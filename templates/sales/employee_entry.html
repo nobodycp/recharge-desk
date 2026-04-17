@@ -104,12 +104,9 @@
             <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
             {{ form.sell_price_actual.errors }}
             {{ form.sell_price_actual }}
-          </div>
-
-          <div class="rd-field-group">
             <div class="rd-esim-switch">
-              <div class="rd-esim-switch__row d-flex align-items-center flex-nowrap">
-                <div class="form-check form-switch m-0 flex-shrink-0">{{ form.is_esim }}</div>
+              <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
+                <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_esim }}</div>
                 <label class="form-check-label mb-0 rd-esim-switch__label" for="id_is_esim">
                   {% trans "eSIM" %}
                   <span class="text-secondary rd-esim-switch__extra">(+{{ esim_extra|unlocalize }})</span>
