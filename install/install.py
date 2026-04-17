@@ -300,14 +300,23 @@ def path_is_nonempty_dir(p: Path) -> bool:
     return True
 
 
+def bundled_repo_root_at_base(cfg: dict[str, Any], base: Path | None = None) -> bool:
+    """True if this machine's install.py lives under paths.base (git checkout root layout)."""
+    b = Path(cfg["paths"]["base"]).resolve() if base is None else base.resolve()
+    return (
+        str(cfg.get("project", {}).get("mode", "bundled")) == "bundled"
+        and (b / "install" / "install.py").is_file()
+        and (b / "manage.py").is_file()
+    )
+
+
 def fresh_bundled_git_checkout_at_base(cfg: dict[str, Any]) -> bool:
     """
     True when paths.base is a non-empty repo root (manage.py + install/) but
     paths.app is not populated yet. Typical: git clone into /opt/recharge-desk
     with default paths.base == clone root and paths.app == .../app.
     """
-    proj = cfg.get("project")
-    if not isinstance(proj, dict) or str(proj.get("mode", "bundled")) != "bundled":
+    if not bundled_repo_root_at_base(cfg):
         return False
     base = Path(cfg["paths"]["base"]).resolve()
     app = Path(cfg["paths"]["app"]).resolve()
@@ -316,10 +325,6 @@ def fresh_bundled_git_checkout_at_base(cfg: dict[str, Any]) -> bool:
     try:
         app.relative_to(base)
     except ValueError:
-        return False
-    if not (base / "manage.py").is_file():
-        return False
-    if not (base / "install" / "install.py").is_file():
         return False
     if (app / "manage.py").is_file():
         return False
@@ -1013,6 +1018,43 @@ def set_env_file_permissions(env_path: Path, system_user: str, dry_run: bool) ->
     run(["chmod", "640", str(env_path)])
 
 
+def force_reset_deployment_tree(cfg: dict[str, Any], base: Path, dry_run: bool) -> None:
+    """
+    force=true: remove previous deploy output. If the git checkout lives at
+    paths.base (bundled layout), only remove app/venv/static/media — never
+    rmtree(base) or we delete install/install.py and manage.py while running.
+    """
+    if dry_run or not cfg.get("force") or not base.exists():
+        return
+    paths = cfg["paths"]
+    b = base.resolve()
+
+    if bundled_repo_root_at_base(cfg, base):
+        print(
+            f"force=true: removing deployment dirs under {base} "
+            "(keeping git checkout / installer sources)."
+        )
+        for key in ("app", "venv", "static", "media"):
+            p = Path(str(paths[key])).resolve()
+            try:
+                p.relative_to(b)
+            except ValueError:
+                _die(
+                    f"force=true: paths.{key} ({p}) must be under paths.base ({b}) "
+                    "when the repository lives at paths.base."
+                )
+            if not p.exists():
+                continue
+            if p.is_dir():
+                shutil.rmtree(p)
+            else:
+                p.unlink()
+        return
+
+    print(f"force=true: removing existing tree {base}")
+    shutil.rmtree(base)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Recharge Desk Ubuntu 24 installer")
     parser.add_argument("--config", required=True, type=Path, help="Path to install JSON config")
@@ -1048,9 +1090,7 @@ def main() -> None:
         check_acme_listen_ports(cfg, dry_run)
 
         phase = "filesystem"
-        if cfg.get("force") and base.exists() and not dry_run:
-            print(f"force=true: removing existing tree {base}")
-            shutil.rmtree(base)
+        force_reset_deployment_tree(cfg, base, dry_run)
 
         prepare_directories(cfg, dry_run)
         ensure_system_user(user, base, dry_run)

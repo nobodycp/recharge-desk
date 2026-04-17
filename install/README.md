@@ -158,7 +158,7 @@ Equivalent (direct Python):
 sudo python3 install/install.py --config /root/recharge.install-config.json
 ```
 
-Re-run with `"force": true` only when replacing an existing deployment under `paths.base`.
+Re-run with `"force": true` only when you intentionally reset deploy outputs. If the **git clone** lives at `paths.base` (default layout), `force` removes only **`app`**, **`venv`**, **`static`**, and **`media`** — it does **not** delete the whole repo tree (so `install/install.py` keeps working).
 
 ## Post-install
 
