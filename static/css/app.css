@@ -280,9 +280,9 @@
   box-shadow: none;
 }
 
-.rd-esim-switch .d-flex {
+.rd-esim-switch__row {
   align-items: center;
-  gap: 0.28rem;
+  gap: 0.1rem;
   font-size: 0.9375rem;
   line-height: 1.25;
 }
@@ -292,6 +292,8 @@
   display: inline-flex;
   align-items: center;
   line-height: 1;
+  /* tighten space before label (Bootstrap switch box is wider than the thumb) */
+  margin-inline-end: -0.2rem;
   /* optical vertical match with label cap height */
   transform: translateY(-0.0625rem);
 }
@@ -314,7 +316,7 @@
 .rd-esim-switch__extra {
   font-size: 0.8125rem;
   font-weight: 400;
-  margin-inline-start: 0.15rem;
+  margin-inline-start: 0.08rem;
 }
 
 .rd-sale-preview {
