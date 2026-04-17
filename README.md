@@ -47,7 +47,9 @@ cd /opt/recharge-desk
 sudo python3 install.py --app-update --git-pull
 ```
 
-`--app-update` يعيد `pip` و`migrate` و`collectstatic` وإعادة تشغيل الخدمات باستخدام `deploy.json` داخل مجلد التثبيت. `--git-pull` اختياري لسحب آخر كود من `origin`.
+`--app-update` يعيد `pip` و`migrate` و`compilemessages` (يُنشئ `locale/**/LC_MESSAGES/*.mo` من ملفات `.po`) و`collectstatic` ثم إعادة تشغيل الخدمات باستخدام `deploy.json` داخل مجلد التثبيت. `--git-pull` اختياري لسحب آخر كود من `origin`. المثبّت يثبّت حزمة **`gettext`** عبر APT (لتوفير `msgfmt`). مع `--git-pull`، إذا تغيّر `install.py` على القرص يُعاد تشغيل المثبّت تلقائياً مرة واحدة حتى تُنفَّذ خطوات النسخة الجديدة (مثل `compilemessages`) في نفس الأمر.
+
+**لوكال فيه ترجمة والسيرفر لا:** بعد سحب آخر كود من Git يجب أن يصل `locale/ar/LC_MESSAGES/django.mo` مع المستودع (يُتتبَّع عمداً للإنتاج). نفّذ `install.py --app-update --git-pull` ثم أعد تحميل الصفحة أو امسح كاش المتصفح. **لا حاجة لحذف التثبيت بالكامل** إلا إن كان المسار أو `deploy.json` خاطئين. إن بقي الإنجليزي، تحقق من وجود الملف على الخادم: `ls -la <paths.app>/locale/ar/LC_MESSAGES/django.mo`.
 
 ### Demo users (`seed_demo`)
 
@@ -69,8 +71,11 @@ Arabic strings are pre-filled for the MVP UI. To refresh after template/code cha
 ```bash
 python manage.py makemessages -l ar --ignore=.venv
 python tools/fill_ar_translations.py   # reapplies Arabic msgstr for known keys
-msgfmt -o locale/ar/LC_MESSAGES/django.mo locale/ar/LC_MESSAGES/django.po
+python manage.py compilemessages
+# أو يدوياً: msgfmt -c -o locale/ar/LC_MESSAGES/django.mo locale/ar/LC_MESSAGES/django.po
 ```
+
+ملف **`locale/ar/LC_MESSAGES/django.mo`** مُتتبَّع في Git حتى يعمل العربي على السيرفر حتى لو تعذّر `compilemessages` هناك. بعد تعديل `django.po` شغّل `compilemessages` (أو `msgfmt`) محلياً ثم ارفع `django.po` و`django.mo` معاً. باقي كتالوجات `*.mo` تبقى مُستثناة؛ `compilemessages` في `install.py` ما زال يحدّثها عند توفر gettext.
 
 Add new keys to `tools/fill_ar_translations.py` (`AR` dict) when you introduce new `gettext` / `{% trans %}` strings, then run the script again.
 
