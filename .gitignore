@@ -5,6 +5,8 @@
 *.pem
 *.install-config.json
 install.config.json
+deploy-config.json
+deploy.json
 
 # Python
 __pycache__/
