@@ -30,6 +30,25 @@ python manage.py runserver
 
 Open `http://127.0.0.1:8000/`.
 
+### تحديث سريع (`pull.sh`)
+
+من جذر المشروع بعد إنشاء `.venv` مرة واحدة:
+
+```bash
+./pull.sh
+```
+
+يعمل `git pull --ff-only` ثم `pip install` و`migrate` داخل `.venv`. لتمرير فرع/ريموت صريح: `./pull.sh origin main`.
+
+**تحديث السيرفر من نفس الماكينة** (بعد ضبط مفاتيح SSH):
+
+```bash
+export DEPLOY_SSH=root@YOUR_SERVER_IP
+# اختياري إذا مسار الاستنساخ ليس الافتراضي:
+# export DEPLOY_INSTALL_DIR=/opt/recharge-desk
+./pull.sh
+```
+
 ### Demo users (`seed_demo`)
 
 | Username   | Password      | Role        |
