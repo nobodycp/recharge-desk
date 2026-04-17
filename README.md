@@ -47,7 +47,7 @@ cd /opt/recharge-desk
 sudo python3 install.py --app-update --git-pull
 ```
 
-`--app-update` يعيد `pip` و`migrate` و`compilemessages` (يُنشئ `locale/**/LC_MESSAGES/*.mo` من ملفات `.po`) و`collectstatic` ثم إعادة تشغيل الخدمات باستخدام `deploy.json` داخل مجلد التثبيت. `--git-pull` اختياري لسحب آخر كود من `origin`. المثبّت يثبّت حزمة **`gettext`** عبر APT (لتوفير `msgfmt`). مع `--git-pull`، إذا تغيّر `install.py` على القرص يُعاد تشغيل المثبّت تلقائياً مرة واحدة حتى تُنفَّذ خطوات النسخة الجديدة (مثل `compilemessages`) في نفس الأمر.
+`--app-update` يعيد `pip` و`migrate` و`compilemessages` (يُنشئ `locale/**/LC_MESSAGES/*.mo` من ملفات `.po`) و`collectstatic` ثم إعادة تشغيل الخدمات باستخدام `deploy.json` داخل مجلد التثبيت. `--git-pull` اختياري لسحب آخر كود من `origin`. المثبّت يثبّت حزمة **`gettext`** عبر APT (لتوفير `msgfmt`). مع `--git-pull`، إذا تغيّر `install.py` على القرص يُعاد تشغيل المثبّت تلقائياً مرة واحدة حتى تُنفَّذ خطوات النسخة الجديدة (مثل `compilemessages`) في نفس الأمر. كما يُحدَّث **`DJANGO_ASSET_CACHE_BUSTER`** في ملف البيئة لكل تشغيل حتى تُحمَّل نسخ جديدة من ملفات **`/static/*.css`** و**`.js`** بدلاً من نسخة قديمة مخزّنة في المتصفح أو عند الوكيل (CDN).
 
 **لوكال فيه ترجمة والسيرفر لا:** إذا كان التشغيل من `paths.app` داخل `paths.base`، `git pull` وحده يحدّث الجذر و**لا** يحدّث `app/`؛ المثبّت يزامن الجذر → `paths.app` بـ `rsync` في كل تشغيل (حتى لو شغّلت `install.py` من خارج المستودع). مع `project.mode: "git"` يُسحَب أيضاً استنساخ Git تحت `paths.app` عند `--git-pull`. نفّذ `install.py --app-update --git-pull` ثم تحقق من `ls -la <paths.app>/locale/ar/LC_MESSAGES/django.mo`. **لا حاجة لحذف التثبيت بالكامل** عادةً.
 

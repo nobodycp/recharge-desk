@@ -8,9 +8,9 @@
   <title>{% trans "Access denied" %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="{{ bootstrap_css }}" rel="stylesheet">
-  <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
-  <link href="{% static 'css/app.css' %}" rel="stylesheet">
-  <script src="{% static 'js/theme.js' %}" defer></script>
+  <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
+  <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
 </head>
 <body class="p-4 bg-body text-body rd-body app-shell">
   <div class="mx-auto" style="max-width: 560px;">

@@ -674,6 +674,8 @@ def build_env_dict(cfg: dict[str, Any], secret_key: str) -> dict[str, str]:
         "DJANGO_STATIC_ROOT": paths["static"],
         "DJANGO_MEDIA_ROOT": paths["media"],
         "DJANGO_LOG_LEVEL": str(dj.get("log_level", "INFO")),
+        # Bust browser/CDN caches for /static/*.css|js after each deploy (templates append ?v=…).
+        "DJANGO_ASSET_CACHE_BUSTER": str(int(time.time())),
     }
 
 

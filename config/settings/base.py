@@ -99,6 +99,9 @@ STATIC_ROOT = Path(
     os.environ.get("DJANGO_STATIC_ROOT", str(BASE_DIR / "staticfiles"))
 ).resolve()
 
+# Set by install.py on each deploy; templates append ?v=… to {% static %} CSS/JS URLs.
+ASSET_CACHE_BUSTER = os.environ.get("DJANGO_ASSET_CACHE_BUSTER", "").strip()
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
 
