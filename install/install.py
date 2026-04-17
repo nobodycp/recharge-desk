@@ -276,9 +276,20 @@ def check_ubuntu_24() -> None:
         )
 
 
-def run(cmd: list[str], *, check: bool = True, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+def run(
+    cmd: list[str],
+    *,
+    check: bool = True,
+    env: dict[str, str] | None = None,
+    cwd: str | Path | None = None,
+) -> subprocess.CompletedProcess[str]:
     print(f"+ {' '.join(cmd)}")
-    return subprocess.run(cmd, check=check, text=True, capture_output=False, env=env)
+    kw: dict[str, Any] = {"check": check, "text": True, "capture_output": False}
+    if env is not None:
+        kw["env"] = env
+    if cwd is not None:
+        kw["cwd"] = cwd
+    return subprocess.run(cmd, **kw)
 
 
 def run_capture(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
