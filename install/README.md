@@ -17,7 +17,8 @@ PostgreSQL, **Gunicorn** on loopback, **Caddy** for TLS + static/media.
 ## Architecture (A)
 
 - **Python 3 driver** (`install.py`, stdlib only): JSON config, validation, subprocess orchestration, safe templating.
-- **`bootstrap.sh`**: optional one-liner to invoke `install.py` with the same Python as `python3`.
+- **`../install.sh`** (repository root): **recommended** one-file entry — run from the clone root on the server.
+- **`bootstrap.sh`**: same as above but lives under `install/` (optional).
 
 Reasoning: JSON is stdlib; no `PyYAML` dependency on a minimal server. `sudo`/`apt`/`systemctl` stay explicit shell commands from Python subprocess.
 
@@ -25,8 +26,9 @@ Reasoning: JSON is stdlib; no `PyYAML` dependency on a minimal server. `sudo`/`a
 
 | Path | Role |
 |------|------|
+| `install.sh` | **One-file launcher** at repo root → `install/install.py` |
 | `install/install.py` | Main installer |
-| `install/bootstrap.sh` | Wrapper → `install.py` |
+| `install/bootstrap.sh` | Alternate wrapper inside `install/` |
 | `install/config.example.json` | Schema template (committed, no secrets) |
 | `install/README.md` | This document |
 
@@ -100,20 +102,20 @@ cd /path/to/account_manger
 sudo cp install/config.example.json /root/recharge.install-config.json
 sudo nano /root/recharge.install-config.json   # set postgres.password, domain, paths, etc.
 sudo chmod 600 /root/recharge.install-config.json
-sudo python3 install/install.py --config /root/recharge.install-config.json
+chmod +x install.sh
+sudo ./install.sh --config /root/recharge.install-config.json
 ```
 
 Dry run (no system changes beyond reads):
 
 ```bash
-sudo python3 install/install.py --config /root/recharge.install-config.json --dry-run
+sudo ./install.sh --config /root/recharge.install-config.json --dry-run
 ```
 
-Or:
+Equivalent (direct Python):
 
 ```bash
-chmod +x install/bootstrap.sh
-sudo ./install/bootstrap.sh --config /root/recharge.install-config.json
+sudo python3 install/install.py --config /root/recharge.install-config.json
 ```
 
 Re-run with `"force": true` only when replacing an existing deployment under `paths.base`.
