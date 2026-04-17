@@ -10,6 +10,9 @@
 #
 # If RECHARGE_DB_PASSWORD is empty and no 3rd argument: a password is generated
 # and written to /root/recharge-desk.generated-db-password.txt (chmod 600).
+#
+# Git "dubious ownership": after install, /opt/recharge-desk may be owned by the
+# app user; this script passes -c safe.directory=... on every git invocation.
 # =============================================================================
 set -euo pipefail
 
@@ -22,8 +25,15 @@ REPO="${RECHARGE_REPO:-${1:-}}"
 DOMAIN="${RECHARGE_DOMAIN:-${2:-}}"
 DBPW="${RECHARGE_DB_PASSWORD:-${3:-}}"
 INSTALL_DIR="${RECHARGE_INSTALL_DIR:-/opt/recharge-desk}"
+# Resolve so git safe.directory matches the path Git reports (avoids dubious ownership).
+if [[ -d "${INSTALL_DIR}" ]]; then
+	INSTALL_DIR="$(cd "${INSTALL_DIR}" && pwd)"
+fi
 CONFIG="${RECHARGE_CONFIG:-/root/recharge.install-config.json}"
-EXAMPLE="${INSTALL_DIR}/install/config.example.json"
+
+_git() {
+	git -c "safe.directory=${INSTALL_DIR}" "$@"
+}
 
 if [[ -z "${REPO}" ]]; then
 	cat >&2 <<'EOF'
@@ -60,16 +70,16 @@ apt-get install -y git python3
 
 if [[ -d "${INSTALL_DIR}/.git" ]]; then
 	echo "[remote-install] Updating existing clone at ${INSTALL_DIR}"
-	git -C "${INSTALL_DIR}" remote set-url origin "${REPO}"
-	git -C "${INSTALL_DIR}" fetch --depth 1 origin
-	cur="$(git -C "${INSTALL_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
-	if git -C "${INSTALL_DIR}" show-ref --verify --quiet "refs/remotes/origin/${cur}"; then
-		git -C "${INSTALL_DIR}" reset --hard -q "origin/${cur}"
+	_git -C "${INSTALL_DIR}" remote set-url origin "${REPO}"
+	_git -C "${INSTALL_DIR}" fetch --depth 1 origin
+	cur="$(_git -C "${INSTALL_DIR}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+	if _git -C "${INSTALL_DIR}" show-ref --verify --quiet "refs/remotes/origin/${cur}"; then
+		_git -C "${INSTALL_DIR}" reset --hard -q "origin/${cur}"
 	else
 		for fallback in main master; do
-			if git -C "${INSTALL_DIR}" show-ref --verify --quiet "refs/remotes/origin/${fallback}"; then
-				git -C "${INSTALL_DIR}" checkout -q "${fallback}"
-				git -C "${INSTALL_DIR}" reset --hard -q "origin/${fallback}"
+			if _git -C "${INSTALL_DIR}" show-ref --verify --quiet "refs/remotes/origin/${fallback}"; then
+				_git -C "${INSTALL_DIR}" checkout -q "${fallback}"
+				_git -C "${INSTALL_DIR}" reset --hard -q "origin/${fallback}"
 				break
 			fi
 		done
@@ -77,15 +87,18 @@ if [[ -d "${INSTALL_DIR}/.git" ]]; then
 else
 	echo "[remote-install] Cloning ${REPO} -> ${INSTALL_DIR}"
 	rm -rf "${INSTALL_DIR}"
-	git clone --depth 1 "${REPO}" "${INSTALL_DIR}"
+	_git clone --depth 1 "${REPO}" "${INSTALL_DIR}"
+	if [[ -d "${INSTALL_DIR}" ]]; then
+		INSTALL_DIR="$(cd "${INSTALL_DIR}" && pwd)"
+	fi
 fi
 
+EXAMPLE="${INSTALL_DIR}/install/config.example.json"
+INSTALL_PY="${INSTALL_DIR}/install/install.py"
 if [[ ! -f "${EXAMPLE}" ]]; then
 	echo "ERROR: cloned tree missing ${EXAMPLE} (wrong repository?)." >&2
 	exit 1
 fi
-
-INSTALL_PY="${INSTALL_DIR}/install/install.py"
 if [[ ! -f "${INSTALL_PY}" ]]; then
 	echo "ERROR: missing ${INSTALL_PY}" >&2
 	exit 1
@@ -116,6 +129,8 @@ cfg["domain"] = domain
 cfg["django"]["allowed_hosts"] = [domain]
 cfg["django"]["csrf_trusted_origins"] = [f"https://{domain}"]
 cfg["postgres"]["password"] = password
+# Re-running this script must not fail assert_install_target_safe when app/ already exists.
+cfg["idempotent"] = True
 
 with open(path, "w", encoding="utf-8") as f:
     json.dump(cfg, f, indent=2)

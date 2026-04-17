@@ -16,7 +16,11 @@ curl -fsSL https://raw.githubusercontent.com/nobodycp/recharge-desk/main/scripts
 
 Same with environment variables instead of positional args: `RECHARGE_REPO`, `RECHARGE_DOMAIN`, `RECHARGE_DB_PASSWORD` (optional), plus `RECHARGE_INSTALL_DIR`, `RECHARGE_CONFIG` — see [`scripts/remote-install.sh`](../scripts/remote-install.sh) header.
 
-The script installs `git`/`python3`, clones or updates the repo under `/opt/recharge-desk`, merges **domain + password + Django hosts** into the JSON config, then runs **`python3 install/install.py`** (not `install.sh`) so there is no “command not found” from shebang/permissions.
+The script installs `git`/`python3`, clones or updates the repo under `/opt/recharge-desk`, merges **domain + password + Django hosts** into the JSON config, sets **`idempotent`: true** so re-running after a partial install is allowed, uses **`git -c safe.directory=…`** so root can pull even when the tree was `chown`’d to the app user, then runs **`python3 install/install.py`** (not `install.sh`) so there is no “command not found” from shebang/permissions.
+
+**Manual `git pull` as root** (if you do not use the script):  
+`git -c safe.directory=/opt/recharge-desk -C /opt/recharge-desk pull`  
+or once: `git config --global --add safe.directory /opt/recharge-desk`.
 
 ## Install from an existing clone (two steps)
 
