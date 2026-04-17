@@ -19,10 +19,20 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(ProductLine)
 class ProductLineAdmin(admin.ModelAdmin):
-    list_display = ("name", "company", "sort_order", "is_active")
+    list_display = ("name", "company", "sort_order", "is_active", "default_package")
     list_filter = ("company", "is_active")
     search_fields = ("name", "company__name")
+    autocomplete_fields = ("default_package",)
     inlines = [ProductVariantInline]
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "default_package":
+            obj = kwargs.get("obj")
+            if obj:
+                kwargs["queryset"] = Product.objects.filter(line=obj).order_by("variant_label")
+            else:
+                kwargs["queryset"] = Product.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(Product)

@@ -14,6 +14,7 @@
             class="btn btn-sm w-100 py-2 px-1 rounded-2 employee-chip employee-product-line-tile d-flex flex-column align-items-center justify-content-center {% if selected_line_id == g.line.pk|stringformat:'s' %}is-active{% endif %}"
             data-line-id="{{ g.line.pk }}"
             data-variant-count="{{ g.variants|length }}"
+            data-default-product-id="{{ g.default_product_id }}"
             title="{{ g.line.name }}"
           >
             {% include "sales/partials/employee_icon_mark.html" with icon=g.line.icon title=g.line.name %}

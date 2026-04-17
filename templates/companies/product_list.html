@@ -47,7 +47,12 @@
                   </div>
                 </td>
               {% endif %}
-              <td>{% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+              <td>
+                {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
+                {% if line.default_package_id == v.pk %}
+                  <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
+                {% endif %}
+              </td>
               <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
               <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
               <td>{% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>

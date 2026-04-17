@@ -312,6 +312,16 @@
         return;
       }
     }
+    var defaultPid = (btn.getAttribute("data-default-product-id") || "").trim();
+    if (defaultPid) {
+      var wrapDef = document.getElementById("packages-for-line-" + lineId);
+      var defChip =
+        wrapDef && wrapDef.querySelector('.employee-package-chip[data-product-id="' + defaultPid + '"]');
+      if (defChip) {
+        syncProductFromTile(defChip);
+        return;
+      }
+    }
     var hid = document.getElementById("id_product");
     if (hid) hid.value = "";
     var inp = document.getElementById("id_sell_price_actual");

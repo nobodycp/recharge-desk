@@ -82,7 +82,7 @@ def company_delete(request, pk):
 @management_required
 def product_list(request):
     lines = (
-        ProductLine.objects.select_related("company")
+        ProductLine.objects.select_related("company", "default_package")
         .prefetch_related("variants")
         .order_by("company__name", "sort_order", "name")
     )

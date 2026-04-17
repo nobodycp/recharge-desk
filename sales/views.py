@@ -33,6 +33,7 @@ def employee_entry(request):
     if company_id:
         lines_qs = (
             ProductLine.objects.filter(company_id=company_id, is_active=True)
+            .select_related("default_package")
             .prefetch_related(
                 Prefetch(
                     "variants",
@@ -44,7 +45,13 @@ def employee_entry(request):
         for line in lines_qs:
             variants = list(line.variants.all())
             if variants:
-                product_groups.append({"line": line, "variants": variants})
+                variant_ids = {p.pk for p in variants}
+                default_product_id = ""
+                if line.default_package_id and line.default_package_id in variant_ids:
+                    default_product_id = str(line.default_package_id)
+                product_groups.append(
+                    {"line": line, "variants": variants, "default_product_id": default_product_id}
+                )
     recent_qs = Sale.objects.select_related("company", "product", "product__line", "payment_method")
     if is_employee(request.user):
         recent_qs = recent_qs.filter(created_by=request.user)
@@ -128,6 +135,7 @@ def employee_product_fragment(request):
         return HttpResponseBadRequest()
     lines_qs = (
         ProductLine.objects.filter(company_id=company_id, is_active=True)
+        .select_related("default_package")
         .prefetch_related(
             Prefetch(
                 "variants",
@@ -140,7 +148,13 @@ def employee_product_fragment(request):
     for line in lines_qs:
         variants = list(line.variants.all())
         if variants:
-            product_groups.append({"line": line, "variants": variants})
+            variant_ids = {p.pk for p in variants}
+            default_product_id = ""
+            if line.default_package_id and line.default_package_id in variant_ids:
+                default_product_id = str(line.default_package_id)
+            product_groups.append(
+                {"line": line, "variants": variants, "default_product_id": default_product_id}
+            )
     return render(
         request,
         "sales/partials/employee_product_tiles.html",

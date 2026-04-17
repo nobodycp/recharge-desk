@@ -30,14 +30,35 @@ class CompanyForm(forms.ModelForm):
 class ProductLineForm(forms.ModelForm):
     class Meta:
         model = ProductLine
-        fields = ["company", "name", "icon", "sort_order", "is_active"]
+        fields = ["company", "name", "icon", "sort_order", "is_active", "default_package"]
         widgets = {
             "company": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "sort_order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "default_package": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            del self.fields["default_package"]
+        else:
+            self.fields["default_package"].queryset = Product.objects.filter(line=self.instance).order_by(
+                "variant_label"
+            )
+            self.fields["default_package"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        dp = cleaned.get("default_package")
+        if dp and self.instance.pk and dp.line_id != self.instance.pk:
+            self.add_error(
+                "default_package",
+                _("Select a package that belongs to this product line."),
+            )
+        return cleaned
 
 
 class ProductVariantForm(forms.ModelForm):

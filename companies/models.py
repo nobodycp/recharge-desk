@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.apps import apps
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -66,6 +67,17 @@ class ProductLine(models.Model):
     )
     sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
     is_active = models.BooleanField(_("active"), default=True)
+    default_package = models.ForeignKey(
+        "Product",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("default package for sales"),
+        help_text=_(
+            "If this line has several packages, employees see this one selected first; they can still pick another."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -79,6 +91,13 @@ class ProductLine(models.Model):
 
     def __str__(self):
         return f"{self.company.name} — {self.name}"
+
+    def clean(self):
+        super().clean()
+        if self.default_package_id and self.pk and self.default_package.line_id != self.pk:
+            raise ValidationError(
+                {"default_package": _("The default package must belong to this product line.")}
+            )
 
     @property
     def is_deletable(self) -> bool:
