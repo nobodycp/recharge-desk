@@ -3,6 +3,18 @@
 Config-driven, non-interactive installation for **single-server** deployments:
 PostgreSQL, **Gunicorn** on loopback, **Caddy** for TLS + static/media.
 
+## One-line remote install (clone + install)
+
+On a **fresh Ubuntu 24** server as a user with `sudo`, run **one command** (replace password and domain; appears in shell history — prefer a private deploy channel or `HISTCONTROL=ignorespace` + leading space):
+
+```bash
+RECHARGE_DB_PASSWORD='YOUR_POSTGRES_APP_PASSWORD' RECHARGE_DOMAIN='s.prosim.ps' curl -fsSL https://raw.githubusercontent.com/nobodycp/recharge-desk/main/scripts/remote-install.sh | sudo -E bash -s
+```
+
+This downloads [`scripts/remote-install.sh`](../scripts/remote-install.sh), clones/updates `/opt/recharge-desk`, writes `/root/recharge.install-config.json` from the example (with your password + domain), then runs `./install.sh`.
+
+Optional environment variables: `RECHARGE_REPO`, `RECHARGE_INSTALL_DIR`, `RECHARGE_CONFIG` (see script header).
+
 ## Preconditions (G)
 
 1. **Fresh Ubuntu 24.04** (Jammy is not supported by this script’s OS check).
@@ -31,6 +43,7 @@ Reasoning: JSON is stdlib; no `PyYAML` dependency on a minimal server. `sudo`/`a
 | `install/bootstrap.sh` | Alternate wrapper inside `install/` |
 | `install/config.example.json` | Schema template (committed, no secrets) |
 | `install/README.md` | This document |
+| `scripts/remote-install.sh` | Curl-friendly clone + config + `install.sh` |
 
 Generated on the server (not in git): private JSON config, `/etc/recharge-desk.env`, systemd unit, Caddy fragment under `/etc/caddy/sites/`.
 
