@@ -5,15 +5,38 @@ PostgreSQL, **Gunicorn** on loopback, **Caddy** for TLS + static/media.
 
 ## One-line remote install (clone + install)
 
-On a **fresh Ubuntu 24** server as a user with `sudo`, run **one command** (replace password and domain; appears in shell history — prefer a private deploy channel or `HISTCONTROL=ignorespace` + leading space):
+On **Ubuntu 24** as root (pipe with `sudo`), pass **git URL** and **domain**. Third argument is the DB password; **omit it** to auto-generate one under `/root/recharge-desk.generated-db-password.txt`.
 
 ```bash
-RECHARGE_DB_PASSWORD='YOUR_POSTGRES_APP_PASSWORD' RECHARGE_DOMAIN='s.prosim.ps' curl -fsSL https://raw.githubusercontent.com/nobodycp/recharge-desk/main/scripts/remote-install.sh | sudo -E bash -s
+curl -fsSL https://raw.githubusercontent.com/nobodycp/recharge-desk/main/scripts/remote-install.sh | sudo bash -s -- \
+  'https://github.com/nobodycp/recharge-desk.git' \
+  's.prosim.ps' \
+  'YOUR_POSTGRES_APP_PASSWORD'
 ```
 
-This downloads [`scripts/remote-install.sh`](../scripts/remote-install.sh), clones/updates `/opt/recharge-desk`, writes `/root/recharge.install-config.json` from the example (with your password + domain), then runs `./install.sh`.
+Same with environment variables instead of positional args: `RECHARGE_REPO`, `RECHARGE_DOMAIN`, `RECHARGE_DB_PASSWORD` (optional), plus `RECHARGE_INSTALL_DIR`, `RECHARGE_CONFIG` — see [`scripts/remote-install.sh`](../scripts/remote-install.sh) header.
 
-Optional environment variables: `RECHARGE_REPO`, `RECHARGE_INSTALL_DIR`, `RECHARGE_CONFIG` (see script header).
+The script installs `git`/`python3`, clones or updates the repo under `/opt/recharge-desk`, merges **domain + password + Django hosts** into the JSON config, then runs **`python3 install/install.py`** (not `install.sh`) so there is no “command not found” from shebang/permissions.
+
+## Install from an existing clone (two steps)
+
+1. **Once:** copy the template next to the repo and edit only what `_edit_these` says in `install/config.example.json`:
+
+```bash
+cd /opt/recharge-desk   # or your clone path
+sudo cp install/config.example.json install.config.json
+sudo nano install.config.json
+sudo chmod 600 install.config.json
+```
+
+2. **Any time:** run the launcher (no `--config` needed if `install.config.json` sits in the repo root):
+
+```bash
+sudo bash install.sh
+```
+
+Or: `sudo bash install.sh --config /root/recharge.install-config.json`  
+`install.config.json` is gitignored so secrets are not committed.
 
 ## Preconditions (G)
 
@@ -29,7 +52,7 @@ Optional environment variables: `RECHARGE_REPO`, `RECHARGE_INSTALL_DIR`, `RECHAR
 ## Architecture (A)
 
 - **Python 3 driver** (`install.py`, stdlib only): JSON config, validation, subprocess orchestration, safe templating.
-- **`../install.sh`** (repository root): **recommended** one-file entry — run from the clone root on the server.
+- **`../install.sh`** (repository root): run with **`sudo bash install.sh`** from the clone root (defaults to `install.config.json` if present).
 - **`bootstrap.sh`**: same as above but lives under `install/` (optional).
 
 Reasoning: JSON is stdlib; no `PyYAML` dependency on a minimal server. `sudo`/`apt`/`systemctl` stay explicit shell commands from Python subprocess.
@@ -91,7 +114,7 @@ Copy `config.example.json` to a private path (e.g. `/root/recharge.install-confi
 - Refuses `gunicorn.bind` that is not loopback or unix socket.
 - Refuses empty or non-HTTPS CSRF origins in config validation.
 - Refuses `django.allowed_hosts` containing `*`.
-- Refuses overwriting a non-empty `paths.base` unless `force: true` **or** `idempotent: true` with an existing app tree.
+- Refuses overwriting a non-empty `paths.base` unless `force: true`, **`idempotent: true`** with an existing `paths.app/manage.py`, **or** a detected **fresh bundled git checkout** at `paths.base` (clone root + empty `paths.app`) so `git clone` into `/opt/recharge-desk` works without `force`.
 - **Path sanity:** `paths.*` must be absolute; `paths.base` / `app` / `venv` must not target `/`, `/etc`, `/bin`, etc.; `paths.env_file` parent must be writable.
 - **PostgreSQL:** logs whether the role already exists; if the database exists, verifies **owner** matches `postgres.user` or aborts with a clear message (no silent takeover).
 - **Ports 80/443:** warns (or aborts with `strict_port_check: true`) if another process already listens.
@@ -107,22 +130,26 @@ Copy `config.example.json` to a private path (e.g. `/root/recharge.install-confi
 
 ## Usage (F)
 
-On the server (after copying the project tree or cloning it):
+On the server (after `git clone`):
 
 ```bash
-sudo apt-get update && sudo apt-get install -y python3
-cd /path/to/account_manger
-sudo cp install/config.example.json /root/recharge.install-config.json
-sudo nano /root/recharge.install-config.json   # set postgres.password, domain, paths, etc.
-sudo chmod 600 /root/recharge.install-config.json
-chmod +x install.sh
-sudo ./install.sh --config /root/recharge.install-config.json
+cd /path/to/recharge-desk
+sudo cp install/config.example.json install.config.json
+sudo nano install.config.json
+sudo chmod 600 install.config.json
+sudo bash install.sh
 ```
 
-Dry run (no system changes beyond reads):
+Use an explicit config path instead of `install.config.json` when you prefer:
 
 ```bash
-sudo ./install.sh --config /root/recharge.install-config.json --dry-run
+sudo bash install.sh --config /root/recharge.install-config.json
+```
+
+Dry run:
+
+```bash
+sudo bash install.sh --config /root/recharge.install-config.json --dry-run
 ```
 
 Equivalent (direct Python):

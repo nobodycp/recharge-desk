@@ -79,7 +79,7 @@ Add new keys to `tools/fill_ar_translations.py` (`AR` dict) when you introduce n
 | `config.settings.development` | Default for `manage.py` / local `runserver` (SQLite, `DEBUG=True`). |
 | `config.settings.production` | Default for `config.wsgi` / Gunicorn: PostgreSQL, env-based secrets, HTTPS headers behind a reverse proxy (e.g. Caddy). |
 
-For unattended server installation, see `install/README.md` and `install/config.example.json` (Ubuntu 24, PostgreSQL, Gunicorn, Caddy). **One-file launcher from repo root:** `chmod +x install.sh` then `sudo ./install.sh --config /path/to/config.json` (wraps `install/install.py`).
+For unattended server installation, see **`install/README.md`**. **Fast path:** on Ubuntu 24, `curl …/scripts/remote-install.sh | sudo bash -s -- 'https://github.com/…/your.git' 'your.domain'` (clone + config + install in one go). **From a clone:** copy `install/config.example.json` → `install.config.json` in the repo root, edit `_edit_these` fields, `chmod 600`, then **`sudo bash install.sh`** (no `--config` needed). `install.config.json` is gitignored.
 
 **Environment configuration:** **`.env.example`** in the repository is a **template only** (safe to commit). It documents variable names and example non-secret values. For any real deployment—including one created by a future automated installer—you must **create a separate `.env` file** (or use systemd `EnvironmentFile=` pointing at a path such as `/etc/recharge-desk.env`) by **copying** from `.env.example` and filling in real values. **Never put secrets in `.env.example`**; real secrets belong only in the deployed `.env` (or secret store) that is **not** committed to version control. An installer should generate or populate that private file, not edit the template in the repo.
 

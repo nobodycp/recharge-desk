@@ -1,5 +1,6 @@
 {
-  "_comment": "Copy to a private path (e.g. /root/recharge-install.json), fill secrets, chmod 600. Never commit real configs.",
+  "_comment": "Copy to install.config.json in the repo root OR /root/recharge.install-config.json. chmod 600. Never commit real configs.",
+  "_edit_these": "1) domain  2) postgres.password (strong random)  3) django.allowed_hosts = [same hostname]  4) django.csrf_trusted_origins = [\"https://\" + same hostname]",
   "domain": "s.prosim.ps",
   "system_user": "rechargedesk",
   "service_name": "recharge-desk",

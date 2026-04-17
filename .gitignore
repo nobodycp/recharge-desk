@@ -4,6 +4,7 @@
 .env.*.local
 *.pem
 *.install-config.json
+install.config.json
 
 # Python
 __pycache__/

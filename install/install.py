@@ -249,7 +249,11 @@ def validate_deployment_paths(cfg: dict[str, Any]) -> None:
 
 def require_root() -> None:
     if os.geteuid() != 0:
-        _die("This installer must run as root. Use: sudo python3 install/install.py --config /path/to/config.json")
+        _die(
+            "This installer must run as root. Use: "
+            "sudo bash install.sh --config /path/to/config.json   OR   "
+            "sudo python3 install/install.py --config /path/to/config.json"
+        )
 
 
 def check_ubuntu_24() -> None:
@@ -296,6 +300,32 @@ def path_is_nonempty_dir(p: Path) -> bool:
     return True
 
 
+def fresh_bundled_git_checkout_at_base(cfg: dict[str, Any]) -> bool:
+    """
+    True when paths.base is a non-empty repo root (manage.py + install/) but
+    paths.app is not populated yet. Typical: git clone into /opt/recharge-desk
+    with default paths.base == clone root and paths.app == .../app.
+    """
+    proj = cfg.get("project")
+    if not isinstance(proj, dict) or str(proj.get("mode", "bundled")) != "bundled":
+        return False
+    base = Path(cfg["paths"]["base"]).resolve()
+    app = Path(cfg["paths"]["app"]).resolve()
+    if app == base:
+        return False
+    try:
+        app.relative_to(base)
+    except ValueError:
+        return False
+    if not (base / "manage.py").is_file():
+        return False
+    if not (base / "install" / "install.py").is_file():
+        return False
+    if (app / "manage.py").is_file():
+        return False
+    return True
+
+
 def assert_install_target_safe(cfg: dict[str, Any]) -> None:
     base = Path(cfg["paths"]["base"])
     app = Path(cfg["paths"]["app"])
@@ -306,6 +336,12 @@ def assert_install_target_safe(cfg: dict[str, Any]) -> None:
             print(
                 f"[idempotent] Non-empty {base} with existing app at {app}; "
                 "will skip re-copying project sources (upgrade / re-run)."
+            )
+            return
+        if fresh_bundled_git_checkout_at_base(cfg):
+            print(
+                f"[install] Non-empty {base} looks like a fresh git checkout; "
+                f"will copy sources into {app} (first install)."
             )
             return
         _die(
