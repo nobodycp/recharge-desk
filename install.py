@@ -422,23 +422,34 @@ def copy_project_bundled(dest_app: Path, source_root: Path, dry_run: bool) -> No
     shutil.copytree(source_root, dest_app, ignore=ignore_copy_patterns)
 
 
-def sync_bundled_repo_into_runtime_app(cfg: dict[str, Any], dry_run: bool) -> None:
-    """
-    Git and the live checkout live at ``paths.base``, but Gunicorn uses
-    ``paths.app`` (a duplicate tree). ``git pull`` only updates ``base``;
-    without this step ``app`` stays stale (wrong i18n, old code). Re-sync with
-    ``rsync`` when both trees exist.
-    """
-    if not bundled_repo_root_at_base(cfg):
-        return
+def should_rsync_base_into_nested_app(cfg: dict[str, Any]) -> bool:
+    """True when Django runs from ``paths.app`` nested under ``paths.base``."""
     base = Path(cfg["paths"]["base"]).resolve()
     app = Path(cfg["paths"]["app"]).resolve()
     if app == base:
+        return False
+    if not (base / "manage.py").is_file() or not (app / "manage.py").is_file():
+        return False
+    try:
+        app.relative_to(base)
+    except ValueError:
+        return False
+    return True
+
+
+def sync_bundled_repo_into_runtime_app(cfg: dict[str, Any], dry_run: bool) -> None:
+    """
+    When ``paths.app`` is nested under ``paths.base``, a ``git pull`` at the
+    repo root does not refresh the tree Gunicorn serves from ``app/``.
+    Mirror sources with ``rsync`` (works even if ``install.py`` is not under
+    ``paths.base``).
+    """
+    if not should_rsync_base_into_nested_app(cfg):
         return
-    if not app.is_dir() or not (app / "manage.py").is_file():
-        return
+    base = Path(cfg["paths"]["base"]).resolve()
+    app = Path(cfg["paths"]["app"]).resolve()
     if dry_run:
-        print(f"[dry-run] Would rsync {base}/ → {app}/ (bundled runtime sync)")
+        print(f"[dry-run] Would rsync {base}/ → {app}/ (nested runtime sync)")
         return
     excludes = (
         "venv",
@@ -1265,6 +1276,20 @@ def git_sync_bundle(root: Path, url: str, ref: str, *, dry_run: bool) -> None:
     ensure_git_clone(repo=url, branch=ref, root=root, dry_run=False)
 
 
+def _sync_git_mode_app_clone(
+    proj: dict[str, Any], app: Path, url: str, ref: str, *, dry_run: bool
+) -> None:
+    """``project.mode`` git: ``paths.app`` is its own clone; pull it on --git-pull."""
+    if dry_run:
+        return
+    if str(proj.get("mode", "")).strip() != "git":
+        return
+    if not (app / ".git").is_dir():
+        return
+    print(f"[git] Syncing Django app clone at {app} …")
+    ensure_git_clone(repo=url, branch=ref, root=app, dry_run=False)
+
+
 def app_update_git_sync_and_maybe_reexec(
     cfg: dict[str, Any], args: argparse.Namespace, *, dry_run: bool
 ) -> None:
@@ -1282,6 +1307,7 @@ def app_update_git_sync_and_maybe_reexec(
     if not url:
         return
     base = Path(cfg["paths"]["base"]).resolve()
+    app = Path(cfg["paths"]["app"]).resolve()
     script = _installer_file_path()
     if script.is_file() and script.name == "install.py":
         script_res = script.resolve()
@@ -1289,16 +1315,18 @@ def app_update_git_sync_and_maybe_reexec(
             script_res.relative_to(base)
         except ValueError:
             git_sync_bundle(base, url, ref, dry_run=False)
-            return
-        pre = script_res.stat()
+        else:
+            pre = script_res.stat()
+            git_sync_bundle(base, url, ref, dry_run=False)
+            post = script_res.stat()
+            if (pre.st_mtime, pre.st_size) != (post.st_mtime, post.st_size):
+                argv = [sys.executable, str(script_res), *sys.argv[1:]]
+                print(f"+ exec {argv[0]} {argv[1]} … (installer updated from git)")
+                os.execv(sys.executable, argv)
+    else:
         git_sync_bundle(base, url, ref, dry_run=False)
-        post = script_res.stat()
-        if (pre.st_mtime, pre.st_size) != (post.st_mtime, post.st_size):
-            argv = [sys.executable, str(script_res), *sys.argv[1:]]
-            print(f"+ exec {argv[0]} {argv[1]} … (installer updated from git)")
-            os.execv(sys.executable, argv)
-        return
-    git_sync_bundle(base, url, ref, dry_run=False)
+
+    _sync_git_mode_app_clone(proj, app, url, ref, dry_run=dry_run)
 
 
 def reexec_from_clone(root: Path) -> None:
