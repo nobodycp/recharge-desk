@@ -271,22 +271,21 @@
   color: var(--bs-primary);
 }
 
-/* Employee sale — eSIM switch (touch-friendly) */
+/* Employee sale — eSIM: no box border; switch only inside .form-switch so label sits beside it */
 .rd-esim-switch {
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--rd-radius-sm, 10px);
-  border: 1px solid var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
-  min-height: 2.75rem;
-  display: flex;
-  align-items: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
-.rd-esim-switch .form-check-input {
-  width: 2.6rem;
-  height: 1.35rem;
+.rd-esim-switch .form-check.form-switch {
+  margin-bottom: 0;
+}
+
+.rd-esim-switch .form-switch .form-check-input {
   margin-top: 0;
-  flex-shrink: 0;
 }
 
 .rd-sale-preview {

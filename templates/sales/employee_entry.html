@@ -107,12 +107,14 @@
           </div>
 
           <div class="rd-field-group">
-            <div class="rd-esim-switch form-check form-switch m-0">
-              {{ form.is_esim }}
-              <label class="form-check-label fw-semibold ps-1" for="id_is_esim">
-                {% trans "eSIM" %}
-                <span class="text-secondary fw-normal small">(+{{ esim_extra|unlocalize }})</span>
-              </label>
+            <div class="rd-esim-switch">
+              <div class="d-flex align-items-center gap-2 flex-nowrap">
+                <div class="form-check form-switch m-0 flex-shrink-0">{{ form.is_esim }}</div>
+                <label class="form-check-label fw-semibold mb-0" for="id_is_esim">
+                  {% trans "eSIM" %}
+                  <span class="text-secondary fw-normal small">(+{{ esim_extra|unlocalize }})</span>
+                </label>
+              </div>
             </div>
             {{ form.is_esim.errors }}
           </div>
