@@ -422,6 +422,42 @@ def copy_project_bundled(dest_app: Path, source_root: Path, dry_run: bool) -> No
     shutil.copytree(source_root, dest_app, ignore=ignore_copy_patterns)
 
 
+def sync_bundled_repo_into_runtime_app(cfg: dict[str, Any], dry_run: bool) -> None:
+    """
+    Git and the live checkout live at ``paths.base``, but Gunicorn uses
+    ``paths.app`` (a duplicate tree). ``git pull`` only updates ``base``;
+    without this step ``app`` stays stale (wrong i18n, old code). Re-sync with
+    ``rsync`` when both trees exist.
+    """
+    if not bundled_repo_root_at_base(cfg):
+        return
+    base = Path(cfg["paths"]["base"]).resolve()
+    app = Path(cfg["paths"]["app"]).resolve()
+    if app == base:
+        return
+    if not app.is_dir() or not (app / "manage.py").is_file():
+        return
+    if dry_run:
+        print(f"[dry-run] Would rsync {base}/ → {app}/ (bundled runtime sync)")
+        return
+    excludes = (
+        "venv",
+        ".venv",
+        "__pycache__",
+        ".git",
+        ".cursor",
+        "staticfiles",
+        "media",
+        "app",
+        "deploy.json",
+        "deploy-config.json",
+        "install.config.json",
+    )
+    cmd = ["rsync", "-a", "--delete", *[f"--exclude={x}" for x in excludes], f"{base}/", f"{app}/"]
+    print(f"[sync] Updating runtime app at {app} from {base} …")
+    run(cmd)
+
+
 def clone_project_git(dest_app: Path, url: str, ref: str, dry_run: bool) -> None:
     if dry_run:
         print(f"[dry-run] Would git clone {url} @ {ref} into {dest_app}")
@@ -676,7 +712,7 @@ def django_migrate_collectstatic(cfg: dict[str, Any], env_dict: dict[str, str], 
     user = str(cfg["system_user"])
     static_root = Path(cfg["paths"]["static"])
     if dry_run:
-        print("[dry-run] Would run migrate and collectstatic as app user.")
+        print("[dry-run] Would run migrate, compilemessages, and collectstatic as app user.")
         return
     env_run = dict(env_dict)
     env_run.setdefault("HOME", str(Path(cfg["paths"]["base"])))
@@ -685,6 +721,14 @@ def django_migrate_collectstatic(cfg: dict[str, Any], env_dict: dict[str, str], 
             user,
             env_run,
             [str(venv_python), str(app / "manage.py"), "migrate", "--noinput"],
+        ),
+        cwd=str(app),
+    )
+    run(
+        _sudo_user_env_cmd(
+            user,
+            env_run,
+            [str(venv_python), str(app / "manage.py"), "compilemessages"],
         ),
         cwd=str(app),
     )
@@ -1026,6 +1070,8 @@ def apt_install_packages(cfg: dict[str, Any], dry_run: bool) -> None:
         "postgresql-client",
         "git",
         "curl",
+        "gettext",
+        "rsync",
         "caddy",
     ]
     caddy_cfg = cfg.get("caddy")
@@ -1219,6 +1265,42 @@ def git_sync_bundle(root: Path, url: str, ref: str, *, dry_run: bool) -> None:
     ensure_git_clone(repo=url, branch=ref, root=root, dry_run=False)
 
 
+def app_update_git_sync_and_maybe_reexec(
+    cfg: dict[str, Any], args: argparse.Namespace, *, dry_run: bool
+) -> None:
+    """
+    With --app-update --git-pull, sync paths.base from origin. If this
+    ``install.py`` lives under that tree and changed on disk, re-exec so the
+    rest of the run uses the updated installer (e.g. new deploy steps such as
+    ``compilemessages``).
+    """
+    if not args.app_update or not getattr(args, "git_pull", False) or dry_run:
+        return
+    proj = cfg.get("project") if isinstance(cfg.get("project"), dict) else {}
+    url = str(proj.get("git_url", "")).strip()
+    ref = str(proj.get("git_ref") or "main")
+    if not url:
+        return
+    base = Path(cfg["paths"]["base"]).resolve()
+    script = _installer_file_path()
+    if script.is_file() and script.name == "install.py":
+        script_res = script.resolve()
+        try:
+            script_res.relative_to(base)
+        except ValueError:
+            git_sync_bundle(base, url, ref, dry_run=False)
+            return
+        pre = script_res.stat()
+        git_sync_bundle(base, url, ref, dry_run=False)
+        post = script_res.stat()
+        if (pre.st_mtime, pre.st_size) != (post.st_mtime, post.st_size):
+            argv = [sys.executable, str(script_res), *sys.argv[1:]]
+            print(f"+ exec {argv[0]} {argv[1]} … (installer updated from git)")
+            os.execv(sys.executable, argv)
+        return
+    git_sync_bundle(base, url, ref, dry_run=False)
+
+
 def reexec_from_clone(root: Path) -> None:
     script = root / "install.py"
     if not script.is_file():
@@ -1329,12 +1411,6 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
             _die(f"Missing {rec}. Run a full install first (see --help).")
         cfg = load_config(rec)
         cfg["idempotent"] = True
-        if getattr(args, "git_pull", False):
-            proj = cfg.get("project") if isinstance(cfg.get("project"), dict) else {}
-            url = str(proj.get("git_url", "")).strip()
-            ref = str(proj.get("git_ref") or "main")
-            if url:
-                git_sync_bundle(Path(cfg["paths"]["base"]), url, ref, dry_run=bool(args.dry_run))
         return cfg
 
     if args.domain and args.db_pass:
@@ -1456,7 +1532,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--service-name", default="recharge-desk", help="systemd unit basename")
     p.add_argument("--db-name", default="recharge_desk", help="PostgreSQL database name")
     p.add_argument("--db-user", default="recharge_desk", help="PostgreSQL role name")
-    p.add_argument("--app-update", action="store_true", help="Re-run against existing deploy.json (pip, migrate, restart)")
+    p.add_argument(
+        "--app-update",
+        action="store_true",
+        help="Re-run against existing deploy.json (pip, migrate, compilemessages, collectstatic, restart)",
+    )
     p.add_argument("--git-pull", action="store_true", help="With --app-update: git fetch/reset app tree from origin")
     p.add_argument("--uninstall", action="store_true", help="Tear down services/files from deploy.json (needs --install-root)")
     p.add_argument("--dry-run", action="store_true", help="Plan only")
@@ -1502,6 +1582,8 @@ def main() -> None:
     require_root()
     check_ubuntu_24()
 
+    app_update_git_sync_and_maybe_reexec(cfg, args, dry_run=dry_run)
+
     record = Path(cfg["paths"]["base"]).resolve() / "deploy.json"
 
     optional_dns_check(cfg)
@@ -1542,6 +1624,8 @@ def main() -> None:
                 )
             else:
                 copy_project_local(app, Path(str(cfg["project"]["local_path"])), dry_run)
+
+        sync_bundled_repo_into_runtime_app(cfg, dry_run)
 
         chown_deploy_tree(cfg, dry_run)
 

@@ -49,7 +49,7 @@ sudo python3 install.py --app-update --git-pull
 
 `--app-update` يعيد `pip` و`migrate` و`compilemessages` (يُنشئ `locale/**/LC_MESSAGES/*.mo` من ملفات `.po`) و`collectstatic` ثم إعادة تشغيل الخدمات باستخدام `deploy.json` داخل مجلد التثبيت. `--git-pull` اختياري لسحب آخر كود من `origin`. المثبّت يثبّت حزمة **`gettext`** عبر APT (لتوفير `msgfmt`). مع `--git-pull`، إذا تغيّر `install.py` على القرص يُعاد تشغيل المثبّت تلقائياً مرة واحدة حتى تُنفَّذ خطوات النسخة الجديدة (مثل `compilemessages`) في نفس الأمر.
 
-**لوكال فيه ترجمة والسيرفر لا:** بعد سحب آخر كود من Git يجب أن يصل `locale/ar/LC_MESSAGES/django.mo` مع المستودع (يُتتبَّع عمداً للإنتاج). نفّذ `install.py --app-update --git-pull` ثم أعد تحميل الصفحة أو امسح كاش المتصفح. **لا حاجة لحذف التثبيت بالكامل** إلا إن كان المسار أو `deploy.json` خاطئين. إن بقي الإنجليزي، تحقق من وجود الملف على الخادم: `ls -la <paths.app>/locale/ar/LC_MESSAGES/django.mo`.
+**لوكال فيه ترجمة والسيرفر لا:** في تخطيط «مستودع تحت `paths.base` + تشغيل من `paths.app`» كان `git pull` يحدّث الجذر فقط و**لا** يحدّث نسخة التطبيق تحت `app/`؛ المثبّت يزامن الآن الجذر → `paths.app` بـ `rsync` في كل تشغيل. بعد سحب الكود نفّذ `install.py --app-update --git-pull`. يُتتبَّع أيضاً `locale/ar/LC_MESSAGES/django.mo` في Git. **لا حاجة لحذف التثبيت بالكامل** عادةً. للتحقق: `ls -la <paths.app>/locale/ar/LC_MESSAGES/django.mo`.
 
 ### Demo users (`seed_demo`)
 
