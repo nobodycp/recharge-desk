@@ -68,6 +68,8 @@ What usually fixes it:
 
 The installer probes **public** `https://your-domain/` and also **`curl --resolve domain:443:127.0.0.1`** so a healthy Caddy on the box can pass even when Cloudflare still returns 525. If public fails but loopback succeeds, the installer prints a **WARNING** with this checklist. Optional config: `"health": { "skip_public_https_check": true }` to ignore the public URL check when you intentionally stay behind Cloudflare with a known 525 until SSL is fixed.
 
+**Caddy 2.6.x from Ubuntu + ACME failure:** journald may show a **Go panic** in `certmagic`/`acmez` after a failed HTTP-01 challenge; the process can end up **without a usable TLS certificate**, which surfaces as **`tlsv1 alert internal error`** from `curl` and **525** via Cloudflare. By default the installer configures the **official Caddy stable** APT repository (`caddy.install_upstream_repo`, default `true`) so `apt install caddy` pulls a **newer Caddy** with fixed ACME handling.
+
 ## Architecture (A)
 
 - **Python 3 driver** (`install.py`, stdlib only): JSON config, validation, subprocess orchestration, safe templating.
@@ -124,6 +126,7 @@ Generated on the server (not in git): private JSON config, `/etc/recharge-desk.e
 | `caddy.sites_dir` | string | Directory for site fragments, default `/etc/caddy/sites`. |
 | `caddy.fragment_name` | string | Fragment filename (e.g. `recharge-desk.caddy`). |
 | `caddy.ensure_sites_import` | bool | If `true`, prepend `import /etc/caddy/sites/*.caddy` to `/etc/caddy/Caddyfile` when missing (backup `.bak.installer`). |
+| `caddy.install_upstream_repo` | bool | Default `true`: add **Cloudsmith Caddy stable** APT repo before `apt install caddy` (avoids Ubuntu universe **2.6.x** which can **panic** on failed ACME / broken TLS). Set `false` to keep distro `caddy` only. |
 | `health.skip_public_https_check` | bool | If `true`, skip the public `https://domain/` probe (useful while fixing Cloudflare **525**; loopback SNI check still runs). |
 
 Copy `config.example.json` to a private path (e.g. `/root/recharge.install-config.json`), set secrets, `chmod 600`, and **never commit** that file (see repo `.gitignore` for `*.install-config.json`).

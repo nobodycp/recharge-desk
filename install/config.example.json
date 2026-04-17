@@ -45,7 +45,8 @@
   "caddy": {
     "sites_dir": "/etc/caddy/sites",
     "fragment_name": "recharge-desk.caddy",
-    "ensure_sites_import": true
+    "ensure_sites_import": true,
+    "install_upstream_repo": true
   },
   "health": {
     "skip_public_https_check": false

@@ -178,6 +178,8 @@ def validate_config(cfg: dict[str, Any]) -> None:
     for ck in ("sites_dir", "fragment_name"):
         if not str(caddy.get(ck, "")).strip():
             _die(f"caddy.{ck} is required.")
+    if "install_upstream_repo" in caddy and not isinstance(caddy["install_upstream_repo"], bool):
+        _die("caddy.install_upstream_repo must be a boolean when set.")
 
     if "*" in hosts:
         _die("django.allowed_hosts must not contain '*'.")
@@ -951,7 +953,51 @@ def optional_dns_check(cfg: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def apt_install_packages(dry_run: bool) -> None:
+def ensure_caddy_stable_apt_repository(dry_run: bool) -> bool:
+    """
+    Add Cloudsmith Caddy stable APT repo (newer Caddy than Ubuntu universe).
+    Ubuntu 24's caddy 2.6.x can panic when ACME fails (certmagic); upstream fixes that.
+    Returns True if sources were added/changed and caller should apt-get update again.
+    """
+    if dry_run:
+        return False
+    keyring = Path("/usr/share/keyrings/caddy-stable-archive-keyring.gpg")
+    list_path = Path("/etc/apt/sources.list.d/caddy-stable.list")
+    if keyring.is_file() and list_path.is_file() and list_path.stat().st_size > 0:
+        print("[caddy] Stable apt repository already present (Cloudsmith).")
+        return False
+    print("[caddy] Adding Caddy stable apt repository (Cloudsmith)…")
+    run(
+        [
+            "apt-get",
+            "install",
+            "-y",
+            "debian-keyring",
+            "debian-archive-keyring",
+            "apt-transport-https",
+            "curl",
+            "gnupg",
+        ]
+    )
+    key_url = "https://dl.cloudsmith.io/public/caddy/stable/gpg.key"
+    list_url = "https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt"
+    with urllib.request.urlopen(key_url, timeout=120) as resp:
+        raw_key = resp.read()
+    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        tf.write(raw_key)
+        tmp_key = tf.name
+    try:
+        keyring.parent.mkdir(parents=True, exist_ok=True)
+        run(["gpg", "--batch", "--yes", "--dearmor", "-o", str(keyring), tmp_key])
+    finally:
+        Path(tmp_key).unlink(missing_ok=True)
+    with urllib.request.urlopen(list_url, timeout=120) as resp:
+        list_path.write_bytes(resp.read())
+    run(["chmod", "o+r", str(keyring), str(list_path)])
+    return True
+
+
+def apt_install_packages(cfg: dict[str, Any], dry_run: bool) -> None:
     pkgs = [
         "python3",
         "python3-venv",
@@ -964,10 +1010,18 @@ def apt_install_packages(dry_run: bool) -> None:
         "curl",
         "caddy",
     ]
+    caddy_cfg = cfg.get("caddy")
+    if not isinstance(caddy_cfg, dict):
+        caddy_cfg = {}
+    use_upstream_caddy = bool(caddy_cfg.get("install_upstream_repo", True))
     if dry_run:
         print(f"[dry-run] Would apt-get install -y {' '.join(pkgs)}")
+        if use_upstream_caddy:
+            print("[dry-run] Would ensure Caddy stable apt repository (Cloudsmith) if missing.")
         return
     run(["apt-get", "update", "-y"])
+    if use_upstream_caddy and ensure_caddy_stable_apt_repository(dry_run=False):
+        run(["apt-get", "update", "-y"])
     run(["apt-get", "install", "-y", *pkgs])
 
 
@@ -1105,7 +1159,7 @@ def main() -> None:
 
     try:
         phase = "apt"
-        apt_install_packages(dry_run)
+        apt_install_packages(cfg, dry_run)
         check_acme_listen_ports(cfg, dry_run)
 
         phase = "filesystem"
