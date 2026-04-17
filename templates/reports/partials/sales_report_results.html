@@ -1,0 +1,100 @@
+{% load i18n humanize ui_tags %}
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Filtered profit (excl. cancelled)" %}</div>
+      <div class="h4 fw-bold tabular-nums {% if summary.profit %}{% if summary.profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}{% else %}kpi-muted{% endif %}">{{ summary.profit|default:0|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Filtered volume" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-info">{{ summary.volume|default:0|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Filtered rows" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-muted">{{ summary.cnt|default:0|intcomma }}</div>
+    </div></div>
+  </div>
+</div>
+<div class="rd-card overflow-hidden">
+  <div class="rd-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span>{% trans "Results" %}</span>
+    <span class="small text-secondary">{% trans "Sortable columns · shareable URL state" %}</span>
+  </div>
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'created_at' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'created_at' and order == 'desc' %}{% querystring sort='created_at' order='asc' page=1 %}{% else %}{% querystring sort='created_at' order='desc' page=1 %}{% endif %}">{% trans "When" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'company' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'company' and order == 'desc' %}{% querystring sort='company' order='asc' page=1 %}{% else %}{% querystring sort='company' order='desc' page=1 %}{% endif %}">{% trans "Company" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'product' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'product' and order == 'desc' %}{% querystring sort='product' order='asc' page=1 %}{% else %}{% querystring sort='product' order='desc' page=1 %}{% endif %}">{% trans "Product" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'ref' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'ref' and order == 'desc' %}{% querystring sort='ref' order='asc' page=1 %}{% else %}{% querystring sort='ref' order='desc' page=1 %}{% endif %}">{% trans "Ref" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'employee' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'employee' and order == 'desc' %}{% querystring sort='employee' order='asc' page=1 %}{% else %}{% querystring sort='employee' order='desc' page=1 %}{% endif %}">{% trans "Employee" %}</a>
+            </th>
+            <th>{% trans "Method" %}</th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if sort == 'sell' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sell' and order == 'desc' %}{% querystring sort='sell' order='asc' page=1 %}{% else %}{% querystring sort='sell' order='desc' page=1 %}{% endif %}">{% trans "Sell" %}</a>
+            </th>
+            <th class="text-end">{% trans "Cost" %}</th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if sort == 'profit' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'profit' and order == 'desc' %}{% querystring sort='profit' order='asc' page=1 %}{% else %}{% querystring sort='profit' order='desc' page=1 %}{% endif %}">{% trans "Profit" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'status' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'status' and order == 'desc' %}{% querystring sort='status' order='asc' page=1 %}{% else %}{% querystring sort='status' order='desc' page=1 %}{% endif %}">{% trans "Status" %}</a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in page_obj %}
+            <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
+              <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
+              <td class="fw-medium">{{ s.company.name }}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+              <td class="tabular-nums text-nowrap">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
+              <td class="small text-secondary">{{ s.created_by.username }}</td>
+              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name }}</span></td>
+              <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
+              <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
+              <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
+              <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No rows." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none d-flex flex-column gap-2 p-2">
+    {% for s in page_obj %}
+      <div class="rd-mobile-row-card {% if s.status == 'pending' %}is-pending{% endif %}">
+        <div class="small text-secondary">{{ s.created_at }}</div>
+        <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+        <div class="font-monospace">{{ s.reference_number }}</div>
+        <div class="d-flex justify-content-between mt-1">
+          <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>
+          <span class="{% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-bold">{{ s.profit_snapshot|intcomma }}</span>
+        </div>
+        <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+      </div>
+    {% empty %}
+      <div class="empty-state">{% trans "No rows." %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
+</div>

@@ -1,0 +1,148 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Profit report" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header mb-3">
+  <h1 class="rd-heading-xl mb-1">{% trans "Profit report" %}</h1>
+  <p class="rd-text-muted mb-0">{% trans "Excludes cancelled sales" %}</p>
+</div>
+
+<div class="rd-card mb-4">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
+      <div class="col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'reports:profit_report' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card mb-4">
+  <div class="rd-card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="rd-label mb-0">{% trans "Total profit" %}</div>
+    <div class="display-6 fw-bold tabular-nums">{{ total_profit|intcomma }}</div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "By company" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>{% trans "Company" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Volume" %}</th><th>{% trans "Count" %}</th></tr></thead>
+          <tbody>
+            {% for r in by_company %}
+              <tr>
+                <td>{{ r.company__name }}</td>
+                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
+                <td>{{ r.volume|intcomma }}</td>
+                <td>{{ r.cnt|intcomma }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="4" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "By payment method" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>{% trans "Method" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
+          <tbody>
+            {% for r in by_method %}
+              <tr>
+                <td>{{ r.payment_method__name }}</td>
+                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
+                <td>{{ r.cnt|intcomma }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "By employee" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>{% trans "Employee" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
+          <tbody>
+            {% for r in by_employee %}
+              <tr>
+                <td>{{ r.created_by__username }}</td>
+                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
+                <td>{{ r.cnt|intcomma }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "By product" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table mb-0">
+          <thead class="table-light"><tr><th>{% trans "Product" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
+          <tbody>
+            {% for r in by_product %}
+              <tr>
+                <td>
+                  {{ r.company__name }} — {{ r.product__line__name }}
+                  {% if r.product__variant_label %} — {{ r.product__variant_label }}{% endif %}
+                </td>
+                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
+                <td>{{ r.cnt|intcomma }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "Daily profit trend" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>{% trans "Day" %}</th><th>{% trans "Profit" %}</th></tr></thead>
+          <tbody>
+            {% for r in daily %}
+              <tr><td>{{ r.d }}</td><td class="fw-semibold">{{ r.profit|intcomma }}</td></tr>
+            {% empty %}<tr><td colspan="2" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "Monthly profit trend" %}</div>
+      <div class="table-responsive rd-table-wrap">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>{% trans "Month" %}</th><th>{% trans "Profit" %}</th></tr></thead>
+          <tbody>
+            {% for r in monthly %}
+              <tr><td>{{ r.m }}</td><td class="fw-semibold">{{ r.profit|intcomma }}</td></tr>
+            {% empty %}<tr><td colspan="2" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

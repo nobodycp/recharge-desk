@@ -1,0 +1,5 @@
+Django>=4.2,<5
+Pillow>=9,<11
+# Production WSGI + PostgreSQL (safe to install in dev; unused unless production settings + DB)
+gunicorn>=22,<24
+psycopg[binary]>=3.1,<4

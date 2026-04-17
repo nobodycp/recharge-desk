@@ -1,0 +1,109 @@
+"""
+Shared Django settings for all environments.
+
+Environment-specific values belong in ``development.py`` or ``production.py``.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from django.urls import reverse_lazy
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+def split_env_csv(value: str | None) -> list[str]:
+    if not value or not value.strip():
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+INSTALLED_APPS = [
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.humanize",
+    "core",
+    "accounts",
+    "companies",
+    "sales",
+    "expenses",
+    "reports",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.i18n",
+                "core.context_processors.theme",
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("en", "English"),
+    ("ar", "العربية"),
+]
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
+TIME_ZONE = "Asia/Jerusalem"
+
+USE_I18N = True
+
+USE_L10N = True
+
+USE_TZ = True
+
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = Path(
+    os.environ.get("DJANGO_STATIC_ROOT", str(BASE_DIR / "staticfiles"))
+).resolve()
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media"))).resolve()
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGIN_URL = reverse_lazy("accounts:login")
+LOGIN_REDIRECT_URL = "core:home"
+LOGOUT_REDIRECT_URL = reverse_lazy("accounts:login")

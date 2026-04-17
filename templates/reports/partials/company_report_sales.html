@@ -1,0 +1,91 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-card mb-4 overflow-hidden">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
+    <span class="fw-semibold">{% trans "Sales detail" %}</span>
+    <form
+      class="d-flex flex-wrap gap-2 align-items-end"
+      method="get"
+      hx-get="{% url 'reports:company_report' company.pk %}"
+      hx-target="#company-sales-grid"
+      hx-push-url="true"
+      hx-indicator="#cr-sales-htmx"
+    >
+      <input type="hidden" name="partial" value="sales">
+      <input type="hidden" name="sales_sort" value="{{ sales_sort }}">
+      <input type="hidden" name="sales_order" value="{{ sales_order }}">
+      <input type="hidden" name="ledger_q" value="{{ request.GET.ledger_q }}">
+      <input type="hidden" name="ledger_sort" value="{{ request.GET.ledger_sort }}">
+      <input type="hidden" name="ledger_order" value="{{ request.GET.ledger_order }}">
+      <input type="hidden" name="ledger_page" value="{{ request.GET.ledger_page }}">
+      <div>
+        <label class="visually-hidden" for="cr-sales-q">{% trans "Search" %}</label>
+        <input id="cr-sales-q" type="search" class="form-control form-control-sm" name="sales_q" value="{{ request.GET.sales_q }}" placeholder="{% trans 'Ref, payer, product…' %}">
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:company_report' company.pk %}">{% trans "Reset" %}</a>
+    </form>
+  </div>
+  <div class="rd-table-dual">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table table-sm mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th>
+                <a class="rd-datagrid-sort {% if sales_sort == 'created_at' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'created_at' and sales_order == 'desc' %}{% querystring sales_sort='created_at' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='created_at' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "When" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if sales_sort == 'product' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'product' and sales_order == 'desc' %}{% querystring sales_sort='product' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='product' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Product" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if sales_sort == 'ref' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'ref' and sales_order == 'desc' %}{% querystring sales_sort='ref' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='ref' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Ref" %}</a>
+              </th>
+              <th class="text-end">
+                <a class="rd-datagrid-sort {% if sales_sort == 'sell' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'sell' and sales_order == 'desc' %}{% querystring sales_sort='sell' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='sell' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Sell" %}</a>
+              </th>
+              <th class="text-end">{% trans "Cost" %}</th>
+              <th class="text-end">
+                <a class="rd-datagrid-sort {% if sales_sort == 'profit' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'profit' and sales_order == 'desc' %}{% querystring sales_sort='profit' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='profit' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Profit" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if sales_sort == 'status' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'status' and sales_order == 'desc' %}{% querystring sales_sort='status' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='status' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Status" %}</a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sales_page %}
+              <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
+                <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
+                <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+                <td class="tabular-nums">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
+                <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
+                <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
+                <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
+                <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="7" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none d-flex flex-column gap-2 p-2">
+      {% for s in sales_page %}
+        <div class="rd-mobile-row-card {% if s.status == 'pending' %}is-pending{% endif %}">
+          <div class="small text-secondary">{{ s.created_at }}</div>
+          <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+          <div class="tabular-nums">{{ s.reference_number }}</div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>
+            <span class="{% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-bold">{{ s.profit_snapshot|intcomma }}</span>
+          </div>
+          <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+        </div>
+      {% empty %}
+        <div class="empty-state">{% trans "No sales." %}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% include "partials/pagination.html" with page_obj=sales_page page_key="sales_page" pagination_reset_sibling_pages=True %}
+</div>

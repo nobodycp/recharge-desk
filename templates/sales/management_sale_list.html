@@ -1,0 +1,50 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Sales" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Sales" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Review and manage recorded sales." %}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'sales:pending_payments' %}">{% trans "Pending payments" %}</a>
+</div>
+
+<div class="rd-card mb-3 position-relative">
+  <div id="sale-htmx-indicator" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+  <div class="rd-card-body rd-filter-bar">
+    <form
+      method="get"
+      id="sale-filter-form"
+      class="row g-3 align-items-end"
+      hx-get="{% url 'sales:management_sale_list' %}"
+      hx-target="#sale-list-results"
+      hx-push-url="true"
+      hx-indicator="#sale-htmx-indicator"
+    >
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="order" value="{{ order }}">
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label" for="sale-search-q">{% trans "Search" %}</label>
+        <input type="search" class="form-control form-control-sm" id="sale-search-q" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'Reference, payer, company…' %}" autocomplete="off">
+      </div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.company.label_tag }}{{ filter_form.company }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.product.label_tag }}{{ filter_form.product }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.employee.label_tag }}{{ filter_form.employee }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.payment_method.label_tag }}{{ filter_form.payment_method }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.esim.label_tag }}{{ filter_form.esim }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}</div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'sales:management_sale_list' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid" id="sale-list-results">
+  {% include "sales/partials/management_sale_list_results.html" %}
+</div>
+{% endblock %}

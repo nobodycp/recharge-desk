@@ -1,0 +1,434 @@
+{% extends "base_employee.html" %}
+{% load i18n static l10n %}
+{% block content %}
+<div class="rd-sale-form">
+  <form
+    method="post"
+    class="d-flex flex-column gap-3"
+    novalidate
+    id="employee-sale-form"
+    data-esim-extra="{{ esim_extra|unlocalize }}"
+  >
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="rd-field-group">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="rd-field-label mb-0">{% trans "Company" %}</div>
+              <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+            </div>
+            {{ form.company.errors }}
+            {{ form.company }}
+            <div class="row row-cols-4 g-1 mt-1" id="company-tiles">
+              {% for c in companies %}
+                <div class="col">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary w-100 py-2 px-1 rounded-2 employee-chip employee-company-tile d-flex flex-column align-items-center justify-content-center {% if selected_company_id == c.pk|stringformat:'s' %}is-active{% endif %}"
+                    data-company-id="{{ c.pk }}"
+                    hx-get="{% url 'sales:employee_product_fragment' %}?company={{ c.pk }}"
+                    hx-target="#product-tiles-container"
+                    hx-swap="innerHTML"
+                    hx-indicator="#product-tiles-loading"
+                    onclick="document.getElementById('id_company').value='{{ c.pk }}'; document.getElementById('id_product').value=''; document.querySelectorAll('.employee-company-tile').forEach(function(el){ el.classList.remove('is-active'); }); this.classList.add('is-active');"
+                    title="{{ c.name }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=c.icon title=c.name %}</button>
+                </div>
+              {% empty %}
+                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No active companies." %}</p></div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="rd-field-group">
+            <div class="rd-field-label">{% trans "Product" %}</div>
+            {{ form.product.errors }}
+            {{ form.product }}
+            <div id="product-tiles-container" class="mt-1">
+              {% if product_groups %}
+                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id product_errors=form.product.errors %}
+              {% else %}
+                <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="rd-field-group">
+            <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
+            {{ form.reference_number.errors }}
+            <div class="input-group input-group-sm">
+              {{ form.reference_number }}
+              <button
+                type="button"
+                class="btn btn-outline-secondary employee-clipboard-paste-btn"
+                data-paste-target="id_reference_number"
+                aria-label="{% trans 'Paste from clipboard' %}"
+                data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+              >{% trans "Paste" %}</button>
+            </div>
+          </div>
+          <div
+            class="rd-field-group rd-payer-field-wrap"
+            id="rd-payer-assist-root"
+            data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
+            data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
+            data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
+            data-label-used="{{ _('Previously used')|escapejs }}"
+          >
+            <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
+            {{ form.payer_name.errors }}
+            <div class="rd-payer-ac-anchor">
+              <div class="input-group input-group-sm">
+                {{ form.payer_name }}
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary employee-clipboard-paste-btn"
+                  data-paste-target="id_payer_name"
+                  aria-label="{% trans 'Paste from clipboard' %}"
+                  data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+                >{% trans "Paste" %}</button>
+              </div>
+              <p class="rd-payer-prefill-hint mb-0" id="rd-payer-prefill-hint" hidden aria-live="polite"></p>
+              <div
+                class="rd-payer-ac-list"
+                id="rd-payer-ac-list"
+                role="listbox"
+                aria-label="{% trans 'Payer name suggestions' %}"
+                hidden
+              ></div>
+            </div>
+          </div>
+          <div class="rd-field-group">
+            <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
+            {{ form.sell_price_actual.errors }}
+            {{ form.sell_price_actual }}
+          </div>
+
+          <div class="rd-field-group">
+            <div class="rd-esim-switch form-check form-switch m-0">
+              {{ form.is_esim }}
+              <label class="form-check-label fw-semibold ps-1" for="id_is_esim">
+                {% trans "eSIM" %}
+                <span class="text-secondary fw-normal small">(+{{ esim_extra|unlocalize }})</span>
+              </label>
+            </div>
+            {{ form.is_esim.errors }}
+          </div>
+
+          <div class="rd-field-group rd-sale-preview border rounded-2 px-3 py-2 small" id="rd-sale-preview" hidden>
+            <div class="rd-field-label mb-2">{% trans "Estimate" %}</div>
+            <div class="d-flex justify-content-between gap-2">
+              <span class="text-secondary">{% trans "Supplier cost" %}</span>
+              <span id="rd-preview-cost" class="tabular-nums fw-semibold">—</span>
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-1">
+              <span class="text-secondary">{% trans "Profit" %}</span>
+              <span id="rd-preview-profit" class="tabular-nums fw-semibold">—</span>
+            </div>
+            <p class="mb-0 mt-2 small text-info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
+            <p class="mb-0 mt-2 small text-danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
+          </div>
+
+          <div class="rd-field-group">
+            <div class="rd-field-label">{% trans "Payment method" %}</div>
+            {{ form.payment_method.errors }}
+            {{ form.payment_method }}
+            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
+              {% for pm in payment_methods %}
+                <div class="col">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
+                    data-payment-id="{{ pm.pk }}"
+                    title="{{ pm.name }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
+                </div>
+              {% empty %}
+                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+              {% endfor %}
+            </div>
+          </div>
+          <details class="employee-notes-details small" {% if form.notes.errors %}open{% endif %}>
+            <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
+            <div class="mt-2">
+              <label class="form-label fw-semibold small visually-hidden" for="id_notes">{% trans "Notes" %}</label>
+              {{ form.notes.errors }}
+              {{ form.notes }}
+            </div>
+          </details>
+          <div class="sticky-save">
+            <button class="btn btn-primary w-100 employee-save-sale-btn" type="submit">
+              {% trans "Save sale" %}
+            </button>
+          </div>
+        </form>
+</div>
+
+<div class="mt-4">
+  <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+    <h2 class="rd-heading-lg mb-0">{% trans "Recent entries" %}</h2>
+  </div>
+  {% if recent_sales %}
+    <div class="rd-card overflow-hidden">
+      <div class="list-group list-group-flush rd-list-flush">
+        {% for s in recent_sales %}
+          <div class="list-group-item d-flex justify-content-between gap-3 py-3">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+              <div class="small text-secondary">{{ s.reference_number }} · {{ s.payment_method.name }}</div>
+            </div>
+            <div class="text-end flex-shrink-0 small">
+              <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
+              <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="empty-state">{% trans "No recent entries yet." %}</div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  function getEsimExtra() {
+    var f = document.getElementById("employee-sale-form");
+    if (!f || !f.dataset.esimExtra) return 5;
+    var v = parseFloat(String(f.dataset.esimExtra).replace(",", "."), 10);
+    return isFinite(v) ? v : 5;
+  }
+
+  function updateSalePreview() {
+    var preview = document.getElementById("rd-sale-preview");
+    var pcEl = document.getElementById("rd-preview-cost");
+    var ppEl = document.getElementById("rd-preview-profit");
+    var note = document.getElementById("rd-preview-esim-note");
+    var lossNote = document.getElementById("rd-preview-loss-note");
+    var sellInp = document.getElementById("id_sell_price_actual");
+    var esim = document.getElementById("id_is_esim");
+    if (!preview || !pcEl || !ppEl || !sellInp) return;
+    var chip = document.querySelector(".employee-package-chip.is-active");
+    if (!chip || sellInp.value === "" || sellInp.value == null) {
+      preview.hidden = true;
+      return;
+    }
+    var base = parseFloat(String(chip.getAttribute("data-product-cost") || "").replace(",", "."), 10);
+    if (!isFinite(base)) {
+      preview.hidden = true;
+      return;
+    }
+    var useEsim = esim && esim.checked;
+    var cost = base + (useEsim ? getEsimExtra() : 0);
+    var sell = parseFloat(String(sellInp.value).replace(",", "."), 10);
+    if (!isFinite(sell)) {
+      preview.hidden = true;
+      return;
+    }
+    preview.hidden = false;
+    pcEl.textContent = cost.toFixed(2);
+    var profit = sell - cost;
+    ppEl.textContent = profit.toFixed(2);
+    ppEl.classList.remove("kpi-danger", "kpi-success", "text-danger", "text-success");
+    if (profit < 0) {
+      ppEl.classList.add("kpi-danger");
+    } else {
+      ppEl.classList.add("kpi-success");
+    }
+    if (note) note.hidden = !useEsim;
+    if (lossNote) lossNote.hidden = sell !== 0;
+  }
+
+  function resetLineAndPackages() {
+    document.querySelectorAll(".employee-product-line-tile").forEach(function (el) {
+      el.classList.remove("is-active");
+    });
+    var panel = document.getElementById("employee-packages-panel");
+    if (panel) {
+      panel.classList.add("d-none");
+    }
+    document.querySelectorAll(".employee-packages-for-line").forEach(function (el) {
+      el.classList.add("d-none");
+      el.classList.remove("d-flex");
+    });
+    document.querySelectorAll(".employee-package-chip").forEach(function (c) {
+      c.classList.remove("is-active");
+    });
+  }
+
+  function showPackagesForLine(lineId) {
+    var panel = document.getElementById("employee-packages-panel");
+    if (!panel) return;
+    document.querySelectorAll(".employee-packages-for-line").forEach(function (el) {
+      el.classList.add("d-none");
+      el.classList.remove("d-flex");
+    });
+    var box = document.getElementById("packages-for-line-" + lineId);
+    if (box) {
+      box.classList.remove("d-none");
+      box.classList.add("d-flex");
+    }
+    panel.classList.remove("d-none");
+  }
+
+  function syncLineTileActive(btn) {
+    document.querySelectorAll(".employee-product-line-tile").forEach(function (el) {
+      el.classList.remove("is-active");
+    });
+    if (btn) btn.classList.add("is-active");
+  }
+
+  function syncProductFromTile(tile) {
+    if (!tile) return;
+    document.querySelectorAll(".employee-product-tile").forEach(function (t) {
+      t.classList.remove("is-active");
+    });
+    tile.classList.add("is-active");
+    var id = tile.getAttribute("data-product-id");
+    var def = tile.getAttribute("data-default-price");
+    var hid = document.getElementById("id_product");
+    var inp = document.getElementById("id_sell_price_actual");
+    if (hid) hid.value = id || "";
+    if (inp && def) inp.value = def;
+    var lineId = tile.getAttribute("data-line-id");
+    if (lineId) {
+      var lineBtn = document.querySelector('.employee-product-line-tile[data-line-id="' + lineId + '"]');
+      syncLineTileActive(lineBtn);
+      showPackagesForLine(lineId);
+    }
+    updateSalePreview();
+  }
+
+  function onLineTileClick(btn) {
+    var lineId = btn.getAttribute("data-line-id");
+    var count = parseInt(btn.getAttribute("data-variant-count") || "0", 10);
+    syncLineTileActive(btn);
+    if (count <= 1) {
+      var wrap = document.getElementById("packages-for-line-" + lineId);
+      var only = wrap && wrap.querySelector(".employee-package-chip");
+      if (only) {
+        syncProductFromTile(only);
+        return;
+      }
+    }
+    var hid = document.getElementById("id_product");
+    if (hid) hid.value = "";
+    var inp = document.getElementById("id_sell_price_actual");
+    if (inp) inp.value = "";
+    document.querySelectorAll(".employee-package-chip").forEach(function (c) {
+      c.classList.remove("is-active");
+    });
+    showPackagesForLine(lineId);
+    updateSalePreview();
+  }
+
+  function syncPaymentFromTile(tile) {
+    if (!tile) return;
+    document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
+      t.classList.remove("is-active");
+    });
+    tile.classList.add("is-active");
+    var hid = document.getElementById("id_payment_method");
+    if (hid) hid.value = tile.getAttribute("data-payment-id") || "";
+  }
+
+  document.addEventListener("click", function (e) {
+    var form = document.getElementById("employee-sale-form");
+    if (!form) return;
+    var lineBtn = e.target.closest(".employee-product-line-tile");
+    if (lineBtn && form.contains(lineBtn)) {
+      e.preventDefault();
+      onLineTileClick(lineBtn);
+      return;
+    }
+    var pkg = e.target.closest(".employee-package-chip");
+    if (pkg && form.contains(pkg)) {
+      e.preventDefault();
+      syncProductFromTile(pkg);
+      return;
+    }
+    var pay = e.target.closest(".employee-payment-tile");
+    if (pay && form.contains(pay)) {
+      e.preventDefault();
+      syncPaymentFromTile(pay);
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".employee-clipboard-paste-btn").forEach(function (pasteBtn) {
+      var targetId = pasteBtn.getAttribute("data-paste-target");
+      if (!targetId) return;
+      pasteBtn.addEventListener("click", function () {
+        var ref = document.getElementById(targetId);
+        if (!ref) return;
+        var failMsg = pasteBtn.getAttribute("data-paste-fail") || "";
+        function applyText(text) {
+          if (text == null || text === "") return;
+          var raw = String(text).replace(/\u200e|\u200f/g, "").trim();
+          var firstLine = raw.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean)[0] || raw;
+          var maxAttr = ref.getAttribute("maxlength");
+          var maxLen = maxAttr ? parseInt(maxAttr, 10) : 2000;
+          ref.value = firstLine.replace(/\s+/g, " ").slice(0, maxLen);
+          ref.dispatchEvent(new Event("input", { bubbles: true }));
+          ref.focus();
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+          navigator.clipboard.readText().then(applyText).catch(function () {
+            if (failMsg) window.alert(failMsg);
+            ref.focus();
+          });
+        } else {
+          if (failMsg) window.alert(failMsg);
+          ref.focus();
+        }
+      });
+    });
+    var ph = document.getElementById("id_product");
+    if (ph && ph.value) {
+      var ps = document.querySelector('.employee-package-chip[data-product-id="' + ph.value + '"]');
+      if (ps) {
+        var lid = ps.getAttribute("data-line-id");
+        var lb = document.querySelector('.employee-product-line-tile[data-line-id="' + lid + '"]');
+        syncLineTileActive(lb);
+        showPackagesForLine(lid);
+        syncProductFromTile(ps);
+      }
+    } else {
+      var firstLine = document.querySelector(".employee-product-line-tile");
+      if (firstLine && document.querySelector("#employee-packages-panel")) {
+        /* no product yet — keep packages hidden until line chosen */
+      }
+    }
+    var mh = document.getElementById("id_payment_method");
+    if (mh && mh.value) {
+      var ms = document.querySelector('.employee-payment-tile[data-payment-id="' + mh.value + '"]');
+      if (ms) syncPaymentFromTile(ms);
+    }
+    var esimCb = document.getElementById("id_is_esim");
+    if (esimCb) {
+      esimCb.addEventListener("change", updateSalePreview);
+    }
+    var sellEl = document.getElementById("id_sell_price_actual");
+    if (sellEl) {
+      sellEl.addEventListener("input", updateSalePreview);
+      sellEl.addEventListener("change", updateSalePreview);
+    }
+    updateSalePreview();
+  });
+
+  document.body.addEventListener("htmx:afterSwap", function (evt) {
+    if (evt.detail.target && evt.detail.target.id === "product-tiles-container") {
+      resetLineAndPackages();
+      var hid = document.getElementById("id_product");
+      if (hid) hid.value = "";
+      var inp = document.getElementById("id_sell_price_actual");
+      if (inp) inp.value = "";
+      updateSalePreview();
+    }
+  });
+})();
+</script>
+<script src="{% static 'js/employee-payer-assist.js' %}"></script>
+{% endblock %}

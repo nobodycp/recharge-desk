@@ -1,0 +1,173 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Dashboard" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header">
+  <h1 class="rd-heading-xl mb-1">{% trans "Dashboard" %}</h1>
+  <p class="rd-text-muted mb-0">{% trans "Operational snapshot" %}</p>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4 rd-dashboard-kpi-row">
+  <div class="col d-flex">
+    <div class="rd-card rd-stat flex-fill w-100 h-100">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "Pending payments" %}</div>
+        <div class="rd-stat-value kpi-warning">{{ pending_count|intcomma }}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card rd-stat flex-fill w-100 h-100">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--info" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "Today's sales" %}</div>
+        <div class="rd-stat-value kpi-info">{{ today_count|intcomma }}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <div class="rd-stat-meta">
+          <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 column-gap-3">
+            <span class="text-nowrap"><span class="text-secondary">{% trans "Volume" %}</span> <span class="fw-semibold tabular-nums kpi-info">{{ today_volume|intcomma }}</span></span>
+            <span class="text-nowrap"><span class="text-secondary">{% trans "eSIM" %}</span> <span class="fw-semibold tabular-nums">{{ esim_sales_count|intcomma }}</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card rd-stat flex-fill w-100 h-100">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--success" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "Today's profit" %}</div>
+        <div class="rd-stat-value {% if today_profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ today_profit|intcomma }}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <p class="rd-stat-footnote mb-0">{% trans "Paid sales only" %}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card rd-stat rd-stat--loss flex-fill w-100 h-100">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--danger" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4 4 6-9"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "Loss" %}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <div class="rd-stat-loss-trio">
+          <div class="rd-stat-loss-trio__item">
+            <span class="rd-stat-loss-trio__lbl">{% trans "Today" %}</span>
+            <span class="rd-stat-loss-trio__val kpi-danger">{{ today_loss_from_zero|intcomma }}</span>
+          </div>
+          <div class="rd-stat-loss-trio__item">
+            <span class="rd-stat-loss-trio__lbl">{% trans "Month" %}</span>
+            <span class="rd-stat-loss-trio__val kpi-danger">{{ month_loss_from_zero|intcomma }}</span>
+          </div>
+          <div class="rd-stat-loss-trio__item">
+            <span class="rd-stat-loss-trio__lbl">{% trans "All" %}</span>
+            <span class="rd-stat-loss-trio__val kpi-danger">{{ total_loss_from_zero|intcomma }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+  <div class="col">
+    <div class="rd-card rd-dashboard-summary h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "All-time profit" %}</div>
+        <div class="rd-dashboard-summary__value {% if total_profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ total_profit|intcomma }}</div>
+        <p class="small text-secondary mb-0">{% trans "Paid sales only" %}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="rd-card rd-dashboard-summary h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "All-time expenses" %}</div>
+        <div class="rd-dashboard-summary__value kpi-expense">{{ total_expenses|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="rd-card rd-dashboard-summary h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Net profit (all time)" %}</div>
+        <div class="rd-dashboard-summary__value {% if net_all_time < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ net_all_time|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4 align-items-stretch rd-dashboard-financial-row">
+  <div class="col-md-6 d-flex">
+    <div class="rd-card flex-fill d-flex flex-column">
+      <div class="rd-card-body flex-grow-1">
+        <div class="rd-label mb-1">{% trans "This month profit" %}</div>
+        <div class="rd-dashboard-summary__value rd-dashboard-summary__value--md {% if month_profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ month_profit|intcomma }}</div>
+        <div class="rd-text-muted small mt-2">{% trans "Expenses" %}: <span class="kpi-expense fw-semibold">{{ month_expenses|intcomma }}</span></div>
+        <div class="fw-semibold mt-2 small">{% trans "Net (month)" %}: <span class="{% if net_month < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ net_month|intcomma }}</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 d-flex">
+    <div class="rd-card flex-fill d-flex flex-column overflow-hidden min-h-0">
+      <div class="rd-card-header flex-shrink-0">{% trans "Supplier balances" %}</div>
+      <div class="list-group list-group-flush rd-list-flush rd-dashboard-balance-list flex-grow-1">
+        {% for c in companies %}
+          <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3" href="{% url 'reports:company_report' c.pk %}">
+            <span class="fw-medium">{{ c.name }}</span>
+            <span class="fw-bold tabular-nums {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ c.current_balance|intcomma }}</span>
+          </a>
+        {% empty %}
+          <div class="list-group-item rd-text-muted py-4 text-center">{% trans "No companies yet." %}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden">
+  <div class="rd-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <span>{% trans "Recent activity" %}</span>
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:management_sale_list' %}">{% trans "View all sales" %}</a>
+  </div>
+  <div class="rd-data-shell">
+    <div class="table-responsive rd-table-wrap border-0">
+      <table class="table table-striped table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th scope="col">{% trans "When" %}</th>
+            <th scope="col">{% trans "Company" %}</th>
+            <th scope="col">{% trans "Product" %}</th>
+            <th scope="col">{% trans "Employee" %}</th>
+            <th scope="col" class="text-end">{% trans "Amount" %}</th>
+            <th scope="col">{% trans "Status" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in recent_sales %}
+            <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
+              <td class="text-secondary small text-nowrap">{{ s.created_at }}</td>
+              <td class="fw-medium">{{ s.company.name }}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+              <td class="text-secondary small">{{ s.created_by.username }}</td>
+              <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
+              <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales yet." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

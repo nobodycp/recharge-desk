@@ -1,0 +1,4 @@
+{% load i18n %}
+{% if sale.loss_snapshot and sale.loss_snapshot > 0 %}
+<span class="badge rounded-pill text-bg-secondary rd-sale-loss-badge ms-1" title="{% trans 'Loss sale: selling price was zero; supplier cost is recorded as loss.' %}">{% trans "Loss" %}</span>
+{% endif %}

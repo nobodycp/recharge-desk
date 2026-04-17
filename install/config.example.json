@@ -1,0 +1,49 @@
+{
+  "_comment": "Copy to a private path (e.g. /root/recharge-install.json), fill secrets, chmod 600. Never commit real configs.",
+  "domain": "s.prosim.ps",
+  "system_user": "rechargedesk",
+  "service_name": "recharge-desk",
+  "force": false,
+  "dry_run": false,
+  "idempotent": false,
+  "strict_port_check": false,
+  "dns_check": true,
+  "paths": {
+    "base": "/opt/recharge-desk",
+    "venv": "/opt/recharge-desk/venv",
+    "app": "/opt/recharge-desk/app",
+    "static": "/opt/recharge-desk/staticfiles",
+    "media": "/opt/recharge-desk/media",
+    "env_file": "/etc/recharge-desk.env"
+  },
+  "project": {
+    "mode": "bundled",
+    "git_url": "",
+    "git_ref": "main",
+    "local_path": ""
+  },
+  "postgres": {
+    "create_database": true,
+    "host": "127.0.0.1",
+    "port": 5432,
+    "name": "recharge_desk",
+    "user": "recharge_desk",
+    "password": "CHANGE_ME_STRONG_PASSWORD"
+  },
+  "django": {
+    "secret_key": null,
+    "allowed_hosts": ["s.prosim.ps"],
+    "csrf_trusted_origins": ["https://s.prosim.ps"],
+    "log_level": "INFO"
+  },
+  "gunicorn": {
+    "bind": "127.0.0.1:8000",
+    "workers": 3,
+    "timeout": 120
+  },
+  "caddy": {
+    "sites_dir": "/etc/caddy/sites",
+    "fragment_name": "recharge-desk.caddy",
+    "ensure_sites_import": true
+  }
+}

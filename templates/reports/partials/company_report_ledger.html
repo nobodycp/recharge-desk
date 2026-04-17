@@ -1,0 +1,83 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-card overflow-hidden">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
+    <span class="fw-semibold">{% trans "Balance ledger" %}</span>
+    <form
+      class="d-flex flex-wrap gap-2 align-items-end"
+      method="get"
+      hx-get="{% url 'reports:company_report' company.pk %}"
+      hx-target="#company-ledger-grid"
+      hx-push-url="true"
+      hx-indicator="#cr-ledger-htmx"
+    >
+      <input type="hidden" name="partial" value="ledger">
+      <input type="hidden" name="ledger_sort" value="{{ ledger_sort }}">
+      <input type="hidden" name="ledger_order" value="{{ ledger_order }}">
+      <input type="hidden" name="sales_q" value="{{ request.GET.sales_q }}">
+      <input type="hidden" name="sales_sort" value="{{ request.GET.sales_sort }}">
+      <input type="hidden" name="sales_order" value="{{ request.GET.sales_order }}">
+      <input type="hidden" name="sales_page" value="{{ request.GET.sales_page }}">
+      <div>
+        <label class="visually-hidden" for="cr-ledger-q">{% trans "Search" %}</label>
+        <input id="cr-ledger-q" type="search" class="form-control form-control-sm" name="ledger_q" value="{{ request.GET.ledger_q }}" placeholder="{% trans 'Notes, ref #…' %}">
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:company_report' company.pk %}">{% trans "Reset" %}</a>
+    </form>
+  </div>
+  <div class="rd-table-dual">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table table-sm mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th>
+                <a class="rd-datagrid-sort {% if ledger_sort == 'created_at' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'created_at' and ledger_order == 'desc' %}{% querystring ledger_sort='created_at' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='created_at' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "When" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if ledger_sort == 'entry_type' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'entry_type' and ledger_order == 'desc' %}{% querystring ledger_sort='entry_type' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='entry_type' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Type" %}</a>
+              </th>
+              <th class="text-end">
+                <a class="rd-datagrid-sort {% if ledger_sort == 'amount' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'amount' and ledger_order == 'desc' %}{% querystring ledger_sort='amount' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='amount' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Amount" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if ledger_sort == 'reference_id' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'reference_id' and ledger_order == 'desc' %}{% querystring ledger_sort='reference_id' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='reference_id' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Reference" %}</a>
+              </th>
+              <th>
+                <a class="rd-datagrid-sort {% if ledger_sort == 'by' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'by' and ledger_order == 'desc' %}{% querystring ledger_sort='by' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='by' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "By" %}</a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in ledger_page %}
+              <tr>
+                <td class="small text-secondary text-nowrap">{{ t.created_at }}</td>
+                <td><span class="rd-badge rd-badge--neutral">{{ t.get_entry_type_display }}</span></td>
+                <td class="fw-semibold tabular-nums text-end {% if t.entry_type == 'deduction' %}kpi-warning{% elif t.entry_type == 'deposit' %}kpi-success{% elif t.entry_type == 'reversal' %}kpi-info{% else %}kpi-muted{% endif %}">{{ t.amount|intcomma }}</td>
+                <td class="small">{{ t.get_reference_type_display }} {% if t.reference_id %}#{{ t.reference_id }}{% endif %}</td>
+                <td class="small">{% if t.created_by %}{{ t.created_by.username }}{% else %}—{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center text-secondary py-4">{% trans "No ledger rows." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none d-flex flex-column gap-2 p-2">
+      {% for t in ledger_page %}
+        <div class="rd-mobile-row-card">
+          <div class="small text-secondary">{{ t.created_at }}</div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="rd-badge rd-badge--neutral">{{ t.get_entry_type_display }}</span>
+            <span class="tabular-nums fw-bold {% if t.entry_type == 'deduction' %}kpi-warning{% elif t.entry_type == 'deposit' %}kpi-success{% elif t.entry_type == 'reversal' %}kpi-info{% else %}kpi-muted{% endif %}">{{ t.amount|intcomma }}</span>
+          </div>
+          <div class="small mt-1">{{ t.get_reference_type_display }} {% if t.reference_id %}#{{ t.reference_id }}{% endif %}</div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-3">{% trans "No ledger rows." %}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% include "partials/pagination.html" with page_obj=ledger_page page_key="ledger_page" pagination_reset_sibling_pages=True %}
+</div>

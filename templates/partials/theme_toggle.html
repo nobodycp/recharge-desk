@@ -1,0 +1,12 @@
+{% load i18n %}
+{% with btn=variant|default:"topbar" %}
+<div class="btn-group btn-group-sm app-theme-toggle {% if btn == 'shell' or btn == 'login' %}rd-theme-toggle{% endif %}" role="group" aria-label="{% trans 'Color theme' %}">
+  {% if btn == "shell" or btn == "login" %}
+    <button type="button" class="btn btn-outline-secondary" data-app-theme="light" title="{% trans 'Light theme' %}" aria-pressed="false">{% trans "Light" %}</button>
+    <button type="button" class="btn btn-outline-secondary" data-app-theme="dark" title="{% trans 'Dark theme' %}" aria-pressed="false">{% trans "Dark" %}</button>
+  {% else %}
+    <button type="button" class="btn btn-outline-light" data-app-theme="light" title="{% trans 'Light theme' %}" aria-pressed="false">{% trans "Light" %}</button>
+    <button type="button" class="btn btn-outline-light" data-app-theme="dark" title="{% trans 'Dark theme' %}" aria-pressed="false">{% trans "Dark" %}</button>
+  {% endif %}
+</div>
+{% endwith %}

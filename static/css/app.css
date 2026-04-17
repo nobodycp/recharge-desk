@@ -1,0 +1,511 @@
+/**
+ * App-specific layers — load after design-system.css
+ * (Employee sale chips, legacy list hovers, table helpers.)
+ */
+
+.btn-lg-touch {
+  padding: 0.85rem 1rem;
+  font-size: 1.05rem;
+  border-radius: var(--rd-radius-sm, 10px);
+}
+
+.sticky-save .employee-save-sale-btn {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.employee-save-sale-btn {
+  white-space: normal;
+}
+
+.employee-notes-details {
+  border: 0;
+}
+
+.employee-notes-summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+  user-select: none;
+}
+
+.employee-notes-summary::-webkit-details-marker {
+  display: none;
+}
+
+.employee-notes-details[open] .employee-notes-summary {
+  margin-bottom: 0.15rem;
+}
+
+.htmx-request .htmx-indicator {
+  opacity: 1 !important;
+}
+
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.badge-soft {
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+}
+
+.app-shell .list-group-item-action {
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="light"] .app-shell .list-group-item-action:hover,
+[data-bs-theme="light"] .app-shell .list-group-item-action:focus {
+  background-color: rgba(59, 130, 246, 0.08);
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .app-shell .list-group-item-action:hover,
+[data-bs-theme="dark"] .app-shell .list-group-item-action:focus {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .table-light {
+  --bs-table-bg: rgba(255, 255, 255, 0.06);
+  --bs-table-color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .badge.text-bg-light {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--bs-body-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+/* Employee sale entry — compact chips (company / product / payment) */
+.employee-chip {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.employee-company-tile,
+.employee-payment-tile,
+.employee-product-tile,
+.employee-product-line-tile {
+  white-space: normal;
+}
+
+/* Minimal tiles (test): no chip frame — only logo / price line */
+.employee-company-tile,
+.employee-product-tile:not(.employee-package-chip),
+.employee-payment-tile,
+.employee-product-line-tile {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-color: inherit;
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-hover-color: inherit;
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-active-color: inherit;
+}
+
+.employee-company-tile:hover,
+.employee-product-tile:not(.employee-package-chip):hover,
+.employee-payment-tile:hover,
+.employee-product-line-tile:hover {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+.employee-chip-meta {
+  font-size: 0.68rem;
+  display: block;
+}
+
+/* Company: selected بدون إطار (اللوجو فقط) */
+.employee-company-tile.is-active,
+.employee-company-tile:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  border: none !important;
+}
+
+/* خط المنتج (صورة/أيقونة الخط): نفس منطق التحديد الواضح كالباقات */
+.employee-product-line-tile.is-active {
+  outline: none !important;
+  border: 2px solid var(--bs-primary) !important;
+  border-radius: 0.375rem;
+  background-color: rgba(var(--bs-primary-rgb), 0.14) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.2),
+    0 0 0 2px rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.employee-product-line-tile.is-active:active {
+  border-color: var(--bs-primary) !important;
+  background-color: rgba(var(--bs-primary-rgb), 0.16) !important;
+}
+
+.employee-product-line-tile:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+/* Package chip & payment: تحديد يشبه حقل النموذج */
+.employee-package-chip.employee-product-tile.is-active,
+.employee-package-chip.is-active,
+.employee-package-chip.employee-product-tile:active,
+.employee-payment-tile.is-active,
+.employee-payment-tile:active {
+  outline: none !important;
+  border: 2px solid var(--bs-primary) !important;
+  border-radius: 0.375rem;
+  background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.22),
+    0 0 0 2px rgba(var(--bs-primary-rgb), 0.2);
+  color: inherit !important;
+  font-weight: 600;
+}
+
+.employee-payment-tile.is-active {
+  --bs-btn-color: inherit;
+}
+
+/* Logos: use full chip width (columns are wide); cap height so rows stay tidy. */
+.employee-chip-icon {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  margin-inline: auto;
+}
+
+/* Companies & product lines: 4 per row. Payment methods: 5 per row — compact icons */
+.employee-company-tile .employee-chip-icon,
+.employee-product-line-tile .employee-chip-icon {
+  width: 100%;
+  max-width: 100%;
+  height: clamp(1.5rem, 7.5vw, 2.5rem);
+  max-height: 2.5rem;
+}
+
+.employee-payment-tile .employee-chip-icon {
+  width: 100%;
+  max-width: 100%;
+  height: clamp(1.35rem, 5.5vw, 2.1rem);
+  max-height: 2.1rem;
+}
+
+.employee-chip-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 0.45rem;
+  margin-inline: auto;
+}
+
+.employee-company-tile .employee-chip-icon-fallback,
+.employee-product-line-tile .employee-chip-icon-fallback {
+  width: 100%;
+  min-height: clamp(1.5rem, 7.5vw, 2.5rem);
+  font-size: clamp(0.75rem, 3.8vw, 1.05rem);
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+  color: var(--bs-primary);
+}
+
+.employee-company-tile,
+.employee-payment-tile,
+.employee-product-line-tile {
+  min-height: clamp(1.9rem, 9vw, 2.85rem);
+  padding-block: 0.15rem !important;
+  padding-inline: 0.1rem !important;
+}
+
+.employee-packages-panel {
+  border-radius: 0.375rem;
+  background-color: var(--bs-tertiary-bg);
+}
+
+.employee-package-chip {
+  font-size: 0.72rem !important;
+  font-weight: 500;
+  border: none !important;
+  background: transparent !important;
+  min-height: 0 !important;
+  white-space: normal;
+}
+
+.employee-company-tile.is-active .employee-chip-icon-fallback {
+  background-color: rgba(var(--bs-primary-rgb), 0.18);
+  color: var(--bs-primary);
+}
+
+.employee-product-line-tile.is-active .employee-chip-icon-fallback {
+  background-color: rgba(var(--bs-primary-rgb), 0.26);
+  color: var(--bs-primary);
+}
+
+.employee-product-line-tile.is-active .employee-chip-icon {
+  opacity: 1;
+}
+
+.employee-payment-tile .employee-chip-icon-fallback {
+  width: 100%;
+  min-height: clamp(1.35rem, 5.5vw, 2.1rem);
+  font-size: clamp(0.68rem, 3.2vw, 0.95rem);
+  background-color: transparent;
+  color: var(--bs-body-color);
+  border: none;
+}
+
+.employee-payment-tile.is-active .employee-chip-icon-fallback {
+  background-color: rgba(var(--bs-primary-rgb), 0.12);
+  color: var(--bs-primary);
+}
+
+/* Employee sale — eSIM switch (touch-friendly) */
+.rd-esim-switch {
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--rd-radius-sm, 10px);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.rd-esim-switch .form-check-input {
+  width: 2.6rem;
+  height: 1.35rem;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.rd-sale-preview {
+  background: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color) !important;
+}
+
+/* Employee sale — payer lookup + autocomplete (mobile-first) */
+.rd-payer-field-wrap {
+  position: relative;
+}
+
+.rd-payer-ac-anchor {
+  position: relative;
+}
+
+.rd-payer-prefill-hint {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color);
+  margin-top: 0.35rem;
+  min-height: 0;
+  padding-inline: 0.125rem;
+}
+
+.rd-payer-prefill-hint.is-visible {
+  color: var(--rd-info);
+}
+
+[data-bs-theme="dark"] .rd-payer-prefill-hint.is-visible {
+  color: var(--rd-info);
+}
+
+.rd-payer-ac-list {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  z-index: 1070;
+  max-height: min(50vh, 16rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--rd-radius-sm, 10px);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-secondary-bg);
+  box-shadow: var(--rd-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.08));
+}
+
+.rd-payer-ac-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-bottom: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
+  background: transparent;
+  color: var(--bs-body-color);
+  padding: 0.65rem 0.85rem;
+  min-height: 2.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color var(--rd-transition-fast, 0.14s ease);
+}
+
+.rd-payer-ac-item:last-child {
+  border-bottom: 0;
+}
+
+.rd-payer-ac-item:hover,
+.rd-payer-ac-item:focus-visible {
+  background: var(--bs-tertiary-bg);
+  outline: none;
+}
+
+.rd-payer-ac-item.is-active {
+  background: var(--rd-accent-muted, rgba(79, 70, 229, 0.12));
+}
+
+.rd-payer-ac-item-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.rd-payer-ac-item-meta {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+}
+
+/* Management dashboard — KPI grid & balance panel */
+.rd-dashboard-kpi-row > .col {
+  min-width: 0;
+}
+
+.rd-dashboard-kpi-row .rd-stat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rd-dashboard-kpi-row .rd-stat .rd-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.65rem 0.85rem;
+}
+
+.rd-dashboard-kpi-row .rd-kpi-spacer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.rd-dashboard-kpi-row .rd-stat-icon {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.rd-dashboard-kpi-row .rd-stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rd-dashboard-kpi-row .rd-stat-value {
+  font-size: clamp(1.15rem, 2.1vw, 1.42rem);
+  line-height: 1.05;
+}
+
+.rd-dashboard-kpi-row .rd-label {
+  margin-bottom: 0.2rem;
+}
+
+.rd-dashboard-kpi-row .rd-stat-meta {
+  margin-top: 0.35rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.rd-dashboard-kpi-row .rd-stat-footnote {
+  margin-top: 0.3rem;
+  padding-top: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--bs-secondary-color);
+  line-height: 1.3;
+}
+
+.rd-stat--loss::after {
+  background: radial-gradient(circle, var(--rd-danger-soft) 0%, transparent 72%);
+  opacity: 0.75;
+}
+
+.rd-dashboard-kpi-row .rd-stat-loss-trio {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem 0.25rem;
+  margin-top: 0.3rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
+}
+
+.rd-dashboard-kpi-row .rd-stat-loss-trio__item {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.3rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.rd-dashboard-kpi-row .rd-stat-loss-trio__lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bs-secondary-color);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rd-dashboard-kpi-row .rd-stat-loss-trio__val {
+  font-weight: 700;
+  font-size: clamp(0.8rem, 2vw, 0.95rem);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-dashboard-summary__value {
+  font-size: clamp(1.45rem, 2.8vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.rd-dashboard-summary__value--md {
+  font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+}
+
+.rd-dashboard-financial-row .rd-dashboard-balance-list {
+  max-height: min(40vh, 14rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .rd-dashboard-financial-row .col-md-6 {
+    display: flex;
+  }
+
+  .rd-dashboard-financial-row .rd-card.min-h-0 {
+    min-height: 14rem;
+  }
+}

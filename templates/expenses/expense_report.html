@@ -1,0 +1,101 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-3">
+  <div>
+    <h1 class="h3 mb-1">{% trans "Expense report" %}</h1>
+    <div class="text-secondary">{% trans "Category breakdown and totals" %}</div>
+  </div>
+</div>
+
+<div class="app-card card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
+      <div class="col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'expenses:expense_report' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="app-card card h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">{% trans "Total profit (same date filter)" %}</div>
+        <div class="h3 fw-bold">{{ profit_total|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="app-card card h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">{% trans "Total expenses (filtered)" %}</div>
+        <div class="h3 fw-bold">{{ total|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="app-card card h-100">
+      <div class="card-body">
+        <div class="small text-secondary text-uppercase fw-semibold">{% trans "Net profit" %}</div>
+        <div class="display-6 fw-bold">{{ net_profit|intcomma }}</div>
+        <div class="small text-secondary">{% trans "Profit minus expenses" %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="app-card card h-100">
+      <div class="card-header fw-semibold">{% trans "By category" %}</div>
+      <ul class="list-group list-group-flush">
+        {% for cat, amt in by_category_rows %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ cat }}</span><span class="fw-semibold">{{ amt|intcomma }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-secondary">{% trans "No data." %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="app-card card">
+  <div class="card-header fw-semibold">{% trans "Rows" %}</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead class="table-light">
+        <tr><th>{% trans "Date" %}</th><th>{% trans "Title" %}</th><th>{% trans "Category" %}</th><th>{% trans "Amount" %}</th><th class="text-end">{% trans "Actions" %}</th></tr>
+      </thead>
+      <tbody>
+        {% for e in expenses %}
+          <tr>
+            <td>{{ e.date }}</td>
+            <td>{{ e.title }}</td>
+            <td>{{ e.category }}</td>
+            <td class="fw-semibold">{{ e.amount|intcomma }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}">{% trans "Edit" %}</a>
+                <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" onsubmit="return confirm('{% trans "Delete this expense?" %}');">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center text-secondary py-4">{% trans "No expenses." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

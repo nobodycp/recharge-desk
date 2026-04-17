@@ -1,0 +1,329 @@
+from django.contrib import messages
+from django.db import DatabaseError, IntegrityError
+from django.db.models import Prefetch, Q
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_GET, require_POST
+
+from accounts.permissions import employee_required, is_employee, management_required
+from core.pagination import paginate_request
+from companies.models import Company, Product, ProductLine
+from sales.forms import EmployeeSaleForm, ManagementSaleFilterForm, PaymentMethodForm
+from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
+from sales.query_utils import (
+    apply_management_sale_filter_data,
+    apply_sale_list_ordering,
+)
+from sales.payer_lookup import latest_payer_for_reference, payer_name_suggestions
+from sales.pricing import ESIM_EXTRA_COST
+from sales.services import cancel_sale, create_sale, delete_sale_permanently, mark_sale_paid
+
+@employee_required
+def employee_entry(request):
+    company_id = request.POST.get("company") or request.GET.get("company")
+    initial = {}
+    if request.method == "GET" and company_id:
+        initial["company"] = company_id
+    form = EmployeeSaleForm(request.POST or None, company_id=company_id, initial=initial)
+    companies = list(Company.objects.filter(is_active=True).order_by("name"))
+    payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    product_groups = []
+    if company_id:
+        lines_qs = (
+            ProductLine.objects.filter(company_id=company_id, is_active=True)
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=Product.objects.filter(is_active=True).select_related("line"),
+                )
+            )
+            .order_by("sort_order", "name")
+        )
+        for line in lines_qs:
+            variants = list(line.variants.all())
+            if variants:
+                product_groups.append({"line": line, "variants": variants})
+    recent_qs = Sale.objects.select_related("company", "product", "product__line", "payment_method")
+    if is_employee(request.user):
+        recent_qs = recent_qs.filter(created_by=request.user)
+    recent = recent_qs.order_by("-created_at")[:8]
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            create_sale(
+                company=form.cleaned_data["company"],
+                product=form.cleaned_data["product"],
+                reference_number=form.cleaned_data["reference_number"],
+                payer_name=form.cleaned_data["payer_name"],
+                payment_method=form.cleaned_data["payment_method"],
+                sell_price_actual=form.cleaned_data["sell_price_actual"],
+                notes=form.cleaned_data.get("notes") or "",
+                user=request.user,
+                is_esim=bool(form.cleaned_data.get("is_esim")),
+            )
+            messages.success(request, _("Sale recorded successfully."))
+            return redirect("sales:employee_entry")
+        except ValueError as exc:
+            messages.error(request, str(exc))
+
+    selected_line_id = ""
+    selected_product_id = ""
+    raw_pid = (request.POST.get("product") or "").strip()
+    if not raw_pid and getattr(form, "data", None):
+        raw_pid = (form.data.get("product") or "").strip()
+    if raw_pid:
+        selected_product_id = raw_pid
+        try:
+            selected_line_id = str(Product.objects.only("line_id").get(pk=int(raw_pid)).line_id)
+        except (ValueError, Product.DoesNotExist):
+            pass
+
+    return render(
+        request,
+        "sales/employee_entry.html",
+        {
+            "form": form,
+            "title": _("New sale"),
+            "recent_sales": recent,
+            "product_groups": product_groups,
+            "companies": companies,
+            "payment_methods": payment_methods,
+            "selected_company_id": str(company_id or ""),
+            "selected_line_id": selected_line_id,
+            "selected_product_id": selected_product_id,
+            "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
+            "esim_extra": ESIM_EXTRA_COST,
+        },
+    )
+
+
+@employee_required
+@require_GET
+def api_payer_by_number(request):
+    """JSON: latest payer_name for an exact phone/shipment (reference_number) match."""
+    number = (request.GET.get("number") or "").strip()
+    if len(number) < 3:
+        return JsonResponse({"payer_name": None})
+    name = latest_payer_for_reference(number)
+    return JsonResponse({"payer_name": name})
+
+
+@employee_required
+@require_GET
+def api_payer_name_suggestions(request):
+    """JSON: distinct historical payer names matching q (for autocomplete)."""
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 2:
+        return JsonResponse({"suggestions": []})
+    items = payer_name_suggestions(q, limit=10)
+    return JsonResponse({"suggestions": [{"name": x["name"], "count": x["count"]} for x in items]})
+
+
+@employee_required
+def employee_product_fragment(request):
+    company_id = request.GET.get("company")
+    if not company_id:
+        return HttpResponseBadRequest()
+    lines_qs = (
+        ProductLine.objects.filter(company_id=company_id, is_active=True)
+        .prefetch_related(
+            Prefetch(
+                "variants",
+                queryset=Product.objects.filter(is_active=True).select_related("line"),
+            )
+        )
+        .order_by("sort_order", "name")
+    )
+    product_groups = []
+    for line in lines_qs:
+        variants = list(line.variants.all())
+        if variants:
+            product_groups.append({"line": line, "variants": variants})
+    return render(
+        request,
+        "sales/partials/employee_product_tiles.html",
+        {
+            "product_groups": product_groups,
+            "product_errors": None,
+            "selected_line_id": "",
+        },
+    )
+
+
+@management_required
+def management_sale_list(request):
+    qs = Sale.objects.select_related(
+        "company",
+        "product",
+        "product__line",
+        "payment_method",
+        "created_by",
+    ).order_by("-created_at")
+    form = ManagementSaleFilterForm(request.GET or None)
+    data = form.cleaned_data if form.is_valid() else {}
+    qs = apply_management_sale_filter_data(qs, data)
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        qs = qs.filter(
+            Q(reference_number__icontains=q)
+            | Q(payer_name__icontains=q)
+            | Q(product__line__name__icontains=q)
+            | Q(company__name__icontains=q)
+        )
+    qs = apply_sale_list_ordering(request, qs)
+    page_obj = paginate_request(request, qs)
+    ctx = {
+        "page_obj": page_obj,
+        "filter_form": form,
+        "title": _("Sales"),
+        "sort": request.GET.get("sort") or "created_at",
+        "order": (request.GET.get("order") or "desc").lower(),
+    }
+    if request.headers.get("HX-Request"):
+        return render(request, "sales/partials/management_sale_list_results.html", ctx)
+    return render(request, "sales/management_sale_list.html", ctx)
+
+
+@management_required
+def pending_payments(request):
+    qs = Sale.objects.filter(status=Sale.Status.PENDING).select_related(
+        "company", "product", "product__line", "payment_method", "created_by"
+    )
+    form = ManagementSaleFilterForm(request.GET or None)
+    data = form.cleaned_data if form.is_valid() else {}
+    qs = apply_management_sale_filter_data(qs, data, omit_status=True)
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        qs = qs.filter(
+            Q(reference_number__icontains=q)
+            | Q(payer_name__icontains=q)
+            | Q(product__line__name__icontains=q)
+            | Q(company__name__icontains=q)
+        )
+    qs = apply_sale_list_ordering(request, qs)
+    page_obj = paginate_request(request, qs)
+    ctx = {
+        "page_obj": page_obj,
+        "filter_form": form,
+        "title": _("Pending payments"),
+        "sort": request.GET.get("sort") or "created_at",
+        "order": (request.GET.get("order") or "desc").lower(),
+    }
+    if request.headers.get("HX-Request"):
+        return render(request, "sales/partials/pending_payments_results.html", ctx)
+    return render(request, "sales/pending_payments.html", ctx)
+
+
+@management_required
+def sale_mark_paid(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != "POST":
+        return redirect("sales:pending_payments")
+    try:
+        mark_sale_paid(sale=sale, user=request.user)
+        messages.success(request, _("Marked as paid."))
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    return redirect(request.META.get("HTTP_REFERER") or "sales:pending_payments")
+
+
+@management_required
+def sale_cancel(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != "POST":
+        return redirect("sales:management_sale_list")
+    try:
+        cancel_sale(sale=sale, user=request.user)
+        messages.success(request, _("Sale cancelled and supplier balance restored."))
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+
+
+@management_required
+def sale_delete_permanent(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != "POST":
+        return redirect("sales:management_sale_list")
+    try:
+        delete_sale_permanently(sale=sale)
+        messages.success(request, _("Sale was permanently removed from the system."))
+    except (IntegrityError, DatabaseError) as exc:
+        messages.error(request, _("Could not delete this sale: %(reason)s") % {"reason": str(exc)})
+    return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+
+
+@management_required
+def payment_method_list(request):
+    qs = PaymentMethod.objects.order_by("name")
+    page_obj = paginate_request(request, qs)
+    return render(
+        request,
+        "sales/payment_method_list.html",
+        {"page_obj": page_obj, "title": _("Payment methods")},
+    )
+
+
+@management_required
+def payment_method_create(request):
+    form = PaymentMethodForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Payment method saved."))
+        return redirect("sales:payment_method_list")
+    return render(
+        request,
+        "sales/payment_method_form.html",
+        {"form": form, "title": _("New payment method")},
+    )
+
+
+@management_required
+def payment_method_edit(request, pk):
+    obj = get_object_or_404(PaymentMethod, pk=pk)
+    form = PaymentMethodForm(request.POST or None, request.FILES or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Payment method updated."))
+        return redirect("sales:payment_method_list")
+    return render(
+        request,
+        "sales/payment_method_form.html",
+        {"form": form, "title": _("Edit payment method")},
+    )
+
+
+@management_required
+@require_POST
+def bulk_sales_mark_paid(request):
+    ids = []
+    for x in request.POST.getlist("sale_ids"):
+        try:
+            ids.append(int(x))
+        except (TypeError, ValueError):
+            continue
+    next_url = (request.POST.get("next") or "").strip() or reverse("sales:management_sale_list")
+    if not ids:
+        messages.warning(request, _("No sales selected."))
+    else:
+        qs = Sale.objects.filter(pk__in=ids, status=Sale.Status.PENDING)
+        ok = 0
+        for sale in qs:
+            try:
+                mark_sale_paid(sale=sale, user=request.user)
+                ok += 1
+            except ValueError:
+                pass
+        if ok:
+            messages.success(request, _("Marked %(n)s sale(s) as paid.") % {"n": ok})
+        else:
+            messages.info(request, _("No pending sales were updated."))
+    if request.headers.get("HX-Request"):
+        r = HttpResponse(status=204)
+        r["HX-Redirect"] = next_url
+        return r
+    return redirect(next_url)
+
+

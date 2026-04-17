@@ -1,0 +1,33 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block content %}
+<div class="mx-auto" style="max-width: 640px;">
+  <h1 class="h3 mb-3">{{ title }}</h1>
+  <div class="app-card card">
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+        {% csrf_token %}
+        <div>
+          {{ form.name.label_tag }}
+          {{ form.name }}
+          {{ form.name.errors }}
+        </div>
+        <div>
+          {{ form.icon.label_tag }}
+          {{ form.icon }}
+          {% if form.icon.help_text %}<div class="form-text">{{ form.icon.help_text }}</div>{% endif %}
+          {{ form.icon.errors }}
+        </div>
+        <div class="form-check">
+          {{ form.is_active }}
+          <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+          <a class="btn btn-outline-secondary" href="{% url 'sales:payment_method_list' %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

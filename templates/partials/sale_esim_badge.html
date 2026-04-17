@@ -1,0 +1,4 @@
+{% load i18n %}
+{% if sale.is_esim %}
+<span class="badge rounded-pill text-bg-info rd-sale-esim-badge ms-1" title="{% trans 'eSIM: extra cost applied to this sale' %}">eSIM</span>
+{% endif %}

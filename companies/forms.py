@@ -1,0 +1,53 @@
+from decimal import Decimal
+
+from django import forms
+from django.utils.translation import gettext_lazy as _
+
+from companies.models import Company, Product, ProductLine
+
+
+class CompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = ["name", "icon", "opening_balance", "notes", "is_active"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "opening_balance": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.pk is None:
+            instance.current_balance = Decimal("0")
+        if commit:
+            instance.save()
+        return instance
+
+
+class ProductLineForm(forms.ModelForm):
+    class Meta:
+        model = ProductLine
+        fields = ["company", "name", "icon", "sort_order", "is_active"]
+        widgets = {
+            "company": forms.Select(attrs={"class": "form-select"}),
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "sort_order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+
+
+class ProductVariantForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ["variant_label", "icon", "cost_price", "default_sell_price", "is_active"]
+        widgets = {
+            "variant_label": forms.TextInput(attrs={"class": "form-control", "placeholder": _("e.g. 100 GB")}),
+            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
+            "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "default_sell_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }

@@ -1,0 +1,46 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{{ html_dir }}">
+<head>
+  <meta charset="utf-8">
+  {% include "partials/theme_head.html" %}
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ title|default:_("Sales") }}{% endblock %} · {% trans "Recharge Desk" %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="{{ bootstrap_css }}" rel="stylesheet">
+  <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12/dist/htmx.min.js"></script>
+  <script src="{% static 'js/theme.js' %}" defer></script>
+</head>
+<body class="rd-body rd-employee-app app-shell">
+  <header class="rd-employee-topbar">
+    <div class="rd-employee-title">{% block employee_header %}{% trans "Sales entry" %}{% endblock %}</div>
+    <div class="d-flex align-items-center gap-2">
+      <form action="{% url 'set_language' %}" method="post" class="d-flex mb-0">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <label class="visually-hidden" for="rd-lang-emp">{% trans "Language" %}</label>
+        <select name="language" id="rd-lang-emp" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
+          {% get_current_language as LANGUAGE_CODE %}
+          {% for code, label in languages %}
+            <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% include "partials/theme_toggle.html" with variant="shell" %}
+      <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Log out" %}</button>
+      </form>
+    </div>
+  </header>
+  <div class="rd-employee-main">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{{ html_dir }}">
+<head>
+  <meta charset="utf-8">
+  {% include "partials/theme_head.html" %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ title|default:_("Management") }}{% endblock %} · {% trans "Recharge Desk" %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="{{ bootstrap_css }}" rel="stylesheet">
+  <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12/dist/htmx.min.js"></script>
+  <script src="{% static 'js/theme.js' %}" defer></script>
+  <script src="{% static 'js/data-ui.js' %}" defer></script>
+</head>
+<body
+  class="rd-body app-shell"
+  x-data="{ navOpen: false }"
+  @keydown.escape.window="navOpen = false"
+>
+  <div class="rd-app">
+    <div
+      class="rd-sidebar-backdrop"
+      :class="{ 'is-visible': navOpen }"
+      @click="navOpen = false"
+      aria-hidden="true"
+    ></div>
+
+    <aside class="rd-sidebar" :class="{ 'is-open': navOpen }" id="rd-sidebar">
+      <a class="rd-sidebar-brand" href="{% url 'reports:dashboard' %}">
+        <span class="rd-sidebar-brand-mark">R</span>
+        <span>
+          <div class="fw-bold lh-sm">{% trans "Recharge Desk" %}</div>
+          <div class="rd-text-muted" style="font-size: 0.72rem;">{% trans "Management" %}</div>
+        </span>
+      </a>
+      {% include "partials/management_nav.html" %}
+    </aside>
+
+    <div class="rd-main">
+      <header class="rd-topbar">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            class="rd-menu-btn"
+            aria-controls="rd-sidebar"
+            :aria-expanded="navOpen ? 'true' : 'false'"
+            aria-label="{% trans 'Open menu' %}"
+            @click="navOpen = !navOpen"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="rd-heading-lg mb-0">{% block page_title %}{{ title|default:_("Management") }}{% endblock %}</div>
+        </div>
+        <div class="rd-topbar-meta">
+          <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
+            <select name="language" id="rd-lang-mgmt" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
+              {% get_current_language as LANGUAGE_CODE %}
+              {% for code, label in languages %}
+                <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          {% include "partials/theme_toggle.html" with variant="shell" %}
+          <a class="btn btn-sm btn-primary" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+          <span class="rd-text-muted small d-none d-sm-inline">{{ request.user.username }}</span>
+          <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Log out" %}</button>
+          </form>
+        </div>
+      </header>
+
+      <main class="rd-content">
+        {% include "partials/messages.html" %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>

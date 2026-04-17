@@ -1,0 +1,27 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" dir="{{ html_dir }}">
+<head>
+  <meta charset="utf-8">
+  {% include "partials/theme_head.html" %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Access denied" %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="{{ bootstrap_css }}" rel="stylesheet">
+  <link href="{% static 'css/design-system.css' %}" rel="stylesheet">
+  <link href="{% static 'css/app.css' %}" rel="stylesheet">
+  <script src="{% static 'js/theme.js' %}" defer></script>
+</head>
+<body class="p-4 bg-body text-body rd-body app-shell">
+  <div class="mx-auto" style="max-width: 560px;">
+    <div class="rd-card p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h1 class="h4 mb-0">{% trans "Access denied" %}</h1>
+        {% include "partials/theme_toggle.html" with variant="shell" %}
+      </div>
+      <p class="text-secondary">{% trans "You do not have permission to view this page." %}</p>
+      <a class="btn btn-primary" href="{% url 'core:home' %}">{% trans "Go home" %}</a>
+    </div>
+  </div>
+</body>
+</html>

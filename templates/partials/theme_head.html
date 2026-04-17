@@ -1,0 +1,14 @@
+{# Must be first in <head> to avoid flash of wrong theme #}
+<script>
+(function () {
+  try {
+    var KEY = "recharge-desk-theme";
+    var v = localStorage.getItem(KEY);
+    var t = (v === "light" || v === "dark")
+      ? v
+      : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-bs-theme", t);
+    document.documentElement.style.colorScheme = t;
+  } catch (e) {}
+})();
+</script>

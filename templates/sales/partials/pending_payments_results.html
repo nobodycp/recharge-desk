@@ -1,0 +1,98 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-datagrid-toolbar d-flex flex-wrap align-items-center gap-2 px-2 py-2 border-bottom" style="border-color: var(--bs-border-color);">
+  <form method="post" action="{% url 'sales:bulk_sales_mark_paid' %}" id="bulk-pending-paid-form" class="d-flex flex-wrap align-items-center gap-2">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="btn btn-sm btn-success">{% trans "Mark selected as paid" %}</button>
+  </form>
+  <span class="small text-secondary">{% trans "Select pending rows, then apply." %}</span>
+</div>
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:2.25rem;"><span class="visually-hidden">{% trans "Select" %}</span></th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'created_at' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'created_at' and order == 'desc' %}{% querystring sort='created_at' order='asc' page=1 %}{% else %}{% querystring sort='created_at' order='desc' page=1 %}{% endif %}">{% trans "When" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'company' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'company' and order == 'desc' %}{% querystring sort='company' order='asc' page=1 %}{% else %}{% querystring sort='company' order='desc' page=1 %}{% endif %}">{% trans "Company" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'product' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'product' and order == 'desc' %}{% querystring sort='product' order='asc' page=1 %}{% else %}{% querystring sort='product' order='desc' page=1 %}{% endif %}">{% trans "Product" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'ref' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'ref' and order == 'desc' %}{% querystring sort='ref' order='asc' page=1 %}{% else %}{% querystring sort='ref' order='desc' page=1 %}{% endif %}">{% trans "Ref" %}</a>
+            </th>
+            <th>{% trans "Payer" %}</th>
+            <th>{% trans "Method" %}</th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if sort == 'sell' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sell' and order == 'desc' %}{% querystring sort='sell' order='asc' page=1 %}{% else %}{% querystring sort='sell' order='desc' page=1 %}{% endif %}">{% trans "Amount" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'employee' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'employee' and order == 'desc' %}{% querystring sort='employee' order='asc' page=1 %}{% else %}{% querystring sort='employee' order='desc' page=1 %}{% endif %}">{% trans "Employee" %}</a>
+            </th>
+            <th class="text-end">{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in page_obj %}
+            <tr class="rd-row-pending">
+              <td class="text-center">
+                <input class="form-check-input" type="checkbox" name="sale_ids" value="{{ s.pk }}" form="bulk-pending-paid-form" aria-label="{% trans 'Select sale' %}">
+              </td>
+              <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
+              <td class="fw-medium">{{ s.company.name }}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+              <td class="tabular-nums text-nowrap">
+                {{ s.reference_number }}
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
+              </td>
+              <td>{{ s.payer_name }}</td>
+              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name }}</span></td>
+              <td class="fw-semibold tabular-nums text-end kpi-warning">{{ s.sell_price_actual|intcomma }}</td>
+              <td class="small text-secondary">{{ s.created_by.username }}</td>
+              <td class="text-end text-nowrap position-relative">
+                <details class="rd-actions-details d-inline-block text-start">
+                  <summary class="btn btn-sm btn-outline-secondary">{% trans "Actions" %} ▾</summary>
+                  <div class="rd-actions-details__panel border rounded-3 shadow-sm p-2 bg-body" style="min-width: 11rem;">
+                    <a class="btn btn-sm btn-outline-primary w-100 mb-1" href="{% url 'reports:company_report' s.company.pk %}">{% trans "Company report" %}</a>
+                    <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="mb-1">{% csrf_token %}<button type="submit" class="btn btn-sm btn-success w-100">{% trans "Mark paid" %}</button></form>
+                    <form method="post" action="{% url 'sales:sale_delete_permanent' s.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger w-100">{% trans "Delete permanently" %}</button>
+                    </form>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No pending sales." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none d-flex flex-column gap-2 p-2">
+    {% for s in page_obj %}
+      <div class="rd-mobile-row-card is-pending">
+        <div class="small text-secondary">{{ s.created_at }}</div>
+        <div class="fw-semibold">{{ s.company.name }}</div>
+        <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="font-monospace">{{ s.reference_number }}</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
+        </div>
+        <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
+        <div class="d-flex gap-1 mt-2">
+          <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline flex-fill">{% csrf_token %}<button class="btn btn-sm btn-primary w-100" type="submit">{% trans "Mark paid" %}</button></form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state">{% trans "No pending sales." %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}

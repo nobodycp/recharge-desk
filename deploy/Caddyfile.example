@@ -1,0 +1,25 @@
+# Example Caddy v2 site for Gunicorn + static/media (Ubuntu 24).
+# Adapt paths, domain, and upstream; install outside the Django repo.
+#
+# Assumptions:
+# - Gunicorn listens on 127.0.0.1:8000.
+# - ``collectstatic`` → DJANGO_STATIC_ROOT (here: /var/www/recharge-desk/staticfiles).
+# - User uploads → DJANGO_MEDIA_ROOT (here: /var/www/recharge-desk/media).
+#
+# Replace ``s.prosim.ps`` with your hostname.
+
+s.prosim.ps {
+	encode gzip
+
+	handle_path /static/* {
+		root * /var/www/recharge-desk/staticfiles
+		file_server
+	}
+
+	handle_path /media/* {
+		root * /var/www/recharge-desk/media
+		file_server
+	}
+
+	reverse_proxy 127.0.0.1:8000
+}

@@ -1,0 +1,25 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block content %}
+<div class="mx-auto" style="max-width: 720px;">
+  <h1 class="h3 mb-3">{{ title }}</h1>
+  <div class="app-card card">
+    <div class="card-body p-4">
+      <form method="post" class="d-grid gap-3">
+        {% csrf_token %}
+        {% for field in form %}
+          <div>
+            {{ field.label_tag }}
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+          <a class="btn btn-outline-secondary" href="{% url 'expenses:expense_list' %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

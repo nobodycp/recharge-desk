@@ -1,0 +1,41 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block page_title %}{% trans "Companies" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Companies" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Suppliers and balance overview." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'companies:company_create' %}">{% trans "New company" %}</a>
+</div>
+
+<div class="rd-card mb-3 position-relative">
+  <div id="company-htmx-indicator" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+  <div class="rd-card-body rd-filter-bar">
+    <form
+      method="get"
+      class="row g-3 align-items-end"
+      hx-get="{% url 'companies:company_list' %}"
+      hx-target="#company-list-results"
+      hx-push-url="true"
+      hx-indicator="#company-htmx-indicator"
+    >
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="order" value="{{ order }}">
+      <div class="col-12 col-md-8 col-lg-6">
+        <label class="form-label" for="co-q">{% trans "Search" %}</label>
+        <input type="search" class="form-control form-control-sm" id="co-q" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'Company name or notes…' %}">
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'companies:company_list' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid" id="company-list-results">
+  {% include "companies/partials/company_list_results.html" %}
+</div>
+{% endblock %}

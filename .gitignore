@@ -1,0 +1,43 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.install-config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.eggs/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django / local data
+db.sqlite3
+*.sqlite3-journal
+staticfiles/
+media/
+
+# gettext compiled catalogs (generate with: msgfmt -o locale/.../django.mo locale/.../django.po)
+locale/**/LC_MESSAGES/*.mo
+
+# Logs / run artifacts
+*.log
+pip-log.txt
+
+# IDE / editor
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

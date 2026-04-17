@@ -1,0 +1,51 @@
+{% load i18n l10n %}
+{% if product_errors %}
+  <div class="text-danger small mb-2">{{ product_errors }}</div>
+{% endif %}
+{% if not product_groups %}
+  <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
+{% else %}
+  <div class="employee-product-section">
+    <div class="row row-cols-4 g-1" id="employee-line-tiles">
+      {% for g in product_groups %}
+        <div class="col">
+          <button
+            type="button"
+            class="btn btn-sm w-100 py-2 px-1 rounded-2 employee-chip employee-product-line-tile d-flex flex-column align-items-center justify-content-center {% if selected_line_id == g.line.pk|stringformat:'s' %}is-active{% endif %}"
+            data-line-id="{{ g.line.pk }}"
+            data-variant-count="{{ g.variants|length }}"
+            title="{{ g.line.name }}"
+          >
+            {% include "sales/partials/employee_icon_mark.html" with icon=g.line.icon title=g.line.name %}
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div
+      id="employee-packages-panel"
+      class="employee-packages-panel mt-2 w-100 {% if not selected_line_id %}d-none{% endif %}"
+    >
+      {% for g in product_groups %}
+        <div
+          id="packages-for-line-{{ g.line.pk }}"
+          class="employee-packages-for-line flex-wrap gap-1 justify-content-center align-items-center py-1 px-1 {% if selected_line_id == g.line.pk|stringformat:'s' %}d-flex{% else %}d-none{% endif %}"
+        >
+          {% for p in g.variants %}
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary rounded-pill employee-package-chip employee-product-tile py-0 px-2 lh-sm {% if selected_product_id == p.pk|stringformat:'s' %}is-active{% endif %}"
+              data-product-id="{{ p.pk }}"
+              data-product-cost="{{ p.cost_price|unlocalize }}"
+              data-default-price="{{ p.default_sell_price|unlocalize }}"
+              data-line-id="{{ g.line.pk }}"
+              title="{{ p.display_name }} — {{ p.default_sell_price|unlocalize }}"
+            >
+              {% if p.variant_label %}{{ p.variant_label }}{% else %}<span class="text-secondary">{% trans "Default" %}</span>{% endif %}
+            </button>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

@@ -1,0 +1,10 @@
+{% if messages %}
+<div class="rd-alert-stack mb-3">
+  {% for message in messages %}
+    <div
+      class="alert mb-2 py-2 px-3 d-flex align-items-start gap-2 {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-primary{% endif %}"
+      role="alert"
+    >{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

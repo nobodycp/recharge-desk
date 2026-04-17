@@ -1,0 +1,97 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Products" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Products" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Lines, packages, and pricing." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'companies:product_line_create' %}">{% trans "New product line" %}</a>
+</div>
+<div class="rd-card overflow-hidden">
+  <div class="rd-data-shell">
+    <div class="table-responsive rd-table-dual">
+    <table class="table mb-0 align-middle rd-table-modern">
+      <thead>
+        <tr>
+          <th>{% trans "Company" %}</th>
+          <th>{% trans "Product line" %}</th>
+          <th>{% trans "Package" %}</th>
+          <th class="text-end">{% trans "Cost" %}</th>
+          <th class="text-end">{% trans "Default sell" %}</th>
+          <th>{% trans "Active" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+          {% with vc=line.variants.count %}
+          {% for v in line.variants.all %}
+            <tr>
+              {% if forloop.first %}
+                <td rowspan="{% if vc %}{{ vc }}{% else %}1{% endif %}" class="align-top">{{ line.company.name }}</td>
+                <td rowspan="{% if vc %}{{ vc }}{% else %}1{% endif %}" class="align-top fw-semibold">
+                  {{ line.name }}
+                  <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
+                    {% if line.is_deletable %}
+                      <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
+                      </form>
+                    {% else %}
+                      <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
+                    {% endif %}
+                  </div>
+                </td>
+              {% endif %}
+              <td>{% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+              <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
+              <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
+              <td>{% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
+                {% if v.is_deletable %}
+                  <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+                  </form>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete" %}</button>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td>{{ line.company.name }}</td>
+              <td class="fw-semibold">
+                {{ line.name }}
+                <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
+                  {% if line.is_deletable %}
+                    <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line? This cannot be undone." %}{% endfilter %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
+                    </form>
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
+                  {% endif %}
+                </div>
+              </td>
+              <td colspan="4" class="text-secondary">{% trans "No packages yet." %}</td>
+              <td></td>
+            </tr>
+          {% endfor %}
+          {% endwith %}
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-secondary py-4">{% trans "No product lines." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

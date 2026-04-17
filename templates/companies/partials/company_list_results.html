@@ -1,0 +1,83 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'name' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'name' and order == 'desc' %}{% querystring sort='name' order='asc' page=1 %}{% else %}{% querystring sort='name' order='desc' page=1 %}{% endif %}">{% trans "Name" %}</a>
+            </th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if sort == 'opening' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'opening' and order == 'desc' %}{% querystring sort='opening' order='asc' page=1 %}{% else %}{% querystring sort='opening' order='desc' page=1 %}{% endif %}">{% trans "Opening" %}</a>
+            </th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if sort == 'balance' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'balance' and order == 'desc' %}{% querystring sort='balance' order='asc' page=1 %}{% else %}{% querystring sort='balance' order='desc' page=1 %}{% endif %}">{% trans "Current balance" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if sort == 'active' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'active' and order == 'desc' %}{% querystring sort='active' order='asc' page=1 %}{% else %}{% querystring sort='active' order='desc' page=1 %}{% endif %}">{% trans "Active" %}</a>
+            </th>
+            <th class="text-end">{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in page_obj %}
+            <tr>
+              <td class="fw-semibold">{{ c.name }}</td>
+              <td class="tabular-nums text-end kpi-muted">{{ c.opening_balance|intcomma }}</td>
+              <td class="fw-medium tabular-nums text-end {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 and c.is_active %}kpi-warning{% endif %}">{{ c.current_balance|intcomma }}</td>
+              <td>{% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}">{% trans "Report" %}</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}">{% trans "Edit" %}</a>
+                {% if c.is_deletable %}
+                  <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+                  </form>
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: company has sales.' %}">{% trans "Delete" %}</button>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No companies." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none rd-mobile-stack p-2">
+    {% for c in page_obj %}
+      <div class="rd-mobile-row-card">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <div class="fw-semibold">{{ c.name }}</div>
+          {% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}
+        </div>
+        <div class="row g-2 small">
+          <div class="col-6">
+            <div class="rd-mobile-k">{% trans "Opening" %}</div>
+            <div class="rd-mobile-v tabular-nums kpi-muted">{{ c.opening_balance|intcomma }}</div>
+          </div>
+          <div class="col-6 text-end">
+            <div class="rd-mobile-k">{% trans "Current balance" %}</div>
+            <div class="rd-mobile-v tabular-nums {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 and c.is_active %}kpi-warning{% endif %}">{{ c.current_balance|intcomma }}</div>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top" style="border-color: var(--bs-border-color);">
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}">{% trans "Report" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}">{% trans "Edit" %}</a>
+          {% if c.is_deletable %}
+            <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-secondary py-4">{% trans "No companies." %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}

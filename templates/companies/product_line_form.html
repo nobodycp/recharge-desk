@@ -1,0 +1,38 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block content %}
+<div class="mx-auto" style="max-width: 720px;">
+  <h1 class="h3 mb-3">{{ title }}</h1>
+  <div class="app-card card">
+    <div class="card-body p-4">
+      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+        {% csrf_token %}
+        {% for field in form %}
+          <div>
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+          <a class="btn btn-outline-secondary" href="{% url 'companies:product_list' %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+      {% if line %}
+        <div class="border-top pt-3 mt-3">
+          {% if line.is_deletable %}
+            <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger">{% trans "Delete product line" %}</button>
+            </form>
+          {% else %}
+            <p class="small text-secondary mb-0" title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete unavailable (has sales)" %}</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

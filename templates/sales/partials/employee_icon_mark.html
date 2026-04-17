@@ -1,0 +1,5 @@
+{% if icon %}
+  <img src="{{ icon.url }}" class="employee-chip-icon" alt="" loading="lazy" />
+{% else %}
+  <span class="employee-chip-icon-fallback" aria-hidden="true">{% if title %}{{ title|first|upper }}{% else %}?{% endif %}</span>
+{% endif %}
