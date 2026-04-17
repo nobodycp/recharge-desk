@@ -282,24 +282,33 @@
 
 .rd-esim-switch .d-flex {
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.28rem;
   font-size: 0.9375rem;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 .rd-esim-switch .form-check.form-switch {
   margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  /* optical vertical match with label cap height */
+  transform: translateY(-0.0625rem);
 }
 
 /* Bootstrap sizes the track in em — bump font-size so switch height matches label */
 .rd-esim-switch .form-switch .form-check-input {
   font-size: 1.0625rem;
   margin-top: 0;
+  vertical-align: middle;
 }
 
 .rd-esim-switch__label {
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.12rem;
 }
 
 .rd-esim-switch__extra {
