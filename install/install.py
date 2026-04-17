@@ -190,6 +190,14 @@ def validate_config(cfg: dict[str, Any]) -> None:
         if key in cfg and not isinstance(cfg[key], bool):
             _die(f"{key} must be a boolean when set.")
 
+    health = cfg.get("health")
+    if health is not None:
+        if not isinstance(health, dict):
+            _die("health must be an object when set.")
+        for hk in ("skip_public_https_check",):
+            if hk in health and not isinstance(health[hk], bool):
+                _die(f"health.{hk} must be a boolean when set.")
+
 
 def validate_deployment_paths(cfg: dict[str, Any]) -> None:
     """Reject dangerous or inconsistent paths before touching the filesystem."""
@@ -1158,7 +1166,32 @@ def main() -> None:
         if dry_run:
             print("[dry-run] Skipping live HTTP/HTTPS health checks.")
         else:
-            curl_check_with_retries("https", f"https://{domain}/", retries=6, delay_sec=3.0)
+            health = cfg.get("health") if isinstance(cfg.get("health"), dict) else {}
+            skip_public = bool(health.get("skip_public_https_check", False))
+            # Hits local Caddy:443 with correct SNI — bypasses Cloudflare/DNS edge.
+            ok_origin = curl_check_with_retries(
+                "origin_https(loopback)",
+                f"https://{domain}/",
+                extra_args=["--resolve", f"{domain}:443:127.0.0.1"],
+                retries=4,
+                delay_sec=1.5,
+            )
+            ok_pub = True
+            if not skip_public:
+                ok_pub = curl_check_with_retries(
+                    "https(public)",
+                    f"https://{domain}/",
+                    retries=6,
+                    delay_sec=3.0,
+                )
+            if ok_origin and not ok_pub and not skip_public:
+                _warn(
+                    f"Public HTTPS check failed, but https://{domain}/ via 127.0.0.1:443 (SNI) succeeded. "
+                    "If you use Cloudflare proxied (orange cloud), HTTP 525 means Cloudflare could not "
+                    "complete TLS to your origin: set SSL/TLS to Full or Full (strict) with a valid origin "
+                    "certificate, install a Cloudflare Origin Certificate on Caddy, or use DNS only (grey cloud). "
+                    'To skip the public URL probe on future runs: "health": { "skip_public_https_check": true }.'
+                )
             curl_check_with_retries(
                 "http->https",
                 f"http://{domain}/",
@@ -1168,7 +1201,10 @@ def main() -> None:
             curl_check_gunicorn(domain, str(cfg["gunicorn"]["bind"]), dry_run)
         print(f"\nDone. Site: https://{domain}/")
         if not dry_run:
-            print("If HTTPS health checks failed: verify DNS, ports 80/443, and journalctl -u caddy.")
+            print(
+                "If HTTPS health checks failed: verify DNS, ports 80/443, journalctl -u caddy, "
+                "and Cloudflare SSL mode (see install/README.md → Cloudflare)."
+            )
     except Exception as e:
         print_failure_recovery(
             phase=phase,

@@ -53,6 +53,21 @@ Or: `sudo bash install.sh --config /root/recharge.install-config.json`
    - **git**: set `project.git_url` / `project.git_ref` (branch or tag; not arbitrary SHAs unless shallow clone supports it).
    - **local**: set `project.local_path` to an existing directory tree that contains `manage.py`.
 
+## Cloudflare (orange cloud / proxied)
+
+**HTTP 525** (“SSL handshake failed”) is emitted by **Cloudflare**, not Django: the browser → Cloudflare TLS works, but **Cloudflare → your server (Caddy on :443)** TLS fails.
+
+What usually fixes it:
+
+1. **SSL/TLS → Overview** (dashboard): use **Full** or **Full (strict)**.  
+   - **Full (strict)** needs a **trusted** certificate on the origin (Let’s Encrypt from Caddy is fine once issuance succeeds).  
+   - If strict keeps failing, try **Full** temporarily to confirm the problem is certificate trust.
+2. **Origin cert**: create **SSL/TLS → Origin Server → Create certificate**, install it in Caddy for `s.prosim.ps`, then **Full (strict)** is reliable even when LE HTTP-01 is awkward behind the proxy.
+3. **DNS only** (grey cloud on the `A`/`AAAA` record): traffic hits Caddy directly; no CF-to-origin TLS. Easiest for debugging and for LE if you do not want Origin certs.
+4. **Flexible** is a poor fit for this stack (HTTPS cookies, redirects); avoid it for production.
+
+The installer probes **public** `https://your-domain/` and also **`curl --resolve domain:443:127.0.0.1`** so a healthy Caddy on the box can pass even when Cloudflare still returns 525. If public fails but loopback succeeds, the installer prints a **WARNING** with this checklist. Optional config: `"health": { "skip_public_https_check": true }` to ignore the public URL check when you intentionally stay behind Cloudflare with a known 525 until SSL is fixed.
+
 ## Architecture (A)
 
 - **Python 3 driver** (`install.py`, stdlib only): JSON config, validation, subprocess orchestration, safe templating.
@@ -81,7 +96,7 @@ Generated on the server (not in git): private JSON config, `/etc/recharge-desk.e
 | `domain` | string | Public hostname (Caddy site name + ACME), e.g. `s.prosim.ps`. |
 | `system_user` | string | Linux user for file ownership and Gunicorn (`User=`). |
 | `service_name` | string | systemd unit basename (`recharge-desk` → `recharge-desk.service`). |
-| `force` | bool | If `true`, **delete** `paths.base` before install (destructive). |
+| `force` | bool | If `true`, reset deploy outputs; when the **git checkout** lives at `paths.base`, only **`app` / `venv` / `static` / `media`** are removed (not the whole repo tree). |
 | `dry_run` | bool | Plan only; skips mutating steps (also accepts CLI `--dry-run`). |
 | `idempotent` | bool | If `true`, a non-empty `paths.base` is allowed when `paths.app/manage.py` already exists: skip re-copying sources, reuse venv with `pip install -r` only, and re-apply migrations / services (safe **upgrade / re-run**). |
 | `strict_port_check` | bool | If `true`, abort when TCP **80** or **443** are already bound by a process that does not look like **Caddy** (helps catch Apache/nginx conflicts before reload). |
@@ -109,6 +124,7 @@ Generated on the server (not in git): private JSON config, `/etc/recharge-desk.e
 | `caddy.sites_dir` | string | Directory for site fragments, default `/etc/caddy/sites`. |
 | `caddy.fragment_name` | string | Fragment filename (e.g. `recharge-desk.caddy`). |
 | `caddy.ensure_sites_import` | bool | If `true`, prepend `import /etc/caddy/sites/*.caddy` to `/etc/caddy/Caddyfile` when missing (backup `.bak.installer`). |
+| `health.skip_public_https_check` | bool | If `true`, skip the public `https://domain/` probe (useful while fixing Cloudflare **525**; loopback SNI check still runs). |
 
 Copy `config.example.json` to a private path (e.g. `/root/recharge.install-config.json`), set secrets, `chmod 600`, and **never commit** that file (see repo `.gitignore` for `*.install-config.json`).
 
