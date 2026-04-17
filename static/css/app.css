@@ -280,12 +280,32 @@
   box-shadow: none;
 }
 
+.rd-esim-switch .d-flex {
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
 .rd-esim-switch .form-check.form-switch {
   margin-bottom: 0;
 }
 
+/* Bootstrap sizes the track in em — bump font-size so switch height matches label */
 .rd-esim-switch .form-switch .form-check-input {
+  font-size: 1.0625rem;
   margin-top: 0;
+}
+
+.rd-esim-switch__label {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.rd-esim-switch__extra {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  margin-inline-start: 0.15rem;
 }
 
 .rd-sale-preview {
