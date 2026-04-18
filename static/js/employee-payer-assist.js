@@ -28,6 +28,14 @@
     var lastRefAbort = null;
     var lastNameAbort = null;
 
+    /*
+     * Tracks the (company_id, product_id) we last applied automatically.
+     * The form is allowed to overwrite a hidden field on a fresh lookup
+     * only if it's empty OR still matches the previous auto-fill — so a
+     * manual change made by the employee is never silently overridden.
+     */
+    var lastAutoFill = { company: "", product: "" };
+
     var hintEl = root.querySelector(".rd-payer-prefill-hint");
     var listEl = root.querySelector(".rd-payer-ac-list");
     var suggestions = [];
@@ -116,6 +124,64 @@
       updateActiveHighlight();
     }
 
+    function selectProductChip(productId) {
+      if (!productId) return;
+      var productHidden = document.getElementById("id_product");
+      if (!productHidden) return;
+      var current = String(productHidden.value || "");
+      var lastApplied = String(lastAutoFill.product || "");
+      if (current && current !== lastApplied) return;
+      var chip = document.querySelector(
+        '.employee-package-chip[data-product-id="' + productId + '"]',
+      );
+      if (!chip) return;
+      chip.click();
+      lastAutoFill.product = String(productId);
+    }
+
+    function applyCompanyProduct(companyId, productId) {
+      var companyHidden = document.getElementById("id_company");
+      if (!companyHidden || !companyId) {
+        if (productId) selectProductChip(productId);
+        return;
+      }
+      var newCid = String(companyId);
+      var current = String(companyHidden.value || "");
+      var lastApplied = String(lastAutoFill.company || "");
+
+      if (current === newCid) {
+        selectProductChip(productId);
+        return;
+      }
+      if (current && current !== lastApplied) return;
+
+      var tile = document.querySelector(
+        '.employee-company-tile[data-company-id="' + newCid + '"]',
+      );
+      if (!tile) return;
+
+      var afterSwapHandler = function (evt) {
+        if (
+          evt.detail &&
+          evt.detail.target &&
+          evt.detail.target.id === "product-tiles-container"
+        ) {
+          document.body.removeEventListener("htmx:afterSwap", afterSwapHandler);
+          /*
+           * Run after the inline handler in employee_entry.html that resets
+           * line/packages on swap, so our chip click wins and sets product +
+           * default price + active states.
+           */
+          window.setTimeout(function () {
+            selectProductChip(productId);
+          }, 0);
+        }
+      };
+      document.body.addEventListener("htmx:afterSwap", afterSwapHandler);
+      tile.click();
+      lastAutoFill.company = newCid;
+    }
+
     function runRefLookup() {
       var d = refInput.value.replace(/\u200e|\u200f/g, "").trim();
       refReqId += 1;
@@ -141,17 +207,16 @@
         .then(function (data) {
           if (!data || myId !== refReqId) return;
           var n = data.payer_name ? String(data.payer_name).trim() : "";
-          if (!n) {
-            setHint(false);
-            return;
-          }
-          if (shouldApplyNumberLookup(d, n)) {
+          if (n && shouldApplyNumberLookup(d, n)) {
             payerInput.value = n;
             lastNLRef = d;
             lastNLName = n;
             setHint(true);
             payerInput.dispatchEvent(new Event("input", { bubbles: true }));
+          } else if (!n) {
+            setHint(false);
           }
+          applyCompanyProduct(data.company_id, data.product_id);
         })
         .catch(function (e) {
           if (e.name === "AbortError") return;

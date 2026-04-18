@@ -16,7 +16,7 @@ from sales.query_utils import (
     apply_management_sale_filter_data,
     apply_sale_list_ordering,
 )
-from sales.payer_lookup import latest_payer_for_reference, payer_name_suggestions
+from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
 from sales.services import cancel_sale, create_sale, delete_sale_permanently, mark_sale_paid
 
@@ -109,12 +109,24 @@ def employee_entry(request):
 @employee_required
 @require_GET
 def api_payer_by_number(request):
-    """JSON: latest payer_name for an exact phone/shipment (reference_number) match."""
+    """
+    JSON: latest sale snapshot (payer name + company/product hints) for an
+    exact phone/shipment (reference_number) match.
+    """
+    empty = {"payer_name": None, "company_id": None, "product_id": None}
     number = (request.GET.get("number") or "").strip()
     if len(number) < 3:
-        return JsonResponse({"payer_name": None})
-    name = latest_payer_for_reference(number)
-    return JsonResponse({"payer_name": name})
+        return JsonResponse(empty)
+    snap = latest_sale_for_reference(number)
+    if not snap:
+        return JsonResponse(empty)
+    return JsonResponse(
+        {
+            "payer_name": snap.get("payer_name"),
+            "company_id": snap.get("company_id"),
+            "product_id": snap.get("product_id"),
+        }
+    )
 
 
 @employee_required

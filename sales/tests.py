@@ -6,7 +6,11 @@ from django.urls import reverse
 
 from companies.models import Company, Product, ProductLine
 from sales.models import PaymentMethod, Sale
-from sales.payer_lookup import latest_payer_for_reference, payer_name_suggestions
+from sales.payer_lookup import (
+    latest_payer_for_reference,
+    latest_sale_for_reference,
+    payer_name_suggestions,
+)
 from sales.pricing import ESIM_EXTRA_COST, effective_cost_for_product, loss_snapshot_for_sale
 from sales.services import create_sale
 
@@ -79,7 +83,31 @@ class PayerAssistTests(TestCase):
         c.force_login(self.user)
         r = c.get(reverse("sales:api_payer_by_number"), {"number": "059333"})
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["payer_name"], "Api User")
+        payload = r.json()
+        self.assertEqual(payload["payer_name"], "Api User")
+        self.assertEqual(payload["company_id"], self.company.pk)
+        self.assertEqual(payload["product_id"], self.product.pk)
+
+    def test_latest_sale_snapshot_returns_company_and_product(self):
+        self._make_sale("059444", "Snap User")
+        snap = latest_sale_for_reference("059444")
+        self.assertIsNotNone(snap)
+        self.assertEqual(snap["payer_name"], "Snap User")
+        self.assertEqual(snap["company_id"], self.company.pk)
+        self.assertEqual(snap["product_id"], self.product.pk)
+
+    def test_latest_sale_snapshot_is_none_for_unknown(self):
+        self.assertIsNone(latest_sale_for_reference("nope-xxx"))
+
+    def test_api_unknown_number_returns_empty_payload(self):
+        c = Client()
+        c.force_login(self.user)
+        r = c.get(reverse("sales:api_payer_by_number"), {"number": "000999"})
+        self.assertEqual(r.status_code, 200)
+        payload = r.json()
+        self.assertIsNone(payload["payer_name"])
+        self.assertIsNone(payload["company_id"])
+        self.assertIsNone(payload["product_id"])
 
     def test_api_suggestions_json(self):
         self._make_sale("x", "Suggest Me")
