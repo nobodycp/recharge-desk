@@ -14,9 +14,24 @@ def _is_htmx(request) -> bool:
     return request.headers.get("HX-Request") == "true"
 
 
-def _htmx_action_error(message: str, status: int = 409) -> HttpResponse:
-    """Tell htmx to leave the row in place and surface the error to the user."""
-    resp = HttpResponse(status=status)
+def _htmx_remove_target() -> HttpResponse:
+    """Empty 200 body so htmx swaps an empty string into the target (removing it).
+
+    NOTE: We deliberately avoid 204 here — htmx skips the swap on 204 by default,
+    which would leave the row visually stuck even though the backend succeeded.
+    """
+    return HttpResponse("", status=200)
+
+
+def _htmx_action_error(message: str, status: int = 200) -> HttpResponse:
+    """Tell htmx to leave the row in place and surface the error to the user.
+
+    Status 200 with HX-Reswap=none keeps the target untouched while still
+    delivering the HX-Trigger event for the toast/alert. We do not use a
+    non-2xx code because htmx treats those as transport errors and may
+    suppress the trigger depending on configuration.
+    """
+    resp = HttpResponse("", status=status)
     resp["HX-Reswap"] = "none"
     resp["HX-Trigger"] = json.dumps({"rdSaleActionError": message or "Action failed"})
     return resp
@@ -270,7 +285,7 @@ def sale_mark_paid(request, pk):
         messages.error(request, str(exc))
         return redirect(request.META.get("HTTP_REFERER") or "sales:pending_payments")
     if htmx:
-        return HttpResponse(status=204)
+        return _htmx_remove_target()
     messages.success(request, _("Marked as paid."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:pending_payments")
 
@@ -289,7 +304,7 @@ def sale_cancel(request, pk):
         messages.error(request, str(exc))
         return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
     if htmx:
-        return HttpResponse(status=204)
+        return _htmx_remove_target()
     messages.success(request, _("Sale cancelled and supplier balance restored."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
 
@@ -309,7 +324,7 @@ def sale_delete_permanent(request, pk):
         messages.error(request, msg)
         return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
     if htmx:
-        return HttpResponse(status=204)
+        return _htmx_remove_target()
     messages.success(request, _("Sale was permanently removed from the system."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
 
