@@ -62,23 +62,30 @@
               <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
               <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
               <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
-              <td class="text-end text-nowrap position-relative">
-                <details class="rd-actions-details d-inline-block text-start">
-                  <summary class="btn btn-sm btn-outline-secondary">{% trans "Actions" %} ▾</summary>
-                  <div class="rd-actions-details__panel border rounded-3 shadow-sm p-2 bg-body" style="min-width: 11rem;">
-                    <a class="btn btn-sm btn-outline-primary w-100 mb-1" href="{% url 'reports:company_report' s.company.pk %}">{% trans "Company report" %}</a>
-                    {% if s.status == "pending" %}
-                      <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="mb-1">{% csrf_token %}<button type="submit" class="btn btn-sm btn-success w-100">{% trans "Mark paid" %}</button></form>
-                    {% endif %}
-                    {% if s.status != "cancelled" %}
-                      <form method="post" action="{% url 'sales:sale_cancel' s.pk %}" class="mb-1" onsubmit="return confirm('{% filter escapejs %}{% trans "Cancel this sale?" %}{% endfilter %}');">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger w-100">{% trans "Cancel" %}</button></form>
-                    {% endif %}
-                    <form method="post" action="{% url 'sales:sale_delete_permanent' s.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');">
+              <td class="text-end text-nowrap">
+                <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
+                  {% if s.status == "pending" %}
+                    <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline-block m-0">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-secondary w-100">{% trans "Delete permanently" %}</button>
+                      <button type="submit" class="btn btn-sm btn-success">{% trans "Mark paid" %}</button>
                     </form>
-                  </div>
-                </details>
+                  {% endif %}
+                  {% if s.status != "cancelled" %}
+                    <form method="post" action="{% url 'sales:sale_cancel' s.pk %}" class="d-inline-block m-0" onsubmit="return confirm('{% filter escapejs %}{% trans "Cancel this sale?" %}{% endfilter %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Cancel" %}</button>
+                    </form>
+                  {% endif %}
+                  <form
+                    method="post"
+                    action="{% url 'sales:sale_delete_permanent' s.pk %}"
+                    class="d-inline-block m-0"
+                    onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');"
+                  >
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+                  </form>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -110,13 +117,16 @@
           </span>
         </div>
         <div class="d-flex flex-wrap gap-1 mt-2">
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' s.company.pk %}">{% trans "Report" %}</a>
           {% if s.status == "pending" %}
-            <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">{% trans "Mark paid" %}</button></form>
+            <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline m-0">{% csrf_token %}<button class="btn btn-sm btn-success" type="submit">{% trans "Mark paid" %}</button></form>
           {% endif %}
           {% if s.status != "cancelled" %}
-            <form method="post" action="{% url 'sales:sale_cancel' s.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Cancel this sale?" %}{% endfilter %}');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Cancel" %}</button></form>
+            <form method="post" action="{% url 'sales:sale_cancel' s.pk %}" class="d-inline m-0" onsubmit="return confirm('{% filter escapejs %}{% trans "Cancel this sale?" %}{% endfilter %}');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Cancel" %}</button></form>
           {% endif %}
+          <form method="post" action="{% url 'sales:sale_delete_permanent' s.pk %}" class="d-inline m-0" onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-secondary" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+          </form>
         </div>
       </div>
     {% empty %}
