@@ -1196,3 +1196,33 @@ html[dir="rtl"] .rd-toast {
 html[dir="rtl"] .rd-toast.is-visible {
   transform: translateX(50%) translateY(0);
 }
+
+/* -------------------------------------------------------------------------- */
+/* iOS auto-zoom prevention on input focus                                    */
+/* -------------------------------------------------------------------------- */
+/*
+ * iOS Safari/WebKit zooms the viewport whenever a focused form control has a
+ * computed font-size below 16px. Because the root font-size here is scaled to
+ * 80% (~12.8px), every Bootstrap input falls under that threshold and triggers
+ * the zoom on every focus, which never reverts on blur. Force form controls to
+ * at least 16px on small screens so iOS leaves the viewport alone, while
+ * keeping the compact desktop sizing untouched. `pinch-to-zoom` stays enabled.
+ */
+@media (max-width: 768px) {
+  .form-control,
+  .form-select,
+  input[type="text"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
