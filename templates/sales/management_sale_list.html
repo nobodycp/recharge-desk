@@ -1,5 +1,5 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize ui_tags %}
 {% block page_title %}{% trans "Sales" %}{% endblock %}
 {% block content %}
 <div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -10,7 +10,15 @@
   <a class="btn btn-outline-secondary" href="{% url 'sales:pending_payments' %}">{% trans "Pending payments" %}</a>
 </div>
 
-<div class="rd-card mb-3 position-relative">
+{% active_filter_count as sales_active %}
+<details class="rd-card mb-3 position-relative rd-filter-card">
+  <summary>
+    <span class="rd-filter-summary-left">
+      <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <span>{% trans "Search & filters" %}</span>
+      <span class="rd-filter-active-badge" data-rd-filter-count{% if not sales_active %} style="display:none"{% endif %}>{{ sales_active }}</span>
+    </span>
+  </summary>
   <div id="sale-htmx-indicator" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
   <div class="rd-card-body rd-filter-bar">
     <form
@@ -42,7 +50,7 @@
       </div>
     </form>
   </div>
-</div>
+</details>
 
 <div class="rd-card overflow-hidden rd-datagrid" id="sale-list-results">
   {% include "sales/partials/management_sale_list_results.html" %}

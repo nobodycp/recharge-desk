@@ -152,4 +152,51 @@
     },
     true
   );
+
+  /* Collapsible filter cards: keep the "N active" badge in sync with the
+     current form state after any htmx-driven submit, so the count stays
+     accurate even though we never reload the page. */
+  var FILTER_NOISE = { sort: 1, order: 1, page: 1, csrfmiddlewaretoken: 1 };
+
+  function countActiveFilters(form) {
+    if (!form) return 0;
+    var seen = {};
+    var count = 0;
+    var fields = form.querySelectorAll("input, select, textarea");
+    for (var i = 0; i < fields.length; i++) {
+      var el = fields[i];
+      var name = el.name;
+      if (!name || FILTER_NOISE[name] || seen[name]) continue;
+      var t = (el.type || "").toLowerCase();
+      if (t === "checkbox" || t === "radio") {
+        if (!el.checked) continue;
+      } else if (el.value === "" || el.value == null) {
+        continue;
+      }
+      seen[name] = 1;
+      count++;
+    }
+    return count;
+  }
+
+  function refreshFilterBadge(card) {
+    if (!card) return;
+    var form = card.querySelector("form");
+    var badge = card.querySelector("[data-rd-filter-count]");
+    if (!form || !badge) return;
+    var n = countActiveFilters(form);
+    badge.textContent = String(n);
+    badge.style.display = n > 0 ? "" : "none";
+  }
+
+  document.body.addEventListener("htmx:afterRequest", function (evt) {
+    var src = evt.detail && evt.detail.elt;
+    if (!src) return;
+    var card = src.closest && src.closest(".rd-filter-card");
+    if (card) refreshFilterBadge(card);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
+  });
 })();

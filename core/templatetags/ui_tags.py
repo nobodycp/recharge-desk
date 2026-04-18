@@ -45,3 +45,30 @@ def page_url(context, page_num, page_key="page"):
     q = context["request"].GET.copy()
     q[str(page_key)] = str(page_num)
     return "?" + q.urlencode()
+
+
+# Query-string keys that never count as "the user filtered something":
+# pagination + sort cursors that the page itself manages.
+_FILTER_NOISE_KEYS = {"page", "sort", "order"}
+
+
+@register.simple_tag(takes_context=True)
+def active_filter_count(context):
+    """Return how many non-empty filter params the current request carries.
+
+    Used by collapsible filter bars to show a small badge ("3 active")
+    so that even with the bar collapsed the user can tell that filters
+    are narrowing the table.
+    """
+    request = context.get("request")
+    if request is None:
+        return 0
+    count = 0
+    for key in request.GET:
+        if key in _FILTER_NOISE_KEYS:
+            continue
+        for value in request.GET.getlist(key):
+            if value not in (None, ""):
+                count += 1
+                break
+    return count

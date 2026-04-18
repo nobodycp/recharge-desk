@@ -7,7 +7,15 @@
   <p class="rd-text-muted mb-0">{% trans "Filter, review, and export-friendly table layout" %}</p>
 </div>
 
-<div class="rd-card mb-3 position-relative">
+{% active_filter_count as report_active %}
+<details class="rd-card mb-3 position-relative rd-filter-card">
+  <summary>
+    <span class="rd-filter-summary-left">
+      <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <span>{% trans "Search & filters" %}</span>
+      <span class="rd-filter-active-badge" data-rd-filter-count{% if not report_active %} style="display:none"{% endif %}>{{ report_active }}</span>
+    </span>
+  </summary>
   <div id="sales-report-htmx-indicator" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
   <div class="rd-card-body rd-filter-bar">
     <form
@@ -38,7 +46,7 @@
       </div>
     </form>
   </div>
-</div>
+</details>
 
 <div class="rd-datagrid" id="sales-report-results">
   {% include "reports/partials/sales_report_results.html" %}

@@ -1,5 +1,5 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n ui_tags %}
 {% block page_title %}{% trans "Expenses" %}{% endblock %}
 {% block content %}
 <div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
@@ -10,7 +10,15 @@
   <a class="btn btn-primary" href="{% url 'expenses:expense_create' %}">{% trans "New expense" %}</a>
 </div>
 
-<div class="rd-card mb-3 position-relative">
+{% active_filter_count as expense_active %}
+<details class="rd-card mb-3 position-relative rd-filter-card">
+  <summary>
+    <span class="rd-filter-summary-left">
+      <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <span>{% trans "Search & filters" %}</span>
+      <span class="rd-filter-active-badge" data-rd-filter-count{% if not expense_active %} style="display:none"{% endif %}>{{ expense_active }}</span>
+    </span>
+  </summary>
   <div id="expense-htmx-indicator" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
   <div class="rd-card-body rd-filter-bar">
     <form
@@ -35,7 +43,7 @@
       </div>
     </form>
   </div>
-</div>
+</details>
 
 <div class="rd-card overflow-hidden rd-datagrid" id="expense-list-results">
   {% include "expenses/partials/expense_list_results.html" %}
