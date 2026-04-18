@@ -29,26 +29,6 @@
             </div>
           </div>
 
-          <div class="rd-field-group">
-            <div class="rd-field-label">{% trans "Payment method" %}</div>
-            {{ form.payment_method.errors }}
-            {{ form.payment_method }}
-            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
-              {% for pm in payment_methods %}
-                <div class="col">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
-                    data-payment-id="{{ pm.pk }}"
-                    title="{{ pm.name }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
-                </div>
-              {% empty %}
-                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
-              {% endfor %}
-            </div>
-          </div>
-
           <div
             class="rd-field-group rd-payer-field-wrap"
             id="rd-payer-assist-root"
@@ -78,6 +58,26 @@
                 aria-label="{% trans 'Payer name suggestions' %}"
                 hidden
               ></div>
+            </div>
+          </div>
+
+          <div class="rd-field-group">
+            <div class="rd-field-label">{% trans "Payment method" %}</div>
+            {{ form.payment_method.errors }}
+            {{ form.payment_method }}
+            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
+              {% for pm in payment_methods %}
+                <div class="col">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
+                    data-payment-id="{{ pm.pk }}"
+                    title="{{ pm.name }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
+                </div>
+              {% empty %}
+                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+              {% endfor %}
             </div>
           </div>
 
