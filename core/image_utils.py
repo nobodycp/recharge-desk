@@ -116,6 +116,9 @@ def optimize_field_file(field_file) -> bool:
     storage = field_file.storage
     old_name = field_file.name
 
+    if _already_optimized(storage, old_name):
+        return False
+
     try:
         with storage.open(old_name, "rb") as src:
             optimized = optimize_image(src)
@@ -124,19 +127,6 @@ def optimize_field_file(field_file) -> bool:
         return False
 
     if optimized is None:
-        return False
-
-    try:
-        original_size = storage.size(old_name)
-    except (OSError, NotImplementedError):
-        original_size = None
-
-    new_size = optimized.size
-    if (
-        old_name.lower().endswith(WEBP_EXTENSION)
-        and original_size is not None
-        and new_size >= original_size
-    ):
         return False
 
     dirname = os.path.dirname(old_name)
@@ -166,6 +156,34 @@ def optimize_field_file(field_file) -> bool:
             logger.warning("Could not remove old icon %s: %s", old_name, exc)
 
     return True
+
+
+def _already_optimized(storage, name: str, max_size: int = DEFAULT_MAX_SIZE) -> bool:
+    """
+    True when the stored file is a WebP whose largest dimension fits *max_size*.
+
+    This makes :func:`optimize_field_file` idempotent: re-running the backfill
+    command on icons that have already been processed is a no-op instead of a
+    pointless re-encode that just generates a new collision-suffixed copy.
+    """
+    if not name or not name.lower().endswith(WEBP_EXTENSION):
+        return False
+
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+
+    try:
+        with storage.open(name, "rb") as src:
+            with Image.open(src) as img:
+                width, height = img.size
+    except (FileNotFoundError, OSError, ValueError):
+        return False
+    except Exception:  # noqa: BLE001 — Pillow can raise misc decode errors
+        return False
+
+    return max(width, height) <= max_size
 
 
 def maybe_optimize_image_field(instance, field_name: str = "icon") -> None:
