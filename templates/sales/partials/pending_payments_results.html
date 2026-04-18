@@ -54,18 +54,22 @@
               <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name }}</span></td>
               <td class="fw-semibold tabular-nums text-end kpi-warning">{{ s.sell_price_actual|intcomma }}</td>
               <td class="small text-secondary">{{ s.created_by.username }}</td>
-              <td class="text-end text-nowrap position-relative">
-                <details class="rd-actions-details d-inline-block text-start">
-                  <summary class="btn btn-sm btn-outline-secondary">{% trans "Actions" %} ▾</summary>
-                  <div class="rd-actions-details__panel border rounded-3 shadow-sm p-2 bg-body" style="min-width: 11rem;">
-                    <a class="btn btn-sm btn-outline-primary w-100 mb-1" href="{% url 'reports:company_report' s.company.pk %}">{% trans "Company report" %}</a>
-                    <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="mb-1">{% csrf_token %}<button type="submit" class="btn btn-sm btn-success w-100">{% trans "Mark paid" %}</button></form>
-                    <form method="post" action="{% url 'sales:sale_delete_permanent' s.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');">
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-danger w-100">{% trans "Delete permanently" %}</button>
-                    </form>
-                  </div>
-                </details>
+              <td class="text-end text-nowrap">
+                <div class="d-inline-flex gap-1 align-items-center">
+                  <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline-block m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success">{% trans "Mark paid" %}</button>
+                  </form>
+                  <form
+                    method="post"
+                    action="{% url 'sales:sale_delete_permanent' s.pk %}"
+                    class="d-inline-block m-0"
+                    onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');"
+                  >
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+                  </form>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -87,7 +91,16 @@
         </div>
         <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
         <div class="d-flex gap-1 mt-2">
-          <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline flex-fill">{% csrf_token %}<button class="btn btn-sm btn-primary w-100" type="submit">{% trans "Mark paid" %}</button></form>
+          <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline flex-fill m-0">{% csrf_token %}<button class="btn btn-sm btn-success w-100" type="submit">{% trans "Mark paid" %}</button></form>
+          <form
+            method="post"
+            action="{% url 'sales:sale_delete_permanent' s.pk %}"
+            class="d-inline m-0"
+            onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');"
+          >
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+          </form>
         </div>
       </div>
     {% empty %}
