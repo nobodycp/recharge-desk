@@ -340,6 +340,15 @@
   border-color: var(--bs-border-color) !important;
 }
 
+/* Recent entries — payer name line (sits between product title and ref/method) */
+.rd-recent-payer {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  margin-top: 0.05rem;
+  line-height: 1.25;
+}
+
 /* Employee sale — payer lookup + autocomplete (mobile-first) */
 .rd-payer-field-wrap {
   position: relative;

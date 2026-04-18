@@ -176,7 +176,10 @@
           <div class="list-group-item d-flex justify-content-between gap-3 py-3">
             <div class="min-w-0">
               <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
-              <div class="small text-secondary">{{ s.reference_number }} · {{ s.payment_method.name }}</div>
+              {% if s.payer_name %}
+                <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
+              {% endif %}
+              <div class="small text-secondary text-truncate">{{ s.reference_number }} · {{ s.payment_method.name }}</div>
             </div>
             <div class="text-end flex-shrink-0 small">
               <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
