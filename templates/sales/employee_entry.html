@@ -15,6 +15,73 @@
           {% endif %}
 
           <div class="rd-field-group">
+            <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
+            {{ form.reference_number.errors }}
+            <div class="input-group input-group-sm">
+              {{ form.reference_number }}
+              <button
+                type="button"
+                class="btn btn-outline-secondary employee-clipboard-paste-btn"
+                data-paste-target="id_reference_number"
+                aria-label="{% trans 'Paste from clipboard' %}"
+                data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+              >{% trans "Paste" %}</button>
+            </div>
+          </div>
+
+          <div class="rd-field-group">
+            <div class="rd-field-label">{% trans "Payment method" %}</div>
+            {{ form.payment_method.errors }}
+            {{ form.payment_method }}
+            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
+              {% for pm in payment_methods %}
+                <div class="col">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
+                    data-payment-id="{{ pm.pk }}"
+                    title="{{ pm.name }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
+                </div>
+              {% empty %}
+                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div
+            class="rd-field-group rd-payer-field-wrap"
+            id="rd-payer-assist-root"
+            data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
+            data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
+            data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
+            data-label-used="{{ _('Previously used')|escapejs }}"
+          >
+            <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
+            {{ form.payer_name.errors }}
+            <div class="rd-payer-ac-anchor">
+              <div class="input-group input-group-sm">
+                {{ form.payer_name }}
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary employee-clipboard-paste-btn"
+                  data-paste-target="id_payer_name"
+                  aria-label="{% trans 'Paste from clipboard' %}"
+                  data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+                >{% trans "Paste" %}</button>
+              </div>
+              <p class="rd-payer-prefill-hint mb-0" id="rd-payer-prefill-hint" hidden aria-live="polite"></p>
+              <div
+                class="rd-payer-ac-list"
+                id="rd-payer-ac-list"
+                role="listbox"
+                aria-label="{% trans 'Payer name suggestions' %}"
+                hidden
+              ></div>
+            </div>
+          </div>
+
+          <div class="rd-field-group">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div class="rd-field-label mb-0">{% trans "Company" %}</div>
               <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
@@ -56,51 +123,6 @@
           </div>
 
           <div class="rd-field-group">
-            <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
-            {{ form.reference_number.errors }}
-            <div class="input-group input-group-sm">
-              {{ form.reference_number }}
-              <button
-                type="button"
-                class="btn btn-outline-secondary employee-clipboard-paste-btn"
-                data-paste-target="id_reference_number"
-                aria-label="{% trans 'Paste from clipboard' %}"
-                data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
-              >{% trans "Paste" %}</button>
-            </div>
-          </div>
-          <div
-            class="rd-field-group rd-payer-field-wrap"
-            id="rd-payer-assist-root"
-            data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
-            data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
-            data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
-            data-label-used="{{ _('Previously used')|escapejs }}"
-          >
-            <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
-            {{ form.payer_name.errors }}
-            <div class="rd-payer-ac-anchor">
-              <div class="input-group input-group-sm">
-                {{ form.payer_name }}
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary employee-clipboard-paste-btn"
-                  data-paste-target="id_payer_name"
-                  aria-label="{% trans 'Paste from clipboard' %}"
-                  data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
-                >{% trans "Paste" %}</button>
-              </div>
-              <p class="rd-payer-prefill-hint mb-0" id="rd-payer-prefill-hint" hidden aria-live="polite"></p>
-              <div
-                class="rd-payer-ac-list"
-                id="rd-payer-ac-list"
-                role="listbox"
-                aria-label="{% trans 'Payer name suggestions' %}"
-                hidden
-              ></div>
-            </div>
-          </div>
-          <div class="rd-field-group">
             <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
             {{ form.sell_price_actual.errors }}
             {{ form.sell_price_actual }}
@@ -128,26 +150,6 @@
             </div>
             <p class="mb-0 mt-2 small text-info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
             <p class="mb-0 mt-2 small text-danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
-          </div>
-
-          <div class="rd-field-group">
-            <div class="rd-field-label">{% trans "Payment method" %}</div>
-            {{ form.payment_method.errors }}
-            {{ form.payment_method }}
-            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
-              {% for pm in payment_methods %}
-                <div class="col">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
-                    data-payment-id="{{ pm.pk }}"
-                    title="{{ pm.name }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
-                </div>
-              {% empty %}
-                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
-              {% endfor %}
-            </div>
           </div>
           <details class="employee-notes-details small" {% if form.notes.errors %}open{% endif %}>
             <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
