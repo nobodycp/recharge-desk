@@ -72,6 +72,14 @@
                 </div>
               </td>
             </tr>
+            {% if s.notes %}
+              <tr class="rd-row-pending rd-row-notes">
+                <td class="border-top-0"></td>
+                <td colspan="9" class="border-top-0 pt-0 pb-2 small text-secondary fst-italic">
+                  <span class="fw-semibold text-body me-1">{% trans "Notes" %}:</span>{{ s.notes|linebreaksbr }}
+                </td>
+              </tr>
+            {% endif %}
           {% empty %}
             <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No pending sales." %}</div></td></tr>
           {% endfor %}
@@ -90,6 +98,11 @@
           <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
         </div>
         <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
+        {% if s.notes %}
+          <div class="small text-secondary fst-italic mt-1">
+            <span class="fw-semibold text-body">{% trans "Notes" %}:</span> {{ s.notes|linebreaksbr }}
+          </div>
+        {% endif %}
         <div class="d-flex gap-1 mt-2">
           <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline flex-fill m-0">{% csrf_token %}<button class="btn btn-sm btn-success w-100" type="submit">{% trans "Mark paid" %}</button></form>
           <form
