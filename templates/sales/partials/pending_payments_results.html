@@ -51,7 +51,7 @@
                 <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
               </td>
               <td>{{ s.payer_name }}</td>
-              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name }}</span></td>
+              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name|tdb }}</span></td>
               <td class="fw-semibold tabular-nums text-end kpi-warning">{{ s.sell_price_actual|intcomma }}</td>
               <td class="small text-secondary">{{ s.created_by.username }}</td>
               <td class="text-end text-nowrap">

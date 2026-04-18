@@ -66,7 +66,7 @@
               <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
               <td class="tabular-nums text-nowrap">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
               <td class="small text-secondary">{{ s.created_by.username }}</td>
-              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name }}</span></td>
+              <td><span class="rd-badge rd-badge--neutral">{{ s.payment_method.name|tdb }}</span></td>
               <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
               <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
               <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>

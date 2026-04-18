@@ -1,5 +1,5 @@
 {% extends "base_employee.html" %}
-{% load i18n static l10n %}
+{% load i18n static l10n ui_tags %}
 {% block content %}
 <div class="rd-sale-form">
   <form
@@ -72,8 +72,8 @@
                     type="button"
                     class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
                     data-payment-id="{{ pm.pk }}"
-                    title="{{ pm.name }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name %}</button>
+                    title="{{ pm.name|tdb }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb %}</button>
                 </div>
               {% empty %}
                 <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
@@ -181,7 +181,7 @@
               {% if s.payer_name %}
                 <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
               {% endif %}
-              <div class="small text-secondary text-truncate">{{ s.reference_number }} · {{ s.payment_method.name }}</div>
+              <div class="small text-secondary text-truncate">{{ s.reference_number }} · {{ s.payment_method.name|tdb }}</div>
             </div>
             <div class="text-end flex-shrink-0 small">
               <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>

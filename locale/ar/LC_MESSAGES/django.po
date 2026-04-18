@@ -938,6 +938,18 @@ msgstr "الدافع"
 msgid "No pending sales."
 msgstr "لا توجد مبيعات معلّقة."
 
+#: sales/_i18n_payment_methods.py
+msgid "Jawwal Pay"
+msgstr "جوال باي"
+
+#: sales/_i18n_payment_methods.py
+msgid "Bank of Palestine"
+msgstr "بنك فلسطين"
+
+#: sales/_i18n_payment_methods.py
+msgid "Palpay"
+msgstr "بال باي"
+
 #~ msgid "Customer name"
 #~ msgstr "اسم العميل"
 
