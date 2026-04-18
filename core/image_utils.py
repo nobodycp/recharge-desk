@@ -1,0 +1,172 @@
+"""
+Image normalization for user-uploaded icons.
+
+Every ImageField on the project (Company / ProductLine / Product / PaymentMethod)
+runs uploaded files through :func:`optimize_image` before they hit storage. The
+result is a cache-friendly WebP capped at a sensible square so that the
+employee sales screen on mobile loads chips in kilobytes instead of megabytes,
+even when management uploads a multi-MB PNG straight from a phone camera.
+"""
+
+from __future__ import annotations
+
+import io
+import logging
+import os
+from typing import Optional
+
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import UploadedFile
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_MAX_SIZE = 256
+DEFAULT_QUALITY = 82
+WEBP_EXTENSION = ".webp"
+
+
+def optimize_image(
+    file_obj,
+    *,
+    max_size: int = DEFAULT_MAX_SIZE,
+    quality: int = DEFAULT_QUALITY,
+) -> Optional[ContentFile]:
+    """
+    Re-encode *file_obj* as a size-capped, EXIF-stripped WebP.
+
+    Returns a :class:`~django.core.files.base.ContentFile` ready to assign to an
+    ``ImageField``, keeping the original filename stem but switching the
+    extension to ``.webp``. Returns ``None`` when *file_obj* is falsy or when
+    Pillow cannot decode it (corrupt upload, unsupported format) — callers
+    should fall back to leaving the original file untouched in that case.
+    """
+    if not file_obj:
+        return None
+
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        logger.warning("Pillow is not installed; skipping icon optimization.")
+        return None
+
+    original_name = getattr(file_obj, "name", "") or "icon"
+
+    try:
+        if hasattr(file_obj, "seek"):
+            try:
+                file_obj.seek(0)
+            except (AttributeError, OSError):
+                pass
+
+        with Image.open(file_obj) as img:
+            # Honor EXIF orientation before stripping metadata so portrait
+            # phone uploads don't end up sideways.
+            img = ImageOps.exif_transpose(img)
+
+            # Palette / 1-bit / CMYK uploads can't be saved as WebP directly;
+            # normalize to a mode WebP supports and that preserves alpha.
+            if img.mode in ("P", "LA"):
+                img = img.convert("RGBA")
+            elif img.mode == "CMYK":
+                img = img.convert("RGB")
+            elif img.mode not in ("RGB", "RGBA", "L"):
+                img = img.convert("RGBA")
+
+            # Inline downscale; thumbnail() is a no-op for already-small images.
+            img.thumbnail((max_size, max_size), Image.LANCZOS)
+
+            buffer = io.BytesIO()
+            save_kwargs = {
+                "format": "WEBP",
+                "quality": quality,
+                "method": 6,
+            }
+            if img.mode == "RGBA":
+                save_kwargs["lossless"] = False
+            img.save(buffer, **save_kwargs)
+            buffer.seek(0)
+    except Exception as exc:  # noqa: BLE001 — Pillow raises a wide variety
+        logger.warning("Could not optimize uploaded image %r: %s", original_name, exc)
+        return None
+
+    stem, _ = os.path.splitext(os.path.basename(original_name))
+    new_name = (stem or "icon") + WEBP_EXTENSION
+    return ContentFile(buffer.read(), name=new_name)
+
+
+def optimize_field_file(field_file) -> bool:
+    """
+    In-place re-encode of an existing ``ImageField`` value on disk.
+
+    Used by the ``optimize_icons`` management command to backfill files that
+    pre-date this hook. Returns ``True`` when the underlying storage was
+    rewritten with a smaller WebP, ``False`` when nothing changed (file
+    missing, already optimized, or Pillow could not read it).
+    """
+    if not field_file or not getattr(field_file, "name", ""):
+        return False
+
+    storage = field_file.storage
+    old_name = field_file.name
+
+    try:
+        with storage.open(old_name, "rb") as src:
+            optimized = optimize_image(src)
+    except FileNotFoundError:
+        logger.warning("Icon file is missing on disk: %s", old_name)
+        return False
+
+    if optimized is None:
+        return False
+
+    try:
+        original_size = storage.size(old_name)
+    except (OSError, NotImplementedError):
+        original_size = None
+
+    new_size = optimized.size
+    if (
+        old_name.lower().endswith(WEBP_EXTENSION)
+        and original_size is not None
+        and new_size >= original_size
+    ):
+        return False
+
+    stem, _ = os.path.splitext(old_name)
+    target_name = stem + WEBP_EXTENSION
+
+    saved_name = storage.save(target_name, optimized)
+    field_file.name = saved_name
+    field_file.instance.save(update_fields=[field_file.field.attname])
+
+    if saved_name != old_name:
+        try:
+            storage.delete(old_name)
+        except OSError as exc:
+            logger.warning("Could not remove old icon %s: %s", old_name, exc)
+
+    return True
+
+
+def maybe_optimize_image_field(instance, field_name: str = "icon") -> None:
+    """
+    Re-encode a freshly uploaded image on *instance* in place before save.
+
+    Intended to be called from a model's ``save()`` immediately before
+    ``super().save()``. No-ops when the field is empty, when its current value
+    is already a stored file (i.e. not a fresh upload), or when the optimizer
+    cannot decode the input.
+    """
+    field_file = getattr(instance, field_name, None)
+    if not field_file:
+        return
+
+    raw = getattr(field_file, "file", None)
+    if not isinstance(raw, UploadedFile):
+        return
+
+    optimized = optimize_image(raw)
+    if optimized is None:
+        return
+
+    setattr(instance, field_name, optimized)

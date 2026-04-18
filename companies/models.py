@@ -6,6 +6,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.image_utils import maybe_optimize_image_field
+
 
 class Company(models.Model):
     name = models.CharField(_("name"), max_length=200)
@@ -41,6 +43,10 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        maybe_optimize_image_field(self, "icon")
+        super().save(*args, **kwargs)
 
     @property
     def is_deletable(self) -> bool:
@@ -91,6 +97,10 @@ class ProductLine(models.Model):
 
     def __str__(self):
         return f"{self.company.name} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        maybe_optimize_image_field(self, "icon")
+        super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()
@@ -165,6 +175,10 @@ class Product(models.Model):
 
     def __str__(self):
         return self.display_name
+
+    def save(self, *args, **kwargs):
+        maybe_optimize_image_field(self, "icon")
+        super().save(*args, **kwargs)
 
     @property
     def is_deletable(self) -> bool:

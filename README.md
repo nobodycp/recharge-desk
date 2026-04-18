@@ -79,6 +79,19 @@ python manage.py compilemessages
 
 Add new keys to `tools/fill_ar_translations.py` (`AR` dict) when you introduce new `gettext` / `{% trans %}` strings, then run the script again.
 
+## Icon optimization (auto)
+
+Every uploaded icon (`Company`, `ProductLine`, `Product`, `PaymentMethod`) is re-encoded by `core.image_utils.optimize_image` inside the model's `save()`: scaled to fit a **256×256** square, converted to **WebP @ q82**, EXIF stripped. New uploads need no action — typical savings are **90–95%** vs. the original PNG/JPEG.
+
+Backfill files that were uploaded before this hook landed:
+
+```bash
+python manage.py optimize_icons --dry-run   # report only
+python manage.py optimize_icons             # rewrite in place
+```
+
+Safe to re-run; already-optimized files are skipped.
+
 ## Example scenario (must work)
 
 1. Log in as `employee1`.

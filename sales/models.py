@@ -5,6 +5,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from core.image_utils import maybe_optimize_image_field
+
 
 class PaymentMethod(models.Model):
     name = models.CharField(_("name"), max_length=120, unique=True)
@@ -24,6 +26,10 @@ class PaymentMethod(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        maybe_optimize_image_field(self, "icon")
+        super().save(*args, **kwargs)
 
 
 class Sale(models.Model):
