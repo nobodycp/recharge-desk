@@ -37,8 +37,8 @@
             <th class="text-end">{% trans "Actions" %}</th>
           </tr>
         </thead>
-        <tbody>
-          {% for s in page_obj %}
+        {% for s in page_obj %}
+          <tbody id="pending-row-{{ s.pk }}" class="rd-pending-group">
             <tr class="rd-row-pending">
               <td class="text-center">
                 <input class="form-check-input" type="checkbox" name="sale_ids" value="{{ s.pk }}" form="bulk-pending-paid-form" aria-label="{% trans 'Select sale' %}">
@@ -56,7 +56,14 @@
               <td class="small text-secondary">{{ s.created_by.username }}</td>
               <td class="text-end text-nowrap">
                 <div class="d-inline-flex gap-1 align-items-center">
-                  <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline-block m-0">
+                  <form
+                    method="post"
+                    action="{% url 'sales:sale_mark_paid' s.pk %}"
+                    class="d-inline-block m-0"
+                    hx-post="{% url 'sales:sale_mark_paid' s.pk %}"
+                    hx-target="#pending-row-{{ s.pk }}"
+                    hx-swap="outerHTML swap:200ms"
+                  >
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-success">{% trans "Mark paid" %}</button>
                   </form>
@@ -64,7 +71,10 @@
                     method="post"
                     action="{% url 'sales:sale_delete_permanent' s.pk %}"
                     class="d-inline-block m-0"
-                    onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');"
+                    hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
+                    hx-target="#pending-row-{{ s.pk }}"
+                    hx-swap="outerHTML swap:200ms"
+                    hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
                   >
                     {% csrf_token %}
                     <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
@@ -80,16 +90,18 @@
                 </td>
               </tr>
             {% endif %}
-          {% empty %}
+          </tbody>
+        {% empty %}
+          <tbody>
             <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No pending sales." %}</div></td></tr>
-          {% endfor %}
-        </tbody>
+          </tbody>
+        {% endfor %}
       </table>
     </div>
   </div>
   <div class="d-md-none d-flex flex-column gap-2 p-2">
     {% for s in page_obj %}
-      <div class="rd-mobile-row-card is-pending">
+      <div id="pending-card-{{ s.pk }}" class="rd-mobile-row-card is-pending rd-pending-group">
         <div class="small text-secondary">{{ s.created_at }}</div>
         <div class="fw-semibold">{{ s.company.name }}</div>
         <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
@@ -104,12 +116,25 @@
           </div>
         {% endif %}
         <div class="d-flex gap-1 mt-2">
-          <form method="post" action="{% url 'sales:sale_mark_paid' s.pk %}" class="d-inline flex-fill m-0">{% csrf_token %}<button class="btn btn-sm btn-success w-100" type="submit">{% trans "Mark paid" %}</button></form>
+          <form
+            method="post"
+            action="{% url 'sales:sale_mark_paid' s.pk %}"
+            class="d-inline flex-fill m-0"
+            hx-post="{% url 'sales:sale_mark_paid' s.pk %}"
+            hx-target="#pending-card-{{ s.pk }}"
+            hx-swap="outerHTML swap:200ms"
+          >
+            {% csrf_token %}
+            <button class="btn btn-sm btn-success w-100" type="submit">{% trans "Mark paid" %}</button>
+          </form>
           <form
             method="post"
             action="{% url 'sales:sale_delete_permanent' s.pk %}"
             class="d-inline m-0"
-            onsubmit="return confirm('{% filter escapejs %}{% trans "Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone." %}{% endfilter %}');"
+            hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
+            hx-target="#pending-card-{{ s.pk }}"
+            hx-swap="outerHTML swap:200ms"
+            hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
           >
             {% csrf_token %}
             <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>

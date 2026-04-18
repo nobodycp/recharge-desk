@@ -996,6 +996,12 @@ tr.rd-row-pending {
   box-shadow: inset 0.1875rem 0 0 0 var(--rd-warning);
 }
 
+/* Smooth fade-out for in-place htmx removals (Mark paid / Delete). */
+.rd-pending-group.htmx-swapping {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
 .rd-row-high-value {
   background: color-mix(in srgb, var(--rd-success-soft) 40%, transparent) !important;
 }

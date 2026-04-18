@@ -46,4 +46,13 @@
 <div class="rd-card overflow-hidden rd-datagrid" id="pending-payments-results">
   {% include "sales/partials/pending_payments_results.html" %}
 </div>
+
+<script>
+(function () {
+  document.body.addEventListener("rdSaleActionError", function (evt) {
+    var msg = (evt && evt.detail && (evt.detail.value || evt.detail)) || "{% filter escapejs %}{% trans 'Could not complete the action.' %}{% endfilter %}";
+    window.alert(msg);
+  });
+})();
+</script>
 {% endblock %}

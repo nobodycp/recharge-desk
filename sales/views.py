@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Prefetch, Q
@@ -6,6 +8,18 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST
+
+
+def _is_htmx(request) -> bool:
+    return request.headers.get("HX-Request") == "true"
+
+
+def _htmx_action_error(message: str, status: int = 409) -> HttpResponse:
+    """Tell htmx to leave the row in place and surface the error to the user."""
+    resp = HttpResponse(status=status)
+    resp["HX-Reswap"] = "none"
+    resp["HX-Trigger"] = json.dumps({"rdSaleActionError": message or "Action failed"})
+    return resp
 
 from accounts.permissions import employee_required, is_employee, management_required
 from core.pagination import paginate_request
@@ -247,11 +261,17 @@ def sale_mark_paid(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     if request.method != "POST":
         return redirect("sales:pending_payments")
+    htmx = _is_htmx(request)
     try:
         mark_sale_paid(sale=sale, user=request.user)
-        messages.success(request, _("Marked as paid."))
     except ValueError as exc:
+        if htmx:
+            return _htmx_action_error(str(exc))
         messages.error(request, str(exc))
+        return redirect(request.META.get("HTTP_REFERER") or "sales:pending_payments")
+    if htmx:
+        return HttpResponse(status=204)
+    messages.success(request, _("Marked as paid."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:pending_payments")
 
 
@@ -260,11 +280,17 @@ def sale_cancel(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     if request.method != "POST":
         return redirect("sales:management_sale_list")
+    htmx = _is_htmx(request)
     try:
         cancel_sale(sale=sale, user=request.user)
-        messages.success(request, _("Sale cancelled and supplier balance restored."))
     except ValueError as exc:
+        if htmx:
+            return _htmx_action_error(str(exc))
         messages.error(request, str(exc))
+        return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+    if htmx:
+        return HttpResponse(status=204)
+    messages.success(request, _("Sale cancelled and supplier balance restored."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
 
 
@@ -273,11 +299,18 @@ def sale_delete_permanent(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     if request.method != "POST":
         return redirect("sales:management_sale_list")
+    htmx = _is_htmx(request)
     try:
         delete_sale_permanently(sale=sale)
-        messages.success(request, _("Sale was permanently removed from the system."))
     except (IntegrityError, DatabaseError) as exc:
-        messages.error(request, _("Could not delete this sale: %(reason)s") % {"reason": str(exc)})
+        msg = _("Could not delete this sale: %(reason)s") % {"reason": str(exc)}
+        if htmx:
+            return _htmx_action_error(str(msg))
+        messages.error(request, msg)
+        return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+    if htmx:
+        return HttpResponse(status=204)
+    messages.success(request, _("Sale was permanently removed from the system."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
 
 
