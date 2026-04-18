@@ -47,4 +47,13 @@
 <div class="rd-card overflow-hidden rd-datagrid" id="sale-list-results">
   {% include "sales/partials/management_sale_list_results.html" %}
 </div>
+
+<script>
+(function () {
+  document.body.addEventListener("rdSaleActionError", function (evt) {
+    var msg = (evt && evt.detail && (evt.detail.value || evt.detail)) || "{% filter escapejs %}{% trans 'Could not complete the action.' %}{% endfilter %}";
+    window.alert(msg);
+  });
+})();
+</script>
 {% endblock %}
