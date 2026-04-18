@@ -41,6 +41,7 @@ class Command(BaseCommand):
         rewritten = 0
         skipped = 0
         scanned = 0
+        failed = 0
 
         for model in apps.get_models():
             image_fields = [
@@ -73,7 +74,15 @@ class Command(BaseCommand):
                         total_before += size_before
                         continue
 
-                    changed = optimize_field_file(field_file)
+                    try:
+                        changed = optimize_field_file(field_file)
+                    except Exception as exc:  # noqa: BLE001
+                        failed += 1
+                        self.stdout.write(self.style.ERROR(
+                            f"  failed:   {label} -- {type(exc).__name__}: {exc}"
+                        ))
+                        continue
+
                     if not changed:
                         skipped += 1
                         self.stdout.write(f"  skipped:  {label}")
@@ -95,10 +104,12 @@ class Command(BaseCommand):
                     ))
 
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS(
+        summary = (
             f"Scanned {scanned} icon(s); "
-            f"rewrote {rewritten}, skipped {skipped}."
-        ))
+            f"rewrote {rewritten}, skipped {skipped}, failed {failed}."
+        )
+        style = self.style.WARNING if failed else self.style.SUCCESS
+        self.stdout.write(style(summary))
         if not dry_run and rewritten:
             self.stdout.write(self.style.SUCCESS(
                 f"Total {_human(total_before)} -> {_human(total_after)} "

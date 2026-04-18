@@ -24,6 +24,12 @@ DEFAULT_MAX_SIZE = 256
 DEFAULT_QUALITY = 82
 WEBP_EXTENSION = ".webp"
 
+# Django's FileField stores the relative path in a varchar(100) column by
+# default. We cap the basename stem here so that even worst-case uploads
+# (long upload_to prefix + storage's collision suffix `_xxxxxxx`) still fit
+# without requiring a schema migration.
+MAX_STEM_LEN = 60
+
 
 def optimize_image(
     file_obj,
@@ -90,7 +96,8 @@ def optimize_image(
         return None
 
     stem, _ = os.path.splitext(os.path.basename(original_name))
-    new_name = (stem or "icon") + WEBP_EXTENSION
+    stem = (stem or "icon")[:MAX_STEM_LEN]
+    new_name = stem + WEBP_EXTENSION
     return ContentFile(buffer.read(), name=new_name)
 
 
@@ -132,12 +139,25 @@ def optimize_field_file(field_file) -> bool:
     ):
         return False
 
-    stem, _ = os.path.splitext(old_name)
-    target_name = stem + WEBP_EXTENSION
+    dirname = os.path.dirname(old_name)
+    stem, _ = os.path.splitext(os.path.basename(old_name))
+    stem = stem[:MAX_STEM_LEN]
+    target_name = os.path.join(dirname, stem + WEBP_EXTENSION) if dirname else stem + WEBP_EXTENSION
 
     saved_name = storage.save(target_name, optimized)
-    field_file.name = saved_name
-    field_file.instance.save(update_fields=[field_file.field.attname])
+    try:
+        field_file.name = saved_name
+        field_file.instance.save(update_fields=[field_file.field.attname])
+    except Exception:
+        # The WebP is on disk but the DB row could not be updated (e.g. column
+        # length overflow). Delete the orphan to keep storage consistent and
+        # let the caller decide how to surface the failure.
+        try:
+            storage.delete(saved_name)
+        except OSError as cleanup_exc:
+            logger.warning("Could not delete orphan WebP %s: %s", saved_name, cleanup_exc)
+        field_file.name = old_name
+        raise
 
     if saved_name != old_name:
         try:
