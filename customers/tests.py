@@ -12,6 +12,7 @@ from customers.services import (
     delete_customer_completely,
     delete_customer_payment,
     delete_ledger_entry,
+    record_customer_adjustment,
     record_customer_payment,
     reject_sale,
     write_off_customer_balance,
@@ -408,6 +409,61 @@ class WriteOffCustomerBalanceTests(CustomerARTestCase):
             loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"],
             _decimal(10),
         )
+
+
+class CustomerAdjustmentTests(CustomerARTestCase):
+    def test_positive_adjustment_increases_debt_and_does_not_touch_reports(self):
+        from sales.query_utils import (
+            confirmed_sales,
+            loss_eligible_sales,
+            paid_sales_only,
+        )
+
+        c = self._new_customer()
+        record_customer_adjustment(
+            customer=c, amount=_decimal(80), notes="legacy", user=self.user
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(80))
+        entry = CustomerLedger.objects.get(customer=c)
+        self.assertEqual(entry.entry_type, CustomerLedger.EntryType.ADJUSTMENT)
+        self.assertEqual(entry.amount, _decimal(80))
+
+        all_sales = Sale.objects.all()
+        self.assertEqual(
+            confirmed_sales(all_sales).aggregate(s=Sum("sell_price_actual"))["s"] or 0,
+            _decimal(0),
+        )
+        self.assertEqual(
+            paid_sales_only(all_sales).aggregate(s=Sum("profit_snapshot"))["s"] or 0,
+            _decimal(0),
+        )
+        self.assertEqual(
+            loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"] or 0,
+            _decimal(0),
+        )
+
+    def test_negative_adjustment_credits_balance(self):
+        c = self._new_customer()
+        record_customer_adjustment(
+            customer=c, amount=_decimal(-30), user=self.user
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(-30))
+
+    def test_zero_amount_rejected(self):
+        c = self._new_customer()
+        with self.assertRaises(ValueError):
+            record_customer_adjustment(customer=c, amount=_decimal(0), user=self.user)
+
+    def test_payment_settles_adjustment_via_balance(self):
+        c = self._new_customer()
+        record_customer_adjustment(customer=c, amount=_decimal(120), user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(120), payment_method=self.bank, user=self.user
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
 
 
 class DeleteCustomerCompletelyTests(CustomerARTestCase):

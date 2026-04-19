@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 06:02+0300\n"
+"POT-Creation-Date: 2026-04-18 23:45-0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -246,6 +246,19 @@ msgstr "طريقة الدفع"
 msgid "Notes"
 msgstr "ملاحظات"
 
+msgid "Add as debt (customer owes more)"
+msgstr "دين (يزيد علي الزبون)"
+
+msgid "Add as credit (reduce balance)"
+msgstr "رصيد (يقلل من حساب الزبون)"
+
+#| msgid "Adjustment"
+msgid "Adjustment type"
+msgstr "نوع التعديل"
+
+msgid "Why this adjustment? Shown in the ledger."
+msgstr "سبب التعديل (يظهر في الحركات)."
+
 msgid ""
 "Positive: customer owes the shop. Negative: shop holds credit for the "
 "customer (overpayment)."
@@ -342,6 +355,10 @@ msgstr "يمكن رفض المبيعات بانتظار الموافقة فقط.
 msgid "Payment amount must be positive."
 msgstr "يجب أن تكون قيمة الدفعة موجبة."
 
+#| msgid "Payment amount must be positive."
+msgid "Adjustment amount must be non-zero."
+msgstr "مبلغ التعديل لا يمكن أن يكون صفر."
+
 msgid ""
 "Delete the payment from the customer's payment list instead — this ledger "
 "row is just its mirror entry."
@@ -366,6 +383,9 @@ msgstr "تعديل الزبون"
 
 msgid "Payment recorded."
 msgstr "تم تسجيل الدفعة."
+
+msgid "Adjustment recorded."
+msgstr "تم تسجيل التعديل."
 
 msgid "Phone added."
 msgstr "تمت إضافة الرقم."
@@ -454,9 +474,6 @@ msgstr "تقرير المبيعات"
 
 msgid "Deposit recorded."
 msgstr "تم تسجيل الإيداع."
-
-msgid "Adjustment recorded."
-msgstr "تم تسجيل التسوية."
 
 msgid "Company report"
 msgstr "تقرير الشركة"
@@ -980,6 +997,20 @@ msgstr ""
 "تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً "
 "للزبون."
 
+#| msgid "Save adjustment"
+msgid "Manual adjustment"
+msgstr "تعديل يدوي"
+
+msgid "Save adjustment"
+msgstr "حفظ التعديل"
+
+msgid ""
+"Touches the customer balance only. Does not affect sales, profit, or loss "
+"reports. Settled like any other debt when the customer pays."
+msgstr ""
+"يؤثر على رصيد الزبون فقط. لا يدخل في المبيعات أو الأرباح أو الخسائر. يتم "
+"خصمه من توتل الزبون عند دفعه مثل أي دين آخر."
+
 msgid "Phones"
 msgstr "أرقام الهاتف"
 
@@ -1166,9 +1197,6 @@ msgstr "حفظ الإيداع"
 
 msgid "Balance adjustment"
 msgstr "تسوية الرصيد"
-
-msgid "Save adjustment"
-msgstr "حفظ التسوية"
 
 msgid "Operational snapshot"
 msgstr "لمحة تشغيلية"
@@ -1473,33 +1501,3 @@ msgstr "تاريخ الإنشاء"
 
 msgid "Save changes"
 msgstr "حفظ التغييرات"
-
-#~ msgid "طلبات الديون"
-#~ msgstr "طلبات الديون"
-
-#~ msgid "Customer name"
-#~ msgstr "اسم العميل"
-
-#~ msgid "Phone (optional)"
-#~ msgstr "رقم الهاتف (اختياري)"
-
-#~ msgid "Create"
-#~ msgstr "إنشاء"
-
-#~ msgid "Copy/paste friendly"
-#~ msgstr "مناسب للنسخ"
-
-#~ msgid "optional"
-#~ msgstr "اختياري"
-
-#~ msgid "Show more"
-#~ msgstr "عرض المزيد"
-
-#~ msgid "Choose payment method"
-#~ msgstr "اختر طريقة الدفع"
-
-#~ msgid "Choose company"
-#~ msgstr "اختر الشركة"
-
-#~ msgid "Choose product"
-#~ msgstr "اختر المنتج"

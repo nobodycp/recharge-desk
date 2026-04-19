@@ -9,7 +9,12 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import employee_required, management_required
 from core.pagination import paginate_request
-from customers.forms import CustomerForm, CustomerPaymentForm, CustomerPhoneForm
+from customers.forms import (
+    CustomerAdjustmentForm,
+    CustomerForm,
+    CustomerPaymentForm,
+    CustomerPhoneForm,
+)
 from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPhone
 from customers.services import (
     add_customer_phone,
@@ -17,6 +22,7 @@ from customers.services import (
     delete_customer_completely,
     delete_customer_payment,
     delete_ledger_entry,
+    record_customer_adjustment,
     record_customer_payment,
     write_off_customer_balance,
 )
@@ -118,6 +124,7 @@ def customer_detail(request, pk):
 
     payment_form = CustomerPaymentForm()
     phone_form = CustomerPhoneForm()
+    adjustment_form = CustomerAdjustmentForm()
 
     return render(
         request,
@@ -133,6 +140,7 @@ def customer_detail(request, pk):
             "pending_count": pending_count,
             "payment_form": payment_form,
             "phone_form": phone_form,
+            "adjustment_form": adjustment_form,
         },
     )
 
@@ -159,6 +167,31 @@ def customer_record_payment(request, pk):
         messages.error(request, str(exc))
     else:
         messages.success(request, _("Payment recorded."))
+    return redirect("customers:customer_detail", pk=customer.pk)
+
+
+@management_required
+@require_POST
+def customer_record_adjustment(request, pk):
+    """Manual debit/credit on the customer balance — no sale, no profit/loss."""
+    customer = get_object_or_404(Customer, pk=pk)
+    form = CustomerAdjustmentForm(request.POST)
+    if not form.is_valid():
+        for field, errs in form.errors.items():
+            for e in errs:
+                messages.error(request, f"{field}: {e}")
+        return redirect("customers:customer_detail", pk=customer.pk)
+    try:
+        record_customer_adjustment(
+            customer=customer,
+            amount=form.signed_amount(),
+            notes=form.cleaned_data.get("notes") or "",
+            user=request.user,
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, _("Adjustment recorded."))
     return redirect("customers:customer_detail", pk=customer.pk)
 
 

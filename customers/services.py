@@ -179,6 +179,44 @@ def record_customer_payment(
 
 
 @transaction.atomic
+def record_customer_adjustment(
+    *,
+    customer: Customer,
+    amount: Decimal,
+    notes: str = "",
+    user,
+) -> CustomerLedger:
+    """Manually move a customer's balance up or down without a sale or payment.
+
+    Used for unclassified / legacy debt or to credit a customer outside the
+    normal sales workflow. ``amount`` is signed:
+
+    * positive -> raises balance (customer owes more).
+    * negative -> lowers balance (treated like extra credit on file).
+
+    The entry is intentionally invisible to volume / profit / loss reports —
+    it only touches the customer ledger and ``current_balance``. When the
+    customer pays later, ``record_customer_payment`` already drives down the
+    same ``current_balance``, so the adjustment is implicitly settled by any
+    payment with no extra plumbing required.
+    """
+    amt = Decimal(amount or 0)
+    if amt == 0:
+        raise ValueError(_("Adjustment amount must be non-zero."))
+
+    customer_locked = Customer.objects.select_for_update().get(pk=customer.pk)
+    entry = CustomerLedger.objects.create(
+        customer=customer_locked,
+        entry_type=CustomerLedger.EntryType.ADJUSTMENT,
+        amount=amt,
+        notes=(notes or "").strip(),
+        created_by=user,
+    )
+    _apply_balance_delta(customer_locked, amt)
+    return entry
+
+
+@transaction.atomic
 def write_off_customer_balance(*, customer: Customer, user) -> dict:
     """Close out a customer who will never pay: convert their unpaid
     on-account sales into a recorded loss and zero out their balance.

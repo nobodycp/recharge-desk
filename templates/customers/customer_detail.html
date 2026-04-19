@@ -133,7 +133,7 @@
                 <tr id="customer-ledger-row-{{ l.pk }}">
                   <td class="small text-nowrap">{{ l.created_at|date:"Y-m-d H:i" }}</td>
                   <td>{{ l.get_entry_type_display }}</td>
-                  <td class="text-end tabular-nums {% if l.entry_type == 'charge' %}kpi-expense{% elif l.entry_type == 'payment' %}text-success{% endif %}">{{ l.amount|intcomma }}</td>
+                  <td class="text-end tabular-nums {% if l.entry_type == 'charge' %}kpi-expense{% elif l.entry_type == 'payment' %}text-success{% elif l.entry_type == 'adjustment' %}{% if l.amount > 0 %}kpi-expense{% else %}text-success{% endif %}{% endif %}">{{ l.amount|intcomma }}</td>
                   <td class="small">
                     {% if l.sale_id %}#{{ l.sale_id }}{% endif %}
                     {% if l.payment_id %}{% trans "Payment" %} #{{ l.payment_id }}{% endif %}
@@ -176,6 +176,25 @@
           <button class="btn btn-primary" type="submit">{% trans "Record payment" %}</button>
           <p class="small text-secondary mb-0">
             {% trans "FIFO settlement: the oldest pending charges get marked Paid first; any extra remains as customer credit." %}
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Manual adjustment" %}</h2>
+        <form method="post" action="{% url 'customers:customer_record_adjustment' customer.pk %}" class="d-grid gap-3" novalidate>
+          {% csrf_token %}
+          <div>{{ adjustment_form.kind.label_tag }}{{ adjustment_form.kind }}{{ adjustment_form.kind.errors }}</div>
+          <div>{{ adjustment_form.amount.label_tag }}{{ adjustment_form.amount }}{{ adjustment_form.amount.errors }}</div>
+          <div>
+            {{ adjustment_form.notes.label_tag }}{{ adjustment_form.notes }}{{ adjustment_form.notes.errors }}
+            {% if adjustment_form.notes.help_text %}<div class="form-text">{{ adjustment_form.notes.help_text }}</div>{% endif %}
+          </div>
+          <button class="btn btn-outline-primary" type="submit">{% trans "Save adjustment" %}</button>
+          <p class="small text-secondary mb-0">
+            {% trans "Touches the customer balance only. Does not affect sales, profit, or loss reports. Settled like any other debt when the customer pays." %}
           </p>
         </form>
       </div>
