@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 05:56+0300\n"
+"POT-Creation-Date: 2026-04-19 06:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -321,7 +321,6 @@ msgstr "حركة سجل الزبون"
 msgid "customer ledger entries"
 msgstr "حركات سجل الزبائن"
 
-#| msgid "Phone is required."
 msgid "Customer name is required."
 msgstr "اسم الزبون مطلوب."
 
@@ -628,15 +627,12 @@ msgstr "حركة رصيد"
 msgid "balance transactions"
 msgstr "حركات الرصيد"
 
-#| msgid "Selected product does not belong to the company."
 msgid "Product does not belong to the selected company."
 msgstr "المنتج لا ينتمي إلى الشركة المحدّدة."
 
-#| msgid "Choose a company to see products."
 msgid "Inactive company or product."
 msgstr "الشركة أو المنتج غير نشط."
 
-#| msgid "On-account sales"
 msgid "On-account sales require a customer."
 msgstr "المبيعات الآجلة تستلزم تحديد زبون."
 
@@ -646,11 +642,9 @@ msgstr "المبيعات الآجلة يجب ألا تحوي طريقة دفع �
 msgid "Payment method is required for non on-account sales."
 msgstr "طريقة الدفع مطلوبة للمبيعات غير الآجلة."
 
-#| msgid "No pending sales were updated."
 msgid "Only pending sales can be marked as paid."
 msgstr "لا يمكن تعليم البيع كمدفوع إلا للمبيعات المعلّقة."
 
-#| msgid "Sales count (non-cancelled)"
 msgid "Sale is already cancelled."
 msgstr "هذا البيع ملغى مسبقاً."
 
@@ -1179,6 +1173,12 @@ msgstr "حفظ التسوية"
 msgid "Operational snapshot"
 msgstr "لمحة تشغيلية"
 
+msgid "مدفوعات"
+msgstr "مدفوعات"
+
+msgid "ديون"
+msgstr "ديون"
+
 msgid "Today's sales"
 msgstr "مبيعات اليوم"
 
@@ -1193,9 +1193,6 @@ msgstr "المبيعات المدفوعة فقط"
 
 msgid "إجمالي ديون العملاء"
 msgstr "إجمالي ديون العملاء"
-
-msgid "طلبات الديون"
-msgstr "طلبات الديون"
 
 msgid "Today"
 msgstr "اليوم"
@@ -1476,6 +1473,9 @@ msgstr "تاريخ الإنشاء"
 
 msgid "Save changes"
 msgstr "حفظ التغييرات"
+
+#~ msgid "طلبات الديون"
+#~ msgstr "طلبات الديون"
 
 #~ msgid "Customer name"
 #~ msgstr "اسم العميل"

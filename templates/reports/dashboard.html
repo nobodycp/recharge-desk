@@ -14,9 +14,19 @@
         <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         </div>
-        <div class="rd-label mb-1">{% trans "Pending payments" %}</div>
-        <div class="rd-stat-value kpi-warning">{{ pending_count|intcomma }}</div>
+        <div class="rd-label mb-1">{% trans "Pending" %}</div>
         <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <div class="rd-stat-pair">
+          <a class="rd-stat-pair__item" href="{% url 'sales:pending_payments' %}">
+            <span class="rd-stat-pair__lbl">{% trans "مدفوعات" %}</span>
+            <span class="rd-stat-pair__val kpi-warning">{{ pending_count|intcomma }}</span>
+          </a>
+          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
+          <a class="rd-stat-pair__item" href="{% url 'sales:awaiting_approvals' %}">
+            <span class="rd-stat-pair__lbl">{% trans "ديون" %}</span>
+            <span class="rd-stat-pair__val kpi-warning">{{ awaiting_count|intcomma }}</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -59,18 +69,6 @@
         </div>
         <div class="rd-label mb-1">{% trans "إجمالي ديون العملاء" %}</div>
         <div class="rd-stat-value kpi-expense">{{ customer_debt_total|intcomma }}</div>
-        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
-      </div>
-    </a>
-  </div>
-  <div class="col d-flex">
-    <a class="rd-card rd-stat flex-fill w-100 h-100 text-decoration-none" href="{% url 'sales:awaiting_approvals' %}">
-      <div class="rd-card-body d-flex flex-column h-100">
-        <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-        </div>
-        <div class="rd-label mb-1">{% trans "طلبات الديون" %}</div>
-        <div class="rd-stat-value kpi-warning">{{ awaiting_count|intcomma }}</div>
         <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
       </div>
     </a>
