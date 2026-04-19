@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 01:59+0300\n"
+"POT-Creation-Date: 2026-04-20 02:23+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,6 +32,35 @@ msgstr "الملف الشخصي مفعّل"
 msgid "Login enabled"
 msgstr "تسجيل الدخول مفعّل"
 
+msgid "Username"
+msgstr "اسم المستخدم"
+
+msgid "Profile picture"
+msgstr "صورة الملف الشخصي"
+
+#| msgid "Change password"
+msgid "New password"
+msgstr "كلمة المرور الجديدة"
+
+msgid "Leave blank to keep the current password."
+msgstr "اتركها فارغة للإبقاء على كلمة المرور الحالية."
+
+#| msgid "Change password"
+msgid "Confirm new password"
+msgstr "تأكيد كلمة المرور الجديدة"
+
+msgid "Username cannot be empty."
+msgstr "لا يمكن أن يكون اسم المستخدم فارغاً."
+
+msgid "This username is already taken."
+msgstr "اسم المستخدم هذا محجوز مسبقاً."
+
+msgid "The two password fields didn't match."
+msgstr "حقلا كلمة المرور غير متطابقين."
+
+msgid "Password must be at least 8 characters long."
+msgstr "يجب أن تكون كلمة المرور 8 أحرف على الأقل."
+
 msgid "Management"
 msgstr "الإدارة"
 
@@ -46,6 +75,12 @@ msgstr "الدور"
 
 msgid "profile active"
 msgstr "الملف الشخصي مفعّل"
+
+msgid "avatar"
+msgstr "صورة الحساب"
+
+msgid "Profile picture shown in the topbar menu."
+msgstr "الصورة الشخصية الظاهرة في القائمة العلوية."
 
 msgid "user profile"
 msgstr "ملف المستخدم"
@@ -67,6 +102,39 @@ msgstr "تم تحديث المستخدم."
 
 msgid "Edit user"
 msgstr "تعديل المستخدم"
+
+msgid "You can't delete your own account."
+msgstr "لا يمكنك حذف حسابك الشخصي."
+
+msgid "Only a superuser can delete another superuser."
+msgstr "فقط المستخدم الجذر يمكنه حذف مستخدم جذر آخر."
+
+msgid "This is the last active management account — it can't be deleted."
+msgstr "هذا هو الحساب الإداري الأخير الفعّال — لا يمكن حذفه."
+
+#, python-format
+msgid ""
+"Can't delete '%(name)s': they are linked to existing sales, customers or "
+"payments. Disable their login instead by unticking 'Login enabled' on the "
+"edit screen."
+msgstr ""
+"لا يمكن حذف \"%(name)s\": فهو مرتبط بمبيعات أو زبائن أو دفعات حالية. عطّل "
+"تسجيل دخوله بدلاً من ذلك بإلغاء تأشير \"تمكين تسجيل الدخول\" في شاشة "
+"التعديل."
+
+#, python-format
+#| msgid "Expense \"%(title)s\" deleted."
+msgid "User '%(name)s' deleted."
+msgstr "تم حذف المستخدم \"%(name)s\"."
+
+msgid "Password changed."
+msgstr "تم تغيير كلمة المرور."
+
+msgid "Profile updated."
+msgstr "تم تحديث الملف الشخصي."
+
+msgid "Account settings"
+msgstr "إعدادات الحساب"
 
 msgid "Select a package that belongs to this product line."
 msgstr "اختر باقة تنتمي لخط المنتج هذا."
@@ -524,7 +592,6 @@ msgstr "eSIM فقط"
 msgid "Non-eSIM"
 msgstr "بدون eSIM"
 
-#| msgid "Phone or shipment number"
 msgid "Phone, shipment number, payer name…"
 msgstr "الهاتف أو رقم الشحنة أو اسم الدافع…"
 
@@ -789,6 +856,18 @@ msgstr "تم تحديث طريقة الدفع."
 msgid "Edit payment method"
 msgstr "تعديل طريقة الدفع"
 
+msgid "PNG or JPG. Will be resized automatically."
+msgstr "PNG أو JPG. سيتم تصغيرها تلقائياً."
+
+msgid "Save changes"
+msgstr "حفظ التغييرات"
+
+msgid "Change password"
+msgstr "تغيير كلمة المرور"
+
+msgid "Update password"
+msgstr "تحديث كلمة المرور"
+
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
@@ -797,9 +876,6 @@ msgstr "المحاسب الهامل"
 
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
-
-msgid "Username"
-msgstr "اسم المستخدم"
 
 msgid "Active"
 msgstr "نشط"
@@ -816,6 +892,17 @@ msgstr "لا"
 msgid "Edit"
 msgstr "تعديل"
 
+#| msgid "Delete this company? This cannot be undone."
+msgid "Delete this user permanently? This cannot be undone."
+msgstr "حذف هذا المستخدم نهائياً؟ لا يمكن التراجع."
+
+#| msgid "Delete customer"
+msgid "Delete user"
+msgstr "حذف المستخدم"
+
+msgid "Delete"
+msgstr "حذف"
+
 msgid "No users."
 msgstr "لا يوجد مستخدمون."
 
@@ -827,6 +914,23 @@ msgstr "حفظ"
 
 msgid "Cancel"
 msgstr "إلغاء"
+
+msgid "Danger zone"
+msgstr "منطقة خطرة"
+
+#, python-format
+msgid ""
+"Permanently delete the user <strong>%(name)s</strong>. If they are linked to"
+" any sale, customer or payment record, the deletion will be refused — "
+"disable their login instead by unticking \"Login enabled\" above."
+msgstr ""
+"حذف المستخدم <strong>%(name)s</strong> نهائياً. إذا كان مرتبطاً بأي مبيعة أو"
+" زبون أو دفعة فسيتم رفض الحذف — عطّل تسجيل الدخول بدلاً من ذلك بإلغاء تأشير "
+"«تمكين تسجيل الدخول» بالأعلى."
+
+#| msgid "Delete permanently"
+msgid "Delete user permanently"
+msgstr "حذف المستخدم نهائياً"
 
 msgid "Users"
 msgstr "المستخدمون"
@@ -848,9 +952,6 @@ msgstr "إدخال مبيعات"
 
 msgid "Language"
 msgstr "اللغة"
-
-msgid "Log out"
-msgstr "تسجيل الخروج"
 
 msgid "Open menu"
 msgstr "فتح القائمة"
@@ -884,9 +985,6 @@ msgstr "الرصيد الحالي"
 
 msgid "Report"
 msgstr "تقرير"
-
-msgid "Delete"
-msgstr "حذف"
 
 msgid "No companies."
 msgstr "لا توجد شركات."
@@ -1217,6 +1315,16 @@ msgstr "الوضع الداكن"
 msgid "Dark"
 msgstr "داكن"
 
+#, python-format
+msgid "Account menu for %(name)s"
+msgstr "قائمة الحساب لـ %(name)s"
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "Log out"
+msgstr "تسجيل الخروج"
+
 msgid "Supplier statement & internal ledger"
 msgstr "كشف المورّد وسجل الرصيد الداخلي"
 
@@ -1499,9 +1607,6 @@ msgid ""
 msgstr ""
 "لا يمكن تعديل الشركة والمنتج وعلامة eSIM من هنا. إذا احتجت لتغييرها، احذف "
 "هذا الإدخال وأنشئ واحداً جديداً."
-
-msgid "Save changes"
-msgstr "حفظ التغييرات"
 
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."

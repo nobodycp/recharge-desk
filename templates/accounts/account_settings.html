@@ -1,0 +1,80 @@
+{% extends base_template %}
+{% load i18n %}
+
+{% block employee_header %}{% trans "Account settings" %}{% endblock %}
+{% block page_title %}{% trans "Account settings" %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto" style="max-width: 48rem;">
+  <h1 class="rd-heading-xl mb-3">{% trans "Account settings" %}</h1>
+
+  {# ---------- Profile (username / display name / avatar) ---------- #}
+  <div class="app-card card mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="rd-avatar rd-avatar-lg" aria-hidden="true">
+          {% if request.user.profile.avatar %}
+            <img src="{{ request.user.profile.avatar.url }}" alt="">
+          {% else %}
+            <span>{{ request.user.profile.initials }}</span>
+          {% endif %}
+        </div>
+        <div>
+          <div class="rd-heading-lg mb-0">{{ request.user.profile.display_name }}</div>
+          <div class="rd-text-muted small">{{ request.user.profile.get_role_display }}</div>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="profile">
+
+        <div>
+          {{ profile_form.username.label_tag }}
+          {{ profile_form.username }}
+          {{ profile_form.username.errors }}
+        </div>
+        <div>
+          {{ profile_form.full_name.label_tag }}
+          {{ profile_form.full_name }}
+          {{ profile_form.full_name.errors }}
+        </div>
+        <div>
+          {{ profile_form.avatar.label_tag }}
+          {{ profile_form.avatar }}
+          {{ profile_form.avatar.errors }}
+          <div class="form-text">{% trans "PNG or JPG. Will be resized automatically." %}</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save changes" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ---------- Password ---------- #}
+  <div class="app-card card">
+    <div class="card-body p-4">
+      <h2 class="rd-heading-lg mb-3">{% trans "Change password" %}</h2>
+      <form method="post" class="d-grid gap-3">
+        {% csrf_token %}
+        <input type="hidden" name="form" value="password">
+
+        {% for field in password_form %}
+          <div>
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Update password" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

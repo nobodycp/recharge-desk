@@ -149,9 +149,24 @@
         openDet.removeAttribute("open");
         clearActionsPanelPosition(openDet.querySelector(".rd-actions-details__panel"));
       });
+
+      /* Same outside-click contract for the topbar profile menu. The user
+         menu is positioned with plain CSS so we just need to flip [open]. */
+      var um = e.target.closest("details.rd-user-menu");
+      document.querySelectorAll("details.rd-user-menu[open]").forEach(function (openMenu) {
+        if (openMenu === um || openMenu.contains(e.target)) return;
+        openMenu.removeAttribute("open");
+      });
     },
     true
   );
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll("details.rd-user-menu[open]").forEach(function (m) {
+      m.removeAttribute("open");
+    });
+  });
 
   /* Collapsible filter cards: keep the "N active" badge in sync with the
      current form state after any htmx-driven submit, so the count stays

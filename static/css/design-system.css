@@ -1335,3 +1335,203 @@ html[dir="rtl"] .rd-toast.is-visible {
     font-size: 16px !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Avatar + topbar profile menu                                               */
+/* -------------------------------------------------------------------------- */
+/* The avatar component is shared between the topbar trigger, the dropdown
+ * header, and the standalone settings page. Sizes follow a small/md/lg
+ * scale so the same markup works in every context. */
+.rd-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rd-accent), var(--rd-accent-2, var(--rd-accent)));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.rd-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.rd-avatar-sm { width: 2rem;   height: 2rem;   font-size: 0.78rem; }
+.rd-avatar-md { width: 2.6rem; height: 2.6rem; font-size: 0.95rem; }
+.rd-avatar-lg { width: 4rem;   height: 4rem;   font-size: 1.4rem;  }
+
+/* Trigger: a clean pill with avatar + name + caret. <details>/<summary>
+ * gives us a native click toggle, keyboard support and aria-expanded for
+ * free without pulling in Bootstrap's dropdown JS. */
+.rd-user-menu {
+  position: relative;
+}
+
+.rd-user-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.55rem 0.25rem 0.3rem;
+  border-radius: 999px;
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-secondary-bg);
+  color: inherit;
+  transition: background var(--rd-transition-fast), border-color var(--rd-transition-fast);
+  user-select: none;
+}
+
+.rd-user-menu > summary::-webkit-details-marker { display: none; }
+.rd-user-menu > summary::marker { content: ""; }
+
+.rd-user-menu > summary:hover {
+  background: var(--bs-tertiary-bg);
+}
+
+.rd-user-menu[open] > summary {
+  border-color: var(--rd-accent);
+  background: var(--bs-tertiary-bg);
+}
+
+.rd-user-menu-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-user-menu-caret {
+  opacity: 0.65;
+  transition: transform var(--rd-transition-fast);
+}
+
+.rd-user-menu[open] .rd-user-menu-caret {
+  transform: rotate(180deg);
+}
+
+/* Panel: drops out of the trigger flush to the inline-end edge so it
+ * works in both LTR and RTL without a separate ruleset. The fixed
+ * z-index keeps it above the sticky topbar and any sibling content. */
+.rd-user-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  inset-inline-end: 0;
+  z-index: 1080;
+  min-width: 16rem;
+  max-width: calc(100vw - 1rem);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-md);
+  box-shadow: var(--rd-shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.18));
+  padding: 0.5rem;
+  animation: rd-user-menu-in 140ms ease-out;
+}
+
+@keyframes rd-user-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rd-user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem;
+  border-radius: var(--rd-radius-sm);
+  background: var(--bs-secondary-bg);
+  margin-bottom: 0.35rem;
+}
+
+.rd-user-menu-identity {
+  min-width: 0;
+}
+
+.rd-user-menu-display {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-user-menu-handle {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color, var(--bs-body-color));
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-user-menu-divider {
+  height: 1px;
+  background: var(--bs-border-color);
+  margin: 0.35rem 0.25rem;
+}
+
+/* Items are styled identically whether they are <a> or <button> so the
+ * "Log out" form button visually matches the "Settings" link. */
+.rd-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--rd-radius-sm);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: start;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--rd-transition-fast), color var(--rd-transition-fast);
+}
+
+.rd-user-menu-item:hover,
+.rd-user-menu-item:focus-visible {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  text-decoration: none;
+  outline: none;
+}
+
+.rd-user-menu-item svg {
+  flex: 0 0 auto;
+  opacity: 0.75;
+}
+
+.rd-user-menu-item--danger {
+  color: var(--bs-danger, #dc3545);
+}
+
+.rd-user-menu-item--danger:hover,
+.rd-user-menu-item--danger:focus-visible {
+  background: color-mix(in srgb, var(--bs-danger, #dc3545) 12%, transparent);
+  color: var(--bs-danger, #dc3545);
+}
+
+.rd-user-menu-item--danger svg {
+  opacity: 0.9;
+}
+
+@media (max-width: 480px) {
+  .rd-user-menu > summary { padding: 0.2rem; }
+  .rd-user-menu-panel { min-width: 14rem; }
+}

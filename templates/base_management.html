@@ -65,11 +65,7 @@
           </form>
           {% include "partials/theme_toggle.html" with variant="shell" %}
           <a class="btn btn-sm btn-primary" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
-          <span class="rd-text-muted small d-none d-sm-inline">{{ request.user.username }}</span>
-          <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
-            {% csrf_token %}
-            <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Log out" %}</button>
-          </form>
+          {% include "partials/user_menu.html" %}
         </div>
       </header>
 
