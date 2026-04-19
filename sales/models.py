@@ -38,6 +38,7 @@ class Sale(models.Model):
         PENDING = "pending", _("Pending")
         PAID = "paid", _("Paid")
         CANCELLED = "cancelled", _("Cancelled")
+        WRITTEN_OFF = "written_off", _("Written off")
 
     company = models.ForeignKey(
         "companies.Company",

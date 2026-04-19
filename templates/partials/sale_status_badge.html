@@ -8,6 +8,8 @@
   <span class="rd-badge rd-badge--paid">{{ sale.get_status_display }}</span>
 {% elif sale.status == "cancelled" %}
   <span class="rd-badge rd-badge--cancelled">{{ sale.get_status_display }}</span>
+{% elif sale.status == "written_off" %}
+  <span class="rd-badge rd-badge--cancelled">{% trans "Written off" %}</span>
 {% else %}
   <span class="rd-badge rd-badge--neutral">{{ sale.get_status_display }}</span>
 {% endif %}

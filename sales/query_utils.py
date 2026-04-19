@@ -9,12 +9,37 @@ from sales.models import Sale
 # AWAITING sales are credit-sales pending management approval — they are
 # real shipments but not yet acknowledged by the shop, so they sit in a
 # holding bay until approved or rejected.
-EXCLUDED_AGGREGATE_STATUSES = (Sale.Status.CANCELLED, Sale.Status.AWAITING)
+EXCLUDED_AGGREGATE_STATUSES = (
+    Sale.Status.CANCELLED,
+    Sale.Status.AWAITING,
+    Sale.Status.WRITTEN_OFF,
+)
 
 
 def confirmed_sales(queryset):
-    """Sales counted in volume / business KPIs (excludes cancelled and awaiting)."""
+    """Sales counted in volume / business KPIs.
+
+    Excludes cancelled, awaiting-approval, and written-off (uncollectible
+    customer debt) sales.
+    """
     return queryset.exclude(status__in=EXCLUDED_AGGREGATE_STATUSES)
+
+
+# Statuses whose ``loss_snapshot`` should appear in the loss totals.
+# Includes write-offs (uncollectible debt converted into loss) on top of
+# regular pending/paid rows. Cancelled and awaiting rows are excluded
+# because their costs were either never realised or were refunded back
+# to the supplier.
+LOSS_INCLUDED_STATUSES = (
+    Sale.Status.PENDING,
+    Sale.Status.PAID,
+    Sale.Status.WRITTEN_OFF,
+)
+
+
+def loss_eligible_sales(queryset):
+    """Restrict to sales whose loss_snapshot counts in loss reports."""
+    return queryset.filter(status__in=LOSS_INCLUDED_STATUSES)
 
 
 def paid_sales_only(queryset):

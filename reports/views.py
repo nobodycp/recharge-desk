@@ -14,6 +14,7 @@ from sales.query_utils import (
     apply_management_sale_filter_data,
     apply_sale_list_ordering,
     confirmed_sales,
+    loss_eligible_sales,
     paid_sales_only,
 )
 from companies.models import Company
@@ -67,9 +68,20 @@ def dashboard(request):
         .order_by("-created_at")[:12]
     )
     esim_sales_count = confirmed_sales(Sale.objects.filter(is_esim=True)).count()
-    today_loss_from_zero = today_sales.aggregate(s=Sum("loss_snapshot"))["s"] or 0
-    month_loss_from_zero = month_sales.aggregate(s=Sum("loss_snapshot"))["s"] or 0
-    total_loss_from_zero = sales_base.aggregate(s=Sum("loss_snapshot"))["s"] or 0
+    all_sales = Sale.objects.all()
+    today_loss_from_zero = (
+        loss_eligible_sales(all_sales.filter(created_at__date=today))
+        .aggregate(s=Sum("loss_snapshot"))["s"]
+        or 0
+    )
+    month_loss_from_zero = (
+        loss_eligible_sales(all_sales.filter(created_at__date__gte=month_start))
+        .aggregate(s=Sum("loss_snapshot"))["s"]
+        or 0
+    )
+    total_loss_from_zero = (
+        loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"] or 0
+    )
     return render(
         request,
         "reports/dashboard.html",
