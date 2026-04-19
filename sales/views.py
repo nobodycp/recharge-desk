@@ -522,15 +522,22 @@ def bulk_sales_mark_paid(request):
     else:
         qs = Sale.objects.filter(pk__in=ids, status=Sale.Status.PENDING)
         ok = 0
+        failed = 0
         for sale in qs:
             try:
                 mark_sale_paid(sale=sale, user=request.user)
                 ok += 1
             except ValueError:
-                pass
+                failed += 1
         if ok:
             messages.success(request, _("Marked %(n)s sale(s) as paid.") % {"n": ok})
-        else:
+        if failed:
+            messages.warning(
+                request,
+                _("%(n)s sale(s) could not be updated (already settled or on-account).")
+                % {"n": failed},
+            )
+        if not ok and not failed:
             messages.info(request, _("No pending sales were updated."))
     if request.headers.get("HX-Request"):
         r = HttpResponse(status=204)
