@@ -18,6 +18,9 @@
               <a class="rd-datagrid-sort {% if sort == 'ref' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'ref' and order == 'desc' %}{% querystring sort='ref' order='asc' page=1 %}{% else %}{% querystring sort='ref' order='desc' page=1 %}{% endif %}">{% trans "Ref" %}</a>
             </th>
             <th>
+              <a class="rd-datagrid-sort {% if sort == 'payer' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'payer' and order == 'desc' %}{% querystring sort='payer' order='asc' page=1 %}{% else %}{% querystring sort='payer' order='desc' page=1 %}{% endif %}">{% trans "Payer" %}</a>
+            </th>
+            <th>
               <a class="rd-datagrid-sort {% if sort == 'employee' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'employee' and order == 'desc' %}{% querystring sort='employee' order='asc' page=1 %}{% else %}{% querystring sort='employee' order='desc' page=1 %}{% endif %}">{% trans "Employee" %}</a>
             </th>
             <th class="text-end">
@@ -42,6 +45,7 @@
                 {{ s.reference_number }}
                 <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
               </td>
+              <td class="text-truncate" style="max-width: 12rem;" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
               <td class="small text-secondary">{{ s.created_by.username }}</td>
               <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
               <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
@@ -81,7 +85,7 @@
           </tbody>
         {% empty %}
           <tbody>
-            <tr><td colspan="9" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
+            <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
           </tbody>
         {% endfor %}
       </table>
@@ -96,6 +100,7 @@
           {% include "partials/sale_status_badge.html" with sale=s %}
         </div>
         <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+        {% if s.payer_name %}<div class="small">{{ s.payer_name }}</div>{% endif %}
         <div class="d-flex align-items-center gap-2 mt-1">
           <span class="tabular-nums font-monospace">{{ s.reference_number }}</span>
           <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>

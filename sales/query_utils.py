@@ -47,6 +47,7 @@ SALE_SORT_WHITELIST = {
     "profit": "profit_snapshot",
     "status": "status",
     "ref": "reference_number",
+    "payer": "payer_name",
     "company": "company__name",
     "product": "product__line__name",
     "employee": "created_by__username",
