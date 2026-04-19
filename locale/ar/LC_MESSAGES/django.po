@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:55+0300\n"
+"POT-Creation-Date: 2026-04-20 00:12+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -408,6 +408,10 @@ msgstr "تم حذف حركة السجل."
 
 msgid "Phone removed."
 msgstr "تمت إزالة الرقم."
+
+#| msgid "Phone is required."
+msgid "Name is required."
+msgstr "الاسم مطلوب."
 
 msgid "Search"
 msgstr "بحث"
@@ -1368,10 +1372,10 @@ msgstr "اقتراحات اسم الدافع"
 msgid "Where did you receive the money?"
 msgstr "ع وين حول المصاري؟"
 
-msgid "On account ON"
+msgid "On account: ON"
 msgstr "الآجل مفعَّل"
 
-msgid "لم يدفع"
+msgid "Mark as on account"
 msgstr "لم يدفع"
 
 msgid "No payment methods."
