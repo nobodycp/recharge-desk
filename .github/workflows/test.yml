@@ -52,6 +52,20 @@ jobs:
         # `--deploy` warnings depend on env-only flags (HSTS, SSL redirect)
         # that production sets at runtime, so we run the plain check here
         # and leave deploy-checks to the production server playbook.
+        #
+        # production.py only short-circuits to in-memory SQLite when
+        # the test runner is invoked. `manage.py check` runs without
+        # "test" in argv, so it needs every required env var to be
+        # present — we inject dummy values here that satisfy the
+        # parsers without ever opening a real DB connection (`check`
+        # does not query the database).
+        env:
+          DJANGO_SECRET_KEY: ci-dummy-secret-not-for-production
+          DJANGO_ALLOWED_HOSTS: testserver
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://testserver
+          POSTGRES_DB: ci
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
         run: python manage.py check
 
       - name: Run test suite
