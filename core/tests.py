@@ -50,14 +50,13 @@ class SecurityHeadersMiddlewareTests(TestCase):
         self.assertIn("https://fonts.googleapis.com", style_block)
         self.assertIn("https://fonts.gstatic.com", font_block)
 
-    def test_csp_allows_unsafe_eval_for_alpinejs(self):
-        """Alpine.js's default cdn.min.js build evaluates x-data / x-bind
-        expressions via Function(); without 'unsafe-eval' the navigation
-        toggle and every other reactive binding throws and stops working.
-        The CSP-safe build would let us drop this — guard the contract
-        until that migration lands."""
+    def test_csp_no_longer_grants_unsafe_eval(self):
+        """Alpine.js was the only consumer of 'unsafe-eval'. After the
+        nav-toggle.js rewrite the directive must stay out of CSP — if
+        a future change re-introduces a library that needs it, this
+        test should fail loudly so the trade-off is reconsidered."""
         r = self.client.get(reverse("core:forbidden"))
-        self.assertIn("'unsafe-eval'", r["Content-Security-Policy"])
+        self.assertNotIn("'unsafe-eval'", r["Content-Security-Policy"])
 
     def test_permissions_policy_disables_sensitive_apis(self):
         r = self.client.get(reverse("core:forbidden"))

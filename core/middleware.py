@@ -51,17 +51,14 @@ from django.conf import settings
 # stylesheet — tracked separately.
 _DEFAULT_CSP = {
     "default-src": ["'self'"],
-    # 'unsafe-eval' is required by Alpine.js's default cdn build, which
-    # evaluates `x-data` / `x-bind` / `x-on` expressions through the
-    # Function() constructor. The CSP-safe build (@alpinejs/csp) would
-    # let us drop this, but it requires rewriting every Alpine
-    # expression in the templates to use registered components instead
-    # of inline JS. Until that migration happens, keep 'unsafe-eval' so
-    # the navigation toggle, dropdowns, etc. keep working.
+    # No 'unsafe-eval' on purpose — Alpine.js was the only consumer
+    # and was replaced by static/js/nav-toggle.js. 'unsafe-inline'
+    # remains because some templates ship small inline <script> tags
+    # for per-page boot logic; migrating those to nonces is a separate
+    # follow-up.
     "script-src": [
         "'self'",
         "'unsafe-inline'",
-        "'unsafe-eval'",
     ],
     "style-src": [
         "'self'",

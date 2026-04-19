@@ -12,25 +12,20 @@
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
   <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
-  <script defer src="{% static 'vendor/alpine.min.js' %}{{ static_cache_query }}"></script>
   <script src="{% static 'vendor/htmx.min.js' %}{{ static_cache_query }}"></script>
+  <script src="{% static 'js/nav-toggle.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/data-ui.js' %}{{ static_cache_query }}" defer></script>
 </head>
-<body
-  class="rd-body app-shell"
-  x-data="{ navOpen: false }"
-  @keydown.escape.window="navOpen = false"
->
+<body class="rd-body app-shell" data-rd-nav>
   <div class="rd-app">
     <div
       class="rd-sidebar-backdrop"
-      :class="{ 'is-visible': navOpen }"
-      @click="navOpen = false"
+      data-rd-nav-backdrop
       aria-hidden="true"
     ></div>
 
-    <aside class="rd-sidebar" :class="{ 'is-open': navOpen }" id="rd-sidebar">
+    <aside class="rd-sidebar" data-rd-nav-panel id="rd-sidebar">
       <a class="rd-sidebar-brand" href="{% url 'reports:dashboard' %}">
         <span class="rd-sidebar-brand-mark">R</span>
         <span>
@@ -47,10 +42,10 @@
           <button
             type="button"
             class="rd-menu-btn"
+            data-rd-nav-toggle
             aria-controls="rd-sidebar"
-            :aria-expanded="navOpen ? 'true' : 'false'"
+            aria-expanded="false"
             aria-label="{% trans 'Open menu' %}"
-            @click="navOpen = !navOpen"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
