@@ -527,7 +527,7 @@ msgid "payment methods"
 msgstr "طرق الدفع"
 
 msgid "Awaiting approval"
-msgstr "ديون عالقه"
+msgstr "الديون المعلقه"
 
 msgid "Pending"
 msgstr "معلّق"
