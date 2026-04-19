@@ -69,6 +69,34 @@ class CustomerARTestCase(TestCase):
         )
 
 
+class CreateCustomerPhoneLinkTests(CustomerARTestCase):
+    def test_same_phone_can_be_linked_to_multiple_customers(self):
+        """Regression: get_or_create must filter by (customer, phone), not phone
+        alone, otherwise the second customer silently ends up with no phone."""
+        from customers.models import CustomerPhone
+
+        a = create_customer(name="Hazem", phones=["0599000111"], user=self.user)
+        b = create_customer(name="Mahmoud", phones=["0599000111"], user=self.user)
+
+        self.assertTrue(
+            CustomerPhone.objects.filter(customer=a, phone="0599000111").exists()
+        )
+        self.assertTrue(
+            CustomerPhone.objects.filter(customer=b, phone="0599000111").exists()
+        )
+        self.assertEqual(CustomerPhone.objects.filter(phone="0599000111").count(), 2)
+
+    def test_create_customer_is_idempotent_on_duplicate_phone_for_same_customer(self):
+        from customers.models import CustomerPhone
+
+        c = create_customer(
+            name="Hazem", phones=["0599000111", "0599000111"], user=self.user
+        )
+        self.assertEqual(
+            CustomerPhone.objects.filter(customer=c, phone="0599000111").count(), 1
+        )
+
+
 class CreateOnAccountSaleTests(CustomerARTestCase):
     def test_on_account_sale_starts_awaiting(self):
         c = self._new_customer()

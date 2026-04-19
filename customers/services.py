@@ -57,7 +57,11 @@ def create_customer(*, name: str, phones: Optional[List[str]] = None, notes: str
         phone = (raw or "").strip()
         if not phone:
             continue
-        CustomerPhone.objects.get_or_create(phone=phone, defaults={"customer": customer})
+        # Unique constraint is (customer, phone) — the same number can legitimately
+        # belong to several customers over time (re-issued SIMs, family lines).
+        # Lookup must include the customer or get_or_create returns somebody
+        # else's row and the new customer ends up with no phone link.
+        CustomerPhone.objects.get_or_create(customer=customer, phone=phone)
     return customer
 
 
