@@ -177,6 +177,46 @@ def record_customer_payment(
     return payment
 
 
+@transaction.atomic
+def delete_ledger_entry(*, entry: CustomerLedger, user) -> None:
+    """Manually remove a single ledger row and undo its balance impact.
+
+    Used to clean up orphan entries — e.g. a CHARGE row whose sale was
+    deleted before we fixed delete_sale_permanently to also reverse the
+    customer ledger. Signs the rollback the same way the original entry
+    was signed when it was created (CHARGE/ADJUSTMENT add to balance,
+    PAYMENT/REVERSAL subtract from balance).
+
+    PAYMENT rows are refused unless the underlying CustomerPayment has
+    already been deleted, because PAYMENT is the only way to settle on-
+    account sales and silently dropping it would orphan a settlement.
+    """
+    locked = CustomerLedger.objects.select_for_update().get(pk=entry.pk)
+    customer_locked = Customer.objects.select_for_update().get(pk=locked.customer_id)
+
+    if locked.entry_type == CustomerLedger.EntryType.PAYMENT and locked.payment_id:
+        raise ValueError(
+            "Delete the payment from the customer's payment list instead — "
+            "this ledger row is just its mirror entry."
+        )
+
+    delta = Decimal("0")
+    if locked.entry_type in (
+        CustomerLedger.EntryType.CHARGE,
+        CustomerLedger.EntryType.ADJUSTMENT,
+    ):
+        delta = -Decimal(locked.amount)
+    elif locked.entry_type in (
+        CustomerLedger.EntryType.PAYMENT,
+        CustomerLedger.EntryType.REVERSAL,
+    ):
+        delta = Decimal(locked.amount)
+
+    locked.delete()
+    if delta != 0:
+        _apply_balance_delta(customer_locked, delta)
+
+
 def _pick_settling_payment(customer: Customer):
     """Pick a CustomerPayment to stamp on a sale being auto-settled.
 

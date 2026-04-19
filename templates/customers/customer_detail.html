@@ -111,11 +111,12 @@
                 <th class="text-end">{% trans "Amount" %}</th>
                 <th>{% trans "Reference" %}</th>
                 <th>{% trans "By" %}</th>
+                <th class="text-end">{% trans "Actions" %}</th>
               </tr>
             </thead>
             <tbody>
               {% for l in ledger %}
-                <tr>
+                <tr id="customer-ledger-row-{{ l.pk }}">
                   <td class="small text-nowrap">{{ l.created_at|date:"Y-m-d H:i" }}</td>
                   <td>{{ l.get_entry_type_display }}</td>
                   <td class="text-end tabular-nums {% if l.entry_type == 'charge' %}kpi-expense{% elif l.entry_type == 'payment' %}text-success{% endif %}">{{ l.amount|intcomma }}</td>
@@ -124,9 +125,23 @@
                     {% if l.payment_id %}{% trans "Payment" %} #{{ l.payment_id }}{% endif %}
                   </td>
                   <td class="small">{% if l.created_by %}{{ l.created_by.username }}{% endif %}</td>
+                  <td class="text-end">
+                    {% if l.entry_type != 'payment' or not l.payment_id %}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        hx-post="{% url 'customers:customer_ledger_delete' customer.pk l.pk %}"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                        hx-target="#customer-ledger-row-{{ l.pk }}"
+                        hx-swap="outerHTML swap:200ms"
+                        hx-confirm="{% trans 'Delete this ledger entry and reverse it from the customer balance?' %}"
+                        title="{% trans 'Delete ledger entry' %}"
+                      >{% trans "Delete" %}</button>
+                    {% endif %}
+                  </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
+                <tr><td colspan="6" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
               {% endfor %}
             </tbody>
           </table>

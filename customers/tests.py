@@ -9,6 +9,7 @@ from customers.models import Customer, CustomerLedger, CustomerPayment
 from customers.services import (
     approve_sale,
     create_customer,
+    delete_ledger_entry,
     record_customer_payment,
     reject_sale,
 )
@@ -299,6 +300,34 @@ class DeleteApprovedOnAccountSaleTests(CustomerARTestCase):
         delete_sale_permanently(sale=s)
         c.refresh_from_db()
         self.assertEqual(c.current_balance, _decimal(0))
+
+
+class DeleteLedgerEntryTests(CustomerARTestCase):
+    def test_delete_orphan_charge_row_clears_balance(self):
+        """Manual cleanup path for stray CHARGE rows whose sale is gone."""
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s, user=self.user)
+        Sale.objects.filter(pk=s.pk).delete()
+
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(200))
+
+        orphan = CustomerLedger.objects.get(customer=c, entry_type=CustomerLedger.EntryType.CHARGE)
+        delete_ledger_entry(entry=orphan, user=self.user)
+
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertFalse(CustomerLedger.objects.filter(customer=c).exists())
+
+    def test_payment_row_with_intact_payment_is_protected(self):
+        c = self._new_customer()
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.bank, user=self.user,
+        )
+        row = CustomerLedger.objects.get(customer=c, entry_type=CustomerLedger.EntryType.PAYMENT)
+        with self.assertRaises(ValueError):
+            delete_ledger_entry(entry=row, user=self.user)
 
 
 class CustomerDetailViewTests(CustomerARTestCase):

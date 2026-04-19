@@ -14,6 +14,7 @@ from customers.models import Customer, CustomerLedger, CustomerPayment, Customer
 from customers.services import (
     add_customer_phone,
     create_customer,
+    delete_ledger_entry,
     record_customer_payment,
 )
 
@@ -176,6 +177,33 @@ def customer_add_phone(request, pk):
         messages.error(request, str(exc))
     else:
         messages.success(request, _("Phone added."))
+    return redirect("customers:customer_detail", pk=customer.pk)
+
+
+@management_required
+@require_POST
+def customer_ledger_delete(request, pk, ledger_id):
+    """Remove a single ledger row and undo its balance impact.
+
+    Targeted clean-up for orphan rows (e.g. a CHARGE whose sale was
+    permanently deleted before the delete-sale flow learned to reverse
+    the customer ledger).
+    """
+    customer = get_object_or_404(Customer, pk=pk)
+    entry = get_object_or_404(CustomerLedger, pk=ledger_id, customer=customer)
+    htmx = request.headers.get("HX-Request") == "true"
+    try:
+        delete_ledger_entry(entry=entry, user=request.user)
+    except ValueError as exc:
+        if htmx:
+            from sales.views import _htmx_action_error
+            return _htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+        return redirect("customers:customer_detail", pk=customer.pk)
+    if htmx:
+        from sales.views import _htmx_remove_target
+        return _htmx_remove_target()
+    messages.success(request, _("Ledger entry removed."))
     return redirect("customers:customer_detail", pk=customer.pk)
 
 
