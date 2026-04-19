@@ -130,12 +130,17 @@ def expense_report(request):
     profit_total = profit_qs.aggregate(s=Sum("profit_snapshot"))["s"] or 0
     net_profit = profit_total - total
 
+    page_obj = paginate_request(request, qs.order_by("-date"))
     return render(
         request,
         "expenses/expense_report.html",
         {
             "form": form,
-            "expenses": qs.order_by("-date"),
+            # Detail rows are paginated; aggregates above (total, by_cat, etc.)
+            # were computed on the full filtered queryset, so they remain
+            # accurate regardless of which page is shown.
+            "expenses": page_obj,
+            "page_obj": page_obj,
             "total": total,
             "by_category_rows": by_category_rows,
             "profit_total": profit_total,
