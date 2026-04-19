@@ -1,6 +1,8 @@
 {% load i18n %}
 {# Expects variable `sale` with .status and .get_status_display #}
-{% if sale.status == "pending" %}
+{% if sale.on_account and sale.status == "pending" %}
+  <span class="rd-badge rd-badge--pending">{% trans "NotPaid" %}</span>
+{% elif sale.status == "pending" %}
   <span class="rd-badge rd-badge--pending">{{ sale.get_status_display }}</span>
 {% elif sale.status == "paid" %}
   <span class="rd-badge rd-badge--paid">{{ sale.get_status_display }}</span>

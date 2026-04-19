@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 04:51+0300\n"
+"POT-Creation-Date: 2026-04-19 05:29+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -387,6 +387,11 @@ msgstr ""
 msgid "Phone added."
 msgstr ""
 
+#, fuzzy
+#| msgid "No ledger rows."
+msgid "Ledger entry removed."
+msgstr "لا توجد حركات في السجل."
+
 msgid "Phone removed."
 msgstr ""
 
@@ -486,16 +491,8 @@ msgstr "سعر البيع"
 msgid "On account"
 msgstr "الحسابات"
 
-#, fuzzy
-#| msgid "Customer name"
-msgid "Customer"
-msgstr "اسم العميل"
-
 msgid "Selected product does not belong to the company."
 msgstr "المنتج المختار لا يتبع الشركة المحددة."
-
-msgid "Pick or create a customer for an on-account sale."
-msgstr ""
 
 #, fuzzy
 #| msgid "Edit payment method"
@@ -933,6 +930,14 @@ msgstr ""
 msgid "Awaiting"
 msgstr ""
 
+msgid ""
+"Permanently delete this sale and reverse it from the customer balance and "
+"reports?"
+msgstr ""
+
+msgid "Delete permanently"
+msgstr "حذف نهائي"
+
 #, fuzzy
 #| msgid "No pending sales."
 msgid "No on-account sales."
@@ -946,6 +951,14 @@ msgstr "النوع"
 
 msgid "By"
 msgstr "بواسطة"
+
+msgid "Delete this ledger entry and reverse it from the customer balance?"
+msgstr ""
+
+#, fuzzy
+#| msgid "Delete permanently"
+msgid "Delete ledger entry"
+msgstr "حذف نهائي"
 
 #, fuzzy
 #| msgid "No ledger rows."
@@ -1102,6 +1115,9 @@ msgstr ""
 
 msgid "Loss sale: selling price was zero; supplier cost is recorded as loss."
 msgstr ""
+
+msgid "NotPaid"
+msgstr "غير مدفوع"
 
 msgid "Color theme"
 msgstr "مظهر الألوان"
@@ -1336,28 +1352,6 @@ msgstr ""
 msgid "No payment methods."
 msgstr "لا توجد طرق دفع."
 
-msgid "Search customer by name or phone"
-msgstr ""
-
-msgid "Change"
-msgstr ""
-
-msgid "Add new customer"
-msgstr ""
-
-msgid "Customer name"
-msgstr "اسم العميل"
-
-#, fuzzy
-#| msgid "Add note (optional)"
-msgid "Phone (optional)"
-msgstr "إضافة ملاحظة (اختياري)"
-
-#, fuzzy
-#| msgid "Create user"
-msgid "Create"
-msgstr "إنشاء مستخدم"
-
 msgid "No active companies."
 msgstr "لا توجد شركات نشطة."
 
@@ -1394,6 +1388,11 @@ msgstr "لا توجد إدخالات حديثة بعد."
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
 
+#, fuzzy
+#| msgid "Customer name"
+msgid "Customer"
+msgstr "اسم العميل"
+
 msgid "Payer"
 msgstr "الدافع"
 
@@ -1429,9 +1428,6 @@ msgid ""
 "balance corrected. This cannot be undone."
 msgstr ""
 "حذف هذا البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
-
-msgid "Delete permanently"
-msgstr "حذف نهائي"
 
 msgid "Copy"
 msgstr ""
@@ -1497,6 +1493,19 @@ msgstr "أنشأه"
 #| msgid "Save sale"
 msgid "Save changes"
 msgstr "حفظ البيع"
+
+#~ msgid "Customer name"
+#~ msgstr "اسم العميل"
+
+#, fuzzy
+#~| msgid "Add note (optional)"
+#~ msgid "Phone (optional)"
+#~ msgstr "إضافة ملاحظة (اختياري)"
+
+#, fuzzy
+#~| msgid "Create user"
+#~ msgid "Create"
+#~ msgstr "إنشاء مستخدم"
 
 #~ msgid "Copy/paste friendly"
 #~ msgstr "مناسب للنسخ"
