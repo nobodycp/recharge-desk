@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-18 23:45-0500\n"
+"POT-Creation-Date: 2026-04-19 23:55+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -252,7 +252,6 @@ msgstr "دين (يزيد علي الزبون)"
 msgid "Add as credit (reduce balance)"
 msgstr "رصيد (يقلل من حساب الزبون)"
 
-#| msgid "Adjustment"
 msgid "Adjustment type"
 msgstr "نوع التعديل"
 
@@ -355,7 +354,6 @@ msgstr "يمكن رفض المبيعات بانتظار الموافقة فقط.
 msgid "Payment amount must be positive."
 msgstr "يجب أن تكون قيمة الدفعة موجبة."
 
-#| msgid "Payment amount must be positive."
 msgid "Adjustment amount must be non-zero."
 msgstr "مبلغ التعديل لا يمكن أن يكون صفر."
 
@@ -997,7 +995,6 @@ msgstr ""
 "تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً "
 "للزبون."
 
-#| msgid "Save adjustment"
 msgid "Manual adjustment"
 msgstr "تعديل يدوي"
 
@@ -1367,6 +1364,9 @@ msgstr "مستخدمة سابقاً"
 
 msgid "Payer name suggestions"
 msgstr "اقتراحات اسم الدافع"
+
+msgid "Where did you receive the money?"
+msgstr "ع وين حوّلت المصاري؟"
 
 msgid "On account ON"
 msgstr "الآجل مفعَّل"
