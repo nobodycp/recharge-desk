@@ -19,10 +19,14 @@ html {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — light                                                             */
+/* Theme-agnostic tokens (z-index, radii, transitions, fonts)                 */
+/*                                                                            */
+/* IMPORTANT: these must live at :root, NOT inside a theme selector. If they  */
+/* only exist under [data-bs-theme="light"], then `var(--rd-z-sidebar)` is    */
+/* undefined in dark mode and the whole `z-index` declaration becomes invalid */
+/* -> the sidebar loses its 1040 stacking and renders under dashboard cards.  */
 /* -------------------------------------------------------------------------- */
-[data-bs-theme="light"] {
-  color-scheme: light;
+:root {
   --rd-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --rd-font-ar: "Cairo", "Inter", system-ui, sans-serif;
 
@@ -32,11 +36,6 @@ html {
   --rd-radius-lg: 1.125rem;
   --rd-radius-xl: 1.375rem;
 
-  --rd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --rd-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --rd-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --rd-shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.1);
-
   --rd-z-sidebar: 1040;
   --rd-z-topbar: 1030;
   --rd-z-backdrop: 1025;
@@ -44,6 +43,18 @@ html {
 
   --rd-transition-fast: 0.14s ease;
   --rd-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tokens — light                                                             */
+/* -------------------------------------------------------------------------- */
+[data-bs-theme="light"] {
+  color-scheme: light;
+
+  --rd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --rd-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --rd-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --rd-shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.1);
 
   --bs-body-bg: #f4f6f9;
   --bs-body-color: #0f172a;
@@ -76,14 +87,6 @@ html {
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="dark"] {
   color-scheme: dark;
-  --rd-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --rd-font-ar: "Cairo", "Inter", system-ui, sans-serif;
-
-  --rd-radius-xs: 0.375rem;
-  --rd-radius-sm: 0.625rem;
-  --rd-radius-md: 0.875rem;
-  --rd-radius-lg: 1.125rem;
-  --rd-radius-xl: 1.375rem;
 
   --rd-shadow-xs: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --rd-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
