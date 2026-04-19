@@ -12,7 +12,13 @@ from sales.payer_lookup import (
     payer_name_suggestions,
 )
 from sales.pricing import ESIM_EXTRA_COST, effective_cost_for_product, loss_snapshot_for_sale
-from sales.services import create_sale, update_sale_fields
+from sales.models import CompanyBalanceTransaction
+from sales.services import (
+    cleanup_orphan_sale_balance_transactions,
+    create_sale,
+    find_orphan_sale_balance_transactions,
+    update_sale_fields,
+)
 
 User = get_user_model()
 
@@ -292,3 +298,158 @@ class EsimSaleTests(TestCase):
         )
         self.assertEqual(updated.profit_snapshot, Decimal("-30"))
         self.assertEqual(updated.loss_snapshot, Decimal("30"))
+
+
+class CleanupOrphanLedgerTests(TestCase):
+    """find_orphan / cleanup_orphan must purge SALE-typed rows whose Sale is gone."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("mgr_orphan", password="x")
+        cls.company = Company.objects.create(
+            name="OrphanCo",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="L")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="P",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("20"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash")
+
+    def _make_sale(self, sell=20):
+        return create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number=f"o-{Sale.objects.count() + 1}",
+            payer_name="P",
+            payment_method=self.pm,
+            sell_price_actual=Decimal(str(sell)),
+            notes="",
+            user=self.user,
+        )
+
+    def test_finder_ignores_live_sales(self):
+        s = self._make_sale()
+        self.assertFalse(find_orphan_sale_balance_transactions().exists())
+        s.delete()
+        self.assertTrue(find_orphan_sale_balance_transactions().exists())
+
+    def test_dry_run_does_not_touch_db(self):
+        s = self._make_sale()
+        before_balance = Company.objects.get(pk=self.company.pk).current_balance
+        before_count = CompanyBalanceTransaction.objects.count()
+        s.delete()
+        summary = cleanup_orphan_sale_balance_transactions(dry_run=True)
+        self.assertEqual(summary["orphan_count"], 1)
+        self.assertEqual(summary["companies_affected"], 1)
+        # Net refund = +5 (the original cost)
+        self.assertEqual(summary["net_refund_total"], Decimal("5"))
+        # Database state must be unchanged.
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, before_balance)
+        self.assertEqual(CompanyBalanceTransaction.objects.count(), before_count)
+
+    def test_apply_refunds_balance_and_removes_orphans(self):
+        s = self._make_sale()
+        # After create_sale, balance was reduced by the cost (5).
+        self.company.refresh_from_db()
+        balance_after_create = self.company.current_balance
+        s.delete()
+        # Hard delete leaves the DEDUCTION orphan; balance is unchanged.
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, balance_after_create)
+
+        summary = cleanup_orphan_sale_balance_transactions(user=self.user)
+
+        # The orphan row was removed and a single REVERSAL audit row added.
+        self.assertEqual(summary["orphan_count"], 1)
+        self.assertEqual(summary["net_refund_total"], Decimal("5"))
+        self.assertFalse(find_orphan_sale_balance_transactions().exists())
+
+        audit = CompanyBalanceTransaction.objects.filter(
+            company=self.company,
+            entry_type=CompanyBalanceTransaction.EntryType.REVERSAL,
+            reference_type=CompanyBalanceTransaction.ReferenceType.MANUAL,
+        ).first()
+        self.assertIsNotNone(audit)
+        self.assertEqual(audit.amount, Decimal("5"))
+
+        # Balance should be back to the pre-sale value.
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, balance_after_create + Decimal("5"))
+
+    def test_company_filter_isolates_cleanup(self):
+        other = Company.objects.create(
+            name="Other", opening_balance=Decimal("0"), current_balance=Decimal("0")
+        )
+        line2 = ProductLine.objects.create(company=other, name="L2")
+        prod2 = Product.objects.create(
+            line=line2, variant_label="P", cost_price=Decimal("3"), default_sell_price=Decimal("10")
+        )
+        s1 = self._make_sale()
+        s2 = create_sale(
+            company=other, product=prod2, reference_number="x", payer_name="p",
+            payment_method=self.pm, sell_price_actual=Decimal("10"), notes="", user=self.user,
+        )
+        s1.delete()
+        s2.delete()
+        # Restrict cleanup to only `self.company`.
+        summary = cleanup_orphan_sale_balance_transactions(user=self.user, company=self.company)
+        self.assertEqual(summary["orphan_count"], 1)
+        # The other company still has its orphan.
+        remaining = find_orphan_sale_balance_transactions(company=other)
+        self.assertEqual(remaining.count(), 1)
+
+    def test_no_orphans_returns_zero_summary(self):
+        summary = cleanup_orphan_sale_balance_transactions()
+        self.assertEqual(summary["orphan_count"], 0)
+        self.assertEqual(summary["companies_affected"], 0)
+
+
+class CleanupOrphanLedgerCommandTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("mgr_orphan_cmd", password="x")
+        cls.company = Company.objects.create(
+            name="CmdCo", opening_balance=Decimal("1000"), current_balance=Decimal("1000")
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="L")
+        cls.product = Product.objects.create(
+            line=cls.line, variant_label="P", cost_price=Decimal("5"), default_sell_price=Decimal("20")
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash")
+
+    def test_dry_run_reports_but_does_not_change(self):
+        from io import StringIO
+        from django.core.management import call_command
+
+        s = create_sale(
+            company=self.company, product=self.product, reference_number="cmd-1",
+            payer_name="p", payment_method=self.pm, sell_price_actual=Decimal("20"),
+            notes="", user=self.user,
+        )
+        s.delete()
+        before = CompanyBalanceTransaction.objects.count()
+        out = StringIO()
+        call_command("cleanup_orphan_ledger", "--dry-run", stdout=out)
+        self.assertIn("Would delete 1 row", out.getvalue())
+        self.assertEqual(CompanyBalanceTransaction.objects.count(), before)
+
+    def test_apply_removes_orphans(self):
+        from io import StringIO
+        from django.core.management import call_command
+
+        s = create_sale(
+            company=self.company, product=self.product, reference_number="cmd-2",
+            payer_name="p", payment_method=self.pm, sell_price_actual=Decimal("20"),
+            notes="", user=self.user,
+        )
+        s.delete()
+        out = StringIO()
+        call_command("cleanup_orphan_ledger", stdout=out)
+        self.assertIn("Removed 1 orphan", out.getvalue())
+        self.assertFalse(find_orphan_sale_balance_transactions().exists())

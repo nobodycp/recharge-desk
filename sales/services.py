@@ -216,6 +216,116 @@ def delete_sale_permanently(*, sale: Sale) -> None:
     sale_locked.delete()
 
 
+def find_orphan_sale_balance_transactions(*, company: Optional[Company] = None):
+    """Return the queryset of CompanyBalanceTransaction rows whose linked
+    Sale no longer exists.
+
+    Such rows leak in two ways:
+
+    * A Sale was hard-deleted by the management UI before the
+      ``delete_sale_permanently`` ledger reversal landed (an early bug
+      we patched).
+    * Manual ``DELETE`` on the Sale row from a shell or admin without
+      using the helper.
+
+    Each orphan is identified by ``reference_type`` in (SALE, CANCELLATION)
+    and a ``reference_id`` that doesn't resolve to an existing Sale.
+    """
+    qs = CompanyBalanceTransaction.objects.filter(
+        reference_type__in=[
+            CompanyBalanceTransaction.ReferenceType.SALE,
+            CompanyBalanceTransaction.ReferenceType.CANCELLATION,
+        ],
+        reference_id__isnull=False,
+    )
+    if company is not None:
+        qs = qs.filter(company=company)
+    existing_sale_ids = set(
+        Sale.objects.filter(pk__in=qs.values_list("reference_id", flat=True))
+        .values_list("pk", flat=True)
+    )
+    return qs.exclude(reference_id__in=existing_sale_ids)
+
+
+@transaction.atomic
+def cleanup_orphan_sale_balance_transactions(
+    *, user=None, dry_run: bool = False, company: Optional[Company] = None
+) -> dict:
+    """Delete orphan SALE/CANCELLATION ledger rows and refund the company.
+
+    For every affected company we sum the net balance impact of the orphan
+    rows (DEDUCTIONs subtracted from balance, REVERSALs / DEPOSITs added)
+    and post a single MANUAL REVERSAL/ADJUSTMENT entry that cancels it
+    out, then delete the orphan rows. This keeps the running balance
+    accurate while leaving a single audit row that says "cleanup of N
+    orphan sale references" for traceability.
+
+    Returns a summary dict::
+
+        {
+          "orphan_count": int,
+          "companies_affected": int,
+          "net_refund_total": Decimal,  # positive = balance restored
+          "dry_run": bool,
+        }
+    """
+    orphans = list(find_orphan_sale_balance_transactions(company=company))
+    summary = {
+        "orphan_count": len(orphans),
+        "companies_affected": 0,
+        "net_refund_total": Decimal("0"),
+        "dry_run": dry_run,
+    }
+    if not orphans:
+        return summary
+
+    by_company: dict[int, list[CompanyBalanceTransaction]] = {}
+    for txn in orphans:
+        by_company.setdefault(txn.company_id, []).append(txn)
+
+    summary["companies_affected"] = len(by_company)
+
+    for company_id, txns in by_company.items():
+        delta = Decimal("0")
+        for txn in txns:
+            if txn.entry_type == CompanyBalanceTransaction.EntryType.DEDUCTION:
+                delta += txn.amount
+            elif txn.entry_type in (
+                CompanyBalanceTransaction.EntryType.REVERSAL,
+                CompanyBalanceTransaction.EntryType.DEPOSIT,
+                CompanyBalanceTransaction.EntryType.ADJUSTMENT,
+            ):
+                delta -= txn.amount
+        summary["net_refund_total"] += delta
+
+        if dry_run:
+            continue
+
+        company_locked = Company.objects.select_for_update().get(pk=company_id)
+        ids = [t.pk for t in txns]
+        if delta != 0:
+            CompanyBalanceTransaction.objects.create(
+                company=company_locked,
+                entry_type=(
+                    CompanyBalanceTransaction.EntryType.REVERSAL
+                    if delta > 0
+                    else CompanyBalanceTransaction.EntryType.ADJUSTMENT
+                ),
+                amount=abs(delta) if delta > 0 else delta,
+                reference_type=CompanyBalanceTransaction.ReferenceType.MANUAL,
+                reference_id=None,
+                notes=(
+                    f"Cleanup of {len(txns)} orphan sale ledger row(s) "
+                    f"(refs: {', '.join(str(t.reference_id) for t in txns)})."
+                )[:500],
+                created_by=user,
+            )
+            _apply_balance_delta(company_locked, delta)
+        CompanyBalanceTransaction.objects.filter(pk__in=ids).delete()
+
+    return summary
+
+
 @transaction.atomic
 def cancel_sale(*, sale: Sale, user) -> Sale:
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
