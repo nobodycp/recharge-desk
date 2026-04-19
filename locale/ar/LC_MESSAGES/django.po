@@ -1366,7 +1366,7 @@ msgid "Payer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 
 msgid "Where did you receive the money?"
-msgstr "ع وين حوّلت المصاري؟"
+msgstr "ع وين حول المصاري؟"
 
 msgid "On account ON"
 msgstr "الآجل مفعَّل"
