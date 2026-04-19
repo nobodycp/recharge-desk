@@ -24,11 +24,21 @@ def _apply_balance_delta(customer: Customer, delta: Decimal) -> None:
 
 
 def get_or_create_customer_for_phone(phone: str) -> Optional[Customer]:
-    """Return the customer that owns ``phone`` (case-insensitive exact match)."""
+    """Return the most recent customer associated with ``phone``.
+
+    A phone can legitimately belong to several customers over time (re-issued
+    SIMs, family-shared lines), so the lookup is non-authoritative — used only
+    for hints in the UI. The actual identity tied to a sale is the payer name.
+    """
     phone = (phone or "").strip()
     if not phone:
         return None
-    link = CustomerPhone.objects.select_related("customer").filter(phone__iexact=phone).first()
+    link = (
+        CustomerPhone.objects.select_related("customer")
+        .filter(phone__iexact=phone)
+        .order_by("-created_at", "-id")
+        .first()
+    )
     return link.customer if link else None
 
 
@@ -54,31 +64,24 @@ def create_customer(*, name: str, phones: Optional[List[str]] = None, notes: str
 def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> Customer:
     """Auto-resolve the customer for an on-account employee sale.
 
-    Lookup order:
-    1. By phone (an existing CustomerPhone wins, even if the payer name
-       differs — same phone = same person).
-    2. By exact case-insensitive customer name match.
-    3. Otherwise create a new Customer with that name and attach the
-       phone (when provided and not already in use).
+    Identity is the payer **name** — one person can own many SIMs, the same
+    phone can pass through different people over time. Lookup is therefore:
+
+    1. Match an active customer by exact (case-insensitive) name.
+    2. If found, attach the phone to *that* customer if it isn't already
+       on their record (other customers may legitimately share the number).
+    3. Otherwise create a new Customer with that name and link the phone.
     """
     name = (name or "").strip()
     phone = (phone or "").strip()
     if not name:
         raise ValueError("Payer name is required for on-account sales.")
 
-    if phone:
-        link = CustomerPhone.objects.select_related("customer").filter(phone__iexact=phone).first()
-        if link:
-            return link.customer
+    customer = Customer.objects.filter(is_active=True, name__iexact=name).first()
+    if customer is None:
+        customer = Customer.objects.create(name=name, created_by=user)
 
-    existing = Customer.objects.filter(is_active=True, name__iexact=name).first()
-    if existing:
-        if phone and not CustomerPhone.objects.filter(phone__iexact=phone).exists():
-            CustomerPhone.objects.create(customer=existing, phone=phone)
-        return existing
-
-    customer = Customer.objects.create(name=name, created_by=user)
-    if phone:
+    if phone and not CustomerPhone.objects.filter(customer=customer, phone__iexact=phone).exists():
         CustomerPhone.objects.create(customer=customer, phone=phone)
     return customer
 
@@ -88,10 +91,8 @@ def add_customer_phone(*, customer: Customer, phone: str, label: str = "") -> Cu
     phone = (phone or "").strip()
     if not phone:
         raise ValueError("Phone is required.")
-    existing = CustomerPhone.objects.filter(phone__iexact=phone).first()
+    existing = CustomerPhone.objects.filter(customer=customer, phone__iexact=phone).first()
     if existing:
-        if existing.customer_id != customer.pk:
-            raise ValueError("This phone is already linked to another customer.")
         return existing
     return CustomerPhone.objects.create(customer=customer, phone=phone, label=(label or "").strip())
 

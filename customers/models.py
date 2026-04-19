@@ -55,7 +55,7 @@ class CustomerPhone(models.Model):
         related_name="phones",
         verbose_name=_("customer"),
     )
-    phone = models.CharField(_("phone or shipment number"), max_length=64, unique=True)
+    phone = models.CharField(_("phone or shipment number"), max_length=64)
     label = models.CharField(_("label"), max_length=80, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -63,6 +63,15 @@ class CustomerPhone(models.Model):
         verbose_name = _("customer phone")
         verbose_name_plural = _("customer phones")
         ordering = ["customer__name", "phone"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "phone"],
+                name="customer_phone_unique_per_customer",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["phone"], name="customer_phone_lookup_idx"),
+        ]
 
     def __str__(self):
         return f"{self.customer.name} · {self.phone}"
