@@ -5,7 +5,6 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
 from companies.models import Company, Product
-from customers.models import Customer
 from sales.models import PaymentMethod, Sale
 
 User = get_user_model()
@@ -72,12 +71,6 @@ class EmployeeSaleForm(forms.Form):
         required=False,
         widget=forms.HiddenInput(attrs={"id": "id_on_account"}),
     )
-    customer = forms.ModelChoiceField(
-        label=_("Customer"),
-        queryset=Customer.objects.filter(is_active=True),
-        required=False,
-        widget=forms.HiddenInput(attrs={"id": "id_customer"}),
-    )
     is_esim = forms.BooleanField(
         label="",
         required=False,
@@ -110,18 +103,13 @@ class EmployeeSaleForm(forms.Form):
         if company and product and product.line.company_id != company.id:
             raise forms.ValidationError(_("Selected product does not belong to the company."))
         on_account = bool(cleaned.get("on_account"))
-        customer = cleaned.get("customer")
         payment_method = cleaned.get("payment_method")
         if on_account:
-            if customer is None:
-                self.add_error("customer", _("Pick or create a customer for an on-account sale."))
             if payment_method is not None:
                 cleaned["payment_method"] = None
         else:
             if payment_method is None:
                 self.add_error("payment_method", _("Pick a payment method."))
-            if customer is not None:
-                cleaned["customer"] = None
         return cleaned
 
 

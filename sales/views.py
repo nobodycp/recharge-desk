@@ -54,6 +54,7 @@ from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
 from customers.services import approve_sale as approve_on_account_sale
 from customers.services import reject_sale as reject_on_account_sale
+from customers.services import resolve_or_create_customer_for_sale
 from sales.services import (
     cancel_sale,
     create_sale,
@@ -102,6 +103,13 @@ def employee_entry(request):
     if request.method == "POST" and form.is_valid():
         try:
             on_account = bool(form.cleaned_data.get("on_account"))
+            customer = None
+            if on_account:
+                customer = resolve_or_create_customer_for_sale(
+                    name=form.cleaned_data["payer_name"],
+                    phone=form.cleaned_data["reference_number"],
+                    user=request.user,
+                )
             create_sale(
                 company=form.cleaned_data["company"],
                 product=form.cleaned_data["product"],
@@ -113,7 +121,7 @@ def employee_entry(request):
                 user=request.user,
                 is_esim=bool(form.cleaned_data.get("is_esim")),
                 on_account=on_account,
-                customer=form.cleaned_data.get("customer") if on_account else None,
+                customer=customer,
             )
             if on_account:
                 messages.success(request, _("Recorded as on-account; awaiting management approval."))

@@ -92,50 +92,6 @@
             </div>
           </div>
 
-          <div
-            class="rd-field-group d-none"
-            id="rd-customer-section"
-            data-api-customer-lookup="{% url 'customers:api_customer_lookup' %}"
-            data-api-customer-create="{% url 'customers:api_customer_create' %}"
-          >
-            <div class="rd-field-label d-block">{% trans "Customer" %} <span class="text-danger">*</span></div>
-            {{ form.customer.errors }}
-            {{ form.customer }}
-            <div class="rd-customer-picker position-relative">
-              <input
-                type="text"
-                id="rd-customer-search"
-                class="form-control form-control-sm"
-                placeholder="{% trans 'Search customer by name or phone' %}"
-                autocomplete="off"
-              >
-              <div
-                class="rd-customer-results list-group position-absolute w-100 shadow-sm"
-                id="rd-customer-results"
-                hidden
-                style="z-index:20;"
-              ></div>
-            </div>
-            <div class="rd-customer-selected mt-2 small d-none" id="rd-customer-selected">
-              <span class="rd-badge rd-badge--neutral me-1" id="rd-customer-selected-name"></span>
-              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="rd-customer-clear">{% trans "Change" %}</button>
-            </div>
-            <details class="mt-2 small">
-              <summary class="text-primary">{% trans "Add new customer" %}</summary>
-              <div class="row g-2 mt-1">
-                <div class="col-12 col-md-6">
-                  <input type="text" id="rd-customer-new-name" class="form-control form-control-sm" placeholder="{% trans 'Customer name' %}">
-                </div>
-                <div class="col-12 col-md-4">
-                  <input type="text" id="rd-customer-new-phone" class="form-control form-control-sm" placeholder="{% trans 'Phone (optional)' %}">
-                </div>
-                <div class="col-12 col-md-2">
-                  <button type="button" class="btn btn-sm btn-primary w-100" id="rd-customer-create-btn">{% trans "Create" %}</button>
-                </div>
-              </div>
-            </details>
-          </div>
-
           <div class="rd-field-group">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div class="rd-field-label mb-0">{% trans "Company" %}</div>
@@ -415,7 +371,6 @@
   function setOnAccount(enabled) {
     var hid = document.getElementById("id_on_account");
     var btn = document.getElementById("rd-on-account-toggle");
-    var custSection = document.getElementById("rd-customer-section");
     var paymentTiles = document.getElementById("payment-tiles");
     var pmHidden = document.getElementById("id_payment_method");
     if (!hid || !btn) return;
@@ -425,148 +380,18 @@
       btn.classList.add("btn-warning");
       btn.setAttribute("aria-pressed", "true");
       btn.textContent = btn.getAttribute("data-on-label") || "ON";
-      if (custSection) custSection.classList.remove("d-none");
       if (paymentTiles) paymentTiles.classList.add("opacity-50");
       if (pmHidden) pmHidden.value = "";
       document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
         t.classList.remove("is-active");
       });
-      var ref = document.getElementById("id_reference_number");
-      var search = document.getElementById("rd-customer-search");
-      if (ref && search && !search.value && ref.value) {
-        search.value = ref.value;
-        search.dispatchEvent(new Event("input", { bubbles: true }));
-      }
     } else {
       hid.value = "";
       btn.classList.remove("btn-warning");
       btn.classList.add("btn-outline-warning");
       btn.setAttribute("aria-pressed", "false");
       btn.textContent = btn.getAttribute("data-off-label") || "On account";
-      if (custSection) custSection.classList.add("d-none");
       if (paymentTiles) paymentTiles.classList.remove("opacity-50");
-      var custHidden = document.getElementById("id_customer");
-      if (custHidden) custHidden.value = "";
-      var sel = document.getElementById("rd-customer-selected");
-      if (sel) sel.classList.add("d-none");
-      var search = document.getElementById("rd-customer-search");
-      if (search) search.value = "";
-    }
-  }
-
-  function debounce(fn, ms) {
-    var t = null;
-    return function () {
-      var args = arguments;
-      var ctx = this;
-      if (t) clearTimeout(t);
-      t = setTimeout(function () { fn.apply(ctx, args); }, ms);
-    };
-  }
-
-  function setSelectedCustomer(id, name) {
-    var hid = document.getElementById("id_customer");
-    if (hid) hid.value = id || "";
-    var sel = document.getElementById("rd-customer-selected");
-    var lab = document.getElementById("rd-customer-selected-name");
-    if (sel && lab) {
-      if (id) {
-        lab.textContent = name || "";
-        sel.classList.remove("d-none");
-      } else {
-        sel.classList.add("d-none");
-      }
-    }
-    var list = document.getElementById("rd-customer-results");
-    if (list) { list.innerHTML = ""; list.hidden = true; }
-  }
-
-  function renderCustomerResults(results) {
-    var list = document.getElementById("rd-customer-results");
-    if (!list) return;
-    list.innerHTML = "";
-    if (!results || !results.length) { list.hidden = true; return; }
-    results.forEach(function (r) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action small d-flex justify-content-between align-items-center";
-      var bal = parseFloat(r.balance || "0");
-      var balTxt = isFinite(bal) ? bal.toFixed(2) : "—";
-      btn.innerHTML = '<span>' + (r.name || "") + '</span><span class="text-secondary tabular-nums">' + balTxt + '</span>';
-      btn.addEventListener("click", function () {
-        setSelectedCustomer(r.id, r.name);
-        var search = document.getElementById("rd-customer-search");
-        if (search) search.value = r.name || "";
-      });
-      list.appendChild(btn);
-    });
-    list.hidden = false;
-  }
-
-  function getCsrfToken() {
-    var inp = document.querySelector('#employee-sale-form input[name="csrfmiddlewaretoken"]');
-    return inp ? inp.value : "";
-  }
-
-  function wireCustomerSection() {
-    var section = document.getElementById("rd-customer-section");
-    if (!section) return;
-    var search = document.getElementById("rd-customer-search");
-    var lookupUrl = section.getAttribute("data-api-customer-lookup");
-    if (search && lookupUrl) {
-      var run = debounce(function () {
-        var q = (search.value || "").trim();
-        if (q.length < 2) {
-          var list = document.getElementById("rd-customer-results");
-          if (list) { list.innerHTML = ""; list.hidden = true; }
-          return;
-        }
-        fetch(lookupUrl + "?q=" + encodeURIComponent(q), { credentials: "same-origin" })
-          .then(function (r) { return r.ok ? r.json() : { results: [] }; })
-          .then(function (j) { renderCustomerResults(j.results || []); })
-          .catch(function () { /* ignore */ });
-      }, 200);
-      search.addEventListener("input", run);
-    }
-    var clear = document.getElementById("rd-customer-clear");
-    if (clear) {
-      clear.addEventListener("click", function () {
-        setSelectedCustomer("", "");
-        if (search) { search.value = ""; search.focus(); }
-      });
-    }
-    var createBtn = document.getElementById("rd-customer-create-btn");
-    var createUrl = section.getAttribute("data-api-customer-create");
-    if (createBtn && createUrl) {
-      createBtn.addEventListener("click", function () {
-        var name = (document.getElementById("rd-customer-new-name") || {}).value || "";
-        var phone = (document.getElementById("rd-customer-new-phone") || {}).value || "";
-        var refField = document.getElementById("id_reference_number");
-        if (!phone && refField) phone = (refField.value || "").trim();
-        if (!name.trim()) {
-          window.alert("Customer name is required.");
-          return;
-        }
-        var fd = new FormData();
-        fd.append("name", name);
-        fd.append("phone", phone);
-        fetch(createUrl, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "X-CSRFToken": getCsrfToken() },
-          body: fd,
-        })
-          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
-          .then(function (res) {
-            if (!res.ok || !res.body || !res.body.ok) {
-              window.alert((res.body && res.body.error) || "Could not create customer.");
-              return;
-            }
-            setSelectedCustomer(res.body.id, res.body.name);
-            if (search) search.value = res.body.name || "";
-          })
-          .catch(function () { window.alert("Could not create customer."); });
-      });
     }
   }
 
@@ -600,7 +425,6 @@
       });
       setOnAccount(isOnAccount());
     }
-    wireCustomerSection();
     document.querySelectorAll(".employee-clipboard-paste-btn").forEach(function (pasteBtn) {
       var targetId = pasteBtn.getAttribute("data-paste-target");
       if (!targetId) return;

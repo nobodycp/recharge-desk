@@ -51,6 +51,39 @@ def create_customer(*, name: str, phones: Optional[List[str]] = None, notes: str
 
 
 @transaction.atomic
+def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> Customer:
+    """Auto-resolve the customer for an on-account employee sale.
+
+    Lookup order:
+    1. By phone (an existing CustomerPhone wins, even if the payer name
+       differs — same phone = same person).
+    2. By exact case-insensitive customer name match.
+    3. Otherwise create a new Customer with that name and attach the
+       phone (when provided and not already in use).
+    """
+    name = (name or "").strip()
+    phone = (phone or "").strip()
+    if not name:
+        raise ValueError("Payer name is required for on-account sales.")
+
+    if phone:
+        link = CustomerPhone.objects.select_related("customer").filter(phone__iexact=phone).first()
+        if link:
+            return link.customer
+
+    existing = Customer.objects.filter(is_active=True, name__iexact=name).first()
+    if existing:
+        if phone and not CustomerPhone.objects.filter(phone__iexact=phone).exists():
+            CustomerPhone.objects.create(customer=existing, phone=phone)
+        return existing
+
+    customer = Customer.objects.create(name=name, created_by=user)
+    if phone:
+        CustomerPhone.objects.create(customer=customer, phone=phone)
+    return customer
+
+
+@transaction.atomic
 def add_customer_phone(*, customer: Customer, phone: str, label: str = "") -> CustomerPhone:
     phone = (phone or "").strip()
     if not phone:
