@@ -50,6 +50,12 @@ class Company(models.Model):
 
     @property
     def is_deletable(self) -> bool:
+        # If the queryset annotated `has_sales_annotated` (see
+        # companies.views.company_list), reuse that result instead of
+        # firing a fresh EXISTS query per row.
+        annotated = getattr(self, "has_sales_annotated", None)
+        if annotated is not None:
+            return not annotated
         Sale = apps.get_model("sales", "Sale")
         return not Sale.objects.filter(company_id=self.pk).exists()
 
@@ -111,6 +117,9 @@ class ProductLine(models.Model):
 
     @property
     def is_deletable(self) -> bool:
+        annotated = getattr(self, "has_sales_annotated", None)
+        if annotated is not None:
+            return not annotated
         Sale = apps.get_model("sales", "Sale")
         return not Sale.objects.filter(product__line_id=self.pk).exists()
 
@@ -182,5 +191,8 @@ class Product(models.Model):
 
     @property
     def is_deletable(self) -> bool:
+        annotated = getattr(self, "has_sales_annotated", None)
+        if annotated is not None:
+            return not annotated
         Sale = apps.get_model("sales", "Sale")
         return not Sale.objects.filter(product_id=self.pk).exists()

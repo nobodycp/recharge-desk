@@ -1,6 +1,7 @@
+from django.apps import apps
 from django.contrib import messages
-from django.db import transaction
-from django.db.models import Q
+from django.db import models, transaction
+from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 
@@ -12,9 +13,24 @@ from core.pagination import paginate_request
 from sales.services import initialize_company_opening_balance
 
 
+def _has_sales_subquery(field_name: str):
+    """Build an Exists() subquery on Sale that the listing pages can
+    annotate so each row's `is_deletable` property reuses the result
+    instead of firing a fresh EXISTS query per row.
+
+    `field_name` is the column on Sale that points back to the row
+    being listed (e.g. ``company_id``, ``product_id``,
+    ``product__line_id``).
+    """
+    Sale = apps.get_model("sales", "Sale")
+    return Exists(Sale.objects.filter(**{field_name: OuterRef("pk")}))
+
+
 @management_required
 def company_list(request):
-    qs = Company.objects.all()
+    qs = Company.objects.annotate(
+        has_sales_annotated=_has_sales_subquery("company_id"),
+    )
     q = (request.GET.get("q") or "").strip()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(notes__icontains=q))
@@ -81,9 +97,14 @@ def company_delete(request, pk):
 
 @management_required
 def product_list(request):
+    Product = apps.get_model("companies", "Product")
+    variants_qs = Product.objects.annotate(
+        has_sales_annotated=_has_sales_subquery("product_id"),
+    )
     lines = (
         ProductLine.objects.select_related("company", "default_package")
-        .prefetch_related("variants")
+        .annotate(has_sales_annotated=_has_sales_subquery("product__line_id"))
+        .prefetch_related(models.Prefetch("variants", queryset=variants_qs))
         .order_by("company__name", "sort_order", "name")
     )
     return render(

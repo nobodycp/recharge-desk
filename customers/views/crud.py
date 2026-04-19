@@ -30,7 +30,10 @@ from customers.services import create_customer, delete_customer_completely
 
 @management_required
 def customer_list(request):
-    qs = Customer.objects.all()
+    # prefetch_related("phones") flips the per-row "show first 3 phones"
+    # from N+1 (one query per customer) to two queries total. Without it
+    # a 50-customer page issues 51 queries just to render the badges.
+    qs = Customer.objects.prefetch_related("phones")
     q = (request.GET.get("q") or "").strip()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(phones__phone__icontains=q)).distinct()

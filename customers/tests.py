@@ -529,3 +529,31 @@ class CustomerDetailViewTests(CustomerARTestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, c.name)
+
+
+class CustomerListQueryCountTests(CustomerARTestCase):
+    """Regression: customer_list.html iterates `c.phones.all|slice:":3"`
+    on every row. Without prefetch_related the page issued one phone
+    query per customer, so a 30-customer page = ~31 queries."""
+
+    def test_phones_are_prefetched_on_list_page(self):
+        for i in range(8):
+            cust = create_customer(name=f"C{i}", phones=[f"05{i:08d}"], user=self.user)
+            cust.phones.create(phone=f"06{i:08d}")
+            cust.phones.create(phone=f"07{i:08d}")
+        self.client.force_login(self.user)
+
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            resp = self.client.get("/management/customers/")
+        self.assertEqual(resp.status_code, 200)
+        # The list itself + the prefetch + a couple of aggregates +
+        # auth/session lookups ~ <= 15 queries even with 8 customers.
+        # If prefetch_related is removed this jumps to ~25+.
+        self.assertLess(
+            len(ctx.captured_queries),
+            20,
+            f"customer_list issued {len(ctx.captured_queries)} queries; phones prefetch likely regressed.",
+        )
