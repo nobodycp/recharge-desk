@@ -272,9 +272,19 @@
       }
       if (p.length < MIN_NAME_QUERY) {
         closeList();
-      } else {
-        nameTimer = window.setTimeout(runNameSuggest, DEBOUNCE_NAME_MS);
+        return;
       }
+      /*
+       * Once a name was picked from suggestions or auto-filled from a
+       * reference-number match (lastNLName), don't reopen the dropdown
+       * for the same exact value. Resumes as soon as the user edits.
+       */
+      if (lastNLName !== undefined && p === lastNLName) {
+        closeList();
+        if (lastNameAbort) lastNameAbort.abort();
+        return;
+      }
+      nameTimer = window.setTimeout(runNameSuggest, DEBOUNCE_NAME_MS);
     });
 
     payerInput.addEventListener("keydown", function (ev) {
