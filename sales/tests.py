@@ -709,6 +709,104 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Date from")  # form still rendered
 
+    def test_text_search_matches_reference_or_payer(self):
+        # Three sales today with distinct references and payers.
+        a = self._make_sale(payer="Hazem Salah")
+        Sale.objects.filter(pk=a.pk).update(reference_number="0590000111")
+        b = self._make_sale(payer="Other Person")
+        Sale.objects.filter(pk=b.pk).update(reference_number="0590000222")
+        c = self._make_sale(payer="Hazem Junior")
+        Sale.objects.filter(pk=c.pk).update(reference_number="0599999999")
+
+        url = reverse("sales:employee_recent_sales")
+        # Match by partial reference number → only the first row.
+        resp = self.client.get(url, {"q": "0111"})
+        self.assertContains(resp, "Hazem Salah")
+        self.assertNotContains(resp, "Other Person")
+        self.assertNotContains(resp, "Hazem Junior")
+
+        # Match by payer name fragment → both Hazem rows, no Other.
+        resp = self.client.get(url, {"q": "Hazem"})
+        self.assertContains(resp, "Hazem Salah")
+        self.assertContains(resp, "Hazem Junior")
+        self.assertNotContains(resp, "Other Person")
+
+    def test_payment_method_filter_excludes_other_methods(self):
+        cash_sale = self._make_sale(payer="CashGuy")
+        card_sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000333",
+            payer_name="CardGuy",
+            payment_method=self.pm2,
+            sell_price_actual=Decimal("10"),
+            notes="",
+            user=self.emp,
+        )
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url, {"payment_method": self.pm2.pk})
+        self.assertContains(resp, "CardGuy")
+        self.assertNotContains(resp, "CashGuy")
+
+    def test_company_filter_excludes_other_companies(self):
+        other_company = Company.objects.create(
+            name="OtherCo",
+            opening_balance=Decimal("500"),
+            current_balance=Decimal("500"),
+        )
+        other_line = ProductLine.objects.create(company=other_company, name="OL")
+        other_product = Product.objects.create(
+            line=other_line,
+            variant_label="OPkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        self._make_sale(payer="MainCoPayer")
+        create_sale(
+            company=other_company,
+            product=other_product,
+            reference_number="0590000444",
+            payer_name="OtherCoPayer",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("10"),
+            notes="",
+            user=self.emp,
+        )
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url, {"company": other_company.pk})
+        self.assertContains(resp, "OtherCoPayer")
+        self.assertNotContains(resp, "MainCoPayer")
+
+    def test_status_filter_releases_today_only_default(self):
+        # A non-date filter should drop the "default to today" guard so
+        # the employee can search across all of their history.
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        old = self._make_sale(payer="OldStatusGuy")
+        old.status = Sale.Status.PAID
+        old.save(update_fields=["status"])
+        Sale.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(days=5)
+        )
+        # A pending one today, which must NOT match a status=paid filter.
+        self._make_sale(payer="TodayPending")
+
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url, {"status": Sale.Status.PAID})
+        self.assertContains(resp, "OldStatusGuy")
+        self.assertNotContains(resp, "TodayPending")
+
+    def test_text_search_ignores_other_employees(self):
+        # Even if the search would otherwise match, a colleague's row
+        # must never leak into the current employee's listing.
+        s = self._make_sale(user=self.other, payer="ForeignHazem")
+        Sale.objects.filter(pk=s.pk).update(reference_number="0590999111")
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url, {"q": "Hazem"})
+        self.assertNotContains(resp, "ForeignHazem")
+
     def test_filter_card_collapsed_by_default_with_no_active_badge(self):
         resp = self.client.get(reverse("sales:employee_recent_sales"))
         self.assertEqual(resp.status_code, 200)

@@ -21,11 +21,27 @@
       {% if filter_form.non_field_errors %}
         <div class="col-12"><div class="alert alert-danger py-2 mb-0">{{ filter_form.non_field_errors }}</div></div>
       {% endif %}
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        {{ filter_form.q.label_tag }}{{ filter_form.q }}
+        {{ filter_form.q.errors }}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        {{ filter_form.company.label_tag }}{{ filter_form.company }}
+        {{ filter_form.company.errors }}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        {{ filter_form.payment_method.label_tag }}{{ filter_form.payment_method }}
+        {{ filter_form.payment_method.errors }}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        {{ filter_form.status.label_tag }}{{ filter_form.status }}
+        {{ filter_form.status.errors }}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
         {{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}
         {{ filter_form.date_from.errors }}
       </div>
-      <div class="col-12 col-md-4">
+      <div class="col-6 col-md-3 col-lg-2">
         {{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}
         {{ filter_form.date_to.errors }}
       </div>

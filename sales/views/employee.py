@@ -155,18 +155,42 @@ def api_payer_name_suggestions(request):
     return JsonResponse({"suggestions": [{"name": x["name"], "count": x["count"]} for x in items]})
 
 
-def _own_sales_qs(user, *, date_from=None, date_to=None):
-    """All sales the given user created within an optional date range,
-    freshest first. ``date_from`` / ``date_to`` are inclusive ``date``
-    objects in the local timezone."""
+def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
+    """Build the listing queryset for the employee's "My entries" page.
+
+    Always restricted to ``created_by=user`` so an employee never sees
+    another cashier's rows. ``cleaned_filters`` is the validated
+    ``cleaned_data`` of :class:`EmployeeRecentFilterForm`; when no date
+    bounds are supplied we fall back to ``default_date`` (typically
+    today) so the page doesn't dump the entire history.
+    """
+    from django.db.models import Q
+
     qs = Sale.objects.select_related(
         "company", "product", "product__line", "payment_method", "customer"
     ).filter(created_by=user)
+
+    data = cleaned_filters or {}
+    q = (data.get("q") or "").strip()
+    if q:
+        qs = qs.filter(Q(reference_number__icontains=q) | Q(payer_name__icontains=q))
+    if data.get("company"):
+        qs = qs.filter(company=data["company"])
+    if data.get("payment_method"):
+        qs = qs.filter(payment_method=data["payment_method"])
+    if data.get("status"):
+        qs = qs.filter(status=data["status"])
+
+    date_from = data.get("date_from")
+    date_to = data.get("date_to")
+    if not date_from and not date_to and default_date is not None:
+        date_from = date_to = default_date
     if date_from:
         qs = qs.filter(created_at__date__gte=date_from)
     if date_to:
         qs = qs.filter(created_at__date__lte=date_to)
-    return qs.order_by("-created_at")
+
+    return qs.order_by("-created_at"), date_from, date_to
 
 
 @employee_required
@@ -174,22 +198,33 @@ def employee_recent_sales(request):
     """Listing of the current employee's sales with edit/delete buttons
     for entries management has not yet acted on.
 
-    Defaults to today; an optional collapsible date-range filter lets
-    the employee scope the listing to any other day or window."""
+    Defaults to today; an optional collapsible filter card lets the
+    employee narrow by free-text (number/name), company, payment
+    method, status, and date range — any subset, in any combination."""
     today = timezone.localdate()
     filter_form = EmployeeRecentFilterForm(request.GET or None)
 
-    date_from = today
-    date_to = today
+    # Decide what "default scope" means. With no bound filters, or a
+    # bound filter that submitted nothing useful, we lock to today so
+    # the page never fires an unbounded query.
+    default_date = today
+    cleaned = None
     if filter_form.is_bound and filter_form.is_valid():
-        date_from = filter_form.cleaned_data.get("date_from") or None
-        date_to = filter_form.cleaned_data.get("date_to") or None
-        # User explicitly opened the filter but left both boxes blank →
-        # fall back to today so we never spam them with the full history.
-        if date_from is None and date_to is None:
-            date_from = date_to = today
+        cleaned = filter_form.cleaned_data
+        # If the user touched any non-date filter, honour their explicit
+        # submission and stop forcing today as a date boundary.
+        non_date_active = any(
+            cleaned.get(name)
+            for name in filter_form.fields
+            if name not in {"date_from", "date_to"}
+        )
+        if non_date_active or cleaned.get("date_from") or cleaned.get("date_to"):
+            default_date = None
 
-    sales = list(_own_sales_qs(request.user, date_from=date_from, date_to=date_to))
+    sales_qs, date_from, date_to = _own_sales_qs(
+        request.user, cleaned_filters=cleaned, default_date=default_date
+    )
+    sales = list(sales_qs)
 
     if date_from and date_to and date_from == date_to:
         scope_label = (
@@ -207,6 +242,10 @@ def employee_recent_sales(request):
     else:
         scope_label = _("All entries")
 
+    is_default_today = (
+        date_from == today and date_to == today and not request.GET
+    )
+
     return render(
         request,
         "sales/employee_recent.html",
@@ -215,9 +254,7 @@ def employee_recent_sales(request):
             "sales": sales,
             "filter_form": filter_form,
             "scope_label": scope_label,
-            "is_default_today": (
-                date_from == today and date_to == today and not request.GET
-            ),
+            "is_default_today": is_default_today,
         },
     )
 

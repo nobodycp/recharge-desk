@@ -174,14 +174,43 @@ class ManagementSaleFilterForm(forms.Form):
 
 
 class EmployeeRecentFilterForm(forms.Form):
-    """Date-range filter for the employee 'My entries' page.
+    """Search/filter form for the employee 'My entries' page.
 
-    Both bounds are optional. When neither is provided the view defaults
-    to today; whatever the employee picks here narrows the listing
-    server-side. The form itself only validates input — it never reaches
-    the database directly.
+    Every field is optional. When the form is submitted blank the view
+    falls back to "today only" so the employee never accidentally pulls
+    their entire history. The form itself only validates input — it
+    never reaches the database directly.
     """
 
+    q = forms.CharField(
+        label=_("Search"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "placeholder": _("Phone, shipment number, payer name…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
+    company = forms.ModelChoiceField(
+        label=_("Company"),
+        queryset=Company.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    payment_method = forms.ModelChoiceField(
+        label=_("Payment method"),
+        queryset=PaymentMethod.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    status = forms.ChoiceField(
+        label=_("Status"),
+        choices=[("", _("All"))] + list(Sale.Status.choices),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
     date_from = forms.DateField(
         label=_("Date from"),
         required=False,
@@ -197,6 +226,15 @@ class EmployeeRecentFilterForm(forms.Form):
         ),
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Keep dropdowns short and relevant — the employee shouldn't be
+        # offered companies / payment methods that have been retired.
+        self.fields["company"].queryset = Company.objects.filter(is_active=True).order_by("name")
+        self.fields["payment_method"].queryset = (
+            PaymentMethod.objects.filter(is_active=True).order_by("name")
+        )
+
     def clean(self):
         cleaned = super().clean()
         df = cleaned.get("date_from")
@@ -204,6 +242,16 @@ class EmployeeRecentFilterForm(forms.Form):
         if df and dt and df > dt:
             raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
         return cleaned
+
+    def has_any_filter(self) -> bool:
+        """True iff the user submitted at least one non-empty field.
+
+        Used by the view to decide whether to default to "today only" or
+        honour the (possibly empty) explicit submission.
+        """
+        if not self.is_bound or not self.is_valid():
+            return False
+        return any(self.cleaned_data.get(name) for name in self.fields)
 
 
 class PaymentMethodForm(forms.ModelForm):
