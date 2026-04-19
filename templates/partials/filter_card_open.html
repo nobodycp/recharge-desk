@@ -1,0 +1,21 @@
+{% comment %}
+Reusable opening tag for the collapsible filter card.
+
+Required context:
+  active_count   - integer; the number of currently-applied filters.
+  indicator_id   - string; DOM id used by hx-indicator inside the form.
+
+After this include, the caller must render the form/body and close the
+card with `partials/filter_card_close.html`.
+{% endcomment %}
+{% load i18n %}
+<details class="rd-card mb-3 position-relative rd-filter-card">
+  <summary>
+    <span class="rd-filter-summary-left">
+      <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      <span>{% trans "Search & filters" %}</span>
+      <span class="rd-filter-active-badge" data-rd-filter-count{% if not active_count %} style="display:none"{% endif %}>{{ active_count }}</span>
+    </span>
+  </summary>
+  <div id="{{ indicator_id }}" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+  <div class="rd-card-body rd-filter-bar">
