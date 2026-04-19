@@ -38,35 +38,35 @@ from django.conf import settings
 
 # NOTE on third-party origins
 # ---------------------------
-# The base templates pull from a few CDNs. If any of these origins is
-# not explicitly allowed by CSP the affected page renders with a broken
-# layout. Keep these in sync if you ever swap CDNs or self-host the
-# assets:
+# Bootstrap, HTMX and Alpine.js are self-hosted under /static/vendor/
+# (see static/vendor/README.md), so the only external origin the app
+# still depends on is Google Fonts:
 #
-# * https://cdn.jsdelivr.net      Bootstrap 5.3 CSS (LTR + RTL),
-#                                 HTMX 1.9, Alpine.js 3.14
 # * https://fonts.googleapis.com  Cairo / Inter @import stylesheet
 # * https://fonts.gstatic.com     the actual woff2 font files
+#
+# Self-hosting those too would let us drop both lines and run a clean
+# `default-src 'self'` policy. That requires bundling the woff2 files
+# (4 weights x 2 families = 8 files) and rewriting the @font-face
+# stylesheet — tracked separately.
 _DEFAULT_CSP = {
     "default-src": ["'self'"],
-    # 'unsafe-eval' is required by Alpine.js's default cdn.min.js build,
-    # which evaluates `x-data` / `x-bind` / `x-on` expressions through the
-    # Function() constructor. The CSP-safe build (@alpinejs/csp) would let
-    # us drop this, but it requires rewriting every Alpine expression in
-    # the templates to use registered components instead of inline JS.
-    # Until that migration happens, keep 'unsafe-eval' so the navigation
-    # toggle, dropdowns, etc. keep working.
+    # 'unsafe-eval' is required by Alpine.js's default cdn build, which
+    # evaluates `x-data` / `x-bind` / `x-on` expressions through the
+    # Function() constructor. The CSP-safe build (@alpinejs/csp) would
+    # let us drop this, but it requires rewriting every Alpine
+    # expression in the templates to use registered components instead
+    # of inline JS. Until that migration happens, keep 'unsafe-eval' so
+    # the navigation toggle, dropdowns, etc. keep working.
     "script-src": [
         "'self'",
         "'unsafe-inline'",
         "'unsafe-eval'",
-        "https://cdn.jsdelivr.net",
     ],
     "style-src": [
         "'self'",
         "'unsafe-inline'",
         "https://fonts.googleapis.com",
-        "https://cdn.jsdelivr.net",
     ],
     "img-src": ["'self'", "data:"],
     "font-src": [

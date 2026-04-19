@@ -48,12 +48,17 @@ def theme(request):
     explicit = getattr(settings, "ASSET_CACHE_BUSTER", "") or ""
     bust = explicit or _DEFAULT_BUSTER
     static_cache_query = f"?v={bust}" if bust else ""
+    # Bootstrap CSS is served from /static/vendor/ (see static/vendor/README.md
+    # for the pinned upstream versions). The full URL — including the cache
+    # buster — is built here so each template just needs `{{ bootstrap_css }}`.
+    bootstrap_filename = (
+        "vendor/bootstrap.rtl.min.css"
+        if getattr(request, "LANGUAGE_CODE", None) == "ar"
+        else "vendor/bootstrap.min.css"
+    )
+    bootstrap_url = f"{settings.STATIC_URL}{bootstrap_filename}{static_cache_query}"
     return {
-        "bootstrap_css": (
-            "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css"
-            if getattr(request, "LANGUAGE_CODE", None) == "ar"
-            else "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        ),
+        "bootstrap_css": bootstrap_url,
         "html_dir": "rtl" if getattr(request, "LANGUAGE_CODE", None) == "ar" else "ltr",
         "languages": settings.LANGUAGES,
         "static_cache_query": static_cache_query,
