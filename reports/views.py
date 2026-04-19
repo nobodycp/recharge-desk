@@ -34,7 +34,9 @@ def dashboard(request):
     from customers.models import Customer
 
     sales_base = confirmed_sales(Sale.objects.all())
-    pending_count = Sale.objects.filter(status=Sale.Status.PENDING).count()
+    pending_count = Sale.objects.filter(
+        status=Sale.Status.PENDING, on_account=False
+    ).count()
     awaiting_count = Sale.objects.filter(status=Sale.Status.AWAITING).count()
     customer_debt_total = (
         Customer.objects.filter(current_balance__gt=0)
