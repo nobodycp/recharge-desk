@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.permissions import management_required
+from core.kpi_cache import cached_kpi
 from core.pagination import paginate_request
 from sales.ledger_query_utils import apply_ledger_list_ordering, filter_ledger_queryset
 from sales.query_utils import (
@@ -33,56 +34,114 @@ def dashboard(request):
     today = _local_today()
     from customers.models import Customer
 
-    sales_base = confirmed_sales(Sale.objects.all())
-    pending_count = Sale.objects.filter(
-        status=Sale.Status.PENDING, on_account=False
-    ).count()
-    awaiting_count = Sale.objects.filter(status=Sale.Status.AWAITING).count()
-    customer_debt_total = (
-        Customer.objects.filter(current_balance__gt=0)
-        .aggregate(s=Sum("current_balance"))["s"]
-        or 0
+    # Each scalar aggregate below is wrapped in `cached_kpi`. The cache
+    # version is bumped automatically by core.signals whenever a Sale,
+    # Expense, CompanyBalanceTransaction, CustomerLedger or
+    # CustomerPayment row changes — see core.kpi_cache for the full
+    # rationale. Date-bucketed values include `today` in the cache key
+    # so a midnight rollover doesn't serve yesterday's number.
+    today_key = today.isoformat()
+    month_start = today.replace(day=1)
+    month_key = month_start.isoformat()
+
+    pending_count = cached_kpi(
+        "dashboard:pending_count",
+        lambda: Sale.objects.filter(
+            status=Sale.Status.PENDING, on_account=False
+        ).count(),
     )
-    today_sales = sales_base.filter(created_at__date=today)
-    today_count = today_sales.count()
-    today_volume = today_sales.aggregate(s=Sum("sell_price_actual"))["s"] or 0
-    today_profit = (
-        paid_sales_only(today_sales).aggregate(s=Sum("profit_snapshot"))["s"] or 0
+    awaiting_count = cached_kpi(
+        "dashboard:awaiting_count",
+        lambda: Sale.objects.filter(status=Sale.Status.AWAITING).count(),
+    )
+    customer_debt_total = cached_kpi(
+        "dashboard:customer_debt_total",
+        lambda: Customer.objects.filter(current_balance__gt=0).aggregate(
+            s=Sum("current_balance")
+        )["s"]
+        or 0,
     )
 
-    total_profit = (
-        paid_sales_only(Sale.objects.all()).aggregate(s=Sum("profit_snapshot"))["s"] or 0
+    def _today_sales():
+        return confirmed_sales(Sale.objects.all()).filter(created_at__date=today)
+
+    today_count = cached_kpi(
+        f"dashboard:today_count:{today_key}",
+        lambda: _today_sales().count(),
     )
-    total_expenses = Expense.objects.aggregate(s=Sum("amount"))["s"] or 0
+    today_volume = cached_kpi(
+        f"dashboard:today_volume:{today_key}",
+        lambda: _today_sales().aggregate(s=Sum("sell_price_actual"))["s"] or 0,
+    )
+    today_profit = cached_kpi(
+        f"dashboard:today_profit:{today_key}",
+        lambda: paid_sales_only(_today_sales()).aggregate(s=Sum("profit_snapshot"))["s"]
+        or 0,
+    )
+
+    total_profit = cached_kpi(
+        "dashboard:total_profit",
+        lambda: paid_sales_only(Sale.objects.all()).aggregate(
+            s=Sum("profit_snapshot")
+        )["s"]
+        or 0,
+    )
+    total_expenses = cached_kpi(
+        "dashboard:total_expenses",
+        lambda: Expense.objects.aggregate(s=Sum("amount"))["s"] or 0,
+    )
     net_all_time = (total_profit or 0) - (total_expenses or 0)
 
-    month_start = today.replace(day=1)
-    month_sales = sales_base.filter(created_at__date__gte=month_start)
-    month_profit = (
-        paid_sales_only(month_sales).aggregate(s=Sum("profit_snapshot"))["s"] or 0
+    def _month_sales():
+        return confirmed_sales(Sale.objects.all()).filter(created_at__date__gte=month_start)
+
+    month_profit = cached_kpi(
+        f"dashboard:month_profit:{month_key}",
+        lambda: paid_sales_only(_month_sales()).aggregate(s=Sum("profit_snapshot"))["s"]
+        or 0,
     )
-    month_expenses = Expense.objects.filter(date__gte=month_start).aggregate(s=Sum("amount"))["s"] or 0
+    month_expenses = cached_kpi(
+        f"dashboard:month_expenses:{month_key}",
+        lambda: Expense.objects.filter(date__gte=month_start).aggregate(s=Sum("amount"))["s"]
+        or 0,
+    )
     net_month = (month_profit or 0) - (month_expenses or 0)
 
+    # `companies` and `recent_sales` are short queries that drive the
+    # left/right cards and the activity table. They're not cached
+    # because they return queryset rows (not scalars) and we want fresh
+    # ordering and live-icon resolution.
     companies = Company.objects.filter(is_active=True).order_by("name")
     recent_sales = (
-        Sale.objects.select_related("company", "product", "product__line", "created_by", "payment_method")
+        Sale.objects.select_related(
+            "company", "product", "product__line", "created_by", "payment_method"
+        )
         .order_by("-created_at")[:12]
     )
-    esim_sales_count = confirmed_sales(Sale.objects.filter(is_esim=True)).count()
+
+    esim_sales_count = cached_kpi(
+        "dashboard:esim_sales_count",
+        lambda: confirmed_sales(Sale.objects.filter(is_esim=True)).count(),
+    )
     all_sales = Sale.objects.all()
-    today_loss_from_zero = (
-        loss_eligible_sales(all_sales.filter(created_at__date=today))
-        .aggregate(s=Sum("loss_snapshot"))["s"]
-        or 0
+    today_loss_from_zero = cached_kpi(
+        f"dashboard:today_loss:{today_key}",
+        lambda: loss_eligible_sales(all_sales.filter(created_at__date=today)).aggregate(
+            s=Sum("loss_snapshot")
+        )["s"]
+        or 0,
     )
-    month_loss_from_zero = (
-        loss_eligible_sales(all_sales.filter(created_at__date__gte=month_start))
-        .aggregate(s=Sum("loss_snapshot"))["s"]
-        or 0
+    month_loss_from_zero = cached_kpi(
+        f"dashboard:month_loss:{month_key}",
+        lambda: loss_eligible_sales(
+            all_sales.filter(created_at__date__gte=month_start)
+        ).aggregate(s=Sum("loss_snapshot"))["s"]
+        or 0,
     )
-    total_loss_from_zero = (
-        loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"] or 0
+    total_loss_from_zero = cached_kpi(
+        "dashboard:total_loss",
+        lambda: loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"]
+        or 0,
     )
     return render(
         request,

@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -49,6 +50,11 @@ class _ReportsBase(TestCase):
         cls.cash = PaymentMethod.objects.create(name="Cash")
 
     def setUp(self):
+        # Django's LocMemCache is a single dict shared across the test
+        # process. Without this clear, KPI values cached by an earlier
+        # test (e.g. dashboard reloads after creating sales) leak into
+        # the next test which expects a fresh database.
+        cache.clear()
         self.client = Client()
         self.client.force_login(self.user)
 
