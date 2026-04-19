@@ -170,6 +170,39 @@ class PaymentMethodForm(forms.ModelForm):
         }
 
 
+class ManagementSaleEditForm(forms.ModelForm):
+    """Edit safe fields on an existing sale from the management UI.
+
+    Excludes company / product / is_esim because those would invalidate
+    the supplier-balance ledger snapshot taken at creation time.
+    """
+
+    class Meta:
+        model = Sale
+        fields = [
+            "payment_method",
+            "payer_name",
+            "reference_number",
+            "sell_price_actual",
+            "notes",
+        ]
+        widgets = {
+            "payment_method": forms.Select(attrs={"class": "form-select"}),
+            "payer_name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
+            "reference_number": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
+            "sell_price_actual": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": "0"}
+            ),
+            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["payment_method"].queryset = (
+            PaymentMethod.objects.filter(is_active=True).order_by("name")
+        )
+
+
 class ManualDepositForm(forms.Form):
     amount = forms.DecimalField(
         label=_("Amount"),

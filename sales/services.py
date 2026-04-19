@@ -70,6 +70,58 @@ def create_sale(
 
 
 @transaction.atomic
+def update_sale_fields(
+    *,
+    sale: Sale,
+    payment_method: PaymentMethod,
+    payer_name: str,
+    reference_number: str,
+    sell_price_actual: Decimal,
+    notes: str,
+    user,
+) -> Sale:
+    """
+    Edit safe fields on an existing sale — the ones that do NOT change the
+    company's supplier-balance ledger (i.e. they leave cost_price_snapshot
+    and the original deduction untouched).
+
+    Editable: payment_method, payer_name, reference_number, sell_price_actual,
+              notes. Profit and loss snapshots are recomputed from the new
+              selling price against the original cost snapshot.
+
+    Out of scope here: company / product / is_esim — those would require
+    reversing and re-applying balance transactions and are best handled
+    by cancelling and re-creating the sale.
+    """
+    sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    cost = sale_locked.cost_price_snapshot
+
+    sale_locked.payment_method = payment_method
+    sale_locked.payer_name = (payer_name or "").strip()
+    sale_locked.reference_number = (reference_number or "").strip()
+    sale_locked.sell_price_actual = sell_price_actual
+    sale_locked.profit_snapshot = sell_price_actual - cost
+    sale_locked.loss_snapshot = loss_snapshot_for_sale(
+        sell_price_actual=sell_price_actual,
+        cost_price_snapshot=cost,
+    )
+    sale_locked.notes = (notes or "").strip()
+    sale_locked.save(
+        update_fields=[
+            "payment_method",
+            "payer_name",
+            "reference_number",
+            "sell_price_actual",
+            "profit_snapshot",
+            "loss_snapshot",
+            "notes",
+            "updated_at",
+        ]
+    )
+    return sale_locked
+
+
+@transaction.atomic
 def mark_sale_paid(*, sale: Sale, user) -> Sale:
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status != Sale.Status.PENDING:

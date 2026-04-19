@@ -21,6 +21,7 @@ urlpatterns = [
     path("management/sales/bulk-mark-paid/", views.bulk_sales_mark_paid, name="bulk_sales_mark_paid"),
     path("management/sales/pending/", views.pending_payments, name="pending_payments"),
     path("management/sales/<int:pk>/mark-paid/", views.sale_mark_paid, name="sale_mark_paid"),
+    path("management/sales/<int:pk>/edit/", views.sale_edit, name="sale_edit"),
     path("management/sales/<int:pk>/cancel/", views.sale_cancel, name="sale_cancel"),
     path("management/sales/<int:pk>/delete/", views.sale_delete_permanent, name="sale_delete_permanent"),
     path("management/payment-methods/", views.payment_method_list, name="payment_method_list"),

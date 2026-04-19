@@ -39,7 +39,12 @@ def _htmx_action_error(message: str, status: int = 200) -> HttpResponse:
 from accounts.permissions import employee_required, is_employee, management_required
 from core.pagination import paginate_request
 from companies.models import Company, Product, ProductLine
-from sales.forms import EmployeeSaleForm, ManagementSaleFilterForm, PaymentMethodForm
+from sales.forms import (
+    EmployeeSaleForm,
+    ManagementSaleEditForm,
+    ManagementSaleFilterForm,
+    PaymentMethodForm,
+)
 from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
 from sales.query_utils import (
     apply_management_sale_filter_data,
@@ -47,7 +52,13 @@ from sales.query_utils import (
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
-from sales.services import cancel_sale, create_sale, delete_sale_permanently, mark_sale_paid
+from sales.services import (
+    cancel_sale,
+    create_sale,
+    delete_sale_permanently,
+    mark_sale_paid,
+    update_sale_fields,
+)
 
 @employee_required
 def employee_entry(request):
@@ -307,6 +318,45 @@ def sale_cancel(request, pk):
         return _htmx_remove_target()
     messages.success(request, _("Sale cancelled and supplier balance restored."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+
+
+@management_required
+def sale_edit(request, pk):
+    sale = get_object_or_404(
+        Sale.objects.select_related("company", "product", "product__line", "payment_method"),
+        pk=pk,
+    )
+    next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if request.method == "POST":
+        form = ManagementSaleEditForm(request.POST, instance=sale)
+        if form.is_valid():
+            try:
+                update_sale_fields(
+                    sale=sale,
+                    payment_method=form.cleaned_data["payment_method"],
+                    payer_name=form.cleaned_data["payer_name"],
+                    reference_number=form.cleaned_data["reference_number"],
+                    sell_price_actual=form.cleaned_data["sell_price_actual"],
+                    notes=form.cleaned_data.get("notes") or "",
+                    user=request.user,
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, _("Sale updated."))
+                return redirect(next_url or "sales:management_sale_list")
+    else:
+        form = ManagementSaleEditForm(instance=sale)
+    return render(
+        request,
+        "sales/sale_edit.html",
+        {
+            "form": form,
+            "sale": sale,
+            "next_url": next_url,
+            "title": _("Edit sale"),
+        },
+    )
 
 
 @management_required

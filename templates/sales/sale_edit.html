@@ -1,0 +1,83 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width: 45rem;">
+  <div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+      <p class="rd-text-muted mb-0">
+        {% trans "Adjust safe fields on this sale." %}
+        <span class="d-block small mt-1">
+          {% blocktrans with company=sale.company.name product=sale.product.display_name ref=sale.reference_number %}{{ company }} · {{ product }} · {{ ref }}{% endblocktrans %}
+        </span>
+      </p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ next_url|default:'' }}{% if not next_url %}{% url 'sales:management_sale_list' %}{% endif %}">{% trans "Back" %}</a>
+  </div>
+
+  <div class="rd-card">
+    <div class="rd-card-body p-4">
+      <div class="alert alert-info small mb-3" role="status">
+        {% trans "Company, product, and eSIM flag are not editable here because they would change the supplier-balance ledger. Cancel and re-create the sale if those need to change." %}
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" class="d-grid gap-3" novalidate>
+        {% csrf_token %}
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+
+        <div>
+          {{ form.payment_method.label_tag }}
+          {{ form.payment_method }}
+          {{ form.payment_method.errors }}
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            {{ form.payer_name.label_tag }}
+            {{ form.payer_name }}
+            {{ form.payer_name.errors }}
+          </div>
+          <div class="col-md-6">
+            {{ form.reference_number.label_tag }}
+            {{ form.reference_number }}
+            {{ form.reference_number.errors }}
+          </div>
+        </div>
+
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            {{ form.sell_price_actual.label_tag }}
+            {{ form.sell_price_actual }}
+            {{ form.sell_price_actual.errors }}
+            <div class="small text-secondary mt-1">
+              {% trans "Cost snapshot:" %} <span class="tabular-nums">{{ sale.cost_price_snapshot|intcomma }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="small text-secondary">
+              <div>{% trans "Status" %}: <span class="fw-semibold">{{ sale.get_status_display }}</span></div>
+              <div>{% trans "Created" %}: {{ sale.created_at }} · {{ sale.created_by.username }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          {{ form.notes.label_tag }}
+          {{ form.notes }}
+          {{ form.notes.errors }}
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save changes" %}</button>
+          <a class="btn btn-outline-secondary" href="{{ next_url|default:'' }}{% if not next_url %}{% url 'sales:management_sale_list' %}{% endif %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

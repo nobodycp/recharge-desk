@@ -12,7 +12,7 @@ from sales.payer_lookup import (
     payer_name_suggestions,
 )
 from sales.pricing import ESIM_EXTRA_COST, effective_cost_for_product, loss_snapshot_for_sale
-from sales.services import create_sale
+from sales.services import create_sale, update_sale_fields
 
 User = get_user_model()
 
@@ -230,3 +230,65 @@ class EsimSaleTests(TestCase):
         self.assertEqual(sale.cost_price_snapshot, Decimal("35"))
         self.assertEqual(sale.loss_snapshot, Decimal("35"))
         self.assertEqual(sale.profit_snapshot, Decimal("-35"))
+
+    def test_update_sale_fields_swaps_payment_method_without_touching_balance(self):
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000077",
+            payer_name="Old Payer",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_esim=False,
+        )
+        self.company.refresh_from_db()
+        balance_after_create = self.company.current_balance
+
+        new_pm = PaymentMethod.objects.create(name="Card")
+        updated = update_sale_fields(
+            sale=sale,
+            payment_method=new_pm,
+            payer_name="Real Payer  ",
+            reference_number="  0599999999 ",
+            sell_price_actual=Decimal("40"),
+            notes="  swapped to card  ",
+            user=self.user,
+        )
+
+        self.assertEqual(updated.payment_method_id, new_pm.id)
+        self.assertEqual(updated.payer_name, "Real Payer")
+        self.assertEqual(updated.reference_number, "0599999999")
+        self.assertEqual(updated.sell_price_actual, Decimal("40"))
+        self.assertEqual(updated.notes, "swapped to card")
+        # cost snapshot and balance must NOT shift on a safe edit.
+        self.assertEqual(updated.cost_price_snapshot, Decimal("30"))
+        self.assertEqual(updated.profit_snapshot, Decimal("10"))
+        self.assertEqual(updated.loss_snapshot, Decimal("0"))
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, balance_after_create)
+
+    def test_update_sale_fields_recomputes_loss_when_price_drops_to_zero(self):
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0599000044",
+            payer_name="X",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_esim=False,
+        )
+        updated = update_sale_fields(
+            sale=sale,
+            payment_method=self.pm,
+            payer_name="X",
+            reference_number=sale.reference_number,
+            sell_price_actual=Decimal("0"),
+            notes="",
+            user=self.user,
+        )
+        self.assertEqual(updated.profit_snapshot, Decimal("-30"))
+        self.assertEqual(updated.loss_snapshot, Decimal("30"))
