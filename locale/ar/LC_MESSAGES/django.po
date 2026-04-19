@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 01:34+0300\n"
+"POT-Creation-Date: 2026-04-19 04:51+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,6 +69,9 @@ msgstr "تم تحديث المستخدم."
 msgid "Edit user"
 msgstr "تعديل المستخدم"
 
+msgid "Select a package that belongs to this product line."
+msgstr ""
+
 msgid "e.g. 100 GB"
 msgstr ""
 
@@ -113,10 +116,21 @@ msgstr ""
 msgid "sort order"
 msgstr ""
 
+msgid "default package for sales"
+msgstr ""
+
+msgid ""
+"If this line has several packages, employees see this one selected first; "
+"they can still pick another."
+msgstr ""
+
 #, fuzzy
 #| msgid "products"
 msgid "product lines"
 msgstr "المنتجات"
+
+msgid "The default package must belong to this product line."
+msgstr ""
 
 msgid "package"
 msgstr ""
@@ -228,20 +242,179 @@ msgstr ""
 msgid "Access denied"
 msgstr "الوصول مرفوض"
 
+msgid "Phone or shipment number"
+msgstr "رقم الهاتف أو الشحنة"
+
+msgid ""
+"Optional. Adds a first phone link so future sales auto-suggest this customer."
+msgstr ""
+
+msgid "Label"
+msgstr ""
+
+msgid "Amount"
+msgstr "المبلغ"
+
+msgid "Payment method"
+msgstr "طريقة الدفع"
+
+msgid "Notes"
+msgstr "ملاحظات"
+
+msgid ""
+"Positive: customer owes the shop. Negative: shop holds credit for the "
+"customer (overpayment)."
+msgstr ""
+
+msgid "created by"
+msgstr "أنشأه"
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customers"
+msgstr "اسم العميل"
+
+msgid "phone or shipment number"
+msgstr "رقم الهاتف أو الشحنة"
+
+msgid "label"
+msgstr ""
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer phone"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer phones"
+msgstr "اسم العميل"
+
+msgid "amount"
+msgstr "المبلغ"
+
+msgid "payment method"
+msgstr "طريقة الدفع"
+
+#, fuzzy
+#| msgid "created by"
+msgid "recorded by"
+msgstr "أنشأه"
+
+msgid "created at"
+msgstr "تاريخ الإنشاء"
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer payment"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer payments"
+msgstr "اسم العميل"
+
+msgid "Charge"
+msgstr ""
+
+#, fuzzy
+#| msgid "Payment method"
+msgid "Payment"
+msgstr "طريقة الدفع"
+
+msgid "Adjustment"
+msgstr "تسوية"
+
+msgid "Reversal"
+msgstr "عكس حركة"
+
+msgid "type"
+msgstr "النوع"
+
+msgid "Always stored positive; entry_type signs it."
+msgstr ""
+
+msgid "sale"
+msgstr "عملية بيع"
+
+#, fuzzy
+#| msgid "payment method"
+msgid "payment"
+msgstr "طريقة الدفع"
+
+msgid "customer ledger entry"
+msgstr ""
+
+#, fuzzy
+#| msgid "customer name"
+msgid "customer ledger entries"
+msgstr "اسم العميل"
+
+msgid "Customers"
+msgstr "الزبائن"
+
+#, fuzzy
+#| msgid "User created."
+msgid "Customer created."
+msgstr "تم إنشاء المستخدم."
+
+#, fuzzy
+#| msgid "customer name"
+msgid "New customer"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "User updated."
+msgid "Customer updated."
+msgstr "تم تحديث المستخدم."
+
+#, fuzzy
+#| msgid "Edit user"
+msgid "Edit customer"
+msgstr "تعديل المستخدم"
+
+#, fuzzy
+#| msgid "Adjustment recorded."
+msgid "Payment recorded."
+msgstr "تم تسجيل التسوية."
+
+msgid "Phone is required."
+msgstr ""
+
+msgid "Phone added."
+msgstr ""
+
+msgid "Phone removed."
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+msgid "Title, category, notes…"
+msgstr ""
+
+msgid "Date from"
+msgstr "من تاريخ"
+
+msgid "Date to"
+msgstr "إلى تاريخ"
+
+msgid "Category"
+msgstr "التصنيف"
+
 msgid "title"
 msgstr "العنوان"
 
 msgid "category"
 msgstr "التصنيف"
 
-msgid "amount"
-msgstr "المبلغ"
-
 msgid "date"
 msgstr "التاريخ"
-
-msgid "created by"
-msgstr "أنشأه"
 
 msgid "expense"
 msgstr "مصروف"
@@ -264,11 +437,9 @@ msgstr "تم تحديث المصروف."
 msgid "Edit expense"
 msgstr "تعديل المصروف"
 
-msgid "Date from"
-msgstr "من تاريخ"
-
-msgid "Date to"
-msgstr "إلى تاريخ"
+#, python-format
+msgid "Expense \"%(title)s\" deleted."
+msgstr ""
 
 msgid "Expense report"
 msgstr "تقرير المصروفات"
@@ -291,14 +462,20 @@ msgstr "تم تسجيل التسوية."
 msgid "Company report"
 msgstr "تقرير الشركة"
 
+msgid "Jawwal Pay"
+msgstr "جوال باي"
+
+msgid "Bank of Palestine"
+msgstr "بنك فلسطين"
+
+msgid "Palpay"
+msgstr "بال باي"
+
 msgid "Company"
 msgstr "الشركة"
 
 msgid "Product"
 msgstr "المنتج"
-
-msgid "Phone or shipment number"
-msgstr "رقم الهاتف أو الشحنة"
 
 msgid "Payer name"
 msgstr "اسم الدافع"
@@ -306,14 +483,26 @@ msgstr "اسم الدافع"
 msgid "Selling price"
 msgstr "سعر البيع"
 
-msgid "Payment method"
-msgstr "طريقة الدفع"
+#, fuzzy
+#| msgid "Accounts"
+msgid "On account"
+msgstr "الحسابات"
 
-msgid "Notes"
-msgstr "ملاحظات"
+#, fuzzy
+#| msgid "Customer name"
+msgid "Customer"
+msgstr "اسم العميل"
 
 msgid "Selected product does not belong to the company."
 msgstr "المنتج المختار لا يتبع الشركة المحددة."
+
+msgid "Pick or create a customer for an on-account sale."
+msgstr ""
+
+#, fuzzy
+#| msgid "Edit payment method"
+msgid "Pick a payment method."
+msgstr "تعديل طريقة الدفع"
 
 msgid "Status"
 msgstr "الحالة"
@@ -321,8 +510,14 @@ msgstr "الحالة"
 msgid "All"
 msgstr "الكل"
 
-msgid "Amount"
-msgstr "المبلغ"
+msgid "eSIM"
+msgstr ""
+
+msgid "eSIM only"
+msgstr ""
+
+msgid "Non-eSIM"
+msgstr ""
 
 msgid "Signed adjustment (+/-)"
 msgstr "تسوية موقعة (+/-)"
@@ -330,11 +525,11 @@ msgstr "تسوية موقعة (+/-)"
 msgid "Shown on the employee sales screen instead of the method name."
 msgstr ""
 
-msgid "payment method"
-msgstr "طريقة الدفع"
-
 msgid "payment methods"
 msgstr "طرق الدفع"
+
+msgid "Awaiting approval"
+msgstr "ديون عالقه"
 
 msgid "Pending"
 msgstr "معلّق"
@@ -348,11 +543,27 @@ msgstr "ملغى"
 msgid "product"
 msgstr "المنتج"
 
-msgid "phone or shipment number"
-msgstr "رقم الهاتف أو الشحنة"
-
 msgid "payer name"
 msgstr "اسم الدافع"
+
+#, fuzzy
+#| msgid "Accounts"
+msgid "on account"
+msgstr "الحسابات"
+
+msgid ""
+"Customer credit sale: needs management approval and is settled later by a "
+"customer payment."
+msgstr ""
+
+msgid "settled by payment"
+msgstr ""
+
+msgid "approved at"
+msgstr ""
+
+msgid "approved by"
+msgstr ""
 
 msgid "actual selling price"
 msgstr "سعر البيع الفعلي"
@@ -363,11 +574,21 @@ msgstr "سعر التكلفة (لقطة)"
 msgid "profit (snapshot)"
 msgstr "الربح (لقطة)"
 
+msgid "Loss"
+msgstr "الخسائر"
+
+msgid ""
+"When selling price is 0, equals supplier cost recorded as an explicit loss; "
+"otherwise 0."
+msgstr ""
+
+#, fuzzy
+#| msgid "New sale"
+msgid "eSIM sale"
+msgstr "بيع جديد"
+
 msgid "status"
 msgstr "الحالة"
-
-msgid "created at"
-msgstr "تاريخ الإنشاء"
 
 msgid "updated at"
 msgstr "تاريخ التحديث"
@@ -384,9 +605,6 @@ msgstr "تاريخ الإلغاء"
 msgid "cancelled by"
 msgstr "ألغاه"
 
-msgid "sale"
-msgstr "عملية بيع"
-
 msgid "sales"
 msgstr "المبيعات"
 
@@ -395,12 +613,6 @@ msgstr "إيداع"
 
 msgid "Deduction"
 msgstr "خصم"
-
-msgid "Adjustment"
-msgstr "تسوية"
-
-msgid "Reversal"
-msgstr "عكس حركة"
 
 msgid "Sale"
 msgstr "بيع"
@@ -414,9 +626,6 @@ msgstr "الرصيد الافتتاحي"
 msgid "Cancellation"
 msgstr "إلغاء"
 
-msgid "type"
-msgstr "النوع"
-
 msgid "reference type"
 msgstr "نوع المرجع"
 
@@ -428,6 +637,9 @@ msgstr "حركة رصيد"
 
 msgid "balance transactions"
 msgstr "حركات الرصيد"
+
+msgid "Recorded as on-account; awaiting management approval."
+msgstr ""
 
 msgid "Sale recorded successfully."
 msgstr "تم تسجيل البيع بنجاح."
@@ -441,18 +653,36 @@ msgstr "المبيعات"
 msgid "Pending payments"
 msgstr "المدفوعات المعلّقة"
 
+msgid "Sale approved and posted to the customer's account."
+msgstr ""
+
+#, fuzzy
+#| msgid "Sale cancelled and supplier balance restored."
+msgid "Sale rejected and supplier balance restored."
+msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
+
 msgid "Marked as paid."
 msgstr "تم التعليم كمدفوع."
 
 msgid "Sale cancelled and supplier balance restored."
 msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
 
-msgid "Sale was permanently removed from the system."
-msgstr "تم حذف البيع نهائياً من النظام."
+#, fuzzy
+#| msgid "User updated."
+msgid "Sale updated."
+msgstr "تم تحديث المستخدم."
+
+#, fuzzy
+#| msgid "Edit user"
+msgid "Edit sale"
+msgstr "تعديل المستخدم"
 
 #, python-format
 msgid "Could not delete this sale: %(reason)s"
 msgstr "تعذّر حذف البيع: %(reason)s"
+
+msgid "Sale was permanently removed from the system."
+msgstr "تم حذف البيع نهائياً من النظام."
 
 msgid "Payment methods"
 msgstr "طرق الدفع"
@@ -469,6 +699,21 @@ msgstr "تم تحديث طريقة الدفع."
 msgid "Edit payment method"
 msgstr "تعديل طريقة الدفع"
 
+#, fuzzy
+#| msgid "No sales yet."
+msgid "No sales selected."
+msgstr "لا توجد مبيعات بعد."
+
+#, fuzzy, python-format
+#| msgid "Marked as paid."
+msgid "Marked %(n)s sale(s) as paid."
+msgstr "تم التعليم كمدفوع."
+
+#, fuzzy
+#| msgid "No pending sales."
+msgid "No pending sales were updated."
+msgstr "لا توجد مبيعات معلّقة."
+
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
@@ -478,20 +723,14 @@ msgstr "المحاسب الهامل"
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
 
-msgid "Save"
-msgstr "حفظ"
-
-msgid "Cancel"
-msgstr "إلغاء"
-
-msgid "Users"
-msgstr "المستخدمون"
-
 msgid "Username"
 msgstr "اسم المستخدم"
 
 msgid "Active"
 msgstr "نشط"
+
+msgid "Actions"
+msgstr "إجراءات"
 
 msgid "Yes"
 msgstr "نعم"
@@ -504,6 +743,30 @@ msgstr "تعديل"
 
 msgid "No users."
 msgstr "لا يوجد مستخدمون."
+
+msgid "Inactive"
+msgstr "غير نشط"
+
+msgid "Save"
+msgstr "حفظ"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Users"
+msgstr "المستخدمون"
+
+msgid "Staff accounts and roles."
+msgstr ""
+
+msgid "Username or full name…"
+msgstr ""
+
+msgid "Apply"
+msgstr "تطبيق"
+
+msgid "Reset"
+msgstr "إعادة ضبط"
 
 msgid "Sales entry"
 msgstr "إدخال مبيعات"
@@ -534,6 +797,11 @@ msgstr ""
 msgid "Suppliers and balance overview."
 msgstr "نظرة على المورّدين والأرصدة"
 
+#, fuzzy
+#| msgid "Company report"
+msgid "Company name or notes…"
+msgstr "تقرير الشركة"
+
 msgid "Name"
 msgstr "الاسم"
 
@@ -542,9 +810,6 @@ msgstr "افتتاحي"
 
 msgid "Current balance"
 msgstr "الرصيد الحالي"
-
-msgid "Actions"
-msgstr "إجراءات"
 
 msgid "Report"
 msgstr "تقرير"
@@ -598,6 +863,11 @@ msgstr ""
 msgid "Delete line"
 msgstr "حذف نهائي"
 
+#, fuzzy
+#| msgid "Sales detail"
+msgid "Sales default"
+msgstr "تفاصيل المبيعات"
+
 msgid "Delete this package? This cannot be undone."
 msgstr ""
 
@@ -628,29 +898,138 @@ msgstr "ليس لديك صلاحية لعرض هذه الصفحة."
 msgid "Go home"
 msgstr "الرئيسية"
 
+#, fuzzy
+#| msgid "Customer name"
+msgid "Customer account"
+msgstr "اسم العميل"
+
+msgid "Back"
+msgstr "رجوع"
+
+msgid "Customer owes the shop."
+msgstr ""
+
+msgid "Credit on file."
+msgstr ""
+
+msgid "Settled."
+msgstr ""
+
+#, fuzzy
+#| msgid "Pending payments"
+msgid "Pending on account"
+msgstr "المدفوعات المعلّقة"
+
+msgid "On-account sales"
+msgstr ""
+
 msgid "Date"
 msgstr "التاريخ"
 
-msgid "Title"
-msgstr "العنوان"
+msgid "Reference"
+msgstr "المرجع"
 
-msgid "Category"
-msgstr "التصنيف"
+msgid "Price"
+msgstr ""
+
+msgid "Awaiting"
+msgstr ""
+
+#, fuzzy
+#| msgid "No pending sales."
+msgid "No on-account sales."
+msgstr "لا توجد مبيعات معلّقة."
+
+msgid "Ledger"
+msgstr ""
+
+msgid "Type"
+msgstr "النوع"
 
 msgid "By"
 msgstr "بواسطة"
 
-msgid "No expenses."
-msgstr "لا توجد مصروفات."
+#, fuzzy
+#| msgid "No ledger rows."
+msgid "No ledger entries."
+msgstr "لا توجد حركات في السجل."
+
+#, fuzzy
+#| msgid "Pending payments"
+msgid "Record payment"
+msgstr "المدفوعات المعلّقة"
+
+msgid ""
+"FIFO settlement: the oldest pending charges get marked Paid first; any extra "
+"remains as customer credit."
+msgstr ""
+
+msgid "Phones"
+msgstr ""
+
+msgid "Remove this phone?"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+#, fuzzy
+#| msgid "No products."
+msgid "No phones linked."
+msgstr "لا توجد منتجات."
+
+msgid "Add"
+msgstr ""
+
+#, fuzzy
+#| msgid "Recent entries"
+msgid "Recent payments"
+msgstr "آخر الإدخالات"
+
+msgid "Method"
+msgstr "الطريقة"
+
+#, fuzzy
+#| msgid "No payment methods."
+msgid "No payments yet."
+msgstr "لا توجد طرق دفع."
+
+msgid "Customers buying on account and their balances."
+msgstr ""
+
+#, fuzzy
+#| msgid "customer name"
+msgid "Total customer debt"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "Total profit"
+msgid "Total credit on file"
+msgstr "إجمالي الربح"
+
+msgid "Search by name or phone"
+msgstr ""
+
+#, fuzzy
+#| msgid "Balance ledger"
+msgid "Balance"
+msgstr "سجل الرصيد"
+
+#, fuzzy
+#| msgid "No companies yet."
+msgid "No customers yet."
+msgstr "لا توجد شركات بعد."
+
+#, fuzzy
+#| msgid "Operational snapshot"
+msgid "Operational spend tracking."
+msgstr "لمحة تشغيلية"
+
+msgid "Search & filters"
+msgstr ""
 
 msgid "Category breakdown and totals"
 msgstr "التصنيفات والإجماليات"
-
-msgid "Apply"
-msgstr "تطبيق"
-
-msgid "Reset"
-msgstr "إعادة ضبط"
 
 msgid "Total profit (same date filter)"
 msgstr "إجمالي الربح (نفس نطاق التاريخ)"
@@ -673,6 +1052,17 @@ msgstr "لا توجد بيانات."
 msgid "Rows"
 msgstr "الصفوف"
 
+msgid "Title"
+msgstr "العنوان"
+
+#, fuzzy
+#| msgid "Delete permanently"
+msgid "Delete this expense?"
+msgstr "حذف نهائي"
+
+msgid "No expenses."
+msgstr "لا توجد مصروفات."
+
 msgid "Main navigation"
 msgstr "التنقّل الرئيسي"
 
@@ -687,6 +1077,33 @@ msgstr "الكتالوج"
 
 msgid "Administration"
 msgstr "الإدارة"
+
+#, fuzzy
+#| msgid "Main navigation"
+msgid "Pagination"
+msgstr "التنقّل الرئيسي"
+
+#, python-format
+msgid "Page %(p)s of %(t)s · %(c)s records"
+msgstr ""
+
+msgid "First"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Last"
+msgstr ""
+
+msgid "eSIM: extra cost applied to this sale"
+msgstr ""
+
+msgid "Loss sale: selling price was zero; supplier cost is recorded as loss."
+msgstr ""
 
 msgid "Color theme"
 msgstr "مظهر الألوان"
@@ -705,9 +1122,6 @@ msgstr "داكن"
 
 msgid "Supplier statement & internal ledger"
 msgstr "كشف المورّد وسجل الرصيد الداخلي"
-
-msgid "Back"
-msgstr "رجوع"
 
 msgid "Total deposits"
 msgstr "إجمالي الإيداعات"
@@ -742,36 +1156,6 @@ msgstr "تسوية الرصيد"
 msgid "Save adjustment"
 msgstr "حفظ التسوية"
 
-msgid "Sales detail"
-msgstr "تفاصيل المبيعات"
-
-msgid "When"
-msgstr "متى"
-
-msgid "Ref"
-msgstr "المرجع"
-
-msgid "Sell"
-msgstr "البيع"
-
-msgid "Profit"
-msgstr "الربح"
-
-msgid "No sales."
-msgstr "لا توجد مبيعات."
-
-msgid "Balance ledger"
-msgstr "سجل الرصيد"
-
-msgid "Type"
-msgstr "النوع"
-
-msgid "Reference"
-msgstr "المرجع"
-
-msgid "No ledger rows."
-msgstr "لا توجد حركات في السجل."
-
 msgid "Operational snapshot"
 msgstr "لمحة تشغيلية"
 
@@ -783,6 +1167,21 @@ msgstr "الحجم"
 
 msgid "Today's profit"
 msgstr "ربح اليوم"
+
+msgid "Paid sales only"
+msgstr ""
+
+msgid "إجمالي ديون العملاء"
+msgstr ""
+
+msgid "طلبات الديون"
+msgstr ""
+
+msgid "Today"
+msgstr ""
+
+msgid "Month"
+msgstr "الشهر"
 
 msgid "All-time profit"
 msgstr "الربح الكلي"
@@ -808,8 +1207,61 @@ msgstr "لا توجد شركات بعد."
 msgid "Recent activity"
 msgstr "النشاط الأخير"
 
+#, fuzzy
+#| msgid "All sales"
+msgid "View all sales"
+msgstr "كل المبيعات"
+
+msgid "When"
+msgstr "متى"
+
 msgid "No sales yet."
 msgstr "لا توجد مبيعات بعد."
+
+msgid "Balance ledger"
+msgstr "سجل الرصيد"
+
+msgid "Notes, ref #…"
+msgstr ""
+
+msgid "No ledger rows."
+msgstr "لا توجد حركات في السجل."
+
+msgid "Sales detail"
+msgstr "تفاصيل المبيعات"
+
+msgid "Ref, payer, product…"
+msgstr ""
+
+msgid "Ref"
+msgstr "المرجع"
+
+msgid "Sell"
+msgstr "البيع"
+
+msgid "Profit"
+msgstr "الربح"
+
+msgid "No sales."
+msgstr "لا توجد مبيعات."
+
+msgid "Filtered profit (excl. cancelled)"
+msgstr "الربح بعد التصفية (باستثناء الملغاة)"
+
+msgid "Filtered volume"
+msgstr "الحجم بعد التصفية"
+
+msgid "Filtered rows"
+msgstr "الصفوف بعد التصفية"
+
+msgid "Results"
+msgstr "النتائج"
+
+msgid "Sortable columns · shareable URL state"
+msgstr ""
+
+msgid "No rows."
+msgstr "لا توجد صفوف."
 
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
@@ -822,9 +1274,6 @@ msgstr "العدد"
 
 msgid "By payment method"
 msgstr "حسب طريقة الدفع"
-
-msgid "Method"
-msgstr "الطريقة"
 
 msgid "By employee"
 msgstr "حسب الموظف"
@@ -841,35 +1290,22 @@ msgstr "اليوم"
 msgid "Monthly profit trend"
 msgstr "اتجاه الربح الشهري"
 
-msgid "Month"
-msgstr "الشهر"
-
 msgid "Filter, review, and export-friendly table layout"
 msgstr "تصفية ومراجعة وجدول مناسب للتصدير"
 
-msgid "Filtered profit (excl. cancelled)"
-msgstr "الربح بعد التصفية (باستثناء الملغاة)"
+msgid "Reference, payer, company…"
+msgstr ""
 
-msgid "Filtered volume"
-msgstr "الحجم بعد التصفية"
+msgid "On-account sales waiting for management approval."
+msgstr ""
 
-msgid "Filtered rows"
-msgstr "الصفوف بعد التصفية"
+msgid "Reference, payer, customer, company…"
+msgstr ""
 
-msgid "Results"
-msgstr "النتائج"
-
-msgid "Copy/paste friendly"
-msgstr "مناسب للنسخ"
-
-msgid "No rows."
-msgstr "لا توجد صفوف."
-
-msgid "No active companies."
-msgstr "لا توجد شركات نشطة."
-
-msgid "Choose a company to see products."
-msgstr "اختر شركة لعرض المنتجات."
+#, fuzzy
+#| msgid "Could not delete this sale: %(reason)s"
+msgid "Could not complete the action."
+msgstr "تعذّر حذف البيع: %(reason)s"
 
 msgid "Paste from clipboard"
 msgstr "لصق من الحافظة"
@@ -882,8 +1318,68 @@ msgstr ""
 msgid "Paste"
 msgstr "لصق"
 
+msgid "Filled from a previous sale"
+msgstr ""
+
+msgid "Previously used"
+msgstr ""
+
+#, fuzzy
+#| msgid "Payer name"
+msgid "Payer name suggestions"
+msgstr "اسم الدافع"
+
+msgid "On account ON"
+msgstr ""
+
+msgid "لم يدفع"
+msgstr ""
+
 msgid "No payment methods."
 msgstr "لا توجد طرق دفع."
+
+msgid "Search customer by name or phone"
+msgstr ""
+
+msgid "Change"
+msgstr ""
+
+msgid "Add new customer"
+msgstr ""
+
+msgid "Customer name"
+msgstr "اسم العميل"
+
+#, fuzzy
+#| msgid "Add note (optional)"
+msgid "Phone (optional)"
+msgstr "إضافة ملاحظة (اختياري)"
+
+#, fuzzy
+#| msgid "Create user"
+msgid "Create"
+msgstr "إنشاء مستخدم"
+
+msgid "No active companies."
+msgstr "لا توجد شركات نشطة."
+
+msgid "Choose a company to see products."
+msgstr "اختر شركة لعرض المنتجات."
+
+msgid "Estimate"
+msgstr ""
+
+#, fuzzy
+#| msgid "Supplier balances"
+msgid "Supplier cost"
+msgstr "أرصدة المورّدين"
+
+msgid "eSIM: extra supplier cost is included in the estimate above."
+msgstr ""
+
+msgid ""
+"Selling price is 0: supplier cost will be recorded as a loss in the system."
+msgstr ""
 
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
@@ -900,8 +1396,32 @@ msgstr "لا توجد إدخالات حديثة بعد."
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
 
-msgid "Mark paid"
-msgstr "تعليم كمدفوع"
+msgid "Payer"
+msgstr "الدافع"
+
+msgid "Approve"
+msgstr ""
+
+#, fuzzy
+#| msgid "Sale cancelled and supplier balance restored."
+msgid "Reject this sale? Supplier balance will be restored."
+msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
+
+msgid "Reject"
+msgstr ""
+
+msgid "No sales awaiting approval."
+msgstr ""
+
+#, fuzzy
+#| msgid "Default sell"
+msgid "Default"
+msgstr "البيع الافتراضي"
+
+#, fuzzy
+#| msgid "Reference"
+msgid "Copy reference"
+msgstr "المرجع"
 
 msgid "Cancel this sale?"
 msgstr "إلغاء هذا البيع؟"
@@ -915,16 +1435,36 @@ msgstr ""
 msgid "Delete permanently"
 msgstr "حذف نهائي"
 
+msgid "Copy"
+msgstr ""
+
 #, fuzzy
-#| msgid "Default sell"
-msgid "Default"
-msgstr "البيع الافتراضي"
+#| msgid "Marked as paid."
+msgid "Mark selected as paid"
+msgstr "تم التعليم كمدفوع."
+
+msgid "Select pending rows, then apply."
+msgstr ""
+
+msgid "Select"
+msgstr ""
+
+#, fuzzy
+#| msgid "Save sale"
+msgid "Select sale"
+msgstr "حفظ البيع"
+
+msgid "Mark paid"
+msgstr "تعليم كمدفوع"
+
+msgid "No pending sales."
+msgstr "لا توجد مبيعات معلّقة."
+
+msgid "Tiles shown on the employee sales screen."
+msgstr ""
 
 msgid "New"
 msgstr "جديد"
-
-msgid "Inactive"
-msgstr "غير نشط"
 
 msgid "Mark sales paid when funds are received."
 msgstr "تعليم المبيعات كمدفوعة عند استلام الأموال."
@@ -932,29 +1472,36 @@ msgstr "تعليم المبيعات كمدفوعة عند استلام الأم�
 msgid "All sales"
 msgstr "كل المبيعات"
 
-msgid "Payer"
-msgstr "الدافع"
+msgid "Adjust safe fields on this sale."
+msgstr ""
 
-msgid "No pending sales."
-msgstr "لا توجد مبيعات معلّقة."
+#, python-format
+msgid "%(company)s · %(product)s · %(ref)s"
+msgstr ""
 
-#: sales/_i18n_payment_methods.py
-msgid "Jawwal Pay"
-msgstr "جوال باي"
+msgid ""
+"Company, product, and eSIM flag are not editable here because they would "
+"change the supplier-balance ledger. Cancel and re-create the sale if those "
+"need to change."
+msgstr ""
 
-#: sales/_i18n_payment_methods.py
-msgid "Bank of Palestine"
-msgstr "بنك فلسطين"
+#, fuzzy
+#| msgid "profit (snapshot)"
+msgid "Cost snapshot:"
+msgstr "الربح (لقطة)"
 
-#: sales/_i18n_payment_methods.py
-msgid "Palpay"
-msgstr "بال باي"
+#, fuzzy
+#| msgid "created by"
+msgid "Created"
+msgstr "أنشأه"
 
-#~ msgid "Customer name"
-#~ msgstr "اسم العميل"
+#, fuzzy
+#| msgid "Save sale"
+msgid "Save changes"
+msgstr "حفظ البيع"
 
-#~ msgid "customer name"
-#~ msgstr "اسم العميل"
+#~ msgid "Copy/paste friendly"
+#~ msgstr "مناسب للنسخ"
 
 #~ msgid "optional"
 #~ msgstr "اختياري"
