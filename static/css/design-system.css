@@ -182,6 +182,10 @@ body.app-shell {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr;
+  /* Own stacking context so the fixed sidebar/backdrop never get clipped or
+     reordered by sibling stacking contexts created by the sticky topbar's
+     backdrop-filter (Safari/iOS). */
+  isolation: isolate;
 }
 
 @media (min-width: 992px) {
@@ -235,6 +239,14 @@ body.app-shell {
   }
 }
 
+/* Mobile: make the sidebar surface clearly distinct from the page body in
+   dark mode so it doesn't visually melt into the content underneath. */
+@media (max-width: 991.98px) {
+  [data-bs-theme="dark"] .rd-sidebar {
+    background: var(--bs-tertiary-bg);
+  }
+}
+
 .rd-sidebar-backdrop {
   position: fixed;
   inset: 0;
@@ -244,6 +256,13 @@ body.app-shell {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--rd-transition);
+}
+
+[data-bs-theme="dark"] .rd-sidebar-backdrop {
+  /* The default 0.45 alpha is barely visible over an already-dark body,
+     making the sidebar look like it's bleeding into the content. Bump it
+     so the dim layer is unambiguous on mobile. */
+  background: rgba(0, 0, 0, 0.65);
 }
 
 .rd-sidebar-backdrop.is-visible {
