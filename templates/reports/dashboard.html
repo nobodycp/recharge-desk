@@ -7,7 +7,7 @@
   <p class="rd-text-muted mb-0">{% trans "Operational snapshot" %}</p>
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4 rd-dashboard-kpi-row">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4 rd-dashboard-kpi-row">
   <div class="col d-flex">
     <div class="rd-card rd-stat flex-fill w-100 h-100">
       <div class="rd-card-body d-flex flex-column h-100">
@@ -81,18 +81,20 @@
         </div>
         <div class="rd-label mb-1">{% trans "Loss" %}</div>
         <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
-        <div class="rd-stat-loss-trio">
-          <div class="rd-stat-loss-trio__item">
-            <span class="rd-stat-loss-trio__lbl">{% trans "Today" %}</span>
-            <span class="rd-stat-loss-trio__val kpi-danger">{{ today_loss_from_zero|intcomma }}</span>
+        <div class="rd-stat-pair">
+          <div class="rd-stat-pair__item">
+            <span class="rd-stat-pair__lbl">{% trans "Today" %}</span>
+            <span class="rd-stat-pair__val kpi-danger">{{ today_loss_from_zero|intcomma }}</span>
           </div>
-          <div class="rd-stat-loss-trio__item">
-            <span class="rd-stat-loss-trio__lbl">{% trans "Month" %}</span>
-            <span class="rd-stat-loss-trio__val kpi-danger">{{ month_loss_from_zero|intcomma }}</span>
+          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
+          <div class="rd-stat-pair__item">
+            <span class="rd-stat-pair__lbl">{% trans "Month" %}</span>
+            <span class="rd-stat-pair__val kpi-danger">{{ month_loss_from_zero|intcomma }}</span>
           </div>
-          <div class="rd-stat-loss-trio__item">
-            <span class="rd-stat-loss-trio__lbl">{% trans "All" %}</span>
-            <span class="rd-stat-loss-trio__val kpi-danger">{{ total_loss_from_zero|intcomma }}</span>
+          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
+          <div class="rd-stat-pair__item">
+            <span class="rd-stat-pair__lbl">{% trans "All" %}</span>
+            <span class="rd-stat-pair__val kpi-danger">{{ total_loss_from_zero|intcomma }}</span>
           </div>
         </div>
       </div>
