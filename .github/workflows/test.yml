@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+# A push that lands while the previous run is still going is most likely
+# the same dev iterating; cancel the older run so they never race.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Django ${{ matrix.python-version }} / ${{ matrix.settings }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9 mirrors local dev; 3.12 mirrors the production server.
+        python-version: ["3.9", "3.12"]
+        settings:
+          - config.settings.development
+          - config.settings.production
+    env:
+      DJANGO_SETTINGS_MODULE: ${{ matrix.settings }}
+      # Production settings short-circuit to in-memory SQLite when the
+      # test runner is invoked, so no Postgres credentials are needed.
+      # The DJANGO_SECRET_KEY default in production.py covers tests too.
+      PYTHONDONTWRITEBYTECODE: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: System checks
+        # `--deploy` warnings depend on env-only flags (HSTS, SSL redirect)
+        # that production sets at runtime, so we run the plain check here
+        # and leave deploy-checks to the production server playbook.
+        run: python manage.py check
+
+      - name: Run test suite
+        run: python manage.py test --verbosity 2
