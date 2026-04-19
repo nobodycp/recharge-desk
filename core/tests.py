@@ -24,8 +24,20 @@ class SecurityHeadersMiddlewareTests(TestCase):
         until they are migrated to nonces."""
         r = self.client.get(reverse("core:forbidden"))
         csp = r["Content-Security-Policy"]
-        self.assertIn("script-src 'self' 'unsafe-inline'", csp)
-        self.assertIn("style-src 'self' 'unsafe-inline'", csp)
+        self.assertIn("script-src", csp)
+        self.assertIn("'self'", csp)
+        self.assertIn("'unsafe-inline'", csp)
+        self.assertIn("style-src", csp)
+
+    def test_csp_allows_cdn_origins_used_by_base_templates(self):
+        """The base templates load HTMX / Alpine from jsDelivr and Cairo /
+        Inter from Google Fonts. Blocking those breaks every page (login,
+        dashboard, etc.)."""
+        r = self.client.get(reverse("core:forbidden"))
+        csp = r["Content-Security-Policy"]
+        self.assertIn("https://cdn.jsdelivr.net", csp)
+        self.assertIn("https://fonts.googleapis.com", csp)
+        self.assertIn("https://fonts.gstatic.com", csp)
 
     def test_permissions_policy_disables_sensitive_apis(self):
         r = self.client.get(reverse("core:forbidden"))

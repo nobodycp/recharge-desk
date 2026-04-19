@@ -36,12 +36,32 @@ from typing import Iterable
 from django.conf import settings
 
 
+# NOTE on third-party origins
+# ---------------------------
+# The base templates pull HTMX and Alpine.js from jsDelivr and the Cairo /
+# Inter web fonts from Google Fonts (CSS on fonts.googleapis.com, the
+# font files themselves on fonts.gstatic.com). If those origins are not
+# explicitly allowed by CSP the login screen and every other page will
+# render with a broken layout (no JS, no fonts). Keep these in sync if
+# you ever swap CDNs or self-host the assets.
 _DEFAULT_CSP = {
     "default-src": ["'self'"],
-    "script-src": ["'self'", "'unsafe-inline'"],
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "script-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://cdn.jsdelivr.net",
+    ],
+    "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+    ],
     "img-src": ["'self'", "data:"],
-    "font-src": ["'self'", "data:"],
+    "font-src": [
+        "'self'",
+        "data:",
+        "https://fonts.gstatic.com",
+    ],
     "connect-src": ["'self'"],
     "frame-ancestors": ["'none'"],
     "object-src": ["'none'"],
