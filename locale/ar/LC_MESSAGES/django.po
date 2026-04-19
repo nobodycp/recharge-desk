@@ -363,10 +363,8 @@ msgstr "الزبائن"
 msgid "Customer created."
 msgstr "تم إنشاء المستخدم."
 
-#, fuzzy
-#| msgid "customer name"
 msgid "New customer"
-msgstr "اسم العميل"
+msgstr "زبون جديد"
 
 #, fuzzy
 #| msgid "User updated."
