@@ -10,21 +10,35 @@
       {% if not customer.is_active %} · <span class="text-warning">{% trans "Inactive" %}</span>{% endif %}
     </p>
   </div>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_edit' customer.pk %}">{% trans "Edit" %}</a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Back" %}</a>
+    {% if customer.current_balance > 0 %}
+      <form method="post" action="{% url 'customers:customer_write_off' customer.pk %}" class="d-inline"
+            onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">{% trans "Write off & close account" %}</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{% url 'customers:customer_delete' customer.pk %}" class="d-inline"
+          onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger">{% trans "Delete customer" %}</button>
+    </form>
   </div>
 </div>
 
 <div class="row g-3 mb-3">
   <div class="col-12 col-md-4">
     <div class="rd-card p-3">
-      <div class="small text-secondary">{% trans "Current balance" %}</div>
+      <div class="small text-secondary">
+        {% if customer.current_balance > 0 %}{% trans "Outstanding debt" %}{% elif customer.current_balance < 0 %}{% trans "Credit on file" %}{% else %}{% trans "Current balance" %}{% endif %}
+      </div>
       <div class="h3 mb-0 tabular-nums fw-bold {% if customer.current_balance > 0 %}kpi-expense{% elif customer.current_balance < 0 %}text-success{% endif %}">
-        {{ customer.current_balance|intcomma }}
+        {% if customer.current_balance < 0 %}{{ customer.current_balance|cut:"-"|intcomma }}{% else %}{{ customer.current_balance|intcomma }}{% endif %}
       </div>
       <div class="small text-secondary mt-1">
-        {% if customer.current_balance > 0 %}{% trans "Customer owes the shop." %}{% elif customer.current_balance < 0 %}{% trans "Credit on file." %}{% else %}{% trans "Settled." %}{% endif %}
+        {% if customer.current_balance > 0 %}{% trans "Customer owes the shop." %}{% elif customer.current_balance < 0 %}{% trans "Shop owes the customer (overpayment)." %}{% else %}{% trans "Settled." %}{% endif %}
       </div>
     </div>
   </div>
@@ -200,17 +214,29 @@
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
             <thead><tr>
-              <th>{% trans "Date" %}</th><th>{% trans "Method" %}</th><th class="text-end">{% trans "Amount" %}</th>
+              <th>{% trans "Date" %}</th><th>{% trans "Method" %}</th><th class="text-end">{% trans "Amount" %}</th><th class="text-end">{% trans "Actions" %}</th>
             </tr></thead>
             <tbody>
               {% for p in payments %}
-                <tr>
+                <tr id="customer-payment-row-{{ p.pk }}">
                   <td class="small text-nowrap">{{ p.created_at|date:"Y-m-d H:i" }}</td>
                   <td>{{ p.payment_method.name|tdb }}</td>
                   <td class="text-end tabular-nums text-success">{{ p.amount|intcomma }}</td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      hx-post="{% url 'customers:customer_payment_delete' customer.pk p.pk %}"
+                      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                      hx-target="#customer-payment-row-{{ p.pk }}"
+                      hx-swap="outerHTML swap:200ms"
+                      hx-confirm="{% trans 'Delete this payment? Any sales it had settled will be moved back to pending.' %}"
+                      title="{% trans 'Delete payment' %}"
+                    >{% trans "Delete" %}</button>
+                  </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="3" class="text-center py-3 text-secondary">{% trans "No payments yet." %}</td></tr>
+                <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No payments yet." %}</td></tr>
               {% endfor %}
             </tbody>
           </table>

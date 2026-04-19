@@ -9,9 +9,12 @@ from customers.models import Customer, CustomerLedger, CustomerPayment
 from customers.services import (
     approve_sale,
     create_customer,
+    delete_customer_completely,
+    delete_customer_payment,
     delete_ledger_entry,
     record_customer_payment,
     reject_sale,
+    write_off_customer_balance,
 )
 from sales.models import PaymentMethod, Sale
 from sales.query_utils import confirmed_sales
@@ -328,6 +331,106 @@ class DeleteLedgerEntryTests(CustomerARTestCase):
         row = CustomerLedger.objects.get(customer=c, entry_type=CustomerLedger.EntryType.PAYMENT)
         with self.assertRaises(ValueError):
             delete_ledger_entry(entry=row, user=self.user)
+
+
+class DeleteCustomerPaymentTests(CustomerARTestCase):
+    def test_delete_payment_reverts_settlement_and_balance(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 90)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(90), payment_method=self.bank, user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        self.assertEqual(s.status, Sale.Status.PAID)
+        self.assertEqual(c.current_balance, _decimal(0))
+
+        payment = CustomerPayment.objects.get(customer=c)
+        delete_customer_payment(payment=payment, user=self.user)
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        self.assertEqual(s.status, Sale.Status.PENDING)
+        self.assertIsNone(s.payment_method)
+        self.assertIsNone(s.customer_payment_id)
+        self.assertEqual(c.current_balance, _decimal(90))
+        self.assertFalse(CustomerPayment.objects.filter(pk=payment.pk).exists())
+        self.assertEqual(CustomerLedger.objects.filter(customer=c).count(), 1)
+
+
+class WriteOffCustomerBalanceTests(CustomerARTestCase):
+    def test_write_off_marks_sales_records_loss_clears_balance(self):
+        from sales.query_utils import (
+            confirmed_sales,
+            loss_eligible_sales,
+            paid_sales_only,
+        )
+        from django.db.models import Sum
+
+        c = self._new_customer()
+        s1 = self._new_on_account_sale(c, 100)
+        s2 = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s1, user=self.user)
+        approve_sale(sale=s2, user=self.user)
+
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(150))
+
+        result = write_off_customer_balance(customer=c, user=self.user)
+
+        self.assertEqual(result["sales_written_off"], 2)
+        self.assertEqual(result["debt_cleared"], _decimal(150))
+        # cost_price is 5 per sale (from base setUp).
+        self.assertEqual(result["loss_total"], _decimal(10))
+
+        s1.refresh_from_db(); s2.refresh_from_db(); c.refresh_from_db()
+        self.assertEqual(s1.status, Sale.Status.WRITTEN_OFF)
+        self.assertEqual(s2.status, Sale.Status.WRITTEN_OFF)
+        self.assertEqual(s1.loss_snapshot, _decimal(5))
+        self.assertEqual(s2.loss_snapshot, _decimal(5))
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertFalse(c.is_active)
+
+        # WRITTEN_OFF must drop out of volume / profit aggregates.
+        all_sales = Sale.objects.all()
+        self.assertEqual(
+            confirmed_sales(all_sales).aggregate(s=Sum("sell_price_actual"))["s"] or 0,
+            _decimal(0),
+        )
+        self.assertEqual(
+            paid_sales_only(all_sales).aggregate(s=Sum("profit_snapshot"))["s"] or 0,
+            _decimal(0),
+        )
+        # ...but their cost should now show under losses.
+        self.assertEqual(
+            loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"],
+            _decimal(10),
+        )
+
+
+class DeleteCustomerCompletelyTests(CustomerARTestCase):
+    def test_deletes_customer_with_sales_payments_phones(self):
+        c = self._new_customer()
+        c.phones.create(phone="0599000111")
+        s1 = self._new_on_account_sale(c, 100)
+        s2 = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s1, user=self.user)
+        approve_sale(sale=s2, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.bank, user=self.user,
+        )
+
+        from customers.models import CustomerPhone
+
+        delete_customer_completely(customer=c, user=self.user)
+
+        self.assertFalse(Customer.objects.filter(pk=c.pk).exists())
+        self.assertFalse(Sale.objects.filter(pk__in=[s1.pk, s2.pk]).exists())
+        self.assertEqual(CustomerLedger.objects.filter(customer_id=c.pk).count(), 0)
+        self.assertEqual(CustomerPayment.objects.filter(customer_id=c.pk).count(), 0)
+        self.assertEqual(CustomerPhone.objects.filter(customer_id=c.pk).count(), 0)
 
 
 class CustomerDetailViewTests(CustomerARTestCase):

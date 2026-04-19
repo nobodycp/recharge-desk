@@ -20,6 +20,21 @@ urlpatterns = [
         name="customer_ledger_delete",
     ),
     path(
+        "management/customers/<int:pk>/payments/<int:payment_id>/delete/",
+        views.customer_payment_delete,
+        name="customer_payment_delete",
+    ),
+    path(
+        "management/customers/<int:pk>/delete/",
+        views.customer_delete,
+        name="customer_delete",
+    ),
+    path(
+        "management/customers/<int:pk>/write-off/",
+        views.customer_write_off,
+        name="customer_write_off",
+    ),
+    path(
         "management/customers/<int:pk>/phones/new/",
         views.customer_add_phone,
         name="customer_add_phone",

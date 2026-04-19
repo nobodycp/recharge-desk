@@ -20,7 +20,7 @@
   <div class="col-12 col-md-6">
     <div class="rd-card p-3">
       <div class="small text-secondary">{% trans "Total credit on file" %}</div>
-      <div class="h4 mb-0 tabular-nums">{{ credit_total|intcomma }}</div>
+      <div class="h4 mb-0 tabular-nums text-success">{{ credit_total|cut:"-"|intcomma }}</div>
     </div>
   </div>
 </div>
@@ -51,6 +51,7 @@
           <th>{% trans "Phones" %}</th>
           <th class="text-end">{% trans "Balance" %}</th>
           <th>{% trans "Active" %}</th>
+          <th class="text-end">{% trans "Actions" %}</th>
         </tr>
       </thead>
       <tbody>
@@ -63,12 +64,19 @@
               {% for p in c.phones.all|slice:":3" %}<span class="rd-badge rd-badge--neutral me-1">{{ p.phone }}</span>{% endfor %}
             </td>
             <td class="text-end tabular-nums fw-semibold {% if c.current_balance > 0 %}kpi-expense{% elif c.current_balance < 0 %}text-success{% endif %}">
-              {{ c.current_balance|intcomma }}
+              {% if c.current_balance < 0 %}{{ c.current_balance|cut:"-"|intcomma }} <span class="small text-success fw-normal">{% trans "credit" %}</span>{% elif c.current_balance > 0 %}{{ c.current_balance|intcomma }} <span class="small kpi-expense fw-normal">{% trans "debt" %}</span>{% else %}{{ c.current_balance|intcomma }}{% endif %}
             </td>
             <td>{% if c.is_active %}<span class="rd-badge">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}</td>
+            <td class="text-end">
+              <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline"
+                    onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans "Delete customer" %}">{% trans "Delete" %}</button>
+              </form>
+            </td>
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="text-center py-4 text-secondary">{% trans "No customers yet." %}</td></tr>
+          <tr><td colspan="5" class="text-center py-4 text-secondary">{% trans "No customers yet." %}</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -14,8 +14,11 @@ from customers.models import Customer, CustomerLedger, CustomerPayment, Customer
 from customers.services import (
     add_customer_phone,
     create_customer,
+    delete_customer_completely,
+    delete_customer_payment,
     delete_ledger_entry,
     record_customer_payment,
+    write_off_customer_balance,
 )
 
 
@@ -177,6 +180,68 @@ def customer_add_phone(request, pk):
         messages.error(request, str(exc))
     else:
         messages.success(request, _("Phone added."))
+    return redirect("customers:customer_detail", pk=customer.pk)
+
+
+@management_required
+@require_POST
+def customer_write_off(request, pk):
+    """Convert all unpaid on-account sales for the customer into a loss."""
+    customer = get_object_or_404(Customer, pk=pk)
+    try:
+        result = write_off_customer_balance(customer=customer, user=request.user)
+    except Exception as exc:  # pragma: no cover - defensive
+        messages.error(request, str(exc))
+        return redirect("customers:customer_detail", pk=customer.pk)
+    messages.success(
+        request,
+        _(
+            "Account closed. %(count)d sale(s) written off · loss recorded: "
+            "%(loss)s · debt cleared: %(debt)s."
+        )
+        % {
+            "count": result["sales_written_off"],
+            "loss": f"{result['loss_total']:.2f}",
+            "debt": f"{result['debt_cleared']:.2f}",
+        },
+    )
+    return redirect("customers:customer_detail", pk=customer.pk)
+
+
+@management_required
+@require_POST
+def customer_delete(request, pk):
+    """Hard-delete a customer and everything attached. Used for QA cleanup."""
+    customer = get_object_or_404(Customer, pk=pk)
+    name = customer.name
+    try:
+        delete_customer_completely(customer=customer, user=request.user)
+    except Exception as exc:  # pragma: no cover - defensive
+        messages.error(request, str(exc))
+        return redirect("customers:customer_detail", pk=pk)
+    messages.success(request, _("Customer “%(name)s” and all linked records were deleted.") % {"name": name})
+    return redirect("customers:customer_list")
+
+
+@management_required
+@require_POST
+def customer_payment_delete(request, pk, payment_id):
+    """Remove a recorded customer payment and undo its FIFO settlements."""
+    customer = get_object_or_404(Customer, pk=pk)
+    payment = get_object_or_404(CustomerPayment, pk=payment_id, customer=customer)
+    htmx = request.headers.get("HX-Request") == "true"
+    try:
+        delete_customer_payment(payment=payment, user=request.user)
+    except ValueError as exc:
+        if htmx:
+            from sales.views import _htmx_action_error
+            return _htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+        return redirect("customers:customer_detail", pk=customer.pk)
+    if htmx:
+        from sales.views import _htmx_remove_target
+        return _htmx_remove_target()
+    messages.success(request, _("Payment removed and settlements reversed."))
     return redirect("customers:customer_detail", pk=customer.pk)
 
 

@@ -12,6 +12,7 @@ from typing import List, Optional
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPhone
 
@@ -46,7 +47,7 @@ def get_or_create_customer_for_phone(phone: str) -> Optional[Customer]:
 def create_customer(*, name: str, phones: Optional[List[str]] = None, notes: str = "", user) -> Customer:
     name = (name or "").strip()
     if not name:
-        raise ValueError("Customer name is required.")
+        raise ValueError(_("Customer name is required."))
     customer = Customer.objects.create(
         name=name,
         notes=(notes or "").strip(),
@@ -75,7 +76,7 @@ def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> 
     name = (name or "").strip()
     phone = (phone or "").strip()
     if not name:
-        raise ValueError("Payer name is required for on-account sales.")
+        raise ValueError(_("Payer name is required for on-account sales."))
 
     customer = Customer.objects.filter(is_active=True, name__iexact=name).first()
     if customer is None:
@@ -90,7 +91,7 @@ def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> 
 def add_customer_phone(*, customer: Customer, phone: str, label: str = "") -> CustomerPhone:
     phone = (phone or "").strip()
     if not phone:
-        raise ValueError("Phone is required.")
+        raise ValueError(_("Phone is required."))
     existing = CustomerPhone.objects.filter(customer=customer, phone__iexact=phone).first()
     if existing:
         return existing
@@ -104,9 +105,9 @@ def approve_sale(*, sale, user):
 
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status != Sale.Status.AWAITING:
-        raise ValueError("Only awaiting sales can be approved.")
+        raise ValueError(_("Only awaiting sales can be approved."))
     if not sale_locked.on_account or sale_locked.customer_id is None:
-        raise ValueError("This sale is not flagged as on-account or has no customer.")
+        raise ValueError(_("This sale is not flagged as on-account or has no customer."))
 
     customer_locked = Customer.objects.select_for_update().get(pk=sale_locked.customer_id)
 
@@ -137,7 +138,7 @@ def reject_sale(*, sale, user):
 
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status != Sale.Status.AWAITING:
-        raise ValueError("Only awaiting sales can be rejected.")
+        raise ValueError(_("Only awaiting sales can be rejected."))
     return cancel_sale(sale=sale_locked, user=user)
 
 
@@ -152,7 +153,7 @@ def record_customer_payment(
 ) -> CustomerPayment:
     """Record a real-money payment from a customer and run FIFO settlement."""
     if amount is None or Decimal(amount) <= 0:
-        raise ValueError("Payment amount must be positive.")
+        raise ValueError(_("Payment amount must be positive."))
 
     customer_locked = Customer.objects.select_for_update().get(pk=customer.pk)
     payment = CustomerPayment.objects.create(
@@ -178,6 +179,178 @@ def record_customer_payment(
 
 
 @transaction.atomic
+def write_off_customer_balance(*, customer: Customer, user) -> dict:
+    """Close out a customer who will never pay: convert their unpaid
+    on-account sales into a recorded loss and zero out their balance.
+
+    Per unpaid sale (status=PENDING, on_account=True):
+
+    * status -> WRITTEN_OFF (drops out of volume / profit aggregates).
+    * loss_snapshot = cost_price_snapshot (cost shows up under losses).
+    * A REVERSAL ledger row is added crediting the sale's sell price so
+      the audit trail mirrors a normal cancellation.
+
+    Any leftover positive balance on the customer (charges that were
+    not tied to a still-pending on-account sale, e.g. legacy data) is
+    cleared with an ADJUSTMENT entry so the running balance lands at 0.
+
+    Finally the customer is marked inactive so future on-account sales
+    will not flow into the account.
+
+    Supplier balance is intentionally untouched: the goods were really
+    delivered and the cost was really paid - that is exactly why we are
+    booking it as a loss.
+
+    Returns a small summary dict for UI feedback.
+    """
+    from sales.models import Sale  # local import to avoid app cycles
+
+    customer_locked = Customer.objects.select_for_update().get(pk=customer.pk)
+    starting_balance = Decimal(customer_locked.current_balance)
+
+    unpaid = list(
+        Sale.objects.select_for_update().filter(
+            customer=customer_locked,
+            on_account=True,
+            status=Sale.Status.PENDING,
+        )
+    )
+
+    sales_written_off = 0
+    loss_total = Decimal("0")
+    debt_cleared = Decimal("0")
+
+    for sale in unpaid:
+        cost = Decimal(sale.cost_price_snapshot)
+        sell = Decimal(sale.sell_price_actual)
+
+        sale.status = Sale.Status.WRITTEN_OFF
+        sale.loss_snapshot = cost
+        sale.save(
+            update_fields=[
+                "status",
+                "loss_snapshot",
+                "updated_at",
+            ]
+        )
+
+        CustomerLedger.objects.create(
+            customer=customer_locked,
+            entry_type=CustomerLedger.EntryType.REVERSAL,
+            amount=sell,
+            sale=sale,
+            created_by=user,
+            notes="Sale written off as uncollectible loss.",
+        )
+
+        _apply_balance_delta(customer_locked, -sell)
+        sales_written_off += 1
+        loss_total += cost
+        debt_cleared += sell
+
+    customer_locked.refresh_from_db(fields=["current_balance"])
+    leftover = Decimal(customer_locked.current_balance)
+    if leftover > 0:
+        CustomerLedger.objects.create(
+            customer=customer_locked,
+            entry_type=CustomerLedger.EntryType.ADJUSTMENT,
+            amount=-leftover,
+            created_by=user,
+            notes="Account closed: residual debt written off.",
+        )
+        _apply_balance_delta(customer_locked, -leftover)
+        debt_cleared += leftover
+
+    if customer_locked.is_active:
+        customer_locked.is_active = False
+        customer_locked.save(update_fields=["is_active"])
+
+    return {
+        "sales_written_off": sales_written_off,
+        "loss_total": loss_total,
+        "debt_cleared": debt_cleared,
+        "starting_balance": starting_balance,
+    }
+
+
+@transaction.atomic
+def delete_customer_completely(*, customer: Customer, user) -> None:
+    """Hard-delete a customer plus everything attached to them.
+
+    Intended for QA / test cleanup. Walks every sale tied to the
+    customer and runs ``delete_sale_permanently`` on each (so supplier
+    balances and ledger reversals are handled correctly), then drops
+    all remaining payments and the customer row itself. Phones and
+    ledger entries cascade automatically.
+    """
+    from sales.models import Sale  # local import to avoid app cycles
+    from sales.services import delete_sale_permanently
+
+    customer_locked = Customer.objects.select_for_update().get(pk=customer.pk)
+
+    sale_ids = list(
+        Sale.objects.filter(customer=customer_locked).values_list("id", flat=True)
+    )
+    for sid in sale_ids:
+        sale = Sale.objects.select_for_update().get(pk=sid)
+        delete_sale_permanently(sale=sale)
+
+    CustomerPayment.objects.filter(customer=customer_locked).delete()
+    CustomerLedger.objects.filter(customer=customer_locked).delete()
+    customer_locked.delete()
+
+
+@transaction.atomic
+def delete_customer_payment(*, payment: CustomerPayment, user) -> None:
+    """Remove a recorded customer payment and undo its effects.
+
+    Reverses every sale this payment had FIFO-settled (status flips back
+    to PENDING, payment_method/customer_payment cleared), drops the
+    matching CustomerLedger PAYMENT row(s), refunds the customer's
+    balance, deletes the payment, then re-runs FIFO so any remaining
+    payments cover whatever charges they can.
+    """
+    from sales.models import Sale  # local import to avoid app-loading cycles
+
+    locked = CustomerPayment.objects.select_for_update().get(pk=payment.pk)
+    customer_locked = Customer.objects.select_for_update().get(pk=locked.customer_id)
+    amount = Decimal(locked.amount)
+
+    settled = list(
+        Sale.objects.select_for_update().filter(
+            customer=customer_locked,
+            on_account=True,
+            status=Sale.Status.PAID,
+            customer_payment=locked,
+        )
+    )
+    for s in settled:
+        s.status = Sale.Status.PENDING
+        s.paid_at = None
+        s.paid_by = None
+        s.payment_method = None
+        s.customer_payment = None
+        s.save(
+            update_fields=[
+                "status",
+                "paid_at",
+                "paid_by",
+                "payment_method",
+                "customer_payment",
+                "updated_at",
+            ]
+        )
+
+    CustomerLedger.objects.filter(customer=customer_locked, payment=locked).delete()
+    _apply_balance_delta(customer_locked, amount)
+    locked.delete()
+
+    reapply_settlements_for_customer(
+        customer=customer_locked, triggering_payment=None, user=user
+    )
+
+
+@transaction.atomic
 def delete_ledger_entry(*, entry: CustomerLedger, user) -> None:
     """Manually remove a single ledger row and undo its balance impact.
 
@@ -196,8 +369,10 @@ def delete_ledger_entry(*, entry: CustomerLedger, user) -> None:
 
     if locked.entry_type == CustomerLedger.EntryType.PAYMENT and locked.payment_id:
         raise ValueError(
-            "Delete the payment from the customer's payment list instead — "
-            "this ledger row is just its mirror entry."
+            _(
+                "Delete the payment from the customer's payment list instead — "
+                "this ledger row is just its mirror entry."
+            )
         )
 
     delta = Decimal("0")
