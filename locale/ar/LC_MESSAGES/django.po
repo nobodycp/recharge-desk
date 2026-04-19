@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 00:12+0300\n"
+"POT-Creation-Date: 2026-04-20 01:18+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -364,6 +364,35 @@ msgstr ""
 "احذف الدفعة من قائمة دفعات الزبون بدلاً من ذلك — هذا الصف في السجل ما هو إلا"
 " انعكاس لتلك الدفعة."
 
+msgid "Payment recorded."
+msgstr "تم تسجيل الدفعة."
+
+msgid "Adjustment recorded."
+msgstr "تم تسجيل التعديل."
+
+#, python-format
+msgid ""
+"Account closed. %(count)d sale(s) written off · loss recorded: %(loss)s · "
+"debt cleared: %(debt)s."
+msgstr ""
+"تم إغلاق الحساب. تم شطب %(count)d بيع · الخسارة المسجّلة: %(loss)s · الدين "
+"المُلغى: %(debt)s."
+
+msgid "Payment removed and settlements reversed."
+msgstr "تم حذف الدفعة وإلغاء التسديدات المرتبطة بها."
+
+msgid "Ledger entry removed."
+msgstr "تم حذف حركة السجل."
+
+msgid "Phone added."
+msgstr "تمت إضافة الرقم."
+
+msgid "Phone removed."
+msgstr "تمت إزالة الرقم."
+
+msgid "Name is required."
+msgstr "الاسم مطلوب."
+
 msgid "Customers"
 msgstr "الزبائن"
 
@@ -379,39 +408,9 @@ msgstr "تم تحديث بيانات الزبون."
 msgid "Edit customer"
 msgstr "تعديل الزبون"
 
-msgid "Payment recorded."
-msgstr "تم تسجيل الدفعة."
-
-msgid "Adjustment recorded."
-msgstr "تم تسجيل التعديل."
-
-msgid "Phone added."
-msgstr "تمت إضافة الرقم."
-
-#, python-format
-msgid ""
-"Account closed. %(count)d sale(s) written off · loss recorded: %(loss)s · "
-"debt cleared: %(debt)s."
-msgstr ""
-"تم إغلاق الحساب. تم شطب %(count)d بيع · الخسارة المسجّلة: %(loss)s · الدين "
-"المُلغى: %(debt)s."
-
 #, python-format
 msgid "Customer “%(name)s” and all linked records were deleted."
 msgstr "تم حذف الزبون «%(name)s» وكل البيانات المرتبطة به."
-
-msgid "Payment removed and settlements reversed."
-msgstr "تم حذف الدفعة وإلغاء التسديدات المرتبطة بها."
-
-msgid "Ledger entry removed."
-msgstr "تم حذف حركة السجل."
-
-msgid "Phone removed."
-msgstr "تمت إزالة الرقم."
-
-#| msgid "Phone is required."
-msgid "Name is required."
-msgstr "الاسم مطلوب."
 
 msgid "Search"
 msgstr "بحث"
@@ -673,6 +672,20 @@ msgstr "تم تسجيل الإلغاء لهذا البيع مسبقاً."
 msgid "Amount must be positive."
 msgstr "يجب أن تكون القيمة موجبة."
 
+msgid "No sales selected."
+msgstr "لم يتم اختيار أي بيع."
+
+#, python-format
+msgid "Marked %(n)s sale(s) as paid."
+msgstr "تم تعليم %(n)s بيع كمدفوع."
+
+#, python-format
+msgid "%(n)s sale(s) could not be updated (already settled or on-account)."
+msgstr "تعذّر تحديث %(n)s من المبيعات (إما مسدّدة مسبقاً أو على حساب الزبون)."
+
+msgid "No pending sales were updated."
+msgstr "لم يُحدَّث أي بيع معلّق."
+
 msgid "Recorded as on-account; awaiting management approval."
 msgstr "تم تسجيلها كبيع آجل؛ بانتظار موافقة الإدارة."
 
@@ -727,16 +740,6 @@ msgstr "تم تحديث طريقة الدفع."
 
 msgid "Edit payment method"
 msgstr "تعديل طريقة الدفع"
-
-msgid "No sales selected."
-msgstr "لم يتم اختيار أي بيع."
-
-#, python-format
-msgid "Marked %(n)s sale(s) as paid."
-msgstr "تم تعليم %(n)s بيع كمدفوع."
-
-msgid "No pending sales were updated."
-msgstr "لم يُحدَّث أي بيع معلّق."
 
 msgid "Sign in"
 msgstr "تسجيل الدخول"
@@ -1072,9 +1075,6 @@ msgstr "لا يوجد زبائن بعد."
 msgid "Operational spend tracking."
 msgstr "متابعة المصروفات التشغيلية."
 
-msgid "Search & filters"
-msgstr "البحث والفلاتر"
-
 msgid "Category breakdown and totals"
 msgstr "التصنيفات والإجماليات"
 
@@ -1107,6 +1107,9 @@ msgstr "حذف هذا المصروف؟"
 
 msgid "No expenses."
 msgstr "لا توجد مصروفات."
+
+msgid "Search & filters"
+msgstr "البحث والفلاتر"
 
 msgid "Main navigation"
 msgstr "التنقّل الرئيسي"
