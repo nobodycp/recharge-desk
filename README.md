@@ -187,6 +187,86 @@ python manage.py cleanup_orphan_ledger --dry-run
 
 Take a fresh `pg_dump` immediately after step 4 as the new baseline backup.
 
+### Daily PostgreSQL backups
+
+A turn-key script lives at `scripts/backup_postgres.sh`. It reads the
+same `/etc/recharge-desk.env` Django reads (so credentials, host and
+port stay in one place), runs `pg_dump -Fc`, names the file by date,
+and rotates so disk usage stays bounded.
+
+Install once:
+
+```bash
+sudo install -m 750 -o postgres -g postgres \
+    /opt/recharge-desk/app/scripts/backup_postgres.sh \
+    /opt/recharge-desk/scripts/backup_postgres.sh
+
+sudo mkdir -p /var/backups/recharge-desk/db
+sudo chown postgres:postgres /var/backups/recharge-desk/db
+sudo chmod 750 /var/backups/recharge-desk/db
+
+sudo -u postgres crontab -l 2>/dev/null > /tmp/pg.cron
+echo '0 3 * * * /opt/recharge-desk/scripts/backup_postgres.sh' >> /tmp/pg.cron
+sudo -u postgres crontab /tmp/pg.cron
+rm /tmp/pg.cron
+```
+
+Tunables (override via the env file or the cron line):
+
+| Variable        | Default                          | Purpose                                  |
+|-----------------|----------------------------------|------------------------------------------|
+| `BACKUP_ROOT`   | `/var/backups/recharge-desk/db`  | Where dumps land.                        |
+| `KEEP_DAILY`    | `14`                             | How many recent daily files to keep.     |
+| `KEEP_WEEKLY`   | `8`                              | How many Sunday files to keep on top.    |
+| `BACKUP_REMOTE` | (unset)                          | Optional rsync target or `s3://bucket`.  |
+| `LOG_FILE`      | `/var/log/recharge-desk-backup.log` | Per-run log; cron emails on failure. |
+
+Sanity check (run as `postgres`):
+
+```bash
+sudo -u postgres /opt/recharge-desk/scripts/backup_postgres.sh
+ls -lh /var/backups/recharge-desk/db
+```
+
+Verify the dump itself is restorable on a scratch database every
+month or so — an untested backup is not a backup.
+
+### Restoring a PostgreSQL backup
+
+```bash
+# 1. Pick a dump.
+ls /var/backups/recharge-desk/db
+DUMP=/var/backups/recharge-desk/db/recharge-desk-2026-04-19_03-00.dump
+
+# 2. Stop the app so nothing writes mid-restore.
+sudo systemctl stop recharge-desk
+
+# 3. Drop & recreate the target database (DESTRUCTIVE).
+#    Run as the postgres OS user; substitute the env values you use.
+sudo -u postgres psql <<SQL
+DROP DATABASE IF EXISTS rechargedesk;
+CREATE DATABASE rechargedesk OWNER rechargedesk;
+SQL
+
+# 4. Restore. -j parallelises across cores, --clean is harmless on a fresh DB.
+sudo -u postgres pg_restore \
+    --dbname=rechargedesk \
+    --no-owner \
+    --no-privileges \
+    --jobs=4 \
+    "$DUMP"
+
+# 5. Bring the app back, then sanity-check.
+sudo systemctl start recharge-desk
+curl -sf https://s.prosim.ps/management/ -o /dev/null && echo "OK"
+sudo -u rechargedesk /opt/recharge-desk/venv/bin/python \
+    /opt/recharge-desk/app/manage.py cleanup_orphan_ledger --dry-run
+```
+
+If the schema in the dump is older than the running code, run
+`manage.py migrate` after step 4 — Django will apply missing migrations
+without touching existing rows.
+
 ### Reverse proxy trust (production)
 
 Production settings enable **`SECURE_PROXY_SSL_HEADER`** and **`USE_X_FORWARDED_HOST`** so Django treats requests as HTTPS and uses the public `Host` when **Caddy** (or another **trusted** reverse proxy) sets `X-Forwarded-Proto` and related headers. Those headers **must not** be accepted from arbitrary clients. Therefore the **Gunicorn process must not be exposed on a public interface**: bind it to **`127.0.0.1`** or a **Unix socket** and place **only** the reverse proxy on the public network (with firewall rules consistent with that design). If the app is reachable directly from the internet while trusting forwarded headers, clients could spoof headers and undermine HTTPS/host checks.
