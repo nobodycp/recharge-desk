@@ -9,6 +9,26 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import employee_required, management_required
 from core.pagination import paginate_request
+
+
+def _flash_form_errors(request, form):
+    """Surface form errors as translated flash messages.
+
+    Uses the form field's translated label (``form[field].label``) instead of
+    the raw machine name, so an Arabic UI sees Arabic prefixes ("المبلغ:") not
+    English snake-case ones ("amount:").
+    """
+    for field, errs in form.errors.items():
+        if field == "__all__":
+            label = ""
+        else:
+            try:
+                label = form[field].label or field
+            except KeyError:
+                label = field
+        prefix = f"{label}: " if label else ""
+        for e in errs:
+            messages.error(request, f"{prefix}{e}")
 from customers.forms import (
     CustomerAdjustmentForm,
     CustomerForm,
@@ -151,9 +171,7 @@ def customer_record_payment(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     form = CustomerPaymentForm(request.POST)
     if not form.is_valid():
-        for field, errs in form.errors.items():
-            for e in errs:
-                messages.error(request, f"{field}: {e}")
+        _flash_form_errors(request, form)
         return redirect("customers:customer_detail", pk=customer.pk)
     try:
         record_customer_payment(
@@ -177,9 +195,7 @@ def customer_record_adjustment(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     form = CustomerAdjustmentForm(request.POST)
     if not form.is_valid():
-        for field, errs in form.errors.items():
-            for e in errs:
-                messages.error(request, f"{field}: {e}")
+        _flash_form_errors(request, form)
         return redirect("customers:customer_detail", pk=customer.pk)
     try:
         record_customer_adjustment(
@@ -346,13 +362,15 @@ def api_customer_create(request):
     name = (request.POST.get("name") or "").strip()
     phone = (request.POST.get("phone") or "").strip()
     if not name:
-        return JsonResponse({"ok": False, "error": "Name is required."}, status=400)
+        return JsonResponse(
+            {"ok": False, "error": str(_("Name is required."))}, status=400
+        )
     try:
         customer = create_customer(
             name=name,
             phones=[phone] if phone else None,
             user=request.user,
         )
-    except Exception as exc:  # noqa: BLE001
+    except ValueError as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
     return JsonResponse({"ok": True, "id": customer.pk, "name": customer.name})
