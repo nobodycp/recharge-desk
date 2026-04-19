@@ -38,12 +38,15 @@ from django.conf import settings
 
 # NOTE on third-party origins
 # ---------------------------
-# The base templates pull HTMX and Alpine.js from jsDelivr and the Cairo /
-# Inter web fonts from Google Fonts (CSS on fonts.googleapis.com, the
-# font files themselves on fonts.gstatic.com). If those origins are not
-# explicitly allowed by CSP the login screen and every other page will
-# render with a broken layout (no JS, no fonts). Keep these in sync if
-# you ever swap CDNs or self-host the assets.
+# The base templates pull from a few CDNs. If any of these origins is
+# not explicitly allowed by CSP the affected page renders with a broken
+# layout. Keep these in sync if you ever swap CDNs or self-host the
+# assets:
+#
+# * https://cdn.jsdelivr.net      Bootstrap 5.3 CSS (LTR + RTL),
+#                                 HTMX 1.9, Alpine.js 3.14
+# * https://fonts.googleapis.com  Cairo / Inter @import stylesheet
+# * https://fonts.gstatic.com     the actual woff2 font files
 _DEFAULT_CSP = {
     "default-src": ["'self'"],
     # 'unsafe-eval' is required by Alpine.js's default cdn.min.js build,
@@ -63,6 +66,7 @@ _DEFAULT_CSP = {
         "'self'",
         "'unsafe-inline'",
         "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net",
     ],
     "img-src": ["'self'", "data:"],
     "font-src": [

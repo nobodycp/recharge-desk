@@ -30,13 +30,24 @@ class SecurityHeadersMiddlewareTests(TestCase):
         self.assertIn("style-src", csp)
 
     def test_csp_allows_cdn_origins_used_by_base_templates(self):
-        """The base templates load HTMX / Alpine from jsDelivr and Cairo /
-        Inter from Google Fonts. Blocking those breaks every page (login,
-        dashboard, etc.)."""
+        """The base templates load Bootstrap CSS + HTMX + Alpine from
+        jsDelivr and Cairo / Inter from Google Fonts. Blocking any of
+        these origins breaks layout on every page (most visibly the
+        login screen, which has nothing else to fall back on)."""
         r = self.client.get(reverse("core:forbidden"))
         csp = r["Content-Security-Policy"]
-        self.assertIn("https://cdn.jsdelivr.net", csp)
-        self.assertIn("https://fonts.googleapis.com", csp)
+        # jsDelivr must appear in BOTH script-src (HTMX/Alpine) and
+        # style-src (Bootstrap CSS) — we already lost a release once for
+        # only allowing it on script-src.
+        script_block = next(
+            (p for p in csp.split(";") if p.strip().startswith("script-src")), ""
+        )
+        style_block = next(
+            (p for p in csp.split(";") if p.strip().startswith("style-src")), ""
+        )
+        self.assertIn("https://cdn.jsdelivr.net", script_block)
+        self.assertIn("https://cdn.jsdelivr.net", style_block)
+        self.assertIn("https://fonts.googleapis.com", style_block)
         self.assertIn("https://fonts.gstatic.com", csp)
 
     def test_csp_allows_unsafe_eval_for_alpinejs(self):
