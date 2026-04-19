@@ -270,8 +270,15 @@ def management_sale_list(request):
 
 @management_required
 def pending_payments(request):
-    qs = Sale.objects.filter(status=Sale.Status.PENDING).select_related(
-        "company", "product", "product__line", "payment_method", "created_by"
+    """
+    Real-money pending sales only — the till expects cash/transfer to land.
+    Approved on-account sales also live in PENDING but are settled via the
+    customer's account (FIFO on the next CustomerPayment), so they belong
+    on the customer detail page, not here.
+    """
+    qs = (
+        Sale.objects.filter(status=Sale.Status.PENDING, on_account=False)
+        .select_related("company", "product", "product__line", "payment_method", "created_by")
     )
     form = ManagementSaleFilterForm(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}

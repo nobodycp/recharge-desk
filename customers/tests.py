@@ -14,7 +14,7 @@ from customers.services import (
 )
 from sales.models import PaymentMethod, Sale
 from sales.query_utils import confirmed_sales
-from sales.services import cancel_sale, create_sale
+from sales.services import cancel_sale, create_sale, delete_sale_permanently
 
 User = get_user_model()
 
@@ -277,6 +277,28 @@ class CancelSettledSaleTests(CustomerARTestCase):
         c.refresh_from_db()
         self.assertEqual(c.current_balance, _decimal(0))
         self.assertEqual(CustomerLedger.objects.filter(customer=c).count(), 0)
+
+
+class DeleteApprovedOnAccountSaleTests(CustomerARTestCase):
+    def test_delete_approved_pending_sale_clears_customer_charge(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s, user=self.user)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(200))
+
+        delete_sale_permanently(sale=s)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertFalse(CustomerLedger.objects.filter(customer=c).exists())
+        self.assertFalse(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_delete_awaiting_sale_does_not_touch_customer(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        delete_sale_permanently(sale=s)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
 
 
 class CustomerDetailViewTests(CustomerARTestCase):

@@ -159,10 +159,13 @@ def _cancellation_ledger_exists(sale_id: int) -> bool:
 @transaction.atomic
 def delete_sale_permanently(*, sale: Sale) -> None:
     """
-    Remove a sale from the database and undo its effect on supplier balance.
+    Remove a sale from the database and undo every side-effect it had.
 
-    - Pending / paid: reverses the original cost deduction, then removes the sale ledger row.
-    - Cancelled: removes both the original deduction and the cancellation reversal (net zero on balance).
+    - Supplier balance: reverses the original cost deduction (and any
+      cancellation reversal, so the company balance lands net-zero).
+    - Customer ledger: for an on-account sale, undoes any CHARGE rows
+      (debits) and any REVERSAL rows (credits) that pointed at this sale,
+      so the customer's running balance also lands net-zero.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     company_locked = Company.objects.select_for_update().get(pk=sale_locked.company_id)
@@ -188,6 +191,26 @@ def delete_sale_permanently(*, sale: Sale) -> None:
 
     if txns:
         CompanyBalanceTransaction.objects.filter(pk__in=[t.pk for t in txns]).delete()
+
+    if sale_locked.on_account and sale_locked.customer_id:
+        from customers.models import Customer, CustomerLedger
+
+        customer_locked = Customer.objects.select_for_update().get(pk=sale_locked.customer_id)
+        ledger_rows = list(
+            CustomerLedger.objects.filter(customer=customer_locked, sale=sale_locked).order_by("id")
+        )
+        delta = Decimal("0")
+        for row in ledger_rows:
+            if row.entry_type == CustomerLedger.EntryType.CHARGE:
+                delta -= row.amount
+            elif row.entry_type == CustomerLedger.EntryType.REVERSAL:
+                delta += row.amount
+        if ledger_rows:
+            CustomerLedger.objects.filter(pk__in=[r.pk for r in ledger_rows]).delete()
+        if delta != 0:
+            Customer.objects.filter(pk=customer_locked.pk).update(
+                current_balance=F("current_balance") + delta
+            )
 
     sale_locked.delete()
 
