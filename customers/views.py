@@ -96,10 +96,14 @@ def customer_detail(request, pk):
 
     from sales.models import Sale  # local import to avoid cycle
 
+    on_account_qs = Sale.objects.filter(customer=customer, on_account=True)
+    awaiting_count = on_account_qs.filter(status=Sale.Status.AWAITING).count()
+    pending_count = on_account_qs.filter(status=Sale.Status.PENDING).count()
+
     on_account_sales = (
-        Sale.objects.filter(customer=customer, on_account=True)
-        .select_related("company", "product", "product__line", "payment_method", "created_by")
-        .order_by("-created_at")[:200]
+        on_account_qs.select_related(
+            "company", "product", "product__line", "payment_method", "created_by"
+        ).order_by("-created_at")[:200]
     )
     payments = (
         customer.payments.select_related("payment_method", "created_by").order_by("-created_at")[:200]
@@ -107,9 +111,6 @@ def customer_detail(request, pk):
     ledger = (
         customer.ledger_entries.select_related("sale", "payment", "created_by").order_by("-created_at")[:200]
     )
-
-    awaiting_count = on_account_sales.filter(status=Sale.Status.AWAITING).count()
-    pending_count = on_account_sales.filter(status=Sale.Status.PENDING).count()
 
     payment_form = CustomerPaymentForm()
     phone_form = CustomerPhoneForm()

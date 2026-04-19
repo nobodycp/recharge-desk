@@ -26,7 +26,13 @@ def _decimal(v):
 class CustomerARTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
+        from accounts.models import UserProfile
+
         cls.user = User.objects.create_user("mgr", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
         cls.company = Company.objects.create(
             name="Co", opening_balance=_decimal(10000), current_balance=_decimal(10000)
         )
@@ -271,3 +277,17 @@ class CancelSettledSaleTests(CustomerARTestCase):
         c.refresh_from_db()
         self.assertEqual(c.current_balance, _decimal(0))
         self.assertEqual(CustomerLedger.objects.filter(customer=c).count(), 0)
+
+
+class CustomerDetailViewTests(CustomerARTestCase):
+    def test_detail_renders_with_on_account_history(self):
+        """Regression: counts must use a fresh queryset, not the sliced list."""
+        c = self._new_customer()
+        s1 = self._new_on_account_sale(c, 200)
+        s2 = self._new_on_account_sale(c, 300)
+        approve_sale(sale=s1, user=self.user)
+        self.client.force_login(self.user)
+        url = f"/management/customers/{c.pk}/"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, c.name)
