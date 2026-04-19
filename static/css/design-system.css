@@ -197,12 +197,18 @@ body.app-shell {
 
 .rd-sidebar {
   position: fixed;
-  inset-block: 0;
-  inset-inline-start: 0;
+  /* Use physical properties — older Safari/iOS do not honor inset-block /
+     inset-inline-* on `position: fixed` reliably, which left the sidebar
+     un-anchored and effectively dumped it back into normal flow. */
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: auto;
   width: min(18rem, 88vw);
   z-index: var(--rd-z-sidebar);
   background: var(--bs-secondary-bg);
-  border-inline-end: 1px solid var(--bs-border-color);
+  border-right: 1px solid var(--bs-border-color);
+  border-left: none;
   transform: translateX(-105%);
   transition: transform var(--rd-transition), box-shadow var(--rd-transition);
   padding: 1rem 0.75rem;
@@ -213,11 +219,11 @@ body.app-shell {
 }
 
 [dir="rtl"] .rd-sidebar {
+  left: auto;
+  right: 0;
   transform: translateX(105%);
-  inset-inline-start: auto;
-  inset-inline-end: 0;
-  border-inline-end: none;
-  border-inline-start: 1px solid var(--bs-border-color);
+  border-right: none;
+  border-left: 1px solid var(--bs-border-color);
 }
 
 .rd-sidebar.is-open {
@@ -228,14 +234,19 @@ body.app-shell {
   .rd-sidebar {
     position: sticky;
     top: 0;
+    bottom: auto;
+    left: auto;
+    right: auto;
     height: 100vh;
     transform: none !important;
     box-shadow: none;
-    border-inline-start: none;
-    border-inline-end: 1px solid var(--bs-border-color);
+    border-left: none;
+    border-right: 1px solid var(--bs-border-color);
   }
   [dir="rtl"] .rd-sidebar {
     transform: none !important;
+    border-right: none;
+    border-left: 1px solid var(--bs-border-color);
   }
 }
 
