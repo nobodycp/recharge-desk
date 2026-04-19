@@ -179,8 +179,9 @@
 </div>
 
 <div class="mt-4">
-  <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+  <div class="d-flex align-items-center justify-content-between mb-2 px-1 gap-2">
     <h2 class="rd-heading-lg mb-0">{% trans "Recent entries" %}</h2>
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_recent_sales' %}">{% trans "View all" %}</a>
   </div>
   {% if recent_sales %}
     <div class="rd-card overflow-hidden">

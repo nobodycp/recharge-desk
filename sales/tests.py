@@ -453,3 +453,268 @@ class CleanupOrphanLedgerCommandTests(TestCase):
         call_command("cleanup_orphan_ledger", stdout=out)
         self.assertIn("Removed 1 orphan", out.getvalue())
         self.assertFalse(find_orphan_sale_balance_transactions().exists())
+
+
+class EmployeeRecentSalesTests(TestCase):
+    """The employee-facing 'today's entries' page lets a cashier list,
+    edit and delete their own sales — but only while management hasn't
+    acted on them yet."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.company = Company.objects.create(
+            name="EmpRecCo",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="Line")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash")
+        cls.pm2 = PaymentMethod.objects.create(name="Card")
+        cls.emp = User.objects.create_user("emp_rec", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        cls.other = User.objects.create_user("other_emp", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.other,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def _make_sale(self, *, user=None, payer="P", price=Decimal("10")):
+        return create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000000",
+            payer_name=payer,
+            payment_method=self.pm,
+            sell_price_actual=price,
+            notes="",
+            user=user or self.emp,
+        )
+
+    def test_modifiable_property_matrix(self):
+        s = self._make_sale()
+        self.assertTrue(s.is_employee_modifiable)
+        s.status = Sale.Status.PAID
+        self.assertFalse(s.is_employee_modifiable)
+        s.status = Sale.Status.CANCELLED
+        self.assertFalse(s.is_employee_modifiable)
+        s.status = Sale.Status.WRITTEN_OFF
+        self.assertFalse(s.is_employee_modifiable)
+        s.status = Sale.Status.AWAITING
+        self.assertTrue(s.is_employee_modifiable)
+        s.status = Sale.Status.PENDING
+        s.on_account = True
+        self.assertFalse(s.is_employee_modifiable)
+
+    def test_recent_page_lists_only_today_and_only_own(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        own = self._make_sale(payer="Mine")
+        foreign = self._make_sale(user=self.other, payer="NotMine")
+        old = self._make_sale(payer="Yesterday")
+        Sale.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(days=2)
+        )
+
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Mine")
+        self.assertNotContains(resp, "NotMine")
+        self.assertNotContains(resp, "Yesterday")
+        # Edit/delete affordances should be present for a fresh PENDING sale.
+        self.assertContains(
+            resp, reverse("sales:employee_sale_edit", args=[own.pk])
+        )
+        self.assertContains(
+            resp, reverse("sales:employee_sale_delete", args=[own.pk])
+        )
+
+    def test_employee_can_delete_own_pending_sale(self):
+        s = self._make_sale()
+        before = self.company.current_balance
+        # Sale should have decremented the supplier balance.
+        self.company.refresh_from_db()
+        self.assertNotEqual(self.company.current_balance, before)
+
+        url = reverse("sales:employee_sale_delete", args=[s.pk])
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Sale.objects.filter(pk=s.pk).exists())
+        # Supplier balance must be net-zero again.
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000"))
+
+    def test_employee_cannot_delete_paid_sale(self):
+        s = self._make_sale()
+        s.status = Sale.Status.PAID
+        s.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_delete", args=[s.pk])
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_employee_cannot_touch_another_users_sale(self):
+        s = self._make_sale(user=self.other)
+        del_url = reverse("sales:employee_sale_delete", args=[s.pk])
+        edit_url = reverse("sales:employee_sale_edit", args=[s.pk])
+        self.assertEqual(self.client.post(del_url).status_code, 404)
+        self.assertEqual(self.client.get(edit_url).status_code, 404)
+        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_employee_can_edit_own_pending_sale(self):
+        s = self._make_sale(payer="Old")
+        url = reverse("sales:employee_sale_edit", args=[s.pk])
+        resp = self.client.post(
+            url,
+            data={
+                "payment_method": self.pm2.pk,
+                "payer_name": "Fixed",
+                "reference_number": "0590000111",
+                "sell_price_actual": "12.00",
+                "notes": "",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        s.refresh_from_db()
+        self.assertEqual(s.payer_name, "Fixed")
+        self.assertEqual(s.payment_method_id, self.pm2.pk)
+        self.assertEqual(s.reference_number, "0590000111")
+        self.assertEqual(s.sell_price_actual, Decimal("12.00"))
+
+    def test_employee_edit_blocked_after_management_action(self):
+        s = self._make_sale()
+        s.status = Sale.Status.PAID
+        s.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_edit", args=[s.pk])
+        resp = self.client.get(url)
+        # Redirected back to the recent list, no edit form rendered.
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp["Location"], reverse("sales:employee_recent_sales"))
+
+    def test_htmx_delete_returns_empty_200_for_row_swap(self):
+        s = self._make_sale()
+        url = reverse("sales:employee_sale_delete", args=[s.pk])
+        resp = self.client.post(url, HTTP_HX_REQUEST="true")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, b"")
+        self.assertFalse(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_htmx_delete_blocked_keeps_row_and_emits_error_trigger(self):
+        s = self._make_sale()
+        s.status = Sale.Status.PAID
+        s.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_delete", args=[s.pk])
+        resp = self.client.post(url, HTTP_HX_REQUEST="true")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["HX-Reswap"], "none")
+        self.assertIn("rdSaleActionError", resp["HX-Trigger"])
+        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_view_all_link_appears_on_entry_page(self):
+        resp = self.client.get(reverse("sales:employee_entry"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, reverse("sales:employee_recent_sales"))
+
+    def test_date_filter_returns_past_day(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        # Use the local TZ throughout so the date math agrees with the
+        # ORM's `created_at__date` lookup (which honours TIME_ZONE).
+        yesterday = timezone.localdate() - timedelta(days=1)
+        old = self._make_sale(payer="OldPayer")
+        Sale.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(days=1)
+        )
+        # Today entry that must NOT appear when we ask for yesterday only.
+        self._make_sale(payer="TodayPayer")
+
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(
+            url,
+            {
+                "date_from": yesterday.isoformat(),
+                "date_to": yesterday.isoformat(),
+            },
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "OldPayer")
+        self.assertNotContains(resp, "TodayPayer")
+
+    def test_date_range_filter_includes_endpoints(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        old = self._make_sale(payer="ThreeDayOld")
+        Sale.objects.filter(pk=old.pk).update(
+            created_at=timezone.now() - timedelta(days=3)
+        )
+        recent = self._make_sale(payer="OneDayOld")
+        Sale.objects.filter(pk=recent.pk).update(
+            created_at=timezone.now() - timedelta(days=1)
+        )
+        self._make_sale(payer="HappenedToday")
+
+        d_from = timezone.localdate() - timedelta(days=2)
+        d_to = timezone.localdate()
+
+        resp = self.client.get(
+            reverse("sales:employee_recent_sales"),
+            {"date_from": d_from.isoformat(), "date_to": d_to.isoformat()},
+        )
+        self.assertContains(resp, "OneDayOld")
+        self.assertContains(resp, "HappenedToday")
+        self.assertNotContains(resp, "ThreeDayOld")
+
+    def test_date_filter_still_scoped_to_current_user(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        foreign = self._make_sale(user=self.other, payer="OtherUserOld")
+        Sale.objects.filter(pk=foreign.pk).update(
+            created_at=timezone.now() - timedelta(days=1)
+        )
+        d = timezone.localdate() - timedelta(days=1)
+        resp = self.client.get(
+            reverse("sales:employee_recent_sales"),
+            {"date_from": d.isoformat(), "date_to": d.isoformat()},
+        )
+        self.assertNotContains(resp, "OtherUserOld")
+
+    def test_invalid_range_surfaces_form_error(self):
+        resp = self.client.get(
+            reverse("sales:employee_recent_sales"),
+            {"date_from": "2026-04-20", "date_to": "2026-04-10"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Date from")  # form still rendered
+
+    def test_filter_card_collapsed_by_default_with_no_active_badge(self):
+        resp = self.client.get(reverse("sales:employee_recent_sales"))
+        self.assertEqual(resp.status_code, 200)
+        # Filter card uses <details> without `open`, so the search/filter UI
+        # is collapsed until the user clicks the summary.
+        self.assertContains(resp, "<details")
+        self.assertNotContains(resp, "<details open")
+        # No active filter badge when on the default (today) view.
+        self.assertContains(resp, 'data-rd-filter-count style="display:none"')

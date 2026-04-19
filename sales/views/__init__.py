@@ -31,6 +31,9 @@ from sales.views.employee import (
     api_payer_name_suggestions,
     employee_entry,
     employee_product_fragment,
+    employee_recent_sales,
+    employee_sale_delete,
+    employee_sale_edit,
 )
 from sales.views.management import (
     awaiting_approvals,
@@ -53,6 +56,9 @@ __all__ = [
     # employee
     "employee_entry",
     "employee_product_fragment",
+    "employee_recent_sales",
+    "employee_sale_edit",
+    "employee_sale_delete",
     "api_payer_by_number",
     "api_payer_name_suggestions",
     # management

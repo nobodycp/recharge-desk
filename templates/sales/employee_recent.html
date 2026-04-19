@@ -1,0 +1,98 @@
+{% extends "base_employee.html" %}
+{% load i18n ui_tags %}
+{% block employee_header %}{% trans "My entries" %}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
+    <p class="rd-text-muted small mb-0">
+      {% trans "Sales you entered. You can fix or remove an entry only while management hasn't acted on it yet." %}
+      <span class="d-block mt-1">
+        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
+      </span>
+    </p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'sales:employee_entry' %}">{% trans "Back to sales entry" %}</a>
+</div>
+
+{% active_filter_count as recent_active %}
+{% include "partials/filter_card_open.html" with active_count=recent_active indicator_id="recent-htmx-indicator" %}
+    <form method="get" class="row g-3 align-items-end">
+      {% if filter_form.non_field_errors %}
+        <div class="col-12"><div class="alert alert-danger py-2 mb-0">{{ filter_form.non_field_errors }}</div></div>
+      {% endif %}
+      <div class="col-12 col-md-4">
+        {{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}
+        {{ filter_form.date_from.errors }}
+      </div>
+      <div class="col-12 col-md-4">
+        {{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}
+        {{ filter_form.date_to.errors }}
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+{% include "partials/filter_card_close.html" %}
+
+{% if sales %}
+  <div class="rd-card overflow-hidden">
+    <div class="list-group list-group-flush rd-list-flush">
+      {% for s in sales %}
+        <div id="sale-row-{{ s.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
+          <div class="d-flex justify-content-between gap-3">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate">
+                {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}
+              </div>
+              {% if s.payer_name %}
+                <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
+              {% endif %}
+              <div class="small text-secondary text-truncate">
+                {{ s.reference_number }}
+                {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% elif s.on_account %} · {% trans "On account" %}{% endif %}
+              </div>
+              <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
+            </div>
+            <div class="text-end flex-shrink-0 small">
+              <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
+              <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+            </div>
+          </div>
+
+          {% if s.is_employee_modifiable %}
+            <div class="d-flex gap-2 justify-content-end">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_sale_edit' s.pk %}">{% trans "Edit" %}</a>
+              <form
+                method="post"
+                action="{% url 'sales:employee_sale_delete' s.pk %}"
+                class="d-inline-block m-0"
+                hx-post="{% url 'sales:employee_sale_delete' s.pk %}"
+                hx-target="#sale-row-{{ s.pk }}"
+                hx-swap="outerHTML swap:200ms"
+                hx-confirm="{% trans 'Delete this entry permanently? Supplier balance will be corrected. This cannot be undone.' %}"
+              >
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+              </form>
+            </div>
+          {% else %}
+            <div class="small text-secondary text-end">
+              {% trans "Locked: management has already processed this entry." %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% else %}
+  <div class="empty-state">
+    {% if is_default_today %}
+      {% trans "No entries today yet." %}
+    {% else %}
+      {% trans "No entries match the selected date range." %}
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

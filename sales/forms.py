@@ -173,6 +173,39 @@ class ManagementSaleFilterForm(forms.Form):
         )
 
 
+class EmployeeRecentFilterForm(forms.Form):
+    """Date-range filter for the employee 'My entries' page.
+
+    Both bounds are optional. When neither is provided the view defaults
+    to today; whatever the employee picks here narrows the listing
+    server-side. The form itself only validates input — it never reaches
+    the database directly.
+    """
+
+    date_from = forms.DateField(
+        label=_("Date from"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+    date_to = forms.DateField(
+        label=_("Date to"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        df = cleaned.get("date_from")
+        dt = cleaned.get("date_to")
+        if df and dt and df > dt:
+            raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
+        return cleaned
+
+
 class PaymentMethodForm(forms.ModelForm):
     class Meta:
         model = PaymentMethod

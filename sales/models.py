@@ -167,6 +167,29 @@ class Sale(models.Model):
     def __str__(self):
         return f"{self.reference_number} — {self.product.display_name}"
 
+    @property
+    def is_employee_modifiable(self) -> bool:
+        """Can the employee who created this sale still edit/delete it?
+
+        The intent is "the employee can fix their own data-entry mistake
+        until management has acted on the sale". Once any management
+        action has financial consequences elsewhere — the sale was
+        approved (on-account → posted to the customer ledger), marked
+        paid, cancelled, or written off — only management may undo it.
+
+        - AWAITING (on-account, awaiting approval) → yes.
+        - PENDING + cash sale (never needed approval, just freshly
+          entered) → yes.
+        - PENDING + on_account=True (= management already approved it
+          and the sale is now on a customer's ledger) → no.
+        - PAID, CANCELLED, WRITTEN_OFF → no.
+        """
+        if self.status == self.Status.AWAITING:
+            return True
+        if self.status == self.Status.PENDING and not self.on_account:
+            return True
+        return False
+
 
 class CompanyBalanceTransaction(models.Model):
     class EntryType(models.TextChoices):

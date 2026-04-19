@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 01:18+0300\n"
+"POT-Creation-Date: 2026-04-20 01:53+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -524,6 +524,9 @@ msgstr "eSIM فقط"
 msgid "Non-eSIM"
 msgstr "بدون eSIM"
 
+msgid "'Date from' must be on or before 'Date to'."
+msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
+
 msgid "Signed adjustment (+/-)"
 msgstr "تسوية موقعة (+/-)"
 
@@ -695,6 +698,52 @@ msgstr "تم تسجيل البيع بنجاح."
 msgid "New sale"
 msgstr "بيع جديد"
 
+msgid "Today"
+msgstr "اليوم"
+
+#, python-format
+msgid "%(start)s → %(end)s"
+msgstr "%(start)s → %(end)s"
+
+#, python-format
+msgid "From %(start)s"
+msgstr "من %(start)s"
+
+#, python-format
+msgid "Up to %(end)s"
+msgstr "حتى %(end)s"
+
+#| msgid "Recent entries"
+msgid "All entries"
+msgstr "كل الإدخالات"
+
+#| msgid "Today's entries"
+msgid "My entries"
+msgstr "إدخالاتي"
+
+msgid ""
+"This entry has already been processed by management and can no longer be "
+"changed."
+msgstr "تمّت معالجة هذا الإدخال من قبل الإدارة، ولم يعد بالإمكان تعديله."
+
+msgid "Sale updated."
+msgstr "تم تحديث البيع."
+
+msgid "Edit entry"
+msgstr "تعديل الإدخال"
+
+msgid ""
+"This entry has already been processed by management and can no longer be "
+"deleted."
+msgstr "تمّت معالجة هذا الإدخال من قبل الإدارة، ولم يعد بالإمكان حذفه."
+
+#, python-format
+msgid "Could not delete this entry: %(reason)s"
+msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
+
+msgid "Entry was permanently removed."
+msgstr "تم حذف الإدخال نهائياً."
+
 msgid "Sales"
 msgstr "المبيعات"
 
@@ -712,9 +761,6 @@ msgstr "تم التعليم كمدفوع."
 
 msgid "Sale cancelled and supplier balance restored."
 msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
-
-msgid "Sale updated."
-msgstr "تم تحديث البيع."
 
 msgid "Edit sale"
 msgstr "تعديل البيع"
@@ -1226,9 +1272,6 @@ msgstr "المبيعات المدفوعة فقط"
 msgid "إجمالي ديون العملاء"
 msgstr "إجمالي ديون العملاء"
 
-msgid "Today"
-msgstr "اليوم"
-
 msgid "Month"
 msgstr "الشهر"
 
@@ -1412,8 +1455,54 @@ msgstr "حفظ البيع"
 msgid "Recent entries"
 msgstr "آخر الإدخالات"
 
+msgid "View all"
+msgstr "عرض الكل"
+
 msgid "No recent entries yet."
 msgstr "لا توجد إدخالات حديثة بعد."
+
+#| msgid ""
+#| "Sales you entered today. You can fix or remove an entry only while "
+#| "management hasn't acted on it yet."
+msgid ""
+"Sales you entered. You can fix or remove an entry only while management "
+"hasn't acted on it yet."
+msgstr ""
+"المبيعات التي أدخلتها. يمكنك تعديل أو حذف الإدخال فقط ما دامت الإدارة لم "
+"تتعامل معه بعد."
+
+msgid "Back to sales entry"
+msgstr "العودة إلى إدخال المبيعات"
+
+msgid ""
+"Delete this entry permanently? Supplier balance will be corrected. This "
+"cannot be undone."
+msgstr ""
+"حذف هذا الإدخال نهائياً؟ سيتم تصحيح رصيد المورّد. لا يمكن التراجع.حذف هذا "
+"البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
+
+msgid "Locked: management has already processed this entry."
+msgstr "مقفل: تمّت معالجة هذا الإدخال من قبل الإدارة."
+
+msgid "No entries today yet."
+msgstr "لا توجد إدخالات اليوم بعد."
+
+msgid "No entries match the selected date range."
+msgstr "لا توجد إدخالات ضمن النطاق الزمني المحدد."
+
+#, python-format
+msgid "%(company)s · %(product)s · %(ref)s"
+msgstr "%(company)s · %(product)s · %(ref)s"
+
+msgid ""
+"Company, product and eSIM flag can't be changed here. If those need fixing, "
+"delete this entry and create a new one."
+msgstr ""
+"لا يمكن تعديل الشركة والمنتج وعلامة eSIM من هنا. إذا احتجت لتغييرها، احذف "
+"هذا الإدخال وأنشئ واحداً جديداً."
+
+msgid "Save changes"
+msgstr "حفظ التغييرات"
 
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
@@ -1488,10 +1577,6 @@ msgstr "كل المبيعات"
 msgid "Adjust safe fields on this sale."
 msgstr "تعديل الحقول الآمنة لهذا البيع."
 
-#, python-format
-msgid "%(company)s · %(product)s · %(ref)s"
-msgstr "%(company)s · %(product)s · %(ref)s"
-
 msgid ""
 "Company, product, and eSIM flag are not editable here because they would "
 "change the supplier-balance ledger. Cancel and re-create the sale if those "
@@ -1505,6 +1590,3 @@ msgstr "لقطة التكلفة:"
 
 msgid "Created"
 msgstr "تاريخ الإنشاء"
-
-msgid "Save changes"
-msgstr "حفظ التغييرات"
