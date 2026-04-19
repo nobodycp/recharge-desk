@@ -56,11 +56,12 @@
                 <th>{% trans "Product" %}</th>
                 <th class="text-end">{% trans "Price" %}</th>
                 <th>{% trans "Status" %}</th>
+                <th class="text-end">{% trans "Actions" %}</th>
               </tr>
             </thead>
             <tbody>
               {% for s in on_account_sales %}
-                <tr>
+                <tr id="customer-sale-row-{{ s.pk }}">
                   <td class="small text-nowrap">{{ s.created_at|date:"Y-m-d H:i" }}</td>
                   <td class="text-nowrap">{{ s.reference_number }}</td>
                   <td>{{ s.product.display_name }}</td>
@@ -76,9 +77,21 @@
                       <span class="rd-badge rd-badge--neutral">{% trans "Cancelled" %}</span>
                     {% endif %}
                   </td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
+                      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                      hx-target="#customer-sale-row-{{ s.pk }}"
+                      hx-swap="outerHTML swap:200ms"
+                      hx-confirm="{% trans 'Permanently delete this sale and reverse it from the customer balance and reports?' %}"
+                      title="{% trans 'Delete permanently' %}"
+                    >{% trans "Delete" %}</button>
+                  </td>
                 </tr>
               {% empty %}
-                <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No on-account sales." %}</td></tr>
+                <tr><td colspan="6" class="text-center py-3 text-secondary">{% trans "No on-account sales." %}</td></tr>
               {% endfor %}
             </tbody>
           </table>
