@@ -1,0 +1,28 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="mx-auto" style="max-width: 45rem;">
+  <h1 class="rd-heading-xl mb-3">{{ title }}</h1>
+  <div class="rd-card">
+    <div class="rd-card-body p-4">
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <form method="post" class="d-grid gap-3" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+          <div>
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+          <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

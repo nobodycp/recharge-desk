@@ -5,6 +5,18 @@ from typing import Any, Dict, Optional
 from sales.models import Sale
 
 
+# Statuses that must NOT contribute to volume / profit / KPI aggregates.
+# AWAITING sales are credit-sales pending management approval — they are
+# real shipments but not yet acknowledged by the shop, so they sit in a
+# holding bay until approved or rejected.
+EXCLUDED_AGGREGATE_STATUSES = (Sale.Status.CANCELLED, Sale.Status.AWAITING)
+
+
+def confirmed_sales(queryset):
+    """Sales counted in volume / business KPIs (excludes cancelled and awaiting)."""
+    return queryset.exclude(status__in=EXCLUDED_AGGREGATE_STATUSES)
+
+
 def paid_sales_only(queryset):
     """
     Restrict to sales with confirmed payment.

@@ -34,6 +34,7 @@ class PaymentMethod(models.Model):
 
 class Sale(models.Model):
     class Status(models.TextChoices):
+        AWAITING = "awaiting", _("Awaiting approval")
         PENDING = "pending", _("Pending")
         PAID = "paid", _("Paid")
         CANCELLED = "cancelled", _("Cancelled")
@@ -60,6 +61,38 @@ class Sale(models.Model):
         on_delete=models.PROTECT,
         related_name="sales",
         verbose_name=_("payment method"),
+        null=True,
+        blank=True,
+    )
+    on_account = models.BooleanField(
+        _("on account"),
+        default=False,
+        help_text=_("Customer credit sale: needs management approval and is settled later by a customer payment."),
+    )
+    customer = models.ForeignKey(
+        "customers.Customer",
+        on_delete=models.PROTECT,
+        related_name="sales",
+        verbose_name=_("customer"),
+        null=True,
+        blank=True,
+    )
+    customer_payment = models.ForeignKey(
+        "customers.CustomerPayment",
+        on_delete=models.SET_NULL,
+        related_name="settled_sales",
+        verbose_name=_("settled by payment"),
+        null=True,
+        blank=True,
+    )
+    approved_at = models.DateTimeField(_("approved at"), null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales_approved",
+        verbose_name=_("approved by"),
     )
     sell_price_actual = models.DecimalField(
         _("actual selling price"),

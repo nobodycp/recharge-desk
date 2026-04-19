@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 
 from django.db import transaction
 from django.db.models import F
@@ -21,16 +22,26 @@ def create_sale(
     product: Product,
     reference_number: str,
     payer_name: str,
-    payment_method: PaymentMethod,
+    payment_method: Optional[PaymentMethod],
     sell_price_actual: Decimal,
     notes: str,
     user,
     is_esim: bool = False,
+    on_account: bool = False,
+    customer=None,
 ) -> Sale:
     if product.line.company_id != company.id:
         raise ValueError("Product does not belong to the selected company.")
     if not company.is_active or not product.is_active:
         raise ValueError("Inactive company or product.")
+    if on_account:
+        if customer is None:
+            raise ValueError("On-account sales require a customer.")
+        if payment_method is not None:
+            raise ValueError("On-account sales must not have a payment method at entry time.")
+    else:
+        if payment_method is None:
+            raise ValueError("Payment method is required for non on-account sales.")
     cost = effective_cost_for_product(product, is_esim=bool(is_esim))
     profit = sell_price_actual - cost
     loss_snap = loss_snapshot_for_sale(
@@ -39,6 +50,8 @@ def create_sale(
     )
 
     company_locked = Company.objects.select_for_update().get(pk=company.pk)
+
+    initial_status = Sale.Status.AWAITING if on_account else Sale.Status.PENDING
 
     sale = Sale.objects.create(
         company=company_locked,
@@ -51,9 +64,11 @@ def create_sale(
         profit_snapshot=profit,
         loss_snapshot=loss_snap,
         is_esim=bool(is_esim),
-        status=Sale.Status.PENDING,
+        status=initial_status,
         created_by=user,
         notes=notes.strip(),
+        on_account=bool(on_account),
+        customer=customer if on_account else None,
     )
 
     CompanyBalanceTransaction.objects.create(
@@ -187,6 +202,7 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
 
     company_locked = Company.objects.select_for_update().get(pk=sale_locked.company_id)
     cost = sale_locked.cost_price_snapshot
+    previous_status = sale_locked.status
 
     CompanyBalanceTransaction.objects.create(
         company=company_locked,
@@ -198,6 +214,30 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
         created_by=user,
     )
     _apply_balance_delta(company_locked, cost)
+
+    # If this was an on-account sale that had already been approved (i.e. a
+    # CHARGE row is sitting in the customer ledger), reverse it so the
+    # customer's running balance reflects the cancellation. AWAITING sales
+    # have not posted a charge yet, so nothing to reverse there.
+    if (
+        sale_locked.on_account
+        and sale_locked.customer_id
+        and previous_status != Sale.Status.AWAITING
+    ):
+        from customers.models import Customer, CustomerLedger
+
+        customer_locked = Customer.objects.select_for_update().get(pk=sale_locked.customer_id)
+        CustomerLedger.objects.create(
+            customer=customer_locked,
+            entry_type=CustomerLedger.EntryType.REVERSAL,
+            amount=sale_locked.sell_price_actual,
+            sale=sale_locked,
+            created_by=user,
+            notes="Sale cancelled.",
+        )
+        Customer.objects.filter(pk=customer_locked.pk).update(
+            current_balance=F("current_balance") - sale_locked.sell_price_actual
+        )
 
     sale_locked.status = Sale.Status.CANCELLED
     sale_locked.cancelled_at = timezone.now()

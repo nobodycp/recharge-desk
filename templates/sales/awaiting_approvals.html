@@ -1,0 +1,44 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block page_title %}{% trans "Awaiting approval" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Awaiting approval" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "On-account sales waiting for management approval." %}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <form
+      method="get"
+      class="row g-2 align-items-end"
+      hx-get="{% url 'sales:awaiting_approvals' %}"
+      hx-target="#awaiting-results"
+      hx-push-url="true"
+    >
+      <div class="col-12 col-md-6 col-lg-5">
+        <label class="form-label small mb-1" for="awaiting-q">{% trans "Search" %}</label>
+        <input id="awaiting-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="{% trans 'Reference, payer, customer, company…' %}" autocomplete="off">
+      </div>
+      <div class="col-md-3 col-lg-2"><button class="btn btn-primary w-100" type="submit">{% trans "Apply" %}</button></div>
+      <div class="col-md-3 col-lg-2"><a class="btn btn-outline-secondary w-100" href="{% url 'sales:awaiting_approvals' %}">{% trans "Reset" %}</a></div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid" id="awaiting-results">
+  {% include "sales/partials/awaiting_results.html" %}
+</div>
+
+<script>
+(function () {
+  document.body.addEventListener("rdSaleActionError", function (evt) {
+    var msg = (evt && evt.detail && (evt.detail.value || evt.detail)) || "{% filter escapejs %}{% trans 'Could not complete the action.' %}{% endfilter %}";
+    window.alert(msg);
+  });
+})();
+</script>
+{% endblock %}

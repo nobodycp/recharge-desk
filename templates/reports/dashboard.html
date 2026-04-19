@@ -52,6 +52,32 @@
     </div>
   </div>
   <div class="col d-flex">
+    <a class="rd-card rd-stat flex-fill w-100 h-100 text-decoration-none" href="{% url 'customers:customer_list' %}">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--danger" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 5c0-1.66 4-3 9-3s9 1.34 9 3-4 3-9 3-9-1.34-9-3z"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "إجمالي ديون العملاء" %}</div>
+        <div class="rd-stat-value kpi-expense">{{ customer_debt_total|intcomma }}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <p class="rd-stat-footnote mb-0">{% trans "Customer accounts receivable" %}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col d-flex">
+    <a class="rd-card rd-stat flex-fill w-100 h-100 text-decoration-none" href="{% url 'sales:awaiting_approvals' %}">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "شحنات بانتظار الموافقة" %}</div>
+        <div class="rd-stat-value kpi-warning">{{ awaiting_count|intcomma }}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <p class="rd-stat-footnote mb-0">{% trans "On-account sales pending approval" %}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col d-flex">
     <div class="rd-card rd-stat rd-stat--loss flex-fill w-100 h-100">
       <div class="rd-card-body d-flex flex-column h-100">
         <div class="rd-stat-icon rd-stat-icon--danger" aria-hidden="true">

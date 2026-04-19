@@ -10,8 +10,10 @@ from accounts.permissions import management_required
 from core.pagination import paginate_request
 from sales.ledger_query_utils import apply_ledger_list_ordering, filter_ledger_queryset
 from sales.query_utils import (
+    EXCLUDED_AGGREGATE_STATUSES,
     apply_management_sale_filter_data,
     apply_sale_list_ordering,
+    confirmed_sales,
     paid_sales_only,
 )
 from companies.models import Company
@@ -28,8 +30,16 @@ def _local_today():
 @management_required
 def dashboard(request):
     today = _local_today()
-    sales_base = Sale.objects.exclude(status=Sale.Status.CANCELLED)
+    from customers.models import Customer
+
+    sales_base = confirmed_sales(Sale.objects.all())
     pending_count = Sale.objects.filter(status=Sale.Status.PENDING).count()
+    awaiting_count = Sale.objects.filter(status=Sale.Status.AWAITING).count()
+    customer_debt_total = (
+        Customer.objects.filter(current_balance__gt=0)
+        .aggregate(s=Sum("current_balance"))["s"]
+        or 0
+    )
     today_sales = sales_base.filter(created_at__date=today)
     today_count = today_sales.count()
     today_volume = today_sales.aggregate(s=Sum("sell_price_actual"))["s"] or 0
@@ -56,7 +66,7 @@ def dashboard(request):
         Sale.objects.select_related("company", "product", "product__line", "created_by", "payment_method")
         .order_by("-created_at")[:12]
     )
-    esim_sales_count = Sale.objects.filter(is_esim=True).exclude(status=Sale.Status.CANCELLED).count()
+    esim_sales_count = confirmed_sales(Sale.objects.filter(is_esim=True)).count()
     today_loss_from_zero = today_sales.aggregate(s=Sum("loss_snapshot"))["s"] or 0
     month_loss_from_zero = month_sales.aggregate(s=Sum("loss_snapshot"))["s"] or 0
     total_loss_from_zero = sales_base.aggregate(s=Sum("loss_snapshot"))["s"] or 0
@@ -66,6 +76,8 @@ def dashboard(request):
         {
             "title": _("Dashboard"),
             "pending_count": pending_count,
+            "awaiting_count": awaiting_count,
+            "customer_debt_total": customer_debt_total,
             "esim_sales_count": esim_sales_count,
             "today_loss_from_zero": today_loss_from_zero,
             "month_loss_from_zero": month_loss_from_zero,
@@ -101,7 +113,7 @@ class DateRangeForm(forms.Form):
 @management_required
 def profit_report(request):
     form = DateRangeForm(request.GET or None)
-    qs = Sale.objects.exclude(status=Sale.Status.CANCELLED)
+    qs = confirmed_sales(Sale.objects.all())
     if form.is_valid():
         if form.cleaned_data.get("date_from"):
             qs = qs.filter(created_at__date__gte=form.cleaned_data["date_from"])
@@ -181,7 +193,7 @@ def sales_report(request):
             | Q(product__line__name__icontains=q)
             | Q(company__name__icontains=q)
         )
-    non_cancelled = qs.exclude(status=Sale.Status.CANCELLED)
+    non_cancelled = confirmed_sales(qs)
     summary = {
         **non_cancelled.aggregate(volume=Sum("sell_price_actual"), cnt=Count("id")),
         **paid_sales_only(qs).aggregate(profit=Sum("profit_snapshot")),
@@ -268,7 +280,7 @@ def company_report(request, pk):
         s=Sum("amount")
     )["s"] or 0
 
-    sales_non_cancelled = sales_qs_filtered.exclude(status=Sale.Status.CANCELLED)
+    sales_non_cancelled = confirmed_sales(sales_qs_filtered)
     agg = {
         **sales_non_cancelled.aggregate(cnt=Count("id"), total_sell=Sum("sell_price_actual")),
         **paid_sales_only(sales_qs_filtered).aggregate(total_profit=Sum("profit_snapshot")),

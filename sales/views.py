@@ -52,6 +52,8 @@ from sales.query_utils import (
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
+from customers.services import approve_sale as approve_on_account_sale
+from customers.services import reject_sale as reject_on_account_sale
 from sales.services import (
     cancel_sale,
     create_sale,
@@ -99,18 +101,24 @@ def employee_entry(request):
 
     if request.method == "POST" and form.is_valid():
         try:
+            on_account = bool(form.cleaned_data.get("on_account"))
             create_sale(
                 company=form.cleaned_data["company"],
                 product=form.cleaned_data["product"],
                 reference_number=form.cleaned_data["reference_number"],
                 payer_name=form.cleaned_data["payer_name"],
-                payment_method=form.cleaned_data["payment_method"],
+                payment_method=form.cleaned_data["payment_method"] if not on_account else None,
                 sell_price_actual=form.cleaned_data["sell_price_actual"],
                 notes=form.cleaned_data.get("notes") or "",
                 user=request.user,
                 is_esim=bool(form.cleaned_data.get("is_esim")),
+                on_account=on_account,
+                customer=form.cleaned_data.get("customer") if on_account else None,
             )
-            messages.success(request, _("Sale recorded successfully."))
+            if on_account:
+                messages.success(request, _("Recorded as on-account; awaiting management approval."))
+            else:
+                messages.success(request, _("Sale recorded successfully."))
             return redirect("sales:employee_entry")
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -280,6 +288,71 @@ def pending_payments(request):
     if request.headers.get("HX-Request"):
         return render(request, "sales/partials/pending_payments_results.html", ctx)
     return render(request, "sales/pending_payments.html", ctx)
+
+
+@management_required
+def awaiting_approvals(request):
+    """List on-account sales waiting for management approval."""
+    qs = (
+        Sale.objects.filter(status=Sale.Status.AWAITING)
+        .select_related("company", "product", "product__line", "customer", "created_by")
+        .order_by("-created_at")
+    )
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        qs = qs.filter(
+            Q(reference_number__icontains=q)
+            | Q(payer_name__icontains=q)
+            | Q(customer__name__icontains=q)
+            | Q(company__name__icontains=q)
+        )
+    page_obj = paginate_request(request, qs)
+    ctx = {
+        "page_obj": page_obj,
+        "title": _("Awaiting approval"),
+        "q": q,
+    }
+    if request.headers.get("HX-Request"):
+        return render(request, "sales/partials/awaiting_results.html", ctx)
+    return render(request, "sales/awaiting_approvals.html", ctx)
+
+
+@management_required
+def sale_approve(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != "POST":
+        return redirect("sales:awaiting_approvals")
+    htmx = _is_htmx(request)
+    try:
+        approve_on_account_sale(sale=sale, user=request.user)
+    except ValueError as exc:
+        if htmx:
+            return _htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+        return redirect(request.META.get("HTTP_REFERER") or "sales:awaiting_approvals")
+    if htmx:
+        return _htmx_remove_target()
+    messages.success(request, _("Sale approved and posted to the customer's account."))
+    return redirect(request.META.get("HTTP_REFERER") or "sales:awaiting_approvals")
+
+
+@management_required
+def sale_reject(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if request.method != "POST":
+        return redirect("sales:awaiting_approvals")
+    htmx = _is_htmx(request)
+    try:
+        reject_on_account_sale(sale=sale, user=request.user)
+    except ValueError as exc:
+        if htmx:
+            return _htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+        return redirect(request.META.get("HTTP_REFERER") or "sales:awaiting_approvals")
+    if htmx:
+        return _htmx_remove_target()
+    messages.success(request, _("Sale rejected and supplier balance restored."))
+    return redirect(request.META.get("HTTP_REFERER") or "sales:awaiting_approvals")
 
 
 @management_required

@@ -1,0 +1,194 @@
+{% extends "base_management.html" %}
+{% load i18n humanize ui_tags %}
+{% block page_title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ customer.name }}</h1>
+    <p class="rd-text-muted mb-0">
+      {% trans "Customer account" %}
+      {% if not customer.is_active %} · <span class="text-warning">{% trans "Inactive" %}</span>{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_edit' customer.pk %}">{% trans "Edit" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Back" %}</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-4">
+    <div class="rd-card p-3">
+      <div class="small text-secondary">{% trans "Current balance" %}</div>
+      <div class="h3 mb-0 tabular-nums fw-bold {% if customer.current_balance > 0 %}kpi-expense{% elif customer.current_balance < 0 %}text-success{% endif %}">
+        {{ customer.current_balance|intcomma }}
+      </div>
+      <div class="small text-secondary mt-1">
+        {% if customer.current_balance > 0 %}{% trans "Customer owes the shop." %}{% elif customer.current_balance < 0 %}{% trans "Credit on file." %}{% else %}{% trans "Settled." %}{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="rd-card p-3">
+      <div class="small text-secondary">{% trans "Awaiting approval" %}</div>
+      <div class="h4 mb-0">{{ awaiting_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="rd-card p-3">
+      <div class="small text-secondary">{% trans "Pending on account" %}</div>
+      <div class="h4 mb-0">{{ pending_count }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="rd-card mb-3">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "On-account sales" %}</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Reference" %}</th>
+                <th>{% trans "Product" %}</th>
+                <th class="text-end">{% trans "Price" %}</th>
+                <th>{% trans "Status" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in on_account_sales %}
+                <tr>
+                  <td class="small text-nowrap">{{ s.created_at|date:"Y-m-d H:i" }}</td>
+                  <td class="text-nowrap">{{ s.reference_number }}</td>
+                  <td>{{ s.product.display_name }}</td>
+                  <td class="text-end tabular-nums">{{ s.sell_price_actual|intcomma }}</td>
+                  <td>
+                    {% if s.status == 'awaiting' %}
+                      <span class="rd-badge rd-badge--warning">{% trans "Awaiting" %}</span>
+                    {% elif s.status == 'pending' %}
+                      <span class="rd-badge rd-badge--neutral">{% trans "Pending" %}</span>
+                    {% elif s.status == 'paid' %}
+                      <span class="rd-badge">{% trans "Paid" %}</span>
+                    {% elif s.status == 'cancelled' %}
+                      <span class="rd-badge rd-badge--neutral">{% trans "Cancelled" %}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No on-account sales." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Ledger" %}</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th class="text-end">{% trans "Amount" %}</th>
+                <th>{% trans "Reference" %}</th>
+                <th>{% trans "By" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in ledger %}
+                <tr>
+                  <td class="small text-nowrap">{{ l.created_at|date:"Y-m-d H:i" }}</td>
+                  <td>{{ l.get_entry_type_display }}</td>
+                  <td class="text-end tabular-nums {% if l.entry_type == 'charge' %}kpi-expense{% elif l.entry_type == 'payment' %}text-success{% endif %}">{{ l.amount|intcomma }}</td>
+                  <td class="small">
+                    {% if l.sale_id %}#{{ l.sale_id }}{% endif %}
+                    {% if l.payment_id %}{% trans "Payment" %} #{{ l.payment_id }}{% endif %}
+                  </td>
+                  <td class="small">{% if l.created_by %}{{ l.created_by.username }}{% endif %}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="rd-card mb-3">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Record payment" %}</h2>
+        <form method="post" action="{% url 'customers:customer_record_payment' customer.pk %}" class="d-grid gap-3" novalidate>
+          {% csrf_token %}
+          <div>{{ payment_form.amount.label_tag }}{{ payment_form.amount }}{{ payment_form.amount.errors }}</div>
+          <div>{{ payment_form.payment_method.label_tag }}{{ payment_form.payment_method }}{{ payment_form.payment_method.errors }}</div>
+          <div>{{ payment_form.notes.label_tag }}{{ payment_form.notes }}{{ payment_form.notes.errors }}</div>
+          <button class="btn btn-primary" type="submit">{% trans "Record payment" %}</button>
+          <p class="small text-secondary mb-0">
+            {% trans "FIFO settlement: the oldest pending charges get marked Paid first; any extra remains as customer credit." %}
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Phones" %}</h2>
+        <ul class="list-group list-group-flush mb-3">
+          {% for p in phones %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+              <span>
+                <span class="rd-badge rd-badge--neutral">{{ p.phone }}</span>
+                {% if p.label %}<span class="small text-secondary ms-2">{{ p.label }}</span>{% endif %}
+              </span>
+              <form method="post" action="{% url 'customers:customer_remove_phone' customer.pk p.pk %}" onsubmit="return confirm('{% trans "Remove this phone?" %}');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Remove" %}</button>
+              </form>
+            </li>
+          {% empty %}
+            <li class="list-group-item small text-secondary px-0">{% trans "No phones linked." %}</li>
+          {% endfor %}
+        </ul>
+        <form method="post" action="{% url 'customers:customer_add_phone' customer.pk %}" class="row g-2">
+          {% csrf_token %}
+          <div class="col-7">{{ phone_form.phone }}</div>
+          <div class="col-5"><button class="btn btn-outline-primary w-100" type="submit">{% trans "Add" %}</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div class="rd-card">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Recent payments" %}</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead><tr>
+              <th>{% trans "Date" %}</th><th>{% trans "Method" %}</th><th class="text-end">{% trans "Amount" %}</th>
+            </tr></thead>
+            <tbody>
+              {% for p in payments %}
+                <tr>
+                  <td class="small text-nowrap">{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                  <td>{{ p.payment_method.name|tdb }}</td>
+                  <td class="text-end tabular-nums text-success">{{ p.amount|intcomma }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-center py-3 text-secondary">{% trans "No payments yet." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

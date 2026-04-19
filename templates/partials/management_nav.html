@@ -14,6 +14,14 @@
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
     <span>{% trans "Pending payments" %}</span>
   </a>
+  <a class="rd-nav-link {% if ns == 'sales' and un == 'awaiting_approvals' %}is-active{% endif %}" href="{% url 'sales:awaiting_approvals' %}">
+    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>
+    <span>{% trans "Awaiting approval" %}</span>
+  </a>
+  <a class="rd-nav-link {% if ns == 'customers' %}is-active{% endif %}" href="{% url 'customers:customer_list' %}">
+    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 11h-6"/><path d="M20 8v6"/></svg></span>
+    <span>{% trans "Customers" %}</span>
+  </a>
   <a class="rd-nav-link {% if ns == 'sales' and un == 'management_sale_list' %}is-active{% endif %}" href="{% url 'sales:management_sale_list' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span>
     <span>{% trans "Sales" %}</span>

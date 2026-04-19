@@ -1,0 +1,110 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>{% trans "When" %}</th>
+            <th>{% trans "Customer" %}</th>
+            <th>{% trans "Company" %}</th>
+            <th>{% trans "Product" %}</th>
+            <th>{% trans "Ref" %}</th>
+            <th>{% trans "Payer" %}</th>
+            <th class="text-end">{% trans "Amount" %}</th>
+            <th>{% trans "Employee" %}</th>
+            <th class="text-end">{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        {% for s in page_obj %}
+          <tbody id="awaiting-row-{{ s.pk }}" class="rd-pending-group">
+            <tr>
+              <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
+              <td>
+                {% if s.customer_id %}
+                  <a href="{% url 'customers:customer_detail' s.customer_id %}" class="fw-semibold">{{ s.customer.name }}</a>
+                {% else %}
+                  <span class="text-secondary">—</span>
+                {% endif %}
+              </td>
+              <td>{{ s.company.name }}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}</td>
+              <td class="tabular-nums text-nowrap">{{ s.reference_number }}</td>
+              <td>{{ s.payer_name }}</td>
+              <td class="fw-semibold tabular-nums text-end kpi-warning">{{ s.sell_price_actual|intcomma }}</td>
+              <td class="small text-secondary">{{ s.created_by.username }}</td>
+              <td class="text-end text-nowrap">
+                <div class="d-inline-flex gap-1 align-items-center">
+                  <form method="post" action="{% url 'sales:sale_approve' s.pk %}" class="d-inline-block m-0"
+                        hx-post="{% url 'sales:sale_approve' s.pk %}"
+                        hx-target="#awaiting-row-{{ s.pk }}"
+                        hx-swap="outerHTML swap:200ms">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success">{% trans "Approve" %}</button>
+                  </form>
+                  <form method="post" action="{% url 'sales:sale_reject' s.pk %}" class="d-inline-block m-0"
+                        hx-post="{% url 'sales:sale_reject' s.pk %}"
+                        hx-target="#awaiting-row-{{ s.pk }}"
+                        hx-swap="outerHTML swap:200ms"
+                        hx-confirm="{% trans 'Reject this sale? Supplier balance will be restored.' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Reject" %}</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% if s.notes %}
+              <tr class="rd-row-notes">
+                <td colspan="9" class="border-top-0 pt-0 pb-2 small text-secondary fst-italic">
+                  <span class="fw-semibold text-body me-1">{% trans "Notes" %}:</span>{{ s.notes|linebreaksbr }}
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        {% empty %}
+          <tbody>
+            <tr><td colspan="9" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales awaiting approval." %}</div></td></tr>
+          </tbody>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none d-flex flex-column gap-2 p-2">
+    {% for s in page_obj %}
+      <div id="awaiting-card-{{ s.pk }}" class="rd-mobile-row-card rd-pending-group">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
+            {% if s.customer_id %}
+              <div class="fw-semibold"><a href="{% url 'customers:customer_detail' s.customer_id %}">{{ s.customer.name }}</a></div>
+            {% endif %}
+            <div class="small">{{ s.company.name }} · {{ s.product.display_name }}</div>
+            <div class="font-monospace small">{{ s.reference_number }}</div>
+          </div>
+          <div class="text-end fw-bold tabular-nums kpi-warning">{{ s.sell_price_actual|intcomma }}</div>
+        </div>
+        {% if s.notes %}<div class="small text-secondary fst-italic mt-1">{{ s.notes|linebreaksbr }}</div>{% endif %}
+        <div class="d-flex gap-1 mt-2">
+          <form method="post" action="{% url 'sales:sale_approve' s.pk %}" class="d-inline flex-fill m-0"
+                hx-post="{% url 'sales:sale_approve' s.pk %}"
+                hx-target="#awaiting-card-{{ s.pk }}"
+                hx-swap="outerHTML swap:200ms">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-success w-100" type="submit">{% trans "Approve" %}</button>
+          </form>
+          <form method="post" action="{% url 'sales:sale_reject' s.pk %}" class="d-inline m-0"
+                hx-post="{% url 'sales:sale_reject' s.pk %}"
+                hx-target="#awaiting-card-{{ s.pk }}"
+                hx-swap="outerHTML swap:200ms"
+                hx-confirm="{% trans 'Reject this sale? Supplier balance will be restored.' %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Reject" %}</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-state">{% trans "No sales awaiting approval." %}</div>
+    {% endfor %}
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
