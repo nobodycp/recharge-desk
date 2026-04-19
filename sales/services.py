@@ -4,6 +4,7 @@ from typing import Optional
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from companies.models import Company, Product
 from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
@@ -31,17 +32,17 @@ def create_sale(
     customer=None,
 ) -> Sale:
     if product.line.company_id != company.id:
-        raise ValueError("Product does not belong to the selected company.")
+        raise ValueError(_("Product does not belong to the selected company."))
     if not company.is_active or not product.is_active:
-        raise ValueError("Inactive company or product.")
+        raise ValueError(_("Inactive company or product."))
     if on_account:
         if customer is None:
-            raise ValueError("On-account sales require a customer.")
+            raise ValueError(_("On-account sales require a customer."))
         if payment_method is not None:
-            raise ValueError("On-account sales must not have a payment method at entry time.")
+            raise ValueError(_("On-account sales must not have a payment method at entry time."))
     else:
         if payment_method is None:
-            raise ValueError("Payment method is required for non on-account sales.")
+            raise ValueError(_("Payment method is required for non on-account sales."))
     cost = effective_cost_for_product(product, is_esim=bool(is_esim))
     profit = sell_price_actual - cost
     loss_snap = loss_snapshot_for_sale(
@@ -140,7 +141,7 @@ def update_sale_fields(
 def mark_sale_paid(*, sale: Sale, user) -> Sale:
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status != Sale.Status.PENDING:
-        raise ValueError("Only pending sales can be marked as paid.")
+        raise ValueError(_("Only pending sales can be marked as paid."))
     sale_locked.status = Sale.Status.PAID
     sale_locked.paid_at = timezone.now()
     sale_locked.paid_by = user
@@ -219,9 +220,9 @@ def delete_sale_permanently(*, sale: Sale) -> None:
 def cancel_sale(*, sale: Sale, user) -> Sale:
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status == Sale.Status.CANCELLED:
-        raise ValueError("Sale is already cancelled.")
+        raise ValueError(_("Sale is already cancelled."))
     if _cancellation_ledger_exists(sale_locked.pk):
-        raise ValueError("Cancellation already recorded for this sale.")
+        raise ValueError(_("Cancellation already recorded for this sale."))
 
     company_locked = Company.objects.select_for_update().get(pk=sale_locked.company_id)
     cost = sale_locked.cost_price_snapshot
@@ -279,7 +280,7 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
 @transaction.atomic
 def record_manual_deposit(*, company: Company, amount: Decimal, notes: str, user) -> CompanyBalanceTransaction:
     if amount <= 0:
-        raise ValueError("Amount must be positive.")
+        raise ValueError(_("Amount must be positive."))
     company_locked = Company.objects.select_for_update().get(pk=company.pk)
     txn = CompanyBalanceTransaction.objects.create(
         company=company_locked,
