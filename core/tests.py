@@ -178,16 +178,23 @@ class SiteBrandingTests(TestCase):
     def test_login_page_uses_branded_site_name_not_request_host(self):
         """Django's stock LoginView injects ``site_name`` from
         ``get_current_site(request)`` which falls back to the HTTP
-        host (``"127.0.0.1"`` in dev). Our ``BilingualLoginView`` must
-        strip that key so the operator-configured branding name wins.
+        host (``"testserver"`` in tests, ``"127.0.0.1"`` in dev). Our
+        ``BilingualLoginView`` must strip that key so the
+        operator-configured branding name wins regardless of the host
+        the request arrives on.
+
+        We deliberately use the default test client host
+        (``testserver``) because it is always in ``ALLOWED_HOSTS``
+        during tests under every settings module, then assert the
+        host string does NOT leak into the rendered HTML.
         """
         b = SiteBranding.load()
         b.site_name = "Acme Telecom"
         b.save()
-        r = Client(HTTP_HOST="127.0.0.1").get(reverse("accounts:login"))
+        r = Client().get(reverse("accounts:login"))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Acme Telecom")
-        self.assertNotContains(r, "127.0.0.1")
+        self.assertNotContains(r, "testserver")
 
     # ---- management editor ----------------------------------------------
     def test_employee_blocked_from_branding_editor(self):
