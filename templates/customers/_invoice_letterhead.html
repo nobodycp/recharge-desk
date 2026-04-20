@@ -1,0 +1,48 @@
+{% load i18n %}
+{% comment %}
+Compact letterhead used by both customer_statement.html and
+customer_detailed_invoice.html. Centred logo on top, document
+type + issue date directly under it, then a thin rule, then the
+customer / period row. This stacks the brand metadata above the
+recipient line so the page reads top-to-bottom like a real
+invoice instead of left-to-right like a header bar.
+
+Required context:
+  customer       — Customer instance
+  period_from    — date
+  period_to      — date
+  doc_label      — translated string ("Statement" / "Detailed invoice")
+{% endcomment %}
+<div class="rd-invoice-head mb-3">
+  <div class="rd-invoice-head-top">
+    <div class="rd-invoice-head-doc-row">
+      <div class="rd-invoice-head-doc">{{ doc_label }}</div>
+      <div class="rd-invoice-head-issued small text-secondary">
+        {% trans "Issued" %}: {% now "Y-m-d H:i" %}
+      </div>
+    </div>
+    <div class="rd-invoice-head-brand">
+      {% if site_branding.logo %}
+        <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" class="rd-invoice-head-logo">
+      {% else %}
+        <div class="rd-invoice-head-title">{{ site_name }}</div>
+      {% endif %}
+    </div>
+    <div class="rd-invoice-head-spacer" aria-hidden="true"></div>
+  </div>
+  <div class="rd-invoice-head-bottom">
+    <div class="rd-invoice-head-customer">
+      <span class="rd-label">{% trans "Customer" %}</span>
+      <span class="fw-semibold">{{ customer.name }}</span>
+      {% if customer.phones.all %}
+        <span class="small text-secondary">
+          · {% for p in customer.phones.all %}{{ p.number }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        </span>
+      {% endif %}
+    </div>
+    <div class="rd-invoice-head-period">
+      <span class="rd-label">{% trans "Period" %}</span>
+      <span class="fw-semibold tabular-nums">{{ period_from|date:"Y-m-d" }} &rarr; {{ period_to|date:"Y-m-d" }}</span>
+    </div>
+  </div>
+</div>

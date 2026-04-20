@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 22:27+0300\n"
+"POT-Creation-Date: 2026-04-20 23:22+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -358,15 +358,12 @@ msgstr "لا يمكن حذف هذه الباقة لوجود مبيعات مسج�
 msgid "Package was deleted: %(label)s"
 msgstr "تم حذف الباقة: %(label)s"
 
-#| msgid "Recharge Desk"
 msgid "e.g. Recharge Desk"
 msgstr "مثال: المحاسب الشامل"
 
-#| msgid "Management"
 msgid "e.g. Management"
 msgstr "مثال: الإدارة"
 
-#| msgid "Payer name"
 msgid "Site name"
 msgstr "اسم الموقع"
 
@@ -379,7 +376,6 @@ msgstr "شعار الموقع"
 msgid "Browser tab icon"
 msgstr "أيقونة تبويب المتصفح"
 
-#| msgid "Username"
 msgid "site name"
 msgstr "اسم الموقع"
 
@@ -390,7 +386,6 @@ msgstr ""
 "يظهر في عنوان تبويب المتصفح، ورأس الشريط الجانبي، وصفحة تسجيل الدخول. اتركه "
 "فارغاً للإبقاء على الاسم الافتراضي."
 
-#| msgid "Edit line"
 msgid "tagline"
 msgstr "سطر تعريفي"
 
@@ -1373,6 +1368,34 @@ msgstr "الأيقونة الحالية"
 msgid "No tab icon uploaded yet — the browser shows its default."
 msgstr "لم يتم رفع أيقونة بعد — المتصفح يعرض الأيقونة الافتراضية."
 
+msgid "Issued"
+msgstr "تاريخ الإصدار"
+
+msgid "Period"
+msgstr "الفترة"
+
+msgid "Customer signature"
+msgstr "توقيع الزبون"
+
+msgid "Authorised signature"
+msgstr "توقيع المسؤول"
+
+#| msgid "Charge"
+msgid "Charges"
+msgstr "المسحوبات"
+
+#| msgid "Closing balance"
+msgid "Closing"
+msgstr "ختامي"
+
+#| msgid "Customer owes the shop."
+msgid "Customer owes the shop"
+msgstr "الزبون مدين للمحل"
+
+#| msgid "Shop owes the customer."
+msgid "Shop owes the customer"
+msgstr "المحل مدين للزبون"
+
 msgid "Customer account"
 msgstr "حساب الزبون"
 
@@ -1502,12 +1525,6 @@ msgstr "طباعة"
 msgid "This month"
 msgstr "هذا الشهر"
 
-msgid "Period"
-msgstr "الفترة"
-
-msgid "Issued"
-msgstr "تاريخ الإصدار"
-
 msgid "All transactions (chronological)"
 msgstr "كل الحركات (ترتيب زمني)"
 
@@ -1517,29 +1534,11 @@ msgstr "التفاصيل"
 msgid "Running balance"
 msgstr "الرصيد الجاري"
 
-msgid "Received by"
-msgstr "استلمها"
-
 msgid "No activity in this period."
 msgstr "لا توجد حركة في هذه الفترة."
 
 msgid "Period totals"
 msgstr "إجمالي الفترة"
-
-msgid "Charges (took on account)"
-msgstr "مسحوبات (على الحساب)"
-
-msgid "Payments received"
-msgstr "المدفوعات المُستلمة"
-
-msgid "Shop owes the customer."
-msgstr "المحل يدين للزبون."
-
-msgid "Customer signature"
-msgstr "توقيع الزبون"
-
-msgid "Authorised signature"
-msgstr "توقيع المسؤول"
 
 msgid "Customers buying on account and their balances."
 msgstr "الزبائن الذين يشترون بالآجل وأرصدتهم."
@@ -1592,29 +1591,6 @@ msgstr "لا يوجد زبائن بعد."
 #, python-format
 msgid "Statement — %(name)s"
 msgstr "كشف حساب — %(name)s"
-
-msgid "Owed to shop"
-msgstr "بذمة الزبون"
-
-#, python-format
-msgid "%(n)s sale"
-msgid_plural "%(n)s sales"
-msgstr[0] "لا مبيعات"
-msgstr[1] "مبيعة واحدة"
-msgstr[2] "مبيعتان"
-msgstr[3] "%(n)s مبيعات"
-msgstr[4] "%(n)s مبيعة"
-msgstr[5] "%(n)s مبيعة"
-
-#, python-format
-msgid "%(n)s payment"
-msgid_plural "%(n)s payments"
-msgstr[0] "لا دفعات"
-msgstr[1] "دفعة واحدة"
-msgstr[2] "دفعتان"
-msgstr[3] "%(n)s دفعات"
-msgstr[4] "%(n)s دفعة"
-msgstr[5] "%(n)s دفعة"
 
 msgid "Manual adjustments"
 msgstr "تسويات يدوية"
@@ -1751,20 +1727,9 @@ msgstr "بيع خسارة: سعر البيع صفر؛ تُسجَّل تكلفة 
 msgid "NotPaid"
 msgstr "غير مدفوع"
 
-msgid "Color theme"
-msgstr "مظهر الألوان"
-
-msgid "Light theme"
-msgstr "الوضع الفاتح"
-
-msgid "Light"
-msgstr "فاتح"
-
-msgid "Dark theme"
-msgstr "الوضع الداكن"
-
-msgid "Dark"
-msgstr "داكن"
+#| msgid "Color theme"
+msgid "Toggle color theme"
+msgstr "تبديل المظهر"
 
 #, python-format
 msgid "Account menu for %(name)s"
@@ -2204,3 +2169,47 @@ msgstr ""
 
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Received by"
+#~ msgstr "استلمها"
+
+#~ msgid "Charges (took on account)"
+#~ msgstr "مسحوبات (على الحساب)"
+
+#~ msgid "Payments received"
+#~ msgstr "المدفوعات المُستلمة"
+
+#~ msgid "Owed to shop"
+#~ msgstr "بذمة الزبون"
+
+#, python-format
+#~ msgid "%(n)s sale"
+#~ msgid_plural "%(n)s sales"
+#~ msgstr[0] "لا مبيعات"
+#~ msgstr[1] "مبيعة واحدة"
+#~ msgstr[2] "مبيعتان"
+#~ msgstr[3] "%(n)s مبيعات"
+#~ msgstr[4] "%(n)s مبيعة"
+#~ msgstr[5] "%(n)s مبيعة"
+
+#, python-format
+#~ msgid "%(n)s payment"
+#~ msgid_plural "%(n)s payments"
+#~ msgstr[0] "لا دفعات"
+#~ msgstr[1] "دفعة واحدة"
+#~ msgstr[2] "دفعتان"
+#~ msgstr[3] "%(n)s دفعات"
+#~ msgstr[4] "%(n)s دفعة"
+#~ msgstr[5] "%(n)s دفعة"
+
+#~ msgid "Light theme"
+#~ msgstr "الوضع الفاتح"
+
+#~ msgid "Light"
+#~ msgstr "فاتح"
+
+#~ msgid "Dark theme"
+#~ msgstr "الوضع الداكن"
+
+#~ msgid "Dark"
+#~ msgstr "داكن"

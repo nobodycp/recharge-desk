@@ -18,7 +18,7 @@
   </div>
 </div>
 
-<div class="rd-card mb-4 d-print-none">
+<div class="rd-card mb-3 d-print-none">
   <div class="rd-card-body rd-filter-bar">
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
@@ -37,34 +37,8 @@
   </div>
 </div>
 
-{# ----- Print-only branded header ----- #}
-<div class="d-none d-print-block rd-print-brand">
-  {% if site_branding.logo %}
-    <img src="{{ site_branding.logo.url }}" alt="" class="rd-print-brand-logo">
-  {% endif %}
-</div>
-
-{# ----- Invoice header block (customer + period) ----- #}
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="rd-label mb-1">{% trans "Customer" %}</div>
-        <div class="fw-semibold">{{ customer.name }}</div>
-        {% if customer.phones.all %}
-          <div class="small text-secondary">
-            {% for p in customer.phones.all %}{{ p.number }}{% if not forloop.last %} · {% endif %}{% endfor %}
-          </div>
-        {% endif %}
-      </div>
-      <div class="col-md-6 text-md-end">
-        <div class="rd-label mb-1">{% trans "Period" %}</div>
-        <div class="fw-semibold">{{ period_from|date:"Y-m-d" }} &rarr; {{ period_to|date:"Y-m-d" }}</div>
-        <div class="small text-secondary">{% trans "Issued" %}: {% now "Y-m-d H:i" %}</div>
-      </div>
-    </div>
-  </div>
-</div>
+{# ----- Compact letterhead (logo + customer + period in one band) ----- #}
+{% include "customers/_invoice_letterhead.html" with doc_label=_("Detailed invoice") %}
 
 {# ----- Full chronological activity table (one row per transaction) ----- #}
 <div class="rd-card rd-print-flow mb-3">
@@ -107,22 +81,12 @@
                 <div class="fw-medium">
                   {{ entry.sale.company.name }} — {{ entry.sale.product.display_name }}
                 </div>
-                <div class="small text-secondary">
-                  {% if entry.sale.payer_name %}{% trans "Payer" %}: {{ entry.sale.payer_name }}{% endif %}
-                  {% if entry.sale.created_by %} · {% trans "Employee" %}: {{ entry.sale.created_by.username }}{% endif %}
-                </div>
               {% elif entry.payment %}
                 <div class="fw-medium">
                   {% if entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
                 </div>
-                {% if entry.payment.created_by %}
-                  <div class="small text-secondary">{% trans "Received by" %}: {{ entry.payment.created_by.username }}</div>
-                {% endif %}
               {% elif entry.entry_type == 'adjustment' %}
                 <div class="fw-medium">{% trans "Manual adjustment" %}</div>
-                {% if entry.created_by %}
-                  <div class="small text-secondary">{% trans "By" %}: {{ entry.created_by.username }}</div>
-                {% endif %}
               {% else %}
                 <div class="fw-medium">—</div>
               {% endif %}
@@ -160,46 +124,7 @@
   </div>
 </div>
 
-{# ----- Final balance summary block ----- #}
-<div class="row g-3 mb-4">
-  <div class="col-sm-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Opening balance" %}</div>
-      <div class="h5 fw-bold tabular-nums {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">{{ opening_balance|intcomma }}</div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Charges (took on account)" %}</div>
-      <div class="h5 fw-bold tabular-nums kpi-expense">{{ charges_total|intcomma }}</div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Payments received" %}</div>
-      <div class="h5 fw-bold tabular-nums kpi-success">{{ payments_total|intcomma }}</div>
-    </div></div>
-  </div>
-  <div class="col-sm-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Closing balance" %}</div>
-      <div class="h5 fw-bold tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">{{ closing_balance|intcomma }}</div>
-      <div class="rd-text-muted small">
-        {% if closing_balance > 0 %}{% trans "Customer owes the shop." %}{% elif closing_balance < 0 %}{% trans "Shop owes the customer." %}{% else %}{% trans "Settled." %}{% endif %}
-      </div>
-    </div></div>
-  </div>
-</div>
-
-{# ----- Signature block (print-friendly) ----- #}
-<div class="row g-3 mt-5 d-print-block">
-  <div class="col-6">
-    <div class="small text-secondary">{% trans "Customer signature" %}</div>
-    <div class="border-top mt-5 pt-1 small">{{ customer.name }}</div>
-  </div>
-  <div class="col-6 text-md-end">
-    <div class="small text-secondary">{% trans "Authorised signature" %}</div>
-    <div class="border-top mt-5 pt-1 small">&nbsp;</div>
-  </div>
-</div>
+{# ----- Compact summary strip + inline signatures ----- #}
+{% include "customers/_invoice_summary.html" %}
+{% include "customers/_invoice_signature.html" %}
 {% endblock %}

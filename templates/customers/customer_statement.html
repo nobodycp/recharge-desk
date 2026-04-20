@@ -18,7 +18,7 @@
   </div>
 </div>
 
-<div class="rd-card mb-4 d-print-none">
+<div class="rd-card mb-3 d-print-none">
   <div class="rd-card-body rd-filter-bar">
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-4">
@@ -37,85 +37,30 @@
   </div>
 </div>
 
-{% comment %}
-  Print-only header: logo only, by user request. The browser's own
-  auto-injected header (page title) is suppressed via the
-  @page margin:0 trick plus JS that blanks document.title before
-  printing. The browser footer (URL + page number) is also gone
-  in Chrome / Edge for the same reason; users on Firefox / Safari
-  may need to uncheck "Headers and footers" in the print dialog.
-{% endcomment %}
-<div class="d-none d-print-block rd-print-brand">
-  {% if site_branding.logo %}
-    <img src="{{ site_branding.logo.url }}" alt="" class="rd-print-brand-logo">
-  {% endif %}
-</div>
+{# ----- Compact letterhead (logo + customer + period in one band) ----- #}
+{% include "customers/_invoice_letterhead.html" with doc_label=_("Customer statement") %}
 
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Opening balance" %}</div>
-      <div class="h4 fw-bold tabular-nums {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">
-        {{ opening_balance|intcomma }}
-      </div>
-      <div class="rd-text-muted small">
-        {% if opening_balance > 0 %}{% trans "Owed to shop" %}{% elif opening_balance < 0 %}{% trans "Credit on file" %}{% else %}{% trans "Settled" %}{% endif %}
-      </div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Charges (took on account)" %}</div>
-      <div class="h4 fw-bold tabular-nums kpi-expense">{{ charges_total|intcomma }}</div>
-      <div class="rd-text-muted small">
-        {% blocktrans count n=sales_summary.cnt|default:0 %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}
-      </div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Payments received" %}</div>
-      <div class="h4 fw-bold tabular-nums kpi-success">{{ payments_total|intcomma }}</div>
-      <div class="rd-text-muted small">
-        {% blocktrans count n=payments_in_range.count %}{{ n }} payment{% plural %}{{ n }} payments{% endblocktrans %}
-      </div>
-    </div></div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Closing balance" %}</div>
-      <div class="h4 fw-bold tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">
-        {{ closing_balance|intcomma }}
-      </div>
-      <div class="rd-text-muted small">
-        {% if closing_balance > 0 %}{% trans "Customer owes the shop." %}{% elif closing_balance < 0 %}{% trans "Shop owes the customer." %}{% else %}{% trans "Settled." %}{% endif %}
-      </div>
-    </div></div>
-  </div>
-</div>
+{# ----- Compact summary strip ----- #}
+{% include "customers/_invoice_summary.html" %}
 
 {% if adjustments_total or reversals_total %}
-  <div class="row g-3 mb-4">
+  <div class="rd-invoice-summary rd-invoice-summary--secondary mb-3">
     {% if adjustments_total %}
-      <div class="col-md-6">
-        <div class="rd-card h-100"><div class="rd-card-body">
-          <div class="rd-label mb-1">{% trans "Manual adjustments" %}</div>
-          <div class="h5 fw-bold tabular-nums {% if adjustments_total > 0 %}kpi-expense{% else %}kpi-success{% endif %}">{{ adjustments_total|intcomma }}</div>
-        </div></div>
+      <div class="rd-invoice-summary-item">
+        <span class="rd-label">{% trans "Manual adjustments" %}</span>
+        <span class="rd-invoice-summary-value tabular-nums {% if adjustments_total > 0 %}kpi-expense{% else %}kpi-success{% endif %}">{{ adjustments_total|intcomma }}</span>
       </div>
     {% endif %}
     {% if reversals_total %}
-      <div class="col-md-6">
-        <div class="rd-card h-100"><div class="rd-card-body">
-          <div class="rd-label mb-1">{% trans "Reversals (write-offs / cancellations)" %}</div>
-          <div class="h5 fw-bold tabular-nums kpi-warning">{{ reversals_total|intcomma }}</div>
-        </div></div>
+      <div class="rd-invoice-summary-item">
+        <span class="rd-label">{% trans "Reversals (write-offs / cancellations)" %}</span>
+        <span class="rd-invoice-summary-value tabular-nums kpi-warning">{{ reversals_total|intcomma }}</span>
       </div>
     {% endif %}
   </div>
 {% endif %}
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
   <div class="col-lg-6">
     <div class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "What they took (by product)" %}</div>
@@ -175,7 +120,7 @@
   </div>
 </div>
 
-<div class="rd-card mb-4">
+<div class="rd-card rd-print-flow mb-3">
   <div class="rd-card-header fw-semibold">{% trans "Activity" %}</div>
   <div class="table-responsive">
     <table class="table table-sm align-middle mb-0">
@@ -245,7 +190,10 @@
   </div>
 </div>
 
-<div class="rd-card mb-4 d-print-none">
+{# Inline signature block, kept tight so it doesn't push to a new page. #}
+{% include "customers/_invoice_signature.html" %}
+
+<div class="rd-card mt-3 d-print-none">
   <div class="rd-card-body small text-secondary">
     {% blocktrans %}Closing balance = opening balance + charges − payments + signed adjustments − reversals.{% endblocktrans %}
   </div>

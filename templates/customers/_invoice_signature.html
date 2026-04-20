@@ -1,0 +1,19 @@
+{% load i18n %}
+{% comment %}
+Compact two-column signature block. The previous mt-5 + pt-5 inside
+each cell reserved roughly 10rem of empty vertical space; this
+version leaves just enough room for hand-written ink (1.4rem)
+above a thin rule.
+{% endcomment %}
+<div class="rd-invoice-sig">
+  <div class="rd-invoice-sig-block">
+    <span class="rd-invoice-sig-rule"></span>
+    <span class="rd-invoice-sig-name">{{ customer.name }}</span>
+    <span class="rd-label">{% trans "Customer signature" %}</span>
+  </div>
+  <div class="rd-invoice-sig-block">
+    <span class="rd-invoice-sig-rule"></span>
+    <span class="rd-invoice-sig-name">&nbsp;</span>
+    <span class="rd-label">{% trans "Authorised signature" %}</span>
+  </div>
+</div>

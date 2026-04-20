@@ -1,0 +1,32 @@
+{% load i18n humanize %}
+{% comment %}
+Compact summary strip — replaces four tall KPI cards with a single
+inline row of label/value pairs. The closing balance is set apart
+with a left border so the headline number still gets emphasis.
+
+Required context:
+  opening_balance, charges_total, payments_total, closing_balance
+{% endcomment %}
+<div class="rd-invoice-summary mb-3">
+  <div class="rd-invoice-summary-item">
+    <span class="rd-label">{% trans "Opening" %}</span>
+    <span class="rd-invoice-summary-value tabular-nums {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">{{ opening_balance|intcomma }}</span>
+  </div>
+  <div class="rd-invoice-summary-item">
+    <span class="rd-label">{% trans "Charges" %}</span>
+    <span class="rd-invoice-summary-value tabular-nums kpi-expense">{{ charges_total|intcomma }}</span>
+  </div>
+  <div class="rd-invoice-summary-item">
+    <span class="rd-label">{% trans "Payments" %}</span>
+    <span class="rd-invoice-summary-value tabular-nums kpi-success">{{ payments_total|intcomma }}</span>
+  </div>
+  <div class="rd-invoice-summary-item rd-invoice-summary-item--total">
+    <span class="rd-label">{% trans "Closing" %}</span>
+    <span class="rd-invoice-summary-value tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">{{ closing_balance|intcomma }}</span>
+    <span class="rd-invoice-summary-hint">
+      {% if closing_balance > 0 %}{% trans "Customer owes the shop" %}
+      {% elif closing_balance < 0 %}{% trans "Shop owes the customer" %}
+      {% else %}{% trans "Settled" %}{% endif %}
+    </span>
+  </div>
+</div>
