@@ -6,6 +6,16 @@ app_name = "customers"
 
 urlpatterns = [
     path("management/customers/", views.customer_list, name="customer_list"),
+    path(
+        "management/customers/export.csv",
+        views.customers_export_csv,
+        name="customers_export_csv",
+    ),
+    path(
+        "management/customers/payments/export.csv",
+        views.customer_payments_export_csv,
+        name="customer_payments_export_csv",
+    ),
     path("management/customers/new/", views.customer_create, name="customer_create"),
     path("management/customers/<int:pk>/", views.customer_detail, name="customer_detail"),
     path("management/customers/<int:pk>/edit/", views.customer_edit, name="customer_edit"),

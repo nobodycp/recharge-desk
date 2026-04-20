@@ -46,6 +46,11 @@ from sales.views.management import (
     sale_mark_paid,
     sale_reject,
 )
+from sales.views.exports import (
+    awaiting_approvals_export_csv,
+    pending_payments_export_csv,
+    sales_export_csv,
+)
 from sales.views.payment_methods import (
     payment_method_create,
     payment_method_delete,
@@ -79,6 +84,10 @@ __all__ = [
     "payment_method_delete",
     # bulk
     "bulk_sales_mark_paid",
+    # exports
+    "sales_export_csv",
+    "pending_payments_export_csv",
+    "awaiting_approvals_export_csv",
     # htmx helpers (legacy underscored names kept for backward compat)
     "is_htmx",
     "htmx_remove_target",

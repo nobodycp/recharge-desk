@@ -816,3 +816,90 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertNotContains(resp, "<details open")
         # No active filter badge when on the default (today) view.
         self.assertContains(resp, 'data-rd-filter-count style="display:none"')
+
+
+class SalesCsvExportTests(TestCase):
+    """End-to-end checks for the CSV downloads on management pages.
+
+    The export views must (a) be guarded behind management auth, (b)
+    honour the same ``q`` and ``status`` filters as the HTML page, and
+    (c) emit a UTF-8 BOM so Excel opens Arabic correctly.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.boss = User.objects.create_user("csv_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.worker = User.objects.create_user("csv_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+        cls.company = Company.objects.create(name="جوال")
+        cls.line = ProductLine.objects.create(company=cls.company, name="019")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="100GB",
+            cost_price=Decimal("8"),
+            default_sell_price=Decimal("10"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="نقدًا")
+
+        def _mk(ref, payer, status=Sale.Status.PAID):
+            return Sale.objects.create(
+                company=cls.company,
+                product=cls.product,
+                reference_number=ref,
+                payer_name=payer,
+                payment_method=cls.pm,
+                sell_price_actual=Decimal("10"),
+                cost_price_snapshot=Decimal("8"),
+                profit_snapshot=Decimal("2"),
+                loss_snapshot=Decimal("0"),
+                status=status,
+                created_by=cls.boss,
+            )
+
+        cls.sale_paid = _mk("0590000111", "أحمد")
+        cls.sale_pending = _mk("0590000222", "محمد", status=Sale.Status.PENDING)
+
+    def test_employee_cannot_download_export(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("sales:sales_export_csv"))
+        self.assertEqual(r.status_code, 302)
+
+    def test_management_download_includes_bom_and_arabic(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("sales:sales_export_csv"))
+        self.assertEqual(r.status_code, 200)
+        body = b"".join(r.streaming_content).decode("utf-8")
+        self.assertTrue(body.startswith("\ufeff"), "CSV must start with BOM for Excel")
+        self.assertIn("جوال", body)
+        self.assertIn("0590000111", body)
+        self.assertIn("0590000222", body)
+        self.assertIn("text/csv", r["Content-Type"])
+        self.assertIn("attachment", r["Content-Disposition"])
+
+    def test_status_filter_narrows_export(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("sales:sales_export_csv"), {"status": Sale.Status.PENDING})
+        body = b"".join(r.streaming_content).decode("utf-8")
+        self.assertIn("0590000222", body)
+        self.assertNotIn("0590000111", body)
+
+    def test_pending_payments_export_only_cash_pending(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("sales:pending_payments_export_csv"))
+        body = b"".join(r.streaming_content).decode("utf-8")
+        self.assertIn("0590000222", body)
+        self.assertNotIn("0590000111", body)

@@ -7,7 +7,13 @@
     <h1 class="rd-heading-xl mb-1">{% trans "Awaiting approval" %}</h1>
     <p class="rd-text-muted mb-0">{% trans "On-account sales waiting for management approval." %}</p>
   </div>
-  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:awaiting_approvals_export_csv' %}?{{ request.GET.urlencode }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      {% trans "Export CSV" %}
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
+  </div>
 </div>
 
 <div class="rd-card mb-3">

@@ -26,6 +26,10 @@ from customers.views.actions import (
     customer_write_off,
 )
 from customers.views.api import api_customer_create, api_customer_lookup
+from customers.views.exports import (
+    customer_payments_export_csv,
+    customers_export_csv,
+)
 from customers.views.crud import (
     customer_create,
     customer_delete,
@@ -52,4 +56,7 @@ __all__ = [
     # api
     "api_customer_lookup",
     "api_customer_create",
+    # exports
+    "customers_export_csv",
+    "customer_payments_export_csv",
 ]
