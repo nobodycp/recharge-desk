@@ -109,6 +109,16 @@
           <span class="font-monospace">{{ s.reference_number }}</span>
           <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
         </div>
+        {% if s.payer_name %}
+          <div class="mt-1">
+            <span class="rd-mobile-k">{% trans "Payer" %}</span>
+            <span class="rd-mobile-v">{{ s.payer_name }}</span>
+          </div>
+        {% endif %}
+        <div class="mt-1 d-flex align-items-center gap-2 flex-wrap">
+          <span class="rd-mobile-k">{% trans "Method" %}</span>
+          <span class="rd-badge rd-badge--neutral">{{ s.payment_method.name|tdb }}</span>
+        </div>
         <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
         {% if s.notes %}
           <div class="small text-secondary fst-italic mt-1">

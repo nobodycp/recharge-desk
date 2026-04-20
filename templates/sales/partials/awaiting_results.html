@@ -71,19 +71,31 @@
   </div>
   <div class="d-md-none d-flex flex-column gap-2 p-2">
     {% for s in page_obj %}
-      <div id="awaiting-card-{{ s.pk }}" class="rd-mobile-row-card rd-pending-group">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <div>
-            <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
-            {% if s.customer_id %}
-              <div class="fw-semibold"><a href="{% url 'customers:customer_detail' s.customer_id %}" hx-boost="false">{{ s.customer.name }}</a></div>
-            {% endif %}
-            <div class="small">{{ s.company.name }} · {{ s.product.display_name }}</div>
-            <div class="font-monospace small">{{ s.reference_number }}</div>
+      <div id="awaiting-card-{{ s.pk }}" class="rd-mobile-row-card is-pending rd-pending-group">
+        <div class="small text-secondary">{{ s.created_at }}</div>
+        {% if s.customer_id %}
+          <div class="fw-semibold">
+            <a href="{% url 'customers:customer_detail' s.customer_id %}" hx-boost="false">{{ s.customer.name }}</a>
           </div>
-          <div class="text-end fw-bold tabular-nums kpi-warning">{{ s.sell_price_actual|intcomma }}</div>
+        {% endif %}
+        <div class="fw-semibold">{{ s.company.name }}</div>
+        <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}</div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="font-monospace">{{ s.reference_number }}</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
         </div>
-        {% if s.notes %}<div class="small text-secondary fst-italic mt-1">{{ s.notes|linebreaksbr }}</div>{% endif %}
+        {% if s.payer_name %}
+          <div class="mt-1">
+            <span class="rd-mobile-k">{% trans "Payer" %}</span>
+            <span class="rd-mobile-v">{{ s.payer_name }}</span>
+          </div>
+        {% endif %}
+        <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
+        {% if s.notes %}
+          <div class="small text-secondary fst-italic mt-1">
+            <span class="fw-semibold text-body">{% trans "Notes" %}:</span> {{ s.notes|linebreaksbr }}
+          </div>
+        {% endif %}
         <div class="d-flex gap-1 mt-2">
           <form method="post" action="{% url 'sales:sale_approve' s.pk %}" class="d-inline flex-fill m-0"
                 hx-post="{% url 'sales:sale_approve' s.pk %}"
