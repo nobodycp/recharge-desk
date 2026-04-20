@@ -1,0 +1,118 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Audit log" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Audit log" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Append-only record of who changed what." %}</p>
+  </div>
+</div>
+
+<details class="rd-filter-card mb-3">
+  <summary class="rd-card rd-card-body" style="cursor:pointer; list-style:none;">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="fw-semibold">{% trans "Filters" %}</span>
+      <span class="badge bg-primary-subtle text-primary" data-rd-filter-count style="display:none;">0</span>
+    </div>
+  </summary>
+  <div class="rd-card rd-card-body mt-2">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label" for="audit-q">{% trans "Search target" %}</label>
+        <input type="search" id="audit-q" name="q" class="form-control form-control-sm" value="{{ request.GET.q|default:'' }}" placeholder="{% trans 'Object id or text' %}">
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="audit-action">{% trans "Action" %}</label>
+        <select id="audit-action" name="action" class="form-select form-select-sm">
+          <option value="">{% trans "All" %}</option>
+          {% for value, label in action_choices %}
+            <option value="{{ value }}" {% if request.GET.action == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="audit-model">{% trans "Model" %}</label>
+        <select id="audit-model" name="model" class="form-select form-select-sm">
+          <option value="">{% trans "All" %}</option>
+          {% for m in models_seen %}
+            <option value="{{ m }}" {% if request.GET.model == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="audit-actor">{% trans "Actor" %}</label>
+        <select id="audit-actor" name="actor" class="form-select form-select-sm">
+          <option value="">{% trans "All" %}</option>
+          {% for a in actors %}
+            <option value="{{ a.id }}" {% if request.GET.actor == a.id|stringformat:'s' %}selected{% endif %}>{{ a.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="audit-from">{% trans "Date from" %}</label>
+        <input type="date" id="audit-from" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from|default:'' }}">
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="audit-to">{% trans "Date to" %}</label>
+        <input type="date" id="audit-to" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to|default:'' }}">
+      </div>
+      <div class="col-12 col-md-auto">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-link btn-sm" href="{% url 'audit:audit_log_list' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</details>
+
+<div class="rd-card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>{% trans "When" %}</th>
+          <th>{% trans "Actor" %}</th>
+          <th>{% trans "Action" %}</th>
+          <th>{% trans "Target" %}</th>
+          <th>{% trans "Changes" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in page_obj.object_list %}
+          <tr>
+            <td class="text-secondary small">{{ row.created_at|date:"Y-m-d H:i:s" }}</td>
+            <td>
+              {% if row.actor %}{{ row.actor.username }}{% else %}<span class="text-muted">—</span>{% endif %}
+              {% if row.ip %}<div class="text-secondary small">{{ row.ip }}</div>{% endif %}
+            </td>
+            <td><span class="badge bg-secondary-subtle text-secondary">{{ row.get_action_display }}</span></td>
+            <td>
+              <div><code class="small">{{ row.model_label }}#{{ row.object_id|default:"—" }}</code></div>
+              <div class="small">{{ row.object_repr|default:"" }}</div>
+            </td>
+            <td>
+              {% if row.changes %}
+                <details>
+                  <summary class="small text-secondary" style="cursor:pointer;">{% trans "View" %}</summary>
+                  <pre class="small mb-0 mt-1" style="white-space:pre-wrap; word-break:break-word;">{{ row.changes|pprint }}</pre>
+                </details>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-secondary py-4">{% trans "No audit events match your filters." %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+    <div class="rd-card-footer">
+      {% include "partials/pagination.html" with page_obj=page_obj %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

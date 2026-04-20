@@ -6,9 +6,23 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from audit.models import AuditAction
+from audit.services import diff_fields, record as audit_record, snapshot
 from companies.models import Company, Product
 from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
 from sales.pricing import effective_cost_for_product, loss_snapshot_for_sale
+
+
+_SALE_AUDITED_FIELDS = (
+    "reference_number",
+    "payer_name",
+    "sell_price_actual",
+    "payment_method_id",
+    "notes",
+    "status",
+    "on_account",
+    "customer_id",
+)
 
 
 def _apply_balance_delta(company: Company, delta: Decimal) -> None:
@@ -82,6 +96,12 @@ def create_sale(
         created_by=user,
     )
     _apply_balance_delta(company_locked, -cost)
+    audit_record(
+        AuditAction.CREATE,
+        sale,
+        actor=user,
+        changes=diff_fields(None, snapshot(sale, _SALE_AUDITED_FIELDS)),
+    )
     return sale
 
 
@@ -110,6 +130,7 @@ def update_sale_fields(
     by cancelling and re-creating the sale.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    before = snapshot(sale_locked, _SALE_AUDITED_FIELDS)
     cost = sale_locked.cost_price_snapshot
 
     sale_locked.payment_method = payment_method
@@ -134,6 +155,9 @@ def update_sale_fields(
             "updated_at",
         ]
     )
+    changes = diff_fields(before, snapshot(sale_locked, _SALE_AUDITED_FIELDS))
+    if changes:
+        audit_record(AuditAction.UPDATE, sale_locked, actor=user, changes=changes)
     return sale_locked
 
 
@@ -146,6 +170,7 @@ def mark_sale_paid(*, sale: Sale, user) -> Sale:
     sale_locked.paid_at = timezone.now()
     sale_locked.paid_by = user
     sale_locked.save(update_fields=["status", "paid_at", "paid_by", "updated_at"])
+    audit_record(AuditAction.MARK_PAID, sale_locked, actor=user)
     return sale_locked
 
 
@@ -158,7 +183,7 @@ def _cancellation_ledger_exists(sale_id: int) -> bool:
 
 
 @transaction.atomic
-def delete_sale_permanently(*, sale: Sale) -> None:
+def delete_sale_permanently(*, sale: Sale, user=None) -> None:
     """
     Remove a sale from the database and undo every side-effect it had.
 
@@ -169,6 +194,9 @@ def delete_sale_permanently(*, sale: Sale) -> None:
       so the customer's running balance also lands net-zero.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    audit_snapshot = snapshot(sale_locked, _SALE_AUDITED_FIELDS)
+    audit_repr = str(sale_locked)
+    audit_pk = sale_locked.pk
     company_locked = Company.objects.select_for_update().get(pk=sale_locked.company_id)
     sale_id = sale_locked.pk
 
@@ -214,6 +242,15 @@ def delete_sale_permanently(*, sale: Sale) -> None:
             )
 
     sale_locked.delete()
+    # Even though the row is gone the audit snapshot keeps a textual
+    # description + the field-level diff, so a deleted sale still has
+    # an investigable trail.
+    audit_record(
+        AuditAction.DELETE,
+        sale,  # original instance carries pk + str() for the snapshot
+        actor=user,
+        changes={"_snapshot": audit_snapshot, "_repr": audit_repr, "_pk": audit_pk},
+    )
 
 
 def find_orphan_sale_balance_transactions(*, company: Optional[Company] = None):
@@ -383,6 +420,12 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
             "cancelled_by",
             "updated_at",
         ]
+    )
+    audit_record(
+        AuditAction.CANCEL,
+        sale_locked,
+        actor=user,
+        changes={"previous_status": previous_status},
     )
     return sale_locked
 

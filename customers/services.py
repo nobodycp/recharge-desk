@@ -14,6 +14,8 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from audit.models import AuditAction
+from audit.services import record as audit_record
 from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPhone
 
 
@@ -62,6 +64,12 @@ def create_customer(*, name: str, phones: Optional[List[str]] = None, notes: str
         # Lookup must include the customer or get_or_create returns somebody
         # else's row and the new customer ends up with no phone link.
         CustomerPhone.objects.get_or_create(customer=customer, phone=phone)
+    audit_record(
+        AuditAction.CREATE,
+        customer,
+        actor=user,
+        changes={"name": name, "phones": list(phones or [])},
+    )
     return customer
 
 
@@ -131,6 +139,12 @@ def approve_sale(*, sale, user):
 
     # New charge may be auto-covered by an existing credit.
     reapply_settlements_for_customer(customer=customer_locked, triggering_payment=None, user=user)
+    audit_record(
+        AuditAction.APPROVE,
+        sale_locked,
+        actor=user,
+        changes={"customer_id": customer_locked.pk, "amount": str(sale_locked.sell_price_actual)},
+    )
     return sale_locked
 
 
@@ -143,7 +157,9 @@ def reject_sale(*, sale, user):
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status != Sale.Status.AWAITING:
         raise ValueError(_("Only awaiting sales can be rejected."))
-    return cancel_sale(sale=sale_locked, user=user)
+    result = cancel_sale(sale=sale_locked, user=user)
+    audit_record(AuditAction.REJECT, result, actor=user)
+    return result
 
 
 @transaction.atomic
@@ -178,6 +194,16 @@ def record_customer_payment(
 
     reapply_settlements_for_customer(
         customer=customer_locked, triggering_payment=payment, user=user
+    )
+    audit_record(
+        AuditAction.PAY,
+        payment,
+        actor=user,
+        changes={
+            "customer_id": customer_locked.pk,
+            "amount": str(amount),
+            "payment_method_id": getattr(payment_method, "pk", None),
+        },
     )
     return payment
 
@@ -217,6 +243,12 @@ def record_customer_adjustment(
         created_by=user,
     )
     _apply_balance_delta(customer_locked, amt)
+    audit_record(
+        AuditAction.ADJUST,
+        customer_locked,
+        actor=user,
+        changes={"amount": str(amt), "ledger_entry_id": entry.pk},
+    )
     return entry
 
 
@@ -307,6 +339,17 @@ def write_off_customer_balance(*, customer: Customer, user) -> dict:
         customer_locked.is_active = False
         customer_locked.save(update_fields=["is_active"])
 
+    audit_record(
+        AuditAction.WRITE_OFF,
+        customer_locked,
+        actor=user,
+        changes={
+            "sales_written_off": sales_written_off,
+            "loss_total": str(loss_total),
+            "debt_cleared": str(debt_cleared),
+            "starting_balance": str(starting_balance),
+        },
+    )
     return {
         "sales_written_off": sales_written_off,
         "loss_total": loss_total,
@@ -335,11 +378,19 @@ def delete_customer_completely(*, customer: Customer, user) -> None:
     )
     for sid in sale_ids:
         sale = Sale.objects.select_for_update().get(pk=sid)
-        delete_sale_permanently(sale=sale)
+        delete_sale_permanently(sale=sale, user=user)
 
     CustomerPayment.objects.filter(customer=customer_locked).delete()
     CustomerLedger.objects.filter(customer=customer_locked).delete()
+    name_repr = customer_locked.name
+    pk = customer_locked.pk
     customer_locked.delete()
+    audit_record(
+        AuditAction.DELETE,
+        customer,
+        actor=user,
+        changes={"_repr": name_repr, "_pk": pk, "sales_purged": len(sale_ids)},
+    )
 
 
 @transaction.atomic
@@ -385,7 +436,19 @@ def delete_customer_payment(*, payment: CustomerPayment, user) -> None:
 
     CustomerLedger.objects.filter(customer=customer_locked, payment=locked).delete()
     _apply_balance_delta(customer_locked, amount)
+    payment_id = locked.pk
     locked.delete()
+    audit_record(
+        AuditAction.DELETE,
+        payment,
+        actor=user,
+        changes={
+            "_pk": payment_id,
+            "amount": str(amount),
+            "customer_id": customer_locked.pk,
+            "settled_sales_reverted": len(settled),
+        },
+    )
 
     reapply_settlements_for_customer(
         customer=customer_locked, triggering_payment=None, user=user
