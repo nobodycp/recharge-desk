@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -65,26 +67,23 @@ def theme(request):
     }
 
 
-def nav_notifications(request):
-    """Counts surfaced as a badge on the management topbar / nav.
+def compute_nav_notifications(user) -> dict | None:
+    """Return ``{awaiting, pending, total}`` for the given user, or
+    ``None`` if the user shouldn't see the notification badge.
 
-    Only runs for authenticated management users — employees never see
-    these and unauthenticated requests skip the DB hit entirely. The
-    queries are tiny (two ``COUNT(*)`` on indexed columns) and never
-    cached: the badge has to react immediately when management approves
-    or marks a sale paid, otherwise the UI lies about how much work is
-    waiting. If load ever becomes a concern, a 15 s per-user cache here
-    is the obvious next step.
+    Used by both the context processor (initial render) and the live
+    polling endpoint, so they stay in lock-step. Two tiny COUNT queries
+    on indexed columns; never cached so management sees the change the
+    instant they approve or mark something paid.
     """
-    user = getattr(request, "user", None)
-    if not user or not user.is_authenticated:
-        return {"nav_notifications": None}
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
 
     try:
         from accounts.permissions import is_management
 
         if not is_management(user):
-            return {"nav_notifications": None}
+            return None
 
         from sales.models import Sale
 
@@ -94,14 +93,19 @@ def nav_notifications(request):
             on_account=False,
         ).count()
     except Exception:
-        return {"nav_notifications": None}
+        return None
 
     return {
-        "nav_notifications": {
-            "awaiting": awaiting,
-            "pending": pending,
-            "total": awaiting + pending,
-        }
+        "awaiting": awaiting,
+        "pending": pending,
+        "total": awaiting + pending,
+    }
+
+
+def nav_notifications(request):
+    """Context processor wrapper around :func:`compute_nav_notifications`."""
+    return {
+        "nav_notifications": compute_nav_notifications(getattr(request, "user", None))
     }
 
 

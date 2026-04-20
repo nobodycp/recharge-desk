@@ -271,6 +271,32 @@ class NavNotificationsContextProcessorTests(TestCase):
         # And the badge HTML must render in the topbar.
         self.assertContains(r, "rd-notif-badge")
 
+    def test_poll_endpoint_returns_same_counts_as_context_processor(self):
+        """The live-polling JSON endpoint and the initial-render context
+        processor must agree, otherwise the badge would jump on the
+        first poll for no reason. Same setUpTestData fixture is reused
+        so any drift between the two code paths is caught here."""
+        import json
+
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:nav_notifications_poll"))
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body["awaiting"], 2)
+        self.assertEqual(body["pending"], 1)
+        self.assertEqual(body["total"], 3)
+        # Translated labels are bundled too so the JS fallback can use
+        # them if it ever needs to.
+        self.assertIn("labels", body)
+
+    def test_poll_endpoint_blocked_for_employees(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("core:nav_notifications_poll"))
+        # @management_required redirects employees to the forbidden page.
+        self.assertEqual(r.status_code, 302)
+
 
 class GlobalSearchTests(TestCase):
     """The topbar search must surface matches across sales, customers,

@@ -133,6 +133,34 @@ def search(request):
 
 
 @management_required
+def nav_notifications_poll(request):
+    """Lightweight JSON heartbeat for the topbar notification badge.
+
+    Returns the same {awaiting, pending, total} payload the context
+    processor renders into the page on initial load, so the JS poller
+    can reuse the existing markup without an extra translation step.
+    Two indexed ``COUNT(*)`` queries — cheap enough to poll every
+    15 s without measurable impact even with several active users.
+    """
+    from core.context_processors import compute_nav_notifications
+
+    counts = compute_nav_notifications(request.user) or {
+        "awaiting": 0,
+        "pending": 0,
+        "total": 0,
+    }
+    return JsonResponse(
+        {
+            **counts,
+            "labels": {
+                "needs_attention": str(_("Needs attention")),
+                "all_caught_up": str(_("All caught up.")),
+            },
+        }
+    )
+
+
+@management_required
 def search_suggest(request):
     """Tiny JSON endpoint feeding the live-suggestion dropdown in the topbar.
 
