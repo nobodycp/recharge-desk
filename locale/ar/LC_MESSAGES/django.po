@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 02:56+0300\n"
+"POT-Creation-Date: 2026-04-20 04:09+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -132,6 +132,98 @@ msgstr "تم تحديث الملف الشخصي."
 
 msgid "Account settings"
 msgstr "إعدادات الحساب"
+
+#, fuzzy
+#| msgid "Created"
+msgid "Create"
+msgstr "تاريخ الإنشاء"
+
+#, fuzzy
+#| msgid "date"
+msgid "Update"
+msgstr "التاريخ"
+
+msgid "Delete"
+msgstr "حذف"
+
+msgid "Approve"
+msgstr "موافقة"
+
+msgid "Reject"
+msgstr "رفض"
+
+msgid "Cancel"
+msgstr "إلغاء"
+
+msgid "Mark paid"
+msgstr "تعليم كمدفوع"
+
+msgid "Record payment"
+msgstr "تسجيل دفعة"
+
+#, fuzzy
+#| msgid "current balance"
+msgid "Adjust balance"
+msgstr "الرصيد الحالي"
+
+#, fuzzy
+#| msgid "Written off"
+msgid "Write off"
+msgstr "مشطوب"
+
+msgid "actor"
+msgstr ""
+
+#, fuzzy
+#| msgid "Actions"
+msgid "action"
+msgstr "إجراءات"
+
+msgid "model"
+msgstr ""
+
+msgid "Lowercased ``app_label.model_name`` of the affected row."
+msgstr ""
+
+msgid "object id"
+msgstr ""
+
+#, fuzzy
+#| msgid "Reject"
+msgid "object"
+msgstr "رفض"
+
+msgid "Snapshot of ``str(instance)`` so deletes stay meaningful."
+msgstr ""
+
+#, fuzzy
+#| msgid "Save changes"
+msgid "changes"
+msgstr "حفظ التغييرات"
+
+msgid "Per-field {old, new} for updates; arbitrary context otherwise."
+msgstr ""
+
+msgid "IP address"
+msgstr "عنوان IP"
+
+msgid "created at"
+msgstr "تاريخ الإنشاء"
+
+#, fuzzy
+#| msgid "Edit entry"
+msgid "audit log entry"
+msgstr "تعديل الإدخال"
+
+#, fuzzy
+#| msgid "Site logo"
+msgid "audit log"
+msgstr "شعار الموقع"
+
+#, fuzzy
+#| msgid "Site logo"
+msgid "Audit log"
+msgstr "شعار الموقع"
 
 msgid "Select a package that belongs to this product line."
 msgstr "اختر باقة تنتمي لخط المنتج هذا."
@@ -313,6 +405,9 @@ msgstr "هوية الموقع"
 msgid "Access denied"
 msgstr "الوصول مرفوض"
 
+msgid "Search"
+msgstr "بحث"
+
 msgid "Branding updated."
 msgstr "تم تحديث هوية الموقع."
 
@@ -388,9 +483,6 @@ msgstr "طريقة الدفع"
 
 msgid "recorded by"
 msgstr "سجَّلها"
-
-msgid "created at"
-msgstr "تاريخ الإنشاء"
 
 msgid "customer payment"
 msgstr "دفعة زبون"
@@ -507,9 +599,6 @@ msgstr "تعديل الزبون"
 msgid "Customer “%(name)s” and all linked records were deleted."
 msgstr "تم حذف الزبون «%(name)s» وكل البيانات المرتبطة به."
 
-msgid "Search"
-msgstr "بحث"
-
 msgid "Title, category, notes…"
 msgstr "العنوان، الفئة، الملاحظات…"
 
@@ -564,6 +653,12 @@ msgstr "لوحة التحكم"
 
 msgid "Profit report"
 msgstr "تقرير الأرباح"
+
+msgid "Unknown"
+msgstr "غير معروف"
+
+msgid "Employee performance"
+msgstr "أداء الموظفين"
 
 msgid "Sales report"
 msgstr "تقرير المبيعات"
@@ -890,7 +985,6 @@ msgstr ""
 "اجعلها غير نشطة بدلاً من ذلك، أو حوّل هذه السجلات لطريقة أخرى أولاً."
 
 #, python-format
-#| msgid "Company “%(name)s” was deleted."
 msgid "Payment method “%(name)s” was deleted."
 msgstr "تم حذف طريقة الدفع \"%(name)s\"."
 
@@ -936,9 +1030,6 @@ msgstr "حذف هذا المستخدم نهائياً؟ لا يمكن الترا
 msgid "Delete user"
 msgstr "حذف المستخدم"
 
-msgid "Delete"
-msgstr "حذف"
-
 msgid "No users."
 msgstr "لا يوجد مستخدمون."
 
@@ -947,9 +1038,6 @@ msgstr "غير نشط"
 
 msgid "Save"
 msgstr "حفظ"
-
-msgid "Cancel"
-msgstr "إلغاء"
 
 msgid "Danger zone"
 msgstr "منطقة خطرة"
@@ -982,6 +1070,54 @@ msgstr "تطبيق"
 msgid "Reset"
 msgstr "إعادة ضبط"
 
+msgid "Append-only record of who changed what."
+msgstr "سجل لا يقبل التعديل لكل التغييرات."
+
+#, fuzzy
+#| msgid "Filtered rows"
+msgid "Filters"
+msgstr "الصفوف بعد التصفية"
+
+#, fuzzy
+#| msgid "Search"
+msgid "Search target"
+msgstr "بحث"
+
+msgid "Object id or text"
+msgstr "معرّف أو نص"
+
+#, fuzzy
+#| msgid "Actions"
+msgid "Action"
+msgstr "إجراءات"
+
+msgid "Model"
+msgstr ""
+
+msgid "Actor"
+msgstr "الفاعل"
+
+msgid "When"
+msgstr "متى"
+
+#, fuzzy
+#| msgid "Charge"
+msgid "Target"
+msgstr "مديونية"
+
+#, fuzzy
+#| msgid "Change password"
+msgid "Changes"
+msgstr "تغيير كلمة المرور"
+
+#, fuzzy
+#| msgid "View all"
+msgid "View"
+msgstr "عرض الكل"
+
+msgid "No audit events match your filters."
+msgstr "لا توجد أحداث تطابق الفلاتر."
+
 msgid "Sales entry"
 msgstr "إدخال مبيعات"
 
@@ -990,6 +1126,11 @@ msgstr "اللغة"
 
 msgid "Open menu"
 msgstr "فتح القائمة"
+
+#, fuzzy
+#| msgid "Reference, payer, customer, company…"
+msgid "Search reference, customer, payment…"
+msgstr "المرجع، الدافع، الزبون، الشركة…"
 
 msgid "Delete this company? This cannot be undone."
 msgstr "حذف هذه الشركة؟ لا يمكن التراجع."
@@ -1084,6 +1225,66 @@ msgstr "ليس لديك صلاحية لعرض هذه الصفحة."
 msgid "Go home"
 msgstr "الرئيسية"
 
+#, python-format
+msgid "Found %(n)s result for “%(q)s”."
+msgid_plural "Found %(n)s results for “%(q)s”."
+msgstr[0] "لا توجد نتائج لـ “%(q)s”."
+msgstr[1] "نتيجة واحدة لـ “%(q)s”."
+msgstr[2] "نتيجتان لـ “%(q)s”."
+msgstr[3] "%(n)s نتائج لـ “%(q)s”."
+msgstr[4] "%(n)s نتيجة لـ “%(q)s”."
+msgstr[5] "%(n)s نتيجة لـ “%(q)s”."
+
+msgid "Type a reference number, customer name, phone, or numeric ID."
+msgstr "اكتب رقم مرجع أو اسم زبون أو رقم هاتف أو معرّف رقمي."
+
+msgid "Search across sales, customers, and payments"
+msgstr "ابحث في المبيعات والزبائن والدفعات"
+
+msgid "e.g. 0599…, customer name, payment notes"
+msgstr "مثال: 0599…، اسم الزبون، ملاحظات دفعة"
+
+#, fuzzy
+#| msgid "Shop owes the customer (overpayment)."
+msgid "No matches across sales, customers, or payments."
+msgstr "المحل يدين للزبون (دفعة زائدة)."
+
+#, fuzzy
+#| msgid "View all sales"
+msgid "View all matches"
+msgstr "عرض كل المبيعات"
+
+msgid "Reference"
+msgstr "المرجع"
+
+msgid "Payer"
+msgstr "الدافع"
+
+msgid "Created"
+msgstr "تاريخ الإنشاء"
+
+#, fuzzy
+#| msgid "Opening"
+msgid "Open"
+msgstr "افتتاحي"
+
+msgid "Balance"
+msgstr "الرصيد"
+
+msgid "Phones"
+msgstr "أرقام الهاتف"
+
+#, fuzzy
+#| msgid "customer payments"
+msgid "Customer payments"
+msgstr "دفعات الزبائن"
+
+msgid "Customer"
+msgstr "الزبون"
+
+msgid "Method"
+msgstr "الطريقة"
+
 msgid "Login page logo"
 msgstr "شعار صفحة تسجيل الدخول"
 
@@ -1165,9 +1366,6 @@ msgstr "مبيعات الآجل"
 msgid "Date"
 msgstr "التاريخ"
 
-msgid "Reference"
-msgstr "المرجع"
-
 msgid "Price"
 msgstr "السعر"
 
@@ -1203,9 +1401,6 @@ msgstr "حذف حركة السجل"
 msgid "No ledger entries."
 msgstr "لا توجد حركات."
 
-msgid "Record payment"
-msgstr "تسجيل دفعة"
-
 msgid ""
 "FIFO settlement: the oldest pending charges get marked Paid first; any extra"
 " remains as customer credit."
@@ -1226,9 +1421,6 @@ msgstr ""
 "يؤثر على رصيد الزبون فقط. لا يدخل في المبيعات أو الأرباح أو الخسائر. يتم "
 "خصمه من توتل الزبون عند دفعه مثل أي دين آخر."
 
-msgid "Phones"
-msgstr "أرقام الهاتف"
-
 msgid "Remove this phone?"
 msgstr "إزالة هذا الرقم؟"
 
@@ -1243,9 +1435,6 @@ msgstr "إضافة"
 
 msgid "Recent payments"
 msgstr "آخر الدفعات"
-
-msgid "Method"
-msgstr "الطريقة"
 
 msgid ""
 "Delete this payment? Any sales it had settled will be moved back to pending."
@@ -1262,6 +1451,14 @@ msgstr "لا توجد دفعات بعد."
 msgid "Customers buying on account and their balances."
 msgstr "الزبائن الذين يشترون بالآجل وأرصدتهم."
 
+msgid "Export CSV"
+msgstr "تصدير CSV"
+
+#, fuzzy
+#| msgid "No payments yet."
+msgid "Export payments CSV"
+msgstr "تصدير الدفعات CSV"
+
 msgid "Total customer debt"
 msgstr "إجمالي ديون الزبائن"
 
@@ -1270,9 +1467,6 @@ msgstr "إجمالي الرصيد للزبائن"
 
 msgid "Search by name or phone"
 msgstr "بحث بالاسم أو رقم الهاتف"
-
-msgid "Balance"
-msgstr "الرصيد"
 
 msgid "credit"
 msgstr "رصيد له"
@@ -1337,6 +1531,32 @@ msgstr "الكتالوج"
 msgid "Administration"
 msgstr "الإدارة"
 
+#, fuzzy
+#| msgid "Actions"
+msgid "Notifications"
+msgstr "الإشعارات"
+
+#, python-format
+msgid "%(n)s item needs attention"
+msgid_plural "%(n)s items need attention"
+msgstr[0] "لا يوجد طلبات معلّقة"
+msgstr[1] "طلب واحد يحتاج للاهتمام"
+msgstr[2] "طلبان يحتاجان للاهتمام"
+msgstr[3] "%(n)s طلبات تحتاج للاهتمام"
+msgstr[4] "%(n)s طلبًا يحتاج للاهتمام"
+msgstr[5] "%(n)s طلب يحتاج للاهتمام"
+
+msgid "Needs attention"
+msgstr "يحتاج للاهتمام"
+
+#, fuzzy
+#| msgid "No sales awaiting approval."
+msgid "Debt requests awaiting approval"
+msgstr "لا توجد مبيعات بانتظار الموافقة."
+
+msgid "All caught up."
+msgstr "كل شي تمام، لا يوجد طلبات معلّقة."
+
 msgid "Pagination"
 msgstr "الترقيم"
 
@@ -1393,11 +1613,36 @@ msgstr "تسجيل الخروج"
 msgid "Supplier statement & internal ledger"
 msgstr "كشف المورّد وسجل الرصيد الداخلي"
 
+#| msgid "Net profit (all time)"
+msgid "Reset (all time)"
+msgstr "إعادة تعيين (كل الفترات)"
+
+#, python-format
+#| msgid "%(start)s → %(end)s"
+msgid "Showing data from %(start)s to %(end)s."
+msgstr "تعرض البيانات من %(start)s إلى %(end)s."
+
+msgid ""
+"Showing all-time data. Pick a date range above to scope the cards and tables"
+" below."
+msgstr ""
+"تعرض كل البيانات. اختر نطاق تاريخ بالأعلى لقصر البطاقات والجداول التالية "
+"عليه."
+
 msgid "Total deposits"
 msgstr "إجمالي الإيداعات"
 
 msgid "Consumed (sales)"
 msgstr "المستهلك (مبيعات)"
+
+#, python-format
+#| msgid "Balance"
+msgid "Balance on %(d)s"
+msgstr "الرصيد بتاريخ %(d)s"
+
+#| msgid "No"
+msgid "Now"
+msgstr "الآن"
 
 msgid "Reversals (cancellations)"
 msgstr "العكس (إلغاءات)"
@@ -1471,17 +1716,79 @@ msgstr "أرصدة المورّدين"
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."
 
+#, python-format
+msgid "Sales last %(n)s day"
+msgid_plural "Sales last %(n)s days"
+msgstr[0] "مبيعات آخر يوم"
+msgstr[1] "مبيعات آخر يومين"
+msgstr[2] "مبيعات آخر %(n)s أيام"
+msgstr[3] "مبيعات آخر %(n)s يوماً"
+msgstr[4] "مبيعات آخر %(n)s يوماً"
+msgstr[5] "مبيعات آخر %(n)s يوم"
+
+#, fuzzy
+#| msgid "Profit report"
+msgid "Open profit report"
+msgstr "تقرير الأرباح"
+
+#, fuzzy
+#| msgid "Paid sales only"
+msgid "Daily sales volume"
+msgstr "المبيعات المدفوعة فقط"
+
+msgid "No sales recorded in this period."
+msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
+
+#, fuzzy
+#| msgid "This month profit"
+msgid "Top companies (this month, by profit)"
+msgstr "ربح هذا الشهر"
+
+#, fuzzy
+#| msgid "No sales yet."
+msgid "No paid sales this month yet."
+msgstr "لا توجد مبيعات بعد."
+
 msgid "Recent activity"
 msgstr "النشاط الأخير"
 
 msgid "View all sales"
 msgstr "عرض كل المبيعات"
 
-msgid "When"
-msgstr "متى"
-
 msgid "No sales yet."
 msgstr "لا توجد مبيعات بعد."
+
+#, fuzzy, python-format
+#| msgid "Excludes cancelled sales"
+msgid "From %(start)s to %(end)s. Excludes cancelled sales."
+msgstr "باستثناء المبيعات الملغاة"
+
+#, fuzzy
+#| msgid "Sales entry"
+msgid "Sales count"
+msgstr "إدخال مبيعات"
+
+msgid "Profit (paid only)"
+msgstr "الأرباح (المدفوعة فقط)"
+
+#, fuzzy
+#| msgid "Active"
+msgid "Active staff"
+msgstr "نشط"
+
+msgid "Per-employee breakdown"
+msgstr "تفصيل لكل موظف"
+
+msgid "Profit"
+msgstr "الربح"
+
+msgid "Avg. ticket"
+msgstr "متوسط الفاتورة"
+
+#, fuzzy
+#| msgid "company"
+msgid "Top company"
+msgstr "الشركة"
 
 msgid "Balance ledger"
 msgstr "سجل الرصيد"
@@ -1503,9 +1810,6 @@ msgstr "المرجع"
 
 msgid "Sell"
 msgstr "البيع"
-
-msgid "Profit"
-msgstr "الربح"
 
 msgid "No sales."
 msgstr "لا توجد مبيعات."
@@ -1676,20 +1980,8 @@ msgstr ""
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
 
-msgid "Customer"
-msgstr "الزبون"
-
-msgid "Payer"
-msgstr "الدافع"
-
-msgid "Approve"
-msgstr "موافقة"
-
 msgid "Reject this sale? Supplier balance will be restored."
 msgstr "رفض هذا البيع؟ سيتم استرجاع رصيد المورّد."
-
-msgid "Reject"
-msgstr "رفض"
 
 msgid "No sales awaiting approval."
 msgstr "لا توجد مبيعات بانتظار الموافقة."
@@ -1725,9 +2017,6 @@ msgstr "تحديد"
 msgid "Select sale"
 msgstr "تحديد البيع"
 
-msgid "Mark paid"
-msgstr "تعليم كمدفوع"
-
 msgid "No pending sales."
 msgstr "لا توجد مبيعات معلّقة."
 
@@ -1740,11 +2029,9 @@ msgstr ""
 "تزال مرتبطة بها، سيتم منع الحذف — اجعلها غير نشطة بدلاً من ذلك."
 
 #, python-format
-#| msgid "Delete this product line? This cannot be undone."
 msgid "Delete payment method “%(name)s”? This cannot be undone."
 msgstr "حذف طريقة الدفع \"%(name)s\"؟ لا يمكن التراجع عن هذا الإجراء."
 
-#| msgid "New payment method"
 msgid "Delete payment method"
 msgstr "حذف طريقة الدفع"
 
@@ -1773,6 +2060,3 @@ msgstr ""
 
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
-
-msgid "Created"
-msgstr "تاريخ الإنشاء"
