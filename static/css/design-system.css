@@ -495,7 +495,13 @@ body.app-shell {
 .rd-search-panel {
   position: absolute;
   top: calc(100% + 0.5rem);
-  inset-inline-end: 0;
+  /* Anchor the panel to the start edge of the toggle so it always opens
+   * INTO the viewport: in LTR that's the toggle's left edge (panel
+   * extends right); in RTL the start edge is on the right (panel
+   * extends left). With the previous `inset-inline-end: 0` the panel
+   * opened OUTWARD on Arabic mobile and got clipped against the
+   * viewport edge. */
+  inset-inline-start: 0;
   z-index: 1080;
   width: min(22rem, calc(100vw - 1rem));
   background: var(--bs-body-bg);
@@ -660,7 +666,7 @@ body.app-shell {
 
 @media (max-width: 480px) {
   .rd-search-panel {
-    inset-inline-end: -0.5rem;
+    inset-inline-start: -0.5rem;
     width: calc(100vw - 1rem);
   }
   .rd-search-kbd { display: none; }
@@ -965,7 +971,8 @@ body.app-shell {
   }
 }
 
-/* Theme toggle — shell variant */
+/* Theme toggle — shell variant (legacy paired buttons, kept so any
+ * older surfaces that haven't been migrated still render sensibly). */
 .rd-theme-toggle .btn {
   border-radius: var(--rd-radius-xs);
   font-weight: 600;
@@ -977,6 +984,42 @@ body.app-shell {
   background: var(--bs-primary);
   border-color: var(--bs-primary);
   color: #fff;
+}
+
+/* New single-icon theme toggle. Visually matches .rd-search-toggle and
+ * .rd-notif-trigger so the topbar reads as one consistent row of
+ * round icon buttons. The two SVGs (sun/moon) are both rendered into
+ * the DOM and CSS swaps which one is visible based on the current
+ * <html data-bs-theme>; clicking flips the theme via theme.js. */
+.rd-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rd-radius-sm);
+  background: transparent;
+  color: var(--bs-body-color);
+  cursor: pointer;
+  transition:
+    background var(--rd-transition-fast),
+    color var(--rd-transition-fast);
+}
+
+.rd-theme-btn:hover,
+.rd-theme-btn:focus-visible {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  outline: none;
+}
+
+.rd-theme-icon { display: none; }
+
+[data-bs-theme="light"] .rd-theme-icon-moon,
+[data-bs-theme="dark"]  .rd-theme-icon-sun {
+  display: block;
 }
 
 /* Employee shell */
