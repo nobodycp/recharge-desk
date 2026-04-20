@@ -124,8 +124,9 @@ class SiteBrandingTests(TestCase):
         )
 
     def setUp(self):
-        # Wipe both the singleton row and its cache between tests so each
-        # case starts from a known empty state.
+        # Wipe the singleton row between tests so each case starts from
+        # a known empty state. Also clear the legacy cache key, in case
+        # any other code path still pokes at it.
         SiteBranding.objects.all().delete()
         cache.delete(SITE_BRANDING_CACHE_KEY)
 
@@ -136,22 +137,28 @@ class SiteBrandingTests(TestCase):
         self.assertEqual(b.pk, 1)
         self.assertEqual(SiteBranding.objects.count(), 1)
 
-    def test_load_creates_row_lazily_then_caches(self):
+    def test_load_creates_row_lazily(self):
         self.assertEqual(SiteBranding.objects.count(), 0)
         first = SiteBranding.load()
         self.assertEqual(first.pk, 1)
         self.assertEqual(SiteBranding.objects.count(), 1)
-        # Second call resolves from cache: no new row created.
+        # Second call must not create a duplicate row.
         SiteBranding.load()
         self.assertEqual(SiteBranding.objects.count(), 1)
-        self.assertIsNotNone(cache.get(SITE_BRANDING_CACHE_KEY))
 
-    def test_save_invalidates_cache(self):
+    def test_save_is_visible_on_next_load(self):
+        """A fresh ``load()`` after ``save()`` must reflect the new value.
+
+        This guards against the previous behaviour where a per-process
+        ``LocMemCache`` could keep returning a stale ``site_name`` for
+        up to five minutes after the operator updated it from the
+        admin panel.
+        """
         SiteBranding.load()
-        self.assertIsNotNone(cache.get(SITE_BRANDING_CACHE_KEY))
         b = SiteBranding.objects.get(pk=1)
+        b.site_name = "Updated"
         b.save()
-        self.assertIsNone(cache.get(SITE_BRANDING_CACHE_KEY))
+        self.assertEqual(SiteBranding.load().site_name, "Updated")
 
     # ---- login page integration -----------------------------------------
     def test_login_page_omits_logo_when_unset(self):
