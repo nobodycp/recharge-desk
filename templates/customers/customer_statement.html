@@ -1,0 +1,245 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% blocktrans with name=customer.name %}Statement — {{ name }}{% endblocktrans %}{% endblock %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 d-print-none">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Customer statement" %}</h1>
+    <p class="rd-text-muted mb-0">
+      {{ customer.name }}
+      {% blocktrans with start=period_from end=period_to %} · From {{ start }} to {{ end }}{% endblocktrans %}
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement_csv' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Export CSV" %}</a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
+  </div>
+</div>
+
+<div class="rd-card mb-4 d-print-none">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="cs-from">{% trans "Date from" %}</label>
+        <input type="date" class="form-control" id="cs-from" name="period_from" value="{{ period_from|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="cs-to">{% trans "Date to" %}</label>
+        <input type="date" class="form-control" id="cs-to" name="period_to" value="{{ period_to|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="?period_from={{ period_from|date:'Y-m-01' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "This month" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ----- Print-only header (browsers strip the topbar in @media print) ----- #}
+<div class="d-none d-print-block mb-3">
+  <h1 class="h3 mb-1">{% trans "Customer statement" %}</h1>
+  <div><strong>{{ customer.name }}</strong></div>
+  <div class="text-secondary small">{% blocktrans with start=period_from end=period_to %}From {{ start }} to {{ end }}{% endblocktrans %}</div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Opening balance" %}</div>
+      <div class="h4 fw-bold tabular-nums {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">
+        {{ opening_balance|intcomma }}
+      </div>
+      <div class="rd-text-muted small">
+        {% if opening_balance > 0 %}{% trans "Owed to shop" %}{% elif opening_balance < 0 %}{% trans "Credit on file" %}{% else %}{% trans "Settled" %}{% endif %}
+      </div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Charges (took on account)" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-expense">{{ charges_total|intcomma }}</div>
+      <div class="rd-text-muted small">
+        {% blocktrans count n=sales_summary.cnt|default:0 %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}
+      </div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Payments received" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-success">{{ payments_total|intcomma }}</div>
+      <div class="rd-text-muted small">
+        {% blocktrans count n=payments_in_range.count %}{{ n }} payment{% plural %}{{ n }} payments{% endblocktrans %}
+      </div>
+    </div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Closing balance" %}</div>
+      <div class="h4 fw-bold tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">
+        {{ closing_balance|intcomma }}
+      </div>
+      <div class="rd-text-muted small">
+        {% if closing_balance > 0 %}{% trans "Customer owes the shop." %}{% elif closing_balance < 0 %}{% trans "Shop owes the customer." %}{% else %}{% trans "Settled." %}{% endif %}
+      </div>
+    </div></div>
+  </div>
+</div>
+
+{% if adjustments_total or reversals_total %}
+  <div class="row g-3 mb-4">
+    {% if adjustments_total %}
+      <div class="col-md-6">
+        <div class="rd-card h-100"><div class="rd-card-body">
+          <div class="rd-label mb-1">{% trans "Manual adjustments" %}</div>
+          <div class="h5 fw-bold tabular-nums {% if adjustments_total > 0 %}kpi-expense{% else %}kpi-success{% endif %}">{{ adjustments_total|intcomma }}</div>
+        </div></div>
+      </div>
+    {% endif %}
+    {% if reversals_total %}
+      <div class="col-md-6">
+        <div class="rd-card h-100"><div class="rd-card-body">
+          <div class="rd-label mb-1">{% trans "Reversals (write-offs / cancellations)" %}</div>
+          <div class="h5 fw-bold tabular-nums kpi-warning">{{ reversals_total|intcomma }}</div>
+        </div></div>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "What they took (by product)" %}</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>{% trans "Product" %}</th>
+              <th class="text-end">{% trans "Count" %}</th>
+              <th class="text-end">{% trans "Total" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in by_product %}
+              <tr>
+                <td>
+                  {{ r.company__name }} — {{ r.product__line__name }}
+                  {% if r.product__variant_label %} — {{ r.product__variant_label }}{% endif %}
+                </td>
+                <td class="text-end tabular-nums">{{ r.cnt|intcomma }}</td>
+                <td class="text-end tabular-nums kpi-expense">{{ r.total_sell|intcomma }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center py-3 text-secondary">{% trans "No on-account sales in this period." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "How they paid (by method)" %}</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>{% trans "Method" %}</th>
+              <th class="text-end">{% trans "Count" %}</th>
+              <th class="text-end">{% trans "Total" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in by_payment_method %}
+              <tr>
+                <td>{{ r.payment_method__name|default:"—" }}</td>
+                <td class="text-end tabular-nums">{{ r.cnt|intcomma }}</td>
+                <td class="text-end tabular-nums kpi-success">{{ r.total|intcomma }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center py-3 text-secondary">{% trans "No payments in this period." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rd-card mb-4">
+  <div class="rd-card-header fw-semibold">{% trans "Activity" %}</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th>{% trans "Description" %}</th>
+          <th>{% trans "Reference" %}</th>
+          <th class="text-end">{% trans "Charge" %}</th>
+          <th class="text-end">{% trans "Payment" %}</th>
+          <th class="text-end">{% trans "Running balance" %}</th>
+          <th>{% trans "Notes" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-light">
+          <td colspan="6" class="text-end fw-semibold">{% trans "Opening balance" %}</td>
+          <td class="text-end tabular-nums fw-semibold">{{ opening_balance|intcomma }}</td>
+          <td></td>
+        </tr>
+        {% for entry in ledger_chrono %}
+          <tr>
+            <td class="small text-nowrap">{{ entry.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              {% if entry.entry_type == 'charge' %}<span class="rd-badge rd-badge--warning">{% trans "Charge" %}</span>
+              {% elif entry.entry_type == 'payment' %}<span class="rd-badge">{% trans "Payment" %}</span>
+              {% elif entry.entry_type == 'adjustment' %}<span class="rd-badge rd-badge--neutral">{% trans "Adjustment" %}</span>
+              {% elif entry.entry_type == 'reversal' %}<span class="rd-badge rd-badge--neutral">{% trans "Reversal" %}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if entry.sale %}
+                {{ entry.sale.company.name }} — {{ entry.sale.product.display_name }}
+              {% elif entry.payment and entry.payment.payment_method %}
+                {{ entry.payment.payment_method.name }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-nowrap">{{ entry.sale.reference_number|default:"—" }}</td>
+            <td class="text-end tabular-nums {% if entry.entry_type == 'charge' or entry.entry_type == 'adjustment' and entry.amount > 0 %}kpi-expense{% endif %}">
+              {% if entry.entry_type == 'charge' %}{{ entry.amount|intcomma }}
+              {% elif entry.entry_type == 'adjustment' and entry.amount > 0 %}{{ entry.amount|intcomma }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end tabular-nums {% if entry.entry_type == 'payment' or entry.entry_type == 'reversal' or entry.entry_type == 'adjustment' and entry.amount < 0 %}kpi-success{% endif %}">
+              {% if entry.entry_type == 'payment' or entry.entry_type == 'reversal' %}{{ entry.amount|intcomma }}
+              {% elif entry.entry_type == 'adjustment' and entry.amount < 0 %}{{ entry.amount|cut:"-"|intcomma }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end tabular-nums fw-semibold {% if entry.running_balance > 0 %}kpi-expense{% elif entry.running_balance < 0 %}kpi-success{% endif %}">{{ entry.running_balance|intcomma }}</td>
+            <td class="small text-secondary">{{ entry.notes|default:"" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-center py-4 text-secondary">{% trans "No activity in this period." %}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr class="fw-semibold">
+          <td colspan="4" class="text-end">{% trans "Period totals" %}</td>
+          <td class="text-end tabular-nums kpi-expense">{{ charges_total|intcomma }}</td>
+          <td class="text-end tabular-nums kpi-success">{{ payments_total|intcomma }}</td>
+          <td class="text-end tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">{{ closing_balance|intcomma }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="rd-card mb-4 d-print-none">
+  <div class="rd-card-body small text-secondary">
+    {% blocktrans %}Closing balance = opening balance + charges − payments + signed adjustments − reversals.{% endblocktrans %}
+  </div>
+</div>
+{% endblock %}

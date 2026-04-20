@@ -1774,3 +1774,25 @@ html[dir="rtl"] .rd-toast.is-visible {
   );
   border-radius: inherit;
 }
+
+/* ---------------- Print mode (customer statement, future receipts) ----- */
+@media print {
+  /* Hide chrome the customer doesn't need on paper. */
+  .rd-sidebar,
+  .rd-topbar,
+  .rd-mobile-tabbar,
+  .d-print-none {
+    display: none !important;
+  }
+  body, .rd-main, .rd-page {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .rd-card {
+    border: 1px solid #999 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .table { color: #000 !important; }
+  a { color: inherit !important; text-decoration: none !important; }
+}

@@ -531,6 +531,82 @@ class CustomerDetailViewTests(CustomerARTestCase):
         self.assertContains(resp, c.name)
 
 
+class CustomerStatementTests(CustomerARTestCase):
+    """End-to-end tests for the per-customer date-ranged statement page."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+
+    def _url(self, c, **params):
+        from urllib.parse import urlencode
+
+        base = f"/management/customers/{c.pk}/statement/"
+        return f"{base}?{urlencode(params)}" if params else base
+
+    def test_default_period_is_current_month_and_renders(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 300)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.cash, user=self.user
+        )
+        r = self.client.get(self._url(c))
+        self.assertEqual(r.status_code, 200)
+        ctx = r.context
+        self.assertEqual(ctx["charges_total"], _decimal(300))
+        self.assertEqual(ctx["payments_total"], _decimal(100))
+        # opening = 0 (no activity before today), closing = +300 - 100 = 200
+        self.assertEqual(ctx["opening_balance"], _decimal(0))
+        self.assertEqual(ctx["closing_balance"], _decimal(200))
+        # running balance on the last entry equals closing balance
+        self.assertEqual(ctx["ledger_chrono"][-1].running_balance, _decimal(200))
+
+    def test_period_excludes_out_of_range_activity(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        c = self._new_customer()
+        # Old sale: dragged 60 days into the past.
+        s_old = self._new_on_account_sale(c, 500)
+        approve_sale(sale=s_old, user=self.user)
+        old_dt = timezone.now() - timedelta(days=60)
+        Sale.objects.filter(pk=s_old.pk).update(created_at=old_dt)
+        CustomerLedger.objects.filter(sale=s_old).update(created_at=old_dt)
+
+        # New sale today.
+        s_new = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s_new, user=self.user)
+
+        today = timezone.localdate()
+        r = self.client.get(
+            self._url(c, period_from=today.isoformat(), period_to=today.isoformat())
+        )
+        self.assertEqual(r.status_code, 200)
+        ctx = r.context
+        self.assertEqual(ctx["charges_total"], _decimal(200))  # only new sale
+        # opening balance = balance from the old approved sale
+        self.assertEqual(ctx["opening_balance"], _decimal(500))
+        # closing = opening + new charge = 700
+        self.assertEqual(ctx["closing_balance"], _decimal(700))
+
+    def test_csv_download_returns_bom_and_lines(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 300)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.cash, user=self.user
+        )
+        r = self.client.get(f"/management/customers/{c.pk}/statement.csv")
+        self.assertEqual(r.status_code, 200)
+        body = b"".join(r.streaming_content)
+        self.assertTrue(body.startswith(b"\xef\xbb\xbf"), "CSV must include UTF-8 BOM")
+        text = body.decode("utf-8-sig")
+        self.assertIn("300", text)
+        self.assertIn("100", text)
+
+
 class CustomerListQueryCountTests(CustomerARTestCase):
     """Regression: customer_list.html iterates `c.phones.all|slice:":3"`
     on every row. Without prefetch_related the page issued one phone

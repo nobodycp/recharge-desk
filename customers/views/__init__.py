@@ -30,6 +30,10 @@ from customers.views.exports import (
     customer_payments_export_csv,
     customers_export_csv,
 )
+from customers.views.statements import (
+    customer_statement,
+    customer_statement_csv,
+)
 from customers.views.crud import (
     customer_create,
     customer_delete,
@@ -59,4 +63,7 @@ __all__ = [
     # exports
     "customers_export_csv",
     "customer_payments_export_csv",
+    # statements
+    "customer_statement",
+    "customer_statement_csv",
 ]

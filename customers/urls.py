@@ -20,6 +20,16 @@ urlpatterns = [
     path("management/customers/<int:pk>/", views.customer_detail, name="customer_detail"),
     path("management/customers/<int:pk>/edit/", views.customer_edit, name="customer_edit"),
     path(
+        "management/customers/<int:pk>/statement/",
+        views.customer_statement,
+        name="customer_statement",
+    ),
+    path(
+        "management/customers/<int:pk>/statement.csv",
+        views.customer_statement_csv,
+        name="customer_statement_csv",
+    ),
+    path(
         "management/customers/<int:pk>/payments/new/",
         views.customer_record_payment,
         name="customer_record_payment",

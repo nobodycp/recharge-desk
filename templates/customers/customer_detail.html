@@ -11,6 +11,7 @@
     </p>
   </div>
   <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-primary" href="{% url 'customers:customer_statement' customer.pk %}">{% trans "Statement" %}</a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_edit' customer.pk %}">{% trans "Edit" %}</a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Back" %}</a>
     {% if customer.current_balance > 0 %}
