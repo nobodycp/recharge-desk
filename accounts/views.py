@@ -28,6 +28,24 @@ class BilingualLoginView(LoginView):
     form_class = LoginForm
     redirect_authenticated_user = True
 
+    def get_context_data(self, **kwargs):
+        """Drop Django's auto-populated ``site`` / ``site_name`` keys.
+
+        ``django.contrib.auth.views.LoginView`` calls
+        ``get_current_site(request)``, which falls back to the request
+        host (``"127.0.0.1:8000"`` in dev) when ``django.contrib.sites``
+        is not installed and stuffs that value into ``site_name``. That
+        clobbers the project-wide ``site_name`` exposed by our
+        ``core.context_processors.site_branding`` processor, so the
+        login page ends up displaying the bind address instead of the
+        branding configured by the operator. Removing the keys here
+        lets the context processor's value win.
+        """
+        ctx = super().get_context_data(**kwargs)
+        ctx.pop("site", None)
+        ctx.pop("site_name", None)
+        return ctx
+
 
 class AppLogoutView(LogoutView):
     next_page = reverse_lazy("accounts:login")

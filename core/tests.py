@@ -175,6 +175,20 @@ class SiteBrandingTests(TestCase):
         self.assertContains(r, "login-brand-img")
         self.assertContains(r, b.logo.url)
 
+    def test_login_page_uses_branded_site_name_not_request_host(self):
+        """Django's stock LoginView injects ``site_name`` from
+        ``get_current_site(request)`` which falls back to the HTTP
+        host (``"127.0.0.1"`` in dev). Our ``BilingualLoginView`` must
+        strip that key so the operator-configured branding name wins.
+        """
+        b = SiteBranding.load()
+        b.site_name = "Acme Telecom"
+        b.save()
+        r = Client(HTTP_HOST="127.0.0.1").get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Acme Telecom")
+        self.assertNotContains(r, "127.0.0.1")
+
     # ---- management editor ----------------------------------------------
     def test_employee_blocked_from_branding_editor(self):
         c = Client()
