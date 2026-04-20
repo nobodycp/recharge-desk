@@ -613,3 +613,24 @@ class UserProfileHelpersTests(TestCase):
         u.profile.save()
         self.assertEqual(u.profile.initials, "XY")
         self.assertEqual(u.profile.display_name, "xy")
+
+
+class UserListHxBoostTests(TestCase):
+    """Sort headers and pagination on the user list update the table in
+    place via HTMX rather than triggering a full page reload."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.boss = User.objects.create_user("hxb_users_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def test_user_list_results_container_is_hx_boosted(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("accounts:user_list"))
+        self.assertContains(r, 'id="user-list-results"')
+        self.assertContains(r, 'hx-target="#user-list-results"')
+        self.assertContains(r, 'hx-boost="true"')

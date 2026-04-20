@@ -35,7 +35,15 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div class="rd-card overflow-hidden rd-datagrid" id="expense-list-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="expense-list-results"
+  hx-boost="true"
+  hx-target="#expense-list-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#expense-htmx-indicator"
+>
   {% include "expenses/partials/expense_list_results.html" %}
 </div>
 {% endblock %}

@@ -219,6 +219,16 @@ class SalesReportTests(_ReportsBase):
         self.assertIn("reports/partials/sales_report_results.html", templates)
         self.assertNotIn("reports/sales_report.html", templates)
 
+    def test_results_container_is_hx_boosted(self):
+        """The whole results container is hx-boost'd so sort headers and
+        pagination links update the table in place instead of triggering
+        a full page reload (which was visibly jarring + lost scroll
+        position on every column-sort click)."""
+        r = self.client.get(reverse("reports:sales_report"))
+        self.assertContains(r, 'id="sales-report-results"')
+        self.assertContains(r, 'hx-boost="true"')
+        self.assertContains(r, 'hx-target="#sales-report-results"')
+
 
 # ============================================================ Employee report
 class EmployeeReportTests(_ReportsBase):
@@ -289,6 +299,19 @@ class CompanyReportTests(_ReportsBase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context["company"], self.company)
         self.assertEqual(r.context["sales_page"].paginator.count, 0)
+
+    def test_sales_and_ledger_grids_are_hx_boosted(self):
+        """Both sub-grids (#company-sales-grid, #company-ledger-grid) use
+        hx-boost so sort headers and pagination links update each table
+        in place. Each carries its own hx-vals partial=... so the view
+        knows which fragment to re-render."""
+        r = self.client.get(reverse("reports:company_report", args=[self.company.pk]))
+        self.assertContains(r, 'id="company-sales-grid"')
+        self.assertContains(r, 'id="company-ledger-grid"')
+        self.assertContains(r, 'hx-target="#company-sales-grid"')
+        self.assertContains(r, 'hx-target="#company-ledger-grid"')
+        self.assertContains(r, '"partial": "sales"')
+        self.assertContains(r, '"partial": "ledger"')
 
     def test_deposit_post_records_transaction(self):
         url = reverse("reports:company_report", args=[self.company.pk])

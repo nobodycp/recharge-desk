@@ -28,8 +28,8 @@
               <td class="fw-medium tabular-nums text-end {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 and c.is_active %}kpi-warning{% endif %}">{{ c.current_balance|intcomma }}</td>
               <td>{% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
               <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}">{% trans "Report" %}</a>
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}">{% trans "Edit" %}</a>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}" hx-boost="false">{% trans "Report" %}</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}" hx-boost="false">{% trans "Edit" %}</a>
                 {% if c.is_deletable %}
                   <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}');">
                     {% csrf_token %}
@@ -65,8 +65,8 @@
           </div>
         </div>
         <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top" style="border-color: var(--bs-border-color);">
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}">{% trans "Report" %}</a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}">{% trans "Edit" %}</a>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:company_report' c.pk %}" hx-boost="false">{% trans "Report" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}" hx-boost="false">{% trans "Edit" %}</a>
           {% if c.is_deletable %}
             <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}');">
               {% csrf_token %}

@@ -47,7 +47,15 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div class="rd-card overflow-hidden rd-datagrid" id="pending-payments-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="pending-payments-results"
+  hx-boost="true"
+  hx-target="#pending-payments-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#pending-htmx-indicator"
+>
   {% include "sales/partials/pending_payments_results.html" %}
 </div>
 

@@ -38,7 +38,15 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div class="rd-datagrid" id="sales-report-results">
+<div
+  class="rd-datagrid"
+  id="sales-report-results"
+  hx-boost="true"
+  hx-target="#sales-report-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#sales-report-htmx-indicator"
+>
   {% include "reports/partials/sales_report_results.html" %}
 </div>
 {% endblock %}

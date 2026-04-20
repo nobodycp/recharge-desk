@@ -102,6 +102,14 @@ class ExpenseListTests(TestCase):
         self.assertIn("expenses/partials/expense_list_results.html", templates)
         self.assertNotIn("expenses/expense_list.html", templates)
 
+    def test_results_container_is_hx_boosted(self):
+        """Sort headers and pagination links update the table in place via
+        HTMX rather than triggering a full page reload."""
+        r = self.client.get(reverse("expenses:expense_list"))
+        self.assertContains(r, 'id="expense-list-results"')
+        self.assertContains(r, 'hx-target="#expense-list-results"')
+        self.assertContains(r, 'hx-boost="true"')
+
 
 class ExpenseReportTests(TestCase):
     @classmethod

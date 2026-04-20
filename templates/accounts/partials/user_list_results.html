@@ -29,7 +29,7 @@
               <td>{% if p.user.is_active and p.is_active_profile %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--cancelled">{% trans "No" %}</span>{% endif %}</td>
               <td class="text-end">
                 <div class="d-inline-flex gap-1 align-items-center">
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}">{% trans "Edit" %}</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false">{% trans "Edit" %}</a>
                   {% if p.user.pk != request.user.pk %}
                     <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
                           onsubmit="return confirm('{% trans "Delete this user permanently? This cannot be undone." %}');">
@@ -57,7 +57,7 @@
           {% if p.user.is_active and p.is_active_profile %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--cancelled">{% trans "Inactive" %}</span>{% endif %}
         </div>
         <div class="mt-2 d-flex gap-1 flex-wrap">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}">{% trans "Edit" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false">{% trans "Edit" %}</a>
           {% if p.user.pk != request.user.pk %}
             <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
                   onsubmit="return confirm('{% trans "Delete this user permanently? This cannot be undone." %}');">

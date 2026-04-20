@@ -903,3 +903,46 @@ class SalesCsvExportTests(TestCase):
         body = b"".join(r.streaming_content).decode("utf-8")
         self.assertIn("0590000222", body)
         self.assertNotIn("0590000111", body)
+
+
+class HxBoostMarkupTests(TestCase):
+    """Sort headers and pagination links must update the table in place via
+    HTMX rather than triggering a full page reload (which lost scroll
+    position and felt jarring on every column-sort click).
+
+    The pattern used everywhere is hx-boost on the results container,
+    targeting itself with innerHTML swap. Inline action <a> links inside
+    rows opt-out via hx-boost="false" so they still navigate normally.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.boss = User.objects.create_user("hxb_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.boss)
+
+    def test_management_sale_list_results_container_is_boosted(self):
+        r = self.client.get(reverse("sales:management_sale_list"))
+        self.assertContains(r, 'id="sale-list-results"')
+        self.assertContains(r, 'hx-target="#sale-list-results"')
+        self.assertContains(r, 'hx-boost="true"')
+
+    def test_pending_payments_results_container_is_boosted(self):
+        r = self.client.get(reverse("sales:pending_payments"))
+        self.assertContains(r, 'id="pending-payments-results"')
+        self.assertContains(r, 'hx-target="#pending-payments-results"')
+        self.assertContains(r, 'hx-boost="true"')
+
+    def test_awaiting_approvals_results_container_is_boosted(self):
+        r = self.client.get(reverse("sales:awaiting_approvals"))
+        self.assertContains(r, 'id="awaiting-results"')
+        self.assertContains(r, 'hx-target="#awaiting-results"')
+        self.assertContains(r, 'hx-boost="true"')

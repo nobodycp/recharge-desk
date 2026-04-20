@@ -35,7 +35,15 @@
   </div>
 </div>
 
-<div class="rd-card overflow-hidden rd-datagrid" id="company-list-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="company-list-results"
+  hx-boost="true"
+  hx-target="#company-list-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#company-htmx-indicator"
+>
   {% include "companies/partials/company_list_results.html" %}
 </div>
 {% endblock %}

@@ -35,7 +35,15 @@
   </div>
 </div>
 
-<div class="rd-card overflow-hidden rd-datagrid" id="user-list-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="user-list-results"
+  hx-boost="true"
+  hx-target="#user-list-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#user-htmx-indicator"
+>
   {% include "accounts/partials/user_list_results.html" %}
 </div>
 {% endblock %}

@@ -48,7 +48,15 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div class="rd-card overflow-hidden rd-datagrid" id="sale-list-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="sale-list-results"
+  hx-boost="true"
+  hx-target="#sale-list-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+  hx-indicator="#sale-htmx-indicator"
+>
   {% include "sales/partials/management_sale_list_results.html" %}
 </div>
 

@@ -52,7 +52,7 @@
               <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
               <td class="text-end text-nowrap">
                 <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}">{% trans "Edit" %}</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
                   {% if s.status != "cancelled" %}
                     <form
                       method="post"
@@ -114,7 +114,7 @@
           </span>
         </div>
         <div class="d-flex flex-wrap gap-1 mt-2">
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}">{% trans "Edit" %}</a>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
           {% if s.status != "cancelled" %}
             <form
               method="post"

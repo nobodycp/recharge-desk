@@ -22,7 +22,7 @@
               <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
               <td>
                 {% if s.customer_id %}
-                  <a href="{% url 'customers:customer_detail' s.customer_id %}" class="fw-semibold">{{ s.customer.name }}</a>
+                  <a href="{% url 'customers:customer_detail' s.customer_id %}" class="fw-semibold" hx-boost="false">{{ s.customer.name }}</a>
                 {% else %}
                   <span class="text-secondary">—</span>
                 {% endif %}
@@ -76,7 +76,7 @@
           <div>
             <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
             {% if s.customer_id %}
-              <div class="fw-semibold"><a href="{% url 'customers:customer_detail' s.customer_id %}">{{ s.customer.name }}</a></div>
+              <div class="fw-semibold"><a href="{% url 'customers:customer_detail' s.customer_id %}" hx-boost="false">{{ s.customer.name }}</a></div>
             {% endif %}
             <div class="small">{{ s.company.name }} · {{ s.product.display_name }}</div>
             <div class="font-monospace small">{{ s.reference_number }}</div>

@@ -31,7 +31,7 @@
               <td class="small kpi-muted">{% if e.created_by %}{{ e.created_by.username }}{% else %}—{% endif %}</td>
               <td class="text-end">
                 <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}">{% trans "Edit" %}</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}" hx-boost="false">{% trans "Edit" %}</a>
                   <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" onsubmit="return confirm('{% trans "Delete this expense?" %}');">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -60,7 +60,7 @@
         </div>
         <div class="small kpi-muted mt-2">{% trans "By" %}: {% if e.created_by %}{{ e.created_by.username }}{% else %}—{% endif %}</div>
         <div class="mt-2 d-flex flex-wrap gap-1">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}">{% trans "Edit" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}" hx-boost="false">{% trans "Edit" %}</a>
           <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" onsubmit="return confirm('{% trans "Delete this expense?" %}');">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">

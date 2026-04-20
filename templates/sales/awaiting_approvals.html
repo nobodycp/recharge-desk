@@ -35,7 +35,14 @@
   </div>
 </div>
 
-<div class="rd-card overflow-hidden rd-datagrid" id="awaiting-results">
+<div
+  class="rd-card overflow-hidden rd-datagrid"
+  id="awaiting-results"
+  hx-boost="true"
+  hx-target="#awaiting-results"
+  hx-swap="innerHTML"
+  hx-push-url="true"
+>
   {% include "sales/partials/awaiting_results.html" %}
 </div>
 

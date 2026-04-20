@@ -84,3 +84,12 @@ class CompanyListQueryCountTests(TestCase):
         # No annotation in the round-trip — fall back to the EXISTS query.
         fresh = Company.objects.get(pk=company.pk)
         self.assertTrue(fresh.is_deletable)
+
+    def test_company_list_results_container_is_hx_boosted(self):
+        """Sort headers and pagination links update the table in place via
+        HTMX rather than triggering a full page reload."""
+        self.client.force_login(self.user)
+        r = self.client.get("/management/companies/")
+        self.assertContains(r, 'id="company-list-results"')
+        self.assertContains(r, 'hx-target="#company-list-results"')
+        self.assertContains(r, 'hx-boost="true"')

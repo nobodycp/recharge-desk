@@ -120,13 +120,31 @@
   <div class="col-lg-7">
     <div class="position-relative mb-3">
       <div id="cr-sales-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
-      <div id="company-sales-grid" class="rd-datagrid">
+      <div
+        id="company-sales-grid"
+        class="rd-datagrid"
+        hx-boost="true"
+        hx-target="#company-sales-grid"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-indicator="#cr-sales-htmx"
+        hx-vals='{"partial": "sales"}'
+      >
         {% include "reports/partials/company_report_sales.html" %}
       </div>
     </div>
     <div class="position-relative">
       <div id="cr-ledger-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
-      <div id="company-ledger-grid" class="rd-datagrid">
+      <div
+        id="company-ledger-grid"
+        class="rd-datagrid"
+        hx-boost="true"
+        hx-target="#company-ledger-grid"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-indicator="#cr-ledger-htmx"
+        hx-vals='{"partial": "ledger"}'
+      >
         {% include "reports/partials/company_report_ledger.html" %}
       </div>
     </div>
