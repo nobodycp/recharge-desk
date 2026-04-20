@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 13:56+0300\n"
+"POT-Creation-Date: 2026-04-20 14:11+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,7 +15,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 msgid "Accounts"
 msgstr "الحسابات"
@@ -117,8 +118,7 @@ msgid ""
 "edit screen."
 msgstr ""
 "لا يمكن حذف \"%(name)s\": فهو مرتبط بمبيعات أو زبائن أو دفعات حالية. عطّل "
-"تسجيل دخوله بدلاً من ذلك بإلغاء تأشير \"تمكين تسجيل الدخول\" في شاشة "
-"التعديل."
+"تسجيل دخوله بدلاً من ذلك بإلغاء تأشير \"تمكين تسجيل الدخول\" في شاشة التعديل."
 
 #, python-format
 msgid "User '%(name)s' deleted."
@@ -133,11 +133,9 @@ msgstr "تم تحديث الملف الشخصي."
 msgid "Account settings"
 msgstr "إعدادات الحساب"
 
-#| msgid "Created"
 msgid "Create"
 msgstr "إنشاء"
 
-#| msgid "date"
 msgid "Update"
 msgstr "تحديث"
 
@@ -159,18 +157,15 @@ msgstr "تعليم كمدفوع"
 msgid "Record payment"
 msgstr "تسجيل دفعة"
 
-#| msgid "current balance"
 msgid "Adjust balance"
 msgstr "تعديل الرصيد"
 
-#| msgid "Written off"
 msgid "Write off"
 msgstr "شطب"
 
 msgid "actor"
 msgstr "الفاعل"
 
-#| msgid "Actions"
 msgid "action"
 msgstr "إجراء"
 
@@ -183,14 +178,12 @@ msgstr "اسم التطبيق واسم النموذج بحروف صغيرة لل
 msgid "object id"
 msgstr "معرّف العنصر"
 
-#| msgid "Reject"
 msgid "object"
 msgstr "كائن"
 
 msgid "Snapshot of ``str(instance)`` so deletes stay meaningful."
 msgstr "لقطة من ``str(instance)`` حتى تبقى عمليات الحذف ذات معنى."
 
-#| msgid "Save changes"
 msgid "changes"
 msgstr "التغييرات"
 
@@ -203,15 +196,12 @@ msgstr "عنوان IP"
 msgid "created at"
 msgstr "تاريخ الإنشاء"
 
-#| msgid "Edit entry"
 msgid "audit log entry"
 msgstr "إدخال سجل التدقيق"
 
-#| msgid "Site logo"
 msgid "audit log"
 msgstr "سجل التدقيق"
 
-#| msgid "Site logo"
 msgid "Audit log"
 msgstr "سجل التدقيق"
 
@@ -419,7 +409,6 @@ msgstr "مُسوَّى"
 msgid "Customers"
 msgstr "الزبائن"
 
-#| msgid "Payment"
 msgid "Payments"
 msgstr "الدفعات"
 
@@ -442,8 +431,7 @@ msgid "Phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
 
 msgid ""
-"Optional. Adds a first phone link so future sales auto-suggest this "
-"customer."
+"Optional. Adds a first phone link so future sales auto-suggest this customer."
 msgstr ""
 "اختياري. يضيف ربطاً برقم هاتف أوّل ليقترح النظام هذا الزبون تلقائياً في "
 "المبيعات القادمة."
@@ -572,8 +560,8 @@ msgid ""
 "Delete the payment from the customer's payment list instead — this ledger "
 "row is just its mirror entry."
 msgstr ""
-"احذف الدفعة من قائمة دفعات الزبون بدلاً من ذلك — هذا الصف في السجل ما هو إلا"
-" انعكاس لتلك الدفعة."
+"احذف الدفعة من قائمة دفعات الزبون بدلاً من ذلك — هذا الصف في السجل ما هو إلا "
+"انعكاس لتلك الدفعة."
 
 msgid "Payment recorded."
 msgstr "تم تسجيل الدفعة."
@@ -804,8 +792,7 @@ msgstr "آجل"
 msgid ""
 "Customer credit sale: needs management approval and is settled later by a "
 "customer payment."
-msgstr ""
-"بيع آجل للزبون: يحتاج إلى موافقة الإدارة ويُسدَّد لاحقاً بدفعة من الزبون."
+msgstr "بيع آجل للزبون: يحتاج إلى موافقة الإدارة ويُسدَّد لاحقاً بدفعة من الزبون."
 
 msgid "settled by payment"
 msgstr "مسدَّدة بدفعة"
@@ -832,8 +819,8 @@ msgid ""
 "When selling price is 0, equals supplier cost recorded as an explicit loss; "
 "otherwise 0."
 msgstr ""
-"عندما يكون سعر البيع صفراً، يساوي تكلفة المورّد المسجّلة كخسارة صريحة؛ وإلا "
-"فهو صفر."
+"عندما يكون سعر البيع صفراً، يساوي تكلفة المورّد المسجّلة كخسارة صريحة؛ وإلا فهو "
+"صفر."
 
 msgid "eSIM sale"
 msgstr "بيع eSIM"
@@ -1086,12 +1073,12 @@ msgstr "منطقة خطرة"
 
 #, python-format
 msgid ""
-"Permanently delete the user <strong>%(name)s</strong>. If they are linked to"
-" any sale, customer or payment record, the deletion will be refused — "
-"disable their login instead by unticking \"Login enabled\" above."
+"Permanently delete the user <strong>%(name)s</strong>. If they are linked to "
+"any sale, customer or payment record, the deletion will be refused — disable "
+"their login instead by unticking \"Login enabled\" above."
 msgstr ""
-"حذف المستخدم <strong>%(name)s</strong> نهائياً. إذا كان مرتبطاً بأي مبيعة أو"
-" زبون أو دفعة فسيتم رفض الحذف — عطّل تسجيل الدخول بدلاً من ذلك بإلغاء تأشير "
+"حذف المستخدم <strong>%(name)s</strong> نهائياً. إذا كان مرتبطاً بأي مبيعة أو "
+"زبون أو دفعة فسيتم رفض الحذف — عطّل تسجيل الدخول بدلاً من ذلك بإلغاء تأشير "
 "«تمكين تسجيل الدخول» بالأعلى."
 
 msgid "Delete user permanently"
@@ -1115,18 +1102,15 @@ msgstr "إعادة ضبط"
 msgid "Append-only record of who changed what."
 msgstr "سجل لا يقبل التعديل لكل التغييرات."
 
-#| msgid "Filtered rows"
 msgid "Filters"
 msgstr "الفلاتر"
 
-#| msgid "Search"
 msgid "Search target"
 msgstr "البحث في الهدف"
 
 msgid "Object id or text"
 msgstr "معرّف أو نص"
 
-#| msgid "Actions"
 msgid "Action"
 msgstr "الإجراء"
 
@@ -1139,15 +1123,12 @@ msgstr "الفاعل"
 msgid "When"
 msgstr "متى"
 
-#| msgid "Charge"
 msgid "Target"
 msgstr "الهدف"
 
-#| msgid "Change password"
 msgid "Changes"
 msgstr "التغييرات"
 
-#| msgid "View all"
 msgid "View"
 msgstr "عرض"
 
@@ -1166,7 +1147,6 @@ msgstr "فتح القائمة"
 msgid "Search (press /)"
 msgstr "بحث (اضغط /)"
 
-#| msgid "Reference, payer, customer, company…"
 msgid "Search reference, customer, payment…"
 msgstr "ابحث في المرجع، الزبون، الدفعة…"
 
@@ -1282,11 +1262,9 @@ msgstr "ابحث في المبيعات والزبائن والدفعات"
 msgid "e.g. 0599…, customer name, payment notes"
 msgstr "مثال: 0599…، اسم الزبون، ملاحظات دفعة"
 
-#| msgid "Shop owes the customer (overpayment)."
 msgid "No matches across sales, customers, or payments."
 msgstr "لا نتائج في المبيعات أو الزبائن أو الدفعات."
 
-#| msgid "View all sales"
 msgid "View all matches"
 msgstr "عرض كل النتائج"
 
@@ -1296,7 +1274,6 @@ msgstr "الدافع"
 msgid "Created"
 msgstr "تاريخ الإنشاء"
 
-#| msgid "Opening"
 msgid "Open"
 msgstr "فتح"
 
@@ -1306,7 +1283,6 @@ msgstr "الرصيد"
 msgid "Phones"
 msgstr "أرقام الهاتف"
 
-#| msgid "customer payments"
 msgid "Customer payments"
 msgstr "دفعات الزبائن"
 
@@ -1334,8 +1310,8 @@ msgid "No logo uploaded yet — the login page shows just the title."
 msgstr "لم يتم رفع شعار بعد — صفحة تسجيل الدخول تعرض العنوان فقط."
 
 msgid ""
-"Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square"
-" image for best results."
+"Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square "
+"image for best results."
 msgstr ""
 "تظهر في تبويب المتصفح والإشارات المرجعية واختصارات الشاشة الرئيسية. استخدم "
 "صورة مربعة للحصول على أفضل النتائج."
@@ -1356,12 +1332,12 @@ msgid "Back"
 msgstr "رجوع"
 
 msgid ""
-"Close this customer's account and book the outstanding debt as a loss? Their"
-" unpaid sales will be marked as written off, the cost will appear under "
+"Close this customer's account and book the outstanding debt as a loss? Their "
+"unpaid sales will be marked as written off, the cost will appear under "
 "losses, and the customer will be deactivated."
 msgstr ""
-"إغلاق حساب هذا الزبون وتحويل الدين المستحق إلى خسارة؟ سيتم تعليم مبيعاته غير"
-" المدفوعة كمشطوبة، وستظهر التكلفة تحت الخسائر، وسيتم تعطيل حساب الزبون."
+"إغلاق حساب هذا الزبون وتحويل الدين المستحق إلى خسارة؟ سيتم تعليم مبيعاته غير "
+"المدفوعة كمشطوبة، وستظهر التكلفة تحت الخسائر، وسيتم تعطيل حساب الزبون."
 
 msgid "Write off & close account"
 msgstr "شطب وإغلاق الحساب"
@@ -1370,8 +1346,8 @@ msgid ""
 "Permanently delete this customer? All their sales, payments, ledger entries "
 "and phones will be removed. This cannot be undone."
 msgstr ""
-"حذف هذا الزبون نهائياً؟ ستُحذف كل مبيعاته ودفعاته وسجل الرصيد وأرقام الهاتف."
-" لا يمكن التراجع."
+"حذف هذا الزبون نهائياً؟ ستُحذف كل مبيعاته ودفعاته وسجل الرصيد وأرقام الهاتف. "
+"لا يمكن التراجع."
 
 msgid "Delete customer"
 msgstr "حذف الزبون"
@@ -1430,11 +1406,10 @@ msgid "No ledger entries."
 msgstr "لا توجد حركات."
 
 msgid ""
-"FIFO settlement: the oldest pending charges get marked Paid first; any extra"
-" remains as customer credit."
+"FIFO settlement: the oldest pending charges get marked Paid first; any extra "
+"remains as customer credit."
 msgstr ""
-"تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً "
-"للزبون."
+"تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً للزبون."
 
 msgid "Manual adjustment"
 msgstr "تعديل يدوي"
@@ -1482,7 +1457,6 @@ msgstr "الزبائن الذين يشترون بالآجل وأرصدتهم."
 msgid "Export CSV"
 msgstr "تصدير CSV"
 
-#| msgid "No payments yet."
 msgid "Export payments CSV"
 msgstr "تصدير الدفعات CSV"
 
@@ -1550,7 +1524,6 @@ msgstr[3] "%(n)s دفعات"
 msgstr[4] "%(n)s دفعة"
 msgstr[5] "%(n)s دفعة"
 
-#| msgid "Shop owes the customer (overpayment)."
 msgid "Shop owes the customer."
 msgstr "المحل يدين للزبون."
 
@@ -1566,7 +1539,6 @@ msgstr "ما الذي سحبه (حسب المنتج)"
 msgid "Count"
 msgstr "العدد"
 
-#| msgid "Total sell"
 msgid "Total"
 msgstr "الإجمالي"
 
@@ -1652,7 +1624,6 @@ msgstr "الكتالوج"
 msgid "Administration"
 msgstr "الإدارة"
 
-#| msgid "Actions"
 msgid "Notifications"
 msgstr "الإشعارات"
 
@@ -1666,9 +1637,11 @@ msgstr[3] "%(n)s عناصر تحتاج انتباه"
 msgstr[4] "%(n)s عنصراً يحتاج انتباه"
 msgstr[5] "%(n)s عنصر يحتاج انتباه"
 
-#| msgid "No sales awaiting approval."
 msgid "Debt requests awaiting approval"
 msgstr "طلبات ديون بانتظار الموافقة"
+
+msgid "Payment requests awaiting approval"
+msgstr "طلبات دفع بانتظار الموافقة"
 
 msgid "Pagination"
 msgstr "الترقيم"
@@ -1734,8 +1707,8 @@ msgid "Showing data from %(start)s to %(end)s."
 msgstr "تعرض البيانات من %(start)s إلى %(end)s."
 
 msgid ""
-"Showing all-time data. Pick a date range above to scope the cards and tables"
-" below."
+"Showing all-time data. Pick a date range above to scope the cards and tables "
+"below."
 msgstr ""
 "تعرض كل البيانات. اختر نطاق تاريخ بالأعلى لقصر البطاقات والجداول التالية "
 "عليه."
@@ -1835,22 +1808,18 @@ msgstr[3] "المبيعات في آخر %(n)s أيام"
 msgstr[4] "المبيعات في آخر %(n)s يوماً"
 msgstr[5] "المبيعات في آخر %(n)s يوم"
 
-#| msgid "Profit report"
 msgid "Open profit report"
 msgstr "فتح تقرير الأرباح"
 
-#| msgid "Paid sales only"
 msgid "Daily sales volume"
 msgstr "حجم المبيعات اليومي"
 
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
-#| msgid "This month profit"
 msgid "Top companies (this month, by profit)"
 msgstr "أفضل الشركات (هذا الشهر، حسب الربح)"
 
-#| msgid "No sales yet."
 msgid "No paid sales this month yet."
 msgstr "لا توجد مبيعات مدفوعة هذا الشهر بعد."
 
@@ -1864,18 +1833,15 @@ msgid "No sales yet."
 msgstr "لا توجد مبيعات بعد."
 
 #, python-format
-#| msgid "Excludes cancelled sales"
 msgid "From %(start)s to %(end)s. Excludes cancelled sales."
 msgstr "من %(start)s إلى %(end)s. باستثناء المبيعات الملغاة."
 
-#| msgid "Sales entry"
 msgid "Sales count"
 msgstr "عدد المبيعات"
 
 msgid "Profit (paid only)"
 msgstr "الأرباح (المدفوعة فقط)"
 
-#| msgid "Active"
 msgid "Active staff"
 msgstr "الموظفون النشطون"
 
@@ -1888,7 +1854,6 @@ msgstr "الربح"
 msgid "Avg. ticket"
 msgstr "متوسط الفاتورة"
 
-#| msgid "company"
 msgid "Top company"
 msgstr "الشركة الأفضل"
 
@@ -2085,6 +2050,9 @@ msgstr "رفض هذا البيع؟ سيتم استرجاع رصيد المورّ
 msgid "No sales awaiting approval."
 msgstr "لا توجد مبيعات بانتظار الموافقة."
 
+msgid "Copy"
+msgstr "نسخ"
+
 msgid "Default"
 msgstr "الافتراضي"
 
@@ -2098,11 +2066,7 @@ msgid ""
 "Permanently delete this sale? Ledger rows will be removed and supplier "
 "balance corrected. This cannot be undone."
 msgstr ""
-"حذف هذا البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن "
-"التراجع."
-
-msgid "Copy"
-msgstr "نسخ"
+"حذف هذا البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
 
 msgid "Mark selected as paid"
 msgstr "تعليم المحدد كمدفوع"
