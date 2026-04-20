@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 04:09+0300\n"
+"POT-Creation-Date: 2026-04-20 04:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -408,6 +408,39 @@ msgstr "الوصول مرفوض"
 msgid "Search"
 msgstr "بحث"
 
+msgid "Sales"
+msgstr "المبيعات"
+
+msgid "Owes"
+msgstr "يدين بـ"
+
+#| msgid "credit"
+msgid "Credit"
+msgstr "رصيد دائن"
+
+msgid "Settled"
+msgstr "مُسوَّى"
+
+msgid "Customers"
+msgstr "الزبائن"
+
+#, fuzzy
+#| msgid "Payment"
+msgid "Payments"
+msgstr "دفعة"
+
+#| msgid "View all sales"
+msgid "See all results"
+msgstr "عرض كل النتائج"
+
+#| msgid "Results"
+msgid "No results"
+msgstr "لا توجد نتائج"
+
+#| msgid "Password must be at least 8 characters long."
+msgid "Type at least 2 characters…"
+msgstr "اكتب حرفين على الأقل…"
+
 msgid "Branding updated."
 msgstr "تم تحديث هوية الموقع."
 
@@ -491,7 +524,7 @@ msgid "customer payments"
 msgstr "دفعات الزبائن"
 
 msgid "Charge"
-msgstr "مديونية"
+msgstr "سحب"
 
 msgid "Payment"
 msgstr "دفعة"
@@ -500,7 +533,7 @@ msgid "Adjustment"
 msgstr "تسوية"
 
 msgid "Reversal"
-msgstr "عكس حركة"
+msgstr "عكسي"
 
 msgid "type"
 msgstr "النوع"
@@ -580,9 +613,6 @@ msgstr "تمت إزالة الرقم."
 msgid "Name is required."
 msgstr "الاسم مطلوب."
 
-msgid "Customers"
-msgstr "الزبائن"
-
 msgid "Customer created."
 msgstr "تم إنشاء الزبون."
 
@@ -598,6 +628,33 @@ msgstr "تعديل الزبون"
 #, python-format
 msgid "Customer “%(name)s” and all linked records were deleted."
 msgstr "تم حذف الزبون «%(name)s» وكل البيانات المرتبطة به."
+
+msgid "Customer statement"
+msgstr "كشف حساب الزبون"
+
+msgid "Date"
+msgstr "التاريخ"
+
+msgid "Type"
+msgstr "النوع"
+
+msgid "Description"
+msgstr "الوصف"
+
+msgid "Reference"
+msgstr "المرجع"
+
+msgid "Opening balance"
+msgstr "الرصيد الافتتاحي"
+
+msgid "Charges total"
+msgstr "إجمالي المسحوبات"
+
+msgid "Payments total"
+msgstr "إجمالي المدفوعات"
+
+msgid "Closing balance"
+msgstr "الرصيد الختامي"
 
 msgid "Title, category, notes…"
 msgstr "العنوان، الفئة، الملاحظات…"
@@ -820,9 +877,6 @@ msgstr "بيع"
 msgid "Manual"
 msgstr "يدوي"
 
-msgid "Opening balance"
-msgstr "الرصيد الافتتاحي"
-
 msgid "Cancellation"
 msgstr "إلغاء"
 
@@ -931,9 +985,6 @@ msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
 
 msgid "Entry was permanently removed."
 msgstr "تم حذف الإدخال نهائياً."
-
-msgid "Sales"
-msgstr "المبيعات"
 
 msgid "Pending payments"
 msgstr "المدفوعات المعلّقة"
@@ -1127,10 +1178,17 @@ msgstr "اللغة"
 msgid "Open menu"
 msgstr "فتح القائمة"
 
+#| msgid "Search"
+msgid "Search (press /)"
+msgstr "بحث (اضغط /)"
+
 #, fuzzy
 #| msgid "Reference, payer, customer, company…"
 msgid "Search reference, customer, payment…"
 msgstr "المرجع، الدافع، الزبون، الشركة…"
+
+msgid "Close search"
+msgstr "إغلاق البحث"
 
 msgid "Delete this company? This cannot be undone."
 msgstr "حذف هذه الشركة؟ لا يمكن التراجع."
@@ -1254,9 +1312,6 @@ msgstr "المحل يدين للزبون (دفعة زائدة)."
 msgid "View all matches"
 msgstr "عرض كل المبيعات"
 
-msgid "Reference"
-msgstr "المرجع"
-
 msgid "Payer"
 msgstr "الدافع"
 
@@ -1318,6 +1373,9 @@ msgstr "لم يتم رفع أيقونة بعد — المتصفح يعرض ال�
 msgid "Customer account"
 msgstr "حساب الزبون"
 
+msgid "Statement"
+msgstr "كشف حساب"
+
 msgid "Back"
 msgstr "رجوع"
 
@@ -1363,9 +1421,6 @@ msgstr "معلّق على الحساب"
 msgid "On-account sales"
 msgstr "مبيعات الآجل"
 
-msgid "Date"
-msgstr "التاريخ"
-
 msgid "Price"
 msgstr "السعر"
 
@@ -1385,9 +1440,6 @@ msgstr "لا توجد مبيعات آجلة."
 
 msgid "Ledger"
 msgstr "السجل"
-
-msgid "Type"
-msgstr "النوع"
 
 msgid "By"
 msgstr "بواسطة"
@@ -1476,6 +1528,98 @@ msgstr "دين"
 
 msgid "No customers yet."
 msgstr "لا يوجد زبائن بعد."
+
+#, python-format
+msgid "Statement — %(name)s"
+msgstr "كشف حساب — %(name)s"
+
+#, python-format
+msgid " · From %(start)s to %(end)s"
+msgstr " · من %(start)s إلى %(end)s"
+
+msgid "Back to customer"
+msgstr "العودة إلى الزبون"
+
+msgid "Print"
+msgstr "طباعة"
+
+msgid "This month"
+msgstr "هذا الشهر"
+
+#, python-format
+msgid "From %(start)s to %(end)s"
+msgstr "من %(start)s إلى %(end)s"
+
+msgid "Owed to shop"
+msgstr "بذمة الزبون"
+
+msgid "Charges (took on account)"
+msgstr "مسحوبات (على الحساب)"
+
+#, python-format
+msgid "%(n)s sale"
+msgid_plural "%(n)s sales"
+msgstr[0] "%(n)s مبيع"
+msgstr[1] "%(n)s مبيعات"
+
+msgid "Payments received"
+msgstr "المدفوعات المُستلمة"
+
+#, python-format
+msgid "%(n)s payment"
+msgid_plural "%(n)s payments"
+msgstr[0] "%(n)s دفعة"
+msgstr[1] "%(n)s دفعات"
+
+#, fuzzy
+#| msgid "Shop owes the customer (overpayment)."
+msgid "Shop owes the customer."
+msgstr "المحل يدين للزبون (دفعة زائدة)."
+
+msgid "Manual adjustments"
+msgstr "تسويات يدوية"
+
+msgid "Reversals (write-offs / cancellations)"
+msgstr "عكسيات (شطب / إلغاء)"
+
+msgid "What they took (by product)"
+msgstr "ما الذي سحبه (حسب المنتج)"
+
+msgid "Count"
+msgstr "العدد"
+
+#, fuzzy
+#| msgid "Total sell"
+msgid "Total"
+msgstr "إجمالي البيع"
+
+msgid "No on-account sales in this period."
+msgstr "لا توجد مبيعات على الحساب في هذه الفترة."
+
+msgid "How they paid (by method)"
+msgstr "كيف دفع (حسب طريقة الدفع)"
+
+msgid "No payments in this period."
+msgstr "لا توجد مدفوعات في هذه الفترة."
+
+msgid "Activity"
+msgstr "الحركة"
+
+msgid "Running balance"
+msgstr "الرصيد الجاري"
+
+msgid "No activity in this period."
+msgstr "لا توجد حركة في هذه الفترة."
+
+msgid "Period totals"
+msgstr "إجمالي الفترة"
+
+msgid ""
+"Closing balance = opening balance + charges − payments + signed adjustments "
+"− reversals."
+msgstr ""
+"الرصيد الختامي = الرصيد الافتتاحي + المسحوبات − المدفوعات + التسويات "
+"(بإشارتها) − العكسيات."
 
 msgid "Operational spend tracking."
 msgstr "متابعة المصروفات التشغيلية."
@@ -1613,12 +1757,10 @@ msgstr "تسجيل الخروج"
 msgid "Supplier statement & internal ledger"
 msgstr "كشف المورّد وسجل الرصيد الداخلي"
 
-#| msgid "Net profit (all time)"
 msgid "Reset (all time)"
 msgstr "إعادة تعيين (كل الفترات)"
 
 #, python-format
-#| msgid "%(start)s → %(end)s"
 msgid "Showing data from %(start)s to %(end)s."
 msgstr "تعرض البيانات من %(start)s إلى %(end)s."
 
@@ -1636,11 +1778,9 @@ msgid "Consumed (sales)"
 msgstr "المستهلك (مبيعات)"
 
 #, python-format
-#| msgid "Balance"
 msgid "Balance on %(d)s"
 msgstr "الرصيد بتاريخ %(d)s"
 
-#| msgid "No"
 msgid "Now"
 msgstr "الآن"
 
@@ -1837,9 +1977,6 @@ msgstr "باستثناء المبيعات الملغاة"
 
 msgid "By company"
 msgstr "حسب الشركة"
-
-msgid "Count"
-msgstr "العدد"
 
 msgid "By payment method"
 msgstr "حسب طريقة الدفع"
