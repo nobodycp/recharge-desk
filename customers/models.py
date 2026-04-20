@@ -112,6 +112,13 @@ class CustomerPayment(models.Model):
         verbose_name = _("customer payment")
         verbose_name_plural = _("customer payments")
         ordering = ["-created_at", "-id"]
+        indexes = [
+            # Customer detail page + reports list payments by recency.
+            models.Index(fields=["customer", "-created_at"], name="cust_pay_recent_idx"),
+            # Date-bucketed reports (today / week / month) hit this
+            # column on its own without a customer filter.
+            models.Index(fields=["-created_at"], name="cust_pay_created_desc"),
+        ]
 
     def __str__(self):
         return f"{self.customer.name} · {self.amount}"

@@ -161,7 +161,21 @@ class Sale(models.Model):
         verbose_name_plural = _("sales")
         ordering = ["-created_at"]
         indexes = [
+            # Reference lookups during sale entry (auto-fill last sale
+            # for a number) and in the search bar.
             models.Index(fields=["reference_number", "-created_at"], name="sale_ref_created_desc"),
+            # Pending / awaiting / paid filters drive the busiest list
+            # pages — pre-sort within each status bucket.
+            models.Index(fields=["status", "-created_at"], name="sale_status_created_idx"),
+            # "My entries" page for the logged-in employee, plus all
+            # per-employee performance reports.
+            models.Index(fields=["created_by", "-created_at"], name="sale_creator_created_idx"),
+            # Customer detail page lists every sale on their ledger,
+            # ordered by recency.
+            models.Index(fields=["customer", "-created_at"], name="sale_customer_created_idx"),
+            # Payer-name search/auto-suggest: case-insensitive prefix
+            # lookups still benefit from the index for equality matches.
+            models.Index(fields=["payer_name"], name="sale_payer_name_idx"),
         ]
 
     def __str__(self):

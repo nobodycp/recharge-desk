@@ -31,6 +31,13 @@ class Expense(models.Model):
         verbose_name = _("expense")
         verbose_name_plural = _("expenses")
         ordering = ["-date", "-id"]
+        indexes = [
+            # Expense report is always date-bucketed; ordering by date
+            # also benefits from this index covering the default sort.
+            models.Index(fields=["-date"], name="expense_date_desc_idx"),
+            # Category drill-down in the expense report.
+            models.Index(fields=["category", "-date"], name="expense_cat_date_idx"),
+        ]
 
     def __str__(self):
         return self.title
