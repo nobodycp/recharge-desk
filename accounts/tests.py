@@ -98,6 +98,8 @@ class PermissionMatrixTests(TestCase):
             # accounts
             reverse("accounts:user_list"),
             reverse("accounts:user_create"),
+            # core (management-only branding editor)
+            reverse("core:site_branding"),
             # companies
             reverse("companies:company_list"),
             reverse("companies:company_create"),

@@ -7,4 +7,5 @@ app_name = "core"
 urlpatterns = [
     path("", views.home, name="home"),
     path("forbidden/", views.forbidden, name="forbidden"),
+    path("management/branding/", views.site_branding, name="site_branding"),
 ]

@@ -31,11 +31,68 @@ WEBP_EXTENSION = ".webp"
 MAX_STEM_LEN = 60
 
 
+def _trim_empty_borders(img):
+    """
+    Crop transparent / uniform borders away from *img* so logos display
+    flush against the edges of the image box.
+
+    Strategy:
+
+    * If the image has an alpha channel, find the bounding box of pixels
+      whose alpha is above ``8/255`` (i.e. visibly opaque). This handles
+      the typical "PNG with transparent padding" case perfectly.
+    * Otherwise, sample the four corners and trim rows/columns whose
+      pixels are all within a small distance of the (assumed) background
+      color. This rescues white-padded JPGs without false-positives on
+      photos because the threshold is conservative.
+
+    Returns the (possibly cropped) image. Always returns the original
+    when no meaningful crop is possible — never returns an empty image.
+    """
+    from PIL import Image, ImageChops
+
+    try:
+        if img.mode == "RGBA":
+            alpha = img.split()[-1]
+            # Drop near-transparent pixels before measuring the bbox so
+            # subtle anti-aliasing halos don't leave a 1px ghost border.
+            mask = alpha.point(lambda v: 255 if v > 8 else 0)
+            bbox = mask.getbbox()
+        elif img.mode == "LA":
+            bbox = img.split()[-1].point(lambda v: 255 if v > 8 else 0).getbbox()
+        else:
+            # Heuristic: assume the top-left corner is the background.
+            bg = img.getpixel((0, 0))
+            bg_img = Image.new(img.mode, img.size, bg)
+            diff = ImageChops.difference(img, bg_img)
+            # `getbbox` returns None if the image is entirely background.
+            if diff.getbbox() is None:
+                return img
+            # Threshold the diff so off-white pixels don't keep a margin.
+            if diff.mode != "L":
+                diff = diff.convert("L")
+            mask = diff.point(lambda v: 255 if v > 12 else 0)
+            bbox = mask.getbbox()
+
+        if not bbox:
+            return img
+
+        x0, y0, x1, y1 = bbox
+        if (x1 - x0) < 4 or (y1 - y0) < 4:
+            # Suspiciously empty — probably an artefact, leave the
+            # original alone instead of returning a blank thumbnail.
+            return img
+        return img.crop(bbox)
+    except Exception:  # noqa: BLE001 — Pillow can raise on weird modes
+        return img
+
+
 def optimize_image(
     file_obj,
     *,
     max_size: int = DEFAULT_MAX_SIZE,
     quality: int = DEFAULT_QUALITY,
+    trim: bool = False,
 ) -> Optional[ContentFile]:
     """
     Re-encode *file_obj* as a size-capped, EXIF-stripped WebP.
@@ -45,6 +102,11 @@ def optimize_image(
     extension to ``.webp``. Returns ``None`` when *file_obj* is falsy or when
     Pillow cannot decode it (corrupt upload, unsupported format) — callers
     should fall back to leaving the original file untouched in that case.
+
+    Set ``trim=True`` for assets that should sit flush in their display box
+    (logos, banners) — empty transparent / solid-color borders are cropped
+    out before resizing so a centered wordmark on a 2000×600 canvas doesn't
+    show up as a tiny image swimming in white space.
     """
     if not file_obj:
         return None
@@ -77,6 +139,9 @@ def optimize_image(
                 img = img.convert("RGB")
             elif img.mode not in ("RGB", "RGBA", "L"):
                 img = img.convert("RGBA")
+
+            if trim:
+                img = _trim_empty_borders(img)
 
             # Inline downscale; thumbnail() is a no-op for already-small images.
             img.thumbnail((max_size, max_size), Image.LANCZOS)
@@ -186,14 +251,23 @@ def _already_optimized(storage, name: str, max_size: int = DEFAULT_MAX_SIZE) -> 
     return max(width, height) <= max_size
 
 
-def maybe_optimize_image_field(instance, field_name: str = "icon") -> None:
+def maybe_optimize_image_field(
+    instance,
+    field_name: str = "icon",
+    *,
+    max_size: int = DEFAULT_MAX_SIZE,
+    quality: int = DEFAULT_QUALITY,
+    trim: bool = False,
+) -> None:
     """
     Re-encode a freshly uploaded image on *instance* in place before save.
 
     Intended to be called from a model's ``save()`` immediately before
     ``super().save()``. No-ops when the field is empty, when its current value
     is already a stored file (i.e. not a fresh upload), or when the optimizer
-    cannot decode the input.
+    cannot decode the input. ``max_size`` / ``quality`` let bigger fields
+    (logos, banners) opt into a larger cap than the icon default; ``trim``
+    enables transparent / solid-color border cropping for logo-style assets.
     """
     field_file = getattr(instance, field_name, None)
     if not field_file:
@@ -203,7 +277,7 @@ def maybe_optimize_image_field(instance, field_name: str = "icon") -> None:
     if not isinstance(raw, UploadedFile):
         return
 
-    optimized = optimize_image(raw)
+    optimized = optimize_image(raw, max_size=max_size, quality=quality, trim=trim)
     if optimized is None:
         return
 

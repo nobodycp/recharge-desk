@@ -1,11 +1,14 @@
 from urllib.parse import urlsplit
 
+from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.utils import translation
 from django.utils.translation import get_language_from_path, gettext_lazy as _
 from django.views.i18n import set_language as django_set_language
 
-from accounts.permissions import is_employee, is_management
+from accounts.permissions import is_employee, is_management, management_required
+from core.forms import SiteBrandingForm
+from core.models import SiteBranding
 
 
 def set_language_fixed(request):
@@ -46,4 +49,24 @@ def forbidden(request):
         "core/forbidden.html",
         {"title": _("Access denied")},
         status=403,
+    )
+
+
+@management_required
+def site_branding(request):
+    """Singleton editor for the company logo shown on the login page."""
+    instance = SiteBranding.load()
+    form = SiteBrandingForm(
+        request.POST or None,
+        request.FILES or None,
+        instance=instance,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("Branding updated."))
+        return redirect("core:site_branding")
+    return render(
+        request,
+        "core/site_branding.html",
+        {"form": form, "branding": instance, "title": _("Site branding")},
     )

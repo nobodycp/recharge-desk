@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   {% include "partials/theme_head.html" %}
+  {% include "partials/favicon.html" %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% trans "Sign in" %} · {% trans "Recharge Desk" %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +17,11 @@
   <div class="p-3 w-100 d-flex justify-content-center">
     <div class="card login-card">
       <div class="card-body p-4 p-md-5">
+        {% if site_branding.logo %}
+          <div class="login-brand text-center">
+            <img src="{{ site_branding.logo.url }}" alt="{% trans 'Site logo' %}" class="login-brand-img">
+          </div>
+        {% endif %}
         <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
           <div>
             <div class="text-uppercase text-secondary small fw-semibold">{% trans "Recharge Desk" %}</div>

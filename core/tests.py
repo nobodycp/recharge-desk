@@ -1,7 +1,26 @@
-"""Tests for core app pieces (security headers, context processor)."""
+"""Tests for core app pieces (security headers, context processor, branding)."""
 
+import io
+
+from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+from accounts.models import UserProfile
+from core.models import SITE_BRANDING_CACHE_KEY, SiteBranding
+
+User = get_user_model()
+
+
+def _png_bytes(width: int = 16, height: int = 16) -> bytes:
+    """Build a tiny in-memory PNG so tests don't need an asset fixture."""
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (width, height), (10, 20, 30)).save(buf, format="PNG")
+    return buf.getvalue()
 
 
 class SecurityHeadersMiddlewareTests(TestCase):
@@ -86,3 +105,90 @@ class SecurityHeadersMiddlewareTests(TestCase):
         # constructs a new wsgi handler, which re-instantiates middleware).
         r = Client().get(reverse("core:forbidden"))
         self.assertNotIn("Content-Security-Policy", r)
+
+
+class SiteBrandingTests(TestCase):
+    """Singleton SiteBranding model + login-page rendering + management editor."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.boss = User.objects.create_user("brand_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.worker = User.objects.create_user("brand_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        # Wipe both the singleton row and its cache between tests so each
+        # case starts from a known empty state.
+        SiteBranding.objects.all().delete()
+        cache.delete(SITE_BRANDING_CACHE_KEY)
+
+    # ---- model + singleton -----------------------------------------------
+    def test_save_pins_pk_to_one(self):
+        b = SiteBranding(pk=42)
+        b.save()
+        self.assertEqual(b.pk, 1)
+        self.assertEqual(SiteBranding.objects.count(), 1)
+
+    def test_load_creates_row_lazily_then_caches(self):
+        self.assertEqual(SiteBranding.objects.count(), 0)
+        first = SiteBranding.load()
+        self.assertEqual(first.pk, 1)
+        self.assertEqual(SiteBranding.objects.count(), 1)
+        # Second call resolves from cache: no new row created.
+        SiteBranding.load()
+        self.assertEqual(SiteBranding.objects.count(), 1)
+        self.assertIsNotNone(cache.get(SITE_BRANDING_CACHE_KEY))
+
+    def test_save_invalidates_cache(self):
+        SiteBranding.load()
+        self.assertIsNotNone(cache.get(SITE_BRANDING_CACHE_KEY))
+        b = SiteBranding.objects.get(pk=1)
+        b.save()
+        self.assertIsNone(cache.get(SITE_BRANDING_CACHE_KEY))
+
+    # ---- login page integration -----------------------------------------
+    def test_login_page_omits_logo_when_unset(self):
+        r = Client().get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, "login-brand-img")
+
+    def test_login_page_renders_logo_when_set(self):
+        b = SiteBranding.load()
+        b.logo = SimpleUploadedFile("logo.png", _png_bytes(64, 64), "image/png")
+        b.save()
+        r = Client().get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "login-brand-img")
+        self.assertContains(r, b.logo.url)
+
+    # ---- management editor ----------------------------------------------
+    def test_employee_blocked_from_branding_editor(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("core:site_branding"))
+        self.assertEqual(r.status_code, 302)
+        self.assertIn(reverse("core:forbidden"), r["Location"])
+
+    def test_management_can_open_editor(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:site_branding"))
+        self.assertEqual(r.status_code, 200)
+
+    def test_upload_persists_and_runs_through_optimizer(self):
+        c = Client()
+        c.force_login(self.boss)
+        upload = SimpleUploadedFile("brand.png", _png_bytes(800, 600), "image/png")
+        r = c.post(reverse("core:site_branding"), {"logo": upload})
+        self.assertEqual(r.status_code, 302)
+        b = SiteBranding.load()
+        self.assertTrue(b.logo)
+        # The optimizer must have re-encoded the upload as a WebP.
+        self.assertTrue(b.logo.name.endswith(".webp"))

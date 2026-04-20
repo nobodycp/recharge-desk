@@ -63,3 +63,22 @@ def theme(request):
         "languages": settings.LANGUAGES,
         "static_cache_query": static_cache_query,
     }
+
+
+def site_branding(request):
+    """Expose the singleton SiteBranding row to every template.
+
+    Local import keeps the context processor import-time cheap and avoids
+    a circular import during initial migrations / collectstatic — the
+    model only needs to be importable when a request is actually being
+    served. ``cached`` for 5 minutes inside ``SiteBranding.load`` so the
+    public login page doesn't hit the DB on every poll.
+    """
+    try:
+        from core.models import SiteBranding
+
+        return {"site_branding": SiteBranding.load()}
+    except Exception:
+        # Migrations not applied yet, DB unavailable, etc. — never let a
+        # branding lookup break an otherwise-renderable page.
+        return {"site_branding": None}

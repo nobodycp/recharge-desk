@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   {% include "partials/theme_head.html" %}
+  {% include "partials/favicon.html" %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ title|default:_("Management") }}{% endblock %} · {% trans "Recharge Desk" %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,12 +27,16 @@
     ></div>
 
     <aside class="rd-sidebar" data-rd-nav-panel id="rd-sidebar">
-      <a class="rd-sidebar-brand" href="{% url 'reports:dashboard' %}">
-        <span class="rd-sidebar-brand-mark">R</span>
-        <span>
-          <div class="fw-bold lh-sm">{% trans "Recharge Desk" %}</div>
-          <div class="rd-text-muted" style="font-size: 0.72rem;">{% trans "Management" %}</div>
-        </span>
+      <a class="rd-sidebar-brand{% if site_branding.logo %} rd-sidebar-brand--logo{% endif %}" href="{% url 'reports:dashboard' %}">
+        {% if site_branding.logo %}
+          <img class="rd-sidebar-brand-logo" src="{{ site_branding.logo.url }}" alt="{% trans 'Recharge Desk' %}">
+        {% else %}
+          <span class="rd-sidebar-brand-mark">R</span>
+          <span>
+            <div class="fw-bold lh-sm">{% trans "Recharge Desk" %}</div>
+            <div class="rd-text-muted" style="font-size: 0.72rem;">{% trans "Management" %}</div>
+          </span>
+        {% endif %}
       </a>
       {% include "partials/management_nav.html" %}
     </aside>
