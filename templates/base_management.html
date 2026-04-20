@@ -56,27 +56,62 @@
           </button>
           <div class="rd-heading-lg mb-0">{% block page_title %}{{ title|default:_("Management") }}{% endblock %}</div>
         </div>
-        <form
-          method="get"
-          action="{% url 'core:search' %}"
-          class="rd-topbar-search mb-0"
-          role="search"
-        >
-          <label class="visually-hidden" for="rd-global-search">{% trans "Search" %}</label>
-          <span class="rd-topbar-search-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </span>
-          <input
-            type="search"
-            id="rd-global-search"
-            name="q"
-            class="form-control form-control-sm rd-topbar-search-input"
-            placeholder="{% trans 'Search reference, customer, payment…' %}"
-            value="{{ request.GET.q|default:'' }}"
-            autocomplete="off"
-          >
-        </form>
         <div class="rd-topbar-meta">
+          <div
+            class="rd-search"
+            data-rd-search
+            data-suggest-url="{% url 'core:search_suggest' %}"
+          >
+            <button
+              type="button"
+              class="rd-search-toggle"
+              data-rd-search-toggle
+              aria-expanded="false"
+              aria-controls="rd-search-panel"
+              aria-label="{% trans 'Search' %}"
+              title="{% trans 'Search (press /)' %}"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+            <form
+              method="get"
+              action="{% url 'core:search' %}"
+              class="rd-search-panel"
+              id="rd-search-panel"
+              role="search"
+              data-rd-search-panel
+              hidden
+            >
+              <label class="visually-hidden" for="rd-global-search">{% trans "Search" %}</label>
+              <span class="rd-search-panel-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input
+                type="search"
+                id="rd-global-search"
+                name="q"
+                class="form-control form-control-sm rd-search-input"
+                placeholder="{% trans 'Search reference, customer, payment…' %}"
+                value="{{ request.GET.q|default:'' }}"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-controls="rd-search-results"
+              >
+              <button
+                type="button"
+                class="rd-search-close"
+                data-rd-search-close
+                aria-label="{% trans 'Close search' %}"
+              >×</button>
+              <div
+                class="rd-search-results"
+                id="rd-search-results"
+                data-rd-search-results
+                role="listbox"
+                hidden
+              ></div>
+            </form>
+          </div>
           <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">

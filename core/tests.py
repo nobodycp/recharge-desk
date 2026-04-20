@@ -364,3 +364,39 @@ class GlobalSearchTests(TestCase):
         c.force_login(self.boss)
         r = c.get(reverse("reports:dashboard"))
         self.assertContains(r, 'id="rd-global-search"')
+        # The icon-toggle wrapper must also be present so the JS can
+        # find a hook to expand the panel on click. If the markup gets
+        # accidentally collapsed back to the always-visible input the
+        # toggle button disappears and this regression catches it.
+        self.assertContains(r, "data-rd-search-toggle")
+
+    def test_suggest_endpoint_returns_grouped_json(self):
+        import json
+
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search_suggest"), {"q": "Hazem"})
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        keys = {g["key"] for g in body["groups"]}
+        # Sale (matched on payer name), customer, and payment (via FK
+        # customer.name) are all expected to appear in the dropdown.
+        self.assertEqual(keys, {"sales", "customers", "payments"})
+        self.assertTrue(body["more_url"])
+
+    def test_suggest_short_query_returns_no_groups(self):
+        import json
+
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search_suggest"), {"q": "H"})
+        body = json.loads(r.content)
+        # Single-character queries are rejected to avoid table scans
+        # for every keystroke.
+        self.assertEqual(body["groups"], [])
+
+    def test_suggest_blocked_for_employees(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("core:search_suggest"), {"q": "Hazem"})
+        self.assertEqual(r.status_code, 302)

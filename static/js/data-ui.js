@@ -215,21 +215,218 @@
     document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
   });
 
-  // Press "/" anywhere outside a form field to focus the global topbar
-  // search box. Mirrors the GitHub / Linear UX so power users can jump
-  // straight from "I want to find sale 0599..." to typing without
-  // hunting for the input. Ignored while editing or with a modifier
-  // pressed so it never steals "/" from a user typing a slash.
-  document.addEventListener("keydown", function (e) {
-    if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
-    var t = e.target;
-    if (!t) return;
-    var tag = (t.tagName || "").toUpperCase();
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable) return;
-    var box = document.getElementById("rd-global-search");
-    if (!box) return;
-    e.preventDefault();
-    box.focus();
-    box.select();
-  });
+  // ===== Global search: icon-toggled panel + live suggestions =========
+  // The topbar shows just an icon by default. Clicking it (or pressing
+  // "/" outside a form field) opens a floating panel with the input
+  // and a debounced suggestion dropdown. Suggestions come from
+  // /management/search/suggest/ and are grouped (Sales / Customers /
+  // Payments). Keyboard: ArrowUp/Down moves selection, Enter activates
+  // the highlighted item (or submits to the full results page if
+  // nothing is highlighted), Escape closes.
+  (function setupGlobalSearch() {
+    var root = document.querySelector("[data-rd-search]");
+    if (!root) return;
+    var toggle = root.querySelector("[data-rd-search-toggle]");
+    var panel = root.querySelector("[data-rd-search-panel]");
+    var input = root.querySelector("#rd-global-search");
+    var closeBtn = root.querySelector("[data-rd-search-close]");
+    var results = root.querySelector("[data-rd-search-results]");
+    var suggestUrl = root.getAttribute("data-suggest-url");
+    if (!toggle || !panel || !input || !results || !suggestUrl) return;
+
+    var debounceTimer = null;
+    var lastQuery = null;
+    var inflight = null;
+    var selectedIndex = -1;
+    var renderedItems = [];
+
+    function open() {
+      root.setAttribute("data-rd-search-open", "true");
+      toggle.setAttribute("aria-expanded", "true");
+      panel.hidden = false;
+      setTimeout(function () {
+        input.focus();
+        input.select();
+      }, 0);
+      if (input.value.trim().length >= 2 && input.value.trim() !== lastQuery) {
+        fetchSuggestions(input.value.trim());
+      }
+    }
+
+    function close() {
+      root.removeAttribute("data-rd-search-open");
+      toggle.setAttribute("aria-expanded", "false");
+      panel.hidden = true;
+      hideResults();
+      selectedIndex = -1;
+    }
+
+    function hideResults() {
+      results.hidden = true;
+      results.innerHTML = "";
+      renderedItems = [];
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function render(payload) {
+      results.innerHTML = "";
+      renderedItems = [];
+      var groups = (payload && payload.groups) || [];
+      if (!groups.length) {
+        var empty = document.createElement("div");
+        empty.className = "rd-search-empty";
+        empty.textContent = payload.empty_label || "No results";
+        results.appendChild(empty);
+      } else {
+        groups.forEach(function (group) {
+          var section = document.createElement("div");
+          section.className = "rd-search-group";
+          section.setAttribute("role", "group");
+
+          var label = document.createElement("div");
+          label.className = "rd-search-group-label";
+          label.textContent = group.label || group.key;
+          section.appendChild(label);
+
+          (group.items || []).forEach(function (item) {
+            var a = document.createElement("a");
+            a.className = "rd-search-item";
+            a.setAttribute("role", "option");
+            a.href = item.url;
+            a.innerHTML =
+              '<span class="rd-search-item-label">' +
+              escapeHtml(item.label) +
+              "</span>" +
+              (item.sublabel
+                ? '<span class="rd-search-item-sublabel">' +
+                  escapeHtml(item.sublabel) +
+                  "</span>"
+                : "");
+            section.appendChild(a);
+            renderedItems.push(a);
+          });
+          results.appendChild(section);
+        });
+      }
+      if (payload.more_url) {
+        var more = document.createElement("a");
+        more.className = "rd-search-more";
+        more.href = payload.more_url;
+        more.textContent = payload.more_label || "See all results";
+        results.appendChild(more);
+      }
+      results.hidden = false;
+      selectedIndex = -1;
+    }
+
+    function showHint(text) {
+      results.innerHTML =
+        '<div class="rd-search-hint">' + escapeHtml(text) + "</div>";
+      results.hidden = false;
+      renderedItems = [];
+      selectedIndex = -1;
+    }
+
+    function fetchSuggestions(q) {
+      lastQuery = q;
+      if (inflight && typeof inflight.abort === "function") {
+        try { inflight.abort(); } catch (_) {}
+      }
+      var url = suggestUrl + "?q=" + encodeURIComponent(q);
+      var ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      inflight = ctrl;
+      fetch(url, {
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "fetch" },
+        signal: ctrl ? ctrl.signal : undefined,
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (payload) {
+          if (!payload || lastQuery !== q) return;
+          render(payload);
+        })
+        .catch(function () { /* ignore aborts / network blips */ });
+    }
+
+    function onInput() {
+      var q = input.value.trim();
+      if (q.length < 2) {
+        if (q.length === 0) {
+          hideResults();
+        } else {
+          showHint(input.getAttribute("data-hint") || "Type at least 2 characters…");
+        }
+        lastQuery = q;
+        return;
+      }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () { fetchSuggestions(q); }, 180);
+    }
+
+    function highlight(idx) {
+      renderedItems.forEach(function (el, i) {
+        if (i === idx) {
+          el.setAttribute("aria-selected", "true");
+          el.scrollIntoView({ block: "nearest" });
+        } else {
+          el.removeAttribute("aria-selected");
+        }
+      });
+      selectedIndex = idx;
+    }
+
+    toggle.addEventListener("click", function () {
+      if (panel.hidden) open(); else close();
+    });
+    closeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      close();
+      toggle.focus();
+    });
+    input.addEventListener("input", onInput);
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+        toggle.focus();
+      } else if (e.key === "ArrowDown") {
+        if (!renderedItems.length) return;
+        e.preventDefault();
+        highlight((selectedIndex + 1) % renderedItems.length);
+      } else if (e.key === "ArrowUp") {
+        if (!renderedItems.length) return;
+        e.preventDefault();
+        highlight(selectedIndex <= 0 ? renderedItems.length - 1 : selectedIndex - 1);
+      } else if (e.key === "Enter") {
+        if (selectedIndex >= 0 && renderedItems[selectedIndex]) {
+          e.preventDefault();
+          window.location.href = renderedItems[selectedIndex].href;
+        }
+        // otherwise fall through and submit the form (full results page)
+      }
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !root.contains(e.target)) close();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      var t = e.target;
+      if (!t) return;
+      var tag = (t.tagName || "").toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable) return;
+      e.preventDefault();
+      open();
+    });
+  })();
 })();

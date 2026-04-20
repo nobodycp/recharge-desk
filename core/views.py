@@ -1,7 +1,9 @@
 from urllib.parse import urlsplit
 
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import translation
 from django.utils.translation import get_language_from_path, gettext_lazy as _
 from django.views.i18n import set_language as django_set_language
@@ -128,6 +130,118 @@ def search(request):
         "title": _("Search"),
     }
     return render(request, "core/search.html", ctx)
+
+
+@management_required
+def search_suggest(request):
+    """Tiny JSON endpoint feeding the live-suggestion dropdown in the topbar.
+
+    Returns at most ``PER_GROUP`` rows from each of the three sections so
+    the dropdown stays scannable; the payload is intentionally
+    URL-and-label only (no full row markup) so the wire format is
+    cacheable and the rendering work stays in the browser.
+    """
+    from django.db.models import Q
+
+    from customers.models import Customer, CustomerPayment
+    from sales.models import Sale
+
+    PER_GROUP = 6
+    q = (request.GET.get("q") or "").strip()
+    groups = []
+
+    if len(q) >= 2:
+        sale_filter = Q(reference_number__icontains=q) | Q(payer_name__icontains=q)
+        if q.isdigit():
+            sale_filter |= Q(id=int(q))
+        sale_rows = (
+            Sale.objects.filter(sale_filter)
+            .select_related("company", "product__line", "customer")
+            .order_by("-created_at")[:PER_GROUP]
+        )
+        sales = [
+            {
+                "label": s.reference_number or f"#{s.pk}",
+                "sublabel": " · ".join(
+                    bit
+                    for bit in [
+                        s.payer_name,
+                        s.company.name if s.company_id else "",
+                        s.product.display_name if s.product_id else "",
+                    ]
+                    if bit
+                ),
+                "url": reverse("sales:management_sale_list") + f"?q={s.reference_number or s.pk}",
+            }
+            for s in sale_rows
+        ]
+        if sales:
+            groups.append({"key": "sales", "label": str(_("Sales")), "items": sales})
+
+        customer_filter = Q(name__icontains=q) | Q(phones__phone__icontains=q)
+        if q.isdigit():
+            customer_filter |= Q(id=int(q))
+        customer_rows = (
+            Customer.objects.filter(customer_filter)
+            .distinct()
+            .order_by("-current_balance", "name")[:PER_GROUP]
+        )
+        customers = [
+            {
+                "label": c.name,
+                "sublabel": (
+                    str(_("Owes")) + f" {c.current_balance}"
+                    if c.current_balance > 0
+                    else (
+                        str(_("Credit")) + f" {abs(c.current_balance)}"
+                        if c.current_balance < 0
+                        else str(_("Settled"))
+                    )
+                ),
+                "url": reverse("customers:customer_detail", args=[c.pk]),
+            }
+            for c in customer_rows
+        ]
+        if customers:
+            groups.append({"key": "customers", "label": str(_("Customers")), "items": customers})
+
+        payment_filter = Q(notes__icontains=q) | Q(customer__name__icontains=q)
+        if q.isdigit():
+            payment_filter |= Q(id=int(q))
+        payment_rows = (
+            CustomerPayment.objects.filter(payment_filter)
+            .select_related("customer", "payment_method")
+            .order_by("-created_at")[:PER_GROUP]
+        )
+        payments = [
+            {
+                "label": f"#{p.pk} · {p.customer.name}",
+                "sublabel": " · ".join(
+                    bit
+                    for bit in [
+                        f"{p.amount}",
+                        p.payment_method.name if p.payment_method_id else "",
+                        p.created_at.strftime("%Y-%m-%d"),
+                    ]
+                    if bit
+                ),
+                "url": reverse("customers:customer_detail", args=[p.customer_id]) + f"#payment-{p.pk}",
+            }
+            for p in payment_rows
+        ]
+        if payments:
+            groups.append({"key": "payments", "label": str(_("Payments")), "items": payments})
+
+    return JsonResponse(
+        {
+            "q": q,
+            "groups": groups,
+            "more_url": reverse("core:search") + (f"?q={q}" if q else ""),
+            "more_label": str(_("See all results")),
+            "empty_label": str(_("No results")),
+            "hint_label": str(_("Type at least 2 characters…")),
+        }
+    )
 
 
 @management_required
