@@ -237,9 +237,11 @@
     var awaitingEl = root.querySelector("[data-rd-notif-awaiting]");
     var pendingEl = root.querySelector("[data-rd-notif-pending]");
     var emptyEl = root.querySelector("[data-rd-notif-empty]");
+    var trigger = root.querySelector(".rd-notif-trigger");
 
     var timer = null;
     var inflight = null;
+    var pollDebounce = null;
 
     function setCount(el, n) {
       if (!el) return;
@@ -260,6 +262,10 @@
         badge.textContent = String(total);
         if (total > 0) badge.removeAttribute("hidden");
         else badge.setAttribute("hidden", "hidden");
+      }
+      if (trigger) {
+        if (total > 0) trigger.classList.add("is-active");
+        else trigger.classList.remove("is-active");
       }
       if (aria) {
         // Best-effort plural string; the real translated copy is rendered
@@ -316,6 +322,19 @@
 
     window.addEventListener("focus", poll);
     window.addEventListener("pageshow", poll);
+
+    // Re-poll right after any successful HTMX mutation (approve a sale,
+    // mark a payment paid, delete a row, etc.) so the badge updates the
+    // instant the action lands instead of waiting for the next 15s tick.
+    document.body.addEventListener("htmx:afterRequest", function (e) {
+      var detail = e && e.detail;
+      var xhr = detail && detail.xhr;
+      if (!xhr || xhr.status < 200 || xhr.status >= 400) return;
+      var verb = (detail.requestConfig && detail.requestConfig.verb) || "";
+      if (String(verb).toLowerCase() === "get") return;
+      if (pollDebounce) clearTimeout(pollDebounce);
+      pollDebounce = setTimeout(poll, 150);
+    });
 
     start();
   })();

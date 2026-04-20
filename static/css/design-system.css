@@ -1808,7 +1808,29 @@ html[dir="rtl"] .rd-toast.is-visible {
   gap: 0 !important;
 }
 
-.rd-notif-trigger svg { display: block; }
+.rd-notif-trigger svg { display: block; transform-origin: 50% 4px; }
+
+@keyframes rd-bell-ring {
+  0%   { transform: rotate(0deg); }
+  3%   { transform: rotate(-14deg); }
+  6%   { transform: rotate(12deg); }
+  9%   { transform: rotate(-10deg); }
+  12%  { transform: rotate(8deg); }
+  15%  { transform: rotate(-6deg); }
+  18%  { transform: rotate(4deg); }
+  21%  { transform: rotate(-2deg); }
+  24%, 100% { transform: rotate(0deg); }
+}
+
+.rd-notif-trigger.is-active svg {
+  animation: rd-bell-ring 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-notif-trigger.is-active svg {
+    animation: none;
+  }
+}
 
 .rd-notif-badge {
   position: absolute;

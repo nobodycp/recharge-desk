@@ -7,25 +7,47 @@
 
   <div class="app-card card mb-4">
     <div class="card-body p-4">
-      <h2 class="rd-heading-lg mb-2">{% trans "Login page logo" %}</h2>
-      <p class="rd-text-muted mb-3">
-        {% trans "This image appears above the sign-in form. Upload a transparent PNG or SVG-rendered PNG for best results — the file is automatically resized so it loads fast." %}
-      </p>
-
-      {% if branding.logo %}
-        <div class="d-flex align-items-center gap-3 p-3 mb-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
-          <img src="{{ branding.logo.url }}" alt="" style="max-height: 5rem; max-width: 12rem; object-fit: contain;">
-          <div class="small rd-text-muted">
-            <div>{% trans "Current logo" %}</div>
-            <div>{{ branding.logo.name }}</div>
-          </div>
-        </div>
-      {% else %}
-        <div class="empty-state mb-3">{% trans "No logo uploaded yet — the login page shows just the title." %}</div>
-      {% endif %}
-
       <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
         {% csrf_token %}
+
+        <h2 class="rd-heading-lg mb-2">{% trans "Site name and tagline" %}</h2>
+        <p class="rd-text-muted mb-3">
+          {% trans "These appear in the browser tab title, the sidebar header above the logo, and the login page heading. Leave both empty to fall back to the built-in defaults." %}
+        </p>
+
+        <div>
+          {{ form.site_name.label_tag }}
+          {{ form.site_name }}
+          {% if form.site_name.help_text %}<div class="form-text">{{ form.site_name.help_text|safe }}</div>{% endif %}
+          {{ form.site_name.errors }}
+        </div>
+
+        <div>
+          {{ form.tagline.label_tag }}
+          {{ form.tagline }}
+          {% if form.tagline.help_text %}<div class="form-text">{{ form.tagline.help_text|safe }}</div>{% endif %}
+          {{ form.tagline.errors }}
+        </div>
+
+        <hr class="my-2">
+
+        <h2 class="rd-heading-lg mb-2">{% trans "Login page logo" %}</h2>
+        <p class="rd-text-muted mb-3">
+          {% trans "This image appears above the sign-in form. Upload a transparent PNG or SVG-rendered PNG for best results — the file is automatically resized so it loads fast." %}
+        </p>
+
+        {% if branding.logo %}
+          <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
+            <img src="{{ branding.logo.url }}" alt="" style="max-height: 5rem; max-width: 12rem; object-fit: contain;">
+            <div class="small rd-text-muted">
+              <div>{% trans "Current logo" %}</div>
+              <div>{{ branding.logo.name }}</div>
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-state">{% trans "No logo uploaded yet — the login page shows just the title." %}</div>
+        {% endif %}
+
         <div>
           {{ form.logo.label_tag }}
           {{ form.logo }}
@@ -35,24 +57,24 @@
 
         <hr class="my-2">
 
-        <div>
-          <h2 class="rd-heading-lg mb-2">{% trans "Browser tab icon" %}</h2>
-          <p class="rd-text-muted mb-3">
-            {% trans "Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square image for best results." %}
-          </p>
+        <h2 class="rd-heading-lg mb-2">{% trans "Browser tab icon" %}</h2>
+        <p class="rd-text-muted mb-3">
+          {% trans "Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square image for best results." %}
+        </p>
 
-          {% if branding.favicon %}
-            <div class="d-flex align-items-center gap-3 p-3 mb-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
-              <img src="{{ branding.favicon.url }}" alt="" style="width: 2rem; height: 2rem; object-fit: contain;">
-              <div class="small rd-text-muted">
-                <div>{% trans "Current icon" %}</div>
-                <div>{{ branding.favicon.name }}</div>
-              </div>
+        {% if branding.favicon %}
+          <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
+            <img src="{{ branding.favicon.url }}" alt="" style="width: 2rem; height: 2rem; object-fit: contain;">
+            <div class="small rd-text-muted">
+              <div>{% trans "Current icon" %}</div>
+              <div>{{ branding.favicon.name }}</div>
             </div>
-          {% else %}
-            <div class="empty-state mb-3">{% trans "No tab icon uploaded yet — the browser shows its default." %}</div>
-          {% endif %}
+          </div>
+        {% else %}
+          <div class="empty-state">{% trans "No tab icon uploaded yet — the browser shows its default." %}</div>
+        {% endif %}
 
+        <div>
           {{ form.favicon.label_tag }}
           {{ form.favicon }}
           {% if form.favicon.help_text %}<div class="form-text">{{ form.favicon.help_text|safe }}</div>{% endif %}

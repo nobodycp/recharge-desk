@@ -117,12 +117,30 @@ def site_branding(request):
     model only needs to be importable when a request is actually being
     served. ``cached`` for 5 minutes inside ``SiteBranding.load`` so the
     public login page doesn't hit the DB on every poll.
+
+    Also exposes ``site_name`` and ``site_tagline`` separately, falling
+    back to translated defaults when the operator hasn't customised them.
+    Templates should always use these helpers instead of hard-coding the
+    project name so branding stays editable from the admin UI.
     """
+    from django.utils.translation import gettext as _g
+
+    default_name = _g("Recharge Desk")
+    default_tagline = _g("Management")
     try:
         from core.models import SiteBranding
 
-        return {"site_branding": SiteBranding.load()}
+        instance = SiteBranding.load()
+        return {
+            "site_branding": instance,
+            "site_name": (instance.site_name or "").strip() or default_name,
+            "site_tagline": (instance.tagline or "").strip() or default_tagline,
+        }
     except Exception:
         # Migrations not applied yet, DB unavailable, etc. — never let a
         # branding lookup break an otherwise-renderable page.
-        return {"site_branding": None}
+        return {
+            "site_branding": None,
+            "site_name": default_name,
+            "site_tagline": default_tagline,
+        }

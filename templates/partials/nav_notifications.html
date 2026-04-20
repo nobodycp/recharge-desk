@@ -8,7 +8,7 @@
     data-pending-url="{% url 'sales:pending_payments' %}"
   >
     <summary
-      class="rd-user-menu-trigger rd-notif-trigger"
+      class="rd-user-menu-trigger rd-notif-trigger{% if nav_notifications.total %} is-active{% endif %}"
       aria-haspopup="menu"
       aria-label="{% trans 'Notifications' %}"
     >

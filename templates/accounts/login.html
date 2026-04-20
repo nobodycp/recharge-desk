@@ -6,7 +6,7 @@
   {% include "partials/theme_head.html" %}
   {% include "partials/favicon.html" %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% trans "Sign in" %} · {% trans "Recharge Desk" %}</title>
+  <title>{% trans "Sign in" %} · {{ site_name }}</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
@@ -24,7 +24,7 @@
         {% endif %}
         <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
           <div>
-            <div class="text-uppercase text-secondary small fw-semibold">{% trans "Recharge Desk" %}</div>
+            <div class="text-uppercase text-secondary small fw-semibold">{{ site_name }}</div>
             <h1 class="h4 mb-0 mt-1">{% trans "Sign in" %}</h1>
           </div>
           <div class="d-flex align-items-center gap-2 flex-wrap">

@@ -28,6 +28,24 @@ class SiteBranding(models.Model):
     # headroom while keeping the WebP tiny.
     FAVICON_MAX_SIZE = 256
 
+    site_name = models.CharField(
+        _("site name"),
+        max_length=120,
+        blank=True,
+        help_text=_(
+            "Displayed in the browser tab title, the sidebar header, and"
+            " the login page. Leave empty to keep the default name."
+        ),
+    )
+    tagline = models.CharField(
+        _("tagline"),
+        max_length=160,
+        blank=True,
+        help_text=_(
+            "Short text shown under the site name in the sidebar. Leave"
+            " empty to keep the default."
+        ),
+    )
     logo = models.ImageField(
         _("logo"),
         upload_to="branding/",
