@@ -23,7 +23,18 @@
             {% endif %}
           </div>
         </div>
-        <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:payment_method_edit' m.pk %}">{% trans "Edit" %}</a>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:payment_method_edit' m.pk %}">{% trans "Edit" %}</a>
+          <form
+            method="post"
+            action="{% url 'sales:payment_method_delete' m.pk %}"
+            class="m-0"
+            onsubmit="return confirm('{% blocktrans with name=m.name %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}');"
+          >
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+          </form>
+        </div>
       </div>
     {% empty %}
       <div class="list-group-item text-secondary">{% trans "No payment methods." %}</div>

@@ -48,6 +48,7 @@ from sales.views.management import (
 )
 from sales.views.payment_methods import (
     payment_method_create,
+    payment_method_delete,
     payment_method_edit,
     payment_method_list,
 )
@@ -75,6 +76,7 @@ __all__ = [
     "payment_method_list",
     "payment_method_create",
     "payment_method_edit",
+    "payment_method_delete",
     # bulk
     "bulk_sales_mark_paid",
     # htmx helpers (legacy underscored names kept for backward compat)

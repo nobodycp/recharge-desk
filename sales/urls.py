@@ -33,4 +33,5 @@ urlpatterns = [
     path("management/payment-methods/", views.payment_method_list, name="payment_method_list"),
     path("management/payment-methods/new/", views.payment_method_create, name="payment_method_create"),
     path("management/payment-methods/<int:pk>/edit/", views.payment_method_edit, name="payment_method_edit"),
+    path("management/payment-methods/<int:pk>/delete/", views.payment_method_delete, name="payment_method_delete"),
 ]

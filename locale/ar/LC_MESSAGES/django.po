@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 02:23+0300\n"
+"POT-Creation-Date: 2026-04-20 02:56+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,14 +38,12 @@ msgstr "اسم المستخدم"
 msgid "Profile picture"
 msgstr "صورة الملف الشخصي"
 
-#| msgid "Change password"
 msgid "New password"
 msgstr "كلمة المرور الجديدة"
 
 msgid "Leave blank to keep the current password."
 msgstr "اتركها فارغة للإبقاء على كلمة المرور الحالية."
 
-#| msgid "Change password"
 msgid "Confirm new password"
 msgstr "تأكيد كلمة المرور الجديدة"
 
@@ -123,7 +121,6 @@ msgstr ""
 "التعديل."
 
 #, python-format
-#| msgid "Expense \"%(title)s\" deleted."
 msgid "User '%(name)s' deleted."
 msgstr "تم حذف المستخدم \"%(name)s\"."
 
@@ -289,8 +286,38 @@ msgstr "لا يمكن حذف هذه الباقة لوجود مبيعات مسج�
 msgid "Package was deleted: %(label)s"
 msgstr "تم حذف الباقة: %(label)s"
 
+msgid "Site logo"
+msgstr "شعار الموقع"
+
+msgid "Browser tab icon"
+msgstr "أيقونة تبويب المتصفح"
+
+msgid "logo"
+msgstr "الشعار"
+
+msgid "Shown above the login form. Resized automatically."
+msgstr "يظهر أعلى نموذج تسجيل الدخول. يُصغَّر حجمه تلقائياً."
+
+msgid "favicon"
+msgstr "أيقونة المتصفح"
+
+msgid "Shown in the browser tab and bookmarks. Resized automatically."
+msgstr "تظهر في تبويب المتصفح والإشارات المرجعية. يتم تصغير حجمها تلقائياً."
+
+msgid "updated at"
+msgstr "آخر تحديث"
+
+msgid "site branding"
+msgstr "هوية الموقع"
+
 msgid "Access denied"
 msgstr "الوصول مرفوض"
+
+msgid "Branding updated."
+msgstr "تم تحديث هوية الموقع."
+
+msgid "Site branding"
+msgstr "هوية الموقع"
 
 msgid "Phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
@@ -671,9 +698,6 @@ msgstr "بيع eSIM"
 msgid "status"
 msgstr "الحالة"
 
-msgid "updated at"
-msgstr "تاريخ التحديث"
-
 msgid "marked paid at"
 msgstr "تاريخ التعليم كمدفوع"
 
@@ -856,6 +880,20 @@ msgstr "تم تحديث طريقة الدفع."
 msgid "Edit payment method"
 msgstr "تعديل طريقة الدفع"
 
+#, python-format
+msgid ""
+"Cannot delete “%(name)s” because existing sales or customer payments still "
+"reference it. Mark it inactive instead, or first move those records to "
+"another method."
+msgstr ""
+"لا يمكن حذف \"%(name)s\" لأن مبيعات أو دفعات زبائن لا تزال مرتبطة بها. "
+"اجعلها غير نشطة بدلاً من ذلك، أو حوّل هذه السجلات لطريقة أخرى أولاً."
+
+#, python-format
+#| msgid "Company “%(name)s” was deleted."
+msgid "Payment method “%(name)s” was deleted."
+msgstr "تم حذف طريقة الدفع \"%(name)s\"."
+
 msgid "PNG or JPG. Will be resized automatically."
 msgstr "PNG أو JPG. سيتم تصغيرها تلقائياً."
 
@@ -892,11 +930,9 @@ msgstr "لا"
 msgid "Edit"
 msgstr "تعديل"
 
-#| msgid "Delete this company? This cannot be undone."
 msgid "Delete this user permanently? This cannot be undone."
 msgstr "حذف هذا المستخدم نهائياً؟ لا يمكن التراجع."
 
-#| msgid "Delete customer"
 msgid "Delete user"
 msgstr "حذف المستخدم"
 
@@ -928,7 +964,6 @@ msgstr ""
 " زبون أو دفعة فسيتم رفض الحذف — عطّل تسجيل الدخول بدلاً من ذلك بإلغاء تأشير "
 "«تمكين تسجيل الدخول» بالأعلى."
 
-#| msgid "Delete permanently"
 msgid "Delete user permanently"
 msgstr "حذف المستخدم نهائياً"
 
@@ -1048,6 +1083,36 @@ msgstr "ليس لديك صلاحية لعرض هذه الصفحة."
 
 msgid "Go home"
 msgstr "الرئيسية"
+
+msgid "Login page logo"
+msgstr "شعار صفحة تسجيل الدخول"
+
+msgid ""
+"This image appears above the sign-in form. Upload a transparent PNG or SVG-"
+"rendered PNG for best results — the file is automatically resized so it "
+"loads fast."
+msgstr ""
+"تظهر هذه الصورة أعلى نموذج تسجيل الدخول. يُفضّل رفع صورة PNG بخلفية شفافة — "
+"يتم تصغير الملف تلقائياً ليتم تحميله بسرعة."
+
+msgid "Current logo"
+msgstr "الشعار الحالي"
+
+msgid "No logo uploaded yet — the login page shows just the title."
+msgstr "لم يتم رفع شعار بعد — صفحة تسجيل الدخول تعرض العنوان فقط."
+
+msgid ""
+"Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square"
+" image for best results."
+msgstr ""
+"تظهر في تبويب المتصفح والإشارات المرجعية واختصارات الشاشة الرئيسية. استخدم "
+"صورة مربعة للحصول على أفضل النتائج."
+
+msgid "Current icon"
+msgstr "الأيقونة الحالية"
+
+msgid "No tab icon uploaded yet — the browser shows its default."
+msgstr "لم يتم رفع أيقونة بعد — المتصفح يعرض الأيقونة الافتراضية."
 
 msgid "Customer account"
 msgstr "حساب الزبون"
@@ -1665,6 +1730,23 @@ msgstr "تعليم كمدفوع"
 
 msgid "No pending sales."
 msgstr "لا توجد مبيعات معلّقة."
+
+msgid ""
+"Deleting a payment method is permanent. If existing sales or customer "
+"payments still reference it, the delete will be blocked — mark it inactive "
+"instead."
+msgstr ""
+"حذف طريقة الدفع لا يمكن التراجع عنه. إذا كانت هناك مبيعات أو دفعات زبائن لا "
+"تزال مرتبطة بها، سيتم منع الحذف — اجعلها غير نشطة بدلاً من ذلك."
+
+#, python-format
+#| msgid "Delete this product line? This cannot be undone."
+msgid "Delete payment method “%(name)s”? This cannot be undone."
+msgstr "حذف طريقة الدفع \"%(name)s\"؟ لا يمكن التراجع عن هذا الإجراء."
+
+#| msgid "New payment method"
+msgid "Delete payment method"
+msgstr "حذف طريقة الدفع"
 
 msgid "Tiles shown on the employee sales screen."
 msgstr "البطاقات الظاهرة في شاشة مبيعات الموظف."

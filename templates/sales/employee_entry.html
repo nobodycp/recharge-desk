@@ -76,7 +76,7 @@
             {{ form.payment_method.errors }}
             {{ form.payment_method }}
             {{ form.on_account }}
-            <div class="row row-cols-5 g-1 mt-1" id="payment-tiles">
+            <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="payment-tiles">
               {% for pm in payment_methods %}
                 <div class="col">
                   <button
@@ -99,7 +99,7 @@
             </div>
             {{ form.company.errors }}
             {{ form.company }}
-            <div class="row row-cols-4 g-1 mt-1" id="company-tiles">
+            <div class="row row-cols-4 g-1 mt-1 justify-content-center" id="company-tiles">
               {% for c in companies %}
                 <div class="col">
                   <button

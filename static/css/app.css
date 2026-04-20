@@ -188,12 +188,21 @@
 }
 
 /* Companies & product lines: 4 per row. Payment methods: 5 per row — compact icons */
-.employee-company-tile .employee-chip-icon,
-.employee-product-line-tile .employee-chip-icon {
+.employee-company-tile .employee-chip-icon {
   width: 100%;
   max-width: 100%;
   height: clamp(1.5rem, 7.5vw, 2.5rem);
   max-height: 2.5rem;
+}
+
+/* Product lines sit one level deeper than companies in the visual
+   hierarchy (line picker → package picker), so render their icons a
+   notch smaller to keep the screen calm. */
+.employee-product-line-tile .employee-chip-icon {
+  width: 100%;
+  max-width: 100%;
+  height: clamp(0.95rem, 4.4vw, 1.5rem);
+  max-height: 1.5rem;
 }
 
 .employee-payment-tile .employee-chip-icon {
@@ -212,11 +221,18 @@
   margin-inline: auto;
 }
 
-.employee-company-tile .employee-chip-icon-fallback,
-.employee-product-line-tile .employee-chip-icon-fallback {
+.employee-company-tile .employee-chip-icon-fallback {
   width: 100%;
   min-height: clamp(1.5rem, 7.5vw, 2.5rem);
   font-size: clamp(0.75rem, 3.8vw, 1.05rem);
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+  color: var(--bs-primary);
+}
+
+.employee-product-line-tile .employee-chip-icon-fallback {
+  width: 100%;
+  min-height: clamp(0.95rem, 4.4vw, 1.5rem);
+  font-size: clamp(0.6rem, 2.6vw, 0.8rem);
   background-color: rgba(var(--bs-primary-rgb), 0.15);
   color: var(--bs-primary);
 }

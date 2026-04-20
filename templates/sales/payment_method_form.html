@@ -29,5 +29,25 @@
       </form>
     </div>
   </div>
+
+  {% if method %}
+    <div class="app-card card mt-4 border-danger-subtle">
+      <div class="card-body p-4">
+        <h2 class="rd-heading-lg mb-2 text-danger">{% trans "Danger zone" %}</h2>
+        <p class="rd-text-muted mb-3">
+          {% trans "Deleting a payment method is permanent. If existing sales or customer payments still reference it, the delete will be blocked — mark it inactive instead." %}
+        </p>
+        <form
+          method="post"
+          action="{% url 'sales:payment_method_delete' method.pk %}"
+          class="m-0"
+          onsubmit="return confirm('{% blocktrans with name=method.name %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}');"
+        >
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger">{% trans "Delete payment method" %}</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
