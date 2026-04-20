@@ -215,6 +215,111 @@
     document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
   });
 
+  // ===== Notifications: live polling for the topbar bell ==============
+  // Polls /notifications/poll/ every POLL_INTERVAL ms and updates the
+  // badge count, the per-row counts inside the dropdown, and the
+  // "all caught up" empty state in place — no full page reload needed
+  // for a sale that just landed in awaiting / pending to surface.
+  //
+  // Pauses while the tab is hidden (Page Visibility API) so background
+  // tabs don't pile up requests, and refreshes immediately whenever
+  // the tab regains focus so management never sees stale numbers
+  // when switching back from another tab.
+  (function setupLiveNotifications() {
+    var root = document.querySelector("[data-rd-notifications]");
+    if (!root) return;
+    var url = root.getAttribute("data-poll-url");
+    if (!url) return;
+
+    var POLL_INTERVAL = 15000; // ms — cheap two COUNTs per call
+    var badge = root.querySelector("[data-rd-notif-badge]");
+    var aria = root.querySelector("[data-rd-notif-aria]");
+    var awaitingEl = root.querySelector("[data-rd-notif-awaiting]");
+    var pendingEl = root.querySelector("[data-rd-notif-pending]");
+    var emptyEl = root.querySelector("[data-rd-notif-empty]");
+
+    var timer = null;
+    var inflight = null;
+
+    function setCount(el, n) {
+      if (!el) return;
+      el.textContent = String(n);
+      if (n > 0) el.classList.add("is-active");
+      else el.classList.remove("is-active");
+    }
+
+    function applyPayload(p) {
+      var total = Number(p.total || 0);
+      var awaiting = Number(p.awaiting || 0);
+      var pending = Number(p.pending || 0);
+
+      setCount(awaitingEl, awaiting);
+      setCount(pendingEl, pending);
+
+      if (badge) {
+        badge.textContent = String(total);
+        if (total > 0) badge.removeAttribute("hidden");
+        else badge.setAttribute("hidden", "hidden");
+      }
+      if (aria) {
+        // Best-effort plural string; the real translated copy is rendered
+        // server-side on first paint, so this is just a fallback.
+        aria.textContent =
+          total === 1
+            ? "1 item needs attention"
+            : total + " items need attention";
+      }
+      if (emptyEl) {
+        if (total > 0) emptyEl.setAttribute("hidden", "hidden");
+        else emptyEl.removeAttribute("hidden");
+      }
+    }
+
+    function poll() {
+      if (document.visibilityState === "hidden") return;
+      if (inflight && typeof inflight.abort === "function") {
+        try { inflight.abort(); } catch (_) {}
+      }
+      var ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      inflight = ctrl;
+      fetch(url, {
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "fetch" },
+        signal: ctrl ? ctrl.signal : undefined,
+        cache: "no-store",
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (payload) { if (payload) applyPayload(payload); })
+        .catch(function () { /* network blip / aborted — try again next tick */ });
+    }
+
+    function start() {
+      stop();
+      timer = setInterval(poll, POLL_INTERVAL);
+    }
+
+    function stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        poll();
+        start();
+      } else {
+        stop();
+      }
+    });
+
+    window.addEventListener("focus", poll);
+    window.addEventListener("pageshow", poll);
+
+    start();
+  })();
+
   // ===== Print: blank document.title so the browser's print header
   // (which renders document.title in the top margin) shows nothing.
   // Combined with @page { margin: 0 } in print CSS, this gives a
@@ -249,7 +354,6 @@
     var toggle = root.querySelector("[data-rd-search-toggle]");
     var panel = root.querySelector("[data-rd-search-panel]");
     var input = root.querySelector("#rd-global-search");
-    var closeBtn = root.querySelector("[data-rd-search-close]");
     var results = root.querySelector("[data-rd-search-results]");
     var suggestUrl = root.getAttribute("data-suggest-url");
     if (!toggle || !panel || !input || !results || !suggestUrl) return;
@@ -405,11 +509,6 @@
 
     toggle.addEventListener("click", function () {
       if (panel.hidden) open(); else close();
-    });
-    closeBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      close();
-      toggle.focus();
     });
     input.addEventListener("input", onInput);
 

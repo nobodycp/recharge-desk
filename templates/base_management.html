@@ -82,27 +82,24 @@
               data-rd-search-panel
               hidden
             >
-              <label class="visually-hidden" for="rd-global-search">{% trans "Search" %}</label>
-              <span class="rd-search-panel-icon" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              </span>
-              <input
-                type="search"
-                id="rd-global-search"
-                name="q"
-                class="form-control form-control-sm rd-search-input"
-                placeholder="{% trans 'Search reference, customer, payment…' %}"
-                value="{{ request.GET.q|default:'' }}"
-                autocomplete="off"
-                aria-autocomplete="list"
-                aria-controls="rd-search-results"
-              >
-              <button
-                type="button"
-                class="rd-search-close"
-                data-rd-search-close
-                aria-label="{% trans 'Close search' %}"
-              >×</button>
+              <div class="rd-search-field">
+                <span class="rd-search-field-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <label class="visually-hidden" for="rd-global-search">{% trans "Search" %}</label>
+                <input
+                  type="search"
+                  id="rd-global-search"
+                  name="q"
+                  class="rd-search-input"
+                  placeholder="{% trans 'Search reference, customer, payment…' %}"
+                  value="{{ request.GET.q|default:'' }}"
+                  autocomplete="off"
+                  aria-autocomplete="list"
+                  aria-controls="rd-search-results"
+                >
+                <kbd class="rd-search-kbd" aria-hidden="true">Esc</kbd>
+              </div>
               <div
                 class="rd-search-results"
                 id="rd-search-results"
