@@ -1984,6 +1984,25 @@ html[dir="rtl"] .rd-toast.is-visible {
     box-shadow: none !important;
     break-inside: avoid;
   }
+  /* Cards that contain long paginated content (e.g. the detailed
+   * invoice table) must be allowed to split across pages, otherwise
+   * they push the whole table to the next page and leave page 1
+   * nearly empty. */
+  .rd-card.rd-print-flow {
+    break-inside: auto;
+  }
+  .rd-card.rd-print-flow table {
+    break-inside: auto;
+  }
+  .rd-card.rd-print-flow thead {
+    display: table-header-group; /* repeat header on each page */
+  }
+  .rd-card.rd-print-flow tfoot {
+    display: table-footer-group;
+  }
+  .rd-card.rd-print-flow tr {
+    break-inside: avoid;
+  }
   .table { color: #000 !important; }
   a { color: inherit !important; text-decoration: none !important; }
 
