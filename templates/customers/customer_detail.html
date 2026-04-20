@@ -12,20 +12,8 @@
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-primary" href="{% url 'customers:customer_statement' customer.pk %}">{% trans "Statement" %}</a>
-    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_edit' customer.pk %}">{% trans "Edit" %}</a>
+    <a class="btn btn-outline-primary" href="{% url 'customers:customer_detailed_invoice' customer.pk %}">{% trans "Detailed invoice" %}</a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Back" %}</a>
-    {% if customer.current_balance > 0 %}
-      <form method="post" action="{% url 'customers:customer_write_off' customer.pk %}" class="d-inline"
-            onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-warning">{% trans "Write off & close account" %}</button>
-      </form>
-    {% endif %}
-    <form method="post" action="{% url 'customers:customer_delete' customer.pk %}" class="d-inline"
-          onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-outline-danger">{% trans "Delete customer" %}</button>
-    </form>
   </div>
 </div>
 

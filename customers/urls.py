@@ -30,6 +30,11 @@ urlpatterns = [
         name="customer_statement_csv",
     ),
     path(
+        "management/customers/<int:pk>/invoice/",
+        views.customer_detailed_invoice,
+        name="customer_detailed_invoice",
+    ),
+    path(
         "management/customers/<int:pk>/payments/new/",
         views.customer_record_payment,
         name="customer_record_payment",

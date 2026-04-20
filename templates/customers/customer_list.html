@@ -78,11 +78,21 @@
             </td>
             <td>{% if c.is_active %}<span class="rd-badge">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}</td>
             <td class="text-end">
-              <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline"
-                    onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans "Delete customer" %}">{% trans "Delete" %}</button>
-              </form>
+              <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}" title="{% trans 'Edit customer' %}">{% trans "Edit" %}</a>
+                {% if c.current_balance > 0 %}
+                  <form method="post" action="{% url 'customers:customer_write_off' c.pk %}" class="d-inline m-0"
+                        onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-warning" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
+                  </form>
+                {% endif %}
+                <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline m-0"
+                      onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete customer' %}">{% trans "Delete" %}</button>
+                </form>
+              </div>
             </td>
           </tr>
         {% empty %}

@@ -1,0 +1,205 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% blocktrans with name=customer.name %}Detailed invoice — {{ name }}{% endblocktrans %}{% endblock %}
+{% block content %}
+{# ----- On-screen toolbar (hidden on print) ----- #}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 d-print-none">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Detailed invoice" %}</h1>
+    <p class="rd-text-muted mb-0">
+      {{ customer.name }}
+      {% blocktrans with start=period_from end=period_to %} · From {{ start }} to {{ end }}{% endblocktrans %}
+    </p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Summary statement" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
+  </div>
+</div>
+
+<div class="rd-card mb-4 d-print-none">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="di-from">{% trans "Date from" %}</label>
+        <input type="date" class="form-control" id="di-from" name="period_from" value="{{ period_from|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="di-to">{% trans "Date to" %}</label>
+        <input type="date" class="form-control" id="di-to" name="period_to" value="{{ period_to|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="?period_from={{ period_from|date:'Y-m-01' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "This month" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ----- Print-only branded header ----- #}
+<div class="d-none d-print-block rd-print-brand">
+  {% if site_branding.logo %}
+    <img src="{{ site_branding.logo.url }}" alt="" class="rd-print-brand-logo">
+  {% endif %}
+</div>
+
+{# ----- Invoice header block (customer + period) ----- #}
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="rd-label mb-1">{% trans "Customer" %}</div>
+        <div class="fw-semibold">{{ customer.name }}</div>
+        {% if customer.phones.all %}
+          <div class="small text-secondary">
+            {% for p in customer.phones.all %}{{ p.number }}{% if not forloop.last %} · {% endif %}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="col-md-6 text-md-end">
+        <div class="rd-label mb-1">{% trans "Period" %}</div>
+        <div class="fw-semibold">{{ period_from|date:"Y-m-d" }} &rarr; {{ period_to|date:"Y-m-d" }}</div>
+        <div class="small text-secondary">{% trans "Issued" %}: {% now "Y-m-d H:i" %}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ----- Full chronological activity table (one row per transaction) ----- #}
+<div class="rd-card mb-3">
+  <div class="rd-card-header fw-semibold d-print-none">{% trans "All transactions (chronological)" %}</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0 rd-invoice-table">
+      <thead class="table-light">
+        <tr>
+          <th style="width:1%;">#</th>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th>{% trans "Details" %}</th>
+          <th>{% trans "Reference" %}</th>
+          <th class="text-end">{% trans "Charge" %}</th>
+          <th class="text-end">{% trans "Payment" %}</th>
+          <th class="text-end">{% trans "Running balance" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-light">
+          <td></td>
+          <td colspan="4" class="fw-semibold">{% trans "Opening balance" %}</td>
+          <td></td>
+          <td></td>
+          <td class="text-end tabular-nums fw-semibold {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">{{ opening_balance|intcomma }}</td>
+        </tr>
+        {% for entry in ledger_chrono %}
+          <tr>
+            <td class="small text-secondary">{{ forloop.counter }}</td>
+            <td class="small text-nowrap">{{ entry.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              {% if entry.entry_type == 'charge' %}<span class="rd-badge rd-badge--warning">{% trans "Charge" %}</span>
+              {% elif entry.entry_type == 'payment' %}<span class="rd-badge">{% trans "Payment" %}</span>
+              {% elif entry.entry_type == 'adjustment' %}<span class="rd-badge rd-badge--neutral">{% trans "Adjustment" %}</span>
+              {% elif entry.entry_type == 'reversal' %}<span class="rd-badge rd-badge--neutral">{% trans "Reversal" %}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if entry.sale %}
+                <div class="fw-medium">
+                  {{ entry.sale.company.name }} — {{ entry.sale.product.display_name }}
+                </div>
+                <div class="small text-secondary">
+                  {% if entry.sale.payer_name %}{% trans "Payer" %}: {{ entry.sale.payer_name }}{% endif %}
+                  {% if entry.sale.created_by %} · {% trans "Employee" %}: {{ entry.sale.created_by.username }}{% endif %}
+                </div>
+              {% elif entry.payment %}
+                <div class="fw-medium">
+                  {% if entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
+                </div>
+                {% if entry.payment.created_by %}
+                  <div class="small text-secondary">{% trans "Received by" %}: {{ entry.payment.created_by.username }}</div>
+                {% endif %}
+              {% elif entry.entry_type == 'adjustment' %}
+                <div class="fw-medium">{% trans "Manual adjustment" %}</div>
+                {% if entry.created_by %}
+                  <div class="small text-secondary">{% trans "By" %}: {{ entry.created_by.username }}</div>
+                {% endif %}
+              {% else %}
+                <div class="fw-medium">—</div>
+              {% endif %}
+              {% if entry.notes %}
+                <div class="small fst-italic text-secondary">{{ entry.notes|linebreaksbr }}</div>
+              {% endif %}
+            </td>
+            <td class="text-nowrap font-monospace small">{{ entry.sale.reference_number|default:"—" }}</td>
+            <td class="text-end tabular-nums {% if entry.entry_type == 'charge' %}kpi-expense{% endif %}">
+              {% if entry.entry_type == 'charge' %}{{ entry.amount|intcomma }}
+              {% elif entry.entry_type == 'adjustment' and entry.amount > 0 %}{{ entry.amount|intcomma }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end tabular-nums {% if entry.entry_type == 'payment' or entry.entry_type == 'reversal' %}kpi-success{% endif %}">
+              {% if entry.entry_type == 'payment' or entry.entry_type == 'reversal' %}{{ entry.amount|intcomma }}
+              {% elif entry.entry_type == 'adjustment' and entry.amount < 0 %}{{ entry.amount|cut:"-"|intcomma }}
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end tabular-nums fw-semibold {% if entry.running_balance > 0 %}kpi-expense{% elif entry.running_balance < 0 %}kpi-success{% endif %}">{{ entry.running_balance|intcomma }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-center py-4 text-secondary">{% trans "No activity in this period." %}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr class="fw-semibold">
+          <td></td>
+          <td colspan="4" class="text-end">{% trans "Period totals" %}</td>
+          <td class="text-end tabular-nums kpi-expense">{{ charges_total|intcomma }}</td>
+          <td class="text-end tabular-nums kpi-success">{{ payments_total|intcomma }}</td>
+          <td class="text-end tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">{{ closing_balance|intcomma }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+{# ----- Final balance summary block ----- #}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Opening balance" %}</div>
+      <div class="h5 fw-bold tabular-nums {% if opening_balance > 0 %}kpi-expense{% elif opening_balance < 0 %}kpi-success{% endif %}">{{ opening_balance|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Charges (took on account)" %}</div>
+      <div class="h5 fw-bold tabular-nums kpi-expense">{{ charges_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Payments received" %}</div>
+      <div class="h5 fw-bold tabular-nums kpi-success">{{ payments_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Closing balance" %}</div>
+      <div class="h5 fw-bold tabular-nums {% if closing_balance > 0 %}kpi-expense{% elif closing_balance < 0 %}kpi-success{% endif %}">{{ closing_balance|intcomma }}</div>
+      <div class="rd-text-muted small">
+        {% if closing_balance > 0 %}{% trans "Customer owes the shop." %}{% elif closing_balance < 0 %}{% trans "Shop owes the customer." %}{% else %}{% trans "Settled." %}{% endif %}
+      </div>
+    </div></div>
+  </div>
+</div>
+
+{# ----- Signature block (print-friendly) ----- #}
+<div class="row g-3 mt-5 d-print-block">
+  <div class="col-6">
+    <div class="small text-secondary">{% trans "Customer signature" %}</div>
+    <div class="border-top mt-5 pt-1 small">{{ customer.name }}</div>
+  </div>
+  <div class="col-6 text-md-end">
+    <div class="small text-secondary">{% trans "Authorised signature" %}</div>
+    <div class="border-top mt-5 pt-1 small">&nbsp;</div>
+  </div>
+</div>
+{% endblock %}

@@ -187,6 +187,21 @@ def customer_statement(request, pk):
 
 
 @management_required
+def customer_detailed_invoice(request, pk):
+    """Print-first detailed invoice: every ledger row as its own line.
+
+    Unlike :func:`customer_statement`, this view hides the per-product
+    and per-method aggregations and focuses on a transaction-by-transaction
+    audit trail the customer can reconcile against their own records.
+    """
+    customer = get_object_or_404(Customer, pk=pk)
+    period_from, period_to = _parse_period(request)
+    ctx = _build_statement_context(customer, period_from, period_to)
+    ctx["title"] = _("Detailed invoice")
+    return render(request, "customers/customer_detailed_invoice.html", ctx)
+
+
+@management_required
 def customer_statement_csv(request, pk):
     """Single CSV with ledger rows for the requested period.
 

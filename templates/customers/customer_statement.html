@@ -13,6 +13,7 @@
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement_csv' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Export CSV" %}</a>
+    <a class="btn btn-outline-primary" href="{% url 'customers:customer_detailed_invoice' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Detailed invoice" %}</a>
     <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
   </div>
 </div>

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:11+0300\n"
+"POT-Creation-Date: 2026-04-20 15:39+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -610,6 +610,9 @@ msgstr "تم حذف الزبون «%(name)s» وكل البيانات المرت
 
 msgid "Customer statement"
 msgstr "كشف حساب الزبون"
+
+msgid "Detailed invoice"
+msgstr "فاتورة مفصّلة"
 
 msgid "Date"
 msgstr "التاريخ"
@@ -1331,27 +1334,6 @@ msgstr "كشف حساب"
 msgid "Back"
 msgstr "رجوع"
 
-msgid ""
-"Close this customer's account and book the outstanding debt as a loss? Their "
-"unpaid sales will be marked as written off, the cost will appear under "
-"losses, and the customer will be deactivated."
-msgstr ""
-"إغلاق حساب هذا الزبون وتحويل الدين المستحق إلى خسارة؟ سيتم تعليم مبيعاته غير "
-"المدفوعة كمشطوبة، وستظهر التكلفة تحت الخسائر، وسيتم تعطيل حساب الزبون."
-
-msgid "Write off & close account"
-msgstr "شطب وإغلاق الحساب"
-
-msgid ""
-"Permanently delete this customer? All their sales, payments, ledger entries "
-"and phones will be removed. This cannot be undone."
-msgstr ""
-"حذف هذا الزبون نهائياً؟ ستُحذف كل مبيعاته ودفعاته وسجل الرصيد وأرقام الهاتف. "
-"لا يمكن التراجع."
-
-msgid "Delete customer"
-msgstr "حذف الزبون"
-
 msgid "Outstanding debt"
 msgstr "الدين المستحق"
 
@@ -1451,6 +1433,65 @@ msgstr "حذف الدفعة"
 msgid "No payments yet."
 msgstr "لا توجد دفعات بعد."
 
+#, python-format
+msgid "Detailed invoice — %(name)s"
+msgstr "فاتورة مفصّلة — %(name)s"
+
+#, python-format
+msgid " · From %(start)s to %(end)s"
+msgstr " · من %(start)s إلى %(end)s"
+
+msgid "Summary statement"
+msgstr "كشف ملخّص"
+
+msgid "Back to customer"
+msgstr "العودة إلى الزبون"
+
+msgid "Print"
+msgstr "طباعة"
+
+msgid "This month"
+msgstr "هذا الشهر"
+
+msgid "Period"
+msgstr "الفترة"
+
+msgid "Issued"
+msgstr "تاريخ الإصدار"
+
+msgid "All transactions (chronological)"
+msgstr "كل الحركات (ترتيب زمني)"
+
+msgid "Details"
+msgstr "التفاصيل"
+
+msgid "Running balance"
+msgstr "الرصيد الجاري"
+
+msgid "Received by"
+msgstr "استلمها"
+
+msgid "No activity in this period."
+msgstr "لا توجد حركة في هذه الفترة."
+
+msgid "Period totals"
+msgstr "إجمالي الفترة"
+
+msgid "Charges (took on account)"
+msgstr "مسحوبات (على الحساب)"
+
+msgid "Payments received"
+msgstr "المدفوعات المُستلمة"
+
+msgid "Shop owes the customer."
+msgstr "المحل يدين للزبون."
+
+msgid "Customer signature"
+msgstr "توقيع الزبون"
+
+msgid "Authorised signature"
+msgstr "توقيع المسؤول"
+
 msgid "Customers buying on account and their balances."
 msgstr "الزبائن الذين يشترون بالآجل وأرصدتهم."
 
@@ -1475,6 +1516,27 @@ msgstr "رصيد له"
 msgid "debt"
 msgstr "دين"
 
+msgid ""
+"Close this customer's account and book the outstanding debt as a loss? Their "
+"unpaid sales will be marked as written off, the cost will appear under "
+"losses, and the customer will be deactivated."
+msgstr ""
+"إغلاق حساب هذا الزبون وتحويل الدين المستحق إلى خسارة؟ سيتم تعليم مبيعاته غير "
+"المدفوعة كمشطوبة، وستظهر التكلفة تحت الخسائر، وسيتم تعطيل حساب الزبون."
+
+msgid "Write off & close account"
+msgstr "شطب وإغلاق الحساب"
+
+msgid ""
+"Permanently delete this customer? All their sales, payments, ledger entries "
+"and phones will be removed. This cannot be undone."
+msgstr ""
+"حذف هذا الزبون نهائياً؟ ستُحذف كل مبيعاته ودفعاته وسجل الرصيد وأرقام الهاتف. "
+"لا يمكن التراجع."
+
+msgid "Delete customer"
+msgstr "حذف الزبون"
+
 msgid "No customers yet."
 msgstr "لا يوجد زبائن بعد."
 
@@ -1482,24 +1544,8 @@ msgstr "لا يوجد زبائن بعد."
 msgid "Statement — %(name)s"
 msgstr "كشف حساب — %(name)s"
 
-#, python-format
-msgid " · From %(start)s to %(end)s"
-msgstr " · من %(start)s إلى %(end)s"
-
-msgid "Back to customer"
-msgstr "العودة إلى الزبون"
-
-msgid "Print"
-msgstr "طباعة"
-
-msgid "This month"
-msgstr "هذا الشهر"
-
 msgid "Owed to shop"
 msgstr "بذمة الزبون"
-
-msgid "Charges (took on account)"
-msgstr "مسحوبات (على الحساب)"
 
 #, python-format
 msgid "%(n)s sale"
@@ -1511,9 +1557,6 @@ msgstr[3] "%(n)s مبيعات"
 msgstr[4] "%(n)s مبيعة"
 msgstr[5] "%(n)s مبيعة"
 
-msgid "Payments received"
-msgstr "المدفوعات المُستلمة"
-
 #, python-format
 msgid "%(n)s payment"
 msgid_plural "%(n)s payments"
@@ -1523,9 +1566,6 @@ msgstr[2] "دفعتان"
 msgstr[3] "%(n)s دفعات"
 msgstr[4] "%(n)s دفعة"
 msgstr[5] "%(n)s دفعة"
-
-msgid "Shop owes the customer."
-msgstr "المحل يدين للزبون."
 
 msgid "Manual adjustments"
 msgstr "تسويات يدوية"
@@ -1553,15 +1593,6 @@ msgstr "لا توجد مدفوعات في هذه الفترة."
 
 msgid "Activity"
 msgstr "الحركة"
-
-msgid "Running balance"
-msgstr "الرصيد الجاري"
-
-msgid "No activity in this period."
-msgstr "لا توجد حركة في هذه الفترة."
-
-msgid "Period totals"
-msgstr "إجمالي الفترة"
 
 msgid ""
 "Closing balance = opening balance + charges − payments + signed adjustments "

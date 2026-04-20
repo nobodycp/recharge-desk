@@ -31,6 +31,7 @@ from customers.views.exports import (
     customers_export_csv,
 )
 from customers.views.statements import (
+    customer_detailed_invoice,
     customer_statement,
     customer_statement_csv,
 )
@@ -66,4 +67,5 @@ __all__ = [
     # statements
     "customer_statement",
     "customer_statement_csv",
+    "customer_detailed_invoice",
 ]
