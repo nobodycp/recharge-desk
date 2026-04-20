@@ -215,6 +215,26 @@
     document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
   });
 
+  // ===== Print: blank document.title so the browser's print header
+  // (which renders document.title in the top margin) shows nothing.
+  // Combined with @page { margin: 0 } in print CSS, this gives a
+  // header/footer-free printout in Chrome / Edge. We restore the
+  // original title immediately after printing so the browser tab
+  // and history don't lose their label.
+  (function setupPrintTitleBlank() {
+    var savedTitle = null;
+    window.addEventListener("beforeprint", function () {
+      savedTitle = document.title;
+      document.title = "\u00a0"; // non-breaking space: empty visually
+    });
+    window.addEventListener("afterprint", function () {
+      if (savedTitle !== null) {
+        document.title = savedTitle;
+        savedTitle = null;
+      }
+    });
+  })();
+
   // ===== Global search: icon-toggled panel + live suggestions =========
   // The topbar shows just an icon by default. Clicking it (or pressing
   // "/" outside a form field) opens a floating panel with the input

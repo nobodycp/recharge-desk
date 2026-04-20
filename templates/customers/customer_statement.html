@@ -36,11 +36,18 @@
   </div>
 </div>
 
-{# ----- Print-only header (browsers strip the topbar in @media print) ----- #}
-<div class="d-none d-print-block mb-3">
-  <h1 class="h3 mb-1">{% trans "Customer statement" %}</h1>
-  <div><strong>{{ customer.name }}</strong></div>
-  <div class="text-secondary small">{% blocktrans with start=period_from end=period_to %}From {{ start }} to {{ end }}{% endblocktrans %}</div>
+{% comment %}
+  Print-only header: logo only, by user request. The browser's own
+  auto-injected header (page title) is suppressed via the
+  @page margin:0 trick plus JS that blanks document.title before
+  printing. The browser footer (URL + page number) is also gone
+  in Chrome / Edge for the same reason; users on Firefox / Safari
+  may need to uncheck "Headers and footers" in the print dialog.
+{% endcomment %}
+<div class="d-none d-print-block rd-print-brand">
+  {% if site_branding.logo %}
+    <img src="{{ site_branding.logo.url }}" alt="" class="rd-print-brand-logo">
+  {% endif %}
 </div>
 
 <div class="row g-3 mb-4">

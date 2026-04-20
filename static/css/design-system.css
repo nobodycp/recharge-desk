@@ -1925,18 +1925,36 @@ html[dir="rtl"] .rd-toast.is-visible {
   border-radius: inherit;
 }
 
-/* ---------------- Print mode (customer statement, future receipts) ----- */
+/* ---------------- Print mode (customer statement, future receipts) -----
+ * @page { margin: 0 } is the key trick: in Chrome / Edge it removes
+ * the auto-injected URL + page-number footer and the document-title
+ * header. We then re-add visual margins via body padding so content
+ * is not glued to the paper edge. Firefox / Safari still respect
+ * the @page block but their default headers/footers are also
+ * controllable from the print dialog. */
 @media print {
-  /* Hide chrome the customer doesn't need on paper. */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body {
+    padding: 1.5cm 1.2cm !important;
+  }
+  /* Hide app chrome the customer doesn't need on paper. */
   .rd-sidebar,
   .rd-topbar,
   .rd-mobile-tabbar,
   .d-print-none {
     display: none !important;
   }
-  body, .rd-main, .rd-page {
+  .rd-main, .rd-page, .rd-content {
     background: #fff !important;
-    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .rd-card {
     border: 1px solid #999 !important;
@@ -1945,4 +1963,17 @@ html[dir="rtl"] .rd-toast.is-visible {
   }
   .table { color: #000 !important; }
   a { color: inherit !important; text-decoration: none !important; }
+
+  /* Print-only logo header (used by the customer statement). */
+  .rd-print-brand {
+    text-align: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #ccc;
+  }
+  .rd-print-brand-logo {
+    max-height: 80px;
+    max-width: 240px;
+    object-fit: contain;
+  }
 }
