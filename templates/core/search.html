@@ -1,0 +1,180 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Search" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Search" %}</h1>
+    {% if q %}
+      <p class="rd-text-muted mb-0">
+        {% blocktrans count n=total with q=q %}Found {{ n }} result for “{{ q }}”.{% plural %}Found {{ n }} results for “{{ q }}”.{% endblocktrans %}
+      </p>
+    {% else %}
+      <p class="rd-text-muted mb-0">{% trans "Type a reference number, customer name, phone, or numeric ID." %}</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <form method="get" action="{% url 'core:search' %}" class="row g-2 align-items-end">
+      <div class="col-12 col-md">
+        <label class="form-label" for="search-q">{% trans "Search across sales, customers, and payments" %}</label>
+        <input
+          type="search"
+          class="form-control"
+          id="search-q"
+          name="q"
+          value="{{ q }}"
+          placeholder="{% trans 'e.g. 0599…, customer name, payment notes' %}"
+          autofocus
+          autocomplete="off"
+        >
+      </div>
+      <div class="col-12 col-md-auto">
+        <button class="btn btn-primary w-100" type="submit">{% trans "Search" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if q and not total %}
+  <div class="rd-card">
+    <div class="rd-card-body text-center text-secondary py-5">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mb-2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div>{% trans "No matches across sales, customers, or payments." %}</div>
+    </div>
+  </div>
+{% endif %}
+
+{% if sales %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-header d-flex justify-content-between align-items-center">
+      <div class="rd-heading-md mb-0">
+        {% trans "Sales" %}
+        <span class="badge bg-primary-subtle text-primary ms-2">{{ sales|length }}</span>
+      </div>
+      {% if sale_truncated %}
+        <a class="small" href="{% url 'sales:management_sale_list' %}?q={{ q }}">{% trans "View all matches" %} &rsaquo;</a>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>{% trans "Reference" %}</th>
+            <th>{% trans "Payer" %}</th>
+            <th>{% trans "Company" %}</th>
+            <th>{% trans "Amount" %}</th>
+            <th>{% trans "Status" %}</th>
+            <th>{% trans "Created" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sales %}
+            <tr>
+              <td><code>{{ s.reference_number }}</code></td>
+              <td>{{ s.payer_name|default:"—" }}</td>
+              <td>{{ s.company.name }}</td>
+              <td class="tabular-nums">{{ s.sell_price_actual|intcomma }}</td>
+              <td><span class="badge bg-secondary-subtle text-secondary">{{ s.get_status_display }}</span></td>
+              <td><span class="text-secondary small">{{ s.created_at|date:"Y-m-d H:i" }}</span></td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:sale_edit' s.pk %}">{% trans "Open" %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if customers %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-header d-flex justify-content-between align-items-center">
+      <div class="rd-heading-md mb-0">
+        {% trans "Customers" %}
+        <span class="badge bg-primary-subtle text-primary ms-2">{{ customers|length }}</span>
+      </div>
+      {% if customer_truncated %}
+        <a class="small" href="{% url 'customers:customer_list' %}?q={{ q }}">{% trans "View all matches" %} &rsaquo;</a>
+      {% endif %}
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>{% trans "Name" %}</th>
+            <th>{% trans "Balance" %}</th>
+            <th>{% trans "Phones" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in customers %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td class="tabular-nums">
+                {% if c.current_balance > 0 %}
+                  <span class="text-danger">{{ c.current_balance|intcomma }}</span>
+                {% elif c.current_balance < 0 %}
+                  <span class="text-success">{{ c.current_balance|cut:"-"|intcomma }}</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="small text-secondary">
+                {% for ph in c.phones.all|slice:":3" %}{{ ph.phone }}{% if not forloop.last %} · {% endif %}{% endfor %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' c.pk %}">{% trans "Open" %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if payments %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-header">
+      <div class="rd-heading-md mb-0">
+        {% trans "Customer payments" %}
+        <span class="badge bg-primary-subtle text-primary ms-2">{{ payments|length }}</span>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>{% trans "Customer" %}</th>
+            <th>{% trans "Amount" %}</th>
+            <th>{% trans "Method" %}</th>
+            <th>{% trans "Created" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td>{{ p.id }}</td>
+              <td>{{ p.customer.name }}</td>
+              <td class="tabular-nums">{{ p.amount|intcomma }}</td>
+              <td>{{ p.payment_method.name }}</td>
+              <td><span class="text-secondary small">{{ p.created_at|date:"Y-m-d H:i" }}</span></td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

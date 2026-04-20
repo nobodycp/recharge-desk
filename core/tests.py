@@ -192,3 +192,175 @@ class SiteBrandingTests(TestCase):
         self.assertTrue(b.logo)
         # The optimizer must have re-encoded the upload as a WebP.
         self.assertTrue(b.logo.name.endswith(".webp"))
+
+
+class NavNotificationsContextProcessorTests(TestCase):
+    """The topbar bell counts must surface AWAITING + cash-PENDING sales
+    only for management users, never for employees or anonymous visitors."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from decimal import Decimal
+
+        from companies.models import Company, Product, ProductLine
+        from sales.models import PaymentMethod, Sale
+
+        cls.boss = User.objects.create_user("notif_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.worker = User.objects.create_user("notif_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+        co = Company.objects.create(name="Acme")
+        line = ProductLine.objects.create(company=co, name="019")
+        prod = Product.objects.create(
+            line=line,
+            variant_label="100 GB",
+            cost_price=Decimal("8"),
+            default_sell_price=Decimal("10"),
+        )
+        pm = PaymentMethod.objects.create(name="Cash")
+
+        def _mk(status, on_account=False):
+            return Sale.objects.create(
+                reference_number="0500000000",
+                payer_name="x",
+                company=co,
+                product=prod,
+                payment_method=pm,
+                sell_price_actual=Decimal("10"),
+                cost_price_snapshot=Decimal("8"),
+                profit_snapshot=Decimal("2"),
+                status=status,
+                on_account=on_account,
+                created_by=cls.boss,
+            )
+
+        # Two awaiting + one cash-pending = badge total of 3.
+        _mk(Sale.Status.AWAITING, on_account=True)
+        _mk(Sale.Status.AWAITING, on_account=True)
+        _mk(Sale.Status.PENDING)
+        # On-account PENDING is "approved debt" — must NOT show up in pending.
+        _mk(Sale.Status.PENDING, on_account=True)
+        _mk(Sale.Status.PAID)
+
+    def test_anonymous_request_has_no_badge(self):
+        r = Client().get(reverse("accounts:login"))
+        self.assertIsNone(r.context["nav_notifications"])
+
+    def test_employee_does_not_see_management_badge(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("sales:employee_entry"))
+        self.assertIsNone(r.context["nav_notifications"])
+
+    def test_management_sees_correct_counts(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("reports:dashboard"))
+        n = r.context["nav_notifications"]
+        self.assertIsNotNone(n)
+        self.assertEqual(n["awaiting"], 2)
+        self.assertEqual(n["pending"], 1)
+        self.assertEqual(n["total"], 3)
+        # And the badge HTML must render in the topbar.
+        self.assertContains(r, "rd-notif-badge")
+
+
+class GlobalSearchTests(TestCase):
+    """The topbar search must surface matches across sales, customers,
+    and customer payments, gated to management users only."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from decimal import Decimal
+
+        from companies.models import Company, Product, ProductLine
+        from customers.models import Customer, CustomerPayment
+        from sales.models import PaymentMethod, Sale
+
+        cls.boss = User.objects.create_user("search_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.worker = User.objects.create_user("search_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+        co = Company.objects.create(name="Co")
+        line = ProductLine.objects.create(company=co, name="L")
+        prod = Product.objects.create(
+            line=line,
+            variant_label="P",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        pm = PaymentMethod.objects.create(name="cash")
+        cls.cust = Customer.objects.create(name="Hazem Salah", created_by=cls.boss)
+        cls.sale = Sale.objects.create(
+            company=co,
+            product=prod,
+            reference_number="0590999777",
+            payer_name="Hazem Salah",
+            payment_method=pm,
+            sell_price_actual=Decimal("10"),
+            cost_price_snapshot=Decimal("5"),
+            profit_snapshot=Decimal("5"),
+            status=Sale.Status.PAID,
+            created_by=cls.boss,
+        )
+        cls.payment = CustomerPayment.objects.create(
+            customer=cls.cust,
+            amount=Decimal("100"),
+            payment_method=pm,
+            notes="bank transfer for sale 0590999777",
+            created_by=cls.boss,
+        )
+
+    def test_employee_blocked_from_search(self):
+        c = Client()
+        c.force_login(self.worker)
+        r = c.get(reverse("core:search"), {"q": "Hazem"})
+        self.assertEqual(r.status_code, 302)
+
+    def test_empty_query_renders_form_only(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context["total"], 0)
+        self.assertNotContains(r, "Hazem Salah")
+
+    def test_query_groups_results_by_section(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"), {"q": "Hazem"})
+        self.assertEqual(r.status_code, 200)
+        # Sale + customer both contain "Hazem".
+        self.assertEqual(len(r.context["sales"]), 1)
+        self.assertEqual(len(r.context["customers"]), 1)
+        # Payment surfaces too via its FK to the matching customer —
+        # that's the whole point of the cross-model section listing.
+        self.assertEqual(len(r.context["payments"]), 1)
+
+    def test_numeric_query_matches_sale_reference_and_payment_notes(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"), {"q": "0590999777"})
+        self.assertEqual(len(r.context["sales"]), 1)
+        # The payment's notes contain the reference too.
+        self.assertEqual(len(r.context["payments"]), 1)
+
+    def test_topbar_renders_global_search_box(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("reports:dashboard"))
+        self.assertContains(r, 'id="rd-global-search"')

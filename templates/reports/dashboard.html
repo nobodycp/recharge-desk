@@ -158,6 +158,62 @@
   </div>
 </div>
 
+<div class="row g-3 mb-4 align-items-stretch rd-dashboard-charts-row">
+  <div class="col-lg-7 d-flex">
+    <div class="rd-card flex-fill d-flex flex-column">
+      <div class="rd-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span>{% blocktrans count n=chart_window_days %}Sales last {{ n }} day{% plural %}Sales last {{ n }} days{% endblocktrans %}</span>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:profit_report' %}">{% trans "Open profit report" %}</a>
+      </div>
+      <div class="rd-card-body">
+        {% if daily_series %}
+          <div class="rd-mini-chart" role="img" aria-label="{% trans 'Daily sales volume' %}">
+            <div class="rd-mini-chart-bars">
+              {% for d in daily_series %}
+                {% widthratio d.volume chart_max_volume 100 as bar_pct %}
+                <div class="rd-mini-chart-bar-cell" title="{{ d.date }} — {{ d.volume|floatformat:0 }} ({{ d.count }})">
+                  <div class="rd-mini-chart-bar" style="height: {% if d.volume %}{{ bar_pct }}%{% else %}2px{% endif %};"></div>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="rd-mini-chart-axis">
+              <span>{{ daily_series.0.date }}</span>
+              <span>{% trans "Today" %}</span>
+            </div>
+          </div>
+        {% else %}
+          <div class="rd-text-muted small">{% trans "No sales recorded in this period." %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5 d-flex">
+    <div class="rd-card flex-fill d-flex flex-column">
+      <div class="rd-card-header">{% trans "Top companies (this month, by profit)" %}</div>
+      <div class="rd-card-body">
+        {% if top_companies %}
+          <ul class="list-unstyled rd-top-list mb-0">
+            {% for c in top_companies %}
+              {% widthratio c.profit chart_max_company_profit 100 as cbar %}
+              <li class="rd-top-list-item">
+                <div class="d-flex justify-content-between gap-2 small">
+                  <span class="text-truncate fw-medium">{{ c.name }}</span>
+                  <span class="tabular-nums kpi-success">{{ c.profit|floatformat:0|intcomma }}</span>
+                </div>
+                <div class="rd-top-list-track">
+                  <div class="rd-top-list-fill" style="width: {{ cbar }}%;"></div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="rd-text-muted small">{% trans "No paid sales this month yet." %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="rd-card overflow-hidden">
   <div class="rd-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
     <span>{% trans "Recent activity" %}</span>

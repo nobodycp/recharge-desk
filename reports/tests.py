@@ -220,6 +220,68 @@ class SalesReportTests(_ReportsBase):
         self.assertNotIn("reports/sales_report.html", templates)
 
 
+# ============================================================ Employee report
+class EmployeeReportTests(_ReportsBase):
+    def test_empty_employee_report_renders(self):
+        r = self.client.get(reverse("reports:employee_report"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context["summary"]["sales_count"], 0)
+        self.assertEqual(r.context["rows"], [])
+
+    def test_employee_report_aggregates_per_user(self):
+        other = User.objects.create_user("staff2", password="x")
+        UserProfile.objects.update_or_create(
+            user=other,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        self._make_sale(sell=20, paid=True)
+        self._make_sale(sell=20, paid=True)
+        s = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="X-1",
+            payer_name="A",
+            payment_method=self.cash,
+            sell_price_actual=_d(50),
+            notes="",
+            user=other,
+        )
+        mark_sale_paid(sale=s, user=other)
+        r = self.client.get(reverse("reports:employee_report"))
+        self.assertEqual(r.status_code, 200)
+        rows = {row["username"]: row for row in r.context["rows"]}
+        self.assertEqual(rows["mgr_rep"]["sales_count"], 2)
+        self.assertEqual(rows["mgr_rep"]["volume"], _d(40))
+        self.assertEqual(rows["staff2"]["sales_count"], 1)
+        self.assertEqual(rows["staff2"]["volume"], _d(50))
+        self.assertEqual(r.context["summary"]["active_staff"], 2)
+
+    def test_date_filter_excludes_out_of_range(self):
+        s = self._make_sale(sell=20, paid=True)
+        old = timezone.now() - timedelta(days=120)
+        Sale.objects.filter(pk=s.pk).update(created_at=old)
+        today = timezone.localdate()
+        r = self.client.get(
+            reverse("reports:employee_report"),
+            {"date_from": today.isoformat(), "date_to": today.isoformat()},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context["summary"]["sales_count"], 0)
+
+
+class DashboardChartsTests(_ReportsBase):
+    def test_dashboard_exposes_chart_series(self):
+        self._make_sale(sell=20, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(r.status_code, 200)
+        ctx = r.context
+        self.assertEqual(len(ctx["daily_series"]), ctx["chart_window_days"])
+        self.assertEqual(ctx["daily_series"][-1]["count"], 1)
+        self.assertEqual(ctx["daily_series"][-1]["volume"], 20.0)
+        self.assertGreaterEqual(len(ctx["top_companies"]), 1)
+        self.assertEqual(ctx["top_companies"][0]["name"], "ReportCo")
+
+
 # ============================================================ Company report
 class CompanyReportTests(_ReportsBase):
     def test_empty_company_report_renders(self):
@@ -242,3 +304,68 @@ class CompanyReportTests(_ReportsBase):
     def test_unknown_company_returns_404(self):
         r = self.client.get(reverse("reports:company_report", args=[99999]))
         self.assertEqual(r.status_code, 404)
+
+    def test_period_filter_scopes_aggregates_and_tables(self):
+        from sales.services import record_manual_deposit
+
+        # One sale today, one sale 60 days ago.
+        recent = self._make_sale(sell=20, paid=True)
+        old = self._make_sale(sell=20, paid=True)
+        backdate = timezone.now() - timedelta(days=60)
+        Sale.objects.filter(pk=old.pk).update(created_at=backdate)
+        # Same for the matching DEDUCTION ledger row created when the
+        # old sale was confirmed, otherwise a "this month" filter would
+        # still include that historical consumption row.
+        from sales.models import CompanyBalanceTransaction
+        CompanyBalanceTransaction.objects.filter(
+            company=self.company,
+            entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
+            reference_id=old.pk,
+        ).update(created_at=backdate)
+
+        # A deposit today and a deposit 60 days ago.
+        record_manual_deposit(
+            company=self.company, amount=_d(500), notes="recent", user=self.user
+        )
+        old_dep = record_manual_deposit(
+            company=self.company, amount=_d(900), notes="old", user=self.user
+        )
+        CompanyBalanceTransaction.objects.filter(pk=old_dep.pk).update(
+            created_at=backdate
+        )
+
+        today = timezone.localdate()
+        url = reverse("reports:company_report", args=[self.company.pk])
+        r = self.client.get(
+            url,
+            {
+                "period_from": today.isoformat(),
+                "period_to": today.isoformat(),
+            },
+        )
+        self.assertEqual(r.status_code, 200)
+        ctx = r.context
+        self.assertTrue(ctx["period_active"])
+        self.assertEqual(ctx["agg"]["cnt"], 1)
+        self.assertEqual(ctx["agg"]["total_sell"], _d(20))
+        self.assertEqual(ctx["deposits_total"], _d(500))
+        self.assertEqual(ctx["consumed_total"], _d(5))
+        self.assertIn(recent, ctx["sales_page"].object_list)
+        self.assertNotIn(old, ctx["sales_page"].object_list)
+        # closing balance uses the full ledger up to period_to (inclusive)
+        # so it reflects history before the window as well.
+        self.assertIsNotNone(ctx["balance_as_of"])
+
+    def test_no_period_means_all_time(self):
+        from sales.services import record_manual_deposit
+
+        self._make_sale(sell=20, paid=True)
+        record_manual_deposit(
+            company=self.company, amount=_d(500), notes="x", user=self.user
+        )
+        r = self.client.get(reverse("reports:company_report", args=[self.company.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context["period_active"])
+        self.assertIsNone(r.context["balance_as_of"])
+        self.assertEqual(r.context["agg"]["cnt"], 1)
+        self.assertEqual(r.context["deposits_total"], _d(500))

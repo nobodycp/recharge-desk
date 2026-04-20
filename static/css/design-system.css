@@ -453,6 +453,46 @@ body.app-shell {
   flex-wrap: wrap;
 }
 
+/* Topbar search: grows to take all the slack between the title and the
+ * meta cluster on wide screens, then drops to its own row underneath
+ * everything on narrow ones (the topbar itself already wraps). */
+.rd-topbar-search {
+  position: relative;
+  flex: 1 1 18rem;
+  min-width: 0;
+  max-width: 32rem;
+}
+
+.rd-topbar-search-icon {
+  position: absolute;
+  inset-inline-start: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color);
+  pointer-events: none;
+  display: inline-flex;
+}
+
+.rd-topbar-search-input {
+  width: 100%;
+  padding-inline-start: 2rem;
+  background: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+}
+
+.rd-topbar-search-input:focus {
+  border-color: var(--rd-accent);
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, var(--rd-accent) 22%, transparent);
+}
+
+@media (max-width: 768px) {
+  .rd-topbar-search {
+    order: 99;
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
 .rd-menu-btn {
   display: inline-flex;
   align-items: center;
@@ -1586,4 +1626,151 @@ html[dir="rtl"] .rd-toast.is-visible {
 @media (max-width: 480px) {
   .rd-user-menu > summary { padding: 0.2rem; }
   .rd-user-menu-panel { min-width: 14rem; }
+}
+
+/* ---------------- Topbar notification bell ---------------- */
+.rd-notif-trigger {
+  position: relative;
+  padding: 0.35rem 0.55rem !important;
+  gap: 0 !important;
+}
+
+.rd-notif-trigger svg { display: block; }
+
+.rd-notif-badge {
+  position: absolute;
+  top: -3px;
+  inset-inline-end: -3px;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.32rem;
+  border-radius: 999px;
+  background: var(--rd-danger, #dc3545);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.05rem;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bs-secondary-bg);
+}
+
+.rd-notif-panel { min-width: 19rem; }
+
+.rd-notif-header {
+  display: block;
+  padding: 0.35rem 0.6rem 0.5rem;
+}
+
+.rd-notif-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.rd-notif-count {
+  flex: 0 0 auto;
+  min-width: 1.5rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4rem;
+}
+
+.rd-notif-count.is-active {
+  background: color-mix(in srgb, var(--rd-danger, #dc3545) 14%, transparent);
+  color: var(--rd-danger, #dc3545);
+}
+
+.rd-notif-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.7rem;
+  margin-top: 0.25rem;
+  border-radius: var(--rd-radius-sm);
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+}
+
+.rd-notif-empty svg {
+  color: var(--rd-success, #198754);
+  opacity: 0.95;
+}
+
+/* Mini-charts on the management dashboard. The bar chart is built with
+   inline DIVs so we avoid any external chart dependency and keep the
+   strict CSP intact. Heights are set inline via {% widthratio %}. */
+.rd-mini-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 180px;
+}
+.rd-mini-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding-block: 0.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.rd-mini-chart-bar-cell {
+  flex: 1 1 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+}
+.rd-mini-chart-bar {
+  width: 100%;
+  max-width: 28px;
+  min-height: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--bs-primary) 0%,
+    rgba(var(--bs-primary-rgb), 0.55) 100%
+  );
+  border-radius: 4px 4px 0 0;
+  transition: filter 0.15s ease;
+}
+.rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
+  filter: brightness(1.15);
+}
+.rd-mini-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
+.rd-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.rd-top-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.rd-top-list-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+}
+.rd-top-list-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--rd-success, #198754) 0%,
+    rgba(25, 135, 84, 0.55) 100%
+  );
+  border-radius: inherit;
 }

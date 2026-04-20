@@ -74,6 +74,7 @@ TEMPLATES = [
                 "django.template.context_processors.i18n",
                 "core.context_processors.theme",
                 "core.context_processors.site_branding",
+                "core.context_processors.nav_notifications",
             ],
         },
     },

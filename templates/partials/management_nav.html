@@ -32,6 +32,10 @@
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
     <span>{% trans "Sales report" %}</span>
   </a>
+  <a class="rd-nav-link {% if ns == 'reports' and un == 'employee_report' %}is-active{% endif %}" href="{% url 'reports:employee_report' %}">
+    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+    <span>{% trans "Employee performance" %}</span>
+  </a>
   <a class="rd-nav-link {% if ns == 'expenses' and un == 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_report' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>
     <span>{% trans "Expense report" %}</span>

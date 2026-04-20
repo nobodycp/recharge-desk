@@ -10,6 +10,32 @@
   <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>
 </div>
 
+<div class="rd-card mb-4">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label" for="cr-period-from">{% trans "Date from" %}</label>
+        <input type="date" class="form-control" id="cr-period-from" name="period_from" value="{% if period_from %}{{ period_from|date:'Y-m-d' }}{% endif %}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="cr-period-to">{% trans "Date to" %}</label>
+        <input type="date" class="form-control" id="cr-period-to" name="period_to" value="{% if period_to %}{{ period_to|date:'Y-m-d' }}{% endif %}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'reports:company_report' company.pk %}">{% trans "Reset (all time)" %}</a>
+      </div>
+    </form>
+    {% if period_active %}
+      <div class="rd-text-muted small mt-2">
+        {% blocktrans with start=period_from|default:"—" end=period_to|default:"—" %}Showing data from {{ start }} to {{ end }}.{% endblocktrans %}
+      </div>
+    {% else %}
+      <div class="rd-text-muted small mt-2">{% trans "Showing all-time data. Pick a date range above to scope the cards and tables below." %}</div>
+    {% endif %}
+  </div>
+</div>
+
 <div class="row g-3 mb-4">
   <div class="col-md-3">
     <div class="rd-card h-100"><div class="rd-card-body">
@@ -31,8 +57,14 @@
   </div>
   <div class="col-md-3">
     <div class="rd-card h-100"><div class="rd-card-body">
-      <div class="rd-label mb-1">{% trans "Current balance" %}</div>
-      <div class="h4 fw-bold tabular-nums {% if company.current_balance < 0 %}kpi-danger{% elif company.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ company.current_balance|intcomma }}</div>
+      {% if period_active and balance_as_of != None %}
+        <div class="rd-label mb-1">{% blocktrans with d=period_to %}Balance on {{ d }}{% endblocktrans %}</div>
+        <div class="h4 fw-bold tabular-nums {% if balance_as_of < 0 %}kpi-danger{% elif balance_as_of == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ balance_as_of|intcomma }}</div>
+        <div class="rd-text-muted small">{% trans "Now" %}: <span class="fw-semibold">{{ company.current_balance|intcomma }}</span></div>
+      {% else %}
+        <div class="rd-label mb-1">{% trans "Current balance" %}</div>
+        <div class="h4 fw-bold tabular-nums {% if company.current_balance < 0 %}kpi-danger{% elif company.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ company.current_balance|intcomma }}</div>
+      {% endif %}
     </div></div>
   </div>
 </div>

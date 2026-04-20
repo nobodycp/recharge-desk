@@ -17,6 +17,8 @@
       <input type="hidden" name="sales_sort" value="{{ request.GET.sales_sort }}">
       <input type="hidden" name="sales_order" value="{{ request.GET.sales_order }}">
       <input type="hidden" name="sales_page" value="{{ request.GET.sales_page }}">
+      <input type="hidden" name="period_from" value="{{ request.GET.period_from }}">
+      <input type="hidden" name="period_to" value="{{ request.GET.period_to }}">
       <div>
         <label class="visually-hidden" for="cr-ledger-q">{% trans "Search" %}</label>
         <input id="cr-ledger-q" type="search" class="form-control form-control-sm" name="ledger_q" value="{{ request.GET.ledger_q }}" placeholder="{% trans 'Notes, ref #…' %}">

@@ -1,0 +1,96 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block page_title %}{% trans "Employee performance" %}{% endblock %}
+{% block content %}
+<div class="rd-page-header mb-3">
+  <h1 class="rd-heading-xl mb-1">{% trans "Employee performance" %}</h1>
+  <p class="rd-text-muted mb-0">
+    {% blocktrans with start=date_from end=date_to %}From {{ start }} to {{ end }}. Excludes cancelled sales.{% endblocktrans %}
+  </p>
+</div>
+
+<div class="rd-card mb-4">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
+      <div class="col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'reports:employee_report' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4">
+  <div class="col d-flex">
+    <div class="rd-card flex-fill h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Sales count" %}</div>
+        <div class="rd-dashboard-summary__value rd-dashboard-summary__value--md">{{ summary.sales_count|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card flex-fill h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Volume" %}</div>
+        <div class="rd-dashboard-summary__value rd-dashboard-summary__value--md kpi-info">{{ summary.volume|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card flex-fill h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Profit (paid only)" %}</div>
+        <div class="rd-dashboard-summary__value rd-dashboard-summary__value--md {% if summary.profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ summary.profit|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col d-flex">
+    <div class="rd-card flex-fill h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Active staff" %}</div>
+        <div class="rd-dashboard-summary__value rd-dashboard-summary__value--md">{{ summary.active_staff|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden">
+  <div class="rd-card-header fw-semibold">{% trans "Per-employee breakdown" %}</div>
+  <div class="rd-data-shell">
+    <div class="table-responsive rd-table-wrap border-0">
+      <table class="table table-striped table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th scope="col">{% trans "Employee" %}</th>
+            <th scope="col" class="text-end">{% trans "Sales" %}</th>
+            <th scope="col" class="text-end">{% trans "Volume" %}</th>
+            <th scope="col" class="text-end">{% trans "Profit" %}</th>
+            <th scope="col" class="text-end">{% trans "Avg. ticket" %}</th>
+            <th scope="col">{% trans "Top company" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td class="fw-medium">
+                {{ r.username }}
+                {% if r.first_name %}<span class="text-secondary small ms-1">({{ r.first_name }})</span>{% endif %}
+              </td>
+              <td class="text-end tabular-nums">{{ r.sales_count|intcomma }}</td>
+              <td class="text-end tabular-nums kpi-info">{{ r.volume|intcomma }}</td>
+              <td class="text-end tabular-nums {% if r.profit < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ r.profit|intcomma }}</td>
+              <td class="text-end tabular-nums">{{ r.avg_ticket|floatformat:0|intcomma }}</td>
+              <td>{{ r.top_company }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales recorded in this period." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

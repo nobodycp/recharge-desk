@@ -65,6 +65,46 @@ def theme(request):
     }
 
 
+def nav_notifications(request):
+    """Counts surfaced as a badge on the management topbar / nav.
+
+    Only runs for authenticated management users — employees never see
+    these and unauthenticated requests skip the DB hit entirely. The
+    queries are tiny (two ``COUNT(*)`` on indexed columns) and never
+    cached: the badge has to react immediately when management approves
+    or marks a sale paid, otherwise the UI lies about how much work is
+    waiting. If load ever becomes a concern, a 15 s per-user cache here
+    is the obvious next step.
+    """
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return {"nav_notifications": None}
+
+    try:
+        from accounts.permissions import is_management
+
+        if not is_management(user):
+            return {"nav_notifications": None}
+
+        from sales.models import Sale
+
+        awaiting = Sale.objects.filter(status=Sale.Status.AWAITING).count()
+        pending = Sale.objects.filter(
+            status=Sale.Status.PENDING,
+            on_account=False,
+        ).count()
+    except Exception:
+        return {"nav_notifications": None}
+
+    return {
+        "nav_notifications": {
+            "awaiting": awaiting,
+            "pending": pending,
+            "total": awaiting + pending,
+        }
+    }
+
+
 def site_branding(request):
     """Expose the singleton SiteBranding row to every template.
 

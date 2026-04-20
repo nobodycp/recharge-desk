@@ -53,6 +53,84 @@ def forbidden(request):
 
 
 @management_required
+def search(request):
+    """One box, many models.
+
+    The topbar search resolves to this view. We fan out across the small
+    set of "things you usually look for" — sales (by reference, payer,
+    or numeric id), customers (by name, phone, or id), and customer
+    payments (by id or notes) — and group the results into sections.
+    Each subquery is bounded to ``MAX_HITS`` rows so a stray empty
+    string doesn't load the whole DB; the page also tells the user when
+    a section was truncated so they can refine the query instead of
+    silently missing matches.
+    """
+    from django.db.models import Q
+
+    from customers.models import Customer, CustomerPayment
+    from sales.models import Sale
+
+    MAX_HITS = 25
+
+    q = (request.GET.get("q") or "").strip()
+    sales = customers = payments = []
+    sale_truncated = customer_truncated = payment_truncated = False
+    total = 0
+
+    if q:
+        sale_filter = Q(reference_number__icontains=q) | Q(payer_name__icontains=q)
+        if q.isdigit():
+            sale_filter |= Q(id=int(q))
+        sale_qs = (
+            Sale.objects.filter(sale_filter)
+            .select_related("company", "product", "product__line", "customer", "created_by")
+            .order_by("-created_at")
+        )
+        sales = list(sale_qs[: MAX_HITS + 1])
+        sale_truncated = len(sales) > MAX_HITS
+        sales = sales[:MAX_HITS]
+
+        customer_filter = Q(name__icontains=q) | Q(phones__phone__icontains=q)
+        if q.isdigit():
+            customer_filter |= Q(id=int(q))
+        customer_qs = (
+            Customer.objects.filter(customer_filter)
+            .distinct()
+            .order_by("-current_balance", "name")
+        )
+        customers = list(customer_qs[: MAX_HITS + 1])
+        customer_truncated = len(customers) > MAX_HITS
+        customers = customers[:MAX_HITS]
+
+        payment_filter = Q(notes__icontains=q) | Q(customer__name__icontains=q)
+        if q.isdigit():
+            payment_filter |= Q(id=int(q))
+        payment_qs = (
+            CustomerPayment.objects.filter(payment_filter)
+            .select_related("customer", "payment_method", "created_by")
+            .order_by("-created_at")
+        )
+        payments = list(payment_qs[: MAX_HITS + 1])
+        payment_truncated = len(payments) > MAX_HITS
+        payments = payments[:MAX_HITS]
+
+        total = len(sales) + len(customers) + len(payments)
+
+    ctx = {
+        "q": q,
+        "sales": sales,
+        "customers": customers,
+        "payments": payments,
+        "sale_truncated": sale_truncated,
+        "customer_truncated": customer_truncated,
+        "payment_truncated": payment_truncated,
+        "total": total,
+        "title": _("Search"),
+    }
+    return render(request, "core/search.html", ctx)
+
+
+@management_required
 def site_branding(request):
     """Singleton editor for the company logo shown on the login page."""
     instance = SiteBranding.load()

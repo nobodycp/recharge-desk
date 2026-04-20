@@ -214,4 +214,22 @@
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
   });
+
+  // Press "/" anywhere outside a form field to focus the global topbar
+  // search box. Mirrors the GitHub / Linear UX so power users can jump
+  // straight from "I want to find sale 0599..." to typing without
+  // hunting for the input. Ignored while editing or with a modifier
+  // pressed so it never steals "/" from a user typing a slash.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (!t) return;
+    var tag = (t.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable) return;
+    var box = document.getElementById("rd-global-search");
+    if (!box) return;
+    e.preventDefault();
+    box.focus();
+    box.select();
+  });
 })();

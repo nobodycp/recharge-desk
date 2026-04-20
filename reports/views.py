@@ -143,6 +143,58 @@ def dashboard(request):
         lambda: loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"]
         or 0,
     )
+    # 14-day sales sparkline + top-5 companies bar chart for the new
+    # mini-charts row on the dashboard. Both queries are cheap (a single
+    # GROUP BY on the indexed created_at) and cached for the day so a
+    # busy dashboard doesn't hit them on every refresh.
+    chart_window_days = 14
+
+    def _daily_series():
+        from datetime import timedelta
+
+        start = today - timedelta(days=chart_window_days - 1)
+        rows = (
+            confirmed_sales(Sale.objects.all())
+            .filter(created_at__date__gte=start)
+            .annotate(d=TruncDate("created_at"))
+            .values("d")
+            .annotate(volume=Sum("sell_price_actual"), cnt=Count("id"))
+            .order_by("d")
+        )
+        bucket = {r["d"]: (float(r["volume"] or 0), int(r["cnt"] or 0)) for r in rows}
+        out = []
+        for i in range(chart_window_days):
+            day = start + timedelta(days=i)
+            v, c = bucket.get(day, (0.0, 0))
+            out.append({"date": day.isoformat(), "volume": v, "count": c})
+        return out
+
+    def _top_companies():
+        rows = (
+            paid_sales_only(_month_sales())
+            .values("company__name")
+            .annotate(profit=Sum("profit_snapshot"), volume=Sum("sell_price_actual"))
+            .order_by("-profit")[:5]
+        )
+        return [
+            {
+                "name": r["company__name"] or "—",
+                "profit": float(r["profit"] or 0),
+                "volume": float(r["volume"] or 0),
+            }
+            for r in rows
+        ]
+
+    daily_series = cached_kpi(
+        f"dashboard:daily_series:{today_key}", _daily_series
+    )
+    top_companies = cached_kpi(
+        f"dashboard:top_companies:{month_key}", _top_companies
+    )
+
+    chart_max_volume = max((d["volume"] for d in daily_series), default=0) or 1
+    chart_max_company_profit = max((c["profit"] for c in top_companies), default=0) or 1
+
     return render(
         request,
         "reports/dashboard.html",
@@ -166,6 +218,11 @@ def dashboard(request):
             "net_month": net_month,
             "companies": companies,
             "recent_sales": recent_sales,
+            "daily_series": daily_series,
+            "top_companies": top_companies,
+            "chart_max_volume": chart_max_volume,
+            "chart_max_company_profit": chart_max_company_profit,
+            "chart_window_days": chart_window_days,
         },
     )
 
@@ -248,6 +305,96 @@ def profit_report(request):
 
 
 @management_required
+def employee_report(request):
+    """Per-employee KPIs (sales count, volume, profit) within a date range.
+
+    The default window is the current month so the page always lands on
+    actionable numbers without forcing the user to fill the form first.
+    The "best company" column does a second pass per employee — N is
+    bounded by the number of staff so this stays cheap.
+    """
+    today = _local_today()
+    default_from = today.replace(day=1)
+
+    form = DateRangeForm(request.GET or None)
+    date_from = default_from
+    date_to = today
+    if form.is_valid():
+        date_from = form.cleaned_data.get("date_from") or default_from
+        date_to = form.cleaned_data.get("date_to") or today
+
+    qs = confirmed_sales(Sale.objects.all()).filter(
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
+    )
+    qs_paid = paid_sales_only(qs)
+
+    summary = {
+        "sales_count": qs.count(),
+        "volume": qs.aggregate(s=Sum("sell_price_actual"))["s"] or 0,
+        "profit": qs_paid.aggregate(s=Sum("profit_snapshot"))["s"] or 0,
+        "active_staff": qs.values("created_by_id").distinct().count(),
+    }
+
+    by_employee = list(
+        qs.values("created_by_id", "created_by__username", "created_by__first_name")
+        .annotate(
+            sales_count=Count("id"),
+            volume=Sum("sell_price_actual"),
+        )
+        .order_by("-volume")
+    )
+
+    profit_by_employee = {
+        row["created_by_id"]: row["profit"] or 0
+        for row in qs_paid.values("created_by_id").annotate(profit=Sum("profit_snapshot"))
+    }
+
+    top_company_by_employee = {}
+    for row in (
+        qs.values("created_by_id", "company__name")
+        .annotate(volume=Sum("sell_price_actual"))
+        .order_by("created_by_id", "-volume")
+    ):
+        emp_id = row["created_by_id"]
+        if emp_id in top_company_by_employee:
+            continue
+        top_company_by_employee[emp_id] = row["company__name"]
+
+    rows = []
+    for r in by_employee:
+        emp_id = r["created_by_id"]
+        sales_count = r["sales_count"] or 0
+        volume = r["volume"] or 0
+        profit = profit_by_employee.get(emp_id, 0)
+        rows.append(
+            {
+                "employee_id": emp_id,
+                "username": r["created_by__username"] or _("Unknown"),
+                "first_name": r["created_by__first_name"] or "",
+                "sales_count": sales_count,
+                "volume": volume,
+                "profit": profit,
+                "avg_ticket": (volume / sales_count) if sales_count else 0,
+                "top_company": top_company_by_employee.get(emp_id) or "—",
+            }
+        )
+
+    return render(
+        request,
+        "reports/employee_report.html",
+        {
+            "title": _("Employee performance"),
+            "form": form,
+            "date_from": date_from,
+            "date_to": date_to,
+            "summary": summary,
+            "rows": rows,
+        },
+    )
+
+
+@management_required
 def sales_report(request):
     """Alias filters reusing sales list logic via redirect or duplicate — embed quick summary."""
     from sales.forms import ManagementSaleFilterForm
@@ -286,7 +433,34 @@ def sales_report(request):
     return render(request, "reports/sales_report.html", ctx)
 
 
-def _company_report_sales_queryset(company, request):
+def _parse_company_report_period(request):
+    """Read ``period_from`` / ``period_to`` GET params into ``date`` objects.
+
+    Returns ``(date_from, date_to)``; either side may be ``None`` when the
+    user omits or supplies an invalid value, in which case that bound is
+    treated as open-ended ("all time").
+    """
+    from datetime import date as _date
+
+    def _parse(s):
+        try:
+            return _date.fromisoformat((s or "").strip())
+        except (ValueError, TypeError):
+            return None
+
+    return _parse(request.GET.get("period_from")), _parse(request.GET.get("period_to"))
+
+
+def _apply_period(qs, date_from, date_to, field="created_at"):
+    """Inclusive ``date_from``/``date_to`` filter on a datetime field."""
+    if date_from:
+        qs = qs.filter(**{f"{field}__date__gte": date_from})
+    if date_to:
+        qs = qs.filter(**{f"{field}__date__lte": date_to})
+    return qs
+
+
+def _company_report_sales_queryset(company, request, *, date_from=None, date_to=None):
     qs = company.sales.select_related("product", "product__line", "payment_method", "created_by")
     sales_q = (request.GET.get("sales_q") or "").strip()
     if sales_q:
@@ -296,14 +470,16 @@ def _company_report_sales_queryset(company, request):
             | Q(product__line__name__icontains=sales_q)
             | Q(product__variant_label__icontains=sales_q)
         )
+    qs = _apply_period(qs, date_from, date_to)
     return apply_sale_list_ordering(
         request, qs, sort_param="sales_sort", order_param="sales_order"
     )
 
 
-def _company_report_ledger_queryset(company, request):
+def _company_report_ledger_queryset(company, request, *, date_from=None, date_to=None):
     qs = company.balance_transactions.select_related("created_by")
     qs = filter_ledger_queryset(qs, request.GET.get("ledger_q") or "")
+    qs = _apply_period(qs, date_from, date_to)
     return apply_ledger_list_ordering(request, qs)
 
 
@@ -333,23 +509,31 @@ def company_report(request, pk):
             messages.success(request, _("Adjustment recorded."))
             return redirect("reports:company_report", pk=company.pk)
 
+    period_from, period_to = _parse_company_report_period(request)
+    period_active = bool(period_from or period_to)
+
     ledger_qs_all = company.balance_transactions.all()
-    sales_qs_filtered = _company_report_sales_queryset(company, request)
-    ledger_qs_filtered = _company_report_ledger_queryset(company, request)
+    ledger_qs_period = _apply_period(ledger_qs_all, period_from, period_to)
+    sales_qs_filtered = _company_report_sales_queryset(
+        company, request, date_from=period_from, date_to=period_to
+    )
+    ledger_qs_filtered = _company_report_ledger_queryset(
+        company, request, date_from=period_from, date_to=period_to
+    )
 
     sales_page = paginate_request(request, sales_qs_filtered, page_param="sales_page")
     ledger_page = paginate_request(request, ledger_qs_filtered, page_param="ledger_page")
 
-    deposits = ledger_qs_all.filter(entry_type=CompanyBalanceTransaction.EntryType.DEPOSIT).aggregate(
+    deposits = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.DEPOSIT).aggregate(
         s=Sum("amount")
     )["s"] or 0
-    consumed = ledger_qs_all.filter(entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION).aggregate(
+    consumed = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION).aggregate(
         s=Sum("amount")
     )["s"] or 0
-    reversals = ledger_qs_all.filter(entry_type=CompanyBalanceTransaction.EntryType.REVERSAL).aggregate(
+    reversals = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.REVERSAL).aggregate(
         s=Sum("amount")
     )["s"] or 0
-    adjustments = ledger_qs_all.filter(entry_type=CompanyBalanceTransaction.EntryType.ADJUSTMENT).aggregate(
+    adjustments = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.ADJUSTMENT).aggregate(
         s=Sum("amount")
     )["s"] or 0
 
@@ -358,6 +542,31 @@ def company_report(request, pk):
         **sales_non_cancelled.aggregate(cnt=Count("id"), total_sell=Sum("sell_price_actual")),
         **paid_sales_only(sales_qs_filtered).aggregate(total_profit=Sum("profit_snapshot")),
     }
+
+    # When the user picked a date range we also expose the *closing*
+    # balance as of ``period_to`` so the "current balance" KPI stays
+    # meaningful for historical lookups. The signed contribution to the
+    # supplier balance per ledger row is +amount for everything except
+    # DEDUCTION which is -amount; ADJUSTMENT.amount is already signed.
+    balance_as_of = None
+    if period_to:
+        from django.db.models import Case, F, Value, When
+
+        ledger_up_to = _apply_period(
+            company.balance_transactions.all(), None, period_to
+        )
+        delta = ledger_up_to.aggregate(
+            d=Sum(
+                Case(
+                    When(
+                        entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
+                        then=-F("amount"),
+                    ),
+                    default=F("amount"),
+                )
+            )
+        )["d"] or 0
+        balance_as_of = (company.opening_balance or 0) + delta
 
     ctx = {
         "company": company,
@@ -375,6 +584,10 @@ def company_report(request, pk):
         "sales_order": (request.GET.get("sales_order") or "desc").lower(),
         "ledger_sort": request.GET.get("ledger_sort") or "created_at",
         "ledger_order": (request.GET.get("ledger_order") or "desc").lower(),
+        "period_from": period_from,
+        "period_to": period_to,
+        "period_active": period_active,
+        "balance_as_of": balance_as_of,
     }
     if request.headers.get("HX-Request"):
         frag = (request.GET.get("partial") or "").strip()
