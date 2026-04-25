@@ -288,6 +288,12 @@ class DashboardChartsTests(_ReportsBase):
         self.assertEqual(len(ctx["daily_series"]), ctx["chart_window_days"])
         self.assertEqual(ctx["daily_series"][-1]["count"], 1)
         self.assertEqual(ctx["daily_series"][-1]["volume"], 20.0)
+        self.assertIn("day_letter", ctx["daily_series"][0])
+        self.assertEqual(len(ctx["daily_series"][0]["day_letter"]), 1)
+        self.assertEqual(ctx["chart_total_volume"], 20.0)
+        self.assertAlmostEqual(
+            ctx["chart_avg_volume"], 20.0 / ctx["chart_window_days"], places=6
+        )
         self.assertGreaterEqual(len(ctx["top_companies"]), 1)
         self.assertEqual(ctx["top_companies"][0]["name"], "ReportCo")
 

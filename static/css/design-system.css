@@ -1955,71 +1955,400 @@ html[dir="rtl"] .rd-toast.is-visible {
    inline DIVs so we avoid any external chart dependency and keep the
    strict CSP intact. Heights are set inline via {% widthratio %}. */
 .rd-mini-chart {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-height: 180px;
+  min-height: 220px;
+  padding-top: 0.25rem;
 }
+
+/* Subtle horizontal grid lines (4 levels) sitting behind the bars. */
+.rd-mini-chart-grid {
+  position: absolute;
+  inset: 0.25rem 0 1.75rem 0;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rd-mini-chart-grid > span {
+  border-top: 1px dashed color-mix(in srgb, var(--bs-border-color) 60%, transparent);
+  display: block;
+}
+
 .rd-mini-chart-bars {
+  position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 160px;
+  gap: 6px;
+  height: 180px;
   padding-block: 0.25rem;
   border-bottom: 1px solid var(--bs-border-color);
+  z-index: 1;
 }
+
 .rd-mini-chart-bar-cell {
+  position: relative;
   flex: 1 1 0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   height: 100%;
   min-width: 0;
+  cursor: default;
 }
+
 .rd-mini-chart-bar {
   width: 100%;
-  max-width: 28px;
-  min-height: 2px;
+  max-width: 30px;
+  min-height: 3px;
   background: linear-gradient(
     180deg,
     var(--bs-primary) 0%,
-    rgba(var(--bs-primary-rgb), 0.55) 100%
+    color-mix(in srgb, var(--bs-primary) 45%, transparent) 100%
   );
-  border-radius: 4px 4px 0 0;
-  transition: filter 0.15s ease;
+  border-radius: 5px 5px 0 0;
+  transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
-.rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
-  filter: brightness(1.15);
+
+.rd-mini-chart-bar-cell:hover .rd-mini-chart-bar,
+.rd-mini-chart-bar-cell:focus-visible .rd-mini-chart-bar {
+  filter: brightness(1.12) saturate(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--bs-primary) 32%, transparent);
 }
+
+.rd-mini-chart-bar-cell.is-today .rd-mini-chart-bar {
+  background: linear-gradient(
+    180deg,
+    var(--rd-success, #16a34a) 0%,
+    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+  );
+}
+
+.rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
+  background: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+}
+
+/* Custom hover tooltip — replaces the native title attribute. */
+.rd-mini-chart-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--bs-body-color);
+  color: var(--bs-body-bg);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 5;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.rd-mini-chart-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--bs-body-color);
+}
+
+.rd-mini-chart-tip__date {
+  font-weight: 500;
+  opacity: 0.75;
+  font-size: 0.68rem;
+}
+
+.rd-mini-chart-tip__val {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: -0.01em;
+}
+
+.rd-mini-chart-bar-cell:hover .rd-mini-chart-tip,
+.rd-mini-chart-bar-cell:focus-within .rd-mini-chart-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Edge cells: nudge the tooltip inward so it doesn't clip outside the chart. */
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip {
+  left: 0;
+  transform: translateY(4px);
+}
+
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:focus-within .rd-mini-chart-tip {
+  transform: translateY(0);
+}
+
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip::after {
+  left: 12px;
+  transform: none;
+}
+
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip {
+  left: auto;
+  right: 0;
+  transform: translateY(4px);
+}
+
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:focus-within .rd-mini-chart-tip {
+  transform: translateY(0);
+}
+
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip::after {
+  left: auto;
+  right: 12px;
+  transform: none;
+}
+
+.rd-mini-chart-weekdays {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+
+.rd-mini-chart-wd {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--bs-secondary-color);
+  line-height: 1;
+}
+
+.rd-mini-chart-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.rd-mini-chart-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--bs-body-color);
+  line-height: 1.25;
+}
+
+.rd-mini-chart-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  font-size: 0.78rem;
+  color: var(--bs-secondary-color);
+}
+
+.rd-mini-chart-summary__lbl {
+  font-weight: 500;
+  margin-inline-end: 0.15rem;
+}
+
+.rd-mini-chart-summary__sep {
+  opacity: 0.45;
+  user-select: none;
+}
+
+.rd-mini-chart-summary__item .tabular-nums {
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
 .rd-mini-chart-axis {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--bs-secondary-color);
+  letter-spacing: 0.02em;
 }
 
 .rd-top-list {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.rd-top-list-item {
+
+.rd-top-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.7rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.rd-top-item:hover {
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-body-bg));
+  border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
+}
+
+/* Rank chip — gold/silver/bronze for top 3, neutral for the rest. */
+.rd-top-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: var(--bs-secondary-bg, var(--bs-tertiary-bg));
+  color: var(--bs-secondary-color);
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  flex: 0 0 auto;
+}
+
+.rd-top-item--rank-1 .rd-top-rank {
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  color: #78350f;
+  border-color: color-mix(in srgb, #f59e0b 50%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, #f59e0b 35%, transparent);
+}
+
+.rd-top-item--rank-2 .rd-top-rank {
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  color: #1f2937;
+  border-color: color-mix(in srgb, #9ca3af 50%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, #6b7280 35%, transparent);
+}
+
+.rd-top-item--rank-3 .rd-top-rank {
+  background: linear-gradient(135deg, #fed7aa, #c2410c);
+  color: #fff;
+  border-color: color-mix(in srgb, #c2410c 50%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, #c2410c 35%, transparent);
+}
+
+/* Letter avatar — color rotates per rank to mirror the supplier list look. */
+.rd-top-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, #6366f1 14%, transparent);
+  color: #6366f1;
+  border: 1px solid color-mix(in srgb, #6366f1 22%, transparent);
+  flex: 0 0 auto;
+}
+
+.rd-top-item:nth-child(6n+2) .rd-top-avatar {
+  background: color-mix(in srgb, #10b981 14%, transparent);
+  color: #059669;
+  border-color: color-mix(in srgb, #10b981 22%, transparent);
+}
+
+.rd-top-item:nth-child(6n+3) .rd-top-avatar {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #b45309;
+  border-color: color-mix(in srgb, #f59e0b 24%, transparent);
+}
+
+.rd-top-item:nth-child(6n+4) .rd-top-avatar {
+  background: color-mix(in srgb, #ec4899 14%, transparent);
+  color: #be185d;
+  border-color: color-mix(in srgb, #ec4899 22%, transparent);
+}
+
+.rd-top-item:nth-child(6n+5) .rd-top-avatar {
+  background: color-mix(in srgb, #06b6d4 14%, transparent);
+  color: #0e7490;
+  border-color: color-mix(in srgb, #06b6d4 22%, transparent);
+}
+
+.rd-top-item:nth-child(6n) .rd-top-avatar {
+  background: color-mix(in srgb, #8b5cf6 14%, transparent);
+  color: #7c3aed;
+  border-color: color-mix(in srgb, #8b5cf6 22%, transparent);
+}
+
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n+1) .rd-top-avatar { color: #a5b4fc; }
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n+2) .rd-top-avatar { color: #6ee7b7; }
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n+3) .rd-top-avatar { color: #fcd34d; }
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n+4) .rd-top-avatar { color: #f9a8d4; }
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n+5) .rd-top-avatar { color: #67e8f9; }
+[data-bs-theme="dark"] .rd-top-item:nth-child(6n)   .rd-top-avatar { color: #c4b5fd; }
+
+.rd-top-body {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
+  min-width: 0;
 }
+
+.rd-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.rd-top-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--bs-body-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.rd-top-profit {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--rd-success);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
 .rd-top-list-track {
-  height: 6px;
+  height: 5px;
   border-radius: 999px;
-  background: var(--bs-tertiary-bg);
+  background: color-mix(in srgb, var(--bs-border-color) 55%, transparent);
   overflow: hidden;
 }
+
 .rd-top-list-fill {
   height: 100%;
   background: linear-gradient(
     90deg,
     var(--rd-success, #198754) 0%,
-    rgba(25, 135, 84, 0.55) 100%
+    color-mix(in srgb, var(--rd-success, #198754) 55%, transparent) 100%
   );
   border-radius: inherit;
 }

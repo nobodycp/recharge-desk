@@ -167,12 +167,23 @@ def dashboard(request):
             .annotate(volume=Sum("sell_price_actual"), cnt=Count("id"))
             .order_by("d")
         )
+        # One-letter weekday labels (Sat→س … Fri→ج), common in Arabic UIs.
+        _ar_day_letter = {0: "ن", 1: "ث", 2: "ر", 3: "خ", 4: "ج", 5: "س", 6: "ح"}
+
         bucket = {r["d"]: (float(r["volume"] or 0), int(r["cnt"] or 0)) for r in rows}
         out = []
         for i in range(chart_window_days):
             day = start + timedelta(days=i)
             v, c = bucket.get(day, (0.0, 0))
-            out.append({"date": day.isoformat(), "volume": v, "count": c})
+            out.append(
+                {
+                    "date": day.isoformat(),
+                    "weekday": day,
+                    "day_letter": _ar_day_letter[day.weekday()],
+                    "volume": v,
+                    "count": c,
+                }
+            )
         return out
 
     def _top_companies():
@@ -192,7 +203,7 @@ def dashboard(request):
         ]
 
     daily_series = cached_kpi(
-        f"dashboard:daily_series:{today_key}", _daily_series
+        f"dashboard:daily_series_v3:{today_key}", _daily_series
     )
     top_companies = cached_kpi(
         f"dashboard:top_companies:{month_key}", _top_companies
@@ -200,6 +211,10 @@ def dashboard(request):
 
     chart_max_volume = max((d["volume"] for d in daily_series), default=0) or 1
     chart_max_company_profit = max((c["profit"] for c in top_companies), default=0) or 1
+    chart_total_volume = sum(d["volume"] for d in daily_series)
+    chart_avg_volume = (
+        chart_total_volume / chart_window_days if chart_window_days else 0
+    )
 
     return render(
         request,
@@ -230,6 +245,8 @@ def dashboard(request):
             "chart_max_volume": chart_max_volume,
             "chart_max_company_profit": chart_max_company_profit,
             "chart_window_days": chart_window_days,
+            "chart_total_volume": chart_total_volume,
+            "chart_avg_volume": chart_avg_volume,
         },
     )
 

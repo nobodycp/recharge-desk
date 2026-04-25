@@ -19,10 +19,14 @@
   </div>
 </div>
 
-<div class="rd-card mb-4">
-  <div class="rd-card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div class="rd-label mb-0">{% trans "Total profit" %}</div>
-    <div class="display-6 fw-bold tabular-nums">{{ total_profit|intcomma }}</div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="rd-label mb-1">{% trans "Total profit" %}</div>
+        <div class="h4 mb-0 fw-bold tabular-nums {% if total_profit < 0 %}kpi-danger{% elif total_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ total_profit|intcomma }}</div>
+      </div>
+    </div>
   </div>
 </div>
 

@@ -2876,6 +2876,30 @@ msgstr "الصافي (شهري)"
 msgid "Supplier balances"
 msgstr "أرصدة المورّدين"
 
+#: templates/reports/dashboard.html:171
+msgid "Overdrawn"
+msgstr "مكشوف"
+
+#: templates/reports/dashboard.html:171
+msgid "Empty"
+msgstr "مستنفد"
+
+#: templates/reports/dashboard.html:171
+msgid "Available"
+msgstr "متاح"
+
+#: templates/reports/dashboard.html
+msgid "Total volume"
+msgstr "إجمالي الحجم"
+
+#: templates/reports/dashboard.html
+msgid "Avg per day"
+msgstr "متوسط يومي"
+
+#: templates/reports/dashboard.html
+msgid "All-time totals"
+msgstr "إجماليات كلّيّة"
+
 #: templates/reports/dashboard.html:158
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."

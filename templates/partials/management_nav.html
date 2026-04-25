@@ -4,7 +4,7 @@
   <div class="rd-nav-section">{% trans "Operations" %}</div>
   <a class="rd-nav-link {% if ns == 'reports' and un == 'dashboard' %}is-active{% endif %}" href="{% url 'reports:dashboard' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
-    <span>{% trans "Dashboard" %}</span>
+    <span>{% trans "Operational snapshot" %}</span>
   </a>
   <a class="rd-nav-link {% if ns == 'sales' and un == 'pending_payments' %}is-active{% endif %}" href="{% url 'sales:pending_payments' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
