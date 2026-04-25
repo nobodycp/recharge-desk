@@ -125,9 +125,10 @@ def dashboard(request):
         .order_by("-created_at")[:12]
     )
 
+    # Must use the same date scope as `today_count` / `today_volume` (today only).
     esim_sales_count = cached_kpi(
-        "dashboard:esim_sales_count",
-        lambda: confirmed_sales(Sale.objects.filter(is_esim=True)).count(),
+        f"dashboard:esim_sales_count:{today_key}",
+        lambda: _today_sales().filter(is_esim=True).count(),
     )
     all_sales = Sale.objects.all()
     today_loss_from_zero = cached_kpi(

@@ -58,7 +58,17 @@ class _ReportsBase(TestCase):
         self.client = Client()
         self.client.force_login(self.user)
 
-    def _make_sale(self, *, sell=20, paid=False, on_account=False, customer=None, ref=None, payer="Ali"):
+    def _make_sale(
+        self,
+        *,
+        sell=20,
+        paid=False,
+        on_account=False,
+        customer=None,
+        ref=None,
+        payer="Ali",
+        is_esim=False,
+    ):
         s = create_sale(
             company=self.company,
             product=self.product,
@@ -70,6 +80,7 @@ class _ReportsBase(TestCase):
             user=self.user,
             on_account=on_account,
             customer=customer,
+            is_esim=is_esim,
         )
         if paid and not on_account:
             mark_sale_paid(sale=s, user=self.user)
@@ -155,6 +166,17 @@ class DashboardKPITests(_ReportsBase):
 
         # Net all time = profit - expenses = 25 - 100 = -75
         self.assertEqual(ctx["net_all_time"], _d(-75))
+
+    def test_esim_sales_count_matches_today_only(self):
+        """eSIM KPI must not include historical eSIM sales (same scope as today volume)."""
+        old = timezone.now() - timedelta(days=1)
+        s_old = self._make_sale(sell=20, paid=True, is_esim=True, ref="E-YEST")
+        Sale.objects.filter(pk=s_old.pk).update(created_at=old)
+        self._make_sale(sell=20, paid=True, is_esim=True, ref="E-TODAY")
+        self._make_sale(sell=20, paid=True, is_esim=False, ref="NORM")
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context["esim_sales_count"], 1)
 
 
 # ============================================================ Profit report
