@@ -280,9 +280,19 @@
               {% endfor %}
             </div>
           </div>
-          <div class="mb-0 rd-pay-sub-block">
-            <label class="form-label small fw-semibold" for="id_pay_sub_notes">{{ pay_sub_form.notes.label }}</label>
-            {{ pay_sub_form.notes }}
+          <div class="mb-0 rd-pay-sub-block rd-pay-sub-notes-wrap">
+            <details
+              class="employee-notes-details small"
+              id="rd-pay-sub-notes-details"
+              {% if pay_sub_form.notes.errors %}open{% endif %}
+            >
+              <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
+              <div class="mt-2">
+                <label class="form-label fw-semibold small visually-hidden" for="id_pay_sub_notes">{% trans "Notes" %}</label>
+                {{ pay_sub_form.notes.errors }}
+                {{ pay_sub_form.notes }}
+              </div>
+            </details>
           </div>
         </div>
         <div class="modal-footer py-2">
@@ -384,6 +394,8 @@
       if (f) f.reset();
       if (custHid) custHid.value = "";
       if (balLine) balLine.hidden = true;
+      var notesDetails = document.getElementById("rd-pay-sub-notes-details");
+      if (notesDetails) notesDetails.removeAttribute("open");
     }
 
     var hasBootstrapModal = !!(window.bootstrap && window.bootstrap.Modal);

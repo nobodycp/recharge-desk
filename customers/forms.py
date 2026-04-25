@@ -37,7 +37,13 @@ class EmployeeCustomerPaymentSubmissionForm(forms.Form):
     notes = forms.CharField(
         label=_("Notes"),
         required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2, "id": "id_pay_sub_notes"}),
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control form-control-sm",
+                "rows": 2,
+                "id": "id_pay_sub_notes",
+            }
+        ),
     )
 
 

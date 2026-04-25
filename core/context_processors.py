@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from django.conf import settings
+from django.db.models import Count, Q
 
 
 def _compute_default_asset_buster() -> str:
@@ -72,9 +73,10 @@ def compute_nav_notifications(user) -> dict | None:
     ``None`` if the user shouldn't see the notification badge.
 
     Used by both the context processor (initial render) and the live
-    polling endpoint, so they stay in lock-step. Two tiny COUNT queries
-    on indexed columns; never cached so management sees the change the
-    instant they approve or mark something paid.
+    polling endpoint, so they stay in lock-step. One aggregate on ``Sale``
+    (awaiting + pending counts) plus one COUNT on submissions; never
+    cached so management sees the change the instant they approve or
+    mark something paid.
     """
     if not user or not getattr(user, "is_authenticated", False):
         return None
@@ -88,11 +90,15 @@ def compute_nav_notifications(user) -> dict | None:
         from customers.models import CustomerPaymentSubmission
         from sales.models import Sale
 
-        awaiting = Sale.objects.filter(status=Sale.Status.AWAITING).count()
-        pending = Sale.objects.filter(
-            status=Sale.Status.PENDING,
-            on_account=False,
-        ).count()
+        agg = Sale.objects.aggregate(
+            awaiting=Count("id", filter=Q(status=Sale.Status.AWAITING)),
+            pending=Count(
+                "id",
+                filter=Q(status=Sale.Status.PENDING, on_account=False),
+            ),
+        )
+        awaiting = int(agg["awaiting"] or 0)
+        pending = int(agg["pending"] or 0)
         submissions = CustomerPaymentSubmission.objects.filter(
             status=CustomerPaymentSubmission.Status.AWAITING
         ).count()

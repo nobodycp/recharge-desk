@@ -39,6 +39,23 @@
   margin-bottom: 0.15rem;
 }
 
+.employee-notes-summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1.05em;
+  text-align: center;
+  font-weight: 600;
+  margin-inline-end: 0.28em;
+  opacity: 0.88;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: -0.05em;
+}
+
+.employee-notes-details[open] .employee-notes-summary::before {
+  content: "\2212";
+}
+
 .htmx-request .htmx-indicator {
   opacity: 1 !important;
 }
@@ -299,6 +316,18 @@
 
 #rdCustomerPaySubModal .form-control {
   min-height: 2.45rem;
+}
+
+#rdCustomerPaySubModal textarea#id_pay_sub_notes.form-control {
+  min-height: 0;
+  padding-top: 0.42rem;
+  padding-bottom: 0.42rem;
+  line-height: 1.45;
+  font-size: inherit;
+}
+
+#rdCustomerPaySubModal .rd-pay-sub-notes-wrap .employee-notes-details {
+  padding: 0.1rem 0;
 }
 
 #rdCustomerPaySubModal .modal-footer {
