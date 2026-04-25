@@ -5,6 +5,7 @@
   <span class="text-truncate">{% trans "New sale" %}</span>
   <button
     type="button"
+    id="rd-open-pay-sub-modal"
     class="btn btn-sm btn-outline-primary flex-shrink-0"
     data-bs-toggle="modal"
     data-bs-target="#rdCustomerPaySubModal"
@@ -233,13 +234,13 @@
     <div class="modal-content">
       <div class="modal-header py-2">
         <h2 class="modal-title h6 mb-0" id="rdCustomerPaySubModalLabel">{% trans "Record customer payment" %}</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+        <button type="button" class="btn-close" id="rd-pay-sub-close-x" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
       </div>
       <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
         {% csrf_token %}
         <div class="modal-body">
-          <p class="small text-secondary mb-2">{% trans "Submitted for management approval before it affects the customer balance." %}</p>
-          <div class="mb-3">
+          <p class="small text-secondary mb-2 rd-pay-sub-note">{% trans "Submitted for management approval before it affects the customer balance." %}</p>
+          <div class="mb-3 rd-pay-sub-block">
             <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
             <input
               type="search"
@@ -250,17 +251,17 @@
             >
             <div class="list-group list-group-flush small mt-1 rd-pay-sub-ac" id="rd-pay-sub-ac" hidden role="listbox"></div>
             {{ pay_sub_form.customer }}
-            <div class="mt-2 small" id="rd-pay-sub-balance-line" hidden>
+            <div class="mt-2 small rd-pay-sub-balance" id="rd-pay-sub-balance-line" hidden>
               <span class="text-secondary">{% trans "Current balance (owed to shop)" %}:</span>
               <span class="fw-semibold tabular-nums" id="rd-pay-sub-balance-val">—</span>
             </div>
           </div>
-          <div class="mb-3">
+          <div class="mb-3 rd-pay-sub-block">
             <label class="form-label small fw-semibold" for="id_pay_sub_amount">{{ pay_sub_form.amount.label }}</label>
             {{ pay_sub_form.amount }}
             {{ pay_sub_form.amount.errors }}
           </div>
-          <div class="mb-3">
+          <div class="mb-3 rd-pay-sub-block">
             <div class="form-label small fw-semibold mb-1">{% trans "Payment method" %}</div>
             {{ pay_sub_form.payment_method }}
             {{ pay_sub_form.payment_method.errors }}
@@ -279,13 +280,13 @@
               {% endfor %}
             </div>
           </div>
-          <div class="mb-0">
+          <div class="mb-0 rd-pay-sub-block">
             <label class="form-label small fw-semibold" for="id_pay_sub_notes">{{ pay_sub_form.notes.label }}</label>
             {{ pay_sub_form.notes }}
           </div>
         </div>
         <div class="modal-footer py-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="rd-pay-sub-cancel" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
           <button type="submit" class="btn btn-primary btn-sm" id="rd-pay-sub-submit">{% trans "Submit" %}</button>
         </div>
       </form>
@@ -369,7 +370,7 @@
         if (pmHid) pmHid.value = tile.getAttribute("data-payment-id") || "";
       });
     });
-    modal.addEventListener("hidden.bs.modal", function () {
+    function resetPaySubModal() {
       clearCustomer();
       if (acBox) {
         acBox.innerHTML = "";
@@ -383,7 +384,45 @@
       if (f) f.reset();
       if (custHid) custHid.value = "";
       if (balLine) balLine.hidden = true;
-    });
+    }
+
+    var hasBootstrapModal = !!(window.bootstrap && window.bootstrap.Modal);
+    if (hasBootstrapModal) {
+      modal.addEventListener("hidden.bs.modal", resetPaySubModal);
+    } else {
+      var openBtn = document.getElementById("rd-open-pay-sub-modal");
+      var closeX = document.getElementById("rd-pay-sub-close-x");
+      var closeCancel = document.getElementById("rd-pay-sub-cancel");
+      var backdrop = null;
+      function closeFallbackModal() {
+        modal.classList.remove("show");
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        backdrop = null;
+        resetPaySubModal();
+      }
+      function openFallbackModal() {
+        modal.style.display = "block";
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop fade show";
+        document.body.appendChild(backdrop);
+      }
+      if (openBtn) openBtn.addEventListener("click", function (e) { e.preventDefault(); openFallbackModal(); });
+      if (closeX) closeX.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
+      if (closeCancel) closeCancel.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeFallbackModal();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal.classList.contains("show")) closeFallbackModal();
+      });
+    }
+
     var subForm = document.getElementById("rd-pay-sub-form");
     if (subForm) {
       subForm.addEventListener("submit", function (e) {

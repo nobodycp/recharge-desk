@@ -16,9 +16,9 @@
   </a>
   <a class="rd-nav-link {% if ns == 'customers' and un == 'customer_payment_submissions_list' %}is-active{% endif %}" href="{% url 'customers:customer_payment_submissions_list' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-    <span>{% trans "Payment submissions" %}</span>
+    <span>{% trans "Settlement requests" %}</span>
   </a>
-  <a class="rd-nav-link {% if ns == 'customers' %}is-active{% endif %}" href="{% url 'customers:customer_list' %}">
+  <a class="rd-nav-link {% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %}is-active{% endif %}" href="{% url 'customers:customer_list' %}">
     <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 11h-6"/><path d="M20 8v6"/></svg></span>
     <span>{% trans "Customers" %}</span>
   </a>

@@ -671,8 +671,14 @@ body.app-shell {
 
 @media (max-width: 480px) {
   .rd-search-panel {
-    inset-inline-start: -0.5rem;
-    width: calc(100vw - 1rem);
+    inset-inline-start: 0;
+    width: min(21rem, calc(100vw - 0.75rem));
+  }
+  .rd-search-input {
+    font-size: 0.78rem;
+  }
+  .rd-search-item-label {
+    font-size: 0.78rem;
   }
   .rd-search-kbd { display: none; }
 }

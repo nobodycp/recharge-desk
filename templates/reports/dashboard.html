@@ -17,19 +17,18 @@
         <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
         <div class="rd-stat-pair">
           <a class="rd-stat-pair__item" href="{% url 'sales:pending_payments' %}">
-            <span class="rd-stat-pair__lbl">{% trans "مدفوعات" %}</span>
+            <span class="rd-stat-pair__lbl">{% trans "Payments" %}</span>
             <span class="rd-stat-pair__val kpi-warning">{{ pending_count|intcomma }}</span>
           </a>
           <span class="rd-stat-pair__divider" aria-hidden="true"></span>
           <a class="rd-stat-pair__item" href="{% url 'sales:awaiting_approvals' %}">
-            <span class="rd-stat-pair__lbl">{% trans "ديون" %}</span>
+            <span class="rd-stat-pair__lbl">{% trans "Debts" %}</span>
             <span class="rd-stat-pair__val kpi-warning">{{ awaiting_count|intcomma }}</span>
           </a>
-        </div>
-        <div class="mt-2 pt-2 border-top small" style="border-color: var(--bs-border-color);">
-          <a class="d-flex justify-content-between align-items-center text-decoration-none text-body" href="{% url 'customers:customer_payment_submissions_list' %}">
-            <span class="text-secondary">{% trans "Payment submissions" %}</span>
-            <span class="fw-semibold tabular-nums kpi-warning">{{ payment_submissions_awaiting_count|intcomma }}</span>
+          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
+          <a class="rd-stat-pair__item" href="{% url 'customers:customer_payment_submissions_list' %}">
+            <span class="rd-stat-pair__lbl">{% trans "Settlements" %}</span>
+            <span class="rd-stat-pair__val kpi-warning">{{ payment_submissions_awaiting_count|intcomma }}</span>
           </a>
         </div>
       </div>
@@ -72,7 +71,7 @@
         <div class="rd-stat-icon rd-stat-icon--danger" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 5c0-1.66 4-3 9-3s9 1.34 9 3-4 3-9 3-9-1.34-9-3z"/></svg>
         </div>
-        <div class="rd-label mb-1">{% trans "إجمالي ديون العملاء" %}</div>
+        <div class="rd-label mb-1">{% trans "Total customer debt" %}</div>
         <div class="rd-stat-value kpi-expense">{{ customer_debt_total|intcomma }}</div>
         <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
       </div>

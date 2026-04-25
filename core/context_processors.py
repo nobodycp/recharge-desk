@@ -68,7 +68,7 @@ def theme(request):
 
 
 def compute_nav_notifications(user) -> dict | None:
-    """Return ``{awaiting, pending, total}`` for the given user, or
+    """Return ``{awaiting, pending, submissions, total}`` for the given user, or
     ``None`` if the user shouldn't see the notification badge.
 
     Used by both the context processor (initial render) and the live
@@ -85,6 +85,7 @@ def compute_nav_notifications(user) -> dict | None:
         if not is_management(user):
             return None
 
+        from customers.models import CustomerPaymentSubmission
         from sales.models import Sale
 
         awaiting = Sale.objects.filter(status=Sale.Status.AWAITING).count()
@@ -92,13 +93,17 @@ def compute_nav_notifications(user) -> dict | None:
             status=Sale.Status.PENDING,
             on_account=False,
         ).count()
+        submissions = CustomerPaymentSubmission.objects.filter(
+            status=CustomerPaymentSubmission.Status.AWAITING
+        ).count()
     except Exception:
         return None
 
     return {
         "awaiting": awaiting,
         "pending": pending,
-        "total": awaiting + pending,
+        "submissions": submissions,
+        "total": awaiting + pending + submissions,
     }
 
 

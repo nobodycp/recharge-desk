@@ -219,7 +219,7 @@
   // Polls /notifications/poll/ every POLL_INTERVAL ms and updates the
   // badge count, the per-row counts inside the dropdown, and the
   // "all caught up" empty state in place — no full page reload needed
-  // for a sale that just landed in awaiting / pending to surface.
+  // for an awaiting item (sales/debts/payment submissions) to surface.
   //
   // Pauses while the tab is hidden (Page Visibility API) so background
   // tabs don't pile up requests, and refreshes immediately whenever
@@ -236,6 +236,7 @@
     var aria = root.querySelector("[data-rd-notif-aria]");
     var awaitingEl = root.querySelector("[data-rd-notif-awaiting]");
     var pendingEl = root.querySelector("[data-rd-notif-pending]");
+    var submissionsEl = root.querySelector("[data-rd-notif-submissions]");
     var emptyEl = root.querySelector("[data-rd-notif-empty]");
     var trigger = root.querySelector(".rd-notif-trigger");
 
@@ -254,9 +255,11 @@
       var total = Number(p.total || 0);
       var awaiting = Number(p.awaiting || 0);
       var pending = Number(p.pending || 0);
+      var submissions = Number(p.submissions || 0);
 
       setCount(awaitingEl, awaiting);
       setCount(pendingEl, pending);
+      setCount(submissionsEl, submissions);
 
       if (badge) {
         badge.textContent = String(total);
