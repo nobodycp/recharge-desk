@@ -25,6 +25,11 @@ from customers.views.actions import (
     customer_remove_phone,
     customer_write_off,
 )
+from customers.views.payment_submissions import (
+    customer_payment_submission_approve,
+    customer_payment_submission_reject,
+    customer_payment_submissions_list,
+)
 from customers.views.api import api_customer_create, api_customer_lookup
 from customers.views.exports import (
     customer_payments_export_csv,
@@ -58,6 +63,10 @@ __all__ = [
     "customer_ledger_delete",
     "customer_add_phone",
     "customer_remove_phone",
+    # payment submissions queue
+    "customer_payment_submissions_list",
+    "customer_payment_submission_approve",
+    "customer_payment_submission_reject",
     # api
     "api_customer_lookup",
     "api_customer_create",

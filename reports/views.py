@@ -32,12 +32,12 @@ def _local_today():
 @management_required
 def dashboard(request):
     today = _local_today()
-    from customers.models import Customer
+    from customers.models import Customer, CustomerPaymentSubmission
 
     # Each scalar aggregate below is wrapped in `cached_kpi`. The cache
     # version is bumped automatically by core.signals whenever a Sale,
-    # Expense, CompanyBalanceTransaction, CustomerLedger or
-    # CustomerPayment row changes — see core.kpi_cache for the full
+    # Expense, CompanyBalanceTransaction, CustomerLedger, CustomerPayment,
+    # or CustomerPaymentSubmission row changes — see core.kpi_cache for the full
     # rationale. Date-bucketed values include `today` in the cache key
     # so a midnight rollover doesn't serve yesterday's number.
     today_key = today.isoformat()
@@ -53,6 +53,12 @@ def dashboard(request):
     awaiting_count = cached_kpi(
         "dashboard:awaiting_count",
         lambda: Sale.objects.filter(status=Sale.Status.AWAITING).count(),
+    )
+    payment_submissions_awaiting_count = cached_kpi(
+        "dashboard:payment_submissions_awaiting_count",
+        lambda: CustomerPaymentSubmission.objects.filter(
+            status=CustomerPaymentSubmission.Status.AWAITING
+        ).count(),
     )
     customer_debt_total = cached_kpi(
         "dashboard:customer_debt_total",
@@ -202,6 +208,7 @@ def dashboard(request):
             "title": _("Dashboard"),
             "pending_count": pending_count,
             "awaiting_count": awaiting_count,
+            "payment_submissions_awaiting_count": payment_submissions_awaiting_count,
             "customer_debt_total": customer_debt_total,
             "esim_sales_count": esim_sales_count,
             "today_loss_from_zero": today_loss_from_zero,

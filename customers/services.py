@@ -16,7 +16,13 @@ from django.utils.translation import gettext_lazy as _
 
 from audit.models import AuditAction
 from audit.services import record as audit_record
-from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPhone
+from customers.models import (
+    Customer,
+    CustomerLedger,
+    CustomerPayment,
+    CustomerPaymentSubmission,
+    CustomerPhone,
+)
 
 
 def _apply_balance_delta(customer: Customer, delta: Decimal) -> None:
@@ -162,6 +168,54 @@ def reject_sale(*, sale, user):
     return result
 
 
+def _apply_customer_payment(
+    *,
+    customer_locked: Customer,
+    amount: Decimal,
+    payment_method,
+    notes: str,
+    user,
+) -> CustomerPayment:
+    """Persist payment, ledger, balance delta, and FIFO settlement.
+
+    Caller must already hold a row lock on ``customer_locked`` via
+    ``select_for_update``.
+    """
+    amt = Decimal(amount)
+    if amt <= 0:
+        raise ValueError(_("Payment amount must be positive."))
+    payment = CustomerPayment.objects.create(
+        customer=customer_locked,
+        amount=amt,
+        payment_method=payment_method,
+        notes=(notes or "").strip(),
+        created_by=user,
+    )
+    CustomerLedger.objects.create(
+        customer=customer_locked,
+        entry_type=CustomerLedger.EntryType.PAYMENT,
+        amount=amt,
+        payment=payment,
+        created_by=user,
+    )
+    _apply_balance_delta(customer_locked, -amt)
+
+    reapply_settlements_for_customer(
+        customer=customer_locked, triggering_payment=payment, user=user
+    )
+    audit_record(
+        AuditAction.PAY,
+        payment,
+        actor=user,
+        changes={
+            "customer_id": customer_locked.pk,
+            "amount": str(amt),
+            "payment_method_id": getattr(payment_method, "pk", None),
+        },
+    )
+    return payment
+
+
 @transaction.atomic
 def record_customer_payment(
     *,
@@ -176,36 +230,106 @@ def record_customer_payment(
         raise ValueError(_("Payment amount must be positive."))
 
     customer_locked = Customer.objects.select_for_update().get(pk=customer.pk)
-    payment = CustomerPayment.objects.create(
-        customer=customer_locked,
-        amount=amount,
+    return _apply_customer_payment(
+        customer_locked=customer_locked,
+        amount=Decimal(amount),
+        payment_method=payment_method,
+        notes=notes or "",
+        user=user,
+    )
+
+
+@transaction.atomic
+def submit_customer_payment_submission(
+    *,
+    customer: Customer,
+    amount: Decimal,
+    payment_method,
+    notes: str = "",
+    user,
+) -> CustomerPaymentSubmission:
+    """Create an awaiting payment submission (no ledger/balance change yet)."""
+    if not customer.is_active:
+        raise ValueError(_("Customer is inactive."))
+    amt = Decimal(amount or 0)
+    if amt <= 0:
+        raise ValueError(_("Payment amount must be positive."))
+    sub = CustomerPaymentSubmission.objects.create(
+        customer=customer,
+        amount=amt,
         payment_method=payment_method,
         notes=(notes or "").strip(),
         created_by=user,
-    )
-    CustomerLedger.objects.create(
-        customer=customer_locked,
-        entry_type=CustomerLedger.EntryType.PAYMENT,
-        amount=amount,
-        payment=payment,
-        created_by=user,
-    )
-    _apply_balance_delta(customer_locked, -Decimal(amount))
-
-    reapply_settlements_for_customer(
-        customer=customer_locked, triggering_payment=payment, user=user
+        status=CustomerPaymentSubmission.Status.AWAITING,
     )
     audit_record(
-        AuditAction.PAY,
-        payment,
+        AuditAction.CREATE,
+        sub,
         actor=user,
         changes={
-            "customer_id": customer_locked.pk,
-            "amount": str(amount),
+            "customer_id": customer.pk,
+            "amount": str(amt),
             "payment_method_id": getattr(payment_method, "pk", None),
         },
     )
+    return sub
+
+
+@transaction.atomic
+def approve_customer_payment_submission(
+    *, submission: CustomerPaymentSubmission, user
+) -> CustomerPayment:
+    """Apply the payment and mark the submission approved."""
+    sub = CustomerPaymentSubmission.objects.select_for_update().get(pk=submission.pk)
+    if sub.status != CustomerPaymentSubmission.Status.AWAITING:
+        raise ValueError(_("Only awaiting submissions can be approved."))
+    customer_locked = Customer.objects.select_for_update().get(pk=sub.customer_id)
+    payment = _apply_customer_payment(
+        customer_locked=customer_locked,
+        amount=sub.amount,
+        payment_method=sub.payment_method,
+        notes=sub.notes,
+        user=user,
+    )
+    sub.status = CustomerPaymentSubmission.Status.APPROVED
+    sub.approved_by = user
+    sub.approved_at = timezone.now()
+    sub.save(update_fields=["status", "approved_by", "approved_at"])
+    audit_record(
+        AuditAction.APPROVE,
+        sub,
+        actor=user,
+        changes={"customer_payment_id": payment.pk},
+    )
     return payment
+
+
+@transaction.atomic
+def reject_customer_payment_submission(
+    *, submission: CustomerPaymentSubmission, user, reason: str = ""
+) -> None:
+    """Decline a submission without touching balances."""
+    sub = CustomerPaymentSubmission.objects.select_for_update().get(pk=submission.pk)
+    if sub.status != CustomerPaymentSubmission.Status.AWAITING:
+        raise ValueError(_("Only awaiting submissions can be rejected."))
+    sub.status = CustomerPaymentSubmission.Status.REJECTED
+    sub.rejected_by = user
+    sub.rejected_at = timezone.now()
+    sub.reject_reason = (reason or "").strip()
+    sub.save(
+        update_fields=[
+            "status",
+            "rejected_by",
+            "rejected_at",
+            "reject_reason",
+        ]
+    )
+    audit_record(
+        AuditAction.REJECT,
+        sub,
+        actor=user,
+        changes={"reason": sub.reject_reason},
+    )
 
 
 @transaction.atomic

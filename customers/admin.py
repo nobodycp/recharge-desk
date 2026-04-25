@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPhone
+from customers.models import (
+    Customer,
+    CustomerLedger,
+    CustomerPayment,
+    CustomerPaymentSubmission,
+    CustomerPhone,
+)
 
 
 class CustomerPhoneInline(admin.TabularInline):
@@ -15,6 +21,21 @@ class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("name", "phones__phone")
     readonly_fields = ("current_balance", "created_at", "updated_at")
     inlines = [CustomerPhoneInline]
+
+
+@admin.register(CustomerPaymentSubmission)
+class CustomerPaymentSubmissionAdmin(admin.ModelAdmin):
+    list_display = (
+        "customer",
+        "amount",
+        "payment_method",
+        "status",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("status", "payment_method")
+    search_fields = ("customer__name", "notes")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(CustomerPayment)

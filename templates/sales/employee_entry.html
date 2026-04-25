@@ -1,5 +1,16 @@
 {% extends "base_employee.html" %}
 {% load i18n static l10n ui_tags %}
+{% block employee_header %}
+<div class="d-flex align-items-center justify-content-between gap-2 flex-wrap w-100">
+  <span class="text-truncate">{% trans "New sale" %}</span>
+  <button
+    type="button"
+    class="btn btn-sm btn-outline-primary flex-shrink-0"
+    data-bs-toggle="modal"
+    data-bs-target="#rdCustomerPaySubModal"
+  >{% trans "Record payment" %}</button>
+</div>
+{% endblock %}
 {% block content %}
 <div class="rd-sale-form">
   <form
@@ -208,7 +219,187 @@
   {% endif %}
 </div>
 
+<div
+  class="modal fade"
+  id="rdCustomerPaySubModal"
+  tabindex="-1"
+  aria-labelledby="rdCustomerPaySubModalLabel"
+  aria-hidden="true"
+  data-lookup-url="{% url 'customers:api_customer_lookup' %}"
+  data-msg-customer="{{ _('Choose a customer from the suggestions list.')|escapejs }}"
+  data-msg-payment="{{ _('Choose a payment method tile.')|escapejs }}"
+>
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h2 class="modal-title h6 mb-0" id="rdCustomerPaySubModalLabel">{% trans "Record customer payment" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+      <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="small text-secondary mb-2">{% trans "Submitted for management approval before it affects the customer balance." %}</p>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
+            <input
+              type="search"
+              class="form-control form-control-sm"
+              id="rd-pay-sub-search"
+              autocomplete="off"
+              placeholder="{% trans 'Type name or phone…' %}"
+            >
+            <div class="list-group list-group-flush small mt-1 rd-pay-sub-ac" id="rd-pay-sub-ac" hidden role="listbox"></div>
+            {{ pay_sub_form.customer }}
+            <div class="mt-2 small" id="rd-pay-sub-balance-line" hidden>
+              <span class="text-secondary">{% trans "Current balance (owed to shop)" %}:</span>
+              <span class="fw-semibold tabular-nums" id="rd-pay-sub-balance-val">—</span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold" for="id_pay_sub_amount">{{ pay_sub_form.amount.label }}</label>
+            {{ pay_sub_form.amount }}
+            {{ pay_sub_form.amount.errors }}
+          </div>
+          <div class="mb-3">
+            <div class="form-label small fw-semibold mb-1">{% trans "Payment method" %}</div>
+            {{ pay_sub_form.payment_method }}
+            {{ pay_sub_form.payment_method.errors }}
+            <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="rd-pay-sub-payment-tiles">
+              {% for pm in payment_methods %}
+                <div class="col">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip rd-pay-sub-pm-tile d-flex flex-column align-items-center justify-content-center"
+                    data-payment-id="{{ pm.pk }}"
+                    title="{{ pm.name|tdb }}"
+                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb %}</button>
+                </div>
+              {% empty %}
+                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-0">
+            <label class="form-label small fw-semibold" for="id_pay_sub_notes">{{ pay_sub_form.notes.label }}</label>
+            {{ pay_sub_form.notes }}
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="rd-pay-sub-submit">{% trans "Submit" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
+(function () {
+  var modal = document.getElementById("rdCustomerPaySubModal");
+  if (modal) {
+    var lookupUrl = modal.getAttribute("data-lookup-url") || "";
+    var searchInp = document.getElementById("rd-pay-sub-search");
+    var acBox = document.getElementById("rd-pay-sub-ac");
+    var custHid = document.getElementById("id_pay_sub_customer");
+    var balLine = document.getElementById("rd-pay-sub-balance-line");
+    var balVal = document.getElementById("rd-pay-sub-balance-val");
+    var pmHid = document.getElementById("id_pay_sub_payment_method");
+    var tmr;
+    function clearCustomer() {
+      if (custHid) custHid.value = "";
+      if (balLine) balLine.hidden = true;
+      if (searchInp) searchInp.value = "";
+    }
+    function pickCustomer(id, name, balance) {
+      if (custHid) custHid.value = String(id);
+      if (searchInp) searchInp.value = name;
+      if (acBox) acBox.hidden = true;
+      if (balLine) balLine.hidden = false;
+      if (balVal) balVal.textContent = balance;
+    }
+    function renderResults(items) {
+      if (!acBox) return;
+      acBox.innerHTML = "";
+      items.forEach(function (it) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "list-group-item list-group-item-action py-2";
+        btn.setAttribute("role", "option");
+        btn.textContent = it.name + " · " + it.balance;
+        btn.addEventListener("click", function () {
+          pickCustomer(it.id, it.name, it.balance);
+        });
+        acBox.appendChild(btn);
+      });
+      acBox.hidden = items.length === 0;
+    }
+    function runLookup(q) {
+      if (!lookupUrl || q.length < 2) {
+        if (acBox) acBox.hidden = true;
+        return;
+      }
+      fetch(lookupUrl + "?q=" + encodeURIComponent(q), { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var rows = (data && data.results) ? data.results : [];
+          renderResults(rows);
+        })
+        .catch(function () {
+          if (acBox) acBox.hidden = true;
+        });
+    }
+    if (searchInp) {
+      searchInp.addEventListener("input", function () {
+        if (custHid && searchInp.value.trim() === "") clearCustomer();
+        window.clearTimeout(tmr);
+        tmr = window.setTimeout(function () {
+          runLookup(searchInp.value.trim());
+        }, 250);
+      });
+      searchInp.addEventListener("focus", function () {
+        runLookup(searchInp.value.trim());
+      });
+    }
+    document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (tile) {
+      tile.addEventListener("click", function () {
+        document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
+          t.classList.remove("is-active");
+        });
+        tile.classList.add("is-active");
+        if (pmHid) pmHid.value = tile.getAttribute("data-payment-id") || "";
+      });
+    });
+    modal.addEventListener("hidden.bs.modal", function () {
+      clearCustomer();
+      if (acBox) {
+        acBox.innerHTML = "";
+        acBox.hidden = true;
+      }
+      document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
+        t.classList.remove("is-active");
+      });
+      if (pmHid) pmHid.value = "";
+      var f = document.getElementById("rd-pay-sub-form");
+      if (f) f.reset();
+      if (custHid) custHid.value = "";
+      if (balLine) balLine.hidden = true;
+    });
+    var subForm = document.getElementById("rd-pay-sub-form");
+    if (subForm) {
+      subForm.addEventListener("submit", function (e) {
+        if (!custHid || !String(custHid.value || "").trim()) {
+          e.preventDefault();
+          window.alert(modal.getAttribute("data-msg-customer") || "");
+          return;
+        }
+        if (!pmHid || !String(pmHid.value || "").trim()) {
+          e.preventDefault();
+          window.alert(modal.getAttribute("data-msg-payment") || "");
+        }
+      });
+    }
+  }
+})();
 (function () {
   function getEsimExtra() {
     var f = document.getElementById("employee-sale-form");

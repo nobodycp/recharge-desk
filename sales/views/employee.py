@@ -11,7 +11,9 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import employee_required, is_employee
 from companies.models import Company, Product, ProductLine
-from customers.services import resolve_or_create_customer_for_sale
+from customers.forms import EmployeeCustomerPaymentSubmissionForm
+from customers.services import resolve_or_create_customer_for_sale, submit_customer_payment_submission
+from customers.views._shared import flash_form_errors
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleForm, ManagementSaleEditForm
 from sales.models import PaymentMethod, Sale
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
@@ -120,8 +122,31 @@ def employee_entry(request):
             "selected_product_id": selected_product_id,
             "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
             "esim_extra": ESIM_EXTRA_COST,
+            "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(),
         },
     )
+
+
+@employee_required
+@require_POST
+def employee_submit_customer_payment_submission(request):
+    form = EmployeeCustomerPaymentSubmissionForm(request.POST)
+    if not form.is_valid():
+        flash_form_errors(request, form)
+        return redirect("sales:employee_entry")
+    try:
+        submit_customer_payment_submission(
+            customer=form.cleaned_data["customer"],
+            amount=form.cleaned_data["amount"],
+            payment_method=form.cleaned_data["payment_method"],
+            notes=form.cleaned_data.get("notes") or "",
+            user=request.user,
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, _("Payment submitted for management approval."))
+    return redirect("sales:employee_entry")
 
 
 @employee_required

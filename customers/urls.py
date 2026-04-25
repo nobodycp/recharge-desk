@@ -5,6 +5,21 @@ from customers import views
 app_name = "customers"
 
 urlpatterns = [
+    path(
+        "management/customers/payment-submissions/",
+        views.customer_payment_submissions_list,
+        name="customer_payment_submissions_list",
+    ),
+    path(
+        "management/customers/payment-submissions/<int:pk>/approve/",
+        views.customer_payment_submission_approve,
+        name="customer_payment_submission_approve",
+    ),
+    path(
+        "management/customers/payment-submissions/<int:pk>/reject/",
+        views.customer_payment_submission_reject,
+        name="customer_payment_submission_reject",
+    ),
     path("management/customers/", views.customer_list, name="customer_list"),
     path(
         "management/customers/export.csv",

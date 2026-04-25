@@ -23,6 +23,7 @@ TRACKED_MODELS = (
     ("expenses", "Expense"),
     ("customers", "CustomerLedger"),
     ("customers", "CustomerPayment"),
+    ("customers", "CustomerPaymentSubmission"),
 )
 
 

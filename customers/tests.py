@@ -5,8 +5,9 @@ from django.db.models import Sum
 from django.test import TestCase
 
 from companies.models import Company, Product, ProductLine
-from customers.models import Customer, CustomerLedger, CustomerPayment
+from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPaymentSubmission
 from customers.services import (
+    approve_customer_payment_submission,
     approve_sale,
     create_customer,
     delete_customer_completely,
@@ -14,7 +15,9 @@ from customers.services import (
     delete_ledger_entry,
     record_customer_adjustment,
     record_customer_payment,
+    reject_customer_payment_submission,
     reject_sale,
+    submit_customer_payment_submission,
     write_off_customer_balance,
 )
 from sales.models import PaymentMethod, Sale
@@ -632,4 +635,96 @@ class CustomerListQueryCountTests(CustomerARTestCase):
             len(ctx.captured_queries),
             20,
             f"customer_list issued {len(ctx.captured_queries)} queries; phones prefetch likely regressed.",
+        )
+
+
+class CustomerPaymentSubmissionFlowTests(CustomerARTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        from accounts.models import UserProfile
+
+        cls.emp = User.objects.create_user("emp_pay_sub", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+    def test_submit_does_not_change_balance_approve_does(self):
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 5000), user=self.user)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(5000))
+
+        sub = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(3000),
+            payment_method=self.bank,
+            notes="bp",
+            user=self.emp,
+        )
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.AWAITING)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(5000))
+
+        approve_customer_payment_submission(submission=sub, user=self.user)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(2000))
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.APPROVED)
+        self.assertTrue(
+            CustomerPayment.objects.filter(customer=c, amount=_decimal(3000)).exists()
+        )
+
+    def test_overpayment_approval_makes_negative_balance(self):
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 100), user=self.user)
+        sub = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(250),
+            payment_method=self.cash,
+            notes="",
+            user=self.emp,
+        )
+        approve_customer_payment_submission(submission=sub, user=self.user)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(-150))
+
+    def test_reject_leaves_balance(self):
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 400), user=self.user)
+        sub = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(100),
+            payment_method=self.cash,
+            notes="",
+            user=self.emp,
+        )
+        reject_customer_payment_submission(submission=sub, user=self.user, reason="no")
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(400))
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.REJECTED)
+
+    def test_employee_http_post_creates_submission(self):
+        from django.urls import reverse
+
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 80), user=self.user)
+        self.client.force_login(self.emp)
+        r = self.client.post(
+            reverse("sales:employee_submit_customer_payment_submission"),
+            {
+                "customer": str(c.pk),
+                "amount": "25.00",
+                "payment_method": str(self.cash.pk),
+                "notes": "test",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(
+            CustomerPaymentSubmission.objects.filter(
+                customer=c, status=CustomerPaymentSubmission.Status.AWAITING
+            ).count(),
+            1,
         )

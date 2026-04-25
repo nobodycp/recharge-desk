@@ -7,6 +7,40 @@ from customers.models import Customer
 from sales.models import PaymentMethod
 
 
+class EmployeeCustomerPaymentSubmissionForm(forms.Form):
+    """POST from the sales entry screen: record a payment for management approval."""
+
+    customer = forms.ModelChoiceField(
+        label=_("Customer"),
+        queryset=Customer.objects.filter(is_active=True),
+        widget=forms.HiddenInput(attrs={"id": "id_pay_sub_customer"}),
+    )
+    amount = forms.DecimalField(
+        label=_("Amount"),
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0.01",
+                "id": "id_pay_sub_amount",
+            }
+        ),
+    )
+    payment_method = forms.ModelChoiceField(
+        label=_("Payment method"),
+        queryset=PaymentMethod.objects.filter(is_active=True).order_by("name"),
+        widget=forms.HiddenInput(attrs={"id": "id_pay_sub_payment_method"}),
+    )
+    notes = forms.CharField(
+        label=_("Notes"),
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2, "id": "id_pay_sub_notes"}),
+    )
+
+
 class CustomerForm(forms.ModelForm):
     """Create / edit a customer record (manager-side)."""
 

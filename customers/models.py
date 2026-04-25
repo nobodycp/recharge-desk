@@ -124,6 +124,78 @@ class CustomerPayment(models.Model):
         return f"{self.customer.name} · {self.amount}"
 
 
+class CustomerPaymentSubmission(models.Model):
+    """Employee-recorded customer payment awaiting management approval.
+
+    Until approved, no CustomerPayment, ledger row, balance change, or FIFO
+    settlement runs — see customers.services.approve_customer_payment_submission.
+    """
+
+    class Status(models.TextChoices):
+        AWAITING = "awaiting", _("Awaiting approval")
+        APPROVED = "approved", _("Approved")
+        REJECTED = "rejected", _("Rejected")
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.PROTECT,
+        related_name="payment_submissions",
+        verbose_name=_("customer"),
+    )
+    amount = models.DecimalField(_("amount"), max_digits=14, decimal_places=2)
+    payment_method = models.ForeignKey(
+        "sales.PaymentMethod",
+        on_delete=models.PROTECT,
+        related_name="customer_payment_submissions",
+        verbose_name=_("payment method"),
+    )
+    notes = models.TextField(_("notes"), blank=True)
+    status = models.CharField(
+        _("status"),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.AWAITING,
+        db_index=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="customer_payment_submissions_created",
+        verbose_name=_("submitted by"),
+    )
+    created_at = models.DateTimeField(_("submitted at"), auto_now_add=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="customer_payment_submissions_approved",
+        verbose_name=_("approved by"),
+    )
+    approved_at = models.DateTimeField(_("approved at"), null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="customer_payment_submissions_rejected",
+        verbose_name=_("rejected by"),
+    )
+    rejected_at = models.DateTimeField(_("rejected at"), null=True, blank=True)
+    reject_reason = models.TextField(_("reject reason"), blank=True)
+
+    class Meta:
+        verbose_name = _("customer payment submission")
+        verbose_name_plural = _("customer payment submissions")
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"], name="cust_pay_sub_stat_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.customer.name} · {self.amount} ({self.get_status_display()})"
+
+
 class CustomerLedger(models.Model):
     """Append-only ledger — mirrors CompanyBalanceTransaction style.
 

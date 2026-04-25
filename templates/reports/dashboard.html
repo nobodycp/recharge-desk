@@ -26,6 +26,12 @@
             <span class="rd-stat-pair__val kpi-warning">{{ awaiting_count|intcomma }}</span>
           </a>
         </div>
+        <div class="mt-2 pt-2 border-top small" style="border-color: var(--bs-border-color);">
+          <a class="d-flex justify-content-between align-items-center text-decoration-none text-body" href="{% url 'customers:customer_payment_submissions_list' %}">
+            <span class="text-secondary">{% trans "Payment submissions" %}</span>
+            <span class="fw-semibold tabular-nums kpi-warning">{{ payment_submissions_awaiting_count|intcomma }}</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>

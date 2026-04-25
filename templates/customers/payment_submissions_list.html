@@ -1,0 +1,76 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Customer payments awaiting approval" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Employee-submitted payments. Approve to apply to the customer account and FIFO settlement." %}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6 col-lg-5">
+        <label class="form-label small mb-1" for="pay-sub-q">{% trans "Search" %}</label>
+        <input id="pay-sub-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="{% trans 'Customer, employee, method…' %}" autocomplete="off">
+      </div>
+      <div class="col-md-3 col-lg-2"><button class="btn btn-primary w-100" type="submit">{% trans "Apply" %}</button></div>
+      <div class="col-md-3 col-lg-2"><a class="btn btn-outline-secondary w-100" href="{% url 'customers:customer_payment_submissions_list' %}">{% trans "Reset" %}</a></div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle rd-table-modern">
+      <thead>
+        <tr>
+          <th>{% trans "When" %}</th>
+          <th>{% trans "Customer" %}</th>
+          <th class="text-end">{% trans "Amount" %}</th>
+          <th>{% trans "Payment method" %}</th>
+          <th>{% trans "Submitted by" %}</th>
+          <th>{% trans "Notes" %}</th>
+          <th class="text-end">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in page_obj %}
+          <tr>
+            <td class="small text-secondary text-nowrap">{{ row.created_at }}</td>
+            <td>
+              <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false">{{ row.customer.name }}</a>
+            </td>
+            <td class="tabular-nums text-end fw-semibold">{{ row.amount|intcomma }}</td>
+            <td>{{ row.payment_method.name }}</td>
+            <td class="small text-secondary">{{ row.created_by.username }}</td>
+            <td class="small">{% if row.notes %}{{ row.notes|truncatechars:80 }}{% else %}—{% endif %}</td>
+            <td class="text-end text-nowrap">
+              <div class="d-inline-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-1">
+                <form method="post" action="{% url 'customers:customer_payment_submission_approve' row.pk %}" class="m-0">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-success">{% trans "Approve" %}</button>
+                </form>
+                <form method="post" action="{% url 'customers:customer_payment_submission_reject' row.pk %}" class="m-0 d-flex flex-column gap-1">
+                  {% csrf_token %}
+                  <input type="text" name="reason" class="form-control form-control-sm" placeholder="{% trans 'Reject reason (optional)' %}" maxlength="500">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Reject" %}</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <div class="empty-state border-0 mb-0">{% trans "Nothing awaiting approval." %}</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
+{% endblock %}
