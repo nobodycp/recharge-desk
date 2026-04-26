@@ -23,53 +23,96 @@
 </div>
 
 <div class="rd-card overflow-hidden rd-datagrid">
-  <div class="table-responsive">
-    <table class="table mb-0 align-middle rd-table-modern">
-      <thead>
-        <tr>
-          <th>{% trans "When" %}</th>
-          <th>{% trans "Customer" %}</th>
-          <th class="text-end">{% trans "Amount" %}</th>
-          <th>{% trans "Payment method" %}</th>
-          <th>{% trans "Submitted by" %}</th>
-          <th>{% trans "Notes" %}</th>
-          <th class="text-end">{% trans "Actions" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in page_obj %}
-          <tr>
-            <td class="small text-secondary text-nowrap">{{ row.created_at }}</td>
-            <td>
-              <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false">{{ row.customer.name }}</a>
-            </td>
-            <td class="tabular-nums text-end fw-semibold">{{ row.amount|intcomma }}</td>
-            <td>{{ row.payment_method.name }}</td>
-            <td class="small text-secondary">{{ row.created_by.username }}</td>
-            <td class="small">{% if row.notes %}{{ row.notes|truncatechars:80 }}{% else %}—{% endif %}</td>
-            <td class="text-end text-nowrap">
-              <div class="d-inline-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-1">
-                <form method="post" action="{% url 'customers:customer_payment_submission_approve' row.pk %}" class="m-0">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-success">{% trans "Approve" %}</button>
-                </form>
-                <form method="post" action="{% url 'customers:customer_payment_submission_reject' row.pk %}" class="m-0 d-flex flex-column gap-1">
-                  {% csrf_token %}
-                  <input type="text" name="reason" class="form-control form-control-sm" placeholder="{% trans 'Reject reason (optional)' %}" maxlength="500">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Reject" %}</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="7" class="text-center py-5">
-              <div class="empty-state border-0 mb-0">{% trans "Nothing awaiting approval." %}</div>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern w-100">
+          <thead>
+            <tr>
+              <th scope="col">{% trans "When" %}</th>
+              <th scope="col">{% trans "Customer" %}</th>
+              <th scope="col" class="text-end">{% trans "Amount" %}</th>
+              <th scope="col">{% trans "Payment method" %}</th>
+              <th scope="col">{% trans "Submitted by" %}</th>
+              <th scope="col">{% trans "Notes" %}</th>
+              <th scope="col" class="text-end">{% trans "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in page_obj %}
+              <tr>
+                <td class="small text-secondary text-nowrap">{{ row.created_at }}</td>
+                <td>
+                  <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false">{{ row.customer.name }}</a>
+                </td>
+                <td class="tabular-nums text-end fw-semibold">{{ row.amount|intcomma }}</td>
+                <td>{{ row.payment_method.name }}</td>
+                <td class="small text-secondary">{{ row.created_by.username }}</td>
+                <td class="small">{% if row.notes %}{{ row.notes|truncatechars:80 }}{% else %}—{% endif %}</td>
+                <td class="text-end">
+                  <div class="d-flex flex-wrap gap-1 justify-content-end align-items-start">
+                    <form method="post" action="{% url 'customers:customer_payment_submission_approve' row.pk %}" class="m-0">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-success">{% trans "Approve" %}</button>
+                    </form>
+                    <form method="post" action="{% url 'customers:customer_payment_submission_reject' row.pk %}" class="m-0 d-flex flex-column gap-1 align-items-end">
+                      {% csrf_token %}
+                      <input type="text" name="reason" class="form-control form-control-sm" placeholder="{% trans 'Reject reason (optional)' %}" maxlength="500" style="min-width: 10rem;">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Reject" %}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5">
+                  <div class="empty-state border-0 mb-0">{% trans "Nothing awaiting approval." %}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none d-flex flex-column gap-2 p-2">
+      {% for row in page_obj %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-baseline gap-2">
+            <span class="small text-secondary">{{ row.created_at }}</span>
+            <span class="fw-bold tabular-nums">{{ row.amount|intcomma }}</span>
+          </div>
+          <div class="fw-semibold mt-1">
+            <a href="{% url 'customers:customer_detail' row.customer_id %}" hx-boost="false">{{ row.customer.name }}</a>
+          </div>
+          <div class="mt-2">
+            <span class="rd-mobile-k d-block">{% trans "Payment method" %}</span>
+            <span class="rd-mobile-v">{{ row.payment_method.name }}</span>
+          </div>
+          <div class="mt-1">
+            <span class="rd-mobile-k d-block">{% trans "Submitted by" %}</span>
+            <span class="rd-mobile-v small text-secondary">{{ row.created_by.username }}</span>
+          </div>
+          {% if row.notes %}
+            <div class="small text-secondary mt-2">
+              <span class="fw-semibold text-body">{% trans "Notes" %}:</span> {{ row.notes|truncatechars:120 }}
+            </div>
+          {% endif %}
+          <input type="text" name="reason" class="form-control form-control-sm mt-2" placeholder="{% trans 'Reject reason (optional)' %}" maxlength="500" form="reject-pay-sub-{{ row.pk }}" autocomplete="off">
+          <div class="rd-mobile-action-pair mt-2">
+            <form method="post" action="{% url 'customers:customer_payment_submission_approve' row.pk %}" class="m-0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-success w-100">{% trans "Approve" %}</button>
+            </form>
+            <form id="reject-pay-sub-{{ row.pk }}" method="post" action="{% url 'customers:customer_payment_submission_reject' row.pk %}" class="m-0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger w-100">{% trans "Reject" %}</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div class="empty-state">{% trans "Nothing awaiting approval." %}</div>
+      {% endfor %}
+    </div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
 </div>

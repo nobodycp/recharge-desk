@@ -1464,6 +1464,18 @@ tr.rd-row-pending {
   font-weight: 600;
 }
 
+/* Equal-width primary/secondary actions on narrow cards (approve + reject). */
+.rd-mobile-action-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.rd-mobile-action-pair > form {
+  min-width: 0;
+}
+
 .rd-copy-ref {
   cursor: pointer;
 }

@@ -2,18 +2,18 @@
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
-      <table class="table mb-0 align-middle rd-table-modern">
+      <table class="table mb-0 align-middle rd-table-modern w-100">
         <thead>
           <tr>
-            <th>{% trans "When" %}</th>
-            <th>{% trans "Customer" %}</th>
-            <th>{% trans "Company" %}</th>
-            <th>{% trans "Product" %}</th>
-            <th>{% trans "Ref" %}</th>
-            <th>{% trans "Payer" %}</th>
-            <th class="text-end">{% trans "Amount" %}</th>
-            <th>{% trans "Employee" %}</th>
-            <th class="text-end">{% trans "Actions" %}</th>
+            <th scope="col">{% trans "When" %}</th>
+            <th scope="col">{% trans "Customer" %}</th>
+            <th scope="col">{% trans "Company" %}</th>
+            <th scope="col">{% trans "Product" %}</th>
+            <th scope="col">{% trans "Ref" %}</th>
+            <th scope="col">{% trans "Payer" %}</th>
+            <th scope="col" class="text-end">{% trans "Amount" %}</th>
+            <th scope="col">{% trans "Employee" %}</th>
+            <th scope="col" class="text-end">{% trans "Actions" %}</th>
           </tr>
         </thead>
         {% for s in page_obj %}
@@ -72,45 +72,57 @@
   <div class="d-md-none d-flex flex-column gap-2 p-2">
     {% for s in page_obj %}
       <div id="awaiting-card-{{ s.pk }}" class="rd-mobile-row-card is-pending rd-pending-group">
-        <div class="small text-secondary">{{ s.created_at }}</div>
+        <div class="d-flex justify-content-between align-items-baseline gap-2">
+          <span class="small text-secondary">{{ s.created_at }}</span>
+          <span class="kpi-warning fw-bold tabular-nums">{{ s.sell_price_actual|intcomma }}</span>
+        </div>
         {% if s.customer_id %}
-          <div class="fw-semibold">
+          <div class="fw-semibold mt-1">
             <a href="{% url 'customers:customer_detail' s.customer_id %}" hx-boost="false">{{ s.customer.name }}</a>
           </div>
         {% endif %}
-        <div class="fw-semibold">{{ s.company.name }}</div>
-        <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}</div>
-        <div class="d-flex align-items-center gap-2">
-          <span class="font-monospace">{{ s.reference_number }}</span>
-          <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
+        <div class="mt-2">
+          <span class="rd-mobile-k d-block">{% trans "Company" %}</span>
+          <span class="rd-mobile-v">{{ s.company.name }}</span>
+        </div>
+        <div class="mt-1">
+          <span class="rd-mobile-k d-block">{% trans "Product" %}</span>
+          <span>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-2">
+          <span class="font-monospace small text-break">{{ s.reference_number }}</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
         </div>
         {% if s.payer_name %}
-          <div class="mt-1">
-            <span class="rd-mobile-k">{% trans "Payer" %}</span>
+          <div class="mt-2">
+            <span class="rd-mobile-k d-block">{% trans "Payer" %}</span>
             <span class="rd-mobile-v">{{ s.payer_name }}</span>
           </div>
         {% endif %}
-        <div class="kpi-warning fw-bold mt-1">{{ s.sell_price_actual|intcomma }}</div>
+        <div class="mt-2">
+          <span class="rd-mobile-k d-block">{% trans "Employee" %}</span>
+          <span class="rd-mobile-v small text-secondary">{{ s.created_by.username }}</span>
+        </div>
         {% if s.notes %}
-          <div class="small text-secondary fst-italic mt-1">
+          <div class="small text-secondary fst-italic mt-2">
             <span class="fw-semibold text-body">{% trans "Notes" %}:</span> {{ s.notes|linebreaksbr }}
           </div>
         {% endif %}
-        <div class="d-flex gap-1 mt-2">
-          <form method="post" action="{% url 'sales:sale_approve' s.pk %}" class="d-inline flex-fill m-0"
+        <div class="rd-mobile-action-pair mt-3">
+          <form method="post" action="{% url 'sales:sale_approve' s.pk %}" class="m-0"
                 hx-post="{% url 'sales:sale_approve' s.pk %}"
                 hx-target="#awaiting-card-{{ s.pk }}"
                 hx-swap="outerHTML swap:200ms">
             {% csrf_token %}
             <button class="btn btn-sm btn-success w-100" type="submit">{% trans "Approve" %}</button>
           </form>
-          <form method="post" action="{% url 'sales:sale_reject' s.pk %}" class="d-inline m-0"
+          <form method="post" action="{% url 'sales:sale_reject' s.pk %}" class="m-0"
                 hx-post="{% url 'sales:sale_reject' s.pk %}"
                 hx-target="#awaiting-card-{{ s.pk }}"
                 hx-swap="outerHTML swap:200ms"
                 hx-confirm="{% trans 'Reject this sale? Supplier balance will be restored.' %}">
             {% csrf_token %}
-            <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Reject" %}</button>
+            <button class="btn btn-sm btn-outline-danger w-100" type="submit">{% trans "Reject" %}</button>
           </form>
         </div>
       </div>
