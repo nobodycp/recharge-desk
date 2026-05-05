@@ -391,8 +391,33 @@ class DeleteCustomerPaymentTests(CustomerARTestCase):
         self.assertFalse(CustomerPayment.objects.filter(pk=payment.pk).exists())
         self.assertEqual(CustomerLedger.objects.filter(customer=c).count(), 1)
 
+    def test_htmx_delete_payment_returns_oob_snippets_for_ui_rows(self):
+        from django.urls import reverse
 
-class WriteOffCustomerBalanceTests(CustomerARTestCase):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 90)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(90), payment_method=self.bank, user=self.user,
+        )
+        payment = CustomerPayment.objects.get(customer=c)
+        ledger_pk = CustomerLedger.objects.filter(
+            customer=c, payment=payment
+        ).values_list("pk", flat=True).first()
+
+        self.client.force_login(self.user)
+        r = self.client.post(
+            reverse(
+                "customers:customer_payment_delete",
+                args=[c.pk, payment.pk],
+            ),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn("hx-swap-oob", body)
+        self.assertIn(f"customer-ledger-row-{ledger_pk}", body)
+        self.assertIn(f"customer-payment-row-{payment.pk}", body)
     def test_write_off_marks_sales_records_loss_clears_balance(self):
         from sales.query_utils import (
             confirmed_sales,
@@ -497,7 +522,66 @@ class CustomerAdjustmentTests(CustomerARTestCase):
         self.assertEqual(c.current_balance, _decimal(0))
 
 
-class DeleteCustomerCompletelyTests(CustomerARTestCase):
+class AdjustmentFifoPriorityTests(CustomerARTestCase):
+    """Manual adjustment debt must be covered by payments before FIFO marks sales PAID."""
+
+    def test_payment_covers_manual_debt_before_marking_sales_paid(self):
+        c = self._new_customer()
+        record_customer_adjustment(customer=c, amount=_decimal(100), user=self.user)
+        s = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s, user=self.user)
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(150))
+
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.bank, user=self.user
+        )
+        c.refresh_from_db()
+        s.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(50))
+        self.assertEqual(s.status, Sale.Status.PENDING)
+
+    def test_payment_after_legacy_cleared_then_settles_sale_fifo(self):
+        c = self._new_customer()
+        record_customer_adjustment(customer=c, amount=_decimal(100), user=self.user)
+        s = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(150), payment_method=self.bank, user=self.user
+        )
+        c.refresh_from_db()
+        s.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertEqual(s.status, Sale.Status.PAID)
+        self.assertEqual(s.customer_payment_id, CustomerPayment.objects.get(customer=c).pk)
+
+    def test_partial_payment_does_not_steal_from_legacy_for_sale(self):
+        c = self._new_customer()
+        record_customer_adjustment(customer=c, amount=_decimal(100), user=self.user)
+        s = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(40), payment_method=self.bank, user=self.user
+        )
+        c.refresh_from_db()
+        s.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(110))
+        self.assertEqual(s.status, Sale.Status.PENDING)
+
+    def test_net_zero_adjustments_dont_block_fifo(self):
+        """Credits that fully offset manual debits leave no orphan reserve."""
+        c = self._new_customer()
+        record_customer_adjustment(customer=c, amount=_decimal(100), user=self.user)
+        record_customer_adjustment(customer=c, amount=_decimal(-100), user=self.user)
+        s = self._new_on_account_sale(c, 50)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(50), payment_method=self.bank, user=self.user
+        )
+        c.refresh_from_db()
+        s.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertEqual(s.status, Sale.Status.PAID)
     def test_deletes_customer_with_sales_payments_phones(self):
         c = self._new_customer()
         c.phones.create(phone="0599000111")

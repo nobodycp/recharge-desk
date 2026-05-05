@@ -128,7 +128,17 @@
                   </td>
                   <td class="small">{% if l.created_by %}{{ l.created_by.username }}{% endif %}</td>
                   <td class="text-end">
-                    {% if l.entry_type != 'payment' or not l.payment_id %}
+                    {% if l.entry_type == 'payment' and l.payment_id %}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        hx-post="{% url 'customers:customer_payment_delete' customer.pk l.payment_id %}"
+                        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                        hx-swap="none"
+                        hx-confirm="{% trans 'Delete this payment? Any sales it had settled will be moved back to pending.' %}"
+                        title="{% trans 'Delete payment' %}"
+                      >{% trans "Delete" %}</button>
+                    {% else %}
                       <button
                         type="button"
                         class="btn btn-sm btn-outline-danger"
@@ -235,8 +245,7 @@
                       class="btn btn-sm btn-outline-danger"
                       hx-post="{% url 'customers:customer_payment_delete' customer.pk p.pk %}"
                       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                      hx-target="#customer-payment-row-{{ p.pk }}"
-                      hx-swap="outerHTML swap:200ms"
+                      hx-swap="none"
                       hx-confirm="{% trans 'Delete this payment? Any sales it had settled will be moved back to pending.' %}"
                       title="{% trans 'Delete payment' %}"
                     >{% trans "Delete" %}</button>

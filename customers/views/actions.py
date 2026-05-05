@@ -10,6 +10,7 @@ list and pending payments queue.
 from __future__ import annotations
 
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
@@ -104,6 +105,18 @@ def customer_write_off(request, pk):
     return redirect("customers:customer_detail", pk=customer.pk)
 
 
+def _htmx_payment_deleted_response(*, payment_id: int, ledger_row_ids: list[int]) -> HttpResponse:
+    """Strip matching ledger + recent-payment rows via HTMX out-of-band delete."""
+    parts = [
+        f'<tr id="customer-ledger-row-{lid}" hx-swap-oob="delete"></tr>'
+        for lid in ledger_row_ids
+    ]
+    parts.append(
+        f'<tr id="customer-payment-row-{payment_id}" hx-swap-oob="delete"></tr>'
+    )
+    return HttpResponse("".join(parts), status=200)
+
+
 @management_required
 @require_POST
 def customer_payment_delete(request, pk, payment_id):
@@ -111,6 +124,11 @@ def customer_payment_delete(request, pk, payment_id):
     customer = get_object_or_404(Customer, pk=pk)
     payment = get_object_or_404(CustomerPayment, pk=payment_id, customer=customer)
     htmx = is_htmx(request)
+    ledger_row_ids = list(
+        CustomerLedger.objects.filter(
+            customer_id=customer.pk, payment_id=payment_id
+        ).values_list("pk", flat=True)
+    )
     try:
         delete_customer_payment(payment=payment, user=request.user)
     except ValueError as exc:
@@ -119,7 +137,9 @@ def customer_payment_delete(request, pk, payment_id):
         messages.error(request, str(exc))
         return redirect("customers:customer_detail", pk=customer.pk)
     if htmx:
-        return htmx_remove_target()
+        return _htmx_payment_deleted_response(
+            payment_id=payment_id, ledger_row_ids=ledger_row_ids
+        )
     messages.success(request, _("Payment removed and settlements reversed."))
     return redirect("customers:customer_detail", pk=customer.pk)
 

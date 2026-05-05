@@ -349,10 +349,10 @@ def record_customer_adjustment(
     * negative -> lowers balance (treated like extra credit on file).
 
     The entry is intentionally invisible to volume / profit / loss reports —
-    it only touches the customer ledger and ``current_balance``. When the
-    customer pays later, ``record_customer_payment`` already drives down the
-    same ``current_balance``, so the adjustment is implicitly settled by any
-    payment with no extra plumbing required.
+    it only touches the customer ledger and ``current_balance``. Payments
+    reduce ``current_balance`` and, via ``reapply_settlements_for_customer``,
+    settle **manual / legacy debt first**: only payment headroom beyond that
+    backlog is used to mark on-account sales as PAID (FIFO by sale date).
     """
     amt = Decimal(amount or 0)
     if amt == 0:
@@ -372,6 +372,9 @@ def record_customer_adjustment(
         customer_locked,
         actor=user,
         changes={"amount": str(amt), "ledger_entry_id": entry.pk},
+    )
+    reapply_settlements_for_customer(
+        customer=customer_locked, triggering_payment=None, user=user
     )
     return entry
 
@@ -635,9 +638,14 @@ def reapply_settlements_for_customer(*, customer: Customer, triggering_payment, 
     """FIFO-settle the customer's pending on-account charges.
 
     Sums payments minus the value of charges that have already been settled
-    (i.e. on-account sales already flipped to PAID), and walks the remaining
-    PENDING on-account sales oldest-first, marking each one PAID once the
-    available pot covers it. Returns the number of sales newly settled.
+    (on-account sales already PAID) for unallocated payment headroom.
+
+    **Headroom first covers debt that is not tied to pending sale lines:**
+    the greater of (a) cumulative net manual adjustment debits on the ledger
+    (positive sum of ``ADJUSTMENT`` rows), and (b) ``current_balance`` minus
+    the sum of *pending* on-account sale amounts (picks up orphan CHARGE /
+    legacy slack). The remainder is applied oldest-first to PENDING on-account
+    sales. Returns the number of sales newly settled.
     """
     from sales.models import Sale  # local import to avoid app-loading cycles
 
@@ -656,7 +664,36 @@ def reapply_settlements_for_customer(*, customer: Customer, triggering_payment, 
         ).aggregate(s=Sum("sell_price_actual"))["s"]
         or Decimal("0")
     )
-    available = Decimal(payments_total) - Decimal(settled_total)
+    pending_sum = (
+        Sale.objects.filter(
+            customer=customer_locked,
+            on_account=True,
+            status=Sale.Status.PENDING,
+        ).aggregate(s=Sum("sell_price_actual"))["s"]
+        or Decimal("0")
+    )
+    balance = Decimal(customer_locked.current_balance)
+    adj_sum = (
+        CustomerLedger.objects.filter(
+            customer=customer_locked,
+            entry_type=CustomerLedger.EntryType.ADJUSTMENT,
+        ).aggregate(s=Sum("amount"))["s"]
+        or Decimal("0")
+    )
+    # Opening balance / manual debits & credits (ledger adjustments) must be
+    # covered by payments before any on-account sale is marked PAID. When the
+    # only extra debt is from adjustments, ``current_balance - pending_sum``
+    # after a payment can be zero while the adjustment total still reserves
+    # headroom — so take the max of (net adjustment debt) and (slack in
+    # balance vs pending sale face amounts) to catch orphan CHARGE rows too.
+    ledger_legacy = max(Decimal("0"), Decimal(adj_sum))
+    balance_slack = balance - pending_sum
+    if balance_slack < 0:
+        balance_slack = Decimal("0")
+    non_sale_reserve = max(ledger_legacy, balance_slack)
+
+    unallocated_payments = Decimal(payments_total) - Decimal(settled_total)
+    available = unallocated_payments - non_sale_reserve
     if available <= 0:
         return 0
 
