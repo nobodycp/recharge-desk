@@ -2347,13 +2347,14 @@ msgstr "تعديل يدوي"
 msgid "Save adjustment"
 msgstr "حفظ التعديل"
 
-#: templates/customers/customer_detail.html:185
+#: templates/customers/customer_detail.html:191
 msgid ""
 "Touches the customer balance only. Does not affect sales, profit, or loss "
-"reports. Settled like any other debt when the customer pays."
+"reports. Payments settle manual debt before marking on-account sales paid."
 msgstr ""
-"يؤثر على رصيد الزبون فقط. لا يدخل في المبيعات أو الأرباح أو الخسائر. يتم "
-"خصمه من توتل الزبون عند دفعه مثل أي دين آخر."
+"يؤثّر على رصيد الزبون فقط، ولا يظهر في تقارير المبيعات أو الربح أو الخسارة. "
+"تُوجَّه الدفعات أولاً لتسديد التسوية اليدوية والدين غير المرتبط بمبيعات، ثم "
+"تُعلَّم مبيعات الآجل كمدفوعة."
 
 #: templates/customers/customer_detail.html:201
 msgid "Remove this phone?"
