@@ -250,21 +250,24 @@ AR: dict[str, str] = {
     "No active companies.": "لا توجد شركات نشطة.",
     "Lines for disconnect": "أرقام للفصل",
     "Idle threshold": "عتبة عدم النشاط",
-    "Days without a new sale entry": "أيام بدون إدخال بيع جديد",
+    "Days without a new sale entry": "أيام من دون إدخال بيع جديد",
     "Save threshold": "حفظ العتبة",
-    "Saved on your user profile until you change it again.": "تُحفظ على ملف المستخدم حتى تغيّرها لاحقاً.",
+    "Saved on your user profile until you change it again.": "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى.",
     "Number / reference": "الرقم / المرجع",
-    "SIM / chip": "الشريحة / SIM",
+    "SIM / chip": "الشريحة / رقم الشريحة",
     "Last sale entry": "آخر إدخال بيع",
-    "Remove from list": "إزالة من القائمة",
-    "Remove this number from the list? It will reappear if it becomes idle again.": "إزالة هذا الرقم من القائمة؟ قد يظهر مجدداً إذا عاد غير مستخدم.",
-    "No lines match this threshold.": "لا توجد أرقام ضمن هذه العتبة.",
+    "Customer or payer": "الزبون أو الدافع",
+    "Days since last sale": "أيام منذ آخر بيع",
+    "Remove this line from the report only? Sales in the system are not deleted; the number can appear again if it becomes idle.": (
+        "إزالة هذا السطر من التقرير فقط؟ لا تُحذف المبيعات من النظام؛ قد يظهر الرقم مجدداً إذا عاد راكداً."
+    ),
+    "No lines match this threshold.": "لا توجد خطوط تطابق هذه العتبة.",
     "Threshold saved.": "تم حفظ العتبة.",
     "Could not save threshold.": "تعذّر حفظ العتبة.",
-    "Line updated.": "تم تحديث السطر.",
-    "Please correct the errors below.": "صحّح الأخطاء أدناه.",
+    "Line updated.": "تم تحديث الخط.",
+    "Please correct the errors below.": "يرجى تصحيح الأخطاء أدناه.",
     "Removed from this list.": "أُزيل من هذه القائمة.",
-    "Edit line": "تعديل السطر",
+    "Edit line": "تعديل الخط",
 }
 
 

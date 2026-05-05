@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-25 22:31+0300\n"
+"POT-Creation-Date: 2026-05-06 00:25+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -81,11 +81,12 @@ msgid "Management"
 msgstr "الإدارة"
 
 #: accounts/models.py:11 sales/forms.py:130
-#: templates/reports/dashboard.html:234
+#: templates/reports/dashboard.html:295
 #: templates/reports/employee_report.html:66
 #: templates/reports/partials/sales_report_results.html:46
-#: templates/reports/profit_report.html:77
+#: templates/reports/profit_report.html:81
 #: templates/sales/partials/awaiting_results.html:15
+#: templates/sales/partials/awaiting_results.html:103
 #: templates/sales/partials/management_sale_list_results.html:24
 #: templates/sales/partials/pending_payments_results.html:35
 msgid "Employee"
@@ -104,18 +105,30 @@ msgid "profile active"
 msgstr "الملف الشخصي مفعّل"
 
 #: accounts/models.py:27
+msgid "stale line threshold (days)"
+msgstr "حد عدم النشاط للخطوط (بالأيام)"
+
+#: accounts/models.py:30
+msgid ""
+"Used by the “lines for disconnect” report: numbers whose last non-cancelled "
+"sale is older than this many days appear in the list."
+msgstr ""
+"يُستخدم في تقرير «أرقام للفصل»: الأرقام التي آخر بيع غير ملغى لها أقدم من هذا "
+"العدد من الأيام تظهر في القائمة."
+
+#: accounts/models.py:35
 msgid "avatar"
 msgstr "صورة الحساب"
 
-#: accounts/models.py:31
+#: accounts/models.py:39
 msgid "Profile picture shown in the topbar menu."
 msgstr "الصورة الشخصية الظاهرة في القائمة العلوية."
 
-#: accounts/models.py:35
+#: accounts/models.py:43
 msgid "user profile"
 msgstr "ملف المستخدم"
 
-#: accounts/models.py:36
+#: accounts/models.py:44
 msgid "user profiles"
 msgstr "ملفات المستخدمين"
 
@@ -195,12 +208,14 @@ msgstr "تحديث"
 #: templates/companies/product_list.html:63
 #: templates/companies/product_list.html:66
 #: templates/customers/customer_detail.html:92
-#: templates/customers/customer_detail.html:141
-#: templates/customers/customer_detail.html:242
+#: templates/customers/customer_detail.html:140
+#: templates/customers/customer_detail.html:151
+#: templates/customers/customer_detail.html:247
 #: templates/customers/customer_list.html:92
-#: templates/expenses/expense_report.html:89
+#: templates/expenses/expense_report.html:87
 #: templates/expenses/partials/expense_list_results.html:38
 #: templates/expenses/partials/expense_list_results.html:67
+#: templates/reports/partials/stale_phones_report_results.html:45
 #: templates/sales/employee_recent.html:93
 #: templates/sales/partials/management_sale_list_results.html:80
 #: templates/sales/partials/management_sale_list_results.html:142
@@ -210,15 +225,17 @@ msgstr "تحديث"
 msgid "Delete"
 msgstr "حذف"
 
-#: audit/models.py:25 templates/customers/payment_submissions_list.html:54
+#: audit/models.py:25 templates/customers/payment_submissions_list.html:56
+#: templates/customers/payment_submissions_list.html:104
 #: templates/sales/partials/awaiting_results.html:43
-#: templates/sales/partials/awaiting_results.html:105
+#: templates/sales/partials/awaiting_results.html:117
 msgid "Approve"
 msgstr "موافقة"
 
-#: audit/models.py:26 templates/customers/payment_submissions_list.html:59
+#: audit/models.py:26 templates/customers/payment_submissions_list.html:61
+#: templates/customers/payment_submissions_list.html:108
 #: templates/sales/partials/awaiting_results.html:51
-#: templates/sales/partials/awaiting_results.html:113
+#: templates/sales/partials/awaiting_results.html:125
 msgid "Reject"
 msgstr "رفض"
 
@@ -228,7 +245,8 @@ msgstr "رفض"
 #: templates/companies/product_variant_form.html:23
 #: templates/customers/customer_form.html:21
 #: templates/expenses/expense_form.html:19
-#: templates/sales/employee_entry.html:289
+#: templates/reports/stale_phone_edit.html:18
+#: templates/sales/employee_entry.html:299
 #: templates/sales/employee_sale_edit.html:68
 #: templates/sales/partials/management_sale_list_results.html:67
 #: templates/sales/partials/management_sale_list_results.html:129
@@ -242,8 +260,8 @@ msgstr "إلغاء"
 msgid "Mark paid"
 msgstr "تعليم كمدفوع"
 
-#: audit/models.py:29 templates/customers/customer_detail.html:158
-#: templates/customers/customer_detail.html:164
+#: audit/models.py:29 templates/customers/customer_detail.html:167
+#: templates/customers/customer_detail.html:174
 #: templates/sales/employee_entry.html:12
 msgid "Record payment"
 msgstr "تسجيل دفعة"
@@ -310,7 +328,7 @@ msgid "audit log"
 msgstr "سجل التدقيق"
 
 #: audit/views.py:67 templates/audit/audit_log_list.html:6
-#: templates/partials/management_nav.html:77
+#: templates/partials/management_nav.html:81
 msgid "Audit log"
 msgstr "سجل التدقيق"
 
@@ -584,7 +602,7 @@ msgstr "أيقونة المتصفح"
 msgid "Shown in the browser tab and bookmarks. Resized automatically."
 msgstr "تظهر في تبويب المتصفح والإشارات المرجعية. يتم تصغير حجمها تلقائياً."
 
-#: core/models.py:67 sales/models.py:138
+#: core/models.py:67 reports/models.py:23 sales/models.py:138
 msgid "updated at"
 msgstr "آخر تحديث"
 
@@ -597,10 +615,11 @@ msgstr "هوية الموقع"
 msgid "Access denied"
 msgstr "الوصول مرفوض"
 
-#: core/views.py:130 expenses/forms.py:10 sales/forms.py:186
-#: templates/accounts/user_list.html:26 templates/base_management.html:70
-#: templates/base_management.html:88 templates/companies/company_list.html:26
-#: templates/core/search.html:6 templates/core/search.html:34
+#: core/views.py:130 expenses/forms.py:10 reports/forms.py:28
+#: sales/forms.py:186 templates/accounts/user_list.html:26
+#: templates/base_management.html:70 templates/base_management.html:88
+#: templates/companies/company_list.html:26 templates/core/search.html:6
+#: templates/core/search.html:34
 #: templates/customers/payment_submissions_list.html:16
 #: templates/reports/partials/company_report_ledger.html:23
 #: templates/reports/partials/company_report_sales.html:23
@@ -621,7 +640,7 @@ msgstr "كل شي تمام، لا يوجد طلبات معلّقة."
 
 #: core/views.py:208 sales/views/management.py:57
 #: templates/base_employee.html:9 templates/core/search.html:53
-#: templates/partials/management_nav.html:27
+#: templates/partials/management_nav.html:23
 #: templates/reports/employee_report.html:67
 #: templates/sales/management_sale_list.html:6
 msgid "Sales"
@@ -642,7 +661,7 @@ msgstr "مُسوَّى"
 #: core/views.py:235 customers/views/crud.py:57 templates/core/search.html:97
 #: templates/customers/customer_list.html:6
 #: templates/customers/payment_submissions_list.html:9
-#: templates/partials/management_nav.html:23
+#: templates/partials/management_nav.html:69
 #: templates/sales/awaiting_approvals.html:14
 msgid "Customers"
 msgstr "الزبائن"
@@ -669,82 +688,77 @@ msgid "Branding updated."
 msgstr "تم تحديث هوية الموقع."
 
 #: core/views.py:292 templates/core/site_branding.html:6
-#: templates/partials/management_nav.html:73
+#: templates/partials/management_nav.html:77
 msgid "Site branding"
 msgstr "هوية الموقع"
 
-#: customers/forms.py:14 templates/core/search.html:154
+#: customers/forms.py:15 templates/core/search.html:154
 #: templates/customers/_invoice_letterhead.html:35
-#: templates/customers/payment_submissions_list.html:31
+#: templates/customers/payment_submissions_list.html:33
 #: templates/sales/employee_entry.html:244
 #: templates/sales/partials/awaiting_results.html:9
 msgid "Customer"
 msgstr "الزبون"
 
-#: customers/forms.py:19 customers/forms.py:82 customers/forms.py:117
-#: sales/forms.py:303 templates/core/search.html:67
-#: templates/core/search.html:155 templates/customers/customer_detail.html:113
-#: templates/customers/customer_detail.html:224
-#: templates/customers/payment_submissions_list.html:32
-#: templates/expenses/expense_report.html:74
+#: customers/forms.py:20 customers/forms.py:89 sales/forms.py:303
+#: templates/core/search.html:67 templates/core/search.html:155
+#: templates/customers/customer_detail.html:113
+#: templates/customers/customer_detail.html:230
+#: templates/customers/payment_submissions_list.html:34
+#: templates/expenses/expense_report.html:72
 #: templates/expenses/partials/expense_list_results.html:18
-#: templates/reports/dashboard.html:235
+#: templates/reports/dashboard.html:296
 #: templates/reports/partials/company_report_ledger.html:43
 #: templates/sales/partials/awaiting_results.html:14
 #: templates/sales/partials/pending_payments_results.html:32
 msgid "Amount"
 msgstr "المبلغ"
 
-#: customers/forms.py:33 customers/forms.py:89 sales/forms.py:64
+#: customers/forms.py:34 customers/forms.py:96 sales/forms.py:64
 #: sales/forms.py:136 sales/forms.py:203
-#: templates/customers/payment_submissions_list.html:33
+#: templates/customers/payment_submissions_list.html:35
+#: templates/customers/payment_submissions_list.html:88
 #: templates/sales/employee_entry.html:265
 msgid "Payment method"
 msgstr "طريقة الدفع"
 
-#: customers/forms.py:38 customers/forms.py:94 customers/forms.py:124
+#: customers/forms.py:39 customers/forms.py:101 customers/forms.py:120
 #: customers/views/statements.py:224 sales/forms.py:86 sales/forms.py:310
 #: sales/forms.py:324 templates/customers/customer_statement.html:135
-#: templates/customers/payment_submissions_list.html:35
+#: templates/customers/payment_submissions_list.html:37
+#: templates/customers/payment_submissions_list.html:97
 #: templates/sales/employee_entry.html:180
+#: templates/sales/employee_entry.html:291
 #: templates/sales/partials/awaiting_results.html:59
-#: templates/sales/partials/awaiting_results.html:96
+#: templates/sales/partials/awaiting_results.html:108
 #: templates/sales/partials/pending_payments_results.html:89
 #: templates/sales/partials/pending_payments_results.html:125
 msgid "Notes"
 msgstr "ملاحظات"
 
-#: customers/forms.py:48 customers/forms.py:68 sales/forms.py:25
+#: customers/forms.py:55 customers/forms.py:75 sales/forms.py:25
 #: templates/sales/employee_entry.html:30
 msgid "Phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
 
-#: customers/forms.py:53
+#: customers/forms.py:60
 msgid ""
 "Optional. Adds a first phone link so future sales auto-suggest this customer."
 msgstr ""
 "اختياري. يضيف ربطاً برقم هاتف أوّل ليقترح النظام هذا الزبون تلقائياً في "
 "المبيعات القادمة."
 
-#: customers/forms.py:73
+#: customers/forms.py:80
 msgid "Label"
 msgstr "الوصف"
 
-#: customers/forms.py:106
-msgid "Add as debt (customer owes more)"
-msgstr "دين (يزيد علي الزبون)"
+#: customers/forms.py:114 sales/forms.py:318
+msgid "Signed adjustment (+/-)"
+msgstr "تسوية موقعة (+/-)"
 
-#: customers/forms.py:107
-msgid "Add as credit (reduce balance)"
-msgstr "رصيد (يقلل من حساب الزبون)"
-
-#: customers/forms.py:111
-msgid "Adjustment type"
-msgstr "نوع التعديل"
-
-#: customers/forms.py:127
-msgid "Why this adjustment? Shown in the ledger."
-msgstr "سبب التعديل (يظهر في الحركات)."
+#: customers/forms.py:128 customers/services.py:359
+msgid "Adjustment amount must be non-zero."
+msgstr "مبلغ التعديل لا يمكن أن يكون صفر."
 
 #: customers/models.py:23
 msgid ""
@@ -936,7 +950,7 @@ msgstr "اسم الزبون مطلوب."
 msgid "Payer name is required for on-account sales."
 msgstr "اسم الدافع مطلوب للمبيعات الآجلة."
 
-#: customers/services.py:112 customers/views/actions.py:158
+#: customers/services.py:112 customers/views/actions.py:178
 msgid "Phone is required."
 msgstr "رقم الهاتف مطلوب."
 
@@ -975,11 +989,7 @@ msgstr "يمكن الموافقة فقط على طلبات الدفعات الت
 msgid "Only awaiting submissions can be rejected."
 msgstr "يمكن الرفض فقط لطلبات الدفعات التي بانتظار الموافقة."
 
-#: customers/services.py:359
-msgid "Adjustment amount must be non-zero."
-msgstr "مبلغ التعديل لا يمكن أن يكون صفر."
-
-#: customers/services.py:602
+#: customers/services.py:605
 msgid ""
 "Delete the payment from the customer's payment list instead — this ledger "
 "row is just its mirror entry."
@@ -987,15 +997,15 @@ msgstr ""
 "احذف الدفعة من قائمة دفعات الزبون بدلاً من ذلك — هذا الصف في السجل ما هو إلا "
 "انعكاس لتلك الدفعة."
 
-#: customers/views/actions.py:55
+#: customers/views/actions.py:56
 msgid "Payment recorded."
 msgstr "تم تسجيل الدفعة."
 
-#: customers/views/actions.py:78 reports/views.py:516
+#: customers/views/actions.py:79 reports/views.py:534
 msgid "Adjustment recorded."
 msgstr "تم تسجيل التعديل."
 
-#: customers/views/actions.py:95
+#: customers/views/actions.py:96
 #, python-format
 msgid ""
 "Account closed. %(count)d sale(s) written off · loss recorded: %(loss)s · "
@@ -1004,19 +1014,19 @@ msgstr ""
 "تم إغلاق الحساب. تم شطب %(count)d بيع · الخسارة المسجّلة: %(loss)s · الدين "
 "المُلغى: %(debt)s."
 
-#: customers/views/actions.py:123
+#: customers/views/actions.py:143
 msgid "Payment removed and settlements reversed."
 msgstr "تم حذف الدفعة وإلغاء التسديدات المرتبطة بها."
 
-#: customers/views/actions.py:148
+#: customers/views/actions.py:168
 msgid "Ledger entry removed."
 msgstr "تم حذف حركة السجل."
 
-#: customers/views/actions.py:169
+#: customers/views/actions.py:189
 msgid "Phone added."
 msgstr "تمت إضافة الرقم."
 
-#: customers/views/actions.py:179
+#: customers/views/actions.py:199
 msgid "Phone removed."
 msgstr "تمت إزالة الرقم."
 
@@ -1079,10 +1089,10 @@ msgstr "فاتورة مفصّلة"
 #: customers/views/statements.py:218
 #: templates/customers/customer_detail.html:56
 #: templates/customers/customer_detail.html:111
-#: templates/customers/customer_detail.html:224
+#: templates/customers/customer_detail.html:230
 #: templates/customers/customer_detailed_invoice.html:50
 #: templates/customers/customer_statement.html:128
-#: templates/expenses/expense_report.html:74
+#: templates/expenses/expense_report.html:72
 #: templates/expenses/partials/expense_list_results.html:9
 msgid "Date"
 msgstr "التاريخ"
@@ -1132,7 +1142,7 @@ msgstr "الرصيد الختامي"
 msgid "Title, category, notes…"
 msgstr "العنوان، الفئة، الملاحظات…"
 
-#: expenses/forms.py:17 expenses/views.py:102 reports/views.py:240
+#: expenses/forms.py:17 expenses/views.py:102 reports/views.py:258
 #: sales/forms.py:148 sales/forms.py:215 templates/audit/audit_log_list.html:52
 #: templates/customers/customer_detailed_invoice.html:24
 #: templates/customers/customer_statement.html:24
@@ -1140,7 +1150,7 @@ msgstr "العنوان، الفئة، الملاحظات…"
 msgid "Date from"
 msgstr "من تاريخ"
 
-#: expenses/forms.py:22 expenses/views.py:107 reports/views.py:245
+#: expenses/forms.py:22 expenses/views.py:107 reports/views.py:263
 #: sales/forms.py:153 sales/forms.py:222 templates/audit/audit_log_list.html:56
 #: templates/customers/customer_detailed_invoice.html:28
 #: templates/customers/customer_statement.html:28
@@ -1148,7 +1158,7 @@ msgstr "من تاريخ"
 msgid "Date to"
 msgstr "إلى تاريخ"
 
-#: expenses/forms.py:27 templates/expenses/expense_report.html:74
+#: expenses/forms.py:27 templates/expenses/expense_report.html:72
 #: templates/expenses/partials/expense_list_results.html:15
 msgid "Category"
 msgstr "التصنيف"
@@ -1174,8 +1184,8 @@ msgid "expenses"
 msgstr "المصروفات"
 
 #: expenses/views.py:38 templates/expenses/expense_list.html:6
-#: templates/partials/management_nav.html:49
-#: templates/reports/dashboard.html:143
+#: templates/partials/management_nav.html:27
+#: templates/reports/dashboard.html:130
 msgid "Expenses"
 msgstr "المصروفات"
 
@@ -1200,42 +1210,142 @@ msgstr "تعديل المصروف"
 msgid "Expense \"%(title)s\" deleted."
 msgstr "تم حذف المصروف «%(title)s»."
 
-#: expenses/views.py:148 templates/expenses/expense_report.html:6
-#: templates/partials/management_nav.html:45
+#: expenses/views.py:148 templates/expenses/expense_report.html:5
+#: templates/partials/management_nav.html:49
 msgid "Expense report"
 msgstr "تقرير المصروفات"
 
-#: reports/views.py:208 templates/partials/management_nav.html:7
-#: templates/reports/dashboard.html:5
+#: reports/forms.py:9
+msgid "Days without a new sale entry"
+msgstr "أيام من دون إدخال بيع جديد"
+
+#: reports/forms.py:17 reports/models.py:15
+#: templates/reports/partials/stale_phones_report_results.html:23
+#: templates/reports/stale_phone_edit.html:10
+msgid "SIM / chip"
+msgstr "الشريحة / رقم الشريحة"
+
+#: reports/forms.py:34 templates/reports/sales_report.html:23
+#: templates/sales/management_sale_list.html:33
+#: templates/sales/pending_payments.html:33
+msgid "Reference, payer, company…"
+msgstr "المرجع، الدافع، الشركة…"
+
+#: reports/forms.py:40 sales/forms.py:15 sales/forms.py:118 sales/forms.py:197
+#: templates/companies/product_list.html:17 templates/core/search.html:66
+#: templates/reports/dashboard.html:293
+#: templates/reports/partials/sales_report_results.html:37
+#: templates/reports/partials/stale_phones_report_results.html:14
+#: templates/reports/profit_report.html:39
+#: templates/sales/employee_entry.html:109
+#: templates/sales/partials/awaiting_results.html:10
+#: templates/sales/partials/awaiting_results.html:85
+#: templates/sales/partials/management_sale_list_results.html:12
+#: templates/sales/partials/pending_payments_results.html:21
+msgid "Company"
+msgstr "الشركة"
+
+#: reports/forms.py:46 sales/forms.py:20 sales/forms.py:124
+#: templates/customers/customer_detail.html:58
+#: templates/customers/customer_statement.html:70
+#: templates/reports/dashboard.html:294
+#: templates/reports/partials/company_report_sales.html:40
+#: templates/reports/partials/sales_report_results.html:40
+#: templates/reports/partials/stale_phones_report_results.html:20
+#: templates/reports/profit_report.html:100
+#: templates/sales/employee_entry.html:136
+#: templates/sales/partials/awaiting_results.html:11
+#: templates/sales/partials/awaiting_results.html:89
+#: templates/sales/partials/management_sale_list_results.html:15
+#: templates/sales/partials/pending_payments_results.html:24
+msgid "Product"
+msgstr "المنتج"
+
+#: reports/models.py:9
+msgid "normalized reference"
+msgstr "المرجع المعياري"
+
+#: reports/models.py:13
+msgid "Lowercased trimmed sale reference / phone key."
+msgstr "مرجع البيع بعد تصغير الأحرف وإزالة الفراغات من الطرفين (مفتاح الرقم)."
+
+#: reports/models.py:17
+msgid "last display reference"
+msgstr "آخر مرجع معروض"
+
+#: reports/models.py:20
+msgid "Most recent raw reference as entered on a sale."
+msgstr "آخر مرجع كما أُدخل في البيع."
+
+#: reports/models.py:22
+msgid "hidden from stale list"
+msgstr "مخفي من قائمة الركود"
+
+#: reports/models.py:26 reports/models.py:27
+msgid "phone line tracking"
+msgstr "متابعة خط الهاتف"
+
+#: reports/views.py:224
 msgid "Dashboard"
 msgstr "لوحة التحكم"
 
-#: reports/views.py:302 templates/partials/management_nav.html:33
+#: reports/views.py:320 templates/partials/management_nav.html:33
 #: templates/reports/profit_report.html:5
 msgid "Profit report"
 msgstr "تقرير الأرباح"
 
-#: reports/views.py:380
+#: reports/views.py:398
 msgid "Unknown"
 msgstr "غير معروف"
 
-#: reports/views.py:394 templates/partials/management_nav.html:41
+#: reports/views.py:412 templates/partials/management_nav.html:41
 #: templates/reports/employee_report.html:5
 msgid "Employee performance"
 msgstr "أداء الموظفين"
 
-#: reports/views.py:434 templates/partials/management_nav.html:37
+#: reports/views.py:452 templates/partials/management_nav.html:37
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
 
-#: reports/views.py:507
+#: reports/views.py:525
 msgid "Deposit recorded."
 msgstr "تم تسجيل الإيداع."
 
-#: reports/views.py:589
+#: reports/views.py:607
 msgid "Company report"
 msgstr "تقرير الشركة"
+
+#: reports/views_stale_phones.py:61
+msgid "Threshold saved."
+msgstr "تم حفظ العتبة."
+
+#: reports/views_stale_phones.py:63
+msgid "Could not save threshold."
+msgstr "تعذّر حفظ العتبة."
+
+#: reports/views_stale_phones.py:82 templates/partials/management_nav.html:45
+#: templates/reports/stale_phones_report.html:6
+msgid "Lines for disconnect"
+msgstr "أرقام للفصل"
+
+#: reports/views_stale_phones.py:139
+msgid "Line updated."
+msgstr "تم تحديث الخط."
+
+#: reports/views_stale_phones.py:141 templates/accounts/login.html:60
+msgid "Please correct the errors below."
+msgstr "يرجى تصحيح الأخطاء أدناه."
+
+#: reports/views_stale_phones.py:151 templates/companies/product_list.html:36
+#: templates/companies/product_list.html:76
+#: templates/reports/stale_phone_edit.html:5
+msgid "Edit line"
+msgstr "تعديل الخط"
+
+#: reports/views_stale_phones.py:173
+msgid "Removed from this list."
+msgstr "أُزيل من هذه القائمة."
 
 #: sales/_i18n_payment_methods.py:12
 msgid "Jawwal Pay"
@@ -1248,32 +1358,6 @@ msgstr "بنك فلسطين"
 #: sales/_i18n_payment_methods.py:14
 msgid "Palpay"
 msgstr "بال باي"
-
-#: sales/forms.py:15 sales/forms.py:118 sales/forms.py:197
-#: templates/companies/product_list.html:17 templates/core/search.html:66
-#: templates/reports/dashboard.html:232
-#: templates/reports/partials/sales_report_results.html:37
-#: templates/reports/profit_report.html:35
-#: templates/sales/employee_entry.html:109
-#: templates/sales/partials/awaiting_results.html:10
-#: templates/sales/partials/management_sale_list_results.html:12
-#: templates/sales/partials/pending_payments_results.html:21
-msgid "Company"
-msgstr "الشركة"
-
-#: sales/forms.py:20 sales/forms.py:124
-#: templates/customers/customer_detail.html:58
-#: templates/customers/customer_statement.html:70
-#: templates/reports/dashboard.html:233
-#: templates/reports/partials/company_report_sales.html:40
-#: templates/reports/partials/sales_report_results.html:40
-#: templates/reports/profit_report.html:96
-#: templates/sales/employee_entry.html:136
-#: templates/sales/partials/awaiting_results.html:11
-#: templates/sales/partials/management_sale_list_results.html:15
-#: templates/sales/partials/pending_payments_results.html:24
-msgid "Product"
-msgstr "المنتج"
 
 #: sales/forms.py:37 templates/sales/employee_entry.html:52
 msgid "Payer name"
@@ -1297,7 +1381,7 @@ msgstr "اختر طريقة دفع."
 
 #: sales/forms.py:142 sales/forms.py:209 templates/core/search.html:68
 #: templates/customers/customer_detail.html:60
-#: templates/reports/dashboard.html:236
+#: templates/reports/dashboard.html:297
 #: templates/reports/partials/company_report_sales.html:53
 #: templates/reports/partials/sales_report_results.html:57
 #: templates/sales/employee_sale_edit.html:54
@@ -1333,10 +1417,6 @@ msgstr "الهاتف أو رقم الشحنة أو اسم الدافع…"
 #: sales/forms.py:243
 msgid "'Date from' must be on or before 'Date to'."
 msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
-
-#: sales/forms.py:318
-msgid "Signed adjustment (+/-)"
-msgstr "تسوية موقعة (+/-)"
 
 #: sales/models.py:18
 msgid "Shown on the employee sales screen instead of the method name."
@@ -1541,7 +1621,7 @@ msgid "Payment submitted for management approval."
 msgstr "تم إرسال الدفعة لموافقة الإدارة."
 
 #: sales/views/employee.py:256 templates/reports/dashboard.html:90
-#: templates/reports/dashboard.html:185
+#: templates/reports/dashboard.html:238
 msgid "Today"
 msgstr "اليوم"
 
@@ -1692,10 +1772,6 @@ msgstr "تحديث كلمة المرور"
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
-#: templates/accounts/login.html:60
-msgid "Please correct the errors below."
-msgstr "يرجى تصحيح الأخطاء أدناه."
-
 #: templates/accounts/partials/user_list_results.html:18
 #: templates/accounts/partials/user_list_results.html:57
 #: templates/companies/partials/company_list_results.html:18
@@ -1710,11 +1786,12 @@ msgstr "نشط"
 #: templates/companies/partials/company_list_results.html:20
 #: templates/customers/customer_detail.html:61
 #: templates/customers/customer_detail.html:116
-#: templates/customers/customer_detail.html:224
+#: templates/customers/customer_detail.html:230
 #: templates/customers/customer_list.html:63
-#: templates/customers/payment_submissions_list.html:36
-#: templates/expenses/expense_report.html:74
+#: templates/customers/payment_submissions_list.html:38
+#: templates/expenses/expense_report.html:72
 #: templates/expenses/partials/expense_list_results.html:21
+#: templates/reports/partials/stale_phones_report_results.html:28
 #: templates/sales/partials/awaiting_results.html:16
 #: templates/sales/partials/management_sale_list_results.html:35
 #: templates/sales/partials/pending_payments_results.html:37
@@ -1741,9 +1818,10 @@ msgstr "لا"
 #: templates/companies/partials/company_list_results.html:69
 #: templates/companies/product_list.html:59
 #: templates/customers/customer_list.html:81
-#: templates/expenses/expense_report.html:85
+#: templates/expenses/expense_report.html:83
 #: templates/expenses/partials/expense_list_results.html:34
 #: templates/expenses/partials/expense_list_results.html:63
+#: templates/reports/partials/stale_phones_report_results.html:42
 #: templates/sales/employee_recent.html:82
 #: templates/sales/partials/management_sale_list_results.html:55
 #: templates/sales/partials/management_sale_list_results.html:117
@@ -1780,6 +1858,7 @@ msgstr "غير نشط"
 #: templates/core/site_branding.html:85
 #: templates/customers/customer_form.html:20
 #: templates/expenses/expense_form.html:18
+#: templates/reports/stale_phone_edit.html:17
 #: templates/sales/payment_method_form.html:26
 msgid "Save"
 msgstr "حفظ"
@@ -1805,7 +1884,7 @@ msgid "Delete user permanently"
 msgstr "حذف المستخدم نهائياً"
 
 #: templates/accounts/user_list.html:6
-#: templates/partials/management_nav.html:69
+#: templates/partials/management_nav.html:73
 msgid "Users"
 msgstr "المستخدمون"
 
@@ -1824,13 +1903,14 @@ msgstr "اسم المستخدم أو الاسم الكامل…"
 #: templates/customers/customer_statement.html:32
 #: templates/customers/payment_submissions_list.html:19
 #: templates/expenses/expense_list.html:31
-#: templates/expenses/expense_report.html:17
+#: templates/expenses/expense_report.html:15
 #: templates/reports/company_report.html:24
 #: templates/reports/employee_report.html:17
 #: templates/reports/partials/company_report_ledger.html:26
 #: templates/reports/partials/company_report_sales.html:26
 #: templates/reports/profit_report.html:15
 #: templates/reports/sales_report.html:34
+#: templates/reports/stale_phones_report.html:55
 #: templates/sales/awaiting_approvals.html:31
 #: templates/sales/employee_recent.html:49
 #: templates/sales/management_sale_list.html:44
@@ -1843,12 +1923,13 @@ msgstr "تطبيق"
 #: templates/customers/customer_list.html:48
 #: templates/customers/payment_submissions_list.html:20
 #: templates/expenses/expense_list.html:32
-#: templates/expenses/expense_report.html:18
+#: templates/expenses/expense_report.html:16
 #: templates/reports/employee_report.html:18
 #: templates/reports/partials/company_report_ledger.html:27
 #: templates/reports/partials/company_report_sales.html:27
 #: templates/reports/profit_report.html:16
 #: templates/reports/sales_report.html:35
+#: templates/reports/stale_phones_report.html:56
 #: templates/sales/awaiting_approvals.html:32
 #: templates/sales/employee_recent.html:50
 #: templates/sales/management_sale_list.html:45
@@ -1887,8 +1968,8 @@ msgid "Actor"
 msgstr "الفاعل"
 
 #: templates/audit/audit_log_list.html:72
-#: templates/customers/payment_submissions_list.html:30
-#: templates/reports/dashboard.html:231
+#: templates/customers/payment_submissions_list.html:32
+#: templates/reports/dashboard.html:292
 #: templates/reports/partials/company_report_ledger.html:37
 #: templates/reports/partials/company_report_sales.html:37
 #: templates/reports/partials/sales_report_results.html:34
@@ -2029,11 +2110,6 @@ msgstr "التكلفة"
 msgid "Default sell"
 msgstr "البيع الافتراضي"
 
-#: templates/companies/product_list.html:36
-#: templates/companies/product_list.html:76
-msgid "Edit line"
-msgstr "تعديل الخط"
-
 #: templates/companies/product_list.html:37
 #: templates/companies/product_list.html:77
 msgid "Add package"
@@ -2117,7 +2193,7 @@ msgstr "عرض كل النتائج"
 
 #: templates/core/search.html:65
 #: templates/sales/partials/awaiting_results.html:13
-#: templates/sales/partials/awaiting_results.html:89
+#: templates/sales/partials/awaiting_results.html:98
 #: templates/sales/partials/management_sale_list_results.html:21
 #: templates/sales/partials/pending_payments_results.html:29
 #: templates/sales/partials/pending_payments_results.html:114
@@ -2138,7 +2214,7 @@ msgstr "فتح"
 msgid "Balance"
 msgstr "الرصيد"
 
-#: templates/core/search.html:110 templates/customers/customer_detail.html:193
+#: templates/core/search.html:110 templates/customers/customer_detail.html:198
 #: templates/customers/customer_list.html:60
 msgid "Phones"
 msgstr "أرقام الهاتف"
@@ -2147,10 +2223,10 @@ msgstr "أرقام الهاتف"
 msgid "Customer payments"
 msgstr "دفعات الزبائن"
 
-#: templates/core/search.html:156 templates/customers/customer_detail.html:224
+#: templates/core/search.html:156 templates/customers/customer_detail.html:230
 #: templates/customers/customer_statement.html:100
 #: templates/reports/partials/sales_report_results.html:48
-#: templates/reports/profit_report.html:55
+#: templates/reports/profit_report.html:59
 #: templates/sales/partials/pending_payments_results.html:30
 #: templates/sales/partials/pending_payments_results.html:119
 msgid "Method"
@@ -2249,6 +2325,7 @@ msgstr "كشف حساب"
 
 #: templates/customers/customer_detail.html:15
 #: templates/reports/company_report.html:9
+#: templates/reports/stale_phones_report.html:11
 #: templates/sales/employee_sale_edit.html:12 templates/sales/sale_edit.html:15
 msgid "Back"
 msgstr "رجوع"
@@ -2318,31 +2395,44 @@ msgstr "السجل"
 msgid "By"
 msgstr "بواسطة"
 
+#: templates/customers/customer_detail.html:138
+#: templates/customers/customer_detail.html:245
+msgid ""
+"Delete this payment? Any sales it had settled will be moved back to pending."
+msgstr ""
+"حذف هذه الدفعة؟ سيتم إرجاع كل الشحنات التي كانت قد سُدّدت بها إلى حالة غير "
+"مدفوع."
+
 #: templates/customers/customer_detail.html:139
+#: templates/customers/customer_detail.html:246
+msgid "Delete payment"
+msgstr "حذف الدفعة"
+
+#: templates/customers/customer_detail.html:149
 msgid "Delete this ledger entry and reverse it from the customer balance?"
 msgstr "حذف هذه الحركة وإلغاء أثرها من رصيد الزبون؟"
 
-#: templates/customers/customer_detail.html:140
+#: templates/customers/customer_detail.html:150
 msgid "Delete ledger entry"
 msgstr "حذف حركة السجل"
 
-#: templates/customers/customer_detail.html:146
+#: templates/customers/customer_detail.html:156
 msgid "No ledger entries."
 msgstr "لا توجد حركات."
 
-#: templates/customers/customer_detail.html:166
+#: templates/customers/customer_detail.html:176
 msgid ""
 "FIFO settlement: the oldest pending charges get marked Paid first; any extra "
 "remains as customer credit."
 msgstr ""
 "تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً للزبون."
 
-#: templates/customers/customer_detail.html:174
-#: templates/customers/customer_detailed_invoice.html:88
-msgid "Manual adjustment"
-msgstr "تعديل يدوي"
-
 #: templates/customers/customer_detail.html:183
+#: templates/reports/company_report.html:108
+msgid "Balance adjustment"
+msgstr "تسوية الرصيد"
+
+#: templates/customers/customer_detail.html:189
 #: templates/reports/company_report.html:114
 msgid "Save adjustment"
 msgstr "حفظ التعديل"
@@ -2353,41 +2443,30 @@ msgid ""
 "reports. Payments settle manual debt before marking on-account sales paid."
 msgstr ""
 "يؤثّر على رصيد الزبون فقط، ولا يظهر في تقارير المبيعات أو الربح أو الخسارة. "
-"تُوجَّه الدفعات أولاً لتسديد التسوية اليدوية والدين غير المرتبط بمبيعات، ثم "
-"تُعلَّم مبيعات الآجل كمدفوعة."
+"تُوجَّه الدفعات أولاً لتسديد التسوية اليدوية والدين غير المرتبط بمبيعات، ثم تُعلَّم "
+"مبيعات الآجل كمدفوعة."
 
-#: templates/customers/customer_detail.html:201
+#: templates/customers/customer_detail.html:207
 msgid "Remove this phone?"
 msgstr "إزالة هذا الرقم؟"
 
-#: templates/customers/customer_detail.html:203
+#: templates/customers/customer_detail.html:209
 msgid "Remove"
 msgstr "إزالة"
 
-#: templates/customers/customer_detail.html:207
+#: templates/customers/customer_detail.html:213
 msgid "No phones linked."
 msgstr "لا توجد أرقام هواتف مرتبطة."
 
-#: templates/customers/customer_detail.html:213
+#: templates/customers/customer_detail.html:219
 msgid "Add"
 msgstr "إضافة"
 
-#: templates/customers/customer_detail.html:220
+#: templates/customers/customer_detail.html:225
 msgid "Recent payments"
 msgstr "آخر الدفعات"
 
-#: templates/customers/customer_detail.html:240
-msgid ""
-"Delete this payment? Any sales it had settled will be moved back to pending."
-msgstr ""
-"حذف هذه الدفعة؟ سيتم إرجاع كل الشحنات التي كانت قد سُدّدت بها إلى حالة غير "
-"مدفوع."
-
-#: templates/customers/customer_detail.html:241
-msgid "Delete payment"
-msgstr "حذف الدفعة"
-
-#: templates/customers/customer_detail.html:246
+#: templates/customers/customer_detail.html:251
 msgid "No payments yet."
 msgstr "لا توجد دفعات بعد."
 
@@ -2428,6 +2507,10 @@ msgstr "التفاصيل"
 #: templates/customers/customer_statement.html:134
 msgid "Running balance"
 msgstr "الرصيد الجاري"
+
+#: templates/customers/customer_detailed_invoice.html:88
+msgid "Manual adjustment"
+msgstr "تعديل يدوي"
 
 #: templates/customers/customer_detailed_invoice.html:110
 #: templates/customers/customer_statement.html:176
@@ -2519,10 +2602,10 @@ msgstr "ما الذي سحبه (حسب المنتج)"
 
 #: templates/customers/customer_statement.html:71
 #: templates/customers/customer_statement.html:101
-#: templates/reports/profit_report.html:35
-#: templates/reports/profit_report.html:55
-#: templates/reports/profit_report.html:77
-#: templates/reports/profit_report.html:96
+#: templates/reports/profit_report.html:39
+#: templates/reports/profit_report.html:59
+#: templates/reports/profit_report.html:81
+#: templates/reports/profit_report.html:100
 msgid "Count"
 msgstr "العدد"
 
@@ -2565,15 +2648,18 @@ msgstr "دفعات قدّمها الموظفون. وافِق لتطبيقها ع
 msgid "Customer, employee, method…"
 msgstr "زبون، موظف، طريقة دفع…"
 
-#: templates/customers/payment_submissions_list.html:34
+#: templates/customers/payment_submissions_list.html:36
+#: templates/customers/payment_submissions_list.html:92
 msgid "Submitted by"
 msgstr "مُقدَّمة بواسطة"
 
-#: templates/customers/payment_submissions_list.html:58
+#: templates/customers/payment_submissions_list.html:60
+#: templates/customers/payment_submissions_list.html:100
 msgid "Reject reason (optional)"
 msgstr "سبب الرفض (اختياري)"
 
-#: templates/customers/payment_submissions_list.html:67
+#: templates/customers/payment_submissions_list.html:69
+#: templates/customers/payment_submissions_list.html:113
 msgid "Nothing awaiting approval."
 msgstr "لا توجد طلبات بانتظار الموافقة."
 
@@ -2581,57 +2667,57 @@ msgstr "لا توجد طلبات بانتظار الموافقة."
 msgid "Operational spend tracking."
 msgstr "متابعة المصروفات التشغيلية."
 
-#: templates/expenses/expense_report.html:7
+#: templates/expenses/expense_report.html:6
 msgid "Category breakdown and totals"
 msgstr "التصنيفات والإجماليات"
 
-#: templates/expenses/expense_report.html:28
+#: templates/expenses/expense_report.html:26
 msgid "Total profit (same date filter)"
 msgstr "إجمالي الربح (نفس نطاق التاريخ)"
 
-#: templates/expenses/expense_report.html:36
+#: templates/expenses/expense_report.html:34
 msgid "Total expenses (filtered)"
 msgstr "إجمالي المصروفات (بعد التصفية)"
 
-#: templates/expenses/expense_report.html:44
+#: templates/expenses/expense_report.html:42
 msgid "Net profit"
 msgstr "صافي الربح"
 
-#: templates/expenses/expense_report.html:46
+#: templates/expenses/expense_report.html:44
 msgid "Profit minus expenses"
 msgstr "الربح ناقص المصروفات"
 
-#: templates/expenses/expense_report.html:55
+#: templates/expenses/expense_report.html:53
 msgid "By category"
 msgstr "حسب التصنيف"
 
-#: templates/expenses/expense_report.html:62
-#: templates/reports/profit_report.html:44
-#: templates/reports/profit_report.html:63
-#: templates/reports/profit_report.html:85
-#: templates/reports/profit_report.html:107
-#: templates/reports/profit_report.html:125
-#: templates/reports/profit_report.html:140
+#: templates/expenses/expense_report.html:60
+#: templates/reports/profit_report.html:48
+#: templates/reports/profit_report.html:67
+#: templates/reports/profit_report.html:89
+#: templates/reports/profit_report.html:111
+#: templates/reports/profit_report.html:129
+#: templates/reports/profit_report.html:144
 msgid "No data."
 msgstr "لا توجد بيانات."
 
-#: templates/expenses/expense_report.html:70
+#: templates/expenses/expense_report.html:68
 #: templates/partials/pagination.html:45
 msgid "Rows"
 msgstr "الصفوف"
 
-#: templates/expenses/expense_report.html:74
+#: templates/expenses/expense_report.html:72
 #: templates/expenses/partials/expense_list_results.html:12
 msgid "Title"
 msgstr "العنوان"
 
-#: templates/expenses/expense_report.html:86
+#: templates/expenses/expense_report.html:84
 #: templates/expenses/partials/expense_list_results.html:35
 #: templates/expenses/partials/expense_list_results.html:64
 msgid "Delete this expense?"
 msgstr "حذف هذا المصروف؟"
 
-#: templates/expenses/expense_report.html:95
+#: templates/expenses/expense_report.html:93
 #: templates/expenses/partials/expense_list_results.html:44
 #: templates/expenses/partials/expense_list_results.html:72
 msgid "No expenses."
@@ -2648,6 +2734,10 @@ msgstr "التنقّل الرئيسي"
 #: templates/partials/management_nav.html:4
 msgid "Operations"
 msgstr "العمليات"
+
+#: templates/partials/management_nav.html:7 templates/reports/dashboard.html:5
+msgid "Operational snapshot"
+msgstr "لمحة تشغيلية"
 
 #: templates/partials/management_nav.html:19
 msgid "Settlement requests"
@@ -2802,7 +2892,7 @@ msgid "Total sell"
 msgstr "إجمالي البيع"
 
 #: templates/reports/company_report.html:89
-#: templates/reports/profit_report.html:24
+#: templates/reports/profit_report.html:26
 msgid "Total profit"
 msgstr "إجمالي الربح"
 
@@ -2813,14 +2903,6 @@ msgstr "تعبئة رصيد يدوية"
 #: templates/reports/company_report.html:103
 msgid "Save deposit"
 msgstr "حفظ الإيداع"
-
-#: templates/reports/company_report.html:108
-msgid "Balance adjustment"
-msgstr "تسوية الرصيد"
-
-#: templates/reports/dashboard.html:6
-msgid "Operational snapshot"
-msgstr "لمحة تشغيلية"
 
 #: templates/reports/dashboard.html:25
 msgid "Debts"
@@ -2837,7 +2919,7 @@ msgstr "مبيعات اليوم"
 #: templates/reports/dashboard.html:48
 #: templates/reports/employee_report.html:36
 #: templates/reports/employee_report.html:68
-#: templates/reports/profit_report.html:35
+#: templates/reports/profit_report.html:39
 msgid "Volume"
 msgstr "الحجم"
 
@@ -2845,67 +2927,63 @@ msgstr "الحجم"
 msgid "Today's profit"
 msgstr "ربح اليوم"
 
-#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:115
+#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:160
 msgid "Paid sales only"
 msgstr "المبيعات المدفوعة فقط"
 
-#: templates/reports/dashboard.html:95 templates/reports/profit_report.html:136
+#: templates/reports/dashboard.html:95 templates/reports/profit_report.html:140
 msgid "Month"
 msgstr "الشهر"
 
-#: templates/reports/dashboard.html:113
-msgid "All-time profit"
-msgstr "الربح الكلي"
-
-#: templates/reports/dashboard.html:122
-msgid "All-time expenses"
-msgstr "المصروفات الكلية"
-
-#: templates/reports/dashboard.html:130
-msgid "Net profit (all time)"
-msgstr "صافي الربح (كلّي)"
-
-#: templates/reports/dashboard.html:141
+#: templates/reports/dashboard.html:119
 msgid "This month profit"
 msgstr "ربح هذا الشهر"
 
-#: templates/reports/dashboard.html:144
+#: templates/reports/dashboard.html:135
 msgid "Net (month)"
 msgstr "الصافي (شهري)"
 
-#: templates/reports/dashboard.html:150
-msgid "Supplier balances"
-msgstr "أرصدة المورّدين"
-
-#: templates/reports/dashboard.html:171
-msgid "Overdrawn"
-msgstr "مكشوف"
-
-#: templates/reports/dashboard.html:171
-msgid "Empty"
-msgstr "مستنفد"
-
-#: templates/reports/dashboard.html:171
-msgid "Available"
-msgstr "متاح"
-
-#: templates/reports/dashboard.html
-msgid "Total volume"
-msgstr "إجمالي الحجم"
-
-#: templates/reports/dashboard.html
-msgid "Avg per day"
-msgstr "متوسط يومي"
-
-#: templates/reports/dashboard.html
+#: templates/reports/dashboard.html:141
 msgid "All-time totals"
 msgstr "إجماليات كلّيّة"
 
-#: templates/reports/dashboard.html:158
+#: templates/reports/dashboard.html:146
+msgid "All-time profit"
+msgstr "الربح الكلي"
+
+#: templates/reports/dashboard.html:151
+msgid "All-time expenses"
+msgstr "المصروفات الكلية"
+
+#: templates/reports/dashboard.html:156
+msgid "Net profit (all time)"
+msgstr "صافي الربح (كلّي)"
+
+#: templates/reports/dashboard.html:170
+msgid "Supplier balances"
+msgstr "أرصدة المورّدين"
+
+#: templates/reports/dashboard.html:172 templates/sales/employee_entry.html:196
+msgid "View all"
+msgstr "عرض الكل"
+
+#: templates/reports/dashboard.html:183
+msgid "Overdrawn"
+msgstr "مكشوف"
+
+#: templates/reports/dashboard.html:183
+msgid "Empty"
+msgstr "مستنفد"
+
+#: templates/reports/dashboard.html:183
+msgid "Available"
+msgstr "متاح"
+
+#: templates/reports/dashboard.html:191
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."
 
-#: templates/reports/dashboard.html:169
+#: templates/reports/dashboard.html:204
 #, python-format
 msgid "Sales last %(n)s day"
 msgid_plural "Sales last %(n)s days"
@@ -2916,36 +2994,44 @@ msgstr[3] "المبيعات في آخر %(n)s أيام"
 msgstr[4] "المبيعات في آخر %(n)s يوماً"
 msgstr[5] "المبيعات في آخر %(n)s يوم"
 
-#: templates/reports/dashboard.html:170
+#: templates/reports/dashboard.html:206
+msgid "Total volume"
+msgstr "إجمالي الحجم"
+
+#: templates/reports/dashboard.html:208
+msgid "Avg per day"
+msgstr "متوسط يومي"
+
+#: templates/reports/dashboard.html:211
 msgid "Open profit report"
 msgstr "فتح تقرير الأرباح"
 
-#: templates/reports/dashboard.html:174
+#: templates/reports/dashboard.html:215
 msgid "Daily sales volume"
 msgstr "حجم المبيعات اليومي"
 
-#: templates/reports/dashboard.html:189
+#: templates/reports/dashboard.html:242
 #: templates/reports/employee_report.html:88
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
-#: templates/reports/dashboard.html:196
+#: templates/reports/dashboard.html:251
 msgid "Top companies (this month, by profit)"
 msgstr "أفضل الشركات (هذا الشهر، حسب الربح)"
 
-#: templates/reports/dashboard.html:214
+#: templates/reports/dashboard.html:274
 msgid "No paid sales this month yet."
 msgstr "لا توجد مبيعات مدفوعة هذا الشهر بعد."
 
-#: templates/reports/dashboard.html:223
+#: templates/reports/dashboard.html:284
 msgid "Recent activity"
 msgstr "النشاط الأخير"
 
-#: templates/reports/dashboard.html:224
+#: templates/reports/dashboard.html:285
 msgid "View all sales"
 msgstr "عرض كل المبيعات"
 
-#: templates/reports/dashboard.html:250
+#: templates/reports/dashboard.html:311
 msgid "No sales yet."
 msgstr "لا توجد مبيعات بعد."
 
@@ -2973,12 +3059,12 @@ msgstr "تفصيل لكل موظف"
 #: templates/reports/employee_report.html:69
 #: templates/reports/partials/company_report_sales.html:50
 #: templates/reports/partials/sales_report_results.html:54
-#: templates/reports/profit_report.html:35
-#: templates/reports/profit_report.html:55
-#: templates/reports/profit_report.html:77
-#: templates/reports/profit_report.html:96
-#: templates/reports/profit_report.html:121
-#: templates/reports/profit_report.html:136
+#: templates/reports/profit_report.html:39
+#: templates/reports/profit_report.html:59
+#: templates/reports/profit_report.html:81
+#: templates/reports/profit_report.html:100
+#: templates/reports/profit_report.html:125
+#: templates/reports/profit_report.html:140
 #: templates/sales/employee_entry.html:171
 #: templates/sales/partials/management_sale_list_results.html:30
 msgid "Profit"
@@ -3059,35 +3145,63 @@ msgstr "أعمدة قابلة للفرز · رابط قابل للمشاركة �
 msgid "No rows."
 msgstr "لا توجد صفوف."
 
+#: templates/reports/partials/stale_phones_report_results.html:8
+msgid "Number / reference"
+msgstr "الرقم / المرجع"
+
+#: templates/reports/partials/stale_phones_report_results.html:11
+msgid "Customer or payer"
+msgstr "الزبون أو الدافع"
+
+#: templates/reports/partials/stale_phones_report_results.html:17
+msgid "Days since last sale"
+msgstr "أيام منذ آخر بيع"
+
+#: templates/reports/partials/stale_phones_report_results.html:26
+msgid "Last sale entry"
+msgstr "آخر إدخال بيع"
+
+#: templates/reports/partials/stale_phones_report_results.html:43
+msgid ""
+"Remove this line from the report only? Sales in the system are not deleted; "
+"the number can appear again if it becomes idle."
+msgstr ""
+"إزالة هذا السطر من التقرير فقط؟ لا تُحذف المبيعات من النظام؛ قد يظهر الرقم "
+"مجدداً إذا عاد راكداً."
+
+#: templates/reports/partials/stale_phones_report_results.html:52
+msgid "No lines match this threshold."
+msgstr "لا توجد خطوط تطابق هذه العتبة."
+
 #: templates/reports/profit_report.html:6
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
 
-#: templates/reports/profit_report.html:32
+#: templates/reports/profit_report.html:36
 msgid "By company"
 msgstr "حسب الشركة"
 
-#: templates/reports/profit_report.html:52
+#: templates/reports/profit_report.html:56
 msgid "By payment method"
 msgstr "حسب طريقة الدفع"
 
-#: templates/reports/profit_report.html:74
+#: templates/reports/profit_report.html:78
 msgid "By employee"
 msgstr "حسب الموظف"
 
-#: templates/reports/profit_report.html:93
+#: templates/reports/profit_report.html:97
 msgid "By product"
 msgstr "حسب المنتج"
 
-#: templates/reports/profit_report.html:118
+#: templates/reports/profit_report.html:122
 msgid "Daily profit trend"
 msgstr "اتجاه الربح اليومي"
 
-#: templates/reports/profit_report.html:121
+#: templates/reports/profit_report.html:125
 msgid "Day"
 msgstr "اليوم"
 
-#: templates/reports/profit_report.html:133
+#: templates/reports/profit_report.html:137
 msgid "Monthly profit trend"
 msgstr "اتجاه الربح الشهري"
 
@@ -3095,11 +3209,23 @@ msgstr "اتجاه الربح الشهري"
 msgid "Filter, review, and export-friendly table layout"
 msgstr "تصفية ومراجعة وجدول مناسب للتصدير"
 
-#: templates/reports/sales_report.html:23
-#: templates/sales/management_sale_list.html:33
-#: templates/sales/pending_payments.html:33
-msgid "Reference, payer, company…"
-msgstr "المرجع، الدافع، الشركة…"
+#: templates/reports/stale_phones_report.html:8
+#, python-format
+msgid ""
+"Numbers whose last sale entry (excluding cancelled) is older than %(d)s days."
+msgstr "الأرقام التي آخر إدخال بيع لها (باستثناء الملغاة) أقدم من %(d)s يوماً."
+
+#: templates/reports/stale_phones_report.html:15
+msgid "Idle threshold"
+msgstr "عتبة عدم النشاط"
+
+#: templates/reports/stale_phones_report.html:26
+msgid "Save threshold"
+msgstr "حفظ العتبة"
+
+#: templates/reports/stale_phones_report.html:30
+msgid "Saved on your user profile until you change it again."
+msgstr "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى."
 
 #: templates/sales/awaiting_approvals.html:7
 msgid "On-account sales waiting for management approval."
@@ -3190,6 +3316,7 @@ msgid ""
 msgstr "سعر البيع صفر: ستُسجَّل تكلفة المورّد كخسارة في النظام."
 
 #: templates/sales/employee_entry.html:178
+#: templates/sales/employee_entry.html:289
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
 
@@ -3200,10 +3327,6 @@ msgstr "حفظ البيع"
 #: templates/sales/employee_entry.html:195
 msgid "Recent entries"
 msgstr "آخر الإدخالات"
-
-#: templates/sales/employee_entry.html:196
-msgid "View all"
-msgstr "عرض الكل"
 
 #: templates/sales/employee_entry.html:219
 msgid "No recent entries yet."
@@ -3242,7 +3365,7 @@ msgstr "اكتب الاسم أو رقم الهاتف…"
 msgid "Current balance (owed to shop)"
 msgstr "الرصيد الحالي (المستحق للمحل)"
 
-#: templates/sales/employee_entry.html:290
+#: templates/sales/employee_entry.html:300
 msgid "Submit"
 msgstr "إرسال"
 
@@ -3294,16 +3417,16 @@ msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
 
 #: templates/sales/partials/awaiting_results.html:49
-#: templates/sales/partials/awaiting_results.html:111
+#: templates/sales/partials/awaiting_results.html:123
 msgid "Reject this sale? Supplier balance will be restored."
 msgstr "رفض هذا البيع؟ سيتم استرجاع رصيد المورّد."
 
 #: templates/sales/partials/awaiting_results.html:66
-#: templates/sales/partials/awaiting_results.html:118
+#: templates/sales/partials/awaiting_results.html:130
 msgid "No sales awaiting approval."
 msgstr "لا توجد مبيعات بانتظار الموافقة."
 
-#: templates/sales/partials/awaiting_results.html:85
+#: templates/sales/partials/awaiting_results.html:94
 #: templates/sales/partials/management_sale_list_results.html:106
 #: templates/sales/partials/pending_payments_results.html:110
 msgid "Copy"
@@ -3405,6 +3528,21 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Remove from list"
+#~ msgstr "إزالة من القائمة"
+
+#~ msgid "Add as debt (customer owes more)"
+#~ msgstr "دين (يزيد علي الزبون)"
+
+#~ msgid "Add as credit (reduce balance)"
+#~ msgstr "رصيد (يقلل من حساب الزبون)"
+
+#~ msgid "Adjustment type"
+#~ msgstr "نوع التعديل"
+
+#~ msgid "Why this adjustment? Shown in the ledger."
+#~ msgstr "سبب التعديل (يظهر في الحركات)."
 
 #~ msgid "Payment submissions"
 #~ msgstr "طلبات الدفعات"

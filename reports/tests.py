@@ -489,3 +489,106 @@ class StalePhonesReportTests(_ReportsBase):
         rows = list(r2.context["page_obj"].object_list)
         hit = next(x for x in rows if x["ref_key"] == "0550000002")
         self.assertEqual(hit["sim_identifier"], "SIM-ABC-99")
+
+    def test_default_sort_most_idle_days_first(self):
+        s_old = self._make_sale(ref="0557000001", paid=True)
+        Sale.objects.filter(pk=s_old.pk).update(created_at=timezone.now() - timedelta(days=200))
+        s_new = self._make_sale(ref="0557000002", paid=True)
+        Sale.objects.filter(pk=s_new.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        idx_old = next(i for i, x in enumerate(rows) if x["ref_key"] == "0557000001")
+        idx_new = next(i for i, x in enumerate(rows) if x["ref_key"] == "0557000002")
+        self.assertLess(idx_old, idx_new)
+        self.assertGreater(rows[idx_old]["idle_days"], rows[idx_new]["idle_days"])
+
+    def test_row_shows_payer_company_product(self):
+        s = self._make_sale(ref="0557000003", paid=True, payer="Karim")
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        row = next(x for x in r.context["page_obj"].object_list if x["ref_key"] == "0557000003")
+        self.assertEqual(row["customer_or_payer"], "Karim")
+        self.assertEqual(row["company_name"], "ReportCo")
+        self.assertIn(self.product.line.name, row["product_display"])
+
+    def test_row_prefers_customer_name_over_payer(self):
+        cust = create_customer(name="Ziad Ledger", user=self.user)
+        # Cash sales do not persist ``customer`` on the row; on-account does.
+        s = self._make_sale(ref="0557000004", on_account=True, customer=cust, payer="Walk-in")
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        row = next(x for x in r.context["page_obj"].object_list if x["ref_key"] == "0557000004")
+        self.assertEqual(row["customer_or_payer"], "Ziad Ledger")
+
+    def test_sort_querystring_ref_asc(self):
+        self._make_sale(ref="0557000009", paid=True)
+        self._make_sale(ref="0557000008", paid=True)
+        Sale.objects.filter(reference_number="0557000009").update(
+            created_at=timezone.now() - timedelta(days=100)
+        )
+        Sale.objects.filter(reference_number="0557000008").update(
+            created_at=timezone.now() - timedelta(days=100)
+        )
+        r = self.client.get(
+            reverse("reports:stale_phones_report"),
+            {"sort": "ref", "order": "asc"},
+        )
+        self.assertEqual(r.context["sort"], "ref")
+        self.assertEqual(r.context["order"], "asc")
+        refs = [x["ref_key"] for x in r.context["page_obj"].object_list if x["ref_key"].startswith("055700000")]
+        self.assertEqual(refs, sorted(refs))
+
+    def test_filter_company_limits_rows(self):
+        s1 = self._make_sale(ref="0558000001", paid=True)
+        Sale.objects.filter(pk=s1.pk).update(created_at=timezone.now() - timedelta(days=100))
+        company2 = Company.objects.create(
+            name="FilterCo",
+            opening_balance=_d(5000),
+            current_balance=_d(5000),
+        )
+        line2 = ProductLine.objects.create(company=company2, name="L2")
+        product2 = Product.objects.create(
+            line=line2,
+            variant_label="V",
+            cost_price=_d(2),
+            default_sell_price=_d(12),
+        )
+        s2 = create_sale(
+            company=company2,
+            product=product2,
+            reference_number="0558000002",
+            payer_name="Other",
+            payment_method=self.cash,
+            sell_price_actual=_d(12),
+            notes="",
+            user=self.user,
+        )
+        mark_sale_paid(sale=s2, user=self.user)
+        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(
+            reverse("reports:stale_phones_report"),
+            {"company": str(company2.pk)},
+        )
+        rows = list(r.context["page_obj"].object_list)
+        self.assertEqual([x["ref_key"] for x in rows], ["0558000002"])
+
+    def test_filter_search_q_matches_payer(self):
+        s = self._make_sale(ref="0559000111", paid=True, payer="UniquePayerXYZ")
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(reverse("reports:stale_phones_report"), {"q": "UniquePayerXYZ"})
+        rows = list(r.context["page_obj"].object_list)
+        self.assertTrue(any(x["ref_key"] == "0559000111" for x in rows))
+
+    def test_htmx_returns_results_partial_only(self):
+        self._make_sale(ref="0559000222", paid=True)
+        Sale.objects.filter(reference_number="0559000222").update(
+            created_at=timezone.now() - timedelta(days=100)
+        )
+        r = self.client.get(
+            reverse("reports:stale_phones_report"),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn("table", body)
+        self.assertNotIn("Idle threshold", body)

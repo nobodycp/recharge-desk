@@ -1,0 +1,60 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>
+            <a class="rd-datagrid-sort {% if sort == 'ref' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'ref' and order == 'desc' %}{% querystring sort='ref' order='asc' page=1 %}{% else %}{% querystring sort='ref' order='desc' page=1 %}{% endif %}">{% trans "Number / reference" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'customer' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'customer' and order == 'desc' %}{% querystring sort='customer' order='asc' page=1 %}{% else %}{% querystring sort='customer' order='desc' page=1 %}{% endif %}">{% trans "Customer or payer" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'company' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'company' and order == 'desc' %}{% querystring sort='company' order='asc' page=1 %}{% else %}{% querystring sort='company' order='desc' page=1 %}{% endif %}">{% trans "Company" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'idle_days' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'idle_days' and order == 'desc' %}{% querystring sort='idle_days' order='asc' page=1 %}{% else %}{% querystring sort='idle_days' order='desc' page=1 %}{% endif %}">{% trans "Days since last sale" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'product' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'product' and order == 'desc' %}{% querystring sort='product' order='asc' page=1 %}{% else %}{% querystring sort='product' order='desc' page=1 %}{% endif %}">{% trans "Product" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'sim' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sim' and order == 'desc' %}{% querystring sort='sim' order='asc' page=1 %}{% else %}{% querystring sort='sim' order='desc' page=1 %}{% endif %}">{% trans "SIM / chip" %}</a>
+          </th>
+          <th class="text-center">
+            <a class="rd-datagrid-sort {% if sort == 'last_activity' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'last_activity' and order == 'desc' %}{% querystring sort='last_activity' order='asc' page=1 %}{% else %}{% querystring sort='last_activity' order='desc' page=1 %}{% endif %}">{% trans "Last sale entry" %}</a>
+          </th>
+          <th class="text-center">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in page_obj.object_list %}
+          <tr>
+            <td class="fw-semibold font-monospace">{{ row.display_reference }}</td>
+            <td class="small text-center">{{ row.customer_or_payer|default:"—" }}</td>
+            <td class="small text-center">{{ row.company_name|default:"—" }}</td>
+            <td class="small text-center font-monospace">{{ row.idle_days }}</td>
+            <td class="small text-center">{{ row.product_display|default:"—" }}</td>
+            <td class="small text-center">{% if row.sim_identifier %}{{ row.sim_identifier }}{% else %}—{% endif %}</td>
+            <td class="small text-secondary text-nowrap text-center">{{ row.last_activity }}</td>
+            <td class="text-center text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:stale_phone_edit' ref_key=row.ref_key %}" hx-boost="false">{% trans "Edit" %}</a>
+              <form method="post" action="{% url 'reports:stale_phone_dismiss' ref_key=row.ref_key %}" class="d-inline" hx-boost="false" onsubmit="return confirm('{% trans "Remove this line from the report only? Sales in the system are not deleted; the number can appear again if it becomes idle." %}');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4 text-secondary">
+              {% trans "No lines match this threshold." %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>

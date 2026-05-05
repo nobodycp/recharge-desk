@@ -12,9 +12,33 @@ from django.views.decorators.http import require_POST
 from accounts.models import UserProfile
 from accounts.permissions import management_required
 from core.pagination import paginate_request
-from reports.forms import StalePhoneLineEditForm, StalePhoneThresholdDaysForm
+from reports.forms import (
+    StalePhoneLineEditForm,
+    StalePhonesFilterForm,
+    StalePhoneThresholdDaysForm,
+)
 from reports.models import PhoneLineTracking
-from reports.stale_phones import normalize_reference_key, stale_reference_aggregate
+from reports.stale_phones import (
+    filter_stale_rows,
+    normalize_reference_key,
+    sort_stale_rows,
+    stale_reference_aggregate,
+)
+from sales.views._shared import is_htmx
+
+_STALE_SORT_FIELDS = frozenset(
+    {"ref", "idle_days", "last_activity", "customer", "company", "product", "sim"}
+)
+
+
+def _stale_sort_params(request):
+    sort = request.GET.get("sort") or "idle_days"
+    order = (request.GET.get("order") or "desc").lower()
+    if sort not in _STALE_SORT_FIELDS:
+        sort = "idle_days"
+    if order not in ("asc", "desc"):
+        order = "desc"
+    return sort, order
 
 
 def _management_profile(request):
@@ -43,18 +67,34 @@ def stale_phones_report(request):
         )
 
     days = profile.stale_phone_threshold_days
+    filter_form = StalePhonesFilterForm(request.GET or None)
+    cleaned = filter_form.cleaned_data if filter_form.is_valid() else {}
     rows = stale_reference_aggregate(threshold_days=days)
-    page_obj = paginate_request(request, rows, allow_empty_first_page=True)
-    return render(
-        request,
-        "reports/stale_phones_report.html",
-        {
-            "title": _("Lines for disconnect"),
-            "threshold_form": th_form,
-            "threshold_days": days,
-            "page_obj": page_obj,
-        },
+    rows = filter_stale_rows(
+        rows,
+        cleaned=cleaned,
+        q=request.GET.get("q", ""),
     )
+    sort, order = _stale_sort_params(request)
+    rows = sort_stale_rows(rows, sort=sort, order=order)
+    page_obj = paginate_request(request, rows, allow_empty_first_page=True)
+    ctx = {
+        "title": _("Lines for disconnect"),
+        "threshold_form": th_form,
+        "threshold_days": days,
+        "idle_threshold_details_open": th_form.is_bound and not th_form.is_valid(),
+        "filter_form": filter_form,
+        "page_obj": page_obj,
+        "sort": sort,
+        "order": order,
+    }
+    if is_htmx(request):
+        return render(
+            request,
+            "reports/partials/stale_phones_report_results.html",
+            ctx,
+        )
+    return render(request, "reports/stale_phones_report.html", ctx)
 
 
 def _ref_in_stale_list(*, ref_key: str, threshold_days: int) -> bool:

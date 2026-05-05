@@ -12,12 +12,13 @@ urlpatterns = [
     path("management/reports/employees/", views.employee_report, name="employee_report"),
     path("management/reports/company/<int:pk>/", views.company_report, name="company_report"),
     path(
-        "management/reports/stale-phones/edit/<slug:ref_key>/",
+        # ``str`` (not ``slug``): reference can be Arabic digits/text or shipment ids.
+        "management/reports/stale-phones/edit/<str:ref_key>/",
         views_stale_phones.stale_phone_edit,
         name="stale_phone_edit",
     ),
     path(
-        "management/reports/stale-phones/dismiss/<slug:ref_key>/",
+        "management/reports/stale-phones/dismiss/<str:ref_key>/",
         views_stale_phones.stale_phone_dismiss,
         name="stale_phone_dismiss",
     ),
