@@ -23,6 +23,14 @@ class UserProfile(models.Model):
         default=Role.MANAGEMENT,
     )
     is_active_profile = models.BooleanField(_("profile active"), default=True)
+    stale_phone_threshold_days = models.PositiveIntegerField(
+        _("stale line threshold (days)"),
+        default=90,
+        help_text=_(
+            "Used by the “lines for disconnect” report: numbers whose last "
+            "non-cancelled sale is older than this many days appear in the list."
+        ),
+    )
     avatar = models.ImageField(
         _("avatar"),
         upload_to="avatars/",

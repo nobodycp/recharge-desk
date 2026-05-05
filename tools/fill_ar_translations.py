@@ -248,6 +248,23 @@ AR: dict[str, str] = {
     "Show more": "عرض المزيد",
     "Choose a company to see products.": "اختر شركة لعرض المنتجات.",
     "No active companies.": "لا توجد شركات نشطة.",
+    "Lines for disconnect": "أرقام للفصل",
+    "Idle threshold": "عتبة عدم النشاط",
+    "Days without a new sale entry": "أيام بدون إدخال بيع جديد",
+    "Save threshold": "حفظ العتبة",
+    "Saved on your user profile until you change it again.": "تُحفظ على ملف المستخدم حتى تغيّرها لاحقاً.",
+    "Number / reference": "الرقم / المرجع",
+    "SIM / chip": "الشريحة / SIM",
+    "Last sale entry": "آخر إدخال بيع",
+    "Remove from list": "إزالة من القائمة",
+    "Remove this number from the list? It will reappear if it becomes idle again.": "إزالة هذا الرقم من القائمة؟ قد يظهر مجدداً إذا عاد غير مستخدم.",
+    "No lines match this threshold.": "لا توجد أرقام ضمن هذه العتبة.",
+    "Threshold saved.": "تم حفظ العتبة.",
+    "Could not save threshold.": "تعذّر حفظ العتبة.",
+    "Line updated.": "تم تحديث السطر.",
+    "Please correct the errors below.": "صحّح الأخطاء أدناه.",
+    "Removed from this list.": "أُزيل من هذه القائمة.",
+    "Edit line": "تعديل السطر",
 }
 
 

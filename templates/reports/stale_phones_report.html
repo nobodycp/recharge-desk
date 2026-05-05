@@ -1,0 +1,72 @@
+{% extends "base_management.html" %}
+{% load i18n humanize ui_tags %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Lines for disconnect" %}</h1>
+    <p class="rd-text-muted mb-0">
+      {% blocktrans with d=threshold_days %}Numbers whose last sale entry (excluding cancelled) is older than {{ d }} days.{% endblocktrans %}
+    </p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-header fw-semibold">{% trans "Idle threshold" %}</div>
+  <div class="rd-card-body">
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="save_stale_threshold" value="1">
+      <div class="col-12 col-md-4 col-lg-3">
+        {{ threshold_form.stale_phone_threshold_days.label_tag }}
+        {{ threshold_form.stale_phone_threshold_days }}
+        {{ threshold_form.stale_phone_threshold_days.errors }}
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary" type="submit">{% trans "Save threshold" %}</button>
+      </div>
+    </form>
+    <p class="small text-secondary mb-0 mt-2">
+      {% trans "Saved on your user profile until you change it again." %}
+    </p>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>{% trans "Number / reference" %}</th>
+          <th>{% trans "SIM / chip" %}</th>
+          <th>{% trans "Last sale entry" %}</th>
+          <th class="text-end">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in page_obj.object_list %}
+          <tr>
+            <td class="fw-semibold font-monospace">{{ row.display_reference }}</td>
+            <td class="small">{% if row.sim_identifier %}{{ row.sim_identifier }}{% else %}—{% endif %}</td>
+            <td class="small text-secondary text-nowrap">{{ row.last_activity }}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'reports:stale_phone_edit' ref_key=row.ref_key %}">{% trans "Edit" %}</a>
+              <form method="post" action="{% url 'reports:stale_phone_dismiss' ref_key=row.ref_key %}" class="d-inline" onsubmit="return confirm('{% trans "Remove this number from the list? It will reappear if it becomes idle again." %}');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Remove from list" %}</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-4 text-secondary">
+              {% trans "No lines match this threshold." %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
+{% endblock %}

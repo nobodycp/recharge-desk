@@ -1,0 +1,23 @@
+{% extends "base_management.html" %}
+{% load i18n %}
+{% block content %}
+<div class="rd-page-header">
+  <h1 class="rd-heading-xl mb-1">{% trans "Edit line" %}</h1>
+  <p class="rd-text-muted mb-0">{{ display_reference }}</p>
+</div>
+
+<div class="rd-card" style="max-width: 32rem;">
+  <div class="rd-card-header fw-semibold">{% trans "SIM / chip" %}</div>
+  <div class="rd-card-body">
+    <form method="post" class="d-grid gap-2">
+      {% csrf_token %}
+      {{ form.sim_identifier.label_tag }} {{ form.sim_identifier }}
+      {{ form.sim_identifier.errors }}
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
+        <a class="btn btn-outline-secondary" href="{{ back_url }}">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

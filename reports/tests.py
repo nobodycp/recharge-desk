@@ -420,3 +420,72 @@ class CompanyReportTests(_ReportsBase):
         self.assertIsNone(r.context["balance_as_of"])
         self.assertEqual(r.context["agg"]["cnt"], 1)
         self.assertEqual(r.context["deposits_total"], _d(500))
+
+
+class StalePhonesReportTests(_ReportsBase):
+    def test_stale_list_shows_old_reference_after_threshold(self):
+        s = self._make_sale(ref="0555544071", paid=True)
+        old = timezone.now() - timedelta(days=120)
+        Sale.objects.filter(pk=s.pk).update(created_at=old)
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        self.assertEqual(r.status_code, 200)
+        rows = list(r.context["page_obj"].object_list)
+        self.assertTrue(any(x["ref_key"] == "0555544071" for x in rows))
+
+    def test_recent_sale_not_in_stale_list(self):
+        s = self._make_sale(ref="0559990000", paid=True)
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=1))
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertFalse(any(x["ref_key"] == "0559990000" for x in rows))
+
+    def test_cancelled_sale_ignored_for_last_activity(self):
+        s = self._make_sale(ref="0551112222", paid=True)
+        old = timezone.now() - timedelta(days=5)
+        Sale.objects.filter(pk=s.pk).update(created_at=old)
+        s2 = self._make_sale(ref="0551112222", paid=True)
+        Sale.objects.filter(pk=s2.pk).update(
+            created_at=timezone.now() - timedelta(days=120),
+            status=Sale.Status.CANCELLED,
+        )
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertFalse(any(x["ref_key"] == "0551112222" for x in rows))
+
+    def test_save_threshold_updates_profile(self):
+        r = self.client.post(
+            reverse("reports:stale_phones_report"),
+            {
+                "save_stale_threshold": "1",
+                "stale_phone_threshold_days": "30",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.stale_phone_threshold_days, 30)
+
+    def test_dismiss_hides_until_reappears(self):
+        s = self._make_sale(ref="0550000001", paid=True)
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.post(
+            reverse("reports:stale_phone_dismiss", kwargs={"ref_key": "0550000001"}),
+        )
+        self.assertEqual(r.status_code, 302)
+        r2 = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r2.context["page_obj"].object_list)
+        self.assertFalse(any(x["ref_key"] == "0550000001" for x in rows))
+
+    def test_edit_sim_persists(self):
+        s = self._make_sale(ref="0550000002", paid=True)
+        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "0550000002"})
+        r = self.client.post(url, {"sim_identifier": "SIM-ABC-99"})
+        self.assertEqual(r.status_code, 302)
+        from reports.models import PhoneLineTracking
+
+        row = PhoneLineTracking.objects.get(reference_key="0550000002")
+        self.assertEqual(row.sim_identifier, "SIM-ABC-99")
+        r2 = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r2.context["page_obj"].object_list)
+        hit = next(x for x in rows if x["ref_key"] == "0550000002")
+        self.assertEqual(hit["sim_identifier"], "SIM-ABC-99")
