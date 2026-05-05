@@ -164,13 +164,13 @@
 
   <div class="col-12 col-lg-5">
     <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">{% trans "Record payment" %}</div>
       <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Record payment" %}</h2>
-        <form method="post" action="{% url 'customers:customer_record_payment' customer.pk %}" class="d-grid gap-3" novalidate>
+        <form method="post" action="{% url 'customers:customer_record_payment' customer.pk %}" class="d-grid gap-2" novalidate>
           {% csrf_token %}
-          <div>{{ payment_form.amount.label_tag }}{{ payment_form.amount }}{{ payment_form.amount.errors }}</div>
-          <div>{{ payment_form.payment_method.label_tag }}{{ payment_form.payment_method }}{{ payment_form.payment_method.errors }}</div>
-          <div>{{ payment_form.notes.label_tag }}{{ payment_form.notes }}{{ payment_form.notes.errors }}</div>
+          {{ payment_form.amount.label_tag }} {{ payment_form.amount }}{{ payment_form.amount.errors }}
+          {{ payment_form.payment_method.label_tag }} {{ payment_form.payment_method }}{{ payment_form.payment_method.errors }}
+          {{ payment_form.notes.label_tag }} {{ payment_form.notes }}{{ payment_form.notes.errors }}
           <button class="btn btn-primary" type="submit">{% trans "Record payment" %}</button>
           <p class="small text-secondary mb-0">
             {% trans "FIFO settlement: the oldest pending charges get marked Paid first; any extra remains as customer credit." %}
@@ -180,27 +180,23 @@
     </div>
 
     <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">{% trans "Balance adjustment" %}</div>
       <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Manual adjustment" %}</h2>
-        <form method="post" action="{% url 'customers:customer_record_adjustment' customer.pk %}" class="d-grid gap-3" novalidate>
+        <form method="post" action="{% url 'customers:customer_record_adjustment' customer.pk %}" class="d-grid gap-2" novalidate>
           {% csrf_token %}
-          <div>{{ adjustment_form.kind.label_tag }}{{ adjustment_form.kind }}{{ adjustment_form.kind.errors }}</div>
-          <div>{{ adjustment_form.amount.label_tag }}{{ adjustment_form.amount }}{{ adjustment_form.amount.errors }}</div>
-          <div>
-            {{ adjustment_form.notes.label_tag }}{{ adjustment_form.notes }}{{ adjustment_form.notes.errors }}
-            {% if adjustment_form.notes.help_text %}<div class="form-text">{{ adjustment_form.notes.help_text }}</div>{% endif %}
-          </div>
+          {{ adjustment_form.signed_amount.label_tag }} {{ adjustment_form.signed_amount }}{{ adjustment_form.signed_amount.errors }}
+          {{ adjustment_form.notes.label_tag }} {{ adjustment_form.notes }}{{ adjustment_form.notes.errors }}
           <button class="btn btn-outline-primary" type="submit">{% trans "Save adjustment" %}</button>
           <p class="small text-secondary mb-0">
-            {% trans "Touches the customer balance only. Does not affect sales, profit, or loss reports. Settled like any other debt when the customer pays." %}
+            {% trans "Touches the customer balance only. Does not affect sales, profit, or loss reports. Payments settle manual debt before marking on-account sales paid." %}
           </p>
         </form>
       </div>
     </div>
 
     <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">{% trans "Phones" %}</div>
       <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Phones" %}</h2>
         <ul class="list-group list-group-flush mb-3">
           {% for p in phones %}
             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
@@ -226,8 +222,8 @@
     </div>
 
     <div class="rd-card">
+      <div class="rd-card-header fw-semibold">{% trans "Recent payments" %}</div>
       <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Recent payments" %}</h2>
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
             <thead><tr>

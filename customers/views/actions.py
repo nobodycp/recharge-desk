@@ -69,7 +69,7 @@ def customer_record_adjustment(request, pk):
     try:
         record_customer_adjustment(
             customer=customer,
-            amount=form.signed_amount(),
+            amount=form.cleaned_data["signed_amount"],
             notes=form.cleaned_data.get("notes") or "",
             user=request.user,
         )
