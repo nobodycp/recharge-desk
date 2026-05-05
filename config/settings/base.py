@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     "companies",
     "sales",
     "expenses",
-    "reports",
+    "reports.apps.ReportsConfig",
     "customers",
     "audit",
 ]

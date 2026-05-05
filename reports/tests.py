@@ -14,6 +14,7 @@ from companies.models import Company, Product, ProductLine
 from customers.models import Customer
 from customers.services import create_customer
 from expenses.models import Expense
+from reports.models import PhoneLineTracking
 from sales.models import PaymentMethod, Sale
 from sales.services import create_sale, mark_sale_paid
 
@@ -475,14 +476,34 @@ class StalePhonesReportTests(_ReportsBase):
         rows = list(r2.context["page_obj"].object_list)
         self.assertFalse(any(x["ref_key"] == "0550000001" for x in rows))
 
+    def test_new_sale_after_dismiss_allows_relist_when_idle_again(self):
+        s1 = self._make_sale(ref="0550000003", paid=True)
+        Sale.objects.filter(pk=s1.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self.client.post(
+            reverse("reports:stale_phone_dismiss", kwargs={"ref_key": "0550000003"}),
+        )
+        self.assertFalse(
+            PhoneLineTracking.objects.filter(
+                reference_key="0550000003", is_dismissed=False
+            ).exists()
+        )
+        s2 = self._make_sale(ref="0550000003", paid=True)
+        self.assertFalse(
+            PhoneLineTracking.objects.filter(
+                reference_key="0550000003", is_dismissed=True
+            ).exists()
+        )
+        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=100))
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertTrue(any(x["ref_key"] == "0550000003" for x in rows))
+
     def test_edit_sim_persists(self):
         s = self._make_sale(ref="0550000002", paid=True)
         Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
         url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "0550000002"})
         r = self.client.post(url, {"sim_identifier": "SIM-ABC-99"})
         self.assertEqual(r.status_code, 302)
-        from reports.models import PhoneLineTracking
-
         row = PhoneLineTracking.objects.get(reference_key="0550000002")
         self.assertEqual(row.sim_identifier, "SIM-ABC-99")
         r2 = self.client.get(reverse("reports:stale_phones_report"))
