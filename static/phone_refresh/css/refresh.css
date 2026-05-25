@@ -430,6 +430,12 @@ body {
 
 .logo-mark:hover { transform: translateY(-2px) scale(1.03); }
 
+.logo-mark picture {
+    height: 100%;
+    max-width: 100%;
+    display: block;
+}
+
 .logo-mark img,
 .logo-mark svg {
     height: 100%;
