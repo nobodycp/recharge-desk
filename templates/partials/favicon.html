@@ -1,4 +1,11 @@
-{% if site_branding.favicon %}
-  <link rel="icon" type="image/webp" href="{{ site_branding.favicon.url }}">
-  <link rel="apple-touch-icon" href="{{ site_branding.favicon.url }}">
+{% load static ui_tags %}
+{% branding_favicon_href site_branding as favicon_href %}
+{% if favicon_href %}
+  <link rel="icon" type="{{ favicon_href|image_mime_type }}" href="{{ favicon_href }}">
+  <link rel="shortcut icon" type="{{ favicon_href|image_mime_type }}" href="{{ favicon_href }}">
+  <link rel="apple-touch-icon" href="{{ favicon_href }}">
+{% else %}
+  <link rel="icon" type="image/png" href="{% static 'phone_refresh/img/favicon.png' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'phone_refresh/img/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'phone_refresh/img/favicon.png' %}">
 {% endif %}

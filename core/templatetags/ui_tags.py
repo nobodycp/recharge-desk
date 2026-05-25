@@ -1,7 +1,49 @@
 from django import template
+from django.core.files.storage import default_storage
 from django.utils.translation import gettext
 
 register = template.Library()
+
+_FAVICON_MIME = {
+    ".webp": "image/webp",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".ico": "image/x-icon",
+    ".svg": "image/svg+xml",
+}
+
+
+@register.filter(name="image_mime_type")
+def image_mime_type(url: str) -> str:
+    """Guess MIME type from a file URL extension (for favicon link tags)."""
+    if not url:
+        return "image/png"
+    lower = str(url).lower().split("?", 1)[0]
+    for ext, mime in _FAVICON_MIME.items():
+        if lower.endswith(ext):
+            return mime
+    return "image/png"
+
+
+@register.simple_tag
+def branding_favicon_href(branding) -> str:
+    """Favicon URL with fallback to logo when favicon file is missing on disk."""
+    if not branding:
+        return ""
+    if (
+        branding.favicon
+        and branding.favicon.name
+        and default_storage.exists(branding.favicon.name)
+    ):
+        return branding.favicon.url
+    if (
+        branding.logo
+        and branding.logo.name
+        and default_storage.exists(branding.logo.name)
+    ):
+        return branding.logo.url
+    return ""
 
 
 @register.filter(name="tdb")
