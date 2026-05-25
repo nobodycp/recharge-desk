@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 set -e
 
+echo "[entrypoint] Ensuring media directory exists..."
+mkdir -p "${DJANGO_MEDIA_ROOT:-/app/media}"
+
 echo "[entrypoint] Running migrations..."
 python manage.py migrate --noinput
 

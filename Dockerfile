@@ -21,7 +21,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app
 
-RUN chmod +x /app/entrypoint.sh || true
+RUN mkdir -p /app/media \
+    && chmod +x /app/entrypoint.sh || true
 
 RUN DJANGO_SECRET_KEY=build-time-dummy \
     DJANGO_ALLOWED_HOSTS=build.local \

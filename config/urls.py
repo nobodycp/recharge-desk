@@ -1,8 +1,11 @@
+import re
+
 from django.conf import settings
 from django.conf.urls.i18n import i18n_patterns
 from django.contrib import admin
 from django.http import HttpResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve
 
 from core.views import set_language_fixed
 
@@ -42,3 +45,14 @@ if settings.DEBUG and settings.STATICFILES_DIRS:
 
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif not settings.DEBUG:
+    # WhiteNoise serves STATIC in production; user uploads (MEDIA) still need
+    # an explicit route when no external storage (S3, etc.) is configured.
+    media_prefix = settings.MEDIA_URL.lstrip("/")
+    urlpatterns += [
+        re_path(
+            rf"^{re.escape(media_prefix)}(?P<path>.*)$",
+            serve,
+            {"document_root": settings.MEDIA_ROOT},
+        ),
+    ]
