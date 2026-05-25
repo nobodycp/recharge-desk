@@ -78,6 +78,149 @@
           </div>
         </form>
 
+        <hr class="my-4">
+
+        <div class="mb-3">
+          <div class="fw-semibold">توكن صفحة التحديث العامة</div>
+          <div class="rd-text-muted small">
+            عند تفعيل «اشتراط التوكن» في إعدادات API، يجب أن ترسل الصفحة العامة
+            ترويسة <code dir="ltr">Authorization: Bearer &lt;token&gt;</code>.
+            أنشئ توكناً هنا أو عيّن توكناً موجوداً — القيمة تُحقَن تلقائياً في الصفحة.
+          </div>
+        </div>
+
+        {% if show_generated_token %}
+        <div class="alert alert-warning d-flex flex-column gap-2 mb-3" role="alert">
+          <div class="fw-semibold">تم إنشاء التوكن — انسخه الآن</div>
+          <div class="small">
+            القيمة أدناه مُخزَّنة في الإعدادات لتعمل الصفحة العامة. يمكنك نسخها
+            للاحتفاظ بها خارج النظام.
+          </div>
+          <div class="d-flex gap-2 align-items-stretch">
+            <input type="text" id="generated-public-token" class="form-control" readonly
+                   dir="ltr" value="{{ show_generated_token }}" onclick="this.select();">
+            <button type="button" class="btn btn-outline-primary" id="copy-generated-token-btn">
+              نسخ
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if site_settings.public_page_token %}
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="fw-semibold">{{ site_settings.public_page_token.name }}</div>
+              <div class="small rd-text-muted">
+                البادئة: <code dir="ltr">{{ site_settings.public_page_token.prefix }}…</code>
+              </div>
+            </div>
+            {% if site_settings.public_page_token.is_active %}
+              <span class="rd-badge rd-badge--paid">نشط</span>
+            {% else %}
+              <span class="rd-badge rd-badge--neutral">مُلغى</span>
+            {% endif %}
+          </div>
+
+          {% if site_settings.public_page_token_raw %}
+          <div class="mb-2 small fw-semibold">القيمة المستخدمة في الصفحة</div>
+          <div class="d-flex gap-2 align-items-stretch mb-2">
+            <input type="text" id="stored-public-token" class="form-control" readonly
+                   dir="ltr" value="{{ site_settings.public_page_token_raw }}"
+                   onclick="this.select();">
+            <button type="button" class="btn btn-outline-primary" id="copy-stored-token-btn">
+              نسخ
+            </button>
+          </div>
+          {% else %}
+          <div class="alert alert-warning small mb-2">
+            التوكن مُعيَّن لكن القيمة الخام غير مخزّنة. أنشئ توكناً جديداً أو
+            أعد التعيين مع لصق القيمة الخام.
+          </div>
+          {% endif %}
+
+          <form method="post" action="?tab={{ site_management_tab_id }}"
+                onsubmit="return confirm('إزالة توكن الصفحة العامة؟');">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="clear_public_page_token">
+            <button type="submit" class="btn btn-sm btn-outline-danger">إزالة التعيين</button>
+          </form>
+        </div>
+        {% else %}
+        <div class="alert alert-info small mb-3">
+          لا يوجد توكن مُعيَّن للصفحة العامة. أنشئ توكناً جديداً أو عيّن توكناً
+          موجوداً من قائمة API.
+        </div>
+        {% endif %}
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="?tab={{ site_management_tab_id }}">
+            {% csrf_token %}
+            <input type="hidden" name="form" value="generate_public_page_token">
+            <button type="submit" class="btn btn-primary btn-sm">
+              + إنشاء توكن للصفحة العامة
+            </button>
+          </form>
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{% url 'phone_refresh:api_token_create' %}">
+            إنشاء توكن في إعدادات API
+          </a>
+        </div>
+
+        <form method="post" action="?tab={{ site_management_tab_id }}" class="d-grid gap-3">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="assign_public_page_token">
+
+          <div>
+            <label class="form-label fw-semibold"
+                   for="{{ public_page_token_form.public_page_token.id_for_label }}">
+              تعيين توكن موجود
+            </label>
+            {{ public_page_token_form.public_page_token }}
+            {% if public_page_token_form.public_page_token.errors %}
+              <div class="text-danger small mt-1">
+                {{ public_page_token_form.public_page_token.errors|join:" " }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="form-label fw-semibold"
+                   for="{{ public_page_token_form.public_page_token_raw.id_for_label }}">
+              {{ public_page_token_form.public_page_token_raw.label }}
+            </label>
+            {{ public_page_token_form.public_page_token_raw }}
+            <div class="form-text">{{ public_page_token_form.public_page_token_raw.help_text }}</div>
+            {% if public_page_token_form.public_page_token_raw.errors %}
+              <div class="text-danger small mt-1">
+                {{ public_page_token_form.public_page_token_raw.errors|join:" " }}
+              </div>
+            {% endif %}
+          </div>
+
+          {% if public_page_token_form.non_field_errors %}
+            <div class="text-danger small">
+              {{ public_page_token_form.non_field_errors|join:" " }}
+            </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary btn-sm">تعيين التوكن</button>
+          </div>
+        </form>
+
+        <div class="small rd-text-muted mt-3">
+          {% if api_settings.require_token %}
+            <span class="rd-badge rd-badge--paid">اشتراط التوكن مفعّل</span>
+            — تأكد من تعيين توكن للصفحة العامة حتى تعمل.
+          {% else %}
+            <span class="rd-badge rd-badge--neutral">اشتراط التوكن معطّل</span>
+            — فعّله من
+            <a href="{% url 'phone_refresh:api_index' %}?tab=settings">إعدادات API</a>
+            لحماية الواجهة البرمجية.
+          {% endif %}
+        </div>
+
         <hr class="my-3">
 
         <div class="small rd-text-muted">
@@ -94,3 +237,35 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    function bindCopy(btnId, inputId) {
+      var btn = document.getElementById(btnId);
+      var input = document.getElementById(inputId);
+      if (!btn || !input) return;
+      btn.addEventListener("click", async function () {
+        var value = input.value;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(value);
+          } else {
+            input.select();
+            document.execCommand("copy");
+          }
+          var original = btn.textContent;
+          btn.textContent = "تم النسخ";
+          btn.disabled = true;
+          setTimeout(function () {
+            btn.textContent = original;
+            btn.disabled = false;
+          }, 1500);
+        } catch (e) {
+          alert("تعذّر النسخ تلقائياً. الرجاء تحديد القيمة ونسخها يدوياً.");
+        }
+      });
+    }
+    bindCopy("copy-generated-token-btn", "generated-public-token");
+    bindCopy("copy-stored-token-btn", "stored-public-token");
+  })();
+</script>

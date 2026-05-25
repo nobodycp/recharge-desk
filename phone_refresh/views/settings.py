@@ -1,6 +1,8 @@
 """Management UI: provider-rule CRUD, customer-message CRUD, status CRUD, logs."""
 from __future__ import annotations
 
+import hashlib
+import secrets
 import time
 
 from django.contrib import messages
@@ -17,11 +19,14 @@ from phone_refresh.forms import (
     InternalTestForm,
     ProviderResponseRuleForm,
     ProviderTestForm,
+    PublicPageTokenAssignForm,
     RefreshStatusForm,
     SiteSettingsForm,
     SystemSettingsForm,
 )
 from phone_refresh.models import (
+    ApiSettings,
+    ApiToken,
     CustomerMessage,
     PhoneProvider,
     ProviderConfig,
@@ -62,6 +67,39 @@ def _available_statuses_for_create():
     return RefreshStatus.objects.exclude(pk__in=used_ids)
 
 
+def _create_public_page_token(*, created_by=None) -> tuple[ApiToken, str]:
+    """Create a fresh ``ApiToken`` row and return ``(token, raw_value)``."""
+    raw_token = secrets.token_urlsafe(48)
+    token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+    token = ApiToken.objects.create(
+        name="صفحة التحديث العامة",
+        token_hash=token_hash,
+        prefix=raw_token[:8],
+        created_by=created_by if created_by and created_by.is_authenticated else None,
+    )
+    return token, raw_token
+
+
+def _assign_public_page_token(site_settings: SiteSettings, token: ApiToken, raw: str) -> None:
+    site_settings.public_page_token = token
+    site_settings.public_page_token_raw = raw
+    site_settings.save(update_fields=[
+        "public_page_token",
+        "public_page_token_raw",
+        "updated_at",
+    ])
+
+
+def _clear_public_page_token(site_settings: SiteSettings) -> None:
+    site_settings.public_page_token = None
+    site_settings.public_page_token_raw = ""
+    site_settings.save(update_fields=[
+        "public_page_token",
+        "public_page_token_raw",
+        "updated_at",
+    ])
+
+
 @management_required
 def settings_index(request):
     """Tabbed settings page: General + statuses + customer messages + site mgmt."""
@@ -84,18 +122,43 @@ def settings_index(request):
     # ── إدارة الموقع form: handle POST on the same view so the tab is
     # fully self-contained (no separate URL/view to wire up).
     site_settings = SiteSettings.get_solo()
-    if (
-        request.method == "POST"
-        and active_tab == SITE_MANAGEMENT_TAB_ID
-        and request.POST.get("form") == "site_settings"
-    ):
-        site_settings_form = SiteSettingsForm(request.POST, instance=site_settings)
-        if site_settings_form.is_valid():
-            site_settings_form.save()
-            messages.success(request, "تم حفظ إعدادات الموقع.")
+    api_settings = ApiSettings.get()
+    site_settings_form = SiteSettingsForm(instance=site_settings)
+    public_page_token_form = PublicPageTokenAssignForm(site_settings=site_settings)
+
+    if request.method == "POST" and active_tab == SITE_MANAGEMENT_TAB_ID:
+        form_type = request.POST.get("form")
+
+        if form_type == "site_settings":
+            site_settings_form = SiteSettingsForm(request.POST, instance=site_settings)
+            if site_settings_form.is_valid():
+                site_settings_form.save()
+                messages.success(request, "تم حفظ إعدادات الموقع.")
+                return redirect(_settings_url(SITE_MANAGEMENT_TAB_ID))
+        elif form_type == "generate_public_page_token":
+            token, raw_token = _create_public_page_token(created_by=request.user)
+            _assign_public_page_token(site_settings, token, raw_token)
+            request.session["show_public_page_token"] = raw_token
+            messages.success(request, "تم إنشاء توكن جديد للصفحة العامة.")
             return redirect(_settings_url(SITE_MANAGEMENT_TAB_ID))
-    else:
-        site_settings_form = SiteSettingsForm(instance=site_settings)
+        elif form_type == "assign_public_page_token":
+            public_page_token_form = PublicPageTokenAssignForm(
+                request.POST,
+                site_settings=site_settings,
+            )
+            if public_page_token_form.is_valid():
+                token = public_page_token_form.cleaned_data["public_page_token"]
+                raw = public_page_token_form.cleaned_data["public_page_token_raw"]
+                _assign_public_page_token(site_settings, token, raw)
+                messages.success(request, "تم تعيين توكن الصفحة العامة.")
+                return redirect(_settings_url(SITE_MANAGEMENT_TAB_ID))
+        elif form_type == "clear_public_page_token":
+            _clear_public_page_token(site_settings)
+            messages.success(request, "تم إزالة توكن الصفحة العامة.")
+            return redirect(_settings_url(SITE_MANAGEMENT_TAB_ID))
+
+    show_generated_token = request.session.pop("show_public_page_token", "")
+    site_settings.refresh_from_db()
 
     ctx = {
         "title": "إعدادات تحديث الأرقام",
@@ -112,6 +175,9 @@ def settings_index(request):
         "internal_test_form": internal_test_form,
         "site_settings": site_settings,
         "site_settings_form": site_settings_form,
+        "public_page_token_form": public_page_token_form,
+        "api_settings": api_settings,
+        "show_generated_token": show_generated_token,
         "current_host": request.get_host(),
     }
     return render(request, "phone_refresh/settings_index.html", ctx)

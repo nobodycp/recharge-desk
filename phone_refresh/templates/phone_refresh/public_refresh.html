@@ -7,6 +7,9 @@
     <meta name="color-scheme" content="light dark" />
     <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
     <meta name="refresh-api" content="{% url 'phone_refresh:public_api' %}" />
+    {% if public_api_token %}
+    <meta name="refresh-api-token" content="{{ public_api_token }}" />
+    {% endif %}
     <meta name="referrer" content="same-origin" />
     {% load static ui_tags %}
     {% branding_favicon_href site_branding as favicon_href %}

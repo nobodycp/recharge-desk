@@ -323,7 +323,7 @@ class ApiSettings(models.Model):
         help_text=_("Max public API requests per IP per hour."),
     )
     allow_anonymous_test_page = models.BooleanField(
-        default=True,
+        default=False,
         help_text=_(
             "When ON, the public /phone-refresh/ form remains accessible "
             "without a token even when require_token is ON."
@@ -492,6 +492,20 @@ class SiteSettings(models.Model):
         blank=True,
         default=DEFAULT_SOCIAL_FACEBOOK_URL,
         help_text="رابط صفحة Facebook كامل. اتركه فارغاً لإخفاء الأيقونة.",
+    )
+    public_page_token = models.ForeignKey(
+        ApiToken,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="التوكن المستخدم لمصادقة طلبات صفحة التحديث العامة.",
+    )
+    public_page_token_raw = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="القيمة الخام للتوكن (تُحقَن في الصفحة العامة عند التحميل).",
     )
     updated_at = models.DateTimeField(auto_now=True)
 

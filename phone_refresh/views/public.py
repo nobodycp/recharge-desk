@@ -6,7 +6,7 @@ import json
 import threading
 import time
 
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -104,16 +104,64 @@ def _resolve_token(raw_token: str) -> ApiToken | None:
     return token if token.is_active else None
 
 
+def _parse_refresh_payload(request) -> tuple[str | None, str, str, HttpResponse | None]:
+    """Extract ``phone``, ``client_hint``, and honeypot from the POST body.
+
+    Returns a 4-tuple ``(phone, client_hint, honeypot, error_response)``.
+    When ``error_response`` is not ``None`` the caller should return it
+    immediately (malformed JSON).
+    """
+    content_type = (request.content_type or "").lower()
+    phone: str | None = None
+    client_hint = ""
+    honeypot = ""
+    if "application/json" in content_type:
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except ValueError:
+            return None, "", "", HttpResponseBadRequest("invalid JSON body")
+        if isinstance(payload, dict):
+            phone = payload.get("phone_number") or payload.get("phone")
+            client_hint = str(payload.get("client") or "").strip().lower()
+            honeypot = str(payload.get("website") or "").strip()
+    else:
+        phone = request.POST.get("phone_number") or request.POST.get("phone")
+        client_hint = (request.POST.get("client") or "").strip().lower()
+        honeypot = (request.POST.get("website") or "").strip()
+    return phone, client_hint, honeypot, None
+
+
+def _token_required(api_settings: ApiSettings, client_hint: str) -> bool:
+    """Return whether this request must carry a valid bearer token."""
+    if not api_settings.require_token:
+        return False
+    if (
+        api_settings.allow_anonymous_test_page
+        and client_hint == RefreshSource.WEB
+    ):
+        return False
+    return True
+
+
 @require_GET
 def public_refresh_page(request):
     """Standalone Arabic RTL refresh form (not part of the admin shell)."""
     site_settings = SiteSettings.get_solo()
+    public_api_token = ""
+    token = site_settings.public_page_token
+    if (
+        token is not None
+        and token.is_active
+        and site_settings.public_page_token_raw
+    ):
+        public_api_token = site_settings.public_page_token_raw
     return render(
         request,
         "phone_refresh/public_refresh.html",
         {
             "whatsapp_url": site_settings.whatsapp_url,
             "facebook_url": site_settings.facebook_url,
+            "public_api_token": public_api_token,
         },
     )
 
@@ -126,7 +174,10 @@ def public_refresh_api(request):
     Honors the API settings singleton:
 
     * ``require_token`` → enforce ``Authorization: Bearer <token>`` and
-      bump the matching :class:`ApiToken`'s ``last_used_at``.
+      bump the matching :class:`ApiToken`'s ``last_used_at``. When
+      ``allow_anonymous_test_page`` is ON, requests from the bundled
+      public form (``client=web``) skip the token gate (not recommended
+      for production).
     * ``rate_limit_per_minute`` / ``rate_limit_per_hour`` → sliding
       window per client IP.
     * ``allowed_origins`` → simple Origin header allowlist (empty =
@@ -154,32 +205,18 @@ def public_refresh_api(request):
             status=429,
         )
 
+    phone, client_hint, honeypot, parse_error = _parse_refresh_payload(request)
+    if parse_error is not None:
+        return parse_error
+
     token: ApiToken | None = None
-    if api_settings.require_token:
+    if _token_required(api_settings, client_hint):
         raw_token = _extract_bearer_token(request)
         if not raw_token:
             return JsonResponse({"error": "missing_token"}, status=401)
         token = _resolve_token(raw_token)
         if token is None:
             return JsonResponse({"error": "invalid_token"}, status=401)
-
-    content_type = (request.content_type or "").lower()
-    phone: str | None = None
-    client_hint: str = ""
-    honeypot: str = ""
-    if "application/json" in content_type:
-        try:
-            payload = json.loads(request.body.decode("utf-8") or "{}")
-        except ValueError:
-            return HttpResponseBadRequest("invalid JSON body")
-        if isinstance(payload, dict):
-            phone = payload.get("phone_number") or payload.get("phone")
-            client_hint = str(payload.get("client") or "").strip().lower()
-            honeypot = str(payload.get("website") or "").strip()
-    else:
-        phone = request.POST.get("phone_number") or request.POST.get("phone")
-        client_hint = (request.POST.get("client") or "").strip().lower()
-        honeypot = (request.POST.get("website") or "").strip()
 
     # Honeypot: legitimate browser users never see/fill the hidden
     # ``website`` field. If it's populated, short-circuit with a benign

@@ -30,6 +30,7 @@ const TRANSLATIONS = {
         "msg.network": "تعذّر الاتصال بالخادم",
         "msg.sending": "جاري الإرسال...",
         "msg.ratelimit": "عدد كبير من المحاولات، الرجاء الانتظار قليلاً",
+        "msg.auth": "تعذّر المصادقة — تحقق من إعدادات التوكن",
         "msg.session": "انتهت الجلسة، يتم التحديث...",
         "msg.service_off": "الخدمة متوقفة حالياً",
         "time.hour": "ساعة",
@@ -62,6 +63,7 @@ const TRANSLATIONS = {
         "msg.network": "Failed to connect to the server",
         "msg.sending": "Sending request...",
         "msg.ratelimit": "Too many attempts, please wait a moment",
+        "msg.auth": "Authentication failed — check token settings",
         "msg.session": "Session expired, reloading...",
         "msg.service_off": "Service is currently offline",
         "time.hour": "hour",
@@ -81,6 +83,7 @@ const STORAGE = { LANG: "rn_lang", THEME: "rn_theme" };
 
 const META = (name) => (document.querySelector(`meta[name="${name}"]`) || {}).content || "";
 const API_URL = META("refresh-api");
+const API_TOKEN = META("refresh-api-token");
 
 const $ = (s) => document.querySelector(s);
 
@@ -273,15 +276,20 @@ async function submitRefresh(number) {
             website: (document.getElementById("hp-website") || {}).value || "",
         };
 
+        const headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRFToken": getCsrfToken(),
+            "X-Requested-With": "XMLHttpRequest",
+        };
+        if (API_TOKEN) {
+            headers.Authorization = `Bearer ${API_TOKEN}`;
+        }
+
         const res = await fetch(API_URL, {
             method: "POST",
             credentials: "same-origin",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "X-CSRFToken": getCsrfToken(),
-                "X-Requested-With": "XMLHttpRequest",
-            },
+            headers,
             body: JSON.stringify(body),
         });
 
@@ -292,6 +300,11 @@ async function submitRefresh(number) {
             const fallback = t("msg.ratelimit");
             const msg = (data && data.message && data.message.body) || fallback;
             showAlert(msg, "error");
+            return;
+        }
+
+        if (res.status === 401) {
+            showAlert(t("msg.auth"), "error");
             return;
         }
 

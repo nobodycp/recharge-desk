@@ -1,4 +1,5 @@
 import re
+import hashlib
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -260,6 +261,64 @@ class SiteSettingsForm(forms.ModelForm):
 
     def clean_facebook_url(self) -> str:
         return self._clean_social_url(self.cleaned_data.get("facebook_url"), "Facebook")
+
+
+class PublicPageTokenAssignForm(forms.Form):
+    """Assign an existing active ``ApiToken`` to the public refresh page."""
+
+    public_page_token = forms.ModelChoiceField(
+        label="التوكن",
+        queryset=ApiToken.objects.none(),
+        required=True,
+        empty_label="— اختر توكناً —",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    public_page_token_raw = forms.CharField(
+        label="القيمة الخام للتوكن",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "dir": "ltr",
+                "autocomplete": "off",
+                "placeholder": "الصق القيمة التي ظهرت لحظة إنشاء التوكن",
+            }
+        ),
+        help_text=(
+            "مطلوبة عند تعيين توكن جديد. إذا كان التوكن مُعيَّناً مسبقاً "
+            "وتحتفظ بالقيمة في الإعدادات، يمكنك ترك الحقل فارغاً."
+        ),
+    )
+
+    def __init__(self, *args, site_settings=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.site_settings = site_settings
+        self.fields["public_page_token"].queryset = ApiToken.objects.filter(
+            revoked_at__isnull=True,
+        ).order_by("-created_at")
+
+    def clean(self):
+        cleaned = super().clean()
+        token = cleaned.get("public_page_token")
+        raw = (cleaned.get("public_page_token_raw") or "").strip()
+        if token is None:
+            return cleaned
+
+        if not raw:
+            if (
+                self.site_settings
+                and self.site_settings.public_page_token_id == token.pk
+                and self.site_settings.public_page_token_raw
+            ):
+                cleaned["public_page_token_raw"] = self.site_settings.public_page_token_raw
+                return cleaned
+            raise ValidationError("يجب إدخال القيمة الخام للتوكن عند التعيين.")
+
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        if token.token_hash != digest:
+            raise ValidationError("القيمة الخام لا تطابق التوكن المختار.")
+        cleaned["public_page_token_raw"] = raw
+        return cleaned
 
 
 class InternalTestForm(forms.Form):
