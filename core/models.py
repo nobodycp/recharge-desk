@@ -1,15 +1,14 @@
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from core.image_utils import maybe_optimize_image_field
 
-# Kept as named constants for any external code that may still import
-# them; the model itself no longer caches so updates from the admin
-# panel are reflected on the very next request, even when Django runs
-# under a multi-worker WSGI server (gunicorn) where each worker has
-# its own ``LocMemCache`` and per-process invalidation isn't enough.
 SITE_BRANDING_CACHE_KEY = "core:site_branding:singleton"
-SITE_BRANDING_CACHE_TTL = 0
+# Short TTL keeps the public login page off the DB while accepting that
+# other gunicorn workers may serve stale branding for a few minutes after
+# an admin edit (each worker clears its own cache on save).
+SITE_BRANDING_CACHE_TTL = 300
 
 
 class SiteBranding(models.Model):
@@ -87,14 +86,16 @@ class SiteBranding(models.Model):
             self, "favicon", max_size=self.FAVICON_MAX_SIZE, trim=True
         )
         super().save(*args, **kwargs)
+        cache.delete(SITE_BRANDING_CACHE_KEY)
 
     @classmethod
     def load(cls) -> "SiteBranding":
-        """Return the singleton row, creating it lazily on first access.
-
-        Reads the row directly on every call: a primary-key lookup on a
-        single tiny text/image row is cheap enough that the simplicity
-        beats juggling cross-process cache invalidation.
-        """
+        """Return the singleton row, creating it lazily on first access."""
+        if SITE_BRANDING_CACHE_TTL:
+            cached = cache.get(SITE_BRANDING_CACHE_KEY)
+            if cached is not None:
+                return cached
         instance, _created = cls.objects.get_or_create(pk=1)
+        if SITE_BRANDING_CACHE_TTL:
+            cache.set(SITE_BRANDING_CACHE_KEY, instance, timeout=SITE_BRANDING_CACHE_TTL)
         return instance

@@ -505,6 +505,9 @@ class SiteSettings(models.Model):
     def save(self, *args, **kwargs):
         self.pk = 1
         super().save(*args, **kwargs)
+        from phone_refresh.middleware import clear_site_settings_cache
+
+        clear_site_settings_cache()
 
     def delete(self, *args, **kwargs):  # pragma: no cover — guard rail
         return  # singleton is never deleted

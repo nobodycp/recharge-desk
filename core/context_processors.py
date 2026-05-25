@@ -4,7 +4,28 @@ import os
 from pathlib import Path
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Count, Q
+
+
+NAV_NOTIFICATIONS_CACHE_TTL = 15
+NAV_NOTIFICATIONS_VERSION_KEY = "nav_notif:version"
+
+
+def bump_nav_notifications_version() -> None:
+    """Drop every cached nav badge count at once."""
+    try:
+        cache.incr(NAV_NOTIFICATIONS_VERSION_KEY)
+    except ValueError:
+        cache.set(NAV_NOTIFICATIONS_VERSION_KEY, 1, timeout=None)
+
+
+def _nav_notifications_version() -> int:
+    version = cache.get(NAV_NOTIFICATIONS_VERSION_KEY)
+    if version is None:
+        cache.set(NAV_NOTIFICATIONS_VERSION_KEY, 1, timeout=None)
+        return 1
+    return int(version)
 
 
 def _compute_default_asset_buster() -> str:
@@ -74,9 +95,9 @@ def compute_nav_notifications(user) -> dict | None:
 
     Used by both the context processor (initial render) and the live
     polling endpoint, so they stay in lock-step. One aggregate on ``Sale``
-    (awaiting + pending counts) plus one COUNT on submissions; never
-    cached so management sees the change the instant they approve or
-    mark something paid.
+    (awaiting + pending counts) plus one COUNT on submissions. Cached
+    briefly so every management page load does not re-run three queries;
+    the live poll endpoint still refreshes the badge within seconds.
     """
     if not user or not getattr(user, "is_authenticated", False):
         return None
@@ -86,6 +107,11 @@ def compute_nav_notifications(user) -> dict | None:
 
         if not is_management(user):
             return None
+
+        cache_key = f"nav_notif:v{_nav_notifications_version()}:{user.pk}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
 
         from customers.models import CustomerPaymentSubmission
         from sales.models import Sale
@@ -105,12 +131,14 @@ def compute_nav_notifications(user) -> dict | None:
     except Exception:
         return None
 
-    return {
+    result = {
         "awaiting": awaiting,
         "pending": pending,
         "submissions": submissions,
         "total": awaiting + pending + submissions,
     }
+    cache.set(cache_key, result, timeout=NAV_NOTIFICATIONS_CACHE_TTL)
+    return result
 
 
 def nav_notifications(request):
@@ -126,8 +154,9 @@ def site_branding(request):
     Local import keeps the context processor import-time cheap and avoids
     a circular import during initial migrations / collectstatic — the
     model only needs to be importable when a request is actually being
-    served. ``cached`` for 5 minutes inside ``SiteBranding.load`` so the
-    public login page doesn't hit the DB on every poll.
+    served. ``SiteBranding.load`` caches the singleton for five minutes
+    (per gunicorn worker) so the public login page does not hit Postgres
+    on every request.
 
     Also exposes ``site_name`` and ``site_tagline`` separately, falling
     back to translated defaults when the operator hasn't customised them.

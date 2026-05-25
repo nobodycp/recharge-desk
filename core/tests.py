@@ -226,6 +226,9 @@ class NavNotificationsContextProcessorTests(TestCase):
     """The topbar bell counts must surface AWAITING + cash-PENDING sales
     only for management users, never for employees or anonymous visitors."""
 
+    def setUp(self):
+        cache.clear()
+
     @classmethod
     def setUpTestData(cls):
         from decimal import Decimal

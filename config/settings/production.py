@@ -82,7 +82,7 @@ else:
         DATABASES = {
             "default": dj_database_url.parse(
                 _database_url,
-                conn_max_age=int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+                conn_max_age=int(os.environ.get("POSTGRES_CONN_MAX_AGE", "300")),
                 ssl_require=os.environ.get("POSTGRES_SSLMODE", "").lower() == "require",
             ),
         }
@@ -95,7 +95,7 @@ else:
                 "PASSWORD": _require("POSTGRES_PASSWORD"),
                 "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
                 "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-                "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+                "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "300")),
                 "OPTIONS": {},
             }
         }
@@ -124,6 +124,8 @@ else:
     # Belt-and-braces: tell WhiteNoise's manifest lookup not to be strict in
     # case we ever switch back to the manifest variant.
     WHITENOISE_MANIFEST_STRICT = False
+    # Long browser cache for compressed static assets (Cloudflare also caches).
+    WHITENOISE_MAX_AGE = int(os.environ.get("WHITENOISE_MAX_AGE", str(60 * 60 * 24 * 30)))
 
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True

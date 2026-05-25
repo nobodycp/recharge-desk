@@ -130,6 +130,17 @@ MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media"))).
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Per-process cache for dashboard KPIs, nav badge counts, and singleton
+# rows. LocMemCache is fine on a single container; for multi-container
+# deploys point CACHE_URL at Redis so every worker shares invalidations.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "recharge-desk",
+        "OPTIONS": {"MAX_ENTRIES": 2000},
+    }
+}
+
 LOGIN_URL = reverse_lazy("accounts:login")
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = reverse_lazy("accounts:login")

@@ -41,8 +41,11 @@ echo "[entrypoint] Collecting static files..."
 python manage.py collectstatic --noinput
 
 echo "[entrypoint] Starting gunicorn on 0.0.0.0:${PORT:-8000}"
+# ``--threads`` only applies to the ``gthread`` worker class; the default
+# ``sync`` workers ignore it and handle one request at a time per worker.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:${PORT:-8000} \
+    --worker-class ${GUNICORN_WORKER_CLASS:-gthread} \
     --workers ${GUNICORN_WORKERS:-3} \
     --threads ${GUNICORN_THREADS:-2} \
     --timeout ${GUNICORN_TIMEOUT:-60} \

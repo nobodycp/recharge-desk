@@ -26,6 +26,7 @@ never crashes a request before the table even exists.
 from __future__ import annotations
 
 import logging
+import time
 
 from django.conf import settings as django_settings
 from django.db import DatabaseError
@@ -41,6 +42,19 @@ _PUBLIC_PATH_PREFIX = "/phone-refresh/"
 # public subdomain) so Coolify / uptime monitors keep getting 200 OK
 # regardless of which hostname they hit.
 _HEALTHZ_PATH_PREFIX = "/healthz"
+
+# ``SiteSettings`` changes rarely (subdomain routing). A per-process cache
+# avoids a Postgres round-trip on every request through this middleware.
+_SITE_SETTINGS_CACHE_TTL = 60.0
+_site_settings_cache: object | None = None
+_site_settings_cached_at: float = 0.0
+
+
+def clear_site_settings_cache() -> None:
+    """Drop the middleware cache after ``SiteSettings`` is saved."""
+    global _site_settings_cache, _site_settings_cached_at
+    _site_settings_cache = None
+    _site_settings_cached_at = 0.0
 
 
 def _normalize_url_prefix(value: str | None) -> str:
@@ -67,17 +81,30 @@ class PhoneRefreshSubdomainMiddleware:
         the table exists — return ``None`` on any DB error and treat it
         like the "no subdomain configured" branch.
         """
+        global _site_settings_cache, _site_settings_cached_at
+
+        now = time.monotonic()
+        if (
+            _site_settings_cache is not None
+            and (now - _site_settings_cached_at) < _SITE_SETTINGS_CACHE_TTL
+        ):
+            return _site_settings_cache
+
         # Imported here to avoid an app-registry-not-ready error when
         # Django is still wiring up INSTALLED_APPS.
         from phone_refresh.models import SiteSettings
 
         try:
-            return SiteSettings.get_solo()
+            settings_obj = SiteSettings.get_solo()
         except DatabaseError:
             return None
         except Exception:  # noqa: BLE001 — defensive: never break the request
             logger.warning("SiteSettings lookup failed", exc_info=True)
             return None
+
+        _site_settings_cache = settings_obj
+        _site_settings_cached_at = now
+        return settings_obj
 
     def __call__(self, request):
         # Health probe MUST short-circuit before any DB lookup: it has to
