@@ -102,9 +102,16 @@ else:
         if sslmode := os.environ.get("POSTGRES_SSLMODE", "").strip():
             DATABASES["default"]["OPTIONS"]["sslmode"] = sslmode
 
-    # WhiteNoise: hashed + compressed manifest storage. Django 4.2 still uses
-    # the legacy STATICFILES_STORAGE setting (STORAGES dict landed in 5.0).
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    # WhiteNoise: compressed (gzip + brotli) static storage. We avoid the
+    # ``CompressedManifestStaticFilesStorage`` variant because its hashed
+    # post-processing fails when CSS files reference assets we don't ship
+    # (e.g. third-party ``.map`` files inside ``bootstrap.rtl.min.css``).
+    # Compression alone is sufficient for our deployment; the reverse proxy
+    # adds long-cache headers.
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+    # Belt-and-braces: tell WhiteNoise's manifest lookup not to be strict in
+    # case we ever switch back to the manifest variant.
+    WHITENOISE_MANIFEST_STRICT = False
 
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
