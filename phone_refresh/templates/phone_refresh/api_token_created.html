@@ -1,0 +1,74 @@
+{% extends "base_management.html" %}
+{% block content %}
+<div class="mx-auto" style="max-width: 50rem;">
+  <h1 class="h3 mb-3">{{ title }}</h1>
+
+  <div class="alert alert-warning d-flex flex-column gap-1" role="alert">
+    <div class="fw-semibold">يرجى نسخ التوكن الآن — لن يظهر مرة أخرى.</div>
+    <div class="small">
+      نحفظ في قاعدة البيانات بصمة sha256 فقط. إذا فقدت القيمة الخام فلن نتمكن من استرجاعها وسيتعيّن إنشاء توكن جديد.
+    </div>
+  </div>
+
+  <div class="app-card card mb-3">
+    <div class="card-body p-4">
+      <div class="mb-2 fw-semibold">{{ token.name }}</div>
+      <div class="rd-text-muted small mb-3">
+        البادئة: <code dir="ltr">{{ token.prefix }}…</code>
+        · أنشئ في {{ token.created_at|date:"Y-m-d H:i" }}
+      </div>
+
+      <div class="mb-2 small fw-semibold">القيمة الخام</div>
+      <div class="d-flex gap-2 align-items-stretch">
+        <input type="text" id="raw-token" class="form-control" readonly
+               dir="ltr" value="{{ raw_token }}"
+               onclick="this.select();">
+        <button type="button" class="btn btn-outline-primary" id="copy-token-btn">
+          نسخ
+        </button>
+      </div>
+      <div class="form-text">
+        أرسلها في ترويسة الطلب:
+        <code dir="ltr">Authorization: Bearer {{ raw_token }}</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-primary" href="{% url 'phone_refresh:api_index' %}?tab=tokens">
+      الرجوع إلى قائمة التوكنات
+    </a>
+    <a class="btn btn-outline-secondary" href="{% url 'phone_refresh:api_token_create' %}">
+      إنشاء توكن آخر
+    </a>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('copy-token-btn');
+    var input = document.getElementById('raw-token');
+    if (!btn || !input) return;
+    btn.addEventListener('click', async function () {
+      var value = input.value;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          input.select();
+          document.execCommand('copy');
+        }
+        var original = btn.textContent;
+        btn.textContent = 'تم النسخ';
+        btn.disabled = true;
+        setTimeout(function () {
+          btn.textContent = original;
+          btn.disabled = false;
+        }, 1500);
+      } catch (e) {
+        alert('تعذّر النسخ تلقائياً. الرجاء تحديد القيمة ونسخها يدوياً.');
+      }
+    });
+  })();
+</script>
+{% endblock %}

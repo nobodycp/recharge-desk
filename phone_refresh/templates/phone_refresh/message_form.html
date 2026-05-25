@@ -1,0 +1,36 @@
+{% extends "base_management.html" %}
+{% block content %}
+<div class="mx-auto" style="max-width: 45rem;">
+  <h1 class="h3 mb-3">{{ title }}</h1>
+  <div class="app-card card">
+    <div class="card-body p-4">
+      <form method="post" class="d-grid gap-3">
+        {% csrf_token %}
+        {% for field in form %}
+          <div>
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-primary" type="submit">حفظ</button>
+          <a class="btn btn-outline-secondary"
+             href="{% url 'phone_refresh:settings' %}?tab=messages">إلغاء</a>
+        </div>
+      </form>
+      {% if message %}
+        <div class="border-top pt-3 mt-3">
+          <form method="post"
+                action="{% url 'phone_refresh:message_delete' pk=message.pk %}"
+                onsubmit="return confirm('حذف هذه الرسالة؟');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">حذف الرسالة</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

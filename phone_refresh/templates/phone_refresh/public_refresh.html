@@ -1,0 +1,280 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تحديث رقم الهاتف</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --bg-grad-from: #eef2ff;
+      --bg-grad-to:   #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --error: #b42318;
+      --error-bg: #fef3f2;
+      --success: #027a48;
+      --success-bg: #ecfdf3;
+      --warn: #b54708;
+      --warn-bg: #fffaeb;
+      --neutral: #374151;
+      --neutral-bg: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: 'Cairo', system-ui, -apple-system, Segoe UI, Tahoma, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #dbeafe 0%, transparent 60%),
+                  linear-gradient(160deg, var(--bg-grad-from), var(--bg-grad-to));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 460px;
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 32px 28px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+      border: 1px solid rgba(226, 232, 240, 0.7);
+    }
+    h1 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
+    p.lead { margin: 0 0 22px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text); }
+    .input-wrap { display: flex; gap: 10px; }
+    input[type="tel"] {
+      flex: 1;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      direction: ltr;
+      text-align: center;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="tel"]:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    button {
+      background: var(--brand);
+      color: #fff;
+      border: 0;
+      padding: 13px 22px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.15s, transform 0.05s;
+      min-width: 96px;
+    }
+    button:hover:not(:disabled) { background: var(--brand-dark); }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    button:disabled { opacity: 0.65; cursor: progress; }
+
+    /* Honeypot: visually hidden but still focusable-trappable for bots */
+    .hp-field {
+      position: absolute !important;
+      left: -10000px !important;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #fff;
+      display: none;
+      line-height: 1.55;
+    }
+    .result.show { display: block; }
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      background: var(--neutral-bg);
+      color: var(--neutral);
+      border: 1px solid var(--border);
+    }
+    .result.refreshed   { background: var(--success-bg); border-color: #abefc6; color: var(--success); }
+    .result.refreshed   .badge { background: #d1fadf; color: var(--success); border-color: #a6f4c5; }
+    .result.wait        { background: var(--warn-bg); border-color: #fedf89; color: var(--warn); }
+    .result.wait        .badge { background: #fef0c7; color: var(--warn); border-color: #fedf89; }
+    .result.service_off { background: #f3f4f6; border-color: #d1d5db; color: var(--neutral); }
+    .result.service_off .badge { background: #e5e7eb; color: var(--neutral); border-color: #d1d5db; }
+    .result.not_found,
+    .result.error       { background: var(--error-bg); border-color: #fecdca; color: var(--error); }
+    .result.not_found   .badge,
+    .result.error       .badge { background: #fee4e2; color: var(--error); border-color: #fecdca; }
+
+    .result .title { display: block; font-weight: 700; margin-bottom: 4px; }
+    .result .body  { display: block; }
+    .result .last-refresh { display: block; margin-top: 8px; font-size: 0.8rem; opacity: 0.85; }
+
+    .footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 20px; }
+
+    @media (max-width: 420px) {
+      .card { padding: 24px 20px; border-radius: 14px; }
+      .input-wrap { flex-direction: column; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>تحديث رقم الهاتف</h1>
+    <p class="lead">أدخل رقم الهاتف الذي يبدأ بـ 05 ثم اضغط تحديث.</p>
+
+    <form id="refresh-form" autocomplete="off" novalidate>
+      {% csrf_token %}
+      <label for="phone">رقم الهاتف</label>
+      <div class="input-wrap">
+        <input id="phone" name="phone_number" type="tel" inputmode="numeric" pattern="05[0-9]{8}"
+               maxlength="10" placeholder="0555555555" required>
+        <button id="submit-btn" type="submit">تحديث</button>
+      </div>
+      <div class="hp-field" aria-hidden="true">
+        <label for="hp-website">Website</label>
+        <input id="hp-website" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+    </form>
+
+    <div id="result" class="result" role="status" aria-live="polite"></div>
+    <div class="footer">© pro-sim</div>
+  </main>
+
+  <script>
+    (function () {
+      const form = document.getElementById('refresh-form');
+      const phoneInput = document.getElementById('phone');
+      const btn = document.getElementById('submit-btn');
+      const result = document.getElementById('result');
+      const hpInput = document.getElementById('hp-website');
+      const apiUrl = "{% url 'phone_refresh:public_api' %}";
+
+      function getCsrfToken() {
+        const el = form.querySelector('input[name="csrfmiddlewaretoken"]');
+        return el ? el.value : '';
+      }
+
+      function statusLabel(code) {
+        switch (code) {
+          case 'refreshed':   return 'تم التحديث';
+          case 'wait':        return 'انتظار';
+          case 'not_found':   return 'غير موجود';
+          case 'service_off': return 'الخدمة متوقفة';
+          case 'error':
+          default:            return 'خطأ';
+        }
+      }
+
+      function formatElapsed(seconds) {
+        seconds = Math.max(0, parseInt(seconds || 0, 10));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        if (hours <= 0) return minutes + ' دقيقة';
+        const hourWord = hours === 1 ? 'ساعة' : 'ساعات';
+        if (minutes <= 0) return hours + ' ' + hourWord;
+        return hours + ' ' + hourWord + ' و ' + minutes + ' دقيقة';
+      }
+
+      function showResult(status, title, body, lastRefresh) {
+        const code = status || 'error';
+        result.className = 'result show ' + code;
+        result.innerHTML = '';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = statusLabel(code);
+        result.appendChild(badge);
+
+        if (title) {
+          const t = document.createElement('span');
+          t.className = 'title';
+          t.textContent = title;
+          result.appendChild(t);
+        }
+        if (body) {
+          const b = document.createElement('span');
+          b.className = 'body';
+          b.textContent = body;
+          result.appendChild(b);
+        }
+        if (lastRefresh && lastRefresh.seconds != null) {
+          const note = document.createElement('span');
+          note.className = 'last-refresh';
+          note.textContent = 'آخر تحديث ناجح: قبل ' + formatElapsed(lastRefresh.seconds);
+          result.appendChild(note);
+        }
+      }
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const phone = (phoneInput.value || '').trim();
+        if (!/^05\d{8}$/.test(phone)) {
+          showResult('error', 'رقم غير صحيح', 'الرجاء إدخال رقم يبدأ بـ 05 ويتكوّن من 10 أرقام.');
+          return;
+        }
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = '...جارٍ التحديث';
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRFToken': getCsrfToken(),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+              phone_number: phone,
+              client: 'web',
+              website: hpInput ? hpInput.value : '',
+            }),
+          });
+          const data = await response.json().catch(function () { return {}; });
+          const msg = (data && data.message) || {};
+          let lastRefresh = null;
+          if (data && Object.prototype.hasOwnProperty.call(data, 'seconds_since_last_refresh')
+              && data.seconds_since_last_refresh != null) {
+            lastRefresh = {
+              seconds: data.seconds_since_last_refresh,
+              at: data.last_refresh_at || null,
+            };
+          }
+          showResult(data.status || 'error', msg.title || '', msg.body || 'تعذّر إتمام العملية.', lastRefresh);
+        } catch (err) {
+          showResult('error', 'تعذّر الاتصال', 'يرجى المحاولة لاحقًا.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+{# API settings tab: token gating, rate limits, origin allowlist. #}
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="mb-2">
+          <div class="fw-semibold">إعدادات الواجهة البرمجية</div>
+          <div class="rd-text-muted small">
+            تتحكّم هذه الإعدادات في مصادقة التوكن، حدود الطلبات، ونطاقات المصادر المسموح بها للواجهة العامة.
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'phone_refresh:api_settings_save' %}" class="d-grid gap-3">
+          {% csrf_token %}
+
+          <div class="form-check form-switch">
+            {{ settings_form.require_token }}
+            <label class="form-check-label fw-semibold" for="{{ settings_form.require_token.id_for_label }}">
+              اشتراط التوكن للواجهة العامة
+            </label>
+            <div class="form-text">
+              عند التفعيل، ترفض الواجهة كل طلب لا يحمل ترويسة
+              <code dir="ltr">Authorization: Bearer &lt;token&gt;</code> صالحة (HTTP 401).
+            </div>
+          </div>
+
+          <div class="form-check form-switch">
+            {{ settings_form.allow_anonymous_test_page }}
+            <label class="form-check-label fw-semibold" for="{{ settings_form.allow_anonymous_test_page.id_for_label }}">
+              السماح للصفحة العامة دون توكن
+            </label>
+            <div class="form-text">
+              تظل صفحة <code dir="ltr">/phone-refresh/</code> متاحة للزوار بدون توكن حتى عند تفعيل اشتراط التوكن للواجهة البرمجية.
+            </div>
+          </div>
+
+          <hr class="my-1">
+
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold" for="{{ settings_form.rate_limit_per_minute.id_for_label }}">
+                الحد الأقصى للطلبات في الدقيقة
+              </label>
+              {{ settings_form.rate_limit_per_minute }}
+              <div class="form-text">لكل عنوان IP. القيمة 0 تُعطّل هذا الحد.</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold" for="{{ settings_form.rate_limit_per_hour.id_for_label }}">
+                الحد الأقصى للطلبات في الساعة
+              </label>
+              {{ settings_form.rate_limit_per_hour }}
+              <div class="form-text">لكل عنوان IP. القيمة 0 تُعطّل هذا الحد.</div>
+            </div>
+          </div>
+
+          <hr class="my-1">
+
+          <div>
+            <label class="form-label fw-semibold" for="{{ settings_form.allowed_origins.id_for_label }}">
+              نطاقات المصادر المسموح بها (Origins)
+            </label>
+            {{ settings_form.allowed_origins }}
+            <div class="form-text">
+              نطاق واحد في كل سطر — مثل <code dir="ltr">https://example.com</code>.
+              اترك الحقل فارغاً للسماح بأي مصدر.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="fw-semibold mb-2">آخر تحديث</div>
+        <div class="rd-text-muted small">
+          {% if api_settings.updated_at %}
+            {{ api_settings.updated_at|date:"Y-m-d H:i" }}
+          {% else %}—{% endif %}
+        </div>
+        <hr>
+        <div class="fw-semibold mb-2">نظرة سريعة</div>
+        <ul class="list-unstyled small mb-0 d-grid gap-2">
+          <li>
+            مصادقة التوكن:
+            {% if api_settings.require_token %}
+              <span class="rd-badge rd-badge--paid">مفعّلة</span>
+            {% else %}
+              <span class="rd-badge rd-badge--neutral">معطّلة</span>
+            {% endif %}
+          </li>
+          <li>الحد/الدقيقة: <code class="tabular-nums">{{ api_settings.rate_limit_per_minute }}</code></li>
+          <li>الحد/الساعة: <code class="tabular-nums">{{ api_settings.rate_limit_per_hour }}</code></li>
+          <li>
+            نطاقات مسموح بها:
+            <code class="tabular-nums">{{ api_settings.allowed_origins_list|length }}</code>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

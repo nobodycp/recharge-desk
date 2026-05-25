@@ -1,0 +1,66 @@
+{# Site Management tab: configure public subdomain + redirect toggle. #}
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="mb-3">
+          <div class="fw-semibold">إدارة الموقع</div>
+          <div class="rd-text-muted small">
+            عند تعيين «النطاق الفرعي العام» تظهر صفحة تحديث الرقم فقط على هذا النطاق،
+            وتُخفى لوحة الإدارة عنه تلقائياً.
+          </div>
+        </div>
+
+        <form method="post" action="?tab={{ site_management_tab_id }}" class="d-grid gap-3">
+          {% csrf_token %}
+          <input type="hidden" name="form" value="site_settings">
+
+          <div>
+            <label class="form-label fw-semibold" for="{{ site_settings_form.public_subdomain.id_for_label }}">
+              النطاق الفرعي العام
+            </label>
+            {{ site_settings_form.public_subdomain }}
+            <div class="form-text">
+              مثال: <code dir="ltr">rn.prosim.ps</code> — اتركه فارغاً لتعطيل التوجيه عبر السب دومين.
+            </div>
+            {% if site_settings_form.public_subdomain.errors %}
+              <div class="text-danger small mt-1">
+                {{ site_settings_form.public_subdomain.errors|join:" " }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="form-check form-switch">
+            {{ site_settings_form.redirect_main_to_subdomain }}
+            <label class="form-check-label fw-semibold"
+                   for="{{ site_settings_form.redirect_main_to_subdomain.id_for_label }}">
+              تحويل الزيارات من الدومين الرئيسي إلى السب دومين
+            </label>
+            <div class="form-text">
+              عند التفعيل: زيارة <code dir="ltr">/phone-refresh/</code>
+              على الدومين الرئيسي تحوّل تلقائياً إلى النطاق الفرعي المُعدّ أعلاه.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+
+        <hr class="my-3">
+
+        <div class="small rd-text-muted">
+          <div class="mb-1">
+            الدومين الحالي الذي رصده الخادم:
+            <code dir="ltr">{{ current_host }}</code>
+          </div>
+          <p class="mb-0">
+            لتفعيل السب دومين تحتاج إلى توجيه DNS وإضافة الدومين إلى إعدادات الخادم
+            (Coolify / nginx) وإلى <code dir="ltr">ALLOWED_HOSTS</code> في إعدادات الإنتاج.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

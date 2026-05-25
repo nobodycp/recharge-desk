@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import sys
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
@@ -73,21 +74,37 @@ else:
                 f"(invalid entry: {origin!r})."
             )
 
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": _require("POSTGRES_DB"),
-            "USER": _require("POSTGRES_USER"),
-            "PASSWORD": _require("POSTGRES_PASSWORD"),
-            "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-            "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
-            "OPTIONS": {},
+    # Coolify (and most 12-factor PaaS) exposes a single DATABASE_URL. When
+    # present we use it directly; otherwise we fall back to the discrete
+    # POSTGRES_* variables that the previous deploy flow already supported.
+    _database_url = os.environ.get("DATABASE_URL", "").strip()
+    if _database_url:
+        DATABASES = {
+            "default": dj_database_url.parse(
+                _database_url,
+                conn_max_age=int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+                ssl_require=os.environ.get("POSTGRES_SSLMODE", "").lower() == "require",
+            ),
         }
-    }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": _require("POSTGRES_DB"),
+                "USER": _require("POSTGRES_USER"),
+                "PASSWORD": _require("POSTGRES_PASSWORD"),
+                "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
+                "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+                "CONN_MAX_AGE": int(os.environ.get("POSTGRES_CONN_MAX_AGE", "60")),
+                "OPTIONS": {},
+            }
+        }
+        if sslmode := os.environ.get("POSTGRES_SSLMODE", "").strip():
+            DATABASES["default"]["OPTIONS"]["sslmode"] = sslmode
 
-    if sslmode := os.environ.get("POSTGRES_SSLMODE", "").strip():
-        DATABASES["default"]["OPTIONS"]["sslmode"] = sslmode
+    # WhiteNoise: hashed + compressed manifest storage. Django 4.2 still uses
+    # the legacy STATICFILES_STORAGE setting (STORAGES dict landed in 5.0).
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True

@@ -1,0 +1,220 @@
+{# API live-test tab: documentation card + interactive request panel. #}
+
+<div class="row g-3">
+  {# ---------------- Documentation ---------------- #}
+  <div class="col-12 col-xl-7">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+          <div>
+            <div class="fw-semibold">توثيق الواجهة البرمجية</div>
+            <div class="rd-text-muted small">جميع الحقول تُرسل بصيغة JSON. حدّث صفحتك بعد كل تعديل لإعدادات API.</div>
+          </div>
+          {% if api_settings.require_token %}
+            <span class="rd-badge rd-badge--paid">يتطلب توكن</span>
+          {% else %}
+            <span class="rd-badge rd-badge--neutral">بدون توكن</span>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">نقطة النهاية (Endpoint)</div>
+          <pre class="mb-0 p-2 small text-break" dir="ltr"
+               style="background: var(--bs-tertiary-bg); border-radius: 6px;">POST {{ api_endpoint }}</pre>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">الترويسات (Headers)</div>
+          <pre class="mb-0 p-2 small text-break" dir="ltr"
+               style="background: var(--bs-tertiary-bg); border-radius: 6px;">Content-Type: application/json{% if api_settings.require_token %}
+Authorization: Bearer &lt;token&gt;{% endif %}</pre>
+          {% if not api_settings.require_token %}
+            <div class="form-text">
+              التوكن غير مطلوب حالياً (الإعداد <code>require_token</code> معطّل).
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">جسم الطلب (Body)</div>
+          <pre class="mb-0 p-2 small text-break" dir="ltr"
+               style="background: var(--bs-tertiary-bg); border-radius: 6px;">{
+  "phone_number": "0555555555"
+}</pre>
+          <div class="form-text">
+            <code>phone_number</code> سلسلة نصية مكوّنة من 10 أرقام تبدأ بـ <code>05</code>.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">مثال على استجابة 200</div>
+          <pre class="mb-0 p-2 small text-break" dir="ltr"
+               style="background: var(--bs-tertiary-bg); border-radius: 6px;">{
+  "status": "refreshed",
+  "message": {
+    "title": "تم التحديث",
+    "body": "تم تحديث الرقم بنجاح."
+  },
+  "last_refresh_at": "2026-05-25T01:00:00+03:00",
+  "seconds_since_last_refresh": 0
+}</pre>
+          <div class="form-text">
+            الحقول <code>last_refresh_at</code> و <code>seconds_since_last_refresh</code> تظهر فقط عند تفعيل
+            «عرض آخر تحديث للرقم» في تبويب الإعدادات العامة.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">رموز الحالة المتاحة</div>
+          <div class="d-flex flex-wrap gap-1">
+            {% for status in refresh_statuses %}
+              <span class="rd-badge rd-badge--neutral" title="{{ status.label }}">
+                <code dir="ltr">{{ status.code }}</code>
+                <span class="ms-1">— {{ status.label }}</span>
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="small fw-semibold mb-1">رموز HTTP المحتملة</div>
+          <ul class="small mb-0 ps-3">
+            <li><code dir="ltr">200</code> — استجابة طبيعية، الحقل <code>status</code> يحدّد النتيجة.</li>
+            <li><code dir="ltr">400</code> — رقم هاتف مفقود أو غير صالح.</li>
+            <li><code dir="ltr">401</code> — التوكن مفقود أو غير صالح (عند تفعيل اشتراط التوكن).</li>
+            <li><code dir="ltr">403</code> — Origin غير مسموح به.</li>
+            <li><code dir="ltr">429</code> — تجاوز حدود الطلبات (دقيقة/ساعة).</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="small fw-semibold mb-1">مثال curl</div>
+          <pre class="mb-0 p-2 small text-break" dir="ltr"
+               style="background: var(--bs-tertiary-bg); border-radius: 6px;">curl -X POST '{{ api_endpoint }}' \
+  -H 'Content-Type: application/json'{% if api_settings.require_token %} \
+  -H 'Authorization: Bearer YOUR_TOKEN'{% endif %} \
+  -d '{"phone_number":"0555555555"}'</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- Interactive panel ---------------- #}
+  <div class="col-12 col-xl-5">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <div>
+            <div class="fw-semibold">اختبار مباشر</div>
+            <div class="rd-text-muted small">يستدعي الواجهة البرمجية الحقيقية من جهة الخادم ويعرض النتيجة هنا.</div>
+          </div>
+          <span class="rd-badge rd-badge--neutral">للمشرفين فقط</span>
+        </div>
+
+        <form id="api-test-form" class="d-grid gap-2"
+              action="{% url 'phone_refresh:api_live_test' %}" method="post">
+          {% csrf_token %}
+          <div>
+            <label class="form-label" for="api-test-phone">رقم الهاتف</label>
+            <input type="text" class="form-control" id="api-test-phone" name="phone"
+                   dir="ltr" inputmode="numeric" pattern="05[0-9]{8}" maxlength="10"
+                   placeholder="0555555555" autocomplete="off" required>
+          </div>
+          <div>
+            <label class="form-label" for="api-test-token">
+              التوكن
+              {% if api_settings.require_token %}
+                <span class="rd-text-muted">(مطلوب)</span>
+              {% else %}
+                <span class="rd-text-muted">(اختياري حالياً)</span>
+              {% endif %}
+            </label>
+            <input type="text" class="form-control" id="api-test-token" name="token"
+                   dir="ltr" autocomplete="off" placeholder="Bearer token">
+            <div class="form-text">يُرسل في الترويسة <code dir="ltr">Authorization: Bearer …</code>.</div>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">إرسال طلب اختبار</button>
+          </div>
+        </form>
+
+        <div id="api-test-result" class="mt-3" hidden>
+          <div class="rd-card" style="background: var(--bs-body-bg);">
+            <div class="rd-card-body">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div>
+                  <span class="rd-badge" id="atr-http">—</span>
+                  <span class="rd-text-muted small ms-2" id="atr-duration"></span>
+                </div>
+                <div class="rd-text-muted small" id="atr-token-flag"></div>
+              </div>
+              <pre class="mb-0 p-2 small text-break" dir="ltr"
+                   id="atr-body"
+                   style="background: var(--bs-tertiary-bg); border-radius: 6px; max-height: 320px; overflow:auto;"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('api-test-form');
+    if (!form) return;
+    var resultBox = document.getElementById('api-test-result');
+    var elHttp = document.getElementById('atr-http');
+    var elDuration = document.getElementById('atr-duration');
+    var elTokenFlag = document.getElementById('atr-token-flag');
+    var elBody = document.getElementById('atr-body');
+
+    function show(data) {
+      resultBox.hidden = false;
+      if (data.ok === false) {
+        elHttp.textContent = 'خطأ';
+        elDuration.textContent = '';
+        elTokenFlag.textContent = '';
+        elBody.textContent = data.error || '—';
+        return;
+      }
+      var statusCode = data.http_status;
+      elHttp.textContent = 'HTTP ' + statusCode;
+      elDuration.textContent = (data.duration_ms != null ? data.duration_ms + ' ms' : '');
+      elTokenFlag.textContent = data.token_used ? 'تم إرسال توكن' : 'بدون توكن';
+      var body = data.response;
+      try {
+        elBody.textContent = (typeof body === 'string')
+          ? body
+          : JSON.stringify(body, null, 2);
+      } catch (e) {
+        elBody.textContent = String(body);
+      }
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...جارٍ التنفيذ';
+      try {
+        var response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' },
+          body: new FormData(form),
+          credentials: 'same-origin',
+        });
+        var data = {};
+        try { data = await response.json(); } catch (e) { data = { ok: false, error: 'استجابة غير صالحة' }; }
+        if (!response.ok && data.ok !== false) data.ok = false;
+        show(data);
+      } catch (err) {
+        show({ ok: false, error: 'تعذّر الاتصال بالخادم' });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  })();
+</script>

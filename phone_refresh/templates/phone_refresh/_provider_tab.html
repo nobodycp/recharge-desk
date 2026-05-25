@@ -1,0 +1,102 @@
+<div class="rd-card mb-3">
+  <div class="rd-card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <div class="fw-semibold">قواعد المزوّد: <span class="text-uppercase">{{ provider }}</span></div>
+      <div class="rd-text-muted small">يتم تنفيذ القواعد حسب الترتيب — أوّل قاعدة تتطابق تحدّد الحالة.</div>
+    </div>
+    <a class="btn btn-primary btn-sm" href="{% url 'phone_refresh:rule_create' provider=provider %}">
+      إضافة قاعدة
+    </a>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th style="width: 80px;">الترتيب</th>
+              <th>نوع المطابقة</th>
+              <th>النمط / Pattern</th>
+              <th>القيمة المتوقّعة</th>
+              <th>الحالة الناتجة</th>
+              <th>مفعّل</th>
+              <th>ملاحظة</th>
+              <th class="text-end">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rule in rules %}
+              <tr>
+                <td class="tabular-nums">{{ rule.order }}</td>
+                <td><span class="rd-badge rd-badge--neutral">{{ rule.get_match_type_display }}</span></td>
+                <td class="text-break" dir="auto"><code>{{ rule.pattern }}</code></td>
+                <td class="text-break" dir="auto">{{ rule.expected_value|default:"—" }}</td>
+                <td><span class="rd-badge">{{ rule.target_status.label }}</span></td>
+                <td>
+                  {% if rule.is_active %}
+                    <span class="rd-badge rd-badge--paid">نعم</span>
+                  {% else %}
+                    <span class="rd-badge rd-badge--neutral">لا</span>
+                  {% endif %}
+                </td>
+                <td class="rd-text-muted small" dir="auto">{{ rule.note|default:"—" }}</td>
+                <td class="text-end text-nowrap">
+                  <a class="btn btn-sm btn-outline-secondary"
+                     href="{% url 'phone_refresh:rule_edit' pk=rule.pk %}">تعديل</a>
+                  <form method="post"
+                        action="{% url 'phone_refresh:rule_delete' pk=rule.pk %}"
+                        class="d-inline"
+                        onsubmit="return confirm('حذف هذه القاعدة؟');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center py-5 rd-text-muted">
+                  لا توجد قواعد لهذا المزوّد. أضف قاعدة لبدء التطابق مع ردود المزوّد.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for rule in rules %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div class="fw-semibold">#{{ rule.order }} · {{ rule.get_match_type_display }}</div>
+            {% if rule.is_active %}
+              <span class="rd-badge rd-badge--paid">مفعّل</span>
+            {% else %}
+              <span class="rd-badge rd-badge--neutral">معطّل</span>
+            {% endif %}
+          </div>
+          <div class="small text-break mb-1" dir="auto"><code>{{ rule.pattern }}</code></div>
+          {% if rule.expected_value %}
+            <div class="small rd-text-muted mb-1" dir="auto">= {{ rule.expected_value }}</div>
+          {% endif %}
+          <div class="small mb-2">→ <span class="rd-badge">{{ rule.target_status.label }}</span></div>
+          <div class="d-flex flex-wrap gap-1 pt-2 border-top" style="border-color: var(--bs-border-color);">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{% url 'phone_refresh:rule_edit' pk=rule.pk %}">تعديل</a>
+            <form method="post"
+                  action="{% url 'phone_refresh:rule_delete' pk=rule.pk %}"
+                  class="d-inline"
+                  onsubmit="return confirm('حذف هذه القاعدة؟');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">لا توجد قواعد لهذا المزوّد.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

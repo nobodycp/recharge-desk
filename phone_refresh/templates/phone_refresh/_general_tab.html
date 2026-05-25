@@ -1,0 +1,204 @@
+{# General tab: internal test tool + system toggles. #}
+
+<div class="row g-3">
+  {# ── Section 1: اختبار داخلي ───────────────────────────────────────── #}
+  <div class="col-12 col-xl-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <div>
+            <div class="fw-semibold">اختبار داخلي</div>
+            <div class="rd-text-muted small">
+              نفّذ تحديثاً مباشرًا على رقم بدون احتساب فترة الانتظار وبدون التأثّر بمفتاح إيقاف الخدمة.
+            </div>
+          </div>
+          <span class="rd-badge rd-badge--neutral">للمشرفين فقط</span>
+        </div>
+
+        <form id="internal-test-form" class="d-grid gap-2"
+              action="{% url 'phone_refresh:settings_internal_test' %}" method="post">
+          {% csrf_token %}
+          <div>
+            {{ internal_test_form.phone.label_tag }}
+            {{ internal_test_form.phone }}
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">تحديث الرقم (اختبار)</button>
+          </div>
+        </form>
+
+        <div id="internal-test-result" class="mt-3" hidden>
+          <div class="rd-card" style="background: var(--bs-body-bg);">
+            <div class="rd-card-body">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div>
+                  <span class="rd-badge" id="itr-status">—</span>
+                  <span class="rd-text-muted small ms-2" id="itr-provider"></span>
+                </div>
+                <div class="rd-text-muted small" id="itr-rule"></div>
+              </div>
+              <div id="itr-title" class="fw-semibold" dir="auto"></div>
+              <div id="itr-body" class="small mb-2" dir="auto"></div>
+              <details>
+                <summary class="rd-text-muted small">تفاصيل خام (للتشخيص)</summary>
+                <div class="small mt-2">
+                  <div>HTTP: <code id="itr-http">—</code></div>
+                  <div>Error: <code id="itr-error">—</code></div>
+                  <div>Last refresh: <code id="itr-last">—</code></div>
+                  <pre class="mt-2 mb-0 p-2 small text-break" dir="ltr"
+                       style="background: var(--bs-tertiary-bg); border-radius: 6px; max-height: 240px; overflow:auto;"
+                       id="itr-excerpt"></pre>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Section 2 & 3: مفاتيح التحكم + مدة الانتظار ───────────────────── #}
+  <div class="col-12 col-xl-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="mb-2">
+          <div class="fw-semibold">مفاتيح التحكم</div>
+          <div class="rd-text-muted small">إعدادات تؤثّر على واجهة العميل العامة وعلى الواجهة البرمجية.</div>
+        </div>
+
+        <form method="post" action="{% url 'phone_refresh:settings_general_save' %}" class="d-grid gap-3">
+          {% csrf_token %}
+
+          <div class="form-check form-switch">
+            {{ settings_form.service_enabled }}
+            <label class="form-check-label fw-semibold" for="{{ settings_form.service_enabled.id_for_label }}">
+              تفعيل خدمة التحديث
+            </label>
+            <div class="form-text">
+              عند الإيقاف يتم إرجاع رسالة «الخدمة متوقفة» لجميع طلبات العملاء.
+            </div>
+          </div>
+
+          <div class="form-check form-switch">
+            {{ settings_form.db_precheck_enabled }}
+            <label class="form-check-label fw-semibold" for="{{ settings_form.db_precheck_enabled.id_for_label }}">
+              فحص قاعدة البيانات قبل التحديث
+            </label>
+            <div class="form-text">
+              عند التفعيل (السلوك الافتراضي) يتم البحث عن الرقم في المبيعات لاختيار المزوّد.
+              عند الإيقاف يتم استخدام «المزوّد الافتراضي» أدناه.
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label fw-semibold" for="{{ settings_form.default_provider.id_for_label }}">
+              المزوّد الافتراضي (عند إيقاف فحص قاعدة البيانات)
+            </label>
+            {{ settings_form.default_provider }}
+            <div class="form-text">إذا تُرك فارغًا وتم إيقاف فحص قاعدة البيانات، يتم إرجاع خطأ.</div>
+          </div>
+
+          <div class="form-check form-switch">
+            {{ settings_form.show_last_refresh }}
+            <label class="form-check-label fw-semibold" for="{{ settings_form.show_last_refresh.id_for_label }}">
+              عرض آخر تحديث للرقم
+            </label>
+            <div class="form-text">
+              عند التفعيل تُرفق الواجهة البرمجية الحقول
+              <code>last_refresh_at</code> و
+              <code>seconds_since_last_refresh</code>.
+            </div>
+          </div>
+
+          <hr class="my-1">
+
+          <div>
+            <label class="form-label fw-semibold" for="{{ settings_form.cooldown_seconds.id_for_label }}">
+              مدة الانتظار بين التحديثات (بالثواني)
+            </label>
+            {{ settings_form.cooldown_seconds }}
+            <div class="form-text">
+              القيمة الافتراضية: 21600 (= 6 ساعات). تظهر للعميل رسالة «{{ '{elapsed}' }}» مع الزمن المنقضي.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('internal-test-form');
+    if (!form) return;
+    var resultBox = document.getElementById('internal-test-result');
+    var elStatus = document.getElementById('itr-status');
+    var elProvider = document.getElementById('itr-provider');
+    var elRule = document.getElementById('itr-rule');
+    var elTitle = document.getElementById('itr-title');
+    var elBody = document.getElementById('itr-body');
+    var elHttp = document.getElementById('itr-http');
+    var elError = document.getElementById('itr-error');
+    var elLast = document.getElementById('itr-last');
+    var elExcerpt = document.getElementById('itr-excerpt');
+
+    function show(data) {
+      resultBox.hidden = false;
+      if (data.ok === false) {
+        elStatus.textContent = 'خطأ';
+        elTitle.textContent = data.error || 'خطأ في التنفيذ';
+        elBody.textContent = '';
+        elProvider.textContent = '';
+        elRule.textContent = '';
+        elHttp.textContent = '—';
+        elError.textContent = data.error || '—';
+        elLast.textContent = '—';
+        elExcerpt.textContent = '';
+        return;
+      }
+      elStatus.textContent = data.status_label || data.status || '—';
+      elProvider.textContent = data.provider ? ('مزوّد: ' + data.provider) : '';
+      elRule.textContent = data.matched_rule_id ? ('قاعدة: #' + data.matched_rule_id) : 'لا توجد قاعدة مطابقة';
+      var msg = data.message || {};
+      elTitle.textContent = msg.title || '';
+      elBody.textContent = msg.body || '';
+      elHttp.textContent = data.raw_status_code == null ? '—' : data.raw_status_code;
+      elError.textContent = data.error || '—';
+      if (data.last_refresh_at) {
+        elLast.textContent = data.last_refresh_at + ' (منذ ' + (data.seconds_since_last_refresh || 0) + ' ثانية)';
+      } else {
+        elLast.textContent = '—';
+      }
+      elExcerpt.textContent = data.raw_excerpt || '';
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...جارٍ التنفيذ';
+      try {
+        var response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' },
+          body: new FormData(form),
+          credentials: 'same-origin',
+        });
+        var data = {};
+        try { data = await response.json(); } catch (e) { data = { ok: false, error: 'استجابة غير صالحة' }; }
+        if (!response.ok && data.ok !== false) data.ok = false;
+        show(data);
+      } catch (err) {
+        show({ ok: false, error: 'تعذّر الاتصال بالخادم' });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  })();
+</script>

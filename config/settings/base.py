@@ -36,13 +36,23 @@ INSTALLED_APPS = [
     "reports.apps.ReportsConfig",
     "customers",
     "audit",
+    "phone_refresh",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # WhiteNoise serves collected static assets straight from gunicorn so the
+    # Coolify proxy does not need a separate static handler. Must sit right
+    # after SecurityMiddleware (see https://whitenoise.readthedocs.io/).
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "core.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    # Subdomain gate for the public phone-refresh page. Sits BEFORE
+    # CommonMiddleware so its 404 / 302 responses bypass APPEND_SLASH
+    # rewriting and language-prefix logic; sits AFTER SessionMiddleware
+    # so a future evolution can branch on request.user without surprises.
+    "phone_refresh.middleware.PhoneRefreshSubdomainMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

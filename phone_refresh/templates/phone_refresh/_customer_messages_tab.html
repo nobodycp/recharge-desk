@@ -1,0 +1,98 @@
+<div class="rd-card mb-3">
+  <div class="rd-card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <div class="fw-semibold">رسائل العميل</div>
+      <div class="rd-text-muted small">الرسائل التالية تظهر للعميل بحسب نتيجة محاولة التحديث.</div>
+    </div>
+    {% if can_add_message %}
+      <a class="btn btn-primary btn-sm" href="{% url 'phone_refresh:message_create' %}">
+        إضافة رسالة
+      </a>
+    {% else %}
+      <span class="d-inline-block" tabindex="0"
+            title="كل الحالات الحالية لديها رسالة. يمكنك إضافة حالة جديدة من تاب الحالات.">
+        <button type="button" class="btn btn-primary btn-sm" disabled
+                style="pointer-events: none;">
+          إضافة رسالة
+        </button>
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th style="width: 200px;">الحالة</th>
+              <th style="width: 220px;">العنوان</th>
+              <th>النص</th>
+              <th class="text-end" style="width: 160px;">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for message in customer_messages %}
+              <tr>
+                <td>
+                  <span class="rd-badge">{{ message.status.label }}</span>
+                  <div class="small rd-text-muted mt-1"><code dir="ltr">{{ message.status.code }}</code></div>
+                </td>
+                <td class="text-break" dir="auto">{{ message.title|default:"—" }}</td>
+                <td class="text-break rd-text-muted small" dir="auto">
+                  {{ message.body|truncatechars:80 }}
+                </td>
+                <td class="text-end text-nowrap">
+                  <a class="btn btn-sm btn-outline-secondary"
+                     href="{% url 'phone_refresh:message_edit' pk=message.pk %}">تعديل</a>
+                  <form method="post"
+                        action="{% url 'phone_refresh:message_delete' pk=message.pk %}"
+                        class="d-inline"
+                        onsubmit="return confirm('حذف هذه الرسالة؟');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-5 rd-text-muted">
+                  لا توجد رسائل بعد. أضف رسالة لكل حالة من حالات التحديث.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for message in customer_messages %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div class="fw-semibold">{{ message.status.label }}</div>
+            <code class="small" dir="ltr">{{ message.status.code }}</code>
+          </div>
+          {% if message.title %}
+            <div class="small fw-semibold mb-1" dir="auto">{{ message.title }}</div>
+          {% endif %}
+          <div class="small rd-text-muted mb-2" dir="auto">{{ message.body|truncatechars:120 }}</div>
+          <div class="d-flex flex-wrap gap-1 pt-2 border-top" style="border-color: var(--bs-border-color);">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{% url 'phone_refresh:message_edit' pk=message.pk %}">تعديل</a>
+            <form method="post"
+                  action="{% url 'phone_refresh:message_delete' pk=message.pk %}"
+                  class="d-inline"
+                  onsubmit="return confirm('حذف هذه الرسالة؟');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+            </form>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">لا توجد رسائل بعد.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

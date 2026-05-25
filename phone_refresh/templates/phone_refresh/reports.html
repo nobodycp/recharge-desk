@@ -1,0 +1,779 @@
+{% extends "base_management.html" %}
+{% load ui_tags %}
+{% block content %}
+{% comment %}
+Self-contained detail-modal styles. The report-detail dialog deliberately
+does NOT use Bootstrap's .modal classes because base_management.html wraps
+everything in .rd-app with isolation: isolate, which creates a new stacking
+context that traps any inner z-index. The overlay + dialog below are kept
+as siblings inside the same stacking context, with explicit z-index values
+and pointer-events, so neither site CSS nor a missing Bootstrap JS bundle
+can break interactivity.
+{% endcomment %}
+<style>
+  .pr-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    pointer-events: auto;
+  }
+  .pr-detail-overlay.is-open { display: flex; }
+  .pr-detail-overlay[hidden] { display: none !important; }
+  .pr-detail-overlay.is-open[hidden] { display: flex !important; }
+
+  .pr-detail-dialog {
+    position: relative;
+    z-index: 10001;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #111);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    width: min(960px, 92vw);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    direction: rtl;
+  }
+
+  .pr-detail-header,
+  .pr-detail-footer {
+    padding: 0.875rem 1.25rem;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pr-detail-header {
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    justify-content: space-between;
+  }
+  .pr-detail-footer {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    justify-content: flex-start;
+  }
+  .pr-detail-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .pr-detail-body {
+    padding: 1rem 1.25rem;
+    overflow: auto;
+    flex: 1 1 auto;
+  }
+
+  .pr-detail-close-btn,
+  .pr-detail-copy-btn,
+  .pr-detail-dismiss-btn {
+    cursor: pointer;
+    pointer-events: auto;
+    font: inherit;
+  }
+  .pr-detail-close-btn {
+    background: transparent;
+    border: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    color: var(--bs-body-color, #111);
+    opacity: 0.7;
+  }
+  .pr-detail-close-btn:hover,
+  .pr-detail-close-btn:focus-visible {
+    opacity: 1;
+    background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.05));
+    outline: none;
+  }
+  .pr-detail-copy-btn,
+  .pr-detail-dismiss-btn {
+    border: 1px solid var(--bs-border-color, #ced4da);
+    background: var(--bs-secondary-bg, #f1f3f5);
+    color: var(--bs-body-color, #111);
+    padding: 0.35rem 0.8rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+  }
+  .pr-detail-copy-btn:hover,
+  .pr-detail-dismiss-btn:hover,
+  .pr-detail-copy-btn:focus-visible,
+  .pr-detail-dismiss-btn:focus-visible {
+    filter: brightness(0.97);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bs-primary, #0d6efd);
+  }
+
+  body.pr-detail-open { overflow: hidden; }
+
+  /* Source badges (web / api / internal / legacy). Colors picked to play
+     nicely with both light and dark Bootstrap themes; intentionally
+     inline-rendered so the badge stays consistent between the table and
+     the detail modal. */
+  .pr-source-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .pr-source-badge--web      { background: #e7f1ff; color: #0a58ca; border-color: #b6d4fe; }
+  .pr-source-badge--api      { background: #d1f4e0; color: #0a6b3a; border-color: #a3e3bf; }
+  .pr-source-badge--internal { background: #efe5ff; color: #5a2ea6; border-color: #d8c4ff; }
+  .pr-source-badge--legacy   { background: #eef0f2; color: #5a6268; border-color: #d6d8db; }
+
+  .pr-bulk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .pr-bulk-toolbar .pr-bulk-count {
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 0.85rem;
+  }
+</style>
+
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+    <p class="rd-text-muted mb-0">سجلّ كامل لمحاولات تحديث الأرقام عبر المزوّدين. اضغط على أي صف لعرض التفاصيل الكاملة والاستجابة الأصلية من المزوّد.</p>
+  </div>
+</div>
+
+{% if summary %}
+  <div class="row g-2 mb-3">
+    {% for row in summary %}
+      <div class="col-6 col-md-3">
+        <div class="rd-card">
+          <div class="rd-card-body py-2">
+            <div class="rd-text-muted small">{{ row.status__label|default:row.status__code }}</div>
+            <div class="fw-semibold tabular-nums">{{ row.n }}</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% active_filter_count as pr_active %}
+{% include "partials/filter_card_open.html" with active_count=pr_active indicator_id="pr-filter-indicator" %}
+    <form method="get" id="pr-filter-form" class="row g-3 align-items-end">
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label" for="pr-q">بحث</label>
+        <input type="search" class="form-control form-control-sm" id="pr-q" name="q"
+               value="{{ q }}" placeholder="رقم الهاتف أو IP" autocomplete="off">
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="pr-provider">المزوّد</label>
+        <select id="pr-provider" name="provider" class="form-select form-select-sm">
+          <option value="">— الكل —</option>
+          {% for value, label in providers %}
+            <option value="{{ value }}" {% if selected_provider == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="pr-status">الحالة</label>
+        <select id="pr-status" name="status" class="form-select form-select-sm">
+          <option value="">— الكل —</option>
+          {% for status in statuses %}
+            <option value="{{ status.code }}" {% if selected_status == status.code %}selected{% endif %}>{{ status.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="pr-source">المصدر</label>
+        <select id="pr-source" name="source" class="form-select form-select-sm">
+          <option value="">— الكل —</option>
+          {% for value, label in source_choices %}
+            <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">تطبيق</button>
+        <a class="btn btn-outline-secondary" href="{% url 'phone_refresh:reports' %}">إعادة ضبط</a>
+      </div>
+    </form>
+{% include "partials/filter_card_close.html" %}
+
+<div class="pr-bulk-toolbar">
+  <button type="button" class="btn btn-sm btn-outline-danger" id="pr-bulk-delete-selected"
+          disabled>حذف المحدد</button>
+  <button type="button" class="btn btn-sm btn-outline-danger" id="pr-bulk-delete-filtered">
+    حذف كل النتائج المطابقة للفلتر
+  </button>
+  <span class="pr-bulk-count" id="pr-bulk-count">لم يتم تحديد أي سجل.</span>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern" id="pr-reports-table">
+          <thead>
+            <tr>
+              <th style="width: 2.5rem;">
+                <input type="checkbox" id="pr-bulk-select-all" class="form-check-input"
+                       aria-label="تحديد الكل">
+              </th>
+              <th>الوقت</th>
+              <th>الرقم</th>
+              <th>المزوّد</th>
+              <th>المصدر</th>
+              <th>الحالة</th>
+              <th>HTTP</th>
+              <th>المدّة (ms)</th>
+              <th>IP</th>
+              <th>مقتطف</th>
+              <th class="text-end"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in page_obj %}
+              <tr class="pr-log-row" data-log-id="{{ log.pk }}" style="cursor: pointer;">
+                <td>
+                  <input type="checkbox" class="form-check-input pr-log-checkbox"
+                         name="log_id" value="{{ log.pk }}"
+                         aria-label="تحديد السجل {{ log.pk }}">
+                </td>
+                <td class="text-nowrap">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                <td class="tabular-nums">{{ log.phone }}</td>
+                <td>{{ log.get_provider_display|default:log.provider|default:"—" }}</td>
+                <td>
+                  {% if log.source == "web" %}
+                    <span class="pr-source-badge pr-source-badge--web">Web</span>
+                  {% elif log.source == "api" %}
+                    <span class="pr-source-badge pr-source-badge--api">API</span>
+                  {% elif log.source == "internal_test" %}
+                    <span class="pr-source-badge pr-source-badge--internal">داخلي</span>
+                  {% elif log.source == "legacy" %}
+                    <span class="pr-source-badge pr-source-badge--legacy">قديم</span>
+                  {% else %}
+                    <span class="pr-source-badge pr-source-badge--legacy">—</span>
+                  {% endif %}
+                </td>
+                <td><span class="rd-badge">{{ log.status.label }}</span></td>
+                <td class="tabular-nums">{{ log.raw_status_code|default:"—" }}</td>
+                <td class="tabular-nums">{{ log.duration_ms|default:"—" }}</td>
+                <td class="rd-text-muted small">{{ log.ip|default:"—" }}</td>
+                <td class="rd-text-muted small text-break" dir="auto" style="max-width: 28rem;">
+                  {{ log.raw_excerpt|truncatechars:120 }}
+                </td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-outline-secondary pr-log-detail-btn"
+                          data-log-id="{{ log.pk }}">تفاصيل</button>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="11" class="text-center py-5 rd-text-muted">لا توجد سجلات.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for log in page_obj %}
+        <div class="rd-mobile-row-card pr-log-row" data-log-id="{{ log.pk }}" style="cursor: pointer;">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <div class="fw-semibold">{{ log.phone }}</div>
+            <span class="rd-badge">{{ log.status.label }}</span>
+          </div>
+          <div class="small rd-text-muted d-flex flex-wrap gap-2 align-items-center">
+            <span>{{ log.created_at|date:"Y-m-d H:i:s" }}</span>
+            <span>·</span>
+            <span>{{ log.provider|default:"—" }}</span>
+            {% if log.source == "web" %}
+              <span class="pr-source-badge pr-source-badge--web">Web</span>
+            {% elif log.source == "api" %}
+              <span class="pr-source-badge pr-source-badge--api">API</span>
+            {% elif log.source == "internal_test" %}
+              <span class="pr-source-badge pr-source-badge--internal">داخلي</span>
+            {% elif log.source == "legacy" %}
+              <span class="pr-source-badge pr-source-badge--legacy">قديم</span>
+            {% endif %}
+          </div>
+          <div class="small text-break" dir="auto">{{ log.raw_excerpt|truncatechars:120 }}</div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">لا توجد سجلات.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
+
+<div class="pr-detail-overlay" id="pr-log-detail-modal" role="dialog" aria-modal="true"
+     aria-labelledby="pr-log-detail-title" hidden>
+  <div class="pr-detail-dialog" role="document">
+    <div class="pr-detail-header">
+      <h2 class="pr-detail-title" id="pr-log-detail-title">تفاصيل السجل</h2>
+      <button type="button" class="pr-detail-close-btn" data-pr-detail-dismiss
+              aria-label="إغلاق">&times;</button>
+    </div>
+    <div class="pr-detail-body">
+      <div id="pr-log-detail-loading" class="text-center py-4 rd-text-muted">جاري التحميل…</div>
+      <div id="pr-log-detail-error" class="alert alert-danger d-none" role="alert"></div>
+      <div id="pr-log-detail-content" class="d-none">
+        <dl class="row g-2 mb-3 small">
+          <dt class="col-sm-3 rd-text-muted">الرقم</dt>
+          <dd class="col-sm-9 tabular-nums" data-field="phone">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">المزوّد</dt>
+          <dd class="col-sm-9" data-field="provider_label">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">المصدر</dt>
+          <dd class="col-sm-9">
+            <span data-field="source_badge"
+                  class="pr-source-badge pr-source-badge--legacy">—</span>
+          </dd>
+
+          <dt class="col-sm-3 rd-text-muted">الحالة</dt>
+          <dd class="col-sm-9">
+            <span class="rd-badge" data-field="status_label">—</span>
+            <code class="ms-2" data-field="status_code"></code>
+          </dd>
+
+          <dt class="col-sm-3 rd-text-muted">رمز HTTP</dt>
+          <dd class="col-sm-9 tabular-nums" data-field="http_status">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">المدّة (ms)</dt>
+          <dd class="col-sm-9 tabular-nums" data-field="duration_ms">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">IP</dt>
+          <dd class="col-sm-9" data-field="ip">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">الوقت</dt>
+          <dd class="col-sm-9" data-field="created_at">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">القاعدة المطابقة</dt>
+          <dd class="col-sm-9" data-field="matched_rule">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">خطأ</dt>
+          <dd class="col-sm-9" data-field="error">—</dd>
+
+          <dt class="col-sm-3 rd-text-muted">html_form_detected</dt>
+          <dd class="col-sm-9" data-field="html_form_detected">—</dd>
+        </dl>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-semibold">الاستجابة الكاملة من المزوّد</div>
+          <button type="button" class="pr-detail-copy-btn" id="pr-log-detail-copy">نسخ</button>
+        </div>
+        <div id="pr-log-detail-body-legacy" class="alert alert-danger small d-none" role="alert">
+          تنبيه: الرد الكامل غير متوفر لهذا السجل (سجل قديم قبل تحديث النظام).
+        </div>
+        <div id="pr-log-detail-body-note" class="alert alert-warning small d-none" role="alert">
+          الرد الكامل لا يُحفظ إلا عند حدوث خطأ أو عدم تطابق أي قاعدة. هذا السجل تم تطابقه بنجاح، فيظهر المقتطف القصير فقط.
+        </div>
+        <pre id="pr-log-detail-body" dir="ltr"
+             style="white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; background: var(--bs-tertiary-bg, #f8f9fa); padding: 0.75rem; border-radius: 0.375rem; font-size: 0.85rem;"></pre>
+      </div>
+    </div>
+    <div class="pr-detail-footer">
+      <button type="button" class="pr-detail-dismiss-btn" data-pr-detail-dismiss>إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var detailUrlTemplate = "{% url 'phone_refresh:report_log_detail' 0 %}";
+
+  var overlayEl = document.getElementById('pr-log-detail-modal');
+  if (!overlayEl) { return; }
+
+  var dialogEl   = overlayEl.querySelector('.pr-detail-dialog');
+  var loadingEl  = document.getElementById('pr-log-detail-loading');
+  var errorEl    = document.getElementById('pr-log-detail-error');
+  var contentEl  = document.getElementById('pr-log-detail-content');
+  var bodyEl       = document.getElementById('pr-log-detail-body');
+  var bodyNoteEl   = document.getElementById('pr-log-detail-body-note');
+  var bodyLegacyEl = document.getElementById('pr-log-detail-body-legacy');
+  var copyBtn      = document.getElementById('pr-log-detail-copy');
+
+  function isOpen() {
+    return overlayEl.classList.contains('is-open');
+  }
+
+  function showState(state) {
+    loadingEl.classList.toggle('d-none', state !== 'loading');
+    errorEl.classList.toggle('d-none',   state !== 'error');
+    contentEl.classList.toggle('d-none', state !== 'content');
+  }
+
+  function resetDetailState() {
+    showState('loading');
+    if (errorEl)      { errorEl.textContent = ''; }
+    if (bodyEl)       { bodyEl.textContent = ''; }
+    if (bodyNoteEl)   { bodyNoteEl.classList.add('d-none'); }
+    if (bodyLegacyEl) { bodyLegacyEl.classList.add('d-none'); }
+    contentEl.querySelectorAll('[data-field]').forEach(function (el) {
+      el.textContent = '—';
+    });
+    var badgeEl = contentEl.querySelector('[data-field="source_badge"]');
+    if (badgeEl) {
+      badgeEl.className = 'pr-source-badge pr-source-badge--legacy';
+      badgeEl.textContent = '—';
+    }
+  }
+
+  function openModal() {
+    if (isOpen()) { return; }
+    overlayEl.removeAttribute('hidden');
+    overlayEl.classList.add('is-open');
+    document.body.classList.add('pr-detail-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (!isOpen()) {
+      // Idempotent: ensure attribute + body state are clean even if called
+      // before any open (e.g. Esc handler firing on a stale listener).
+      overlayEl.setAttribute('hidden', '');
+      document.body.classList.remove('pr-detail-open');
+      document.body.style.overflow = '';
+      return;
+    }
+    overlayEl.classList.remove('is-open');
+    overlayEl.setAttribute('hidden', '');
+    document.body.classList.remove('pr-detail-open');
+    document.body.style.overflow = '';
+    resetDetailState();
+  }
+
+  function setField(name, value) {
+    var el = contentEl.querySelector('[data-field="' + name + '"]');
+    if (el) {
+      el.textContent = (value === null || value === undefined || value === '') ? '—' : String(value);
+    }
+  }
+
+  var SOURCE_BADGE_CONFIG = {
+    web:           { cls: 'pr-source-badge--web',      label: 'Web' },
+    api:           { cls: 'pr-source-badge--api',      label: 'API' },
+    internal_test: { cls: 'pr-source-badge--internal', label: 'داخلي' },
+    legacy:        { cls: 'pr-source-badge--legacy',   label: 'قديم' }
+  };
+
+  function renderSourceBadge(sourceKey, sourceLabel) {
+    var badgeEl = contentEl.querySelector('[data-field="source_badge"]');
+    if (!badgeEl) { return; }
+    badgeEl.className = 'pr-source-badge';
+    var cfg = SOURCE_BADGE_CONFIG[sourceKey];
+    if (cfg) {
+      badgeEl.classList.add(cfg.cls);
+      badgeEl.textContent = cfg.label;
+    } else {
+      badgeEl.classList.add('pr-source-badge--legacy');
+      badgeEl.textContent = sourceLabel || '—';
+    }
+  }
+
+  function renderDetail(data) {
+    setField('phone', data.phone);
+    setField('provider_label', data.provider_label || data.provider);
+    renderSourceBadge(data.source, data.source_label);
+    setField('status_label', data.status_label);
+    setField('status_code', data.status_code ? '(' + data.status_code + ')' : '');
+    setField('http_status', data.http_status);
+    setField('duration_ms', data.duration_ms);
+    setField('ip', data.ip);
+    setField('created_at', data.created_at);
+    setField('error', data.error);
+    setField('html_form_detected',
+      data.html_form_detected === null ? 'غير مسجّل'
+      : (data.html_form_detected ? 'نعم' : 'لا'));
+
+    var ruleEl = contentEl.querySelector('[data-field="matched_rule"]');
+    if (ruleEl) {
+      if (data.matched_rule) {
+        var r = data.matched_rule;
+        var preview = (r.pattern || '').slice(0, 120);
+        ruleEl.textContent = '#' + r.id + ' · ' + r.match_type + ' · ' + preview;
+      } else {
+        ruleEl.textContent = '—';
+      }
+    }
+
+    var hasFullBody = !!(data.raw_body && data.raw_body.length > 0);
+    if (hasFullBody) {
+      bodyNoteEl.classList.add('d-none');
+      bodyLegacyEl.classList.add('d-none');
+      bodyEl.textContent = data.raw_body;
+    } else {
+      // Distinguish "deliberately not stored" (clean rule match) from
+      // legacy rows that predate this storage policy. A legacy row is
+      // one where the upstream call clearly happened but nothing was
+      // captured — heuristically: no rule matched OR an error was
+      // recorded, yet raw_body is still empty.
+      var hasError    = !!(data.error && String(data.error).length > 0);
+      var noRuleMatch = !data.matched_rule;
+      var isLegacy    = hasError || noRuleMatch;
+      if (isLegacy) {
+        bodyLegacyEl.classList.remove('d-none');
+        bodyNoteEl.classList.add('d-none');
+      } else {
+        bodyNoteEl.classList.remove('d-none');
+        bodyLegacyEl.classList.add('d-none');
+      }
+      bodyEl.textContent = data.raw_excerpt || '';
+    }
+  }
+
+  function openDetail(logId) {
+    resetDetailState();
+    openModal();
+    var url = detailUrlTemplate.replace(/\/0\/$/, '/' + encodeURIComponent(logId) + '/');
+    fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (resp) {
+        if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+        return resp.json();
+      })
+      .then(function (data) {
+        renderDetail(data);
+        showState('content');
+      })
+      .catch(function (err) {
+        errorEl.textContent = 'تعذّر تحميل التفاصيل: ' + err.message;
+        showState('error');
+      });
+  }
+
+  // ---- Dismiss wiring (all four close paths) -----------------------------
+  // 1) "×" and "إغلاق" buttons — any element marked data-pr-detail-dismiss.
+  overlayEl.querySelectorAll('[data-pr-detail-dismiss]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    });
+  });
+
+  // 2) Overlay click (but NOT clicks on the dialog itself).
+  overlayEl.addEventListener('click', function (e) {
+    if (e.target === overlayEl) { closeModal(); }
+  });
+
+  // 3) Esc key, only while overlay is open.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isOpen()) {
+      e.preventDefault();
+      closeModal();
+    }
+  });
+
+  // 4) Defensive: stop bubbling INSIDE the dialog so any document-level
+  //    handlers (e.g. row-open below, sidebar nav, htmx helpers) can never
+  //    swallow clicks on the dialog contents.
+  if (dialogEl) {
+    dialogEl.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  }
+
+  // ---- Row / button open --------------------------------------------------
+  document.addEventListener('click', function (event) {
+    // Never let the global row-open handler hijack a click that originated
+    // inside the open detail dialog.
+    if (event.target.closest('#pr-log-detail-modal')) { return; }
+
+    var btn = event.target.closest('.pr-log-detail-btn');
+    if (btn) {
+      event.preventDefault();
+      event.stopPropagation();
+      openDetail(btn.getAttribute('data-log-id'));
+      return;
+    }
+    if (event.target.closest('a, button, input, select, textarea, label')) {
+      return;
+    }
+    var row = event.target.closest('.pr-log-row');
+    if (row) {
+      openDetail(row.getAttribute('data-log-id'));
+    }
+  });
+
+  // ---- Copy button --------------------------------------------------------
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var text = bodyEl ? (bodyEl.textContent || '') : '';
+      if (!text) { return; }
+      var done = function () {
+        var original = copyBtn.dataset.originalLabel || copyBtn.textContent;
+        copyBtn.dataset.originalLabel = original;
+        copyBtn.textContent = 'تم النسخ';
+        setTimeout(function () { copyBtn.textContent = original; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {
+          copyBtn.textContent = 'تعذّر النسخ';
+        });
+      }
+    });
+  }
+})();
+
+// ---- Collapsible filter panel ---------------------------------------------
+// The filter card uses the shared `partials/filter_card_open.html` pattern,
+// which renders a native <details class="rd-filter-card">. We keep the
+// `pr-filter-open` localStorage key so the panel state survives reloads.
+(function () {
+  var STORAGE_KEY = 'pr-filter-open';
+  var formEl = document.getElementById('pr-filter-form');
+  var detailsEl = formEl ? formEl.closest('details.rd-filter-card') : null;
+  if (!detailsEl) { return; }
+
+  var initialOpen = false;
+  try {
+    initialOpen = window.localStorage.getItem(STORAGE_KEY) === '1';
+  } catch (_) { /* localStorage unavailable — fall through to closed */ }
+  if (initialOpen) { detailsEl.setAttribute('open', ''); }
+
+  detailsEl.addEventListener('toggle', function () {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, detailsEl.open ? '1' : '0');
+    } catch (_) { /* ignore quota/private-mode failures */ }
+  });
+})();
+
+// ---- Bulk select + delete --------------------------------------------------
+(function () {
+  var selectAllEl  = document.getElementById('pr-bulk-select-all');
+  var deleteSelEl  = document.getElementById('pr-bulk-delete-selected');
+  var deleteFltEl  = document.getElementById('pr-bulk-delete-filtered');
+  var countEl      = document.getElementById('pr-bulk-count');
+  var tableEl      = document.getElementById('pr-reports-table');
+  if (!deleteSelEl || !deleteFltEl) { return; }
+
+  var bulkDeleteUrl = "{% url 'phone_refresh:report_logs_bulk_delete' %}";
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+
+  function rowCheckboxes() {
+    return tableEl ? tableEl.querySelectorAll('.pr-log-checkbox') : [];
+  }
+
+  function checkedIds() {
+    var ids = [];
+    rowCheckboxes().forEach(function (cb) {
+      if (cb.checked) { ids.push(cb.value); }
+    });
+    return ids;
+  }
+
+  function refreshToolbar() {
+    var n = checkedIds().length;
+    deleteSelEl.disabled = (n === 0);
+    if (countEl) {
+      countEl.textContent = n === 0
+        ? 'لم يتم تحديد أي سجل.'
+        : ('تم تحديد ' + n + ' سجل.');
+    }
+    if (selectAllEl) {
+      var boxes = rowCheckboxes();
+      var total = boxes.length;
+      selectAllEl.checked = (total > 0 && n === total);
+      selectAllEl.indeterminate = (n > 0 && n < total);
+    }
+  }
+
+  if (selectAllEl) {
+    selectAllEl.addEventListener('change', function () {
+      var on = selectAllEl.checked;
+      rowCheckboxes().forEach(function (cb) { cb.checked = on; });
+      refreshToolbar();
+    });
+  }
+
+  // Prevent row-open from firing when toggling checkboxes; the global
+  // click handler in the detail-modal IIFE above already ignores
+  // <input> elements, but stopping propagation here keeps the row's
+  // cursor:pointer affordance from feeling "sticky" on touch devices.
+  document.addEventListener('change', function (e) {
+    if (e.target.classList && e.target.classList.contains('pr-log-checkbox')) {
+      refreshToolbar();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.classList && e.target.classList.contains('pr-log-checkbox')) {
+      e.stopPropagation();
+    }
+  });
+
+  function postBulkDelete(body, confirmMsg) {
+    if (!window.confirm(confirmMsg)) { return; }
+    var formData = new FormData();
+    Object.keys(body).forEach(function (k) {
+      if (body[k] !== undefined && body[k] !== null) {
+        formData.append(k, body[k]);
+      }
+    });
+    var csrfToken = getCookie('csrftoken');
+    fetch(bulkDeleteUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      },
+      body: formData
+    }).then(function (resp) {
+      if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
+      return resp.json();
+    }).then(function (data) {
+      if (data && data.ok) {
+        window.alert('تم حذف ' + (data.deleted || 0) + ' سجل.');
+        window.location.reload();
+      } else {
+        window.alert('تعذّر تنفيذ الحذف.');
+      }
+    }).catch(function (err) {
+      window.alert('تعذّر تنفيذ الحذف: ' + err.message);
+    });
+  }
+
+  deleteSelEl.addEventListener('click', function () {
+    var ids = checkedIds();
+    if (ids.length === 0) { return; }
+    postBulkDelete(
+      { mode: 'ids', ids: ids.join(',') },
+      'سيتم حذف ' + ids.length + ' سجل المحدد. هل أنت متأكد؟'
+    );
+  });
+
+  deleteFltEl.addEventListener('click', function () {
+    var params = new URLSearchParams(window.location.search);
+    var body = { mode: 'filter' };
+    ['provider', 'status', 'source', 'q'].forEach(function (k) {
+      var v = params.get(k);
+      if (v) { body[k] = v; }
+    });
+    var hasFilter = body.provider || body.status || body.source || body.q;
+    var msg = hasFilter
+      ? 'سيتم حذف كل السجلات المطابقة للفلتر الحالي. هل أنت متأكد؟'
+      : 'لا يوجد فلتر مطبّق — سيتم حذف كل السجلات. هل أنت متأكد تمامًا؟';
+    postBulkDelete(body, msg);
+  });
+
+  refreshToolbar();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,246 @@
+{# General tab on the Providers page: on/off toggles + per-provider test. #}
+
+<div class="row g-3">
+  {# ── Section 1: تفعيل المزودين ───────────────────────────────────────── #}
+  <div class="col-12 col-xl-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="mb-2">
+          <div class="fw-semibold">تفعيل المزودين</div>
+          <div class="rd-text-muted small">
+            عند إيقاف مزوّد لن يتم تنفيذ التحديث عبره وستظهر للعميل رسالة «المزوّد متوقف».
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'phone_refresh:providers_general_save' %}" class="d-grid gap-2">
+          {% csrf_token %}
+          {% for cfg in provider_configs %}
+            <div class="d-flex justify-content-between align-items-center py-2 px-2 rounded"
+                 style="background: var(--bs-body-bg);">
+              <div>
+                <div class="fw-semibold">{{ cfg.get_provider_display }}</div>
+                <div class="rd-text-muted small"><code>{{ cfg.provider }}</code></div>
+              </div>
+              <div class="form-check form-switch m-0">
+                <input type="checkbox"
+                       class="form-check-input"
+                       role="switch"
+                       name="is_enabled_{{ cfg.provider }}"
+                       id="prv-toggle-{{ cfg.provider }}"
+                       {% if cfg.is_enabled %}checked{% endif %}>
+                <label class="visually-hidden" for="prv-toggle-{{ cfg.provider }}">{{ cfg.provider }}</label>
+              </div>
+            </div>
+          {% endfor %}
+
+          <div class="d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Section 2: اختبار مزوّد محدد ────────────────────────────────────── #}
+  <div class="col-12 col-xl-6">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+          <div>
+            <div class="fw-semibold">اختبار مزوّد محدد</div>
+            <div class="rd-text-muted small">
+              ينفّذ نداءً مباشراً على المزوّد المختار بدون فحص قاعدة البيانات وبدون احتساب فترة الانتظار، حتى لو كان المزوّد موقوفاً.
+            </div>
+          </div>
+          <span class="rd-badge rd-badge--neutral">للمشرفين فقط</span>
+        </div>
+
+        <form id="provider-test-form" class="d-grid gap-2"
+              action="{% url 'phone_refresh:providers_test' %}" method="post">
+          {% csrf_token %}
+          <div>
+            {{ provider_test_form.phone.label_tag }}
+            {{ provider_test_form.phone }}
+          </div>
+          <div>
+            {{ provider_test_form.provider.label_tag }}
+            {{ provider_test_form.provider }}
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">تنفيذ الاختبار</button>
+          </div>
+        </form>
+
+        <div id="provider-test-result" class="mt-3" hidden>
+          <div class="rd-card" style="background: var(--bs-body-bg);">
+            <div class="rd-card-body">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div>
+                  <span class="rd-badge" id="ptr-status">—</span>
+                  <span class="rd-text-muted small ms-2" id="ptr-provider"></span>
+                </div>
+                <div class="rd-text-muted small" id="ptr-duration"></div>
+              </div>
+              <div id="ptr-title" class="fw-semibold" dir="auto"></div>
+              <div id="ptr-body" class="small mb-2" dir="auto"></div>
+
+              <div class="small mb-2" id="ptr-rule-block">
+                <div class="rd-text-muted">القاعدة المطابقة:</div>
+                <div id="ptr-rule">—</div>
+              </div>
+
+              <details>
+                <summary class="rd-text-muted small">تفاصيل خام (للتشخيص)</summary>
+                <div class="small mt-2">
+                  <div>HTTP: <code id="ptr-http">—</code></div>
+                  <div>Error: <code id="ptr-error">—</code></div>
+                  <div>المدّة: <code id="ptr-duration2">—</code></div>
+                  <div>طول الاستجابة: <code id="ptr-body-len">—</code> حرف</div>
+                  <div>HTML form مكتشف: <code id="ptr-html-form">—</code></div>
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="rd-text-muted small">نص الاستجابة الكامل (بدون اقتطاع):</div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="ptr-copy-btn">نسخ</button>
+                  </div>
+                  <pre class="mt-1 mb-0 p-2 small" dir="ltr"
+                       style="background: var(--bs-tertiary-bg); border-radius: 6px;
+                              max-height: 60vh; overflow: auto;
+                              white-space: pre-wrap; word-break: break-word;"
+                       id="ptr-excerpt"></pre>
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById('provider-test-form');
+    if (!form) return;
+    var resultBox = document.getElementById('provider-test-result');
+    var elStatus = document.getElementById('ptr-status');
+    var elProvider = document.getElementById('ptr-provider');
+    var elDuration = document.getElementById('ptr-duration');
+    var elDuration2 = document.getElementById('ptr-duration2');
+    var elTitle = document.getElementById('ptr-title');
+    var elBody = document.getElementById('ptr-body');
+    var elRule = document.getElementById('ptr-rule');
+    var elHttp = document.getElementById('ptr-http');
+    var elError = document.getElementById('ptr-error');
+    var elExcerpt = document.getElementById('ptr-excerpt');
+    var elBodyLen = document.getElementById('ptr-body-len');
+    var elHtmlForm = document.getElementById('ptr-html-form');
+    var elCopyBtn = document.getElementById('ptr-copy-btn');
+
+    function show(data) {
+      resultBox.hidden = false;
+      if (data.ok === false) {
+        elStatus.textContent = 'خطأ';
+        elTitle.textContent = data.error || 'خطأ في التنفيذ';
+        elBody.textContent = '';
+        elProvider.textContent = '';
+        elDuration.textContent = '';
+        elDuration2.textContent = '—';
+        elRule.textContent = '—';
+        elHttp.textContent = '—';
+        elError.textContent = data.error || '—';
+        elExcerpt.textContent = '';
+        elBodyLen.textContent = '—';
+        elHtmlForm.textContent = '—';
+        return;
+      }
+      elStatus.textContent = data.status_label || data.status || '—';
+      var providerText = data.provider_label || data.provider || '';
+      elProvider.textContent = providerText ? ('مزوّد: ' + providerText) : '';
+      if (data.duration_ms != null) {
+        elDuration.textContent = data.duration_ms + ' ms';
+        elDuration2.textContent = data.duration_ms + ' ms';
+      } else {
+        elDuration.textContent = '';
+        elDuration2.textContent = '—';
+      }
+      var msg = data.message || {};
+      elTitle.textContent = msg.title || '';
+      elBody.textContent = msg.body || '';
+
+      if (data.matched_rule) {
+        var r = data.matched_rule;
+        elRule.textContent =
+          '#' + r.id + ' · ' + (r.match_type || '') +
+          ' · pattern=' + (r.pattern || '') +
+          (r.expected_value ? ' · expected=' + r.expected_value : '') +
+          ' → ' + (r.target_status || '');
+      } else {
+        elRule.textContent = 'لا توجد قاعدة مطابقة';
+      }
+
+      elHttp.textContent = data.raw_status_code == null ? '—' : data.raw_status_code;
+      elError.textContent = data.error || '—';
+      // Prefer the explicit full body field; fall back to raw_excerpt for
+      // older response shapes. textContent guarantees the HTML is rendered
+      // as inert text (no auto-escape concerns).
+      var fullBody = (data.raw_body != null ? data.raw_body : (data.raw_excerpt || ''));
+      elExcerpt.textContent = fullBody;
+      elBodyLen.textContent = (
+        data.raw_body_length != null ? data.raw_body_length : fullBody.length
+      );
+      elHtmlForm.textContent = data.html_form_detected ? 'نعم' : 'لا';
+    }
+
+    if (elCopyBtn) {
+      elCopyBtn.addEventListener('click', function () {
+        var text = elExcerpt.textContent || '';
+        if (!text) return;
+        var original = elCopyBtn.textContent;
+        var done = function (ok) {
+          elCopyBtn.textContent = ok ? 'تم النسخ' : 'تعذّر النسخ';
+          setTimeout(function () { elCopyBtn.textContent = original; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+        } else {
+          try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'absolute';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            done(true);
+          } catch (e) { done(false); }
+        }
+      });
+    }
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '...جارٍ التنفيذ';
+      try {
+        var response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'fetch' },
+          body: new FormData(form),
+          credentials: 'same-origin',
+        });
+        var data = {};
+        try { data = await response.json(); } catch (e) { data = { ok: false, error: 'استجابة غير صالحة' }; }
+        if (!response.ok && data.ok !== false) data.ok = false;
+        show(data);
+      } catch (err) {
+        show({ ok: false, error: 'تعذّر الاتصال بالخادم' });
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  })();
+</script>

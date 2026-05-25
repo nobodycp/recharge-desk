@@ -256,7 +256,7 @@ body.app-shell {
 /* Mobile: make the sidebar surface clearly distinct from the page body in
    dark mode so it doesn't visually melt into the content underneath. */
 @media (max-width: 991.98px) {
-  [data-bs-theme="dark"] .rd-sidebar {
+  [data-bs-theme="dark"] .rd-sidebar:not(:has(.rd-sidebar-nav--accordion)) {
     background: var(--bs-tertiary-bg);
   }
 }
@@ -416,6 +416,332 @@ body.app-shell {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sidebar accordion nav — follows active theme, lilac highlights              */
+/* -------------------------------------------------------------------------- */
+/* Declare the palette on BOTH the sidebar (parent) and the nav itself so
+   that rules targeting either side resolve the same variables. CSS custom
+   properties inherit downward only — declaring them just on the child
+   meant `.rd-sidebar:has(...) { background: var(--rd-nav-bw-bg) }`
+   silently resolved to an invalid value (and the sidebar fell back to a
+   transparent background).
+
+   Active / hover / open-group accents reuse the global lilac (`--rd-accent`
+   / `--bs-primary` — the same pill color used by the topbar's primary
+   actions like "إدخال مبيعات"). Light mode keeps a white surface; the
+   dark-mode bg is overridden below so it composites identically to the
+   topbar (no visible seam). */
+.rd-sidebar:has(.rd-sidebar-nav--accordion),
+.rd-sidebar-nav--accordion {
+  --rd-nav-bw-bg: #ffffff;
+  --rd-nav-bw-surface: #f7f7f8;
+  --rd-nav-bw-text: #111111;
+  --rd-nav-bw-muted: #6b7280;
+  --rd-nav-bw-border: rgba(17, 17, 17, 0.08);
+  /* Match the pre-redesign sidebar: translucent lilac tint on hover/active,
+     lilac text+icon on top of it (NOT a solid lilac pill with white text).
+     Hover is a softer wash than the active state so the two read as
+     distinct layers. */
+  --rd-nav-bw-hover: color-mix(in srgb, var(--rd-accent-muted) 55%, transparent);
+  --rd-nav-bw-active-bg: var(--rd-accent-muted);
+  --rd-nav-bw-active-text: var(--bs-primary);
+  --rd-nav-bw-active-border: rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.rd-sidebar-nav--accordion {
+  gap: 0.2rem;
+}
+
+/* Dark mode: bg matches the `.rd-topbar` formula
+   (`color-mix(in srgb, var(--bs-secondary-bg) 88%, transparent)`) so the
+   sidebar and topbar composite to the exact same color over `--bs-body-bg`
+   and there is no visible seam where they meet. Text/border swap to the
+   light-on-dark palette; the lilac active/hover accents inherit from the
+   light-mode declaration above, and `--rd-accent` itself is already
+   redefined by the global `[data-bs-theme="dark"]` block to `#818cf8`. */
+[data-bs-theme="dark"] .rd-sidebar:has(.rd-sidebar-nav--accordion),
+[data-bs-theme="dark"] .rd-sidebar-nav--accordion {
+  --rd-nav-bw-bg: color-mix(in srgb, var(--bs-secondary-bg) 88%, transparent);
+  --rd-nav-bw-surface: #141a22;
+  --rd-nav-bw-text: #e8eaef;
+  --rd-nav-bw-muted: #9ca3af;
+  --rd-nav-bw-border: rgba(255, 255, 255, 0.08);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group + .rd-nav-group {
+  margin-top: 0.1rem;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.62rem 0.75rem;
+  border: none;
+  border-radius: 0.7rem;
+  background: transparent;
+  color: var(--rd-nav-bw-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background var(--rd-transition-fast),
+    color var(--rd-transition-fast);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-toggle:hover {
+  background: var(--rd-nav-bw-hover);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-chevron {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  display: grid;
+  place-items: center;
+  color: var(--rd-nav-bw-muted);
+  transition: transform var(--rd-transition-fast);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-chevron svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+[dir="rtl"] .rd-sidebar-nav--accordion .rd-nav-group-chevron svg {
+  transform: scaleX(-1);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
+  transform: rotate(90deg);
+  color: var(--rd-accent);
+}
+
+[dir="rtl"] .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
+  transform: rotate(-90deg);
+}
+
+/* When a section is expanded, tint the header (label + icon) lilac so the
+   currently-open group is visually anchored to the active page below it. */
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-toggle {
+  color: var(--rd-accent);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-icon {
+  color: var(--rd-accent);
+  opacity: 1;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-icon {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--rd-nav-bw-text);
+  opacity: 0.72;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-label {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.005em;
+}
+
+/* Markup order is icon → label → chevron, which puts the chevron at the
+   end of the row in both LTR and RTL. No `order` overrides needed. */
+
+.rd-sidebar-nav--accordion .rd-nav-group-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--rd-transition);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-panel {
+  grid-template-rows: 1fr;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-panel-inner {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-height: 0;
+  /* No padding / border while collapsed — they would otherwise show
+     through the `grid-template-rows: 0fr` collapse and look like a stray
+     1px line under the group toggle. */
+  padding-block: 0;
+  padding-inline-start: 0.55rem;
+  margin-inline-start: 0.85rem;
+  border-inline-start: 0 solid var(--rd-nav-bw-border);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-panel-inner {
+  padding-block: 0.15rem;
+  border-inline-start-width: 1px;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.52rem 0.7rem;
+  border-radius: 0.625rem;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--rd-nav-bw-muted);
+  border-color: transparent;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link:hover {
+  background: var(--rd-nav-bw-hover);
+  color: var(--rd-nav-bw-text);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link.is-active {
+  background: var(--rd-nav-bw-active-bg);
+  color: var(--rd-nav-bw-active-text);
+  border-color: var(--rd-nav-bw-active-border);
+  font-weight: 600;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link.is-active .rd-nav-icon {
+  color: inherit;
+  opacity: 1;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-icon {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.65;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link.is-active .rd-nav-icon svg {
+  stroke-width: 2;
+}
+
+/* Pinned quick-access section: a flat list of links above the accordions.
+   Reuses .rd-nav-link styling for visual consistency but is slightly more
+   prominent than nested sub-links (a touch larger, no inset border/padding
+   from the panel-inner gutter) and is separated from the accordions below
+   by a hairline divider. */
+.rd-sidebar-nav--accordion .rd-nav-pinned {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rd-nav-bw-border);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link--pinned {
+  padding: 0.58rem 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--rd-nav-bw-text);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  opacity: 0.78;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* Flat sidebar panel — flush against the top + screen edge, no rounding,
+   no floating drop-shadow. Just a hairline separator between the sidebar
+   and the main content. Surface follows the active theme via the B&W
+   tokens declared above. */
+.rd-sidebar:has(.rd-sidebar-nav--accordion) {
+  background: var(--rd-nav-bw-bg) !important;
+  color: var(--rd-nav-bw-text);
+  border: 0;
+  border-radius: 0;
+  padding: 1rem 0.75rem;
+  box-shadow: none;
+}
+
+.rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand {
+  color: var(--rd-nav-bw-text);
+  padding: 0.25rem 0.55rem 0.95rem;
+}
+
+.rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand:hover {
+  background: var(--rd-nav-bw-hover);
+  color: var(--rd-nav-bw-text);
+}
+
+@media (min-width: 992px) {
+  .rd-sidebar:has(.rd-sidebar-nav--accordion) {
+    top: 0;
+    align-self: stretch;
+    height: 100vh;
+    margin: 0;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    border-radius: 0;
+    /* Hairline separator between sidebar and main content. RTL flips it to
+       the left edge so the sidebar still sits flush against the screen
+       edge on its outer side. */
+    border-inline-end: 1px solid var(--rd-nav-bw-border);
+    box-shadow: none;
+  }
+
+  [dir="rtl"] .rd-sidebar:has(.rd-sidebar-nav--accordion) {
+    margin-inline-start: 0;
+    margin-inline-end: 0;
+    border-inline-end: 1px solid var(--rd-nav-bw-border);
+    border-inline-start: 0;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .rd-sidebar:has(.rd-sidebar-nav--accordion) {
+    border-radius: 0;
+    box-shadow: var(--rd-shadow-lg);
+  }
+}
+
+.rd-sidebar-brand--logo + .rd-sidebar-nav--accordion {
+  padding-top: 0.15rem;
 }
 
 .rd-main {

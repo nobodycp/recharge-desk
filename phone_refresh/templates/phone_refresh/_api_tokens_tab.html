@@ -1,0 +1,133 @@
+{# API tokens tab: list + revoke + delete. Creation lives on a separate page. #}
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <div class="fw-semibold">توكنات الواجهة البرمجية</div>
+      <div class="rd-text-muted small">
+        التوكنات النشطة تستطيع الوصول إلى الواجهة العامة عند تفعيل اشتراط التوكن. القيمة الخام تظهر مرة واحدة فقط لحظة الإنشاء.
+      </div>
+    </div>
+    <a class="btn btn-primary btn-sm" href="{% url 'phone_refresh:api_token_create' %}">
+      + إنشاء توكن جديد
+    </a>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th style="width: 160px;">البادئة</th>
+              <th style="width: 180px;">تاريخ الإنشاء</th>
+              <th style="width: 180px;">آخر استخدام</th>
+              <th style="width: 120px;">الحالة</th>
+              <th class="text-end" style="width: 220px;">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for token in tokens %}
+              <tr>
+                <td dir="auto">
+                  <div class="fw-semibold">{{ token.name }}</div>
+                  {% if token.created_by %}
+                    <div class="small rd-text-muted">بواسطة: {{ token.created_by.get_username }}</div>
+                  {% endif %}
+                </td>
+                <td><code dir="ltr">{{ token.prefix }}…</code></td>
+                <td class="text-nowrap">{{ token.created_at|date:"Y-m-d H:i" }}</td>
+                <td class="text-nowrap rd-text-muted">
+                  {% if token.last_used_at %}
+                    {{ token.last_used_at|date:"Y-m-d H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  {% if token.is_active %}
+                    <span class="rd-badge rd-badge--paid">نشط</span>
+                  {% else %}
+                    <span class="rd-badge rd-badge--neutral">مُلغى</span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  {% if token.is_active %}
+                    <form method="post"
+                          action="{% url 'phone_refresh:api_token_revoke' pk=token.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('إلغاء هذا التوكن؟ لن يعمل بعد ذلك.');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-warning">إلغاء</button>
+                    </form>
+                  {% else %}
+                    <form method="post"
+                          action="{% url 'phone_refresh:api_token_delete' pk=token.pk %}"
+                          class="d-inline"
+                          onsubmit="return confirm('حذف هذا التوكن نهائياً؟');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 rd-text-muted">
+                  لا توجد توكنات بعد. أنشئ توكناً جديداً للسماح للعملاء الخارجيين باستخدام الواجهة البرمجية.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for token in tokens %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <div class="fw-semibold" dir="auto">{{ token.name }}</div>
+            {% if token.is_active %}
+              <span class="rd-badge rd-badge--paid">نشط</span>
+            {% else %}
+              <span class="rd-badge rd-badge--neutral">مُلغى</span>
+            {% endif %}
+          </div>
+          <div class="small rd-text-muted mb-1">
+            <code dir="ltr">{{ token.prefix }}…</code> · {{ token.created_at|date:"Y-m-d" }}
+          </div>
+          {% if token.last_used_at %}
+            <div class="small rd-text-muted mb-2">
+              آخر استخدام: {{ token.last_used_at|date:"Y-m-d H:i" }}
+            </div>
+          {% endif %}
+          <div class="d-flex flex-wrap gap-1 pt-2 border-top" style="border-color: var(--bs-border-color);">
+            {% if token.is_active %}
+              <form method="post"
+                    action="{% url 'phone_refresh:api_token_revoke' pk=token.pk %}"
+                    class="d-inline"
+                    onsubmit="return confirm('إلغاء هذا التوكن؟');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-warning">إلغاء</button>
+              </form>
+            {% else %}
+              <form method="post"
+                    action="{% url 'phone_refresh:api_token_delete' pk=token.pk %}"
+                    class="d-inline"
+                    onsubmit="return confirm('حذف هذا التوكن نهائياً؟');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">لا توجد توكنات بعد.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

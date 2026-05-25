@@ -1,84 +1,190 @@
 {% load i18n %}
 {% with ns=request.resolver_match.namespace|default:'' un=request.resolver_match.url_name|default:'' %}
-<nav class="rd-sidebar-nav" aria-label="{% trans 'Main navigation' %}">
-  <div class="rd-nav-section">{% trans "Operations" %}</div>
-  <a class="rd-nav-link {% if ns == 'reports' and un == 'dashboard' %}is-active{% endif %}" href="{% url 'reports:dashboard' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
-    <span>{% trans "Operational snapshot" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'sales' and un == 'pending_payments' %}is-active{% endif %}" href="{% url 'sales:pending_payments' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
-    <span>{% trans "Pending payments" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'sales' and un == 'awaiting_approvals' %}is-active{% endif %}" href="{% url 'sales:awaiting_approvals' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>
-    <span>{% trans "Awaiting approval" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'customers' and un == 'customer_payment_submissions_list' %}is-active{% endif %}" href="{% url 'customers:customer_payment_submissions_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-    <span>{% trans "Settlement requests" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'sales' and un == 'management_sale_list' %}is-active{% endif %}" href="{% url 'sales:management_sale_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span>
-    <span>{% trans "Sales" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'expenses' and un != 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-    <span>{% trans "Expenses" %}</span>
-  </a>
+<nav
+  class="rd-sidebar-nav rd-sidebar-nav--accordion"
+  aria-label="{% trans 'Main navigation' %}"
+  data-rd-sidebar-nav
+  data-rd-nav-active-section="{% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %}administration{% elif ns == 'accounts' and un != 'login' and un != 'logout' %}administration{% elif ns == 'core' and un == 'site_branding' %}administration{% elif ns == 'audit' %}administration{% elif ns == 'companies' %}catalog{% elif ns == 'sales' and un == 'payment_method_list' or ns == 'sales' and un == 'payment_method_create' or ns == 'sales' and un == 'payment_method_edit' %}catalog{% elif ns == 'reports' and un != 'dashboard' %}reports{% elif ns == 'expenses' and un == 'expense_report' %}reports{% elif ns == 'sales' and un == 'management_sale_list' %}operations{% elif ns == 'expenses' and un != 'expense_report' %}operations{% elif ns == 'phone_refresh' %}update-link{% endif %}"
+>
+  {# ── Pinned quick-access (always visible, no accordion) ── #}
+  <div class="rd-nav-pinned" data-rd-nav-pinned>
+    <a class="rd-nav-link rd-nav-link--pinned {% if ns == 'reports' and un == 'dashboard' %}is-active{% endif %}" href="{% url 'reports:dashboard' %}">
+      <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+      <span>{% trans "Operational snapshot" %}</span>
+    </a>
+    <a class="rd-nav-link rd-nav-link--pinned {% if ns == 'sales' and un == 'awaiting_approvals' %}is-active{% endif %}" href="{% url 'sales:awaiting_approvals' %}">
+      <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span>
+      <span>{% trans "Awaiting approval" %}</span>
+    </a>
+    <a class="rd-nav-link rd-nav-link--pinned {% if ns == 'customers' and un == 'customer_payment_submissions_list' %}is-active{% endif %}" href="{% url 'customers:customer_payment_submissions_list' %}">
+      <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+      <span>{% trans "Settlement requests" %}</span>
+    </a>
+    <a class="rd-nav-link rd-nav-link--pinned {% if ns == 'sales' and un == 'pending_payments' %}is-active{% endif %}" href="{% url 'sales:pending_payments' %}">
+      <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+      <span>{% trans "Pending payments" %}</span>
+    </a>
+  </div>
 
-  <div class="rd-nav-section">{% trans "Reports" %}</div>
-  <a class="rd-nav-link {% if ns == 'reports' and un == 'profit_report' %}is-active{% endif %}" href="{% url 'reports:profit_report' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-    <span>{% trans "Profit report" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'reports' and un == 'sales_report' %}is-active{% endif %}" href="{% url 'reports:sales_report' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
-    <span>{% trans "Sales report" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'reports' and un == 'employee_report' %}is-active{% endif %}" href="{% url 'reports:employee_report' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-    <span>{% trans "Employee performance" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'reports' %}{% if un == 'stale_phones_report' or un == 'stale_phone_edit' %}is-active{% endif %}{% endif %}" href="{% url 'reports:stale_phones_report' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-    <span>{% trans "Lines for disconnect" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'expenses' and un == 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_report' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>
-    <span>{% trans "Expense report" %}</span>
-  </a>
+  {# ── العمليات (Operations) ── #}
+  <div class="rd-nav-group{% if ns == 'sales' and un == 'management_sale_list' %} is-open{% elif ns == 'expenses' and un != 'expense_report' %} is-open{% endif %}" data-rd-nav-group="operations">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'sales' and un == 'management_sale_list' %}true{% elif ns == 'expenses' and un != 'expense_report' %}true{% else %}false{% endif %}">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+      <span class="rd-nav-group-label">{% trans "Operations" %}</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        <a class="rd-nav-link {% if ns == 'sales' and un == 'management_sale_list' %}is-active{% endif %}" href="{% url 'sales:management_sale_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span>
+          <span>{% trans "Sales" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'expenses' and un != 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+          <span>{% trans "Expenses" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
 
-  <div class="rd-nav-section">{% trans "Catalog" %}</div>
-  <a class="rd-nav-link {% if ns == 'companies' %}{% if un == 'company_list' or un == 'company_create' or un == 'company_edit' or un == 'company_delete' %}is-active{% endif %}{% endif %}" href="{% url 'companies:company_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
-    <span>{% trans "Companies" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'companies' %}{% if un != 'company_list' and un != 'company_create' and un != 'company_edit' and un != 'company_delete' %}is-active{% endif %}{% endif %}" href="{% url 'companies:product_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
-    <span>{% trans "Products" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'sales' %}{% if un == 'payment_method_list' or un == 'payment_method_create' or un == 'payment_method_edit' %}is-active{% endif %}{% endif %}" href="{% url 'sales:payment_method_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
-    <span>{% trans "Payment methods" %}</span>
-  </a>
+  {# ── التقارير (Reports) ── #}
+  <div class="rd-nav-group{% if ns == 'reports' and un != 'dashboard' %} is-open{% elif ns == 'expenses' and un == 'expense_report' %} is-open{% endif %}" data-rd-nav-group="reports">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'reports' and un != 'dashboard' %}true{% elif ns == 'expenses' and un == 'expense_report' %}true{% else %}false{% endif %}">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+      <span class="rd-nav-group-label">{% trans "Reports" %}</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        <a class="rd-nav-link {% if ns == 'reports' and un == 'profit_report' %}is-active{% endif %}" href="{% url 'reports:profit_report' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+          <span>{% trans "Profit report" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'reports' and un == 'sales_report' %}is-active{% endif %}" href="{% url 'reports:sales_report' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+          <span>{% trans "Sales report" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'reports' and un == 'employee_report' %}is-active{% endif %}" href="{% url 'reports:employee_report' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span>{% trans "Employee performance" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'reports' %}{% if un == 'stale_phones_report' or un == 'stale_phone_edit' %}is-active{% endif %}{% endif %}" href="{% url 'reports:stale_phones_report' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+          <span>{% trans "Lines for disconnect" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'expenses' and un == 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_report' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>
+          <span>{% trans "Expense report" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
 
-  <div class="rd-nav-section">{% trans "Administration" %}</div>
-  <a class="rd-nav-link {% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %}is-active{% endif %}" href="{% url 'customers:customer_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 11h-6"/><path d="M20 8v6"/></svg></span>
-    <span>{% trans "Customers" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'accounts' and un != 'login' and un != 'logout' %}is-active{% endif %}" href="{% url 'accounts:user_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-    <span>{% trans "Users" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'core' and un == 'site_branding' %}is-active{% endif %}" href="{% url 'core:site_branding' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span>
-    <span>{% trans "Site branding" %}</span>
-  </a>
-  <a class="rd-nav-link {% if ns == 'audit' %}is-active{% endif %}" href="{% url 'audit:audit_log_list' %}">
-    <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
-    <span>{% trans "Audit log" %}</span>
-  </a>
+  {# ── الكاتلوج (Catalog) ── #}
+  <div class="rd-nav-group{% if ns == 'companies' %} is-open{% elif ns == 'sales' and un == 'payment_method_list' or ns == 'sales' and un == 'payment_method_create' or ns == 'sales' and un == 'payment_method_edit' %} is-open{% endif %}" data-rd-nav-group="catalog">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'companies' %}true{% elif ns == 'sales' and un == 'payment_method_list' or ns == 'sales' and un == 'payment_method_create' or ns == 'sales' and un == 'payment_method_edit' %}true{% else %}false{% endif %}">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
+      <span class="rd-nav-group-label">{% trans "Catalog" %}</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        <a class="rd-nav-link {% if ns == 'companies' %}{% if un == 'company_list' or un == 'company_create' or un == 'company_edit' or un == 'company_delete' %}is-active{% endif %}{% endif %}" href="{% url 'companies:company_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
+          <span>{% trans "Companies" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'companies' %}{% if un != 'company_list' and un != 'company_create' and un != 'company_edit' and un != 'company_delete' %}is-active{% endif %}{% endif %}" href="{% url 'companies:product_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
+          <span>{% trans "Products" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'sales' %}{% if un == 'payment_method_list' or un == 'payment_method_create' or un == 'payment_method_edit' %}is-active{% endif %}{% endif %}" href="{% url 'sales:payment_method_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+          <span>{% trans "Payment methods" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ── رابط التحديث (Update Link) ── #}
+  <div class="rd-nav-group{% if ns == 'phone_refresh' %} is-open{% endif %}" data-rd-nav-group="update-link">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'phone_refresh' %}true{% else %}false{% endif %}">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+      <span class="rd-nav-group-label">رابط التحديث</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'settings' %}is-active{% elif ns == 'phone_refresh' and un == 'message_create' %}is-active{% elif ns == 'phone_refresh' and un == 'message_edit' %}is-active{% elif ns == 'phone_refresh' and un == 'status_create' %}is-active{% elif ns == 'phone_refresh' and un == 'status_edit' %}is-active{% endif %}" href="{% url 'phone_refresh:settings' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span>اعدادات</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'providers_index' %}is-active{% elif ns == 'phone_refresh' and un == 'rule_create' %}is-active{% elif ns == 'phone_refresh' and un == 'rule_edit' %}is-active{% endif %}" href="{% url 'phone_refresh:providers_index' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
+          <span>المزودين</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un|slice:':4' == 'api_' %}is-active{% endif %}" href="{% url 'phone_refresh:api_index' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg></span>
+          <span>API</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'reports' %}is-active{% endif %}" href="{% url 'phone_refresh:reports' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+          <span>تقارير</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ── تحديث الرسائل (Messages Update) ── #}
+  {# TODO: Wire up real Django URL routes for the sub-items below (currently href="#" placeholders). #}
+  <div class="rd-nav-group" data-rd-nav-group="messages-update">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="false">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      <span class="rd-nav-group-label">تحديث الرسائل</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        {# TODO: Replace href="#" with real {% url %} once the backend route exists. #}
+        <a class="rd-nav-link" href="#">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <span>اعدادات</span>
+        </a>
+        {# TODO: Replace href="#" with real {% url %} once the backend route exists. #}
+        <a class="rd-nav-link" href="#">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+          <span>تقارير</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ── الإدارة (Administration) ── #}
+  <div class="rd-nav-group{% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %} is-open{% elif ns == 'accounts' and un != 'login' and un != 'logout' %} is-open{% elif ns == 'core' and un == 'site_branding' %} is-open{% elif ns == 'audit' %} is-open{% endif %}" data-rd-nav-group="administration">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %}true{% elif ns == 'accounts' and un != 'login' and un != 'logout' %}true{% elif ns == 'core' and un == 'site_branding' %}true{% elif ns == 'audit' %}true{% else %}false{% endif %}">
+      <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+      <span class="rd-nav-group-label">{% trans "Administration" %}</span>
+      <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+    </button>
+    <div class="rd-nav-group-panel">
+      <div class="rd-nav-group-panel-inner">
+        <a class="rd-nav-link {% if ns == 'customers' and un != 'customer_payment_submissions_list' and un != 'customer_payment_submission_approve' and un != 'customer_payment_submission_reject' %}is-active{% endif %}" href="{% url 'customers:customer_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 11h-6"/><path d="M20 8v6"/></svg></span>
+          <span>{% trans "Customers" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'accounts' and un != 'login' and un != 'logout' %}is-active{% endif %}" href="{% url 'accounts:user_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span>{% trans "Users" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'core' and un == 'site_branding' %}is-active{% endif %}" href="{% url 'core:site_branding' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></span>
+          <span>{% trans "Site branding" %}</span>
+        </a>
+        <a class="rd-nav-link {% if ns == 'audit' %}is-active{% endif %}" href="{% url 'audit:audit_log_list' %}">
+          <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+          <span>{% trans "Audit log" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
 </nav>
 {% endwith %}

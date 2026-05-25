@@ -1,0 +1,133 @@
+from django.urls import path
+
+from phone_refresh import views
+
+app_name = "phone_refresh"
+
+urlpatterns = [
+    # Public surfaces (no auth)
+    path("phone-refresh/", views.public_refresh_page, name="public"),
+    path("phone-refresh/api/refresh/", views.public_refresh_api, name="public_api"),
+    # Management surfaces — nested under /management/ to match the rest of the panel.
+    path(
+        "management/phone-refresh/settings/",
+        views.settings_index,
+        name="settings",
+    ),
+    path(
+        "management/phone-refresh/settings/general/save/",
+        views.settings_general_save,
+        name="settings_general_save",
+    ),
+    path(
+        "management/phone-refresh/settings/test/",
+        views.settings_internal_test,
+        name="settings_internal_test",
+    ),
+    path(
+        "management/phone-refresh/settings/statuses/new/",
+        views.status_create,
+        name="status_create",
+    ),
+    path(
+        "management/phone-refresh/settings/statuses/<int:pk>/edit/",
+        views.status_edit,
+        name="status_edit",
+    ),
+    path(
+        "management/phone-refresh/settings/statuses/<int:pk>/delete/",
+        views.status_delete,
+        name="status_delete",
+    ),
+    path(
+        "management/phone-refresh/settings/messages/new/",
+        views.message_create,
+        name="message_create",
+    ),
+    path(
+        "management/phone-refresh/settings/messages/<int:pk>/edit/",
+        views.message_edit,
+        name="message_edit",
+    ),
+    path(
+        "management/phone-refresh/settings/messages/<int:pk>/delete/",
+        views.message_delete,
+        name="message_delete",
+    ),
+    path(
+        "management/phone-refresh/settings/<str:provider>/rules/new/",
+        views.rule_create,
+        name="rule_create",
+    ),
+    path(
+        "management/phone-refresh/settings/rules/<int:pk>/edit/",
+        views.rule_edit,
+        name="rule_edit",
+    ),
+    path(
+        "management/phone-refresh/settings/rules/<int:pk>/delete/",
+        views.rule_delete,
+        name="rule_delete",
+    ),
+    path(
+        "management/phone-refresh/providers/",
+        views.providers_index,
+        name="providers_index",
+    ),
+    path(
+        "management/phone-refresh/providers/general/save/",
+        views.providers_general_save,
+        name="providers_general_save",
+    ),
+    path(
+        "management/phone-refresh/providers/test/",
+        views.providers_test,
+        name="providers_test",
+    ),
+    path(
+        "management/phone-refresh/reports/",
+        views.reports_list,
+        name="reports",
+    ),
+    path(
+        "management/phone-refresh/reports/log/<int:pk>/",
+        views.report_log_detail,
+        name="report_log_detail",
+    ),
+    path(
+        "management/phone-refresh/reports/bulk-delete/",
+        views.report_logs_bulk_delete,
+        name="report_logs_bulk_delete",
+    ),
+    # API management surfaces (settings + tokens + live test).
+    path(
+        "management/phone-refresh/api/",
+        views.api_index,
+        name="api_index",
+    ),
+    path(
+        "management/phone-refresh/api/settings/save/",
+        views.api_settings_save,
+        name="api_settings_save",
+    ),
+    path(
+        "management/phone-refresh/api/tokens/new/",
+        views.api_token_create,
+        name="api_token_create",
+    ),
+    path(
+        "management/phone-refresh/api/tokens/<int:pk>/revoke/",
+        views.api_token_revoke,
+        name="api_token_revoke",
+    ),
+    path(
+        "management/phone-refresh/api/tokens/<int:pk>/delete/",
+        views.api_token_delete,
+        name="api_token_delete",
+    ),
+    path(
+        "management/phone-refresh/api/test/",
+        views.api_live_test,
+        name="api_live_test",
+    ),
+]
