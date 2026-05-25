@@ -11,3 +11,6 @@ class CoreConfig(AppConfig):
         # imports below and Django would refuse with "Apps aren't
         # loaded yet".
         from core import signals  # noqa: F401
+        from core.media_serving import register_media_mimetypes
+
+        register_media_mimetypes()

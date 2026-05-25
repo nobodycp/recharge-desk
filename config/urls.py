@@ -5,8 +5,7 @@ from django.conf.urls.i18n import i18n_patterns
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path, re_path
-from django.views.static import serve
-
+from core.media_serving import serve_media
 from core.views import set_language_fixed
 
 
@@ -52,7 +51,7 @@ elif not settings.DEBUG:
     urlpatterns += [
         re_path(
             rf"^{re.escape(media_prefix)}(?P<path>.*)$",
-            serve,
+            serve_media,
             {"document_root": settings.MEDIA_ROOT},
         ),
     ]

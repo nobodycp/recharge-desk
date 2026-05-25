@@ -454,3 +454,53 @@ class GlobalSearchTests(TestCase):
         c.force_login(self.worker)
         r = c.get(reverse("core:search_suggest"), {"q": "Hazem"})
         self.assertEqual(r.status_code, 302)
+
+
+class MediaServingTests(TestCase):
+    """Production media route must serve branding images with image/* types."""
+
+    def test_serve_media_sets_webp_content_type(self):
+        from django.core.files.storage import default_storage
+
+        from core.media_serving import serve_media
+
+        default_storage.save("branding/test-icon.webp", SimpleUploadedFile("test-icon.webp", b"RIFF", "image/webp"))
+        self.addCleanup(lambda: default_storage.delete("branding/test-icon.webp"))
+
+        request = Client().get("/media/branding/test-icon.webp").wsgi_request
+        response = serve_media(request, "branding/test-icon.webp", document_root=default_storage.location)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/webp")
+
+
+class FaviconPartialTests(TestCase):
+    """Login and management shells must always emit a usable favicon link."""
+
+    def test_login_emits_static_fallback_when_no_branding_files(self):
+        SiteBranding.objects.all().delete()
+        r = Client().get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'rel="icon"')
+        self.assertContains(r, "/static/phone_refresh/img/favicon.png")
+
+    def test_login_emits_branded_favicon_with_correct_mime(self):
+        b = SiteBranding.load()
+        b.favicon = SimpleUploadedFile("tab.png", _png_bytes(32, 32), "image/png")
+        b.save()
+        r = Client().get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, b.favicon.url)
+        self.assertContains(r, 'type="image/webp"')
+        self.assertContains(r, 'rel="shortcut icon"')
+
+    def test_login_falls_back_to_logo_when_favicon_missing_on_disk(self):
+        b = SiteBranding.load()
+        b.logo = SimpleUploadedFile("logo.png", _png_bytes(64, 64), "image/png")
+        b.save()
+        SiteBranding.objects.filter(pk=1).update(favicon="branding/missing.webp")
+        b.refresh_from_db()
+        r = Client().get(reverse("accounts:login"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, b.logo.url)
+        self.assertContains(r, 'rel="icon"')
+
