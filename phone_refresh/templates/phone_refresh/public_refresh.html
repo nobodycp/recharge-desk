@@ -8,8 +8,13 @@
     <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
     <meta name="refresh-api" content="{% url 'phone_refresh:public_api' %}" />
     <meta name="referrer" content="same-origin" />
+    {% if site_branding and site_branding.favicon %}
+    <link rel="icon" type="image/webp" href="{{ site_branding.favicon.url }}" />
+    <link rel="apple-touch-icon" href="{{ site_branding.favicon.url }}" />
+    {% else %}
     <link rel="icon" type="image/png" href="{% static 'phone_refresh/img/favicon.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'phone_refresh/img/favicon.png' %}" />
+    {% endif %}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
@@ -60,10 +65,14 @@
         <section class="card">
             <div class="logo">
                 <div class="logo-mark" aria-hidden="true">
+                    {% if site_branding and site_branding.logo %}
+                    <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" width="647" height="220" />
+                    {% else %}
                     <picture>
                         <source srcset="{% static 'phone_refresh/img/logo.webp' %}" type="image/webp" />
                         <img src="{% static 'phone_refresh/img/logo.png' %}" alt="Pro Sim" width="647" height="220" />
                     </picture>
+                    {% endif %}
                 </div>
             </div>
 
