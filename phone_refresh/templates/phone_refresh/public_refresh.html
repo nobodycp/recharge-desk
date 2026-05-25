@@ -66,7 +66,7 @@
             <div class="logo">
                 <div class="logo-mark" aria-hidden="true">
                     {% if site_branding and site_branding.logo %}
-                    <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" width="647" height="220" />
+                    <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" />
                     {% else %}
                     <picture>
                         <source srcset="{% static 'phone_refresh/img/logo.webp' %}" type="image/webp" />
