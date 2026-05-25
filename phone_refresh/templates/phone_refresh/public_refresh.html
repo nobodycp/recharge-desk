@@ -65,16 +65,14 @@
         <section class="card">
             <div class="logo">
                 <div class="logo-mark" aria-hidden="true">
-                    {% if site_branding and site_branding.logo %}
                     <picture>
-                        <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" />
-                    </picture>
-                    {% else %}
-                    <picture>
+                        {% if site_branding and site_branding.logo %}
+                        <img src="{{ site_branding.logo.url }}" alt="{{ site_name }}" width="647" height="220" />
+                        {% else %}
                         <source srcset="{% static 'phone_refresh/img/logo.webp' %}" type="image/webp" />
                         <img src="{% static 'phone_refresh/img/logo.png' %}" alt="Pro Sim" width="647" height="220" />
+                        {% endif %}
                     </picture>
-                    {% endif %}
                 </div>
             </div>
 

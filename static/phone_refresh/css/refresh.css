@@ -421,6 +421,7 @@ body {
 
 .logo-mark {
     height: 42px;
+    aspect-ratio: 647 / 220;
     max-width: min(230px, 100%);
     display: inline-flex;
     align-items: center;
@@ -439,7 +440,7 @@ body {
 .logo-mark img,
 .logo-mark svg {
     height: 100%;
-    width: auto;
+    width: 100%;
     max-width: 100%;
     object-fit: contain;
     display: block;
