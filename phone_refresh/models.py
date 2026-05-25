@@ -448,6 +448,13 @@ class ProviderConfig(models.Model):
         return cfg.is_enabled if cfg else True
 
 
+# Flask ``refresh_numbers`` parity defaults (see app.py SOCIAL_* constants).
+DEFAULT_SOCIAL_WHATSAPP_URL = "https://wa.me/972555544071"
+DEFAULT_SOCIAL_FACEBOOK_URL = (
+    "https://www.facebook.com/profile.php?id=61561099095296"
+)
+
+
 class SiteSettings(models.Model):
     """Singleton row holding host/subdomain routing for the public refresh page.
 
@@ -474,7 +481,7 @@ class SiteSettings(models.Model):
     whatsapp_url = models.CharField(
         max_length=255,
         blank=True,
-        default="",
+        default=DEFAULT_SOCIAL_WHATSAPP_URL,
         help_text=(
             "رابط WhatsApp كامل (مثال: https://wa.me/970599999999). "
             "اتركه فارغاً لإخفاء الأيقونة."
@@ -483,7 +490,7 @@ class SiteSettings(models.Model):
     facebook_url = models.CharField(
         max_length=255,
         blank=True,
-        default="",
+        default=DEFAULT_SOCIAL_FACEBOOK_URL,
         help_text="رابط صفحة Facebook كامل. اتركه فارغاً لإخفاء الأيقونة.",
     )
     updated_at = models.DateTimeField(auto_now=True)
