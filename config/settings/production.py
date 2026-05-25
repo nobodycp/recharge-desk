@@ -102,6 +102,18 @@ else:
         if sslmode := os.environ.get("POSTGRES_SSLMODE", "").strip():
             DATABASES["default"]["OPTIONS"]["sslmode"] = sslmode
 
+    # SQLite inside the container filesystem is wiped on every Coolify
+    # redeploy; phone_refresh singleton settings would reset to migration
+    # defaults after each build. Require a persistent PostgreSQL service.
+    _engine = DATABASES["default"]["ENGINE"]
+    if "sqlite" in _engine:
+        raise ImproperlyConfigured(
+            "Production must use PostgreSQL, not SQLite. "
+            "Point DATABASE_URL at your Coolify Postgres service (internal URL). "
+            "A sqlite file inside the app container is ephemeral and will lose "
+            "admin settings on every redeploy."
+        )
+
     # WhiteNoise: compressed (gzip + brotli) static storage. We avoid the
     # ``CompressedManifestStaticFilesStorage`` variant because its hashed
     # post-processing fails when CSS files reference assets we don't ship

@@ -36,6 +36,17 @@ gunicorn, and WhiteNoise for static-file serving. Coolify only needs to:
 > Use the **internal** URL (it resolves over Coolify's docker network)
 > unless your app runs in a different project; only then use the public URL.
 
+**Critical — persistent database:** Link the application to this Postgres
+resource and set `DATABASE_URL` to its **internal** connection string.
+Do **not** point production at SQLite (e.g. `sqlite:///app/db.sqlite3`) —
+the app container filesystem is recreated on every deploy, so any SQLite
+file is wiped and `migrate` re-seeds default settings from scratch.
+
+In Coolify: open the Postgres service → confirm **Persistent Storage** is
+enabled (a named volume on `/var/lib/postgresql/data`). If the database
+is recreated on each deploy, all admin settings (API limits, token
+requirement, subdomain) will reset even though the code is correct.
+
 ---
 
 ## 3. Create the application — إنشاء التطبيق
@@ -197,4 +208,5 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | `CSRF verification failed` | Origin not in `DJANGO_CSRF_TRUSTED_ORIGINS` (and must be `https://`) | Add the `https://` origin, redeploy. |
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
+| Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
 | `/healthz/` returns 404 | Old image still cached | Force a fresh build (Coolify → **Redeploy without cache**). |

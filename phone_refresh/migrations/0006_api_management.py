@@ -10,7 +10,9 @@ from django.db import migrations, models
 
 def seed_api_settings(apps, schema_editor):
     ApiSettings = apps.get_model("phone_refresh", "ApiSettings")
-    ApiSettings.objects.update_or_create(
+    # Insert defaults only on first apply — never overwrite admin edits if
+    # this migration is re-run (e.g. django_migrations reset on deploy).
+    ApiSettings.objects.get_or_create(
         pk=1,
         defaults={
             "require_token": False,

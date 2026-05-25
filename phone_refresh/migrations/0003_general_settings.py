@@ -21,7 +21,9 @@ def seed_forward(apps, schema_editor):
     SystemSettings = apps.get_model("phone_refresh", "SystemSettings")
     CustomerMessage = apps.get_model("phone_refresh", "CustomerMessage")
 
-    SystemSettings.objects.update_or_create(
+    # Insert defaults only on first apply — never overwrite admin edits if
+    # this migration is re-run (e.g. django_migrations reset on deploy).
+    SystemSettings.objects.get_or_create(
         pk=1,
         defaults={
             "service_enabled": True,
