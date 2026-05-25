@@ -5,7 +5,7 @@ import hashlib
 import json
 from unittest.mock import patch
 
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from phone_refresh.models import ApiSettings, ApiToken, RefreshSource, RefreshStatus, SiteSettings
@@ -92,6 +92,80 @@ class PublicRefreshApiTokenGateTests(TestCase):
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(json.loads(response.content), {"error": "missing_token"})
+
+
+@override_settings(TRUST_FORWARDED_FOR=True)
+class PublicRefreshApiClientIpTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        ApiSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_token": False,
+                "allow_anonymous_test_page": True,
+                "rate_limit_per_minute": 0,
+                "rate_limit_per_hour": 0,
+                "allowed_origins": "",
+            },
+        )
+        self.error_status = RefreshStatus.objects.get(code="error")
+
+    @patch("phone_refresh.views.public.refresh_phone")
+    def test_uses_cf_connecting_ip_for_refresh_log(self, refresh_mock):
+        refresh_mock.return_value = RefreshResult(
+            status=self.error_status,
+            provider=None,
+            message_title="",
+            message_body="",
+            matched_rule_id=None,
+            raw_status_code=None,
+            raw_excerpt="",
+        )
+        request = self.factory.post(
+            reverse("phone_refresh:public_api"),
+            data=json.dumps({"phone_number": "0591234567", "client": RefreshSource.WEB}),
+            content_type="application/json",
+            REMOTE_ADDR="203.0.113.10",
+            HTTP_CF_CONNECTING_IP="198.51.100.20",
+            HTTP_X_FORWARDED_FOR="198.51.100.30, 203.0.113.1",
+        )
+        response = public_refresh_api(request)
+        self.assertEqual(response.status_code, 200)
+        refresh_mock.assert_called_once()
+        self.assertEqual(refresh_mock.call_args.kwargs["ip"], "198.51.100.20")
+
+    @patch("phone_refresh.views.public.refresh_phone")
+    def test_rate_limit_uses_same_client_ip(self, refresh_mock):
+        ApiSettings.objects.filter(pk=1).update(rate_limit_per_minute=1)
+        refresh_mock.return_value = RefreshResult(
+            status=self.error_status,
+            provider=None,
+            message_title="",
+            message_body="",
+            matched_rule_id=None,
+            raw_status_code=None,
+            raw_excerpt="",
+        )
+        headers = {
+            "REMOTE_ADDR": "203.0.113.10",
+            "HTTP_CF_CONNECTING_IP": "198.51.100.20",
+        }
+        payload = json.dumps({"phone_number": "0591234567", "client": RefreshSource.WEB})
+
+        first = self.factory.post(
+            reverse("phone_refresh:public_api"),
+            data=payload,
+            content_type="application/json",
+            **headers,
+        )
+        second = self.factory.post(
+            reverse("phone_refresh:public_api"),
+            data=payload,
+            content_type="application/json",
+            **headers,
+        )
+        self.assertEqual(public_refresh_api(first).status_code, 200)
+        self.assertEqual(public_refresh_api(second).status_code, 429)
 
 
 class PublicRefreshPageTokenInjectionTests(TestCase):

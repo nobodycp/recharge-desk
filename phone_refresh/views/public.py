@@ -19,6 +19,7 @@ from phone_refresh.models import (
     SiteSettings,
     SystemSettings,
 )
+from core.http_utils import get_client_ip
 from phone_refresh.services.refresh_service import refresh_phone
 
 # --- Lightweight in-process rate limiter ------------------------------------
@@ -33,13 +34,6 @@ _RATE_WINDOW_HOUR = 3600
 _rate_lock = threading.Lock()
 _rate_state_minute: dict[str, list[float]] = {}
 _rate_state_hour: dict[str, list[float]] = {}
-
-
-def _client_ip(request) -> str:
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "") or ""
 
 
 def _check_rate_limit(ip: str, limit_per_min: int, limit_per_hour: int) -> bool:
@@ -183,7 +177,7 @@ def public_refresh_api(request):
     * ``allowed_origins`` → simple Origin header allowlist (empty =
       allow any).
     """
-    ip = _client_ip(request)
+    ip = get_client_ip(request) or ""
     api_settings = ApiSettings.get()
 
     if not _check_origin(request, api_settings):

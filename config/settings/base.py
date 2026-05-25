@@ -67,6 +67,9 @@ SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 SECURITY_HEADERS_ENABLED = True
+# Only honor CF-Connecting-IP / X-Forwarded-For when explicitly enabled
+# (production.py turns this on behind Coolify/Cloudflare).
+TRUST_FORWARDED_FOR = False
 
 ROOT_URLCONF = "config.urls"
 

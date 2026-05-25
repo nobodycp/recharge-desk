@@ -15,6 +15,7 @@ from typing import Any, Mapping, Optional
 from django.db import models
 
 from audit.models import AuditLog
+from core.http_utils import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +47,6 @@ def diff_fields(before: Optional[Mapping[str, Any]], after: Mapping[str, Any]) -
         if old != new:
             out[k] = {"old": _coerce(old), "new": _coerce(new)}
     return out
-
-
-def _client_ip(request) -> Optional[str]:
-    if request is None:
-        return None
-    fwd = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if fwd:
-        return fwd.split(",")[0].strip() or None
-    return request.META.get("REMOTE_ADDR") or None
 
 
 def record(
@@ -103,7 +95,7 @@ def record(
             object_id="" if oid is None else str(oid),
             object_repr=repr_,
             changes=payload,
-            ip=_client_ip(request),
+            ip=get_client_ip(request),
         )
     except Exception:
         # Auditing failure is never user-visible; log it for ops.

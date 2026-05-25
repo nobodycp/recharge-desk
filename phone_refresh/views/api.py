@@ -198,9 +198,10 @@ def api_live_test(request):
     headers: dict[str, str] = {}
     if raw_token:
         headers["HTTP_AUTHORIZATION"] = f"Bearer {raw_token}"
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        headers["HTTP_X_FORWARDED_FOR"] = forwarded
+    for header in ("HTTP_X_FORWARDED_FOR", "HTTP_CF_CONNECTING_IP"):
+        value = request.META.get(header)
+        if value:
+            headers[header] = value
     remote = request.META.get("REMOTE_ADDR")
     if remote:
         headers["REMOTE_ADDR"] = remote

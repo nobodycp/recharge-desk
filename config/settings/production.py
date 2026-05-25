@@ -129,6 +129,13 @@ else:
 
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
+    # Coolify terminates TLS and Cloudflare sits in front; trust forwarded
+    # client IP headers in production. Set TRUST_X_FORWARDED_FOR=0 to disable.
+    TRUST_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "1").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
     SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "").lower() in (
         "1",
