@@ -1,280 +1,124 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>تحديث رقم الهاتف</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --brand: #2563eb;
-      --brand-dark: #1d4ed8;
-      --bg-grad-from: #eef2ff;
-      --bg-grad-to:   #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --error: #b42318;
-      --error-bg: #fef3f2;
-      --success: #027a48;
-      --success-bg: #ecfdf3;
-      --warn: #b54708;
-      --warn-bg: #fffaeb;
-      --neutral: #374151;
-      --neutral-bg: #f3f4f6;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; }
-    body {
-      font-family: 'Cairo', system-ui, -apple-system, Segoe UI, Tahoma, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 50% -10%, #dbeafe 0%, transparent 60%),
-                  linear-gradient(160deg, var(--bg-grad-from), var(--bg-grad-to));
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .card {
-      width: 100%;
-      max-width: 460px;
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 32px 28px;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
-      border: 1px solid rgba(226, 232, 240, 0.7);
-    }
-    h1 { margin: 0 0 6px; font-size: 1.5rem; font-weight: 700; }
-    p.lead { margin: 0 0 22px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
-    label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text); }
-    .input-wrap { display: flex; gap: 10px; }
-    input[type="tel"] {
-      flex: 1;
-      padding: 13px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 1.05rem;
-      font-family: inherit;
-      direction: ltr;
-      text-align: center;
-      background: #fff;
-      color: var(--text);
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    input[type="tel"]:focus {
-      outline: none;
-      border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-    button {
-      background: var(--brand);
-      color: #fff;
-      border: 0;
-      padding: 13px 22px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background 0.15s, transform 0.05s;
-      min-width: 96px;
-    }
-    button:hover:not(:disabled) { background: var(--brand-dark); }
-    button:active:not(:disabled) { transform: translateY(1px); }
-    button:disabled { opacity: 0.65; cursor: progress; }
-
-    /* Honeypot: visually hidden but still focusable-trappable for bots */
-    .hp-field {
-      position: absolute !important;
-      left: -10000px !important;
-      top: auto;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
-
-    .result {
-      margin-top: 20px;
-      padding: 14px 16px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #fff;
-      display: none;
-      line-height: 1.55;
-    }
-    .result.show { display: block; }
-    .badge {
-      display: inline-block;
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 999px;
-      margin-bottom: 8px;
-      background: var(--neutral-bg);
-      color: var(--neutral);
-      border: 1px solid var(--border);
-    }
-    .result.refreshed   { background: var(--success-bg); border-color: #abefc6; color: var(--success); }
-    .result.refreshed   .badge { background: #d1fadf; color: var(--success); border-color: #a6f4c5; }
-    .result.wait        { background: var(--warn-bg); border-color: #fedf89; color: var(--warn); }
-    .result.wait        .badge { background: #fef0c7; color: var(--warn); border-color: #fedf89; }
-    .result.service_off { background: #f3f4f6; border-color: #d1d5db; color: var(--neutral); }
-    .result.service_off .badge { background: #e5e7eb; color: var(--neutral); border-color: #d1d5db; }
-    .result.not_found,
-    .result.error       { background: var(--error-bg); border-color: #fecdca; color: var(--error); }
-    .result.not_found   .badge,
-    .result.error       .badge { background: #fee4e2; color: var(--error); border-color: #fecdca; }
-
-    .result .title { display: block; font-weight: 700; margin-bottom: 4px; }
-    .result .body  { display: block; }
-    .result .last-refresh { display: block; margin-top: 8px; font-size: 0.8rem; opacity: 0.85; }
-
-    .footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 20px; }
-
-    @media (max-width: 420px) {
-      .card { padding: 24px 20px; border-radius: 14px; }
-      .input-wrap { flex-direction: column; }
-      button { width: 100%; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
+    <meta name="refresh-api" content="{% url 'phone_refresh:public_api' %}" />
+    <meta name="referrer" content="same-origin" />
+    <link rel="icon" type="image/png" href="{% static 'phone_refresh/img/favicon.png' %}" />
+    <link rel="apple-touch-icon" href="{% static 'phone_refresh/img/favicon.png' %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'phone_refresh/css/refresh.css' %}" />
 </head>
 <body>
-  <main class="card">
-    <h1>تحديث رقم الهاتف</h1>
-    <p class="lead">أدخل رقم الهاتف الذي يبدأ بـ 05 ثم اضغط تحديث.</p>
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
-    <form id="refresh-form" autocomplete="off" novalidate>
-      {% csrf_token %}
-      <label for="phone">رقم الهاتف</label>
-      <div class="input-wrap">
-        <input id="phone" name="phone_number" type="tel" inputmode="numeric" pattern="05[0-9]{8}"
-               maxlength="10" placeholder="0555555555" required>
-        <button id="submit-btn" type="submit">تحديث</button>
-      </div>
-      <div class="hp-field" aria-hidden="true">
-        <label for="hp-website">Website</label>
-        <input id="hp-website" name="website" type="text" tabindex="-1" autocomplete="off">
-      </div>
-    </form>
+    <header class="toolbar">
+        <button id="lang-toggle" class="pill" type="button" aria-label="Change language">
+            <span data-lang-label>EN</span>
+        </button>
+        <div class="bg-picker">
+            <button id="bg-toggle" class="pill pill-icon" type="button" aria-label="Change background" aria-haspopup="menu" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z"></path>
+                    <path d="M19 14l.9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9z"></path>
+                    <path d="M5 15l.7 1.6L7.3 17l-1.6.7L5 19.3l-.7-1.6L2.7 17l1.6-.7z"></path>
+                </svg>
+            </button>
+            <div id="bg-menu" class="bg-menu" role="menu" hidden>
+                <button type="button" class="bg-option" data-bg="stars" role="menuitemradio">
+                    <span class="bg-swatch bg-swatch-stars" aria-hidden="true"></span>
+                    <span data-i18n="bg.stars">نجوم وشهب</span>
+                </button>
+                <button type="button" class="bg-option" data-bg="network" role="menuitemradio">
+                    <span class="bg-swatch bg-swatch-network" aria-hidden="true"></span>
+                    <span data-i18n="bg.network">شبكة بيانات</span>
+                </button>
+                <button type="button" class="bg-option" data-bg="dots" role="menuitemradio">
+                    <span class="bg-swatch bg-swatch-dots" aria-hidden="true"></span>
+                    <span data-i18n="bg.dots">نقاط ناعمة</span>
+                </button>
+            </div>
+        </div>
+        <button id="theme-toggle" class="pill pill-icon" type="button" aria-label="Toggle theme">
+            <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+            </svg>
+            <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+            </svg>
+        </button>
+    </header>
 
-    <div id="result" class="result" role="status" aria-live="polite"></div>
-    <div class="footer">© pro-sim</div>
-  </main>
+    <main class="stage">
+        <section class="card">
+            <div class="logo">
+                <div class="logo-mark" aria-hidden="true">
+                    <picture>
+                        <source srcset="{% static 'phone_refresh/img/logo.webp' %}" type="image/webp" />
+                        <img src="{% static 'phone_refresh/img/logo.png' %}" alt="Pro Sim" width="647" height="220" />
+                    </picture>
+                </div>
+            </div>
 
-  <script>
-    (function () {
-      const form = document.getElementById('refresh-form');
-      const phoneInput = document.getElementById('phone');
-      const btn = document.getElementById('submit-btn');
-      const result = document.getElementById('result');
-      const hpInput = document.getElementById('hp-website');
-      const apiUrl = "{% url 'phone_refresh:public_api' %}";
+            <h1 class="title" data-i18n="app.title">مرحبا بك</h1>
+            <p class="subtitle" data-i18n="app.subtitle">الرجاء ادخال الرقم المراد تحديثه</p>
 
-      function getCsrfToken() {
-        const el = form.querySelector('input[name="csrfmiddlewaretoken"]');
-        return el ? el.value : '';
-      }
+            <form id="refresh-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                <div class="hp-trap" aria-hidden="true">
+                    <label>Leave this empty
+                        <input type="text" name="website" id="hp-website" tabindex="-1" autocomplete="off" />
+                    </label>
+                </div>
+                <div class="field">
+                    <div class="input-wrap">
+                        <input
+                            type="text"
+                            id="phone"
+                            name="phone_number"
+                            placeholder="05XXXXXXXX"
+                            maxlength="10"
+                            inputmode="numeric"
+                            dir="ltr"
+                            data-i18n-aria="form.label"
+                            aria-label="رقم الهاتف"
+                            required
+                        />
+                        <span class="input-check" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12l5 5L20 7"></path>
+                            </svg>
+                        </span>
+                    </div>
+                    <small id="field-hint" class="field-hint"></small>
+                </div>
 
-      function statusLabel(code) {
-        switch (code) {
-          case 'refreshed':   return 'تم التحديث';
-          case 'wait':        return 'انتظار';
-          case 'not_found':   return 'غير موجود';
-          case 'service_off': return 'الخدمة متوقفة';
-          case 'error':
-          default:            return 'خطأ';
-        }
-      }
+                <button type="submit" id="submit-btn" class="cta">
+                    <span class="cta-label" data-i18n="form.submit">تحديث</span>
+                    <span class="cta-spinner" aria-hidden="true"></span>
+                </button>
+            </form>
 
-      function formatElapsed(seconds) {
-        seconds = Math.max(0, parseInt(seconds || 0, 10));
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        if (hours <= 0) return minutes + ' دقيقة';
-        const hourWord = hours === 1 ? 'ساعة' : 'ساعات';
-        if (minutes <= 0) return hours + ' ' + hourWord;
-        return hours + ' ' + hourWord + ' و ' + minutes + ' دقيقة';
-      }
+            <div id="alert" class="alert" role="status" aria-live="polite">
+                <span class="alert-dot" aria-hidden="true"></span>
+                <span class="alert-text"></span>
+            </div>
+        </section>
 
-      function showResult(status, title, body, lastRefresh) {
-        const code = status || 'error';
-        result.className = 'result show ' + code;
-        result.innerHTML = '';
+        <footer class="footer">
+            <p class="footer-tagline" data-i18n="footer.tagline">أكبر شبكة موزعين في قطاع غزة</p>
+            <span id="footer-text" class="footer-brand">Pro Sim {% now "Y" %}</span>
+        </footer>
+    </main>
 
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = statusLabel(code);
-        result.appendChild(badge);
-
-        if (title) {
-          const t = document.createElement('span');
-          t.className = 'title';
-          t.textContent = title;
-          result.appendChild(t);
-        }
-        if (body) {
-          const b = document.createElement('span');
-          b.className = 'body';
-          b.textContent = body;
-          result.appendChild(b);
-        }
-        if (lastRefresh && lastRefresh.seconds != null) {
-          const note = document.createElement('span');
-          note.className = 'last-refresh';
-          note.textContent = 'آخر تحديث ناجح: قبل ' + formatElapsed(lastRefresh.seconds);
-          result.appendChild(note);
-        }
-      }
-
-      form.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        const phone = (phoneInput.value || '').trim();
-        if (!/^05\d{8}$/.test(phone)) {
-          showResult('error', 'رقم غير صحيح', 'الرجاء إدخال رقم يبدأ بـ 05 ويتكوّن من 10 أرقام.');
-          return;
-        }
-        btn.disabled = true;
-        const originalText = btn.textContent;
-        btn.textContent = '...جارٍ التحديث';
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRFToken': getCsrfToken(),
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              phone_number: phone,
-              client: 'web',
-              website: hpInput ? hpInput.value : '',
-            }),
-          });
-          const data = await response.json().catch(function () { return {}; });
-          const msg = (data && data.message) || {};
-          let lastRefresh = null;
-          if (data && Object.prototype.hasOwnProperty.call(data, 'seconds_since_last_refresh')
-              && data.seconds_since_last_refresh != null) {
-            lastRefresh = {
-              seconds: data.seconds_since_last_refresh,
-              at: data.last_refresh_at || null,
-            };
-          }
-          showResult(data.status || 'error', msg.title || '', msg.body || 'تعذّر إتمام العملية.', lastRefresh);
-        } catch (err) {
-          showResult('error', 'تعذّر الاتصال', 'يرجى المحاولة لاحقًا.');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
-      });
-    })();
-  </script>
+    <script src="{% static 'phone_refresh/js/backgrounds.js' %}"></script>
+    <script src="{% static 'phone_refresh/js/refresh.js' %}"></script>
 </body>
 </html>
