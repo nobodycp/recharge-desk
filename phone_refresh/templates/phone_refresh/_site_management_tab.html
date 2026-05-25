@@ -43,6 +43,36 @@
             </div>
           </div>
 
+          <div>
+            <label class="form-label fw-semibold" for="{{ site_settings_form.whatsapp_url.id_for_label }}">
+              رابط WhatsApp
+            </label>
+            {{ site_settings_form.whatsapp_url }}
+            <div class="form-text">
+              يظهر كأيقونة WhatsApp في صفحة التحديث العامة. اتركه فارغاً لإخفاء الأيقونة.
+            </div>
+            {% if site_settings_form.whatsapp_url.errors %}
+              <div class="text-danger small mt-1">
+                {{ site_settings_form.whatsapp_url.errors|join:" " }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div>
+            <label class="form-label fw-semibold" for="{{ site_settings_form.facebook_url.id_for_label }}">
+              رابط Facebook
+            </label>
+            {{ site_settings_form.facebook_url }}
+            <div class="form-text">
+              يظهر كأيقونة Facebook في صفحة التحديث العامة. اتركه فارغاً لإخفاء الأيقونة.
+            </div>
+            {% if site_settings_form.facebook_url.errors %}
+              <div class="text-danger small mt-1">
+                {{ site_settings_form.facebook_url.errors|join:" " }}
+              </div>
+            {% endif %}
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">حفظ</button>
           </div>

@@ -183,11 +183,16 @@ class SystemSettingsForm(forms.ModelForm):
 
 
 class SiteSettingsForm(forms.ModelForm):
-    """Form for the إدارة الموقع tab: public subdomain + redirect toggle."""
+    """Form for the إدارة الموقع tab: subdomain + redirect + social links."""
 
     class Meta:
         model = SiteSettings
-        fields = ["public_subdomain", "redirect_main_to_subdomain"]
+        fields = [
+            "public_subdomain",
+            "redirect_main_to_subdomain",
+            "whatsapp_url",
+            "facebook_url",
+        ]
         widgets = {
             "public_subdomain": forms.TextInput(
                 attrs={
@@ -199,6 +204,22 @@ class SiteSettingsForm(forms.ModelForm):
             ),
             "redirect_main_to_subdomain": forms.CheckboxInput(
                 attrs={"class": "form-check-input", "role": "switch"}
+            ),
+            "whatsapp_url": forms.URLInput(
+                attrs={
+                    "class": "form-control",
+                    "dir": "ltr",
+                    "autocomplete": "off",
+                    "placeholder": "https://wa.me/...",
+                }
+            ),
+            "facebook_url": forms.URLInput(
+                attrs={
+                    "class": "form-control",
+                    "dir": "ltr",
+                    "autocomplete": "off",
+                    "placeholder": "https://facebook.com/...",
+                }
             ),
         }
 
@@ -221,6 +242,24 @@ class SiteSettingsForm(forms.ModelForm):
         if not SUBDOMAIN_RE.match(raw):
             raise ValidationError("اسم النطاق غير صالح. استخدم أحرفاً لاتينية وأرقاماً ونقاطاً فقط.")
         return raw
+
+    @staticmethod
+    def _clean_social_url(raw: str, label: str) -> str:
+        value = (raw or "").strip()
+        if not value:
+            return ""
+        lower = value.lower()
+        if not (lower.startswith("https://") or lower.startswith("http://")):
+            raise ValidationError(
+                f"رابط {label} يجب أن يبدأ بـ https:// أو http://."
+            )
+        return value
+
+    def clean_whatsapp_url(self) -> str:
+        return self._clean_social_url(self.cleaned_data.get("whatsapp_url"), "WhatsApp")
+
+    def clean_facebook_url(self) -> str:
+        return self._clean_social_url(self.cleaned_data.get("facebook_url"), "Facebook")
 
 
 class InternalTestForm(forms.Form):

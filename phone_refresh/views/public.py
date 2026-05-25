@@ -12,7 +12,13 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
-from phone_refresh.models import ApiSettings, ApiToken, RefreshSource, SystemSettings
+from phone_refresh.models import (
+    ApiSettings,
+    ApiToken,
+    RefreshSource,
+    SiteSettings,
+    SystemSettings,
+)
 from phone_refresh.services.refresh_service import refresh_phone
 
 # --- Lightweight in-process rate limiter ------------------------------------
@@ -101,7 +107,15 @@ def _resolve_token(raw_token: str) -> ApiToken | None:
 @require_GET
 def public_refresh_page(request):
     """Standalone Arabic RTL refresh form (not part of the admin shell)."""
-    return render(request, "phone_refresh/public_refresh.html")
+    site_settings = SiteSettings.get_solo()
+    return render(
+        request,
+        "phone_refresh/public_refresh.html",
+        {
+            "whatsapp_url": site_settings.whatsapp_url,
+            "facebook_url": site_settings.facebook_url,
+        },
+    )
 
 
 @csrf_exempt

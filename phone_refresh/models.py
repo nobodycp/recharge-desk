@@ -471,6 +471,21 @@ class SiteSettings(models.Model):
         default=False,
         help_text="عند التفعيل: زيارة /phone-refresh/ على الدومين الرئيسي يحوّل تلقائياً إلى السب دومين.",
     )
+    whatsapp_url = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text=(
+            "رابط WhatsApp كامل (مثال: https://wa.me/970599999999). "
+            "اتركه فارغاً لإخفاء الأيقونة."
+        ),
+    )
+    facebook_url = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="رابط صفحة Facebook كامل. اتركه فارغاً لإخفاء الأيقونة.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
