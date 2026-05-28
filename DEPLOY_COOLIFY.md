@@ -95,11 +95,22 @@ GUNICORN_WORKERS=3
 GUNICORN_THREADS=2
 GUNICORN_TIMEOUT=60
 DJANGO_LOG_LEVEL=INFO
+
+# Sky reCAPTCHA via anti-captcha.com (Runtime only — mark secret as sensitive)
+SKY_CAPTCHA_BACKEND=anticaptcha
+ANTICAPTCHA_API_KEY=your_anti_captcha_client_key
+SKY_RECAPTCHA_MIN_SCORE=0.7
+SKY_RECAPTCHA_PAGE_ACTION=public_refresh
+SKY_RECAPTCHA_WEBSITE_URL=https://rn.sky-5g.net/
 ```
 
-> **Sky provider**: captcha tokens are acquired via lightweight HTTP requests
-> (no browser in the container). Remove any old `SKY_*` Playwright env vars
-> from Coolify — they are no longer used.
+Set **`ANTICAPTCHA_API_KEY`** from [anti-captcha.com](https://anti-captcha.com/)
+→ Account Settings → API key. Use **Runtime only** in Coolify (never bake into
+the Docker image). Optional: `SKY_CAPTCHA_BACKEND=bypass` for local dev without
+an API key (legacy HTTP path; Sky may reject it).
+
+> **Sky provider**: tokens are solved off-server by anti-captcha.com workers
+> (~5–20s). No browser in the container. Remove old `SKY_PLAYWRIGHT_*` env vars.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify
 > will route to this container. Forget one and Django answers `400 Bad
@@ -213,4 +224,4 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
-| Sky refresh fails with captcha error | Sky rejected the HTTP captcha token or upstream changed | Check Runtime Logs; retry from **Phone Refresh → Internal test**. |
+| Sky refresh fails with captcha error | anti-captcha key missing/invalid or Sky rejected token | Set `ANTICAPTCHA_API_KEY` (Runtime only); check Runtime Logs for `captcha:` errors; verify balance on anti-captcha.com. |
