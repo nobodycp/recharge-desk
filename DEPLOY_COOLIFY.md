@@ -99,10 +99,21 @@ DJANGO_LOG_LEVEL=INFO
 # Sky reCAPTCHA (Playwright Firefox — installed in Docker image)
 SKY_CAPTCHA_BACKEND=firefox
 SKY_PLAYWRIGHT_HEADLESS=1
-SKY_BROWSER_WAIT_SEC=1
+SKY_BROWSER_WAIT_SEC=2
 SKY_BROWSER_REUSE=1
 SKY_BROWSER_MAX_USES=30
 ```
+
+Optional — **residential proxy** when datacenter IPs get low reCAPTCHA scores
+(server tokens rejected while local Mac tokens work):
+
+```env
+SKY_PLAYWRIGHT_PROXY=http://user:pass@proxy-host:port
+```
+
+Set as **Runtime only** in Coolify. Playwright routes Firefox through this
+proxy when acquiring tokens. After changing the proxy, **Restart** the app
+(so the browser pool is recreated).
 
 > **Sky provider**: the Docker image includes Playwright + Firefox (~100MB).
 > Each Sky refresh launches a headless browser (~15–30s). Use

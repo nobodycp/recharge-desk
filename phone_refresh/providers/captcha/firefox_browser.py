@@ -6,10 +6,13 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import unquote, urlparse
 
 SKY_PAGE_URL = "https://rn.sky-5g.net/"
 SITE_KEY = "6LcMCXYpAAAAABWt8J3o93Z0YRZgbFCd-OfBN5ov"
 PAGE_ACTION = "public_refresh"
+_SKY_LOCALE = "ar"
+_SKY_VIEWPORT = {"width": 1280, "height": 900}
 
 _GET_TOKEN_JS = """
 async () => {
@@ -25,12 +28,11 @@ async () => {
 }
 """.replace("SITE_KEY", repr(SITE_KEY)).replace("PAGE_ACTION", repr(PAGE_ACTION))
 
-_BLOCK_RESOURCE_TYPES = frozenset({"image", "media", "font"})
-
 _pool_lock = threading.Lock()
 _playwright = None
 _browser = None
 _browser_uses = 0
+_launched_proxy_key: str | None = None
 
 # Playwright's sync API runs an asyncio loop on the calling thread. Gunicorn
 # ``gthread`` workers reuse those threads for normal Django requests, which
@@ -54,8 +56,50 @@ def _max_browser_uses() -> int:
     return max(1, int(os.environ.get("SKY_BROWSER_MAX_USES", "30")))
 
 
+def _proxy_env_key() -> str:
+    return os.environ.get("SKY_PLAYWRIGHT_PROXY", "").strip()
+
+
+def _playwright_proxy() -> dict | None:
+    """Parse ``SKY_PLAYWRIGHT_PROXY`` (``http://user:pass@host:port``) for Playwright."""
+    raw = _proxy_env_key()
+    if not raw:
+        return None
+
+    parsed = urlparse(raw)
+    if not parsed.hostname:
+        raise FirefoxCaptchaError(f"Invalid SKY_PLAYWRIGHT_PROXY: {raw!r}")
+
+    scheme = parsed.scheme or "http"
+    if parsed.port is not None:
+        port = parsed.port
+    elif scheme == "https":
+        port = 443
+    else:
+        port = 80
+
+    proxy: dict[str, str] = {"server": f"{scheme}://{parsed.hostname}:{port}"}
+    if parsed.username is not None:
+        proxy["username"] = unquote(parsed.username)
+    if parsed.password is not None:
+        proxy["password"] = unquote(parsed.password)
+    return proxy
+
+
+def _firefox_launch_options(*, headless: bool) -> dict:
+    options: dict = {"headless": headless}
+    proxy = _playwright_proxy()
+    if proxy is not None:
+        options["proxy"] = proxy
+    return options
+
+
+def _new_sky_context(browser):
+    return browser.new_context(locale=_SKY_LOCALE, viewport=_SKY_VIEWPORT)
+
+
 def _shutdown_browser_pool_unlocked() -> None:
-    global _playwright, _browser, _browser_uses
+    global _playwright, _browser, _browser_uses, _launched_proxy_key
     if _browser is not None:
         try:
             _browser.close()
@@ -69,6 +113,7 @@ def _shutdown_browser_pool_unlocked() -> None:
             pass
         _playwright = None
     _browser_uses = 0
+    _launched_proxy_key = None
 
 
 def shutdown_sky_browser_pool() -> None:
@@ -99,15 +144,7 @@ def _atexit_cleanup() -> None:
 atexit.register(_atexit_cleanup)
 
 
-def _block_heavy_assets(route) -> None:
-    if route.request.resource_type in _BLOCK_RESOURCE_TYPES:
-        route.abort()
-    else:
-        route.continue_()
-
-
 def _extract_token(page, *, wait_sec: float, page_timeout_ms: int) -> str:
-    page.route("**/*", _block_heavy_assets)
     page.goto(SKY_PAGE_URL, wait_until="domcontentloaded", timeout=page_timeout_ms)
     if wait_sec > 0:
         time.sleep(wait_sec)
@@ -118,10 +155,11 @@ def _extract_token(page, *, wait_sec: float, page_timeout_ms: int) -> str:
 
 
 def _acquire_browser(*, headless: bool):
-    global _playwright, _browser, _browser_uses
+    global _playwright, _browser, _browser_uses, _launched_proxy_key
 
     from playwright.sync_api import sync_playwright
 
+    proxy_key = _proxy_env_key()
     stale = False
     if _browser is not None:
         try:
@@ -131,7 +169,7 @@ def _acquire_browser(*, headless: bool):
     if stale:
         _browser = None
 
-    if _browser is None or _browser_uses >= _max_browser_uses():
+    if _browser is None or _browser_uses >= _max_browser_uses() or _launched_proxy_key != proxy_key:
         if _browser is not None:
             try:
                 _browser.close()
@@ -140,8 +178,9 @@ def _acquire_browser(*, headless: bool):
             _browser = None
         if _playwright is None:
             _playwright = sync_playwright().start()
-        _browser = _playwright.firefox.launch(headless=headless)
+        _browser = _playwright.firefox.launch(**_firefox_launch_options(headless=headless))
         _browser_uses = 0
+        _launched_proxy_key = proxy_key
 
     _browser_uses += 1
     return _browser
@@ -151,10 +190,14 @@ def _solve_with_fresh_browser(*, headless: bool, wait_sec: float, page_timeout_m
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as playwright:
-        browser = playwright.firefox.launch(headless=headless)
+        browser = playwright.firefox.launch(**_firefox_launch_options(headless=headless))
         try:
-            page = browser.new_page()
-            return _extract_token(page, wait_sec=wait_sec, page_timeout_ms=page_timeout_ms)
+            context = _new_sky_context(browser)
+            page = context.new_page()
+            try:
+                return _extract_token(page, wait_sec=wait_sec, page_timeout_ms=page_timeout_ms)
+            finally:
+                context.close()
         finally:
             browser.close()
 
@@ -162,7 +205,8 @@ def _solve_with_fresh_browser(*, headless: bool, wait_sec: float, page_timeout_m
 def _solve_with_reused_browser(*, headless: bool, wait_sec: float, page_timeout_ms: int) -> str:
     with _pool_lock:
         browser = _acquire_browser(headless=headless)
-        page = browser.new_page()
+        context = _new_sky_context(browser)
+        page = context.new_page()
         try:
             return _extract_token(page, wait_sec=wait_sec, page_timeout_ms=page_timeout_ms)
         except Exception:
@@ -170,7 +214,7 @@ def _solve_with_reused_browser(*, headless: bool, wait_sec: float, page_timeout_
             raise
         finally:
             try:
-                page.close()
+                context.close()
             except Exception:
                 pass
 
