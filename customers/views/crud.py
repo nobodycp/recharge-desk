@@ -105,7 +105,6 @@ def customer_edit(request, pk):
 @management_required
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
-    phones = list(customer.phones.order_by("phone"))
 
     # Local import: customers <-> sales would be a circular import at the
     # module level, so we defer Sale until the request is being served.
@@ -115,14 +114,27 @@ def customer_detail(request, pk):
     awaiting_count = on_account_qs.filter(status=Sale.Status.AWAITING).count()
     pending_count = on_account_qs.filter(status=Sale.Status.PENDING).count()
 
-    on_account_sales = on_account_qs.select_related(
-        "company", "product", "product__line", "payment_method", "created_by"
-    ).order_by("-created_at")[:200]
+    sales_page = paginate_request(
+        request,
+        on_account_qs.select_related(
+            "company", "product", "product__line", "payment_method", "created_by"
+        ).order_by("-created_at"),
+        page_param="sales_page",
+    )
+    ledger_page = paginate_request(
+        request,
+        customer.ledger_entries.select_related(
+            "sale", "payment", "created_by"
+        ).order_by("-created_at"),
+        page_param="ledger_page",
+    )
+    phones_page = paginate_request(
+        request,
+        customer.phones.order_by("phone"),
+        page_param="phones_page",
+    )
     payments = customer.payments.select_related(
         "payment_method", "created_by"
-    ).order_by("-created_at")[:200]
-    ledger = customer.ledger_entries.select_related(
-        "sale", "payment", "created_by"
     ).order_by("-created_at")[:200]
 
     return render(
@@ -131,10 +143,10 @@ def customer_detail(request, pk):
         {
             "title": customer.name,
             "customer": customer,
-            "phones": phones,
-            "on_account_sales": on_account_sales,
+            "sales_page": sales_page,
+            "ledger_page": ledger_page,
+            "phones_page": phones_page,
             "payments": payments,
-            "ledger": ledger,
             "awaiting_count": awaiting_count,
             "pending_count": pending_count,
             "payment_form": CustomerPaymentForm(),

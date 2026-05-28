@@ -492,8 +492,8 @@ def delete_customer_completely(*, customer: Customer, user) -> None:
     Intended for QA / test cleanup. Walks every sale tied to the
     customer and runs ``delete_sale_permanently`` on each (so supplier
     balances and ledger reversals are handled correctly), then drops
-    all remaining payments and the customer row itself. Phones and
-    ledger entries cascade automatically.
+    all remaining payments, payment submissions, and the customer row itself.
+    Phones and ledger entries cascade automatically.
     """
     from sales.models import Sale  # local import to avoid app cycles
     from sales.services import delete_sale_permanently
@@ -509,6 +509,7 @@ def delete_customer_completely(*, customer: Customer, user) -> None:
 
     CustomerPayment.objects.filter(customer=customer_locked).delete()
     CustomerLedger.objects.filter(customer=customer_locked).delete()
+    CustomerPaymentSubmission.objects.filter(customer=customer_locked).delete()
     name_repr = customer_locked.name
     pk = customer_locked.pk
     customer_locked.delete()

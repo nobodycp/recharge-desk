@@ -661,9 +661,10 @@ can break interactivity.
 
   var bulkDeleteUrl = "{% url 'phone_refresh:report_logs_bulk_delete' %}";
 
-  function getCookie(name) {
-    var match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
-    return match ? decodeURIComponent(match[1]) : '';
+  function getCsrfToken() {
+    var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (el && el.value) { return el.value; }
+    return '';
   }
 
   function rowCheckboxes() {
@@ -725,7 +726,10 @@ can break interactivity.
         formData.append(k, body[k]);
       }
     });
-    var csrfToken = getCookie('csrftoken');
+    var csrfToken = getCsrfToken();
+    if (csrfToken) {
+      formData.append('csrfmiddlewaretoken', csrfToken);
+    }
     fetch(bulkDeleteUrl, {
       method: 'POST',
       credentials: 'same-origin',

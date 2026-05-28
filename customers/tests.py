@@ -603,6 +603,32 @@ class AdjustmentFifoPriorityTests(CustomerARTestCase):
         self.assertEqual(CustomerPayment.objects.filter(customer_id=c.pk).count(), 0)
         self.assertEqual(CustomerPhone.objects.filter(customer_id=c.pk).count(), 0)
 
+    def test_deletes_customer_with_approved_and_rejected_payment_submissions(self):
+        c = self._new_customer()
+        approved = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(50),
+            payment_method=self.bank,
+            user=self.user,
+        )
+        approve_customer_payment_submission(submission=approved, user=self.user)
+        rejected = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(50),
+            payment_method=self.bank,
+            user=self.user,
+        )
+        reject_customer_payment_submission(submission=rejected, user=self.user, reason="test")
+        CustomerPayment.objects.filter(customer=c).delete()
+
+        delete_customer_completely(customer=c, user=self.user)
+
+        self.assertFalse(Customer.objects.filter(pk=c.pk).exists())
+        self.assertEqual(
+            CustomerPaymentSubmission.objects.filter(customer_id=c.pk).count(),
+            0,
+        )
+
 
 class CustomerDetailViewTests(CustomerARTestCase):
     def test_detail_renders_with_on_account_history(self):
@@ -616,6 +642,34 @@ class CustomerDetailViewTests(CustomerARTestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, c.name)
+
+    def test_detail_paginates_sales_ledger_and_phones(self):
+        from customers.models import CustomerPhone
+
+        c = self._new_customer()
+        for i in range(26):
+            self._new_on_account_sale(c, 100 + i)
+            CustomerPhone.objects.create(customer=c, phone=f"0599000{i:03d}")
+        approve_sale(sale=c.sales.order_by("created_at").first(), user=self.user)
+
+        self.client.force_login(self.user)
+        url = f"/management/customers/{c.pk}/"
+        r1 = self.client.get(url)
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r1.context["sales_page"].paginator.count, 26)
+        self.assertEqual(len(r1.context["sales_page"].object_list), 25)
+        self.assertEqual(r1.context["ledger_page"].paginator.count, 1)
+        self.assertEqual(r1.context["phones_page"].paginator.count, 26)
+
+        r2 = self.client.get(f"{url}?sales_page=2")
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(len(r2.context["sales_page"].object_list), 1)
+        self.assertEqual(r2.context["sales_page"].number, 2)
+
+        r3 = self.client.get(f"{url}?phones_page=2")
+        self.assertEqual(r3.status_code, 200)
+        self.assertEqual(len(r3.context["phones_page"].object_list), 1)
+        self.assertEqual(r3.context["phones_page"].number, 2)
 
 
 class CustomerStatementTests(CustomerARTestCase):

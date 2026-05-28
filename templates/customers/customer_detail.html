@@ -62,7 +62,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for s in on_account_sales %}
+              {% for s in sales_page %}
                 <tr id="customer-sale-row-{{ s.pk }}">
                   <td class="small text-nowrap">{{ s.created_at|date:"Y-m-d H:i" }}</td>
                   <td class="text-nowrap">{{ s.reference_number }}</td>
@@ -98,6 +98,7 @@
             </tbody>
           </table>
         </div>
+        {% include "partials/pagination.html" with page_obj=sales_page page_key="sales_page" pagination_reset_sibling_pages=True %}
       </div>
     </div>
 
@@ -117,7 +118,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for l in ledger %}
+              {% for l in ledger_page %}
                 <tr id="customer-ledger-row-{{ l.pk }}">
                   <td class="small text-nowrap">{{ l.created_at|date:"Y-m-d H:i" }}</td>
                   <td>{{ l.get_entry_type_display }}</td>
@@ -158,6 +159,7 @@
             </tbody>
           </table>
         </div>
+        {% include "partials/pagination.html" with page_obj=ledger_page page_key="ledger_page" pagination_reset_sibling_pages=True %}
       </div>
     </div>
   </div>
@@ -198,7 +200,7 @@
       <div class="rd-card-header fw-semibold">{% trans "Phones" %}</div>
       <div class="rd-card-body">
         <ul class="list-group list-group-flush mb-3">
-          {% for p in phones %}
+          {% for p in phones_page %}
             <li class="list-group-item d-flex justify-content-between align-items-center px-0">
               <span>
                 <span class="rd-badge rd-badge--neutral">{{ p.phone }}</span>
@@ -218,6 +220,7 @@
           <div class="col-7">{{ phone_form.phone }}</div>
           <div class="col-5"><button class="btn btn-outline-primary w-100" type="submit">{% trans "Add" %}</button></div>
         </form>
+        {% include "partials/pagination.html" with page_obj=phones_page page_key="phones_page" pagination_reset_sibling_pages=True %}
       </div>
     </div>
 
