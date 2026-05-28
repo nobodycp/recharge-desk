@@ -222,4 +222,5 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
 | Sky refresh timeout / worker killed | Browser captcha slower than 60s | Set `GUNICORN_TIMEOUT=120`; ensure container has ≥1GB RAM. |
+| `SynchronousOnlyOperation` / 500 on `/management/` after Sky refresh | Playwright sync API leaves an asyncio loop on gunicorn worker threads | Redeploy latest code (Playwright runs on a dedicated thread). Temporary workaround: `SKY_BROWSER_REUSE=0` and **Redeploy** (or restart containers). |
 | Sky `captcha: playwright is not installed` | Old image without Playwright | Redeploy with fresh Docker build (see Dockerfile). |
