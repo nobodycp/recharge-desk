@@ -1,10 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-theme="dark">
+<html lang="{{ public_default_language|default:'ar' }}" dir="{{ public_html_dir|default:'rtl' }}" data-theme="{{ public_default_theme|default:'dark' }}">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <meta name="refresh-default-lang" content="{{ public_default_language|default:'ar' }}" />
+    <meta name="refresh-default-theme" content="{{ public_default_theme|default:'dark' }}" />
     <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
     <meta name="refresh-api" content="{% url 'phone_refresh:public_api' %}" />
     {% if public_api_token %}

@@ -116,3 +116,76 @@ class SiteBranding(models.Model):
         if SITE_BRANDING_CACHE_TTL:
             cache.set(SITE_BRANDING_CACHE_KEY, instance, timeout=SITE_BRANDING_CACHE_TTL)
         return instance
+
+
+APP_SETTINGS_CACHE_KEY = "core:app_settings:singleton"
+APP_SETTINGS_CACHE_TTL = 300
+
+
+class AppSettings(models.Model):
+    """Singleton row for recharge-desk-wide behaviour and UI defaults."""
+
+    class ThemeChoice(models.TextChoices):
+        LIGHT = "light", _("Light")
+        DARK = "dark", _("Dark")
+        SYSTEM = "system", _("System (match device)")
+
+    allow_sales_auto_create_customer = models.BooleanField(
+        _("Allow creating customers from sales entry"),
+        default=True,
+        help_text=_(
+            "When off, on-account sales require an existing customer created"
+            " from the Customers screen."
+        ),
+    )
+    default_language = models.CharField(
+        _("Default language"),
+        max_length=10,
+        choices=[("en", "English"), ("ar", "العربية")],
+        default="en",
+    )
+    default_theme = models.CharField(
+        _("Default theme"),
+        max_length=10,
+        choices=ThemeChoice.choices,
+        default=ThemeChoice.SYSTEM,
+    )
+    public_default_language = models.CharField(
+        _("Public refresh page default language"),
+        max_length=10,
+        choices=[("en", "English"), ("ar", "العربية")],
+        default="ar",
+    )
+    public_default_theme = models.CharField(
+        _("Public refresh page default theme"),
+        max_length=10,
+        choices=[("light", _("Light")), ("dark", _("Dark"))],
+        default="dark",
+    )
+    updated_at = models.DateTimeField(_("updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("system settings")
+        verbose_name_plural = _("system settings")
+
+    def __str__(self) -> str:
+        return "System settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+        cache.delete(APP_SETTINGS_CACHE_KEY)
+
+    def delete(self, *args, **kwargs):
+        return
+
+    @classmethod
+    def load(cls) -> "AppSettings":
+        if APP_SETTINGS_CACHE_TTL:
+            cached = cache.get(APP_SETTINGS_CACHE_KEY)
+            if cached is not None:
+                return cached
+        instance, _created = cls.objects.get_or_create(pk=1)
+        if APP_SETTINGS_CACHE_TTL:
+            cache.set(APP_SETTINGS_CACHE_KEY, instance, timeout=APP_SETTINGS_CACHE_TTL)
+        return instance

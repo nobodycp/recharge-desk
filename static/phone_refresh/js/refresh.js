@@ -102,8 +102,20 @@ const alertBox = $("#alert");
 const alertText = alertBox.querySelector(".alert-text");
 const footerText = $("#footer-text");
 
-let currentLang = localStorage.getItem(STORAGE.LANG) || "ar";
-let currentTheme = localStorage.getItem(STORAGE.THEME) || "dark";
+let currentLang = localStorage.getItem(STORAGE.LANG);
+let currentTheme = localStorage.getItem(STORAGE.THEME);
+
+function metaDefault(name, fallback) {
+    const el = document.querySelector(`meta[name="${name}"]`);
+    return el && el.content ? el.content : fallback;
+}
+
+if (!currentLang) {
+    currentLang = metaDefault("refresh-default-lang", "ar");
+}
+if (!currentTheme) {
+    currentTheme = metaDefault("refresh-default-theme", "dark");
+}
 
 function t(key) {
     return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key]) || key;

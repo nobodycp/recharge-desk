@@ -48,6 +48,7 @@ MIDDLEWARE = [
     "core.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "core.middleware.AppDefaultLanguageMiddleware",
     # Subdomain gate for the public phone-refresh page. Sits BEFORE
     # CommonMiddleware so its 404 / 302 responses bypass APPEND_SLASH
     # rewriting and language-prefix logic; sits AFTER SessionMiddleware

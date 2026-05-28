@@ -1,7 +1,35 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from core.models import SiteBranding
+from core.models import AppSettings, SiteBranding
+
+
+class AppSettingsForm(forms.ModelForm):
+    class Meta:
+        model = AppSettings
+        fields = [
+            "allow_sales_auto_create_customer",
+            "default_language",
+            "default_theme",
+            "public_default_language",
+            "public_default_theme",
+        ]
+        widgets = {
+            "allow_sales_auto_create_customer": forms.CheckboxInput(
+                attrs={"class": "form-check-input", "role": "switch"}
+            ),
+            "default_language": forms.Select(attrs={"class": "form-select"}),
+            "default_theme": forms.Select(attrs={"class": "form-select"}),
+            "public_default_language": forms.Select(attrs={"class": "form-select"}),
+            "public_default_theme": forms.Select(attrs={"class": "form-select"}),
+        }
+        labels = {
+            "allow_sales_auto_create_customer": _("Create customers from sales entry"),
+            "default_language": _("Default language"),
+            "default_theme": _("Default theme"),
+            "public_default_language": _("Refresh link default language"),
+            "public_default_theme": _("Refresh link default theme"),
+        }
 
 
 class SiteBrandingForm(forms.ModelForm):

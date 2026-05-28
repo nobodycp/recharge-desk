@@ -98,6 +98,15 @@ def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> 
 
     customer = Customer.objects.filter(is_active=True, name__iexact=name).first()
     if customer is None:
+        from core.models import AppSettings
+
+        if not AppSettings.load().allow_sales_auto_create_customer:
+            raise ValueError(
+                _(
+                    'No customer named “%(name)s”. Create the customer from Customers first.'
+                )
+                % {"name": name}
+            )
         customer = Customer.objects.create(name=name, created_by=user)
 
     if phone and not CustomerPhone.objects.filter(customer=customer, phone__iexact=phone).exists():

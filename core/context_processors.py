@@ -72,6 +72,13 @@ def theme(request):
     explicit = getattr(settings, "ASSET_CACHE_BUSTER", "") or ""
     bust = explicit or _DEFAULT_BUSTER
     static_cache_query = f"?v={bust}" if bust else ""
+    default_theme = "system"
+    try:
+        from core.models import AppSettings
+
+        default_theme = AppSettings.load().default_theme
+    except Exception:
+        pass
     # Bootstrap CSS is served from /static/vendor/ (see static/vendor/README.md
     # for the pinned upstream versions). The full URL — including the cache
     # buster — is built here so each template just needs `{{ bootstrap_css }}`.
@@ -86,6 +93,7 @@ def theme(request):
         "html_dir": "rtl" if getattr(request, "LANGUAGE_CODE", None) == "ar" else "ltr",
         "languages": settings.LANGUAGES,
         "static_cache_query": static_cache_query,
+        "app_default_theme": default_theme,
     }
 
 

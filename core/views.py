@@ -9,8 +9,8 @@ from django.utils.translation import get_language_from_path, gettext_lazy as _
 from django.views.i18n import set_language as django_set_language
 
 from accounts.permissions import is_employee, is_management, management_required
-from core.forms import SiteBrandingForm
-from core.models import SiteBranding
+from core.forms import AppSettingsForm, SiteBrandingForm
+from core.models import AppSettings, SiteBranding
 
 
 def set_language_fixed(request):
@@ -290,4 +290,20 @@ def site_branding(request):
         request,
         "core/site_branding.html",
         {"form": form, "branding": instance, "title": _("Site branding")},
+    )
+
+
+@management_required
+def system_settings(request):
+    """Singleton editor for recharge-desk behaviour and UI defaults."""
+    instance = AppSettings.load()
+    form = AppSettingsForm(request.POST or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, _("System settings updated."))
+        return redirect("core:system_settings")
+    return render(
+        request,
+        "core/system_settings.html",
+        {"form": form, "settings": instance, "title": _("System settings")},
     )

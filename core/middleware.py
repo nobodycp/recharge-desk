@@ -34,6 +34,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from django.conf import settings
+from django.utils import translation
 
 
 # NOTE on third-party origins
@@ -119,3 +120,24 @@ class SecurityHeadersMiddleware:
         if "Permissions-Policy" not in response:
             response["Permissions-Policy"] = self.permissions_policy
         return response
+
+
+class AppDefaultLanguageMiddleware:
+    """Apply admin-configured default language when the user has no language cookie."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.cookie_name = getattr(settings, "LANGUAGE_COOKIE_NAME", "django_language")
+
+    def __call__(self, request):
+        if self.cookie_name not in request.COOKIES:
+            try:
+                from core.models import AppSettings
+
+                lang = AppSettings.load().default_language
+                if lang:
+                    translation.activate(lang)
+                    request.LANGUAGE_CODE = lang
+            except Exception:
+                pass
+        return self.get_response(request)

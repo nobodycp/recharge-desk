@@ -140,7 +140,10 @@ def _token_required(api_settings: ApiSettings, client_hint: str) -> bool:
 @require_GET
 def public_refresh_page(request):
     """Standalone Arabic RTL refresh form (not part of the admin shell)."""
+    from core.models import AppSettings
+
     site_settings = SiteSettings.get_solo()
+    app_settings = AppSettings.load()
     public_api_token = ""
     token = site_settings.public_page_token
     if (
@@ -149,6 +152,8 @@ def public_refresh_page(request):
         and site_settings.public_page_token_raw
     ):
         public_api_token = site_settings.public_page_token_raw
+    lang = app_settings.public_default_language or "ar"
+    theme = app_settings.public_default_theme or "dark"
     return render(
         request,
         "phone_refresh/public_refresh.html",
@@ -156,6 +161,9 @@ def public_refresh_page(request):
             "whatsapp_url": site_settings.whatsapp_url,
             "facebook_url": site_settings.facebook_url,
             "public_api_token": public_api_token,
+            "public_default_language": lang,
+            "public_default_theme": theme,
+            "public_html_dir": "rtl" if lang == "ar" else "ltr",
         },
     )
 
