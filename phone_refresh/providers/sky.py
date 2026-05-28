@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import os
 import time
 
 import requests
 
 from phone_refresh.providers.base import BaseProvider, RawResponse
-from phone_refresh.providers.captcha.firefox_browser import solve_sky_recaptcha_v3
 from phone_refresh.providers.captcha.recaptcha_v3 import RecaptchaV3Bypass
 
 _SITE_KEY = "6LcMCXYpAAAAABWt8J3o93Z0YRZgbFCd-OfBN5ov"
@@ -79,14 +77,7 @@ class SkyProvider(BaseProvider):
         )
 
     def _fetch_captcha_token(self) -> str:
-        backend = os.environ.get("SKY_CAPTCHA_BACKEND", "firefox").strip().lower()
-        if backend == "bypass":
-            return RecaptchaV3Bypass(self._LEGACY_ANCHOR_URL, self._LEGACY_RELOAD_URL).response()
-        if backend == "firefox":
-            return solve_sky_recaptcha_v3()
-        raise RuntimeError(
-            f"Unsupported SKY_CAPTCHA_BACKEND={backend!r}. Use 'firefox' or 'bypass'."
-        )
+        return RecaptchaV3Bypass(self._LEGACY_ANCHOR_URL, self._LEGACY_RELOAD_URL).response()
 
     def _poll_status(self, correlation_id: str) -> dict | None:
         url = f"{self.SUBMIT_URL}/{correlation_id}/status"

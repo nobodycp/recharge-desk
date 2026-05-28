@@ -6,19 +6,8 @@ from phone_refresh.providers.sky import SkyProvider
 
 
 class SkyProviderCaptchaTests(SimpleTestCase):
-    @patch("phone_refresh.providers.sky.solve_sky_recaptcha_v3")
-    def test_default_backend_uses_firefox(self, solve_mock):
-        solve_mock.return_value = "firefox-token"
-        provider = SkyProvider()
-
-        token = provider._fetch_captcha_token()
-
-        self.assertEqual(token, "firefox-token")
-        solve_mock.assert_called_once_with()
-
-    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "bypass"})
     @patch("phone_refresh.providers.sky.RecaptchaV3Bypass")
-    def test_bypass_backend_when_configured(self, bypass_cls):
+    def test_fetch_captcha_uses_http_bypass(self, bypass_cls):
         bypass_cls.return_value.response.return_value = "bypass-token"
         provider = SkyProvider()
 

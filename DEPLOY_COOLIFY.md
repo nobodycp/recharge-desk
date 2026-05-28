@@ -93,32 +93,13 @@ Optional knobs (defaults are fine for most deployments):
 ```env
 GUNICORN_WORKERS=3
 GUNICORN_THREADS=2
-GUNICORN_TIMEOUT=120
+GUNICORN_TIMEOUT=60
 DJANGO_LOG_LEVEL=INFO
-
-# Sky reCAPTCHA (Playwright Firefox — installed in Docker image)
-SKY_CAPTCHA_BACKEND=firefox
-SKY_PLAYWRIGHT_HEADLESS=1
-SKY_BROWSER_WAIT_SEC=2
-SKY_BROWSER_REUSE=1
-SKY_BROWSER_MAX_USES=30
 ```
 
-Optional — **residential proxy** when datacenter IPs get low reCAPTCHA scores
-(server tokens rejected while local Mac tokens work):
-
-```env
-SKY_PLAYWRIGHT_PROXY=http://user:pass@proxy-host:port
-```
-
-Set as **Runtime only** in Coolify. Playwright routes Firefox through this
-proxy when acquiring tokens. After changing the proxy, **Restart** the app
-(so the browser pool is recreated).
-
-> **Sky provider**: the Docker image includes Playwright + Firefox (~100MB).
-> Each Sky refresh launches a headless browser (~15–30s). Use
-> `GUNICORN_TIMEOUT=120` or higher. Allocate at least **1GB RAM** per
-> container if Sky traffic is steady.
+> **Sky provider**: captcha tokens are acquired via lightweight HTTP requests
+> (no browser in the container). Remove any old `SKY_*` Playwright env vars
+> from Coolify — they are no longer used.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify
 > will route to this container. Forget one and Django answers `400 Bad
@@ -232,6 +213,4 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
-| Sky refresh timeout / worker killed | Browser captcha slower than 60s | Set `GUNICORN_TIMEOUT=120`; ensure container has ≥1GB RAM. |
-| `SynchronousOnlyOperation` / 500 on `/management/` after Sky refresh | Playwright sync API leaves an asyncio loop on gunicorn worker threads | Redeploy latest code (Playwright runs on a dedicated thread). Temporary workaround: `SKY_BROWSER_REUSE=0` and **Redeploy** (or restart containers). |
-| Sky `captcha: playwright is not installed` | Old image without Playwright | Redeploy with fresh Docker build (see Dockerfile). |
+| Sky refresh fails with captcha error | Sky rejected the HTTP captcha token or upstream changed | Check Runtime Logs; retry from **Phone Refresh → Internal test**. |
