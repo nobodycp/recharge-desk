@@ -11,6 +11,16 @@ SITE_BRANDING_CACHE_KEY = "core:site_branding:singleton"
 SITE_BRANDING_CACHE_TTL = 300
 
 
+class SiteBrandingQuerySet(models.QuerySet):
+    def delete(self):
+        cache.delete(SITE_BRANDING_CACHE_KEY)
+        return super().delete()
+
+
+class SiteBrandingManager(models.Manager.from_queryset(SiteBrandingQuerySet)):
+    pass
+
+
 class SiteBranding(models.Model):
     """Project-wide branding (logo, etc.) — one row, edited by management.
 
@@ -65,6 +75,8 @@ class SiteBranding(models.Model):
     )
     updated_at = models.DateTimeField(_("updated at"), auto_now=True)
 
+    objects = SiteBrandingManager()
+
     class Meta:
         verbose_name = _("site branding")
         verbose_name_plural = _("site branding")
@@ -88,15 +100,18 @@ class SiteBranding(models.Model):
         super().save(*args, **kwargs)
         cache.delete(SITE_BRANDING_CACHE_KEY)
 
+    def delete(self, *args, **kwargs):
+        result = super().delete(*args, **kwargs)
+        cache.delete(SITE_BRANDING_CACHE_KEY)
+        return result
+
     @classmethod
     def load(cls) -> "SiteBranding":
         """Return the singleton row, creating it lazily on first access."""
         if SITE_BRANDING_CACHE_TTL:
             cached = cache.get(SITE_BRANDING_CACHE_KEY)
             if cached is not None:
-                if cls.objects.filter(pk=cached.pk).exists():
-                    return cached
-                cache.delete(SITE_BRANDING_CACHE_KEY)
+                return cached
         instance, _created = cls.objects.get_or_create(pk=1)
         if SITE_BRANDING_CACHE_TTL:
             cache.set(SITE_BRANDING_CACHE_KEY, instance, timeout=SITE_BRANDING_CACHE_TTL)
