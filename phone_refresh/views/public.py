@@ -8,7 +8,9 @@ import time
 
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils import translation
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -154,6 +156,8 @@ def public_refresh_page(request):
         public_api_token = site_settings.public_page_token_raw
     lang = app_settings.public_default_language or "ar"
     theme = app_settings.public_default_theme or "dark"
+    with translation.override(lang):
+        public_api_url = reverse("phone_refresh:public_api")
     return render(
         request,
         "phone_refresh/public_refresh.html",
@@ -161,7 +165,7 @@ def public_refresh_page(request):
             "whatsapp_url": site_settings.whatsapp_url,
             "facebook_url": site_settings.facebook_url,
             "public_api_token": public_api_token,
-            "public_api_url": "/phone-refresh/api/refresh/",
+            "public_api_url": public_api_url,
             "public_default_language": lang,
             "public_default_theme": theme,
             "public_html_dir": "rtl" if lang == "ar" else "ltr",
