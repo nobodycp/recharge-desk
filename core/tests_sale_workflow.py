@@ -20,6 +20,15 @@ User = get_user_model()
 
 
 class SaleWorkflowSettingsTests(TestCase):
+    _DEFAULT_WORKFLOW = {
+        "require_debt_request_approval": True,
+        "require_settlement_request_approval": True,
+        "require_payment_request_approval": True,
+    }
+
+    def tearDown(self):
+        AppSettings.objects.update_or_create(pk=1, defaults=self._DEFAULT_WORKFLOW)
+
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user("wf", password="x")

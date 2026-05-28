@@ -788,6 +788,17 @@ class CustomerPaymentSubmissionFlowTests(CustomerARTestCase):
             defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
         )
 
+    def setUp(self):
+        from core.models import AppSettings
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": True,
+                "sales_show_record_payment": True,
+            },
+        )
+
     def test_submit_does_not_change_balance_approve_does(self):
         c = self._new_customer()
         approve_sale(sale=self._new_on_account_sale(c, 5000), user=self.user)
