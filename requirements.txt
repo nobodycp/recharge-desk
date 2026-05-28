@@ -9,4 +9,7 @@ dj-database-url>=2.2,<3
 whitenoise[brotli]>=6.7,<7
 # phone_refresh app: upstream HTTP + OpenBullet-style JSONPath matching
 requests>=2.31,<3
+PySocks>=1.7,<2
 jsonpath-ng>=1.6,<2
+# Sky provider: Playwright Firefox reCAPTCHA v3
+playwright>=1.49,<2

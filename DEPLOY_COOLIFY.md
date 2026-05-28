@@ -96,21 +96,26 @@ GUNICORN_THREADS=2
 GUNICORN_TIMEOUT=60
 DJANGO_LOG_LEVEL=INFO
 
-# Sky reCAPTCHA via anti-captcha.com (Runtime only — mark secret as sensitive)
-SKY_CAPTCHA_BACKEND=anticaptcha
-ANTICAPTCHA_API_KEY=your_anti_captcha_client_key
-SKY_RECAPTCHA_MIN_SCORE=0.7
-SKY_RECAPTCHA_PAGE_ACTION=public_refresh
-SKY_RECAPTCHA_WEBSITE_URL=https://rn.sky-5g.net/
+# Sky reCAPTCHA via Playwright Firefox + residential proxy (Runtime only)
+SKY_CAPTCHA_BACKEND=firefox
+SKY_PLAYWRIGHT_HEADLESS=1
+SKY_BROWSER_WAIT_SEC=0
+SKY_PLAYWRIGHT_PAGE_TIMEOUT_MS=45000
+SKY_BROWSER_MAX_AGE_SEC=600
+SKY_PLAYWRIGHT_PROXY=http://LOGIN_s_skyprod:PASSWORD@res.geonix.com:10000
 ```
 
-Set **`ANTICAPTCHA_API_KEY`** from [anti-captcha.com](https://anti-captcha.com/)
-→ Account Settings → API key. Use **Runtime only** in Coolify (never bake into
-the Docker image). Optional: `SKY_CAPTCHA_BACKEND=bypass` for local dev without
-an API key (legacy HTTP path; Sky may reject it).
+Use a **sticky session** in the Geonix username (e.g. `LOGIN_s_skyprod`) so
+captcha and Sky API share the same exit IP. Optional geo: `LOGIN_c_IL_s_skyprod`.
 
-> **Sky provider**: tokens are solved off-server by anti-captcha.com workers
-> (~5–20s). No browser in the container. Remove old `SKY_PLAYWRIGHT_*` env vars.
+Set **`SKY_PLAYWRIGHT_PROXY`** from your Geonix residential list. Use **Runtime
+only** in Coolify (never bake into the Docker image). Optional:
+`SKY_CAPTCHA_BACKEND=anticaptcha` with `ANTICAPTCHA_API_KEY`, or
+`SKY_CAPTCHA_BACKEND=bypass` for local dev without a browser.
+
+> **Sky provider**: Playwright Firefox runs inside the container (official
+> `playwright/python` base image). Typical captcha solve: ~5–15s with browser
+> reuse. Residential proxy required — datacenter IPs are rejected by Sky.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify
 > will route to this container. Forget one and Django answers `400 Bad

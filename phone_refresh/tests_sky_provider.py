@@ -50,8 +50,20 @@ class AntiCaptchaSolveTests(SimpleTestCase):
 
 
 class SkyProviderCaptchaTests(SimpleTestCase):
+    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "firefox"}, clear=False)
+    @patch("phone_refresh.providers.sky.solve_sky_recaptcha_v3")
+    def test_default_backend_uses_firefox(self, solve_mock):
+        solve_mock.return_value = "firefox-token"
+        provider = SkyProvider()
+
+        token = provider._fetch_captcha_token()
+
+        self.assertEqual(token, "firefox-token")
+        solve_mock.assert_called_once_with()
+
+    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "anticaptcha"})
     @patch("phone_refresh.providers.sky.solve_recaptcha_v3_anticaptcha")
-    def test_default_backend_uses_anticaptcha(self, solve_mock):
+    def test_anticaptcha_backend_when_configured(self, solve_mock):
         solve_mock.return_value = "anticaptcha-token"
         provider = SkyProvider()
 

@@ -7,6 +7,10 @@ import requests
 
 from phone_refresh.providers.base import BaseProvider, RawResponse
 from phone_refresh.providers.captcha.anticaptcha import solve_recaptcha_v3_anticaptcha
+from phone_refresh.providers.captcha.firefox_browser import (
+    sky_requests_proxy_kwargs,
+    solve_sky_recaptcha_v3,
+)
 from phone_refresh.providers.captcha.recaptcha_v3 import RecaptchaV3Bypass
 
 _SITE_KEY = "6LcMCXYpAAAAABWt8J3o93Z0YRZgbFCd-OfBN5ov"
@@ -56,6 +60,7 @@ class SkyProvider(BaseProvider):
                 json={"phone_number": phone, "captcha": captcha_token},
                 headers=self.HEADERS,
                 timeout=self.timeout,
+                **sky_requests_proxy_kwargs(),
             )
         except requests.RequestException as exc:
             return RawResponse(text="", json=None, status_code=0, error=str(exc))
@@ -79,20 +84,28 @@ class SkyProvider(BaseProvider):
         )
 
     def _fetch_captcha_token(self) -> str:
-        backend = os.environ.get("SKY_CAPTCHA_BACKEND", "anticaptcha").strip().lower()
+        backend = os.environ.get("SKY_CAPTCHA_BACKEND", "firefox").strip().lower()
         if backend == "bypass":
             return RecaptchaV3Bypass(self._LEGACY_ANCHOR_URL, self._LEGACY_RELOAD_URL).response()
         if backend == "anticaptcha":
             return solve_recaptcha_v3_anticaptcha()
+        if backend == "firefox":
+            return solve_sky_recaptcha_v3()
         raise RuntimeError(
-            f"Unsupported SKY_CAPTCHA_BACKEND={backend!r}. Use 'anticaptcha' or 'bypass'."
+            f"Unsupported SKY_CAPTCHA_BACKEND={backend!r}. "
+            "Use 'firefox', 'anticaptcha', or 'bypass'."
         )
 
     def _poll_status(self, correlation_id: str) -> dict | None:
         url = f"{self.SUBMIT_URL}/{correlation_id}/status"
         for _ in range(self._POLL_MAX_ATTEMPTS):
             try:
-                response = requests.get(url, headers=self.HEADERS, timeout=self.timeout)
+                response = requests.get(
+                    url,
+                    headers=self.HEADERS,
+                    timeout=self.timeout,
+                    **sky_requests_proxy_kwargs(),
+                )
             except requests.RequestException:
                 return None
             try:

@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS base
+FROM mcr.microsoft.com/playwright/python:v1.52.0-noble AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,9 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential \
         libpq-dev \
-        curl \
         gettext \
     && rm -rf /var/lib/apt/lists/*
 
