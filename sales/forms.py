@@ -148,6 +148,13 @@ class EmployeeSaleForm(forms.Form):
         on_account = bool(cleaned.get("on_account"))
         paid_via_employee = bool(cleaned.get("paid_via_employee"))
         payment_method = cleaned.get("payment_method")
+        if paid_via_employee:
+            from core.models import AppSettings
+
+            if not AppSettings.load().sales_show_employee_payment:
+                raise forms.ValidationError(
+                    _("Payment to employee is disabled on the sales screen.")
+                )
         if on_account and paid_via_employee:
             raise forms.ValidationError(
                 _("Choose either on-account or payment to employee, not both.")

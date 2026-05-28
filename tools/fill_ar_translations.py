@@ -341,6 +341,7 @@ AR: dict[str, str] = {
     "Show inventory (New SIM) on sales entry": "عرض المخزون (شريحة جديدة) في شاشة المبيعات",
     "Show phone refresh on sales entry": "عرض تحديث الهاتف في شاشة المبيعات",
     "Show record payment on sales entry": "عرض تسجيل الدفعة في شاشة المبيعات",
+    "Show payment to employee on sales entry": "عرض دفع لدى موظف في شاشة المبيعات",
     "Refresh link default language": "اللغة الافتراضية لرابط التحديث",
     "Refresh link default theme": "الثيم الافتراضي لرابط التحديث",
     "Public refresh page default language": "اللغة الافتراضية لصفحة التحديث العامة",
@@ -422,6 +423,13 @@ AR: dict[str, str] = {
     "Inventory (New SIM) on sales entry": "المخزون (شريحة جديدة) في شاشة المبيعات",
     "Phone refresh button on sales entry": "زر تحديث الهاتف في شاشة المبيعات",
     "Record payment button on sales entry": "زر تسجيل الدفعة في شاشة المبيعات",
+    "Payment to employee button on sales entry": "زر دفع لدى موظف في شاشة المبيعات",
+    "When off, the payment-to-employee option is hidden on the sales entry screen.": (
+        "عند الإيقاف، يُخفى خيار الدفع لدى موظف من شاشة إدخال المبيعات."
+    ),
+    "Payment to employee is disabled on the sales screen.": (
+        "الدفع لدى موظف معطّل في شاشة المبيعات."
+    ),
     "Recorded on account and posted to the customer.": "تم التسجيل على الحساب وإضافته للزبون مباشرة.",
     "Sale recorded and marked paid.": "تم تسجيل البيع واعتباره مدفوعاً.",
     "Payment recorded on the customer account.": "تم تسجيل الدفعة على حساب الزبون.",

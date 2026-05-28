@@ -93,6 +93,17 @@
         </div>
         {{ form.sales_show_record_payment.errors }}
 
+        <div class="form-check form-switch mt-2">
+          {{ form.sales_show_employee_payment }}
+          <label class="form-check-label fw-semibold" for="{{ form.sales_show_employee_payment.id_for_label }}">
+            {{ form.sales_show_employee_payment.label }}
+          </label>
+        </div>
+        <p class="small text-secondary mb-0">
+          {% trans "When off, the payment-to-employee option is hidden on the sales entry screen." %}
+        </p>
+        {{ form.sales_show_employee_payment.errors }}
+
         <hr class="my-2">
 
         <h2 class="rd-heading-lg mb-2">{% trans "Management panel defaults" %}</h2>

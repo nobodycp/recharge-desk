@@ -178,6 +178,14 @@ class AppSettings(models.Model):
         _("Show record payment on sales entry"),
         default=True,
     )
+    sales_show_employee_payment = models.BooleanField(
+        _("Show payment to employee on sales entry"),
+        default=True,
+        help_text=_(
+            "When off, the payment-to-employee option is hidden on the employee"
+            " sales screen."
+        ),
+    )
     default_language = models.CharField(
         _("Default language"),
         max_length=10,

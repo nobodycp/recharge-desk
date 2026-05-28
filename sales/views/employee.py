@@ -122,7 +122,11 @@ def employee_entry(request):
     if request.method == "POST" and form.is_valid():
         try:
             on_account = bool(form.cleaned_data.get("on_account"))
-            paid_via_employee = bool(form.cleaned_data.get("paid_via_employee"))
+            app_settings = AppSettings.load()
+            paid_via_employee = (
+                bool(form.cleaned_data.get("paid_via_employee"))
+                and app_settings.sales_show_employee_payment
+            )
             customer = None
             if on_account:
                 customer = resolve_or_create_customer_for_sale(
@@ -133,7 +137,6 @@ def employee_entry(request):
             employee_recipient = (
                 form.cleaned_data.get("employee_recipient") if paid_via_employee else None
             )
-            app_settings = AppSettings.load()
             is_new_sim = bool(form.cleaned_data.get("is_new_sim")) and app_settings.sales_inventory_enabled
             sale = create_sale(
                 company=form.cleaned_data["company"],

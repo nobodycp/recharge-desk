@@ -70,6 +70,7 @@ class AppSettingsViewTests(TestCase):
                 "sales_inventory_enabled": "on",
                 "sales_show_refresh_phone": "",
                 "sales_show_record_payment": "on",
+                "sales_show_employee_payment": "on",
                 "default_language": "ar",
                 "default_theme": "dark",
                 "public_default_language": "en",
