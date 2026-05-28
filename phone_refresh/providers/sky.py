@@ -41,8 +41,8 @@ class SkyProvider(BaseProvider):
         "Referer": f"{BASE_URL}/",
     }
 
-    _POLL_INTERVAL_SEC = 0.8
-    _POLL_MAX_ATTEMPTS = 30
+    _POLL_INTERVAL_SEC = 0.4
+    _POLL_MAX_ATTEMPTS = 40
 
     def call(self, phone: str) -> RawResponse:
         try:

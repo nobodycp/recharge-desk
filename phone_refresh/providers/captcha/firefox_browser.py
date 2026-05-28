@@ -1,7 +1,9 @@
 """Acquire Sky reCAPTCHA v3 tokens via Playwright Firefox."""
 from __future__ import annotations
 
+import atexit
 import os
+import threading
 import time
 
 SKY_PAGE_URL = "https://rn.sky-5g.net/"
@@ -13,7 +15,7 @@ async () => {
   await new Promise((resolve) => {
     const wait = () => {
       if (window.grecaptcha?.execute) return resolve();
-      setTimeout(wait, 200);
+      setTimeout(wait, 100);
     };
     wait();
   });
@@ -22,9 +24,122 @@ async () => {
 }
 """.replace("SITE_KEY", repr(SITE_KEY)).replace("PAGE_ACTION", repr(PAGE_ACTION))
 
+_BLOCK_RESOURCE_TYPES = frozenset({"image", "media", "font"})
+
+_pool_lock = threading.Lock()
+_playwright = None
+_browser = None
+_browser_uses = 0
+
 
 class FirefoxCaptchaError(RuntimeError):
     """Raised when Playwright Firefox cannot produce a reCAPTCHA token."""
+
+
+def _env_bool(name: str, *, default: str = "1") -> bool:
+    return os.environ.get(name, default).strip().lower() not in ("0", "false", "no")
+
+
+def _max_browser_uses() -> int:
+    return max(1, int(os.environ.get("SKY_BROWSER_MAX_USES", "30")))
+
+
+def shutdown_sky_browser_pool() -> None:
+    """Close the reused Playwright Firefox instance (tests / worker reload)."""
+    global _playwright, _browser, _browser_uses
+    with _pool_lock:
+        if _browser is not None:
+            try:
+                _browser.close()
+            except Exception:
+                pass
+            _browser = None
+        if _playwright is not None:
+            try:
+                _playwright.stop()
+            except Exception:
+                pass
+            _playwright = None
+        _browser_uses = 0
+
+
+atexit.register(shutdown_sky_browser_pool)
+
+
+def _block_heavy_assets(route) -> None:
+    if route.request.resource_type in _BLOCK_RESOURCE_TYPES:
+        route.abort()
+    else:
+        route.continue_()
+
+
+def _extract_token(page, *, wait_sec: float, page_timeout_ms: int) -> str:
+    page.route("**/*", _block_heavy_assets)
+    page.goto(SKY_PAGE_URL, wait_until="domcontentloaded", timeout=page_timeout_ms)
+    if wait_sec > 0:
+        time.sleep(wait_sec)
+    token = page.evaluate(_GET_TOKEN_JS)
+    if not token or not str(token).strip():
+        raise FirefoxCaptchaError("grecaptcha.execute returned an empty token")
+    return str(token)
+
+
+def _acquire_browser(*, headless: bool):
+    global _playwright, _browser, _browser_uses
+
+    from playwright.sync_api import sync_playwright
+
+    stale = False
+    if _browser is not None:
+        try:
+            stale = not _browser.is_connected()
+        except Exception:
+            stale = True
+    if stale:
+        _browser = None
+
+    if _browser is None or _browser_uses >= _max_browser_uses():
+        if _browser is not None:
+            try:
+                _browser.close()
+            except Exception:
+                pass
+            _browser = None
+        if _playwright is None:
+            _playwright = sync_playwright().start()
+        _browser = _playwright.firefox.launch(headless=headless)
+        _browser_uses = 0
+
+    _browser_uses += 1
+    return _browser
+
+
+def _solve_with_fresh_browser(*, headless: bool, wait_sec: float, page_timeout_ms: int) -> str:
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as playwright:
+        browser = playwright.firefox.launch(headless=headless)
+        try:
+            page = browser.new_page()
+            return _extract_token(page, wait_sec=wait_sec, page_timeout_ms=page_timeout_ms)
+        finally:
+            browser.close()
+
+
+def _solve_with_reused_browser(*, headless: bool, wait_sec: float, page_timeout_ms: int) -> str:
+    with _pool_lock:
+        browser = _acquire_browser(headless=headless)
+        page = browser.new_page()
+        try:
+            return _extract_token(page, wait_sec=wait_sec, page_timeout_ms=page_timeout_ms)
+        except Exception:
+            shutdown_sky_browser_pool()
+            raise
+        finally:
+            try:
+                page.close()
+            except Exception:
+                pass
 
 
 def solve_sky_recaptcha_v3(
@@ -35,7 +150,7 @@ def solve_sky_recaptcha_v3(
 ) -> str:
     """Load rn.sky-5g.net in Firefox and return a grecaptcha.execute token."""
     try:
-        from playwright.sync_api import sync_playwright
+        from playwright.sync_api import sync_playwright  # noqa: F401
     except ImportError as exc:
         raise FirefoxCaptchaError(
             "playwright is not installed. Add it to requirements and run "
@@ -43,23 +158,24 @@ def solve_sky_recaptcha_v3(
         ) from exc
 
     if headless is None:
-        headless = os.environ.get("SKY_PLAYWRIGHT_HEADLESS", "1").strip() != "0"
+        headless = _env_bool("SKY_PLAYWRIGHT_HEADLESS", default="1")
     if wait_sec is None:
-        wait_sec = float(os.environ.get("SKY_BROWSER_WAIT_SEC", "2"))
+        wait_sec = float(os.environ.get("SKY_BROWSER_WAIT_SEC", "1"))
 
+    reuse = _env_bool("SKY_BROWSER_REUSE", default="1")
     try:
-        with sync_playwright() as playwright:
-            browser = playwright.firefox.launch(headless=headless)
-            try:
-                page = browser.new_page()
-                page.goto(SKY_PAGE_URL, wait_until="domcontentloaded", timeout=page_timeout_ms)
-                time.sleep(wait_sec)
-                token = page.evaluate(_GET_TOKEN_JS)
-            finally:
-                browser.close()
+        if reuse:
+            return _solve_with_reused_browser(
+                headless=headless,
+                wait_sec=wait_sec,
+                page_timeout_ms=page_timeout_ms,
+            )
+        return _solve_with_fresh_browser(
+            headless=headless,
+            wait_sec=wait_sec,
+            page_timeout_ms=page_timeout_ms,
+        )
+    except FirefoxCaptchaError:
+        raise
     except Exception as exc:
         raise FirefoxCaptchaError(str(exc)) from exc
-
-    if not token or not str(token).strip():
-        raise FirefoxCaptchaError("grecaptcha.execute returned an empty token")
-    return str(token)

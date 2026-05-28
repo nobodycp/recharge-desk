@@ -99,7 +99,9 @@ DJANGO_LOG_LEVEL=INFO
 # Sky reCAPTCHA (Playwright Firefox — installed in Docker image)
 SKY_CAPTCHA_BACKEND=firefox
 SKY_PLAYWRIGHT_HEADLESS=1
-SKY_BROWSER_WAIT_SEC=2
+SKY_BROWSER_WAIT_SEC=1
+SKY_BROWSER_REUSE=1
+SKY_BROWSER_MAX_USES=30
 ```
 
 > **Sky provider**: the Docker image includes Playwright + Firefox (~100MB).
