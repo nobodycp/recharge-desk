@@ -68,6 +68,22 @@ def _normalize_url_prefix(value: str | None) -> str:
     return value
 
 
+def _strip_language_prefix(path: str) -> str:
+    """Drop an optional ``/xx/`` locale segment for public-host routing checks."""
+    path = path or "/"
+    for code, _ in django_settings.LANGUAGES:
+        prefix = f"/{code}/"
+        if path.startswith(prefix):
+            return "/" + path[len(prefix) :]
+        if path == f"/{code}":
+            return "/"
+    return path
+
+
+def _is_public_refresh_path(path: str) -> bool:
+    return _strip_language_prefix(path).startswith(_PUBLIC_PATH_PREFIX)
+
+
 class PhoneRefreshSubdomainMiddleware:
     """Gate the public refresh page behind a configurable subdomain."""
 
@@ -140,7 +156,7 @@ class PhoneRefreshSubdomainMiddleware:
                 from phone_refresh.views.public import public_refresh_page
 
                 return public_refresh_page(request)
-            if path.startswith(_PUBLIC_PATH_PREFIX):
+            if _is_public_refresh_path(path):
                 return self.get_response(request)
             if static_prefix and path.startswith(static_prefix):
                 return self.get_response(request)
@@ -152,7 +168,7 @@ class PhoneRefreshSubdomainMiddleware:
         # to the canonical subdomain.
         if (
             site_settings.redirect_main_to_subdomain
-            and path.startswith(_PUBLIC_PATH_PREFIX)
+            and _is_public_refresh_path(path)
         ):
             target = f"https://{configured}{request.get_full_path()}"
             return HttpResponseRedirect(target)

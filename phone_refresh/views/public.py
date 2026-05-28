@@ -161,6 +161,7 @@ def public_refresh_page(request):
             "whatsapp_url": site_settings.whatsapp_url,
             "facebook_url": site_settings.facebook_url,
             "public_api_token": public_api_token,
+            "public_api_url": "/phone-refresh/api/refresh/",
             "public_default_language": lang,
             "public_default_theme": theme,
             "public_html_dir": "rtl" if lang == "ar" else "ltr",

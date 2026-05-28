@@ -8,7 +8,7 @@
     <meta name="refresh-default-lang" content="{{ public_default_language|default:'ar' }}" />
     <meta name="refresh-default-theme" content="{{ public_default_theme|default:'dark' }}" />
     <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
-    <meta name="refresh-api" content="{% url 'phone_refresh:public_api' %}" />
+    <meta name="refresh-api" content="{{ public_api_url|default:'/phone-refresh/api/refresh/' }}" />
     {% if public_api_token %}
     <meta name="refresh-api-token" content="{{ public_api_token }}" />
     {% endif %}
