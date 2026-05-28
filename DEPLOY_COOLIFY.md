@@ -93,9 +93,19 @@ Optional knobs (defaults are fine for most deployments):
 ```env
 GUNICORN_WORKERS=3
 GUNICORN_THREADS=2
-GUNICORN_TIMEOUT=60
+GUNICORN_TIMEOUT=120
 DJANGO_LOG_LEVEL=INFO
+
+# Sky reCAPTCHA (Playwright Firefox — installed in Docker image)
+SKY_CAPTCHA_BACKEND=firefox
+SKY_PLAYWRIGHT_HEADLESS=1
+SKY_BROWSER_WAIT_SEC=2
 ```
+
+> **Sky provider**: the Docker image includes Playwright + Firefox (~100MB).
+> Each Sky refresh launches a headless browser (~15–30s). Use
+> `GUNICORN_TIMEOUT=120` or higher. Allocate at least **1GB RAM** per
+> container if Sky traffic is steady.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify
 > will route to this container. Forget one and Django answers `400 Bad
@@ -209,4 +219,5 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
-| `/healthz/` returns 404 | Old image still cached | Force a fresh build (Coolify → **Redeploy without cache**). |
+| Sky refresh timeout / worker killed | Browser captcha slower than 60s | Set `GUNICORN_TIMEOUT=120`; ensure container has ≥1GB RAM. |
+| Sky `captcha: playwright is not installed` | Old image without Playwright | Redeploy with fresh Docker build (see Dockerfile). |

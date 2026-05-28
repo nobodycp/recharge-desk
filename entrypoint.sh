@@ -48,6 +48,6 @@ exec gunicorn config.wsgi:application \
     --worker-class ${GUNICORN_WORKER_CLASS:-gthread} \
     --workers ${GUNICORN_WORKERS:-3} \
     --threads ${GUNICORN_THREADS:-2} \
-    --timeout ${GUNICORN_TIMEOUT:-60} \
+    --timeout ${GUNICORN_TIMEOUT:-120} \
     --access-logfile - \
     --error-logfile -
