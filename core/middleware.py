@@ -100,6 +100,48 @@ def _build_csp_header() -> str:
     return "; ".join(parts)
 
 
+from django.conf import settings
+from django.shortcuts import redirect
+from django.utils.translation import get_language_from_path
+
+
+class DefaultLanguagePrefixRedirectMiddleware:
+    """Redirect bare paths to ``/{default_language}/…`` when needed.
+
+    Admin sites configured with Arabic as the operational default sometimes
+    still ship ``LANGUAGE_CODE='en'``; only prefixed routes like ``/ar/login/``
+    then resolve while ``/`` and ``/login/`` return 404. One redirect fixes
+    bookmarks and bare-domain entry without forcing every link to carry a prefix.
+    """
+
+    _SKIP_PREFIXES = ("/healthz", "/admin", "/i18n/", "/static/", "/media/")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path or "/"
+        if any(path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
+            return self.get_response(request)
+        if get_language_from_path(path) is not None:
+            return self.get_response(request)
+        if not getattr(settings, "USE_I18N", False):
+            return self.get_response(request)
+
+        lang = settings.LANGUAGE_CODE
+        try:
+            from core.models import AppSettings
+
+            lang = (AppSettings.load().default_language or lang).strip()
+        except Exception:
+            pass
+
+        if not lang or lang == settings.LANGUAGE_CODE:
+            return self.get_response(request)
+
+        return redirect(f"/{lang}{path}")
+
+
 class SecurityHeadersMiddleware:
     """Add CSP and Permissions-Policy to every response."""
 
