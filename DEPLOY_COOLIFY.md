@@ -114,7 +114,8 @@ only** in Coolify (never bake into the Docker image). Optional:
 `SKY_CAPTCHA_BACKEND=bypass` for local dev without a browser.
 
 > **Sky provider**: Playwright Firefox runs inside the container (official
-> `playwright/python` base image). Typical captcha solve: ~5–15s with browser
+> `playwright/python:v1.60.0-noble` base image — keep `playwright==1.60.0` in
+> `requirements.txt` in sync). Typical captcha solve: ~5–15s with browser
 > reuse. Residential proxy required — datacenter IPs are rejected by Sky.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify

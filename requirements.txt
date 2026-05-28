@@ -11,5 +11,5 @@ whitenoise[brotli]>=6.7,<7
 requests>=2.31,<3
 PySocks>=1.7,<2
 jsonpath-ng>=1.6,<2
-# Sky provider: Playwright Firefox reCAPTCHA v3
-playwright>=1.49,<2
+# Sky provider: Playwright Firefox reCAPTCHA v3 (must match Dockerfile base image)
+playwright==1.60.0

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:v1.52.0-noble AS base
+FROM mcr.microsoft.com/playwright/python:v1.60.0-noble AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
