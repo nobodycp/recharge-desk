@@ -197,6 +197,35 @@
     </div>
 
     <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold d-flex justify-content-between align-items-center gap-2">
+        <span>{% trans "SIM stock" %}</span>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'inventory:customer_detail' customer.pk %}">{% trans "Manage" %}</a>
+      </div>
+      <div class="rd-card-body">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>{% trans "Product line" %}</th>
+                <th class="text-end">{% trans "Quantity" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in sim_balances %}
+                <tr>
+                  <td>{{ b.product_line.name }}</td>
+                  <td class="text-end tabular-nums fw-semibold">{{ b.quantity }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="2" class="text-center py-2 text-secondary small">{% trans "No SIM stock for this customer." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">{% trans "Phones" %}</div>
       <div class="rd-card-body">
         <ul class="list-group list-group-flush mb-3">

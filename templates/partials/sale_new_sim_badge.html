@@ -1,0 +1,4 @@
+{% load i18n %}
+{% if sale.is_new_sim %}
+<span class="badge rounded-pill text-bg-warning rd-sale-new-sim-badge ms-1" title="{% trans 'New SIM: stock deducted on approval' %}">{% trans "New SIM" %}</span>
+{% endif %}

@@ -70,6 +70,21 @@ class Sale(models.Model):
         default=False,
         help_text=_("Customer credit sale: needs management approval and is settled later by a customer payment."),
     )
+    paid_via_employee = models.BooleanField(
+        _("payment to employee"),
+        default=False,
+        help_text=_(
+            "Cash received by an employee on behalf of the shop; no payment method at entry."
+        ),
+    )
+    employee_recipient = models.ForeignKey(
+        "employees.EmployeeProfile",
+        on_delete=models.PROTECT,
+        related_name="sales_received",
+        verbose_name=_("employee recipient"),
+        null=True,
+        blank=True,
+    )
     customer = models.ForeignKey(
         "customers.Customer",
         on_delete=models.PROTECT,
@@ -122,6 +137,33 @@ class Sale(models.Model):
         ),
     )
     is_esim = models.BooleanField(_("eSIM sale"), default=False)
+    is_new_sim = models.BooleanField(_("new SIM sale"), default=False)
+    sim_serial_or_iccid = models.CharField(
+        _("SIM serial or ICCID"),
+        max_length=64,
+        blank=True,
+        help_text=_("Optional. Links this sale to a tracked SIM card at approval time."),
+    )
+    sim_consumed_at = models.DateTimeField(_("SIM consumed at"), null=True, blank=True)
+    class SimDeductedFrom(models.TextChoices):
+        NONE = "none", _("Not deducted")
+        CUSTOMER = "customer", _("Customer stock")
+        MAIN = "main", _("Main stock")
+
+    sim_deducted_from = models.CharField(
+        _("SIM deducted from"),
+        max_length=20,
+        choices=SimDeductedFrom.choices,
+        default=SimDeductedFrom.NONE,
+    )
+    sim_stock_movement = models.ForeignKey(
+        "inventory.SimStockMovement",
+        on_delete=models.SET_NULL,
+        related_name="consumed_sales",
+        verbose_name=_("SIM stock movement"),
+        null=True,
+        blank=True,
+    )
     status = models.CharField(
         _("status"),
         max_length=20,

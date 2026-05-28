@@ -1,21 +1,29 @@
 {% comment %}
 Reusable opening tag for the collapsible filter card.
 
-Required context:
-  active_count   - integer; the number of currently-applied filters.
-  indicator_id   - string; DOM id used by hx-indicator inside the form.
+Optional context:
+  filter_title   - summary label (default: "Search & filters")
+  active_count   - integer; filters currently applied (badge)
+  indicator_id   - DOM id for hx-indicator (omit if unused)
+  card_open      - if true, render <details open>
+  hide_badge     - if true, hide the active-filter badge
+  no_filter_badge - if true, skip filter-count JS on this card
 
 After this include, the caller must render the form/body and close the
 card with `partials/filter_card_close.html`.
 {% endcomment %}
 {% load i18n %}
-<details class="rd-card mb-3 position-relative rd-filter-card">
+<details class="rd-card mb-3 position-relative rd-filter-card"{% if card_open %} open{% endif %}{% if no_filter_badge %} data-rd-no-filter-badge{% endif %}>
   <summary>
     <span class="rd-filter-summary-left">
       <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      <span>{% trans "Search & filters" %}</span>
+      <span>{% if filter_title %}{{ filter_title }}{% else %}{% trans "Search & filters" %}{% endif %}</span>
+      {% if not hide_badge %}
       <span class="rd-filter-active-badge" data-rd-filter-count{% if not active_count %} style="display:none"{% endif %}>{{ active_count }}</span>
+      {% endif %}
     </span>
   </summary>
+  {% if indicator_id %}
   <div id="{{ indicator_id }}" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+  {% endif %}
   <div class="rd-card-body rd-filter-bar">

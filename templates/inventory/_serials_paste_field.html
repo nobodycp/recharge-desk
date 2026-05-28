@@ -1,0 +1,52 @@
+{% load i18n %}
+<div
+  class="rd-inv-serials-paste"
+  data-rd-inv-serials-root
+  data-rd-inv-qty-input="#{{ qty_field_id }}"
+>
+  <label class="form-label" for="{{ serials_field.id_for_label }}">{{ serials_field.label }}</label>
+  <div class="rd-inv-serials-paste__store visually-hidden" aria-hidden="true">
+    {{ serials_field }}
+  </div>
+  <button
+    type="button"
+    class="btn btn-outline-secondary btn-sm rd-inv-serials-paste__trigger"
+    data-rd-inv-serials-open
+    aria-haspopup="dialog"
+  >
+    <span class="rd-inv-serials-paste__label" data-rd-inv-serials-label>{% trans "Add serial numbers…" %}</span>
+    <span class="badge text-bg-primary rd-inv-serials-paste__count" data-rd-inv-serials-count hidden></span>
+  </button>
+
+  <div
+    class="rd-inv-dialog rd-inv-dialog--serials-paste"
+    data-rd-inv-serials-dialog
+    hidden
+    aria-hidden="true"
+  >
+    <div class="rd-inv-dialog__backdrop" data-rd-inv-serials-close></div>
+    <div
+      class="rd-inv-dialog__panel rd-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="{{ serials_field.id_for_label }}-dialog-title"
+    >
+      <div class="rd-inv-dialog__header d-flex justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="h6 mb-0" id="{{ serials_field.id_for_label }}-dialog-title">{% trans "Serial numbers" %}</h2>
+        <button type="button" class="btn-close btn-sm" data-rd-inv-serials-close aria-label="{% trans 'Close' %}"></button>
+      </div>
+      <p class="rd-text-muted small mb-2">{% trans "Paste one serial or ICCID per line. Changes apply immediately." %}</p>
+      <textarea
+        class="form-control form-control-sm font-monospace rd-inv-serials-paste__area"
+        rows="12"
+        spellcheck="false"
+        autocomplete="off"
+        data-rd-inv-serials-paste
+        aria-label="{{ serials_field.label }}"
+      ></textarea>
+      <p class="small text-warning mb-0 mt-2" data-rd-inv-serials-mismatch hidden>
+        {% trans "Serial count does not match quantity." %}
+      </p>
+    </div>
+  </div>
+</div>

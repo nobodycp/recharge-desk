@@ -17,7 +17,7 @@ from phone_refresh.models import (
 )
 
 
-PHONE_RE = re.compile(r"^05\d{8}$")
+from phone_refresh.validation import PHONE_HTML_PATTERN, PHONE_RE, PHONE_VALIDATION_ERROR_AR
 STATUS_CODE_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 # Host label per RFC 1035 (a-z, 0-9, hyphens, dots between labels). We
 # allow dots so a full subdomain like ``rn.prosim.ps`` validates as one
@@ -332,7 +332,7 @@ class InternalTestForm(forms.Form):
                 "class": "form-control",
                 "dir": "ltr",
                 "inputmode": "numeric",
-                "pattern": r"05[0-9]{8}",
+                "pattern": PHONE_HTML_PATTERN,
                 "maxlength": "10",
                 "placeholder": "0555555555",
                 "autocomplete": "off",
@@ -343,7 +343,7 @@ class InternalTestForm(forms.Form):
     def clean_phone(self) -> str:
         value = (self.cleaned_data.get("phone") or "").strip()
         if not PHONE_RE.match(value):
-            raise forms.ValidationError("الرقم يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام.")
+            raise forms.ValidationError(PHONE_VALIDATION_ERROR_AR)
         return value
 
 
@@ -435,7 +435,7 @@ class ProviderTestForm(forms.Form):
                 "class": "form-control",
                 "dir": "ltr",
                 "inputmode": "numeric",
-                "pattern": r"05[0-9]{8}",
+                "pattern": PHONE_HTML_PATTERN,
                 "maxlength": "10",
                 "placeholder": "0555555555",
                 "autocomplete": "off",
@@ -451,7 +451,7 @@ class ProviderTestForm(forms.Form):
     def clean_phone(self) -> str:
         value = (self.cleaned_data.get("phone") or "").strip()
         if not PHONE_RE.match(value):
-            raise forms.ValidationError("الرقم يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام.")
+            raise forms.ValidationError(PHONE_VALIDATION_ERROR_AR)
         return value
 
     def clean_provider(self) -> str:

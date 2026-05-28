@@ -1,0 +1,58 @@
+{% load i18n %}
+{% trans "Allocate from main" as allocate_title %}
+{% include "partials/filter_card_open.html" with filter_title=allocate_title active_count=0 card_open=allocate_panel_open hide_badge=True no_filter_badge=True %}
+    <p class="rd-text-muted small mb-3">{% trans "Move SIMs from main stock to a customer." %}</p>
+    <form method="post" class="rd-inventory-receive-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="allocate">
+      {{ allocate_form.customer }}
+      <div class="rd-inventory-receive-form__row">
+        {% if show_customer_picker %}
+        <div class="rd-inv-field rd-inv-field--customer">
+          <label class="form-label" for="id_allocate_customer_search">{% trans "Customer" %}</label>
+          <div
+            class="rd-field-group rd-payer-field-wrap"
+            id="rd-allocate-customer-ac-root"
+            data-api-customer-lookup="{% url 'customers:api_customer_lookup' %}"
+          >
+            <div class="rd-payer-ac-anchor">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="id_allocate_customer_search"
+                autocomplete="off"
+                placeholder="{% trans 'Type customer name…' %}"
+              >
+              <div
+                class="rd-payer-ac-list"
+                id="rd-allocate-customer-ac-list"
+                role="listbox"
+                aria-label="{% trans 'Customer name suggestions' %}"
+                hidden
+              ></div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <div class="rd-inv-field rd-inv-field--line">
+          <label class="form-label" for="{{ allocate_form.product_line.id_for_label }}">{{ allocate_form.product_line.label }}</label>
+          {{ allocate_form.product_line }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--qty">
+          <label class="form-label" for="{{ allocate_form.quantity.id_for_label }}">{{ allocate_form.quantity.label }}</label>
+          {{ allocate_form.quantity }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--notes">
+          <label class="form-label" for="{{ allocate_form.notes.id_for_label }}">{{ allocate_form.notes.label }}</label>
+          {{ allocate_form.notes }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--serials">
+          {% include "inventory/_serials_paste_field.html" with serials_field=allocate_form.serials qty_field_id=allocate_form.quantity.id_for_label %}
+        </div>
+        <div class="rd-inv-field rd-inv-field--submit">
+          <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Allocate" %}</button>
+        </div>
+      </div>
+      {% if allocate_form.serials.help_text %}<div class="form-text mt-1">{{ allocate_form.serials.help_text }}</div>{% endif %}
+    </form>
+{% include "partials/filter_card_close.html" %}

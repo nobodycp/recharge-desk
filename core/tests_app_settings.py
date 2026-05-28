@@ -4,6 +4,7 @@ from __future__ import annotations
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils.translation import gettext as _
 
 from accounts.models import UserProfile
 from core.models import AppSettings
@@ -22,22 +23,53 @@ class AppSettingsViewTests(TestCase):
         )
 
     def setUp(self):
+        from django.utils import translation
+
+        from phone_refresh.middleware import clear_site_settings_cache
+        from phone_refresh.models import SiteSettings
+
+        translation.activate("en")
+        clear_site_settings_cache()
+        ss = SiteSettings.get_solo()
+        if ss.public_subdomain:
+            ss.public_subdomain = ""
+            ss.save(update_fields=["public_subdomain"])
+            clear_site_settings_cache()
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={"default_language": "en"},
+        )
         self.client = Client()
+        self.client.cookies["django_language"] = "en"
         self.client.force_login(self.user)
 
-    def test_system_settings_page_renders(self):
-        response = self.client.get(reverse("core:system_settings"))
+    def test_01_system_settings_page_renders(self):
+        from django.utils import translation
+
+        translation.activate("en")
+        response = self.client.get("/management/system-settings/")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "System settings")
+        self.assertContains(response, "Approval workflows")
+        self.assertContains(response, "Sales entry screen")
 
-    def test_save_persists_toggle(self):
-        url = reverse("core:system_settings")
+    def test_02_save_persists_toggle(self):
+        from django.utils import translation
+
+        translation.activate("en")
+        url = "/management/system-settings/"
         page = self.client.get(url)
         token = str(page.context["csrf_token"])
         response = self.client.post(
             url,
             {
+                "require_debt_request_approval": "",
+                "require_settlement_request_approval": "on",
+                "require_payment_request_approval": "on",
                 "allow_sales_auto_create_customer": "",
+                "sales_inventory_enabled": "on",
+                "sales_show_refresh_phone": "",
+                "sales_show_record_payment": "on",
                 "default_language": "ar",
                 "default_theme": "dark",
                 "public_default_language": "en",
@@ -48,6 +80,9 @@ class AppSettingsViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         row = AppSettings.load()
         self.assertFalse(row.allow_sales_auto_create_customer)
+        self.assertFalse(row.require_debt_request_approval)
+        self.assertFalse(row.sales_show_refresh_phone)
+        self.assertTrue(row.sales_inventory_enabled)
         self.assertEqual(row.default_language, "ar")
         self.assertEqual(row.public_default_theme, "light")
 
@@ -68,7 +103,7 @@ class SalesAutoCreateCustomerTests(TestCase):
         )
         with self.assertRaisesMessage(
             ValueError,
-            "Create the customer from Customers first.",
+            _("Customer not found. Check the name or ask management to add the customer."),
         ):
             resolve_or_create_customer_for_sale(
                 name="Unknown Person",
@@ -90,6 +125,12 @@ class SalesAutoCreateCustomerTests(TestCase):
 
 
 class AppDefaultLanguageMiddlewareTests(TestCase):
+    def tearDown(self):
+        from django.utils import translation
+
+        translation.deactivate()
+        AppSettings.objects.update_or_create(pk=1, defaults={"default_language": "en"})
+
     def test_uses_admin_default_without_language_cookie(self):
         from django.http import HttpResponse
         from django.test import RequestFactory
@@ -126,3 +167,4 @@ class AppDefaultLanguageMiddlewareTests(TestCase):
         request.LANGUAGE_CODE = "en"
         AppDefaultLanguageMiddleware(get_response)(request)
         self.assertEqual(seen["lang"], "en")
+

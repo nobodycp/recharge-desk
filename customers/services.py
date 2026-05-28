@@ -103,9 +103,8 @@ def resolve_or_create_customer_for_sale(*, name: str, phone: str = "", user) -> 
         if not AppSettings.load().allow_sales_auto_create_customer:
             raise ValueError(
                 _(
-                    'No customer named “%(name)s”. Create the customer from Customers first.'
+                    "Customer not found. Check the name or ask management to add the customer."
                 )
-                % {"name": name}
             )
         customer = Customer.objects.create(name=name, created_by=user)
 
@@ -160,6 +159,9 @@ def approve_sale(*, sale, user):
         actor=user,
         changes={"customer_id": customer_locked.pk, "amount": str(sale_locked.sell_price_actual)},
     )
+    from inventory.services import consume_sim_for_sale
+
+    consume_sim_for_sale(sale=sale_locked, user=user)
     return sale_locked
 
 
@@ -310,6 +312,9 @@ def approve_customer_payment_submission(
         actor=user,
         changes={"customer_payment_id": payment.pk},
     )
+    from inventory.services import consume_pending_new_sim_for_customer
+
+    consume_pending_new_sim_for_customer(customer=customer_locked, user=user)
     return payment
 
 

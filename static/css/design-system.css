@@ -1056,6 +1056,42 @@ body.app-shell {
   margin-bottom: 0.25rem;
 }
 
+/* Section tabs — settings, phone refresh, SIM inventory, API */
+.rd-section-tabs.nav-tabs {
+  border-bottom: 1px solid var(--bs-border-color);
+  gap: 0.15rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rd-section-tabs .nav-link {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--rd-radius-sm) var(--rd-radius-sm) 0 0;
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.55rem 0.9rem;
+  white-space: nowrap;
+  transition:
+    color var(--rd-transition-fast),
+    border-color var(--rd-transition-fast),
+    background var(--rd-transition-fast);
+}
+
+.rd-section-tabs .nav-link:hover {
+  color: var(--bs-body-color);
+  border-bottom-color: color-mix(in srgb, var(--bs-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 65%, transparent);
+}
+
+.rd-section-tabs .nav-link.active {
+  color: var(--bs-primary);
+  background: transparent;
+  border-bottom-color: var(--bs-primary);
+}
+
 /* Cards */
 .rd-card {
   background: var(--bs-secondary-bg);
@@ -1919,6 +1955,253 @@ tr.rd-row-pending {
 .rd-actions-details[open] summary {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--bs-primary) 35%, transparent);
   border-radius: var(--rd-radius-xs);
+}
+
+/* SIM inventory — receive form, table, dialogs, autocomplete */
+.rd-inventory-receive-form .form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.rd-inventory-receive-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 0.75rem;
+  align-items: flex-end;
+}
+
+.rd-inv-field--line {
+  flex: 0 0 auto;
+  width: min(100%, 10.5rem);
+}
+
+.rd-inv-field--customer {
+  flex: 0 0 auto;
+  width: min(100%, 12rem);
+}
+
+.rd-inv-field--qty {
+  flex: 0 0 auto;
+  width: min(100%, 4.75rem);
+}
+
+.rd-inv-field--notes {
+  flex: 1 1 8rem;
+  min-width: 7rem;
+  max-width: 14rem;
+}
+
+.rd-inv-field--serials {
+  flex: 0 0 auto;
+  width: min(100%, 7.5rem);
+}
+
+.rd-inv-serials-paste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.rd-inv-serials-paste__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-inv-serials-paste__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-inv-serials-paste__count {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.rd-inv-serials-paste.is-mismatch .rd-inv-serials-paste__trigger {
+  border-color: var(--bs-warning);
+  color: var(--bs-warning-text-emphasis, var(--bs-warning));
+}
+
+.rd-inv-dialog--serials-paste .rd-inv-dialog__panel {
+  width: min(100%, 28rem);
+}
+
+.rd-inv-serials-paste__area {
+  resize: vertical;
+  min-height: 10rem;
+}
+
+.rd-inv-serials-input {
+  resize: none;
+  min-height: calc(1.5em + 0.5rem + 2px);
+  field-sizing: content;
+}
+
+.rd-inv-field--submit {
+  flex: 0 0 auto;
+  width: min(100%, 5.5rem);
+}
+
+.rd-inventory-stock-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.rd-inventory-stock-table .rd-col-line {
+  width: 10.5rem;
+}
+
+.rd-inventory-stock-table .rd-col-customer {
+  width: 11rem;
+}
+
+.rd-inventory-stock-table .rd-col-qty {
+  width: 4.75rem;
+}
+
+.rd-inventory-stock-table .rd-col-value {
+  width: 6.5rem;
+}
+
+.rd-inventory-stock-table .rd-col-actions {
+  width: 6.25rem;
+}
+
+.rd-inventory-stock-table .rd-col-when {
+  width: 8.25rem;
+}
+
+.rd-inventory-stock-table .rd-col-serial {
+  width: 12rem;
+}
+
+.rd-inventory-stock-table .rd-col-type {
+  width: 9.5rem;
+}
+
+.rd-inventory-stock-table td.rd-inventory-stock-table__line,
+.rd-inventory-stock-table td.rd-inventory-stock-table__customer {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+.rd-inventory-stock-table__qty {
+  white-space: nowrap;
+}
+
+.rd-inventory-stock-table__actions {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.rd-data-shell--inventory-actions {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Fixed popover for row actions (escapes table overflow) */
+.rd-inv-actions-popover {
+  position: fixed;
+  z-index: 1065;
+  min-width: 10.5rem;
+  max-width: 14rem;
+}
+
+.rd-inv-actions-popover[hidden] {
+  display: none !important;
+}
+
+.rd-inv-actions-popover__panel {
+  padding: 0.25rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-xs);
+  box-shadow: var(--rd-shadow-md);
+}
+
+.rd-inv-actions-popover__item {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: var(--rd-radius-xs);
+  background: transparent;
+  color: var(--bs-body-color);
+  font-size: 0.8125rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+.rd-inv-actions-popover__item:hover,
+.rd-inv-actions-popover__item:focus-visible {
+  background: var(--bs-tertiary-bg);
+  outline: none;
+}
+
+.rd-inv-actions-popover__item--danger {
+  color: var(--bs-danger);
+}
+
+.rd-inv-actions-popover form {
+  margin: 0;
+}
+
+.rd-inventory-row-actions {
+  max-width: 100%;
+}
+
+/* Inventory action dialog */
+.rd-inv-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1085;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.rd-inv-dialog[hidden] {
+  display: none !important;
+}
+
+.rd-inv-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 0;
+}
+
+.rd-inv-dialog__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22rem);
+  margin-top: min(12vh, 4rem);
+  padding: 1rem;
+  opacity: 0;
+  transform: translateY(0.35rem);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.rd-inv-dialog.is-open .rd-inv-dialog__panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body.rd-inv-dialog-open {
+  overflow: hidden;
 }
 
 .rd-toast {

@@ -23,6 +23,8 @@
     var nameTimer = null;
     var lastNLRef;
     var lastNLName;
+    var lastRefPayerName;
+    var ignoreNextNameInput = false;
     var refReqId = 0;
     var nameReqId = 0;
     var lastRefAbort = null;
@@ -55,6 +57,7 @@
       var refChanged = lastNLRef === undefined || dTrim !== lastNLRef;
       if (refChanged) return true;
       if (p === "") return true;
+      if (lastRefPayerName !== undefined && p === lastRefPayerName) return true;
       if (lastNLName !== undefined && p === lastNLName) return true;
       return false;
     }
@@ -62,6 +65,7 @@
     function closeList() {
       listOpen = false;
       activeIdx = -1;
+      root.classList.remove("is-ac-open");
       if (!listEl) return;
       listEl.innerHTML = "";
       listEl.hidden = true;
@@ -82,6 +86,7 @@
       payerInput.value = item.name;
       var d = refInput.value.replace(/\u200e|\u200f/g, "").trim();
       lastNLRef = d;
+      lastRefPayerName = undefined;
       lastNLName = item.name;
       setHint(false);
       closeList();
@@ -95,6 +100,7 @@
         return;
       }
       listOpen = true;
+      root.classList.add("is-ac-open");
       listEl.hidden = false;
       listEl.innerHTML = "";
       items.forEach(function (item, i) {
@@ -210,8 +216,9 @@
           if (n && shouldApplyNumberLookup(d, n)) {
             payerInput.value = n;
             lastNLRef = d;
-            lastNLName = n;
+            lastRefPayerName = n;
             setHint(true);
+            ignoreNextNameInput = true;
             payerInput.dispatchEvent(new Event("input", { bubbles: true }));
           } else if (!n) {
             setHint(false);
@@ -266,6 +273,10 @@
 
     payerInput.addEventListener("input", function () {
       if (nameTimer) window.clearTimeout(nameTimer);
+      if (ignoreNextNameInput) {
+        ignoreNextNameInput = false;
+        return;
+      }
       var p = payerInput.value.trim();
       if (lastNLName !== undefined && p !== lastNLName) {
         setHint(false);
@@ -275,9 +286,8 @@
         return;
       }
       /*
-       * Once a name was picked from suggestions or auto-filled from a
-       * reference-number match (lastNLName), don't reopen the dropdown
-       * for the same exact value. Resumes as soon as the user edits.
+       * After picking from the dropdown, don't reopen for the same exact
+       * value. Reference-number auto-fill does not set lastNLName.
        */
       if (lastNLName !== undefined && p === lastNLName) {
         closeList();

@@ -1,0 +1,287 @@
+{% extends base_template %}
+{% load i18n static %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+    <p class="rd-text-muted mb-0">{% trans "SIM stock held with distributors and customers." %}</p>
+  </div>
+</div>
+{% include "inventory/_nav.html" %}
+
+{% if not read_only and allocate_form %}
+  {% include "inventory/_allocate_from_main.html" with show_customer_picker=True allocate_panel_open=allocate_panel_open %}
+  <script src="{% static 'js/inventory-serials-paste.js' %}{{ static_cache_query }}" defer></script>
+{% endif %}
+
+{% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <div
+          class="rd-field-group rd-payer-field-wrap"
+          id="rd-inventory-customer-ac-root"
+          data-api-customer-lookup="{% url 'customers:api_customer_lookup' %}"
+        >
+          <label class="form-label" for="{{ filter_form.q.id_for_label }}">{{ filter_form.q.label }}</label>
+          <div class="rd-payer-ac-anchor">
+            {{ filter_form.q }}
+            <div
+              class="rd-payer-ac-list"
+              id="rd-inv-customer-ac-list"
+              role="listbox"
+              aria-label="{% trans 'Customer name suggestions' %}"
+              hidden
+            ></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="{{ filter_form.product_line.id_for_label }}">{{ filter_form.product_line.label }}</label>
+        {{ filter_form.product_line }}
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_customers' %}{% else %}{% url 'inventory:customers' %}{% endif %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+{% include "partials/filter_card_close.html" %}
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="rd-data-shell rd-data-shell--inventory-actions">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+          <colgroup>
+            <col class="rd-col-customer">
+            <col class="rd-col-line">
+            <col class="rd-col-qty">
+            {% if not read_only %}<col class="rd-col-actions">{% endif %}
+          </colgroup>
+          <thead>
+            <tr>
+              <th>{% trans "Customer" %}</th>
+              <th>{% trans "Product line" %}</th>
+              <th class="text-end">{% trans "Quantity" %}</th>
+              {% if not read_only %}<th class="text-end">{% trans "Actions" %}</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in page_obj %}
+              <tr>
+                <td class="rd-inventory-stock-table__customer">
+                  {% if read_only %}
+                    <a href="{% url 'inventory:employee_customer_detail' b.customer_id %}" class="fw-semibold text-decoration-none">{{ b.customer.name }}</a>
+                  {% else %}
+                    <a href="{% url 'inventory:customer_detail' b.customer_id %}" class="fw-semibold text-decoration-none">{{ b.customer.name }}</a>
+                  {% endif %}
+                </td>
+                <td class="rd-inventory-stock-table__line">
+                  <a href="{% if read_only %}{% url 'inventory:employee_line_detail' b.product_line_id %}{% else %}{% url 'inventory:line_detail' b.product_line_id %}{% endif %}" class="text-decoration-none">{{ b.product_line.name }}</a>
+                </td>
+                <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
+                {% if not read_only %}
+                <td class="text-end rd-inventory-stock-table__actions">
+                  {% include "inventory/_balance_actions.html" with balance=b customer=b.customer scope="customer" read_only=read_only next_url=request.path %}
+                </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{% if read_only %}3{% else %}4{% endif %}">
+                  <div class="empty-state my-2">{% trans "No customer stock." %}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
+
+{% if not read_only %}
+  {% include "inventory/_action_dialog.html" %}
+  <script src="{% static 'js/inventory-actions.js' %}{{ static_cache_query }}" defer></script>
+{% endif %}
+
+<script>
+(function () {
+  var DEBOUNCE_NAME_MS = 280;
+  var MIN_NAME_QUERY = 2;
+
+  function initCustomerAc(opts) {
+    var root = document.getElementById(opts.rootId);
+    var searchInput = document.getElementById(opts.inputId);
+    var listEl = document.getElementById(opts.listId);
+    var hiddenInput = opts.hiddenId ? document.getElementById(opts.hiddenId) : null;
+    if (!root || !searchInput || !listEl) return;
+
+    var apiSuggest = root.dataset.apiCustomerLookup;
+    var nameTimer = null;
+    var nameReqId = 0;
+    var lastNameAbort = null;
+    var lastNLName;
+    var suggestions = [];
+    var activeIdx = -1;
+    var listOpen = false;
+
+    function closeList() {
+      listOpen = false;
+      activeIdx = -1;
+      root.classList.remove("is-ac-open");
+      listEl.innerHTML = "";
+      listEl.hidden = true;
+    }
+
+    function updateActiveHighlight() {
+      var btns = listEl.querySelectorAll(".rd-payer-ac-item");
+      btns.forEach(function (b, j) {
+        b.classList.toggle("is-active", j === activeIdx);
+        b.setAttribute("aria-selected", j === activeIdx ? "true" : "false");
+      });
+    }
+
+    function selectSuggestion(idx) {
+      var item = suggestions[idx];
+      if (!item) return;
+      searchInput.value = item.name;
+      lastNLName = item.name;
+      if (hiddenInput) hiddenInput.value = String(item.id);
+      closeList();
+      searchInput.focus();
+    }
+
+    function renderList(items) {
+      if (!items.length) {
+        closeList();
+        return;
+      }
+      listOpen = true;
+      root.classList.add("is-ac-open");
+      listEl.hidden = false;
+      listEl.innerHTML = "";
+      items.forEach(function (item, i) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "rd-payer-ac-item";
+        btn.setAttribute("role", "option");
+        var main = document.createElement("span");
+        main.className = "rd-payer-ac-item-name";
+        main.textContent = item.name;
+        btn.appendChild(main);
+        if (item.balance) {
+          var meta = document.createElement("span");
+          meta.className = "rd-payer-ac-item-meta";
+          meta.textContent = item.balance;
+          btn.appendChild(meta);
+        }
+        btn.addEventListener("mousedown", function (ev) {
+          ev.preventDefault();
+        });
+        btn.addEventListener("click", function () {
+          selectSuggestion(i);
+        });
+        listEl.appendChild(btn);
+      });
+      activeIdx = 0;
+      updateActiveHighlight();
+    }
+
+    function runNameSuggest() {
+      var q = searchInput.value.trim();
+      nameReqId += 1;
+      var myId = nameReqId;
+      if (q.length < MIN_NAME_QUERY) {
+        closeList();
+        return;
+      }
+      if (lastNameAbort) lastNameAbort.abort();
+      lastNameAbort = new AbortController();
+      var u = new URL(apiSuggest, window.location.origin);
+      u.searchParams.set("q", q);
+      fetch(u.toString(), {
+        signal: lastNameAbort.signal,
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      })
+        .then(function (res) {
+          if (myId !== nameReqId) return null;
+          if (!res.ok) return null;
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data || myId !== nameReqId) return;
+          suggestions = (data.results || [])
+            .map(function (s) {
+              return { id: s.id, name: s.name, balance: s.balance };
+            })
+            .slice(0, 10);
+          renderList(suggestions);
+        })
+        .catch(function (e) {
+          if (e.name === "AbortError") return;
+        });
+    }
+
+    searchInput.addEventListener("input", function () {
+      if (nameTimer) window.clearTimeout(nameTimer);
+      var p = searchInput.value.trim();
+      if (hiddenInput && p === "") hiddenInput.value = "";
+      if (p.length < MIN_NAME_QUERY) {
+        closeList();
+        return;
+      }
+      if (lastNLName !== undefined && p === lastNLName) {
+        closeList();
+        if (lastNameAbort) lastNameAbort.abort();
+        return;
+      }
+      nameTimer = window.setTimeout(runNameSuggest, DEBOUNCE_NAME_MS);
+    });
+
+    searchInput.addEventListener("keydown", function (ev) {
+      if (!listOpen || !suggestions.length) return;
+      if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        activeIdx = (activeIdx + 1) % suggestions.length;
+        updateActiveHighlight();
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        activeIdx = (activeIdx - 1 + suggestions.length) % suggestions.length;
+        updateActiveHighlight();
+      } else if (ev.key === "Enter" && activeIdx >= 0) {
+        ev.preventDefault();
+        selectSuggestion(activeIdx);
+      } else if (ev.key === "Escape") {
+        closeList();
+      }
+    });
+
+    searchInput.addEventListener("blur", function () {
+      window.setTimeout(closeList, 200);
+    });
+
+    document.addEventListener("click", function (ev) {
+      if (listEl.hidden) return;
+      if (listEl.contains(ev.target)) return;
+      if (ev.target === searchInput || searchInput.contains(ev.target)) return;
+      closeList();
+    });
+  }
+
+  initCustomerAc({
+    rootId: "rd-inventory-customer-ac-root",
+    inputId: "id_inv_customer_q",
+    listId: "rd-inv-customer-ac-list",
+  });
+
+  initCustomerAc({
+    rootId: "rd-allocate-customer-ac-root",
+    inputId: "id_allocate_customer_search",
+    listId: "rd-allocate-customer-ac-list",
+    hiddenId: "id_allocate_customer",
+  });
+})();
+</script>
+{% endblock %}

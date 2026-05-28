@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import datetime as _dt
 import logging
-import re
 import time
 from dataclasses import dataclass
 
@@ -29,7 +28,7 @@ from phone_refresh.services.pattern_matcher import match_response
 
 log = logging.getLogger(__name__)
 
-PHONE_RE = re.compile(r"^05\d{8}$")
+from phone_refresh.validation import PHONE_RE
 
 # Upper bound on how much of the upstream body we persist in
 # ``RefreshLog.raw_body``. Sized to comfortably hold a full provider HTML
@@ -85,6 +84,10 @@ def _lookup_provider_for_phone(phone: str) -> str | None:
     )
     if not sale or not sale.company:
         return None
+
+    provider = (getattr(sale.company, "phone_refresh_provider", None) or "").strip()
+    if provider:
+        return provider
 
     name = (sale.company.name or "").strip().lower()
     if not name:
@@ -208,9 +211,12 @@ def refresh_phone(
     if source == RefreshSource.LEGACY or source not in {
         RefreshSource.API,
         RefreshSource.WEB,
+        RefreshSource.EMPLOYEE,
         RefreshSource.INTERNAL_TEST,
     }:
         source = RefreshSource.WEB
+
+    skip_cooldown = internal_test or source == RefreshSource.EMPLOYEE
 
     # 1. Service-off short-circuit (skipped during internal test).
     if not settings.service_enabled and not internal_test:
@@ -243,9 +249,9 @@ def refresh_phone(
             source=source,
         )
 
-    # 3. Cooldown (skipped during internal test).
+    # 3. Cooldown (skipped during internal test and employee panel refreshes).
     last_log = _last_successful_refresh(phone)
-    if not internal_test and last_log:
+    if not skip_cooldown and last_log:
         elapsed_sec = (timezone.now() - last_log.created_at).total_seconds()
         if elapsed_sec < settings.cooldown_seconds:
             return _record_and_return(

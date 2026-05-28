@@ -192,3 +192,13 @@ def site_branding(request):
             "site_name": default_name,
             "site_tagline": default_tagline,
         }
+
+
+def app_settings(request):
+    """Expose singleton AppSettings to templates (sales UI toggles, etc.)."""
+    from core.models import AppSettings
+
+    try:
+        return {"app_settings": AppSettings.load()}
+    except Exception:
+        return {"app_settings": AppSettings()}

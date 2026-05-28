@@ -1,0 +1,132 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ employee.display_name }}</h1>
+    <p class="rd-text-muted mb-0">{{ employee.user.username }}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-primary" href="{% url 'employees:employee_edit' employee.pk %}">{% trans "Edit" %}</a>
+    <a class="btn btn-outline-secondary" href="{% url 'employees:employee_list' %}">{% trans "Back" %}</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-4">
+    <div class="rd-card p-3">
+      <div class="small text-secondary">{% trans "Current balance" %}</div>
+      <div class="h3 mb-0 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
+        {{ employee.current_balance|intcomma }}
+      </div>
+      <div class="small text-secondary mt-1">
+        {% if employee.current_balance > 0 %}{% trans "Shop owes the employee." %}{% elif employee.current_balance < 0 %}{% trans "Employee holds cash for the shop." %}{% else %}{% trans "Settled." %}{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="rd-card p-3">
+      <div class="small text-secondary">{% trans "Monthly salary" %}</div>
+      <div class="h4 mb-0 tabular-nums">{{ employee.monthly_salary|intcomma }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="rd-card mb-3">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Received sales payments" %}</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Phone" %}</th>
+                <th>{% trans "Payer" %}</th>
+                <th class="text-end">{% trans "Amount" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in sales_payments %}
+                <tr>
+                  <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+                  <td class="text-nowrap">{{ row.phone }}</td>
+                  <td>{{ row.payer_name }}</td>
+                  <td class="text-end tabular-nums kpi-expense">{{ row.amount|intcomma }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No sales payments yet." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Movement statement" %}</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th class="text-end">{% trans "Amount" %}</th>
+                <th>{% trans "Details" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in ledger_page %}
+                <tr>
+                  <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+                  <td>{{ row.get_entry_type_display }}</td>
+                  <td class="text-end tabular-nums {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}text-success{% endif %}">
+                    {{ row.amount|intcomma }}
+                  </td>
+                  <td class="small">
+                    {% if row.phone %}{{ row.phone }}{% endif %}
+                    {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
+                    {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
+                    {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if ledger_page.has_other_pages %}
+          <div class="mt-3">{% include "partials/pagination.html" with page_obj=ledger_page %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="rd-card">
+      <div class="rd-card-body">
+        <h2 class="h5 mb-3">{% trans "Manual adjustment" %}</h2>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_kind" value="adjustment">
+          <div class="mb-3">
+            <label class="form-label" for="{{ adj_form.amount.id_for_label }}">{{ adj_form.amount.label }}</label>
+            {{ adj_form.amount }}
+            {% if adj_form.amount.help_text %}<div class="form-text">{{ adj_form.amount.help_text }}</div>{% endif %}
+            {{ adj_form.amount.errors }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ adj_form.notes.id_for_label }}">{{ adj_form.notes.label }}</label>
+            {{ adj_form.notes }}
+            {{ adj_form.notes.errors }}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">{% trans "Record adjustment" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

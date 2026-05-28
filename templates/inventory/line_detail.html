@@ -1,0 +1,154 @@
+{% extends base_template %}
+{% load i18n static %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ line.name }}</h1>
+    <p class="rd-text-muted mb-0">
+      <a href="{% if read_only %}{% url 'inventory:employee_overview' %}{% else %}{% url 'inventory:overview' %}{% endif %}" class="text-decoration-none">{% trans "Back to inventory overview" %}</a>
+    </p>
+  </div>
+</div>
+{% include "inventory/_nav.html" %}
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-4">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="rd-text-muted small">{% trans "Main stock" %}</div>
+        <div class="fs-4 fw-bold tabular-nums">{{ main_qty }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="rd-text-muted small">{% trans "With customers" %}</div>
+        <div class="fs-4 fw-bold tabular-nums">{{ customer_qty }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="rd-card h-100">
+      <div class="rd-card-body">
+        <div class="rd-text-muted small">{% trans "Total" %}</div>
+        <div class="fs-4 fw-bold tabular-nums">{{ total_qty }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if customer_balances %}
+<div class="rd-card mb-3 overflow-hidden">
+  <div class="rd-card-body border-bottom py-2">
+    <div class="fw-semibold">{% trans "Stock by customer" %}</div>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+      <colgroup>
+        <col class="rd-col-customer">
+        <col class="rd-col-qty">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>{% trans "Customer" %}</th>
+          <th class="text-end">{% trans "Quantity" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in customer_balances %}
+          <tr>
+            <td class="rd-inventory-stock-table__customer">
+              <a href="{% if read_only %}{% url 'inventory:employee_customer_detail' b.customer_id %}{% else %}{% url 'inventory:customer_detail' b.customer_id %}{% endif %}" class="fw-semibold text-decoration-none">{{ b.customer.name }}</a>
+            </td>
+            <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="rd-card mb-3 overflow-hidden">
+  <div class="rd-card-body border-bottom py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="fw-semibold">{% trans "Recent movements" %}</div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url movements_url %}?product_line={{ line.pk }}">{% trans "All movements" %}</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+      <colgroup>
+        <col class="rd-col-when">
+        <col class="rd-col-type">
+        <col class="rd-col-qty">
+        <col class="rd-col-customer">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>{% trans "When" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th class="text-end">{% trans "Qty" %}</th>
+          <th>{% trans "Customer" %}</th>
+          <th>{% trans "Notes" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movements %}
+          <tr>
+            <td class="text-nowrap small">{{ m.created_at|date:"SHORT_DATETIME_FORMAT" }}</td>
+            <td>{{ m.get_movement_type_display }}</td>
+            <td class="text-end tabular-nums rd-inventory-stock-table__qty">{{ m.quantity }}</td>
+            <td class="rd-inventory-stock-table__customer">{% if m.customer %}{{ m.customer.name }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+            <td class="small text-secondary text-truncate">{{ m.notes|truncatechars:60 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5"><div class="empty-state my-2">{% trans "No movements yet." %}</div></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden">
+  <div class="rd-card-body border-bottom py-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="fw-semibold">{% trans "Tracked SIM cards" %}</div>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url cards_url %}">{% trans "Serial lookup" %}</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+      <colgroup>
+        <col class="rd-col-serial">
+        <col class="rd-col-type">
+        <col class="rd-col-customer">
+        <col class="rd-col-qty">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>{% trans "Serial / ICCID" %}</th>
+          <th>{% trans "Status" %}</th>
+          <th>{% trans "Customer" %}</th>
+          <th>{% trans "Sale" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for card in sim_cards %}
+          <tr>
+            <td class="font-monospace rd-inventory-stock-table__line">{{ card.serial_or_iccid|default:"—" }}</td>
+            <td>{{ card.get_status_display }}</td>
+            <td class="rd-inventory-stock-table__customer">{% if card.customer %}{{ card.customer.name }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+            <td class="rd-inventory-stock-table__qty">{% if card.sale_id %}#{{ card.sale_id }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4">
+              <div class="empty-state my-2">{% trans "No serial numbers recorded for this line yet." %}</div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

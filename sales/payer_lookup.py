@@ -6,6 +6,7 @@ from typing import List, Optional, TypedDict
 
 from django.db.models import Count, Max
 
+from customers.models import Customer
 from sales.models import Sale
 
 
@@ -67,24 +68,51 @@ class PayerSuggestion(TypedDict):
 def payer_name_suggestions(query: str, *, limit: int = 10) -> List[PayerSuggestion]:
     """
     Distinct payer names matching query (case-insensitive), ordered by
-    frequency then most recently seen.
+    sale frequency then name. Active customer account names are merged in
+    when they are not already present from sales history.
     """
     q = (query or "").strip()
     if len(q) < 2:
         return []
     lim = max(1, min(limit, 25))
+    merged: dict[str, PayerSuggestion] = {}
+
     rows = (
         Sale.objects.exclude(status=Sale.Status.CANCELLED)
         .exclude(payer_name="")
         .filter(payer_name__icontains=q)
         .values("payer_name")
         .annotate(count=Count("id"), last_seen=Max("created_at"))
-        .order_by("-count", "-last_seen")[:lim]
+        .order_by("-count", "-last_seen")
     )
-    out: List[PayerSuggestion] = []
     for r in rows:
         name = (r["payer_name"] or "").strip()
         if not name:
             continue
-        out.append(PayerSuggestion(name=name, count=int(r["count"])))
-    return out
+        key = name.casefold()
+        if key in merged:
+            continue
+        merged[key] = PayerSuggestion(name=name, count=int(r["count"]))
+        if len(merged) >= lim:
+            break
+
+    if len(merged) < lim:
+        for name in (
+            Customer.objects.filter(is_active=True, name__icontains=q)
+            .order_by("name")
+            .values_list("name", flat=True)[: lim * 2]
+        ):
+            clean = (name or "").strip()
+            if not clean:
+                continue
+            key = clean.casefold()
+            if key in merged:
+                continue
+            merged[key] = PayerSuggestion(name=clean, count=0)
+            if len(merged) >= lim:
+                break
+
+    return sorted(
+        merged.values(),
+        key=lambda item: (-item["count"], item["name"].casefold()),
+    )[:lim]

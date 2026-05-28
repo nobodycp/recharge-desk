@@ -32,6 +32,22 @@ class Company(models.Model):
         default=Decimal("0"),
     )
     notes = models.TextField(_("notes"), blank=True)
+    phone_refresh_provider = models.CharField(
+        _("phone refresh provider"),
+        max_length=20,
+        blank=True,
+        choices=[
+            ("", _("Not set")),
+            ("sky", "Sky"),
+            ("areen", "Areen"),
+            ("layan", "Layan"),
+            ("aloha", "Aloha"),
+        ],
+        help_text=_(
+            "Which upstream API runs phone refresh for this company."
+            " Leave empty to match from the company name (legacy)."
+        ),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -78,6 +94,15 @@ class ProductLine(models.Model):
         help_text=_("Default icon for all packages in this line; a package can override."),
     )
     sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
+    estimated_unit_cost = models.DecimalField(
+        _("estimated unit cost (SIM)"),
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text=_("Optional. Used for SIM inventory valuation reports."),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     default_package = models.ForeignKey(
         "Product",

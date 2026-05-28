@@ -19,7 +19,7 @@ const TRANSLATIONS = {
         "form.submit": "تحديث",
         "form.submitting": "جارِ التنفيذ",
         "validation.length": "الرقم يجب أن يكون 10 أرقام",
-        "validation.prefix": "الرقم يجب أن يبدأ بـ 05",
+        "validation.prefix": "الرقم يجب أن يبدأ بـ 050 أو 051 أو 052 أو 053 أو 054 أو 055 أو 058",
         "validation.digits": "أرقام فقط",
         "validation.ok": "جاهز للإرسال",
         "msg.success": "تم تحديث الرقم بنجاح",
@@ -52,7 +52,7 @@ const TRANSLATIONS = {
         "form.submit": "Refresh",
         "form.submitting": "Processing",
         "validation.length": "Number must be 10 digits",
-        "validation.prefix": "Number must start with 05",
+        "validation.prefix": "Number must start with 050, 051, 052, 053, 054, 055, or 058",
         "validation.digits": "Numbers only",
         "validation.ok": "Ready",
         "msg.success": "Number refreshed successfully",
@@ -169,6 +169,9 @@ function applyTheme(theme) {
 
 /* ---------- Validation ---------- */
 
+const PHONE_RE = /^05[0123458]\d{7}$/;
+const ALLOWED_THIRD_DIGITS = "0123458";
+
 function validatePhone(value, markInvalid = true) {
     inputWrap.classList.remove("invalid", "valid");
     fieldHint.classList.remove("error", "ok");
@@ -192,8 +195,22 @@ function validatePhone(value, markInvalid = true) {
         return { ok: false };
     }
 
+    if (value.length >= 3 && !ALLOWED_THIRD_DIGITS.includes(value[2])) {
+        fieldHint.textContent = t("validation.prefix");
+        fieldHint.classList.add("error");
+        if (markInvalid) inputWrap.classList.add("invalid");
+        return { ok: false };
+    }
+
     if (value.length !== 10) {
         fieldHint.textContent = t("validation.length");
+        if (markInvalid) inputWrap.classList.add("invalid");
+        return { ok: false };
+    }
+
+    if (!PHONE_RE.test(value)) {
+        fieldHint.textContent = t("validation.prefix");
+        fieldHint.classList.add("error");
         if (markInvalid) inputWrap.classList.add("invalid");
         return { ok: false };
     }

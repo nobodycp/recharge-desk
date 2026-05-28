@@ -1,10 +1,12 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from companies.models import Company, Product, ProductLine
+from customers.models import Customer
 from sales.models import PaymentMethod, Sale
 from sales.payer_lookup import (
     latest_payer_for_reference,
@@ -77,6 +79,14 @@ class PayerAssistTests(TestCase):
         self.assertIn("Mohammad Saleh", names)
         ahmad = next(x for x in items if x["name"] == "Mohammad Ahmad")
         self.assertGreaterEqual(ahmad["count"], 2)
+
+    def test_suggestions_include_active_customers(self):
+        Customer.objects.create(name="Suggest Customer", created_by=self.user)
+        items = payer_name_suggestions("Sugges")
+        names = [x["name"] for x in items]
+        self.assertIn("Suggest Customer", names)
+        row = next(x for x in items if x["name"] == "Suggest Customer")
+        self.assertEqual(row["count"], 0)
 
     def test_api_requires_login(self):
         c = Client()
@@ -561,14 +571,24 @@ class EmployeeRecentSalesTests(TestCase):
         self.company.refresh_from_db()
         self.assertEqual(self.company.current_balance, Decimal("1000"))
 
-    def test_employee_cannot_delete_paid_sale(self):
+    def test_employee_can_delete_paid_sale_within_last_ten(self):
         s = self._make_sale()
         s.status = Sale.Status.PAID
         s.save(update_fields=["status"])
         url = reverse("sales:employee_sale_delete", args=[s.pk])
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
-        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+        self.assertFalse(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_employee_cannot_delete_paid_sale_outside_last_ten(self):
+        sales = [self._make_sale(payer=f"P{i}") for i in range(11)]
+        oldest = sales[0]
+        oldest.status = Sale.Status.PAID
+        oldest.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_delete", args=[oldest.pk])
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Sale.objects.filter(pk=oldest.pk).exists())
 
     def test_employee_cannot_touch_another_users_sale(self):
         s = self._make_sale(user=self.other)
@@ -598,15 +618,21 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertEqual(s.reference_number, "0590000111")
         self.assertEqual(s.sell_price_actual, Decimal("12.00"))
 
-    def test_employee_edit_blocked_after_management_action(self):
-        s = self._make_sale()
-        s.status = Sale.Status.PAID
-        s.save(update_fields=["status"])
-        url = reverse("sales:employee_sale_edit", args=[s.pk])
+    def test_employee_edit_blocked_outside_last_ten(self):
+        sales = [self._make_sale(payer=f"P{i}") for i in range(11)]
+        oldest = sales[0]
+        oldest.status = Sale.Status.PAID
+        oldest.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_edit", args=[oldest.pk])
         resp = self.client.get(url)
-        # Redirected back to the recent list, no edit form rendered.
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(resp["Location"], reverse("sales:employee_recent_sales"))
+
+        newest = sales[-1]
+        newest.status = Sale.Status.PAID
+        newest.save(update_fields=["status"])
+        resp = self.client.get(reverse("sales:employee_sale_edit", args=[newest.pk]))
+        self.assertEqual(resp.status_code, 200)
 
     def test_htmx_delete_returns_empty_200_for_row_swap(self):
         s = self._make_sale()
@@ -617,15 +643,16 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertFalse(Sale.objects.filter(pk=s.pk).exists())
 
     def test_htmx_delete_blocked_keeps_row_and_emits_error_trigger(self):
-        s = self._make_sale()
-        s.status = Sale.Status.PAID
-        s.save(update_fields=["status"])
-        url = reverse("sales:employee_sale_delete", args=[s.pk])
+        sales = [self._make_sale(payer=f"H{i}") for i in range(11)]
+        oldest = sales[0]
+        oldest.status = Sale.Status.PAID
+        oldest.save(update_fields=["status"])
+        url = reverse("sales:employee_sale_delete", args=[oldest.pk])
         resp = self.client.post(url, HTTP_HX_REQUEST="true")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp["HX-Reswap"], "none")
         self.assertIn("rdSaleActionError", resp["HX-Trigger"])
-        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+        self.assertTrue(Sale.objects.filter(pk=oldest.pk).exists())
 
     def test_view_all_link_appears_on_entry_page(self):
         resp = self.client.get(reverse("sales:employee_entry"))
@@ -946,3 +973,96 @@ class HxBoostMarkupTests(TestCase):
         self.assertContains(r, 'id="awaiting-results"')
         self.assertContains(r, 'hx-target="#awaiting-results"')
         self.assertContains(r, 'hx-boost="true"')
+
+
+class EmployeeRefreshPhoneTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.company = Company.objects.create(
+            name="Sky Emp Co",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="Line")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash")
+        cls.emp = User.objects.create_user("emp_refresh", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.emp)
+        self.url = reverse("sales:employee_refresh_phone")
+
+    def _csrf_post(self, data):
+        page = self.client.get(reverse("sales:employee_entry"))
+        token = str(page.context["csrf_token"])
+        return self.client.post(
+            self.url,
+            {**data, "csrfmiddlewaretoken": token},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+            HTTP_ACCEPT="application/json",
+        )
+
+    def test_entry_page_shows_refresh_button_and_modal(self):
+        resp = self.client.get(reverse("sales:employee_entry"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rdEmployeeRefreshModal")
+        self.assertContains(resp, reverse("sales:employee_refresh_phone"))
+
+    def test_rejects_unregistered_phone(self):
+        resp = self._csrf_post({"phone": "0509999999"})
+        self.assertEqual(resp.status_code, 400)
+        payload = resp.json()
+        self.assertEqual(payload["status"], "not_found")
+
+    def test_rejects_invalid_prefix(self):
+        resp = self._csrf_post({"phone": "0591234567"})
+        self.assertEqual(resp.status_code, 400)
+        payload = resp.json()
+        self.assertEqual(payload["status"], "error")
+
+    @patch("sales.views.employee.refresh_phone")
+    def test_refreshes_registered_phone(self, refresh_mock):
+        from phone_refresh.models import RefreshStatus
+
+        create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0501234567",
+            payer_name="Ali",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("10"),
+            notes="",
+            user=self.emp,
+        )
+        status = RefreshStatus.objects.get(code="refreshed")
+        refresh_mock.return_value = type(
+            "R",
+            (),
+            {
+                "status": status,
+                "message_title": "تم",
+                "message_body": "تم التحديث",
+                "last_refresh_at": None,
+                "seconds_since_last_refresh": None,
+            },
+        )()
+        resp = self._csrf_post({"phone": "0501234567"})
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertEqual(payload["status"], "refreshed")
+        self.assertEqual(payload["message"]["body"], "تم التحديث")
+        refresh_mock.assert_called_once()
+        _args, kwargs = refresh_mock.call_args
+        self.assertEqual(kwargs.get("source"), "employee")

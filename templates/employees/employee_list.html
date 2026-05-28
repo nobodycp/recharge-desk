@@ -1,0 +1,99 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Employees" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Payroll accounts, balances, and salary accrual." %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-primary" href="{% url 'employees:employee_create' %}">{% trans "Add employee" %}</a>
+  </div>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <form method="post" action="{% url 'employees:employee_run_salary_accrual' %}" class="row g-3 align-items-end">
+      {% csrf_token %}
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="salary-month">{% trans "Accrue salaries for month" %}</label>
+        <input
+          type="month"
+          class="form-control form-control-sm"
+          id="salary-month"
+          name="salary_month"
+          value="{{ accrual_month|date:'Y-m' }}"
+        >
+      </div>
+      <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-outline-primary btn-sm">{% trans "Run salary accrual" %}</button>
+      </div>
+      <div class="col-12">
+        <p class="small text-secondary mb-0">{% trans "Also runnable via: python manage.py accrue_employee_salaries" %}</p>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-12 col-md-6">
+        <label class="form-label" for="emp-q">{% trans "Search" %}</label>
+        <input type="search" class="form-control form-control-sm" id="emp-q" name="q" value="{{ q }}" placeholder="{% trans 'Username or name…' %}">
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_list' %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>{% trans "Employee" %}</th>
+          <th class="text-end">{% trans "Monthly salary" %}</th>
+          <th class="text-end">{% trans "Balance" %}</th>
+          <th>{% trans "Status" %}</th>
+          <th class="text-end">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in page_obj %}
+          <tr>
+            <td>
+              <a href="{% url 'employees:employee_detail' emp.pk %}" class="fw-semibold text-decoration-none">{{ emp.display_name }}</a>
+              <div class="small text-secondary">{{ emp.user.username }}</div>
+            </td>
+            <td class="text-end tabular-nums">{{ emp.monthly_salary|intcomma }}</td>
+            <td class="text-end tabular-nums {% if emp.current_balance < 0 %}kpi-expense{% elif emp.current_balance > 0 %}text-success{% endif %}">
+              {{ emp.current_balance|intcomma }}
+            </td>
+            <td>
+              {% if emp.is_active %}
+                <span class="rd-badge">{% trans "Active" %}</span>
+              {% else %}
+                <span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:employee_detail' emp.pk %}">{% trans "Ledger" %}</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center py-4 text-secondary">{% trans "No employees yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+    <div class="rd-card-body border-top py-2">
+      {% include "partials/pagination.html" with page_obj=page_obj %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

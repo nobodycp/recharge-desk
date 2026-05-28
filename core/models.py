@@ -138,6 +138,46 @@ class AppSettings(models.Model):
             " from the Customers screen."
         ),
     )
+    require_debt_request_approval = models.BooleanField(
+        _("Require approval for debt requests"),
+        default=True,
+        help_text=_(
+            "When off, on-account sales post to the customer immediately"
+            " without awaiting management approval."
+        ),
+    )
+    require_settlement_request_approval = models.BooleanField(
+        _("Require approval for settlement requests"),
+        default=True,
+        help_text=_(
+            "When off, customer settlement submissions apply to the balance"
+            " immediately without management approval."
+        ),
+    )
+    require_payment_request_approval = models.BooleanField(
+        _("Require approval for payment requests"),
+        default=True,
+        help_text=_(
+            "When off, cash sales are marked paid immediately without appearing"
+            " in pending payments."
+        ),
+    )
+    sales_inventory_enabled = models.BooleanField(
+        _("Show inventory (New SIM) on sales entry"),
+        default=True,
+        help_text=_(
+            "When off, the New SIM option is hidden on the employee sales screen."
+            " Inventory management elsewhere is unchanged."
+        ),
+    )
+    sales_show_refresh_phone = models.BooleanField(
+        _("Show phone refresh on sales entry"),
+        default=True,
+    )
+    sales_show_record_payment = models.BooleanField(
+        _("Show record payment on sales entry"),
+        default=True,
+    )
     default_language = models.CharField(
         _("Default language"),
         max_length=10,

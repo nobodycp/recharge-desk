@@ -1,0 +1,46 @@
+{% load i18n %}
+<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist" aria-label="{% trans 'SIM inventory sections' %}">
+  {% if read_only %}
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'employee_overview' or request.resolver_match.url_name == 'overview' %} active{% endif %}"
+         href="{% url 'inventory:employee_overview' %}" role="tab">{% trans "Overview" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'employee_main' %} active{% endif %}"
+         href="{% url 'inventory:employee_main' %}" role="tab">{% trans "Main stock" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'employee_customers' or request.resolver_match.url_name == 'employee_customer_detail' %} active{% endif %}"
+         href="{% url 'inventory:employee_customers' %}" role="tab">{% trans "Customers" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'employee_movements' %} active{% endif %}"
+         href="{% url 'inventory:employee_movements' %}" role="tab">{% trans "Movements" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'employee_cards' %} active{% endif %}"
+         href="{% url 'inventory:employee_cards' %}" role="tab">{% trans "Serial lookup" %}</a>
+    </li>
+  {% else %}
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'overview' %} active{% endif %}"
+         href="{% url 'inventory:overview' %}" role="tab">{% trans "Overview" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'main' %} active{% endif %}"
+         href="{% url 'inventory:main' %}" role="tab">{% trans "Main stock" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'customers' or request.resolver_match.url_name == 'customer_detail' %} active{% endif %}"
+         href="{% url 'inventory:customers' %}" role="tab">{% trans "Customers" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'movements' %} active{% endif %}"
+         href="{% url 'inventory:movements' %}" role="tab">{% trans "Movements" %}</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link{% if request.resolver_match.url_name == 'cards' %} active{% endif %}"
+         href="{% url 'inventory:cards' %}" role="tab">{% trans "Serial lookup" %}</a>
+    </li>
+  {% endif %}
+</ul>

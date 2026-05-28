@@ -1,0 +1,101 @@
+{% extends base_template %}
+{% load i18n %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Full history of SIM stock changes." %}</p>
+  </div>
+</div>
+{% include "inventory/_nav.html" %}
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label" for="{{ filter_form.movement_type.id_for_label }}">{{ filter_form.movement_type.label }}</label>
+        {{ filter_form.movement_type }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="{{ filter_form.product_line.id_for_label }}">{{ filter_form.product_line.label }}</label>
+        {{ filter_form.product_line }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="{{ filter_form.customer.id_for_label }}">{{ filter_form.customer.label }}</label>
+        {{ filter_form.customer }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="{{ filter_form.date_from.id_for_label }}">{{ filter_form.date_from.label }}</label>
+        {{ filter_form.date_from }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label" for="{{ filter_form.date_to.id_for_label }}">{{ filter_form.date_to.label }}</label>
+        {{ filter_form.date_to }}
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_movements' %}{% else %}{% url 'inventory:movements' %}{% endif %}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="rd-data-shell rd-data-shell--inventory-actions">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+          <colgroup>
+            <col class="rd-col-when">
+            <col class="rd-col-type">
+            <col class="rd-col-line">
+            <col class="rd-col-qty">
+            <col class="rd-col-customer">
+            {% if not read_only %}<col class="rd-col-actions">{% endif %}
+          </colgroup>
+          <thead>
+            <tr>
+              <th>{% trans "When" %}</th>
+              <th>{% trans "Type" %}</th>
+              <th>{% trans "Product line" %}</th>
+              <th class="text-end">{% trans "Qty" %}</th>
+              <th>{% trans "Customer" %}</th>
+              <th>{% trans "Notes" %}</th>
+              {% if not read_only %}<th class="text-end">{% trans "Actions" %}</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in page_obj %}
+              <tr>
+                <td class="text-nowrap small rd-text-muted">{{ m.created_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ m.get_movement_type_display }}</td>
+                <td class="rd-inventory-stock-table__line"><span class="fw-semibold">{{ m.product_line.name }}</span></td>
+                <td class="text-end tabular-nums rd-inventory-stock-table__qty">{{ m.quantity }}</td>
+                <td class="rd-inventory-stock-table__customer">{% if m.customer %}{{ m.customer.name }}{% else %}<span class="rd-text-muted">—</span>{% endif %}</td>
+                <td class="small rd-text-muted text-truncate">{{ m.notes|default:"—" }}</td>
+                {% if not read_only %}
+                <td class="text-end rd-inventory-stock-table__actions">
+                  <form method="post" action="{% url 'inventory:movement_delete' m.pk %}" class="d-inline"
+                        onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this movement? (Does not reverse stock.)" %}{% endfilter %}');">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{% if read_only %}6{% else %}7{% endif %}">
+                  <div class="empty-state my-2">{% trans "No movements." %}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
+{% endblock %}

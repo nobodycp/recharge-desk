@@ -26,9 +26,15 @@
       {% csrf_token %}
 
       <div>
-        {{ form.payment_method.label_tag }}
-        {{ form.payment_method }}
-        {{ form.payment_method.errors }}
+        {% if form.payment_method %}
+          {{ form.payment_method.label_tag }}
+          {{ form.payment_method }}
+          {{ form.payment_method.errors }}
+        {% elif sale.paid_via_employee %}
+          <div class="small text-secondary">{% trans "Payment to employee" %}</div>
+        {% elif sale.on_account %}
+          <div class="small text-secondary">{% trans "On account" %}</div>
+        {% endif %}
       </div>
 
       <div class="row g-3">

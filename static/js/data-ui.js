@@ -59,6 +59,7 @@
 
   /* Row actions <details> panel: fixed position so it is not clipped by scroll shells */
   var panelPosProps = ["position", "top", "left", "right", "max-height", "overflow-y", "z-index"];
+  var suppressScrollCloseUntil = 0;
 
   function clearActionsPanelPosition(panel) {
     if (!panel) return;
@@ -68,6 +69,7 @@
   }
 
   function placeActionsPanel(details) {
+    suppressScrollCloseUntil = Date.now() + 450;
     var panel = details.querySelector(".rd-actions-details__panel");
     var summary = details.querySelector("summary");
     if (!panel || !summary) return;
@@ -130,7 +132,9 @@
 
   document.addEventListener(
     "scroll",
-    function () {
+    function (e) {
+      if (Date.now() < suppressScrollCloseUntil) return;
+      if (e.target && e.target.closest && e.target.closest(".rd-actions-details__panel")) return;
       closeAllActionsPanels();
     },
     true
@@ -195,7 +199,7 @@
   }
 
   function refreshFilterBadge(card) {
-    if (!card) return;
+    if (!card || card.hasAttribute("data-rd-no-filter-badge")) return;
     var form = card.querySelector("form");
     var badge = card.querySelector("[data-rd-filter-count]");
     if (!form || !badge) return;

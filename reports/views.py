@@ -120,7 +120,14 @@ def dashboard(request):
     companies = Company.objects.filter(is_active=True).order_by("name")
     recent_sales = (
         Sale.objects.select_related(
-            "company", "product", "product__line", "created_by", "payment_method"
+            "company",
+            "product",
+            "product__line",
+            "created_by",
+            "payment_method",
+            "employee_recipient",
+            "employee_recipient__user",
+            "employee_recipient__user__profile",
         )
         .order_by("-created_at")[:12]
     )
@@ -426,7 +433,14 @@ def sales_report(request):
 
     form = ManagementSaleFilterForm(request.GET or None)
     qs = Sale.objects.select_related(
-        "company", "product", "product__line", "payment_method", "created_by"
+        "company",
+        "product",
+        "product__line",
+        "payment_method",
+        "created_by",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
     ).order_by("-created_at")
     data = form.cleaned_data if form.is_valid() else {}
     qs = apply_management_sale_filter_data(qs, data)
@@ -486,7 +500,15 @@ def _apply_period(qs, date_from, date_to, field="created_at"):
 
 
 def _company_report_sales_queryset(company, request, *, date_from=None, date_to=None):
-    qs = company.sales.select_related("product", "product__line", "payment_method", "created_by")
+    qs = company.sales.select_related(
+        "product",
+        "product__line",
+        "payment_method",
+        "created_by",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
+    )
     sales_q = (request.GET.get("sales_q") or "").strip()
     if sales_q:
         qs = qs.filter(

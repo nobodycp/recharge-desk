@@ -12,6 +12,16 @@ urlpatterns = [
         name="employee_submit_customer_payment_submission",
     ),
     path(
+        "employee/sales/api/refresh-phone/",
+        views.employee_refresh_phone,
+        name="employee_refresh_phone",
+    ),
+    path(
+        "employee/sales/api/sim-stock-preview/",
+        views.api_sim_stock_preview,
+        name="api_sim_stock_preview",
+    ),
+    path(
         "employee/sales/api/payer-by-number/",
         views.api_payer_by_number,
         name="api_payer_by_number",

@@ -270,33 +270,40 @@
 }
 
 /* Customer payment submission modal polish */
-#rdCustomerPaySubModal .modal-dialog {
+#rdCustomerPaySubModal .modal-dialog,
+#rdEmployeeRefreshModal .modal-dialog {
   max-width: min(42rem, calc(100vw - 1rem));
 }
 
-#rdCustomerPaySubModal .modal-content {
+#rdCustomerPaySubModal .modal-content,
+#rdEmployeeRefreshModal .modal-content {
   border-radius: 0.9rem;
   border: 1px solid var(--bs-border-color);
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.16);
 }
 
 #rdCustomerPaySubModal .modal-header,
-#rdCustomerPaySubModal .modal-footer {
+#rdCustomerPaySubModal .modal-footer,
+#rdEmployeeRefreshModal .modal-header,
+#rdEmployeeRefreshModal .modal-footer {
   background: var(--bs-tertiary-bg);
 }
 
-#rdCustomerPaySubModal .modal-body {
+#rdCustomerPaySubModal .modal-body,
+#rdEmployeeRefreshModal .modal-body {
   padding: 0.85rem 0.9rem;
 }
 
-#rdCustomerPaySubModal .rd-pay-sub-note {
+#rdCustomerPaySubModal .rd-pay-sub-note,
+#rdEmployeeRefreshModal .rd-pay-sub-note {
   background: color-mix(in srgb, var(--bs-info-bg-subtle) 70%, transparent);
   border: 1px solid color-mix(in srgb, var(--bs-info-border-subtle) 70%, transparent);
   border-radius: 0.6rem;
   padding: 0.45rem 0.6rem;
 }
 
-#rdCustomerPaySubModal .rd-pay-sub-block {
+#rdCustomerPaySubModal .rd-pay-sub-block,
+#rdEmployeeRefreshModal .rd-pay-sub-block {
   padding: 0.35rem 0.1rem;
 }
 
@@ -413,7 +420,22 @@
   color: var(--bs-primary);
 }
 
-/* Employee sale — eSIM: inline with selling price; stay inside padded form (RTL-safe) */
+/* d-flex beats [hidden] without !important — keep hint off until toggle is ON */
+#rd-employee-payment-hint[hidden] {
+  display: none !important;
+}
+
+/* Employee sale — eSIM / New SIM toggles under selling price */
+.rd-sim-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .rd-esim-switch {
   padding: 0;
   margin: 0;
@@ -494,6 +516,12 @@
 /* Employee sale — payer lookup + autocomplete (mobile-first) */
 .rd-payer-field-wrap {
   position: relative;
+}
+
+/* Raise above following form sections so the absolute list is not painted under them. */
+.rd-payer-field-wrap:focus-within,
+.rd-payer-field-wrap.is-ac-open {
+  z-index: 1080;
 }
 
 .rd-payer-ac-anchor {

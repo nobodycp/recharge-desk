@@ -1,0 +1,26 @@
+{% load i18n %}
+{% if not read_only %}
+<button
+  type="button"
+  class="btn btn-sm btn-outline-secondary rd-inv-actions-toggle"
+  data-inv-set-url="{% if scope == 'customer' %}{% url 'inventory:customer_set' customer.pk balance.pk %}{% else %}{% url 'inventory:main_set' balance.pk %}{% endif %}"
+  data-inv-adjust-url="{% if scope == 'customer' %}{% url 'inventory:customer_adjust' customer.pk balance.pk %}{% else %}{% url 'inventory:main_adjust' balance.pk %}{% endif %}"
+  data-inv-damaged-url="{% if scope == 'customer' %}{% url 'inventory:customer_damaged' customer.pk balance.pk %}{% else %}{% url 'inventory:main_damaged' balance.pk %}{% endif %}"
+  data-inv-clear-url="{% if scope == 'customer' %}{% url 'inventory:customer_clear' customer.pk balance.pk %}{% else %}{% url 'inventory:main_clear' balance.pk %}{% endif %}"
+  data-inv-delete-url="{% if scope == 'customer' %}{% url 'inventory:customer_delete' customer.pk balance.pk %}{% else %}{% url 'inventory:main_delete' balance.pk %}{% endif %}"
+  data-inv-qty="{{ balance.quantity }}"
+  data-inv-max="{{ balance.quantity }}"
+  data-inv-next="{{ next_url }}"
+  data-inv-title-set="{% trans 'Set quantity' %}"
+  data-inv-title-adjust="{% trans 'Adjust' %}"
+  data-inv-title-damaged="{% trans 'Damaged' %}"
+  data-inv-label-set="{% trans 'Set quantity' %}"
+  data-inv-label-adjust="{% trans 'Adjust' %}"
+  data-inv-label-damaged="{% trans 'Damaged' %}"
+  data-inv-label-clear="{% trans 'Clear' %}"
+  data-inv-label-delete="{% trans 'Delete' %}"
+  data-inv-confirm-clear="{% filter escapejs %}{% trans 'Clear this balance to zero?' %}{% endfilter %}"
+  data-inv-confirm-delete="{% filter escapejs %}{% trans 'Delete this balance row? (Must be zero first.)' %}{% endfilter %}"
+  data-inv-clear-reason="{% trans 'Cleared for testing' %}"
+>{% trans "Actions" %}</button>
+{% endif %}

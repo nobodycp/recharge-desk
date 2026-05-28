@@ -58,7 +58,7 @@
             {% for s in sales_page %}
               <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
                 <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
-                <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+                <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
                 <td class="tabular-nums">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
                 <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
                 <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
@@ -76,7 +76,7 @@
       {% for s in sales_page %}
         <div class="rd-mobile-row-card {% if s.status == 'pending' %}is-pending{% endif %}">
           <div class="small text-secondary">{{ s.created_at }}</div>
-          <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+          <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
           <div class="tabular-nums">{{ s.reference_number }}</div>
           <div class="d-flex justify-content-between mt-1">
             <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>

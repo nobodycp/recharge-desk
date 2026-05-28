@@ -42,14 +42,25 @@ def create_sale(
     notes: str,
     user,
     is_esim: bool = False,
+    is_new_sim: bool = False,
+    sim_serial_or_iccid: str = "",
     on_account: bool = False,
     customer=None,
+    paid_via_employee: bool = False,
+    employee_recipient=None,
 ) -> Sale:
     if product.line.company_id != company.id:
         raise ValueError(_("Product does not belong to the selected company."))
     if not company.is_active or not product.is_active:
         raise ValueError(_("Inactive company or product."))
-    if on_account:
+    if on_account and paid_via_employee:
+        raise ValueError(_("A sale cannot be both on-account and paid via employee."))
+    if paid_via_employee:
+        if employee_recipient is None:
+            raise ValueError(_("Employee payment sales require an employee recipient."))
+        if payment_method is not None:
+            raise ValueError(_("Employee payment sales must not have a payment method."))
+    elif on_account:
         if customer is None:
             raise ValueError(_("On-account sales require a customer."))
         if payment_method is not None:
@@ -79,11 +90,15 @@ def create_sale(
         profit_snapshot=profit,
         loss_snapshot=loss_snap,
         is_esim=bool(is_esim),
+        is_new_sim=bool(is_new_sim),
+        sim_serial_or_iccid=(sim_serial_or_iccid or "").strip() if is_new_sim else "",
         status=initial_status,
         created_by=user,
         notes=notes.strip(),
         on_account=bool(on_account),
         customer=customer if on_account else None,
+        paid_via_employee=bool(paid_via_employee),
+        employee_recipient=employee_recipient if paid_via_employee else None,
     )
 
     CompanyBalanceTransaction.objects.create(
@@ -109,7 +124,7 @@ def create_sale(
 def update_sale_fields(
     *,
     sale: Sale,
-    payment_method: PaymentMethod,
+    payment_method: Optional[PaymentMethod],
     payer_name: str,
     reference_number: str,
     sell_price_actual: Decimal,
@@ -133,7 +148,12 @@ def update_sale_fields(
     before = snapshot(sale_locked, _SALE_AUDITED_FIELDS)
     cost = sale_locked.cost_price_snapshot
 
-    sale_locked.payment_method = payment_method
+    if sale_locked.paid_via_employee or sale_locked.on_account:
+        sale_locked.payment_method = None
+    elif payment_method is None:
+        raise ValueError(_("Payment method is required for this sale."))
+    else:
+        sale_locked.payment_method = payment_method
     sale_locked.payer_name = (payer_name or "").strip()
     sale_locked.reference_number = (reference_number or "").strip()
     sale_locked.sell_price_actual = sell_price_actual
@@ -171,6 +191,13 @@ def mark_sale_paid(*, sale: Sale, user) -> Sale:
     sale_locked.paid_by = user
     sale_locked.save(update_fields=["status", "paid_at", "paid_by", "updated_at"])
     audit_record(AuditAction.MARK_PAID, sale_locked, actor=user)
+    from inventory.services import consume_sim_for_sale
+
+    consume_sim_for_sale(sale=sale_locked, user=user)
+    if sale_locked.paid_via_employee and sale_locked.employee_recipient_id:
+        from employees.services import record_sales_payment_received
+
+        record_sales_payment_received(sale=sale_locked, user=user)
     return sale_locked
 
 
@@ -220,6 +247,15 @@ def delete_sale_permanently(*, sale: Sale, user=None) -> None:
 
     if txns:
         CompanyBalanceTransaction.objects.filter(pk__in=[t.pk for t in txns]).delete()
+
+    from inventory.services import reverse_sim_for_cancelled_sale
+
+    reverse_sim_for_cancelled_sale(sale=sale_locked, user=user)
+
+    if sale_locked.paid_via_employee and sale_locked.employee_recipient_id:
+        from employees.services import reverse_sales_payment_for_sale
+
+        reverse_sales_payment_for_sale(sale=sale_locked)
 
     if sale_locked.on_account and sale_locked.customer_id:
         from customers.models import Customer, CustomerLedger
@@ -412,6 +448,10 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
 
     sale_locked.status = Sale.Status.CANCELLED
     sale_locked.cancelled_at = timezone.now()
+    from inventory.services import reverse_sim_for_cancelled_sale
+
+    reverse_sim_for_cancelled_sale(sale=sale_locked, user=user)
+
     sale_locked.cancelled_by = user
     sale_locked.save(
         update_fields=[

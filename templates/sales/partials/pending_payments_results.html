@@ -45,7 +45,7 @@
               </td>
               <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
               <td class="fw-medium">{{ s.company.name }}</td>
-              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
               <td class="tabular-nums text-nowrap">
                 {{ s.reference_number }}
                 <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
@@ -104,7 +104,7 @@
       <div id="pending-card-{{ s.pk }}" class="rd-mobile-row-card is-pending rd-pending-group">
         <div class="small text-secondary">{{ s.created_at }}</div>
         <div class="fw-semibold">{{ s.company.name }}</div>
-        <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+        <div>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
         <div class="d-flex align-items-center gap-2">
           <span class="font-monospace">{{ s.reference_number }}</span>
           <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>

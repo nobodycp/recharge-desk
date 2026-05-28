@@ -1,0 +1,31 @@
+{% load i18n %}
+{% trans "Return to main" as return_title %}
+{% include "partials/filter_card_open.html" with filter_title=return_title active_count=0 card_open=return_panel_open hide_badge=True no_filter_badge=True %}
+    <p class="rd-text-muted small mb-3">{% trans "Move SIMs back from this customer to main stock." %}</p>
+    <form method="post" class="rd-inventory-receive-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="return">
+      <div class="rd-inventory-receive-form__row">
+        <div class="rd-inv-field rd-inv-field--line">
+          <label class="form-label" for="{{ return_form.product_line.id_for_label }}">{{ return_form.product_line.label }}</label>
+          {{ return_form.product_line }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--qty">
+          <label class="form-label" for="{{ return_form.quantity.id_for_label }}">{{ return_form.quantity.label }}</label>
+          {{ return_form.quantity }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--notes">
+          <label class="form-label" for="{{ return_form.notes.id_for_label }}">{{ return_form.notes.label }}</label>
+          {{ return_form.notes }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--serials">
+          <label class="form-label" for="{{ return_form.serials.id_for_label }}">{{ return_form.serials.label }}</label>
+          {{ return_form.serials }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--submit">
+          <button type="submit" class="btn btn-outline-secondary btn-sm w-100">{% trans "Return" %}</button>
+        </div>
+      </div>
+      {% if return_form.serials.help_text %}<div class="form-text mt-1">{{ return_form.serials.help_text }}</div>{% endif %}
+    </form>
+{% include "partials/filter_card_close.html" %}

@@ -9,11 +9,12 @@ from companies.models import Company, Product, ProductLine
 class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
-        fields = ["name", "icon", "opening_balance", "notes", "is_active"]
+        fields = ["name", "icon", "opening_balance", "phone_refresh_provider", "notes", "is_active"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "opening_balance": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "phone_refresh_provider": forms.Select(attrs={"class": "form-select"}),
             "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
@@ -30,12 +31,23 @@ class CompanyForm(forms.ModelForm):
 class ProductLineForm(forms.ModelForm):
     class Meta:
         model = ProductLine
-        fields = ["company", "name", "icon", "sort_order", "is_active", "default_package"]
+        fields = [
+            "company",
+            "name",
+            "icon",
+            "sort_order",
+            "estimated_unit_cost",
+            "is_active",
+            "default_package",
+        ]
         widgets = {
             "company": forms.Select(attrs={"class": "form-select"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "sort_order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
+            "estimated_unit_cost": forms.NumberInput(
+                attrs={"class": "form-control", "step": "0.01", "min": "0"}
+            ),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "default_package": forms.Select(attrs={"class": "form-select"}),
         }

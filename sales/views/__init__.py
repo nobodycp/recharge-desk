@@ -29,12 +29,14 @@ from sales.views.bulk import bulk_sales_mark_paid
 from sales.views.employee import (
     api_payer_by_number,
     api_payer_name_suggestions,
+    api_sim_stock_preview,
     employee_entry,
     employee_product_fragment,
     employee_recent_sales,
     employee_sale_delete,
     employee_sale_edit,
     employee_submit_customer_payment_submission,
+    employee_refresh_phone,
 )
 from sales.views.management import (
     awaiting_approvals,
@@ -67,8 +69,10 @@ __all__ = [
     "employee_sale_edit",
     "employee_sale_delete",
     "employee_submit_customer_payment_submission",
+    "employee_refresh_phone",
     "api_payer_by_number",
     "api_payer_name_suggestions",
+    "api_sim_stock_preview",
     # management
     "management_sale_list",
     "pending_payments",

@@ -1,0 +1,20 @@
+{% load i18n %}
+{% if s.pk in editable_sale_ids %}
+  <div class="d-flex gap-2 justify-content-end mt-1">
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_sale_edit' s.pk %}">{% trans "Edit" %}</a>
+    <form
+      method="post"
+      action="{% url 'sales:employee_sale_delete' s.pk %}"
+      class="d-inline-block m-0"
+      {% if use_htmx %}
+        hx-post="{% url 'sales:employee_sale_delete' s.pk %}"
+        hx-target="#sale-row-{{ s.pk }}"
+        hx-swap="outerHTML swap:200ms"
+      {% endif %}
+      hx-confirm="{% trans 'Delete this entry permanently? Supplier balance will be corrected. This cannot be undone.' %}"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+    </form>
+  </div>
+{% endif %}

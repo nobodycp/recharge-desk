@@ -1,0 +1,97 @@
+{% extends base_template %}
+{% load i18n static %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Receive, adjust, and track main SIM stock by product line." %}</p>
+  </div>
+</div>
+{% include "inventory/_nav.html" %}
+
+{% if not read_only and receive_form %}
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <div class="mb-3">
+      <div class="fw-semibold">{% trans "Receive stock" %}</div>
+      <div class="rd-text-muted small">{% trans "Add plastic SIMs to main inventory for a product line." %}</div>
+    </div>
+    <form method="post" class="rd-inventory-receive-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="receive">
+      <div class="rd-inventory-receive-form__row">
+        <div class="rd-inv-field rd-inv-field--line">
+          <label class="form-label" for="{{ receive_form.product_line.id_for_label }}">{{ receive_form.product_line.label }}</label>
+          {{ receive_form.product_line }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--qty">
+          <label class="form-label" for="{{ receive_form.quantity.id_for_label }}">{{ receive_form.quantity.label }}</label>
+          {{ receive_form.quantity }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--notes">
+          <label class="form-label" for="{{ receive_form.notes.id_for_label }}">{{ receive_form.notes.label }}</label>
+          {{ receive_form.notes }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--serials">
+          <label class="form-label" for="{{ receive_form.serials.id_for_label }}">{{ receive_form.serials.label }}</label>
+          {{ receive_form.serials }}
+        </div>
+        <div class="rd-inv-field rd-inv-field--submit">
+          <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Add" %}</button>
+        </div>
+      </div>
+      {% if receive_form.serials.help_text %}<div class="form-text mt-1">{{ receive_form.serials.help_text }}</div>{% endif %}
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="rd-data-shell rd-data-shell--inventory-actions">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+          <colgroup>
+            <col class="rd-col-line">
+            <col class="rd-col-qty">
+            {% if not read_only %}<col class="rd-col-actions">{% endif %}
+          </colgroup>
+          <thead>
+            <tr>
+              <th>{% trans "Product line" %}</th>
+              <th class="text-end">{% trans "Quantity" %}</th>
+              {% if not read_only %}<th class="text-end">{% trans "Actions" %}</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in balances %}
+              <tr>
+                <td class="rd-inventory-stock-table__line">
+                  <a href="{% if read_only %}{% url 'inventory:employee_line_detail' b.product_line_id %}{% else %}{% url 'inventory:line_detail' b.product_line_id %}{% endif %}" class="fw-semibold text-decoration-none">{{ b.product_line.name }}</a>
+                </td>
+                <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
+                {% if not read_only %}
+                <td class="text-end rd-inventory-stock-table__actions">
+                  {% include "inventory/_balance_actions.html" with balance=b scope="main" read_only=read_only next_url=request.path %}
+                </td>
+                {% endif %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{% if read_only %}2{% else %}3{% endif %}">
+                  <div class="empty-state my-2">{% trans "No main stock yet." %}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not read_only %}
+  {% include "inventory/_action_dialog.html" %}
+  <script src="{% static 'js/inventory-actions.js' %}{{ static_cache_query }}" defer></script>
+{% endif %}
+{% endblock %}

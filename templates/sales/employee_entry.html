@@ -1,15 +1,24 @@
 {% extends "base_employee.html" %}
-{% load i18n static l10n ui_tags %}
+{% load i18n static l10n ui_tags humanize %}
 {% block employee_header %}
-<div class="d-flex align-items-center justify-content-between gap-2 flex-wrap w-100">
-  <span class="text-truncate">{% trans "New sale" %}</span>
-  <button
-    type="button"
-    id="rd-open-pay-sub-modal"
-    class="btn btn-sm btn-outline-primary flex-shrink-0"
-    data-bs-toggle="modal"
-    data-bs-target="#rdCustomerPaySubModal"
-  >{% trans "Record payment" %}</button>
+<div class="d-flex align-items-center justify-content-end gap-2 flex-wrap w-100">
+  {% if app_settings.sales_show_refresh_phone %}
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-primary rd-open-employee-modal"
+      data-bs-toggle="modal"
+      data-bs-target="#rdEmployeeRefreshModal"
+    >{% trans "Refresh phone" %}</button>
+  {% endif %}
+  {% if app_settings.sales_show_record_payment %}
+    <button
+      type="button"
+      id="rd-open-pay-sub-modal"
+      class="btn btn-sm btn-outline-primary rd-open-employee-modal"
+      data-bs-toggle="modal"
+      data-bs-target="#rdCustomerPaySubModal"
+    >{% trans "Record payment" %}</button>
+  {% endif %}
 </div>
 {% endblock %}
 {% block content %}
@@ -20,6 +29,7 @@
     novalidate
     id="employee-sale-form"
     data-esim-extra="{{ esim_extra|unlocalize }}"
+    data-sim-preview-url="{% if app_settings.sales_inventory_enabled %}{% url 'sales:api_sim_stock_preview' %}{% endif %}"
   >
           {% csrf_token %}
           {% if form.non_field_errors %}
@@ -76,18 +86,41 @@
           <div class="rd-field-group" id="rd-payment-section">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
               <div class="rd-field-label mb-0">{% trans "Where did you receive the money?" %}</div>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-warning rd-on-account-toggle"
-                id="rd-on-account-toggle"
-                aria-pressed="false"
-                data-on-label="{% trans 'On account: ON' %}"
-                data-off-label="{% trans 'Mark as on account' %}"
-              >{% trans "Mark as on account" %}</button>
+              <div class="d-flex flex-wrap gap-1">
+                {% if acting_employee %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-info rd-employee-payment-toggle"
+                  id="rd-employee-payment-toggle"
+                  aria-pressed="false"
+                  data-on-label="{% trans 'Payment to employee: ON' %}"
+                  data-off-label="{% trans 'Payment to employee' %}"
+                >{% trans "Payment to employee" %}</button>
+                {% endif %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-warning rd-on-account-toggle"
+                  id="rd-on-account-toggle"
+                  aria-pressed="false"
+                  data-on-label="{% trans 'On account: ON' %}"
+                  data-off-label="{% trans 'Mark as on account' %}"
+                >{% trans "Mark as on account" %}</button>
+              </div>
             </div>
             {{ form.payment_method.errors }}
             {{ form.payment_method }}
             {{ form.on_account }}
+            {{ form.paid_via_employee }}
+            {% if acting_employee %}
+            <div id="rd-employee-payment-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
+              <span>
+                {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
+              </span>
+              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
+                {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
+              </span>
+            </div>
+            {% endif %}
             <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="payment-tiles">
               {% for pm in payment_methods %}
                 <div class="col">
@@ -159,6 +192,25 @@
               </div>
             </div>
             {{ form.is_esim.errors }}
+            {% if app_settings.sales_inventory_enabled %}
+            <div class="rd-sim-options mt-2">
+              <div class="rd-esim-switch">
+                <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
+                  <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_new_sim }}</div>
+                  <label class="form-check-label mb-0 rd-esim-switch__label" for="id_is_new_sim">
+                    {% trans "New SIM" %}
+                  </label>
+                </div>
+              </div>
+              {{ form.is_new_sim.errors }}
+              <div class="mt-2" id="rd-sim-serial-wrap" hidden>
+                <label class="form-label small mb-1" for="id_sim_serial_or_iccid">{{ form.sim_serial_or_iccid.label }}</label>
+                {{ form.sim_serial_or_iccid }}
+                {{ form.sim_serial_or_iccid.errors }}
+              </div>
+              <p class="mb-0 mt-1 small text-secondary" id="rd-sim-stock-preview" hidden></p>
+            </div>
+            {% endif %}
           </div>
 
           <div class="rd-field-group rd-sale-preview border rounded-2 px-3 py-2 small" id="rd-sale-preview" hidden>
@@ -199,18 +251,30 @@
     <div class="rd-card overflow-hidden">
       <div class="list-group list-group-flush rd-list-flush">
         {% for s in recent_sales %}
-          <div class="list-group-item d-flex justify-content-between gap-3 py-3">
+          <div class="list-group-item d-flex flex-column gap-2 py-3">
+            <div class="d-flex justify-content-between gap-3">
             <div class="min-w-0">
-              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</div>
+              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
               {% if s.payer_name %}
                 <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
               {% endif %}
-              <div class="small text-secondary text-truncate">{{ s.reference_number }} · {{ s.payment_method.name|tdb }}</div>
+              <div class="small text-secondary text-truncate">
+                {{ s.reference_number }}
+                {% if s.paid_via_employee and s.employee_recipient %}
+                  · {% trans "Employee" %}: {{ s.employee_recipient.display_name }}
+                {% elif s.payment_method %}
+                  · {{ s.payment_method.name|tdb }}
+                {% elif s.on_account %}
+                  · {% trans "On account" %}
+                {% endif %}
+              </div>
             </div>
             <div class="text-end flex-shrink-0 small">
               <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
               <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
             </div>
+            </div>
+            {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids %}
           </div>
         {% endfor %}
       </div>
@@ -220,6 +284,63 @@
   {% endif %}
 </div>
 
+{% if app_settings.sales_show_refresh_phone %}
+<div
+  class="modal fade"
+  id="rdEmployeeRefreshModal"
+  tabindex="-1"
+  aria-labelledby="rdEmployeeRefreshModalLabel"
+  aria-hidden="true"
+  data-refresh-url="{% url 'sales:employee_refresh_phone' %}"
+  data-msg-phone="{{ _('Enter a phone number.')|escapejs }}"
+  data-msg-invalid-phone="{{ _('Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058.')|escapejs }}"
+  data-msg-working="{{ _('Refreshing…')|escapejs }}"
+>
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h2 class="modal-title h6 mb-0" id="rdEmployeeRefreshModalLabel">{% trans "Refresh phone number" %}</h2>
+        <button type="button" class="btn-close rd-refresh-close-x" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-secondary mb-3 rd-pay-sub-note">{% trans "Only phone or shipment numbers already saved in sales can be refreshed. No public-site rate limits apply here." %}</p>
+        <div class="mb-3 rd-pay-sub-block">
+          <label class="form-label small fw-semibold" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
+          <div class="input-group input-group-sm">
+            <input
+              type="text"
+              class="form-control"
+              id="rd-refresh-phone-input"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="10"
+              pattern="05[0123458][0-9]{7}"
+              placeholder="0501234567"
+            >
+            <button
+              type="button"
+              class="btn btn-outline-secondary employee-clipboard-paste-btn"
+              data-paste-target="rd-refresh-phone-input"
+              aria-label="{% trans 'Paste from clipboard' %}"
+              data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+            >{% trans "Paste" %}</button>
+          </div>
+        </div>
+        <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none" id="rd-refresh-result" role="status" aria-live="polite">
+          <div class="fw-semibold mb-1" id="rd-refresh-result-title"></div>
+          <div class="mb-0 text-secondary" id="rd-refresh-result-body"></div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm rd-refresh-cancel" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" class="btn btn-primary btn-sm" id="rd-refresh-submit">{% trans "Refresh" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if app_settings.sales_show_record_payment %}
 <div
   class="modal fade"
   id="rdCustomerPaySubModal"
@@ -303,6 +424,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <script>
 (function () {
@@ -451,6 +573,178 @@
     }
   }
 })();
+
+(function () {
+  var modal = document.getElementById("rdEmployeeRefreshModal");
+  if (!modal) return;
+
+  var refreshUrl = modal.getAttribute("data-refresh-url") || "";
+  var phoneInp = document.getElementById("rd-refresh-phone-input");
+  var submitBtn = document.getElementById("rd-refresh-submit");
+  var resultBox = document.getElementById("rd-refresh-result");
+  var resultTitle = document.getElementById("rd-refresh-result-title");
+  var resultBody = document.getElementById("rd-refresh-result-body");
+  var saleRef = document.getElementById("id_reference_number");
+
+  function getCsrfToken() {
+    var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return el && el.value ? el.value : "";
+  }
+
+  function hideResult() {
+    if (resultBox) resultBox.classList.add("d-none");
+    if (resultTitle) resultTitle.textContent = "";
+    if (resultBody) resultBody.textContent = "";
+  }
+
+  function showResult(title, body) {
+    if (!resultBox) return;
+    resultBox.classList.remove("d-none");
+    if (resultTitle) resultTitle.textContent = title || "";
+    if (resultBody) resultBody.textContent = body || "";
+  }
+
+  function resetRefreshModal() {
+    hideResult();
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitBtn.getAttribute("data-default-label") || submitBtn.textContent;
+    }
+  }
+
+  function prefillPhone() {
+    if (!phoneInp || !saleRef) return;
+    var v = (saleRef.value || "").trim();
+    if (v) phoneInp.value = v;
+  }
+
+  if (submitBtn) {
+    submitBtn.setAttribute("data-default-label", submitBtn.textContent);
+  }
+
+  function isValidRefreshPhone(value) {
+    return /^05[0123458]\d{7}$/.test(value);
+  }
+
+  if (phoneInp) {
+    phoneInp.addEventListener("input", function () {
+      phoneInp.value = phoneInp.value.replace(/\D/g, "").slice(0, 10);
+    });
+  }
+
+  function runRefresh() {
+    if (!phoneInp) return;
+    var phone = phoneInp.value.trim();
+    if (!phone) {
+      window.alert(modal.getAttribute("data-msg-phone") || "");
+      return;
+    }
+    if (!isValidRefreshPhone(phone)) {
+      window.alert(modal.getAttribute("data-msg-invalid-phone") || "");
+      phoneInp.focus();
+      return;
+    }
+    if (!refreshUrl) return;
+    hideResult();
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = modal.getAttribute("data-msg-working") || "...";
+    }
+    var formData = new FormData();
+    formData.append("phone", phone);
+    var csrf = getCsrfToken();
+    if (csrf) formData.append("csrfmiddlewaretoken", csrf);
+    fetch(refreshUrl, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json"
+      },
+      body: formData
+    })
+      .then(function (resp) {
+        return resp.json().then(function (data) {
+          if (!resp.ok && !data) {
+            throw new Error("HTTP " + resp.status);
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        var msg = (data && data.message) ? data.message : {};
+        showResult(msg.title || "", msg.body || "");
+      })
+      .catch(function () {
+        showResult("", modal.getAttribute("data-msg-phone") || "");
+      })
+      .finally(function () {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = submitBtn.getAttribute("data-default-label") || "";
+        }
+      });
+  }
+
+  if (submitBtn) {
+    submitBtn.addEventListener("click", runRefresh);
+  }
+  if (phoneInp) {
+    phoneInp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runRefresh();
+      }
+    });
+  }
+
+  var hasBootstrapModal = !!(window.bootstrap && window.bootstrap.Modal);
+  if (hasBootstrapModal) {
+    modal.addEventListener("show.bs.modal", prefillPhone);
+    modal.addEventListener("hidden.bs.modal", resetRefreshModal);
+  } else {
+    var backdrop = null;
+    function closeFallbackModal() {
+      modal.classList.remove("show");
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+      backdrop = null;
+      resetRefreshModal();
+    }
+    function openFallbackModal() {
+      prefillPhone();
+      modal.style.display = "block";
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop fade show";
+      document.body.appendChild(backdrop);
+    }
+    document.querySelectorAll('[data-bs-target="#rdEmployeeRefreshModal"]').forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        openFallbackModal();
+      });
+    });
+    modal.querySelectorAll(".rd-refresh-close-x, .rd-refresh-cancel").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        closeFallbackModal();
+      });
+    });
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) closeFallbackModal();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("show")) closeFallbackModal();
+    });
+  }
+})();
+
 (function () {
   function getEsimExtra() {
     var f = document.getElementById("employee-sale-form");
@@ -497,6 +791,58 @@
     }
     if (note) note.hidden = !useEsim;
     if (lossNote) lossNote.hidden = sell !== 0;
+    updateSimStockPreview();
+  }
+
+  var simPreviewTimer = null;
+  function updateSimStockPreview() {
+    var form = document.getElementById("employee-sale-form");
+    var el = document.getElementById("rd-sim-stock-preview");
+    var newSim = document.getElementById("id_is_new_sim");
+    var payer = document.getElementById("id_payer_name");
+    var product = document.getElementById("id_product");
+    if (!form || !el || !newSim) return;
+    var serialWrap = document.getElementById("rd-sim-serial-wrap");
+    if (!newSim.checked) {
+      el.hidden = true;
+      el.textContent = "";
+      if (serialWrap) serialWrap.hidden = true;
+      return;
+    }
+    if (serialWrap) serialWrap.hidden = false;
+    var payerVal = payer && payer.value ? payer.value.trim() : "";
+    var productVal = product && product.value ? product.value.trim() : "";
+    if (!payerVal || !productVal) {
+      el.hidden = false;
+      el.className = "mb-0 mt-1 small text-secondary";
+      el.textContent = "{% trans 'Enter payer name and product to preview SIM stock.' %}";
+      return;
+    }
+    var url = form.getAttribute("data-sim-preview-url");
+    if (!url) return;
+    clearTimeout(simPreviewTimer);
+    simPreviewTimer = setTimeout(function () {
+      fetch(url + "?payer=" + encodeURIComponent(payerVal) + "&product=" + encodeURIComponent(productVal), {
+        headers: { "Accept": "application/json" },
+        credentials: "same-origin",
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) {
+            el.hidden = false;
+            el.className = "mb-0 mt-1 small text-danger";
+            el.textContent = data.message || "";
+            return;
+          }
+          el.hidden = false;
+          var warn = data.source === "ambiguous" || data.source === "no_customer_stock";
+          el.className = warn ? "mb-0 mt-1 small text-danger" : "mb-0 mt-1 small text-info";
+          el.textContent = data.message || "";
+        })
+        .catch(function () {
+          el.hidden = true;
+        });
+    }, 300);
   }
 
   function resetLineAndPackages() {
@@ -592,11 +938,50 @@
     updateSalePreview();
   }
 
+  function isPaidViaEmployee() {
+    var el = document.getElementById("id_paid_via_employee");
+    return !!(el && el.value);
+  }
+
+  function setPaidViaEmployee(enabled) {
+    var hid = document.getElementById("id_paid_via_employee");
+    var btn = document.getElementById("rd-employee-payment-toggle");
+    var paymentTiles = document.getElementById("payment-tiles");
+    var pmHidden = document.getElementById("id_payment_method");
+    var empHint = document.getElementById("rd-employee-payment-hint");
+    if (!hid || !btn) return;
+    if (enabled) {
+      setOnAccount(false);
+      hid.value = "1";
+      btn.classList.remove("btn-outline-info");
+      btn.classList.add("btn-info");
+      btn.setAttribute("aria-pressed", "true");
+      btn.textContent = btn.getAttribute("data-on-label") || "ON";
+      if (paymentTiles) paymentTiles.classList.add("opacity-50");
+      if (pmHidden) pmHidden.value = "";
+      document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
+        t.classList.remove("is-active");
+      });
+      if (empHint) empHint.hidden = false;
+    } else {
+      hid.value = "";
+      btn.classList.remove("btn-info");
+      btn.classList.add("btn-outline-info");
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = btn.getAttribute("data-off-label") || "Employee";
+      if (paymentTiles) paymentTiles.classList.remove("opacity-50");
+      if (empHint) empHint.hidden = true;
+    }
+  }
+
   function syncPaymentFromTile(tile) {
     if (!tile) return;
     if (isOnAccount()) {
       // Selecting a real method clears the on-account toggle.
       setOnAccount(false);
+    }
+    if (isPaidViaEmployee()) {
+      setPaidViaEmployee(false);
     }
     document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
       t.classList.remove("is-active");
@@ -618,6 +1003,7 @@
     var pmHidden = document.getElementById("id_payment_method");
     if (!hid || !btn) return;
     if (enabled) {
+      setPaidViaEmployee(false);
       hid.value = "1";
       btn.classList.remove("btn-outline-warning");
       btn.classList.add("btn-warning");
@@ -657,6 +1043,7 @@
     if (pay && form.contains(pay)) {
       e.preventDefault();
       syncPaymentFromTile(pay);
+      return;
     }
   });
 
@@ -667,6 +1054,13 @@
         setOnAccount(!isOnAccount());
       });
       setOnAccount(isOnAccount());
+    }
+    var empPayBtn = document.getElementById("rd-employee-payment-toggle");
+    if (empPayBtn) {
+      empPayBtn.addEventListener("click", function () {
+        setPaidViaEmployee(!isPaidViaEmployee());
+      });
+      setPaidViaEmployee(isPaidViaEmployee());
     }
     document.querySelectorAll(".employee-clipboard-paste-btn").forEach(function (pasteBtn) {
       var targetId = pasteBtn.getAttribute("data-paste-target");
@@ -721,12 +1115,22 @@
     if (esimCb) {
       esimCb.addEventListener("change", updateSalePreview);
     }
+    var newSimCb = document.getElementById("id_is_new_sim");
+    if (newSimCb) {
+      newSimCb.addEventListener("change", updateSimStockPreview);
+    }
+    var payerEl = document.getElementById("id_payer_name");
+    if (payerEl) {
+      payerEl.addEventListener("input", updateSimStockPreview);
+      payerEl.addEventListener("change", updateSimStockPreview);
+    }
     var sellEl = document.getElementById("id_sell_price_actual");
     if (sellEl) {
       sellEl.addEventListener("input", updateSalePreview);
       sellEl.addEventListener("change", updateSalePreview);
     }
     updateSalePreview();
+    updateSimStockPreview();
   });
 
   document.body.addEventListener("htmx:afterSwap", function (evt) {
@@ -737,6 +1141,7 @@
       var inp = document.getElementById("id_sell_price_actual");
       if (inp) inp.value = "";
       updateSalePreview();
+      updateSimStockPreview();
     }
   });
 })();

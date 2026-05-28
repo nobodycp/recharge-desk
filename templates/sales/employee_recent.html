@@ -6,7 +6,7 @@
   <div>
     <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
     <p class="rd-text-muted small mb-0">
-      {% trans "Sales you entered. You can fix or remove an entry only while management hasn't acted on it yet." %}
+      {% trans "Sales you entered. You can edit or delete only your last 10 entries." %}
       <span class="d-block mt-1">
         <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
       </span>
@@ -60,7 +60,7 @@
           <div class="d-flex justify-content-between gap-3">
             <div class="min-w-0">
               <div class="fw-semibold text-truncate">
-                {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}
+                {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
               </div>
               {% if s.payer_name %}
                 <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
@@ -77,27 +77,7 @@
             </div>
           </div>
 
-          {% if s.is_employee_modifiable %}
-            <div class="d-flex gap-2 justify-content-end">
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_sale_edit' s.pk %}">{% trans "Edit" %}</a>
-              <form
-                method="post"
-                action="{% url 'sales:employee_sale_delete' s.pk %}"
-                class="d-inline-block m-0"
-                hx-post="{% url 'sales:employee_sale_delete' s.pk %}"
-                hx-target="#sale-row-{{ s.pk }}"
-                hx-swap="outerHTML swap:200ms"
-                hx-confirm="{% trans 'Delete this entry permanently? Supplier balance will be corrected. This cannot be undone.' %}"
-              >
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-              </form>
-            </div>
-          {% else %}
-            <div class="small text-secondary text-end">
-              {% trans "Locked: management has already processed this entry." %}
-            </div>
-          {% endif %}
+          {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids use_htmx=True %}
         </div>
       {% endfor %}
     </div>

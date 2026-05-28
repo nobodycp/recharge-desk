@@ -11,13 +11,26 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import employee_required, is_employee
 from companies.models import Company, Product, ProductLine
+from core.http_utils import get_client_ip
+from core.models import AppSettings
+from core.sale_workflow import finalize_payment_submission_after_entry, finalize_sale_after_entry
 from customers.forms import EmployeeCustomerPaymentSubmissionForm
 from customers.services import resolve_or_create_customer_for_sale, submit_customer_payment_submission
 from customers.views._shared import flash_form_errors
-from sales.forms import EmployeeRecentFilterForm, EmployeeSaleForm, ManagementSaleEditForm
+from phone_refresh.models import RefreshSource, SystemSettings
+from phone_refresh.services.refresh_service import refresh_phone
+from phone_refresh.validation import is_valid_phone
+from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
+from sales.employee_editing import (
+    EMPLOYEE_RECENT_EDIT_LIMIT,
+    employee_editable_sale_ids,
+    sale_is_employee_editable,
+)
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
+from inventory.services import preview_sim_stock_deduction
+from employees.services import get_acting_employee_profile
 from sales.services import create_sale, delete_sale_permanently, update_sale_fields
 from sales.views._shared import htmx_action_error, htmx_remove_target, is_htmx
 
@@ -48,25 +61,68 @@ def _build_product_groups(company_id):
     return groups
 
 
+def _phone_registered_for_refresh(phone: str) -> bool:
+    """True when a non-cancelled sale exists with this reference number."""
+    ref = (phone or "").strip()
+    if not ref:
+        return False
+    return (
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .filter(reference_number=ref)
+        .exists()
+    )
+
+
+def _refresh_json_payload(result) -> dict:
+    payload = {
+        "status": result.status.code,
+        "message": {"title": result.message_title, "body": result.message_body},
+    }
+    if SystemSettings.get().show_last_refresh:
+        payload["last_refresh_at"] = (
+            result.last_refresh_at.isoformat()
+            if result.last_refresh_at is not None
+            else None
+        )
+        payload["seconds_since_last_refresh"] = result.seconds_since_last_refresh
+    return payload
+
+
 @employee_required
 def employee_entry(request):
     company_id = request.POST.get("company") or request.GET.get("company")
     initial = {}
     if request.method == "GET" and company_id:
         initial["company"] = company_id
-    form = EmployeeSaleForm(request.POST or None, company_id=company_id, initial=initial)
+    form = EmployeeSaleForm(
+        request.POST or None,
+        company_id=company_id,
+        initial=initial,
+        user=request.user,
+    )
     companies = list(Company.objects.filter(is_active=True).order_by("name"))
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    acting_employee = get_acting_employee_profile(request.user)
     product_groups = _build_product_groups(company_id) if company_id else []
 
-    recent_qs = Sale.objects.select_related("company", "product", "product__line", "payment_method")
+    recent_qs = Sale.objects.select_related(
+        "company",
+        "product",
+        "product__line",
+        "payment_method",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
+    )
     if is_employee(request.user):
         recent_qs = recent_qs.filter(created_by=request.user)
-    recent = recent_qs.order_by("-created_at")[:8]
+    editable_sale_ids = employee_editable_sale_ids(request.user)
+    recent = recent_qs.order_by("-created_at")[:EMPLOYEE_RECENT_EDIT_LIMIT]
 
     if request.method == "POST" and form.is_valid():
         try:
             on_account = bool(form.cleaned_data.get("on_account"))
+            paid_via_employee = bool(form.cleaned_data.get("paid_via_employee"))
             customer = None
             if on_account:
                 customer = resolve_or_create_customer_for_sale(
@@ -74,20 +130,47 @@ def employee_entry(request):
                     phone=form.cleaned_data["reference_number"],
                     user=request.user,
                 )
-            create_sale(
+            employee_recipient = (
+                form.cleaned_data.get("employee_recipient") if paid_via_employee else None
+            )
+            app_settings = AppSettings.load()
+            is_new_sim = bool(form.cleaned_data.get("is_new_sim")) and app_settings.sales_inventory_enabled
+            sale = create_sale(
                 company=form.cleaned_data["company"],
                 product=form.cleaned_data["product"],
                 reference_number=form.cleaned_data["reference_number"],
                 payer_name=form.cleaned_data["payer_name"],
-                payment_method=form.cleaned_data["payment_method"] if not on_account else None,
+                payment_method=form.cleaned_data["payment_method"]
+                if not on_account and not paid_via_employee
+                else None,
                 sell_price_actual=form.cleaned_data["sell_price_actual"],
                 notes=form.cleaned_data.get("notes") or "",
                 user=request.user,
                 is_esim=bool(form.cleaned_data.get("is_esim")),
+                is_new_sim=is_new_sim,
+                sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
                 on_account=on_account,
                 customer=customer,
+                paid_via_employee=paid_via_employee,
+                employee_recipient=employee_recipient,
             )
-            if on_account:
+            outcome = finalize_sale_after_entry(
+                sale=sale,
+                user=request.user,
+                on_account=on_account,
+                paid_via_employee=paid_via_employee,
+            )
+            if outcome == "posted_debt":
+                messages.success(request, _("Recorded on account and posted to the customer."))
+            elif outcome in ("paid", "paid_employee"):
+                if paid_via_employee:
+                    messages.success(
+                        request,
+                        _("Sale recorded; payment credited to employee ledger."),
+                    )
+                else:
+                    messages.success(request, _("Sale recorded and marked paid."))
+            elif on_account:
                 messages.success(request, _("Recorded as on-account; awaiting management approval."))
             else:
                 messages.success(request, _("Sale recorded successfully."))
@@ -114,9 +197,11 @@ def employee_entry(request):
             "form": form,
             "title": _("New sale"),
             "recent_sales": recent,
+            "editable_sale_ids": editable_sale_ids,
             "product_groups": product_groups,
             "companies": companies,
             "payment_methods": payment_methods,
+            "acting_employee": acting_employee,
             "selected_company_id": str(company_id or ""),
             "selected_line_id": selected_line_id,
             "selected_product_id": selected_product_id,
@@ -130,12 +215,15 @@ def employee_entry(request):
 @employee_required
 @require_POST
 def employee_submit_customer_payment_submission(request):
+    if not AppSettings.load().sales_show_record_payment:
+        messages.error(request, _("Recording payments from the sales screen is disabled."))
+        return redirect("sales:employee_entry")
     form = EmployeeCustomerPaymentSubmissionForm(request.POST)
     if not form.is_valid():
         flash_form_errors(request, form)
         return redirect("sales:employee_entry")
     try:
-        submit_customer_payment_submission(
+        submission = submit_customer_payment_submission(
             customer=form.cleaned_data["customer"],
             amount=form.cleaned_data["amount"],
             payment_method=form.cleaned_data["payment_method"],
@@ -145,8 +233,75 @@ def employee_submit_customer_payment_submission(request):
     except ValueError as exc:
         messages.error(request, str(exc))
     else:
-        messages.success(request, _("Payment submitted for management approval."))
+        if finalize_payment_submission_after_entry(submission=submission, user=request.user):
+            messages.success(request, _("Payment recorded on the customer account."))
+        else:
+            messages.success(request, _("Payment submitted for management approval."))
     return redirect("sales:employee_entry")
+
+
+@employee_required
+@require_POST
+def employee_refresh_phone(request):
+    """Refresh a registered phone for staff — no public API rate limits."""
+    if not AppSettings.load().sales_show_refresh_phone:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": {
+                    "title": str(_("Error")),
+                    "body": str(_("Phone refresh is disabled on the sales screen.")),
+                },
+            },
+            status=403,
+        )
+    phone = (request.POST.get("phone") or "").strip()
+    if not phone:
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": {
+                    "title": str(_("Error")),
+                    "body": str(_("Phone number is required.")),
+                },
+            },
+            status=400,
+        )
+    if not is_valid_phone(phone):
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": {
+                    "title": str(_("Error")),
+                    "body": str(
+                        _(
+                            "Phone must be 10 digits and start with "
+                            "050, 051, 052, 053, 054, 055, or 058."
+                        )
+                    ),
+                },
+            },
+            status=400,
+        )
+    if not _phone_registered_for_refresh(phone):
+        return JsonResponse(
+            {
+                "status": "not_found",
+                "message": {
+                    "title": str(_("Not registered")),
+                    "body": str(
+                        _("This phone number is not registered in the system.")
+                    ),
+                },
+            },
+            status=400,
+        )
+    result = refresh_phone(
+        phone,
+        ip=get_client_ip(request) or None,
+        source=RefreshSource.EMPLOYEE,
+    )
+    return JsonResponse(_refresh_json_payload(result))
 
 
 @employee_required
@@ -167,6 +322,27 @@ def api_payer_by_number(request):
             "product_id": snap.get("product_id"),
         }
     )
+
+
+@employee_required
+@require_GET
+def api_sim_stock_preview(request):
+    """JSON: estimate SIM stock source for New SIM (no mutation)."""
+    if not AppSettings.load().sales_inventory_enabled:
+        return JsonResponse({"ok": False, "message": str(_("Inventory is disabled on the sales screen."))})
+    payer = (request.GET.get("payer") or "").strip()
+    product_id = (request.GET.get("product") or "").strip()
+    if not payer or not product_id:
+        return JsonResponse({"ok": False, "message": str(_("Payer name and product are required."))})
+    try:
+        product = Product.objects.select_related("line", "line__company").get(
+            pk=int(product_id), is_active=True
+        )
+    except (ValueError, Product.DoesNotExist):
+        return JsonResponse({"ok": False, "message": str(_("Product not found."))})
+    payload = preview_sim_stock_deduction(payer_name=payer, product_line=product.line)
+    payload["ok"] = True
+    return JsonResponse(payload)
 
 
 @employee_required
@@ -250,6 +426,7 @@ def employee_recent_sales(request):
         request.user, cleaned_filters=cleaned, default_date=default_date
     )
     sales = list(sales_qs)
+    editable_sale_ids = employee_editable_sale_ids(request.user)
 
     if date_from and date_to and date_from == date_to:
         scope_label = (
@@ -277,6 +454,7 @@ def employee_recent_sales(request):
         {
             "title": _("My entries"),
             "sales": sales,
+            "editable_sale_ids": editable_sale_ids,
             "filter_form": filter_form,
             "scope_label": scope_label,
             "is_default_today": is_default_today,
@@ -290,38 +468,44 @@ def employee_sale_edit(request, pk):
     its initial state (see ``Sale.is_employee_modifiable``)."""
     sale = get_object_or_404(
         Sale.objects.select_related(
-            "company", "product", "product__line", "payment_method"
+            "company", "product", "product__line", "payment_method", "employee_recipient"
         ),
         pk=pk,
         created_by=request.user,
     )
-    if not sale.is_employee_modifiable:
+    if not sale_is_employee_editable(sale, request.user):
         messages.error(
             request,
-            _("This entry has already been processed by management and can no longer be changed."),
+            _("You can only edit or delete your last %(count)s entries.")
+            % {"count": EMPLOYEE_RECENT_EDIT_LIMIT},
         )
         return redirect("sales:employee_recent_sales")
 
     if request.method == "POST":
-        form = ManagementSaleEditForm(request.POST, instance=sale)
+        form = EmployeeSaleEditForm(request.POST, instance=sale)
         if form.is_valid():
             try:
                 update_sale_fields(
                     sale=sale,
-                    payment_method=form.cleaned_data["payment_method"],
+                    payment_method=form.cleaned_data.get("payment_method"),
                     payer_name=form.cleaned_data["payer_name"],
                     reference_number=form.cleaned_data["reference_number"],
                     sell_price_actual=form.cleaned_data["sell_price_actual"],
                     notes=form.cleaned_data.get("notes") or "",
                     user=request.user,
                 )
+                if sale.paid_via_employee:
+                    from employees.services import sync_sales_payment_ledger_for_sale
+
+                    sale.refresh_from_db()
+                    sync_sales_payment_ledger_for_sale(sale=sale, user=request.user)
             except ValueError as exc:
                 messages.error(request, str(exc))
             else:
                 messages.success(request, _("Sale updated."))
                 return redirect("sales:employee_recent_sales")
     else:
-        form = ManagementSaleEditForm(instance=sale)
+        form = EmployeeSaleEditForm(instance=sale)
 
     return render(
         request,
@@ -340,8 +524,10 @@ def employee_sale_delete(request, pk):
     """Employee removes one of their own sales — same modifiability rule."""
     sale = get_object_or_404(Sale, pk=pk, created_by=request.user)
     htmx = is_htmx(request)
-    if not sale.is_employee_modifiable:
-        msg = _("This entry has already been processed by management and can no longer be deleted.")
+    if not sale_is_employee_editable(sale, request.user):
+        msg = _("You can only edit or delete your last %(count)s entries.") % {
+            "count": EMPLOYEE_RECENT_EDIT_LIMIT
+        }
         if htmx:
             return htmx_action_error(str(msg))
         messages.error(request, msg)

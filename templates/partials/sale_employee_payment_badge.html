@@ -1,0 +1,7 @@
+{% load i18n %}
+{% if sale.paid_via_employee %}
+<span
+  class="badge rounded-pill text-bg-primary rd-sale-employee-payment-badge ms-1"
+  title="{% if sale.employee_recipient %}{% blocktrans with name=sale.employee_recipient.display_name %}Payment to employee: {{ name }}{% endblocktrans %}{% else %}{% trans 'Payment to employee' %}{% endif %}"
+>{% trans "Payment to employee" %}</span>
+{% endif %}

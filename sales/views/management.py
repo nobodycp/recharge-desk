@@ -37,6 +37,9 @@ def management_sale_list(request):
         "product__line",
         "payment_method",
         "created_by",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
     ).order_by("-created_at")
     form = ManagementSaleFilterForm(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}
@@ -73,7 +76,16 @@ def pending_payments(request):
     """
     qs = (
         Sale.objects.filter(status=Sale.Status.PENDING, on_account=False)
-        .select_related("company", "product", "product__line", "payment_method", "created_by")
+        .select_related(
+            "company",
+            "product",
+            "product__line",
+            "payment_method",
+            "created_by",
+            "employee_recipient",
+            "employee_recipient__user",
+            "employee_recipient__user__profile",
+        )
     )
     form = ManagementSaleFilterForm(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}
@@ -105,7 +117,16 @@ def awaiting_approvals(request):
     """List on-account sales waiting for management approval."""
     qs = (
         Sale.objects.filter(status=Sale.Status.AWAITING)
-        .select_related("company", "product", "product__line", "customer", "created_by")
+        .select_related(
+            "company",
+            "product",
+            "product__line",
+            "customer",
+            "created_by",
+            "employee_recipient",
+            "employee_recipient__user",
+            "employee_recipient__user__profile",
+        )
         .order_by("-created_at")
     )
     q = (request.GET.get("q") or "").strip()

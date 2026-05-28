@@ -137,6 +137,18 @@ def customer_detail(request, pk):
         "payment_method", "created_by"
     ).order_by("-created_at")[:200]
 
+    from inventory.models import SimStockBalance
+
+    sim_balances = (
+        SimStockBalance.objects.filter(
+            location=SimStockBalance.Location.CUSTOMER,
+            customer=customer,
+            quantity__gt=0,
+        )
+        .select_related("product_line")
+        .order_by("product_line__name")
+    )
+
     return render(
         request,
         "customers/customer_detail.html",
@@ -152,6 +164,7 @@ def customer_detail(request, pk):
             "payment_form": CustomerPaymentForm(),
             "phone_form": CustomerPhoneForm(),
             "adjustment_form": CustomerAdjustmentForm(),
+            "sim_balances": sim_balances,
         },
     )
 

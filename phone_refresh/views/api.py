@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import secrets
 import time
 
@@ -25,14 +24,13 @@ from django.views.decorators.http import require_POST
 from accounts.permissions import management_required
 from phone_refresh.forms import ApiSettingsForm, ApiTokenForm
 from phone_refresh.models import ApiSettings, ApiToken, RefreshStatus
+from phone_refresh.validation import PHONE_RE, PHONE_VALIDATION_ERROR_AR
 from phone_refresh.views.public import public_refresh_api
 
 API_SETTINGS_TAB = "settings"
 API_TOKENS_TAB = "tokens"
 API_TEST_TAB = "test"
 API_VALID_TABS = {API_SETTINGS_TAB, API_TOKENS_TAB, API_TEST_TAB}
-
-PHONE_RE = re.compile(r"^05\d{8}$")
 
 
 def _api_url(active_tab: str) -> str:
@@ -190,7 +188,7 @@ def api_live_test(request):
 
     if not PHONE_RE.match(phone):
         return JsonResponse(
-            {"ok": False, "error": "الرقم يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام."},
+            {"ok": False, "error": PHONE_VALIDATION_ERROR_AR},
             status=400,
         )
 

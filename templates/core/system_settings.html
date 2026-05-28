@@ -10,10 +10,51 @@
       <form method="post" class="d-grid gap-3">
         {% csrf_token %}
 
-        <h2 class="rd-heading-lg mb-2">{% trans "Customers" %}</h2>
+        <h2 class="rd-heading-lg mb-2">{% trans "Approval workflows" %}</h2>
         <p class="rd-text-muted mb-3">
-          {% trans "Control whether on-account sales can create a new customer automatically when the payer name is not found." %}
+          {% trans "Turn a switch off to skip management approval for that queue. Sales and balances apply immediately." %}
         </p>
+
+        <div class="form-check form-switch">
+          {{ form.require_debt_request_approval }}
+          <label class="form-check-label fw-semibold" for="{{ form.require_debt_request_approval.id_for_label }}">
+            {{ form.require_debt_request_approval.label }}
+          </label>
+        </div>
+        <p class="small text-secondary mb-0">
+          {% trans "On-account sales posted to customers or distributors. When off, they are recorded on the customer account immediately." %}
+        </p>
+        {{ form.require_debt_request_approval.errors }}
+
+        <div class="form-check form-switch mt-2">
+          {{ form.require_settlement_request_approval }}
+          <label class="form-check-label fw-semibold" for="{{ form.require_settlement_request_approval.id_for_label }}">
+            {{ form.require_settlement_request_approval.label }}
+          </label>
+        </div>
+        <p class="small text-secondary mb-0">
+          {% trans "Customer settlement submissions from the sales screen. When off, the payment applies to the balance immediately." %}
+        </p>
+        {{ form.require_settlement_request_approval.errors }}
+
+        <div class="form-check form-switch mt-2">
+          {{ form.require_payment_request_approval }}
+          <label class="form-check-label fw-semibold" for="{{ form.require_payment_request_approval.id_for_label }}">
+            {{ form.require_payment_request_approval.label }}
+          </label>
+        </div>
+        <p class="small text-secondary mb-0">
+          {% trans "Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as soon as they are saved." %}
+        </p>
+        {{ form.require_payment_request_approval.errors }}
+
+        <hr class="my-2">
+
+        <h2 class="rd-heading-lg mb-2">{% trans "Sales entry screen" %}</h2>
+        <p class="rd-text-muted mb-3">
+          {% trans "Controls what employees see and how sales are recorded on the entry form." %}
+        </p>
+
         <div class="form-check form-switch">
           {{ form.allow_sales_auto_create_customer }}
           <label class="form-check-label fw-semibold" for="{{ form.allow_sales_auto_create_customer.id_for_label }}">
@@ -21,9 +62,36 @@
           </label>
         </div>
         <p class="small text-secondary mb-0">
-          {% trans "When off, employees must pick an existing customer — create new customers only from the Customers screen." %}
+          {% trans "When off, on-account sales require an existing customer — create customers from the Customers screen." %}
         </p>
         {{ form.allow_sales_auto_create_customer.errors }}
+
+        <div class="form-check form-switch mt-2">
+          {{ form.sales_inventory_enabled }}
+          <label class="form-check-label fw-semibold" for="{{ form.sales_inventory_enabled.id_for_label }}">
+            {{ form.sales_inventory_enabled.label }}
+          </label>
+        </div>
+        <p class="small text-secondary mb-0">
+          {% trans "When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere is unchanged." %}
+        </p>
+        {{ form.sales_inventory_enabled.errors }}
+
+        <div class="form-check form-switch mt-2">
+          {{ form.sales_show_refresh_phone }}
+          <label class="form-check-label fw-semibold" for="{{ form.sales_show_refresh_phone.id_for_label }}">
+            {{ form.sales_show_refresh_phone.label }}
+          </label>
+        </div>
+        {{ form.sales_show_refresh_phone.errors }}
+
+        <div class="form-check form-switch mt-2">
+          {{ form.sales_show_record_payment }}
+          <label class="form-check-label fw-semibold" for="{{ form.sales_show_record_payment.id_for_label }}">
+            {{ form.sales_show_record_payment.label }}
+          </label>
+        </div>
+        {{ form.sales_show_record_payment.errors }}
 
         <hr class="my-2">
 

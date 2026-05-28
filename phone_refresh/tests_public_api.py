@@ -55,7 +55,7 @@ class PublicRefreshApiTokenGateTests(TestCase):
             raw_excerpt="",
         )
         response = self._post(
-            {"phone_number": "0591234567", "client": RefreshSource.WEB},
+            {"phone_number": "0501234567", "client": RefreshSource.WEB},
             headers={"HTTP_AUTHORIZATION": f"Bearer {raw}"},
         )
         self.assertEqual(response.status_code, 200)
@@ -76,19 +76,19 @@ class PublicRefreshApiTokenGateTests(TestCase):
             raw_excerpt="",
         )
         response = self._post(
-            {"phone_number": "0591234567", "client": RefreshSource.WEB},
+            {"phone_number": "0501234567", "client": RefreshSource.WEB},
         )
         self.assertEqual(response.status_code, 200)
         refresh_mock.assert_called_once()
 
     def test_api_client_requires_token(self):
-        response = self._post({"phone_number": "0591234567"})
+        response = self._post({"phone_number": "0501234567"})
         self.assertEqual(response.status_code, 401)
         self.assertEqual(json.loads(response.content), {"error": "missing_token"})
 
     def test_web_client_requires_token_when_anonymous_page_disabled(self):
         response = self._post(
-            {"phone_number": "0591234567", "client": RefreshSource.WEB},
+            {"phone_number": "0501234567", "client": RefreshSource.WEB},
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(json.loads(response.content), {"error": "missing_token"})
@@ -123,7 +123,7 @@ class PublicRefreshApiClientIpTests(TestCase):
         )
         request = self.factory.post(
             reverse("phone_refresh:public_api"),
-            data=json.dumps({"phone_number": "0591234567", "client": RefreshSource.WEB}),
+            data=json.dumps({"phone_number": "0501234567", "client": RefreshSource.WEB}),
             content_type="application/json",
             REMOTE_ADDR="203.0.113.10",
             HTTP_CF_CONNECTING_IP="198.51.100.20",
@@ -150,7 +150,7 @@ class PublicRefreshApiClientIpTests(TestCase):
             "REMOTE_ADDR": "203.0.113.10",
             "HTTP_CF_CONNECTING_IP": "198.51.100.20",
         }
-        payload = json.dumps({"phone_number": "0591234567", "client": RefreshSource.WEB})
+        payload = json.dumps({"phone_number": "0501234567", "client": RefreshSource.WEB})
 
         first = self.factory.post(
             reverse("phone_refresh:public_api"),

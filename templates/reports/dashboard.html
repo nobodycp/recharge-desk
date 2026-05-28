@@ -302,7 +302,7 @@
             <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
               <td class="text-secondary small text-nowrap">{{ s.created_at }}</td>
               <td class="fw-medium">{{ s.company.name }}</td>
-              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}</td>
+              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
               <td class="text-secondary small">{{ s.created_by.username }}</td>
               <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
               <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>

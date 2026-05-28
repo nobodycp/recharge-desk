@@ -33,8 +33,10 @@ INSTALLED_APPS = [
     "companies",
     "sales",
     "expenses",
+    "inventory",
     "reports.apps.ReportsConfig",
     "customers",
+    "employees",
     "audit",
     "phone_refresh",
 ]
@@ -89,6 +91,7 @@ TEMPLATES = [
                 "core.context_processors.theme",
                 "core.context_processors.site_branding",
                 "core.context_processors.nav_notifications",
+                "core.context_processors.app_settings",
             ],
         },
     },
