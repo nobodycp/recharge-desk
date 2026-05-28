@@ -94,7 +94,9 @@ class SiteBranding(models.Model):
         if SITE_BRANDING_CACHE_TTL:
             cached = cache.get(SITE_BRANDING_CACHE_KEY)
             if cached is not None:
-                return cached
+                if cls.objects.filter(pk=cached.pk).exists():
+                    return cached
+                cache.delete(SITE_BRANDING_CACHE_KEY)
         instance, _created = cls.objects.get_or_create(pk=1)
         if SITE_BRANDING_CACHE_TTL:
             cache.set(SITE_BRANDING_CACHE_KEY, instance, timeout=SITE_BRANDING_CACHE_TTL)

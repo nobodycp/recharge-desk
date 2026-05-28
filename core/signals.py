@@ -12,8 +12,11 @@ from __future__ import annotations
 from django.apps import apps
 from django.db.models.signals import post_delete, post_save
 
+from django.core.cache import cache
+
 from core.kpi_cache import bump_kpi_version
 from core.context_processors import bump_nav_notifications_version
+from core.models import SITE_BRANDING_CACHE_KEY
 
 # Tables whose changes affect at least one dashboard KPI. Adding to
 # this list is the only step needed when a new revenue/cost source is
@@ -34,6 +37,10 @@ def _bump(*_args, **_kwargs):
 
 def _bump_nav_notifications(*_args, **_kwargs):
     bump_nav_notifications_version()
+
+
+def _clear_site_branding_cache(*_args, **_kwargs):
+    cache.delete(SITE_BRANDING_CACHE_KEY)
 
 
 def _connect():
@@ -68,6 +75,14 @@ def _connect():
             dispatch_uid=f"nav-notif-bump-delete-{app_label}.{model_name}",
             weak=False,
         )
+
+    site_branding = apps.get_model("core", "SiteBranding")
+    post_delete.connect(
+        _clear_site_branding_cache,
+        sender=site_branding,
+        dispatch_uid="site-branding-cache-clear-delete",
+        weak=False,
+    )
 
 
 _connect()
