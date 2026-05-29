@@ -500,6 +500,7 @@ def rule_delete(request, pk: int):
 SOURCE_FILTER_CHOICES: list[tuple[str, str]] = [
     (RefreshSource.WEB.value, "الويب"),
     (RefreshSource.API.value, "API"),
+    (RefreshSource.EMPLOYEE.value, "المبيعات"),
     (RefreshSource.INTERNAL_TEST.value, "اختبار داخلي"),
     (RefreshSource.LEGACY.value, "قديم"),
 ]

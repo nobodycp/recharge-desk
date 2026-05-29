@@ -184,7 +184,7 @@ class RefreshSource(models.TextChoices):
 
     API = "api", "API"
     WEB = "web", "Web"
-    EMPLOYEE = "employee", "Employee"
+    EMPLOYEE = "employee", "المبيعات"
     INTERNAL_TEST = "internal_test", "Internal Test"
     LEGACY = "legacy", "Legacy"
 

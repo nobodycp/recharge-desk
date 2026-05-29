@@ -8,7 +8,7 @@
       class="btn btn-sm btn-outline-primary rd-open-employee-modal"
       data-bs-toggle="modal"
       data-bs-target="#rdEmployeeRefreshModal"
-    >{% trans "Refresh phone" %}</button>
+    >{% trans "Refresh numbers" %}</button>
   {% endif %}
   {% if app_settings.sales_show_record_payment %}
     <button
@@ -295,15 +295,22 @@
   data-msg-phone="{{ _('Enter a phone number.')|escapejs }}"
   data-msg-invalid-phone="{{ _('Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058.')|escapejs }}"
   data-msg-working="{{ _('Refreshing…')|escapejs }}"
+  data-msg-wait-with-time="{{ _('{body} (last refresh {time} ago)')|escapejs }}"
+  data-msg-less-than-minute="{{ _('less than a minute')|escapejs }}"
+  data-msg-hour="{{ _('hour')|escapejs }}"
+  data-msg-hours="{{ _('hours')|escapejs }}"
+  data-msg-minute="{{ _('minute')|escapejs }}"
+  data-msg-minutes="{{ _('minutes')|escapejs }}"
+  data-msg-time-and="{{ _('and')|escapejs }}"
 >
   <div class="modal-dialog modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header py-2">
-        <h2 class="modal-title h6 mb-0" id="rdEmployeeRefreshModalLabel">{% trans "Refresh phone number" %}</h2>
+        <h2 class="modal-title h6 mb-0" id="rdEmployeeRefreshModalLabel">{% trans "Refresh numbers" %}</h2>
         <button type="button" class="btn-close rd-refresh-close-x" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
       </div>
       <div class="modal-body">
-        <p class="small text-secondary mb-3 rd-pay-sub-note">{% trans "Only phone or shipment numbers already saved in sales can be refreshed. No public-site rate limits apply here." %}</p>
+        <p class="small text-secondary mb-3 rd-pay-sub-note">{% trans "Same routing and messages as the public refresh page, without rate limits." %}</p>
         <div class="mb-3 rd-pay-sub-block">
           <label class="form-label small fw-semibold" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
           <div class="input-group input-group-sm">
@@ -591,6 +598,41 @@
     return el && el.value ? el.value : "";
   }
 
+  function formatElapsedSeconds(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 60) {
+      return modal.getAttribute("data-msg-less-than-minute") || "";
+    }
+    var totalMinutes = Math.floor(seconds / 60);
+    var hours = Math.floor(totalMinutes / 60);
+    var minutes = totalMinutes % 60;
+    var hourWord = hours === 1
+      ? (modal.getAttribute("data-msg-hour") || "hour")
+      : (modal.getAttribute("data-msg-hours") || "hours");
+    var minuteWord = minutes === 1
+      ? (modal.getAttribute("data-msg-minute") || "minute")
+      : (modal.getAttribute("data-msg-minutes") || "minutes");
+    var andWord = modal.getAttribute("data-msg-time-and") || "and";
+    if (hours > 0 && minutes > 0) {
+      return hours + " " + hourWord + " " + andWord + " " + minutes + " " + minuteWord;
+    }
+    if (hours > 0) {
+      return hours + " " + hourWord;
+    }
+    return minutes + " " + minuteWord;
+  }
+
+  function buildRefreshBody(data) {
+    var msg = (data && data.message) ? data.message : {};
+    var body = msg.body || "";
+    var status = (data && data.status) || "";
+    var secs = data && data.seconds_since_last_refresh;
+    if (status === "wait" && typeof secs === "number" && secs > 0 && body) {
+      var tpl = modal.getAttribute("data-msg-wait-with-time") || "{body} (last refresh {time} ago)";
+      return tpl.replace("{body}", body).replace("{time}", formatElapsedSeconds(secs));
+    }
+    return body;
+  }
+
   function hideResult() {
     if (resultBox) resultBox.classList.add("d-none");
     if (resultTitle) resultTitle.textContent = "";
@@ -674,7 +716,7 @@
       })
       .then(function (data) {
         var msg = (data && data.message) ? data.message : {};
-        showResult(msg.title || "", msg.body || "");
+        showResult(msg.title || "", buildRefreshBody(data));
       })
       .catch(function () {
         showResult("", modal.getAttribute("data-msg-phone") || "");

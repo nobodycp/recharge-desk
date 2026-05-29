@@ -1020,17 +1020,48 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertContains(resp, "rdEmployeeRefreshModal")
         self.assertContains(resp, reverse("sales:employee_refresh_phone"))
 
-    def test_rejects_unregistered_phone(self):
-        resp = self._csrf_post({"phone": "0509999999"})
-        self.assertEqual(resp.status_code, 400)
+    def test_unregistered_phone_uses_public_refresh_flow(self):
+        from phone_refresh.models import RefreshStatus
+
+        status = RefreshStatus.objects.get(code="not_found")
+        with patch("sales.views.employee.refresh_phone") as refresh_mock:
+            refresh_mock.return_value = type(
+                "R",
+                (),
+                {
+                    "status": status,
+                    "message_title": "رقم غير موجود",
+                    "message_body": "لم يتم العثور على رقمك في النظام.",
+                    "last_refresh_at": None,
+                    "seconds_since_last_refresh": None,
+                },
+            )()
+            resp = self._csrf_post({"phone": "0509999999"})
+        self.assertEqual(resp.status_code, 200)
         payload = resp.json()
         self.assertEqual(payload["status"], "not_found")
+        self.assertEqual(payload["message"]["body"], "لم يتم العثور على رقمك في النظام.")
 
-    def test_rejects_invalid_prefix(self):
+    @patch("sales.views.employee.refresh_phone")
+    def test_invalid_prefix_delegates_to_refresh_phone(self, refresh_mock):
+        from phone_refresh.models import RefreshStatus
+
+        status = RefreshStatus.objects.get(code="not_found")
+        refresh_mock.return_value = type(
+            "R",
+            (),
+            {
+                "status": status,
+                "message_title": "رقم غير موجود",
+                "message_body": "لم يتم العثور على رقمك في النظام.",
+                "last_refresh_at": None,
+                "seconds_since_last_refresh": None,
+            },
+        )()
         resp = self._csrf_post({"phone": "0591234567"})
-        self.assertEqual(resp.status_code, 400)
-        payload = resp.json()
-        self.assertEqual(payload["status"], "error")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], "not_found")
+        refresh_mock.assert_called_once()
 
     @patch("sales.views.employee.refresh_phone")
     def test_refreshes_registered_phone(self, refresh_mock):

@@ -216,9 +216,9 @@ def refresh_phone(
     }:
         source = RefreshSource.WEB
 
-    skip_cooldown = internal_test or source == RefreshSource.EMPLOYEE
+    skip_cooldown = internal_test
 
-    # 1. Service-off short-circuit (skipped during internal test).
+    # 1. Service-off short-circuit (skipped during internal test only).
     if not settings.service_enabled and not internal_test:
         return _record_and_return(
             phone=phone,
@@ -249,7 +249,7 @@ def refresh_phone(
             source=source,
         )
 
-    # 3. Cooldown (skipped during internal test and employee panel refreshes).
+    # 3. Cooldown (skipped during internal test only).
     last_log = _last_successful_refresh(phone)
     if not skip_cooldown and last_log:
         elapsed_sec = (timezone.now() - last_log.created_at).total_seconds()

@@ -19,7 +19,6 @@ from customers.services import resolve_or_create_customer_for_sale, submit_custo
 from customers.views._shared import flash_form_errors
 from phone_refresh.models import RefreshSource, SystemSettings
 from phone_refresh.services.refresh_service import refresh_phone
-from phone_refresh.validation import is_valid_phone
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
 from sales.employee_editing import (
@@ -59,18 +58,6 @@ def _build_product_groups(company_id):
                 {"line": line, "variants": variants, "default_product_id": default_product_id}
             )
     return groups
-
-
-def _phone_registered_for_refresh(phone: str) -> bool:
-    """True when a non-cancelled sale exists with this reference number."""
-    ref = (phone or "").strip()
-    if not ref:
-        return False
-    return (
-        Sale.objects.exclude(status=Sale.Status.CANCELLED)
-        .filter(reference_number=ref)
-        .exists()
-    )
 
 
 def _refresh_json_payload(result) -> dict:
@@ -246,59 +233,19 @@ def employee_submit_customer_payment_submission(request):
 @employee_required
 @require_POST
 def employee_refresh_phone(request):
-    """Refresh a registered phone for staff — no public API rate limits."""
+    """Staff refresh — same flow as the public site, without API rate limits."""
     if not AppSettings.load().sales_show_refresh_phone:
         return JsonResponse(
             {
                 "status": "error",
                 "message": {
                     "title": str(_("Error")),
-                    "body": str(_("Phone refresh is disabled on the sales screen.")),
+                    "body": str(_("Number refresh is disabled on the sales screen.")),
                 },
             },
             status=403,
         )
     phone = (request.POST.get("phone") or "").strip()
-    if not phone:
-        return JsonResponse(
-            {
-                "status": "error",
-                "message": {
-                    "title": str(_("Error")),
-                    "body": str(_("Phone number is required.")),
-                },
-            },
-            status=400,
-        )
-    if not is_valid_phone(phone):
-        return JsonResponse(
-            {
-                "status": "error",
-                "message": {
-                    "title": str(_("Error")),
-                    "body": str(
-                        _(
-                            "Phone must be 10 digits and start with "
-                            "050, 051, 052, 053, 054, 055, or 058."
-                        )
-                    ),
-                },
-            },
-            status=400,
-        )
-    if not _phone_registered_for_refresh(phone):
-        return JsonResponse(
-            {
-                "status": "not_found",
-                "message": {
-                    "title": str(_("Not registered")),
-                    "body": str(
-                        _("This phone number is not registered in the system.")
-                    ),
-                },
-            },
-            status=400,
-        )
     result = refresh_phone(
         phone,
         ip=get_client_ip(request) or None,

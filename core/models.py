@@ -171,7 +171,7 @@ class AppSettings(models.Model):
         ),
     )
     sales_show_refresh_phone = models.BooleanField(
-        _("Show phone refresh on sales entry"),
+        _("Show number refresh on sales entry"),
         default=True,
     )
     sales_show_record_payment = models.BooleanField(

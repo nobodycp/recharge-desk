@@ -129,9 +129,8 @@ can break interactivity.
   .pr-source-badge--web      { background: #e7f1ff; color: #0a58ca; border-color: #b6d4fe; }
   .pr-source-badge--api      { background: #d1f4e0; color: #0a6b3a; border-color: #a3e3bf; }
   .pr-source-badge--internal { background: #efe5ff; color: #5a2ea6; border-color: #d8c4ff; }
+  .pr-source-badge--employee  { background: #fff3cd; color: #856404; border-color: #ffecb5; }
   .pr-source-badge--legacy   { background: #eef0f2; color: #5a6268; border-color: #d6d8db; }
-
-  .pr-bulk-toolbar {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -258,6 +257,8 @@ can break interactivity.
                     <span class="pr-source-badge pr-source-badge--api">API</span>
                   {% elif log.source == "internal_test" %}
                     <span class="pr-source-badge pr-source-badge--internal">داخلي</span>
+                  {% elif log.source == "employee" %}
+                    <span class="pr-source-badge pr-source-badge--employee">المبيعات</span>
                   {% elif log.source == "legacy" %}
                     <span class="pr-source-badge pr-source-badge--legacy">قديم</span>
                   {% else %}
@@ -300,6 +301,8 @@ can break interactivity.
               <span class="pr-source-badge pr-source-badge--api">API</span>
             {% elif log.source == "internal_test" %}
               <span class="pr-source-badge pr-source-badge--internal">داخلي</span>
+            {% elif log.source == "employee" %}
+              <span class="pr-source-badge pr-source-badge--employee">المبيعات</span>
             {% elif log.source == "legacy" %}
               <span class="pr-source-badge pr-source-badge--legacy">قديم</span>
             {% endif %}
@@ -463,6 +466,7 @@ can break interactivity.
   var SOURCE_BADGE_CONFIG = {
     web:           { cls: 'pr-source-badge--web',      label: 'Web' },
     api:           { cls: 'pr-source-badge--api',      label: 'API' },
+    employee:      { cls: 'pr-source-badge--employee', label: 'المبيعات' },
     internal_test: { cls: 'pr-source-badge--internal', label: 'داخلي' },
     legacy:        { cls: 'pr-source-badge--legacy',   label: 'قديم' }
   };
