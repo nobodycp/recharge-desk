@@ -7,6 +7,7 @@ from django.test import RequestFactory, TestCase, override_settings
 from phone_refresh.middleware import (
     PhoneRefreshSubdomainMiddleware,
     _is_public_refresh_path,
+    _is_public_subdomain_root,
     _strip_language_prefix,
 )
 from phone_refresh.models import SiteSettings
@@ -21,6 +22,12 @@ class SubdomainPathHelpersTests(TestCase):
 
     def test_public_refresh_path_with_locale_prefix(self):
         self.assertTrue(_is_public_refresh_path("/ar/phone-refresh/api/refresh/"))
+
+    def test_public_subdomain_root_paths(self):
+        self.assertTrue(_is_public_subdomain_root("/"))
+        self.assertTrue(_is_public_subdomain_root("/ar"))
+        self.assertTrue(_is_public_subdomain_root("/ar/"))
+        self.assertFalse(_is_public_subdomain_root("/ar/management/"))
 
 
 @override_settings(ALLOWED_HOSTS=["rn.prosim.ps", "s.prosim.ps", "testserver"])
@@ -55,3 +62,10 @@ class PhoneRefreshSubdomainMiddlewareTests(TestCase):
         request.META["HTTP_HOST"] = "rn.prosim.ps"
         response = self.middleware(request)
         self.assertEqual(response.status_code, 404)
+
+    def test_bare_ar_prefix_serves_public_page_on_subdomain(self):
+        request = self.factory.get("/ar/")
+        request.META["HTTP_HOST"] = "rn.prosim.ps"
+        response = self.middleware(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"refresh-api", response.content)

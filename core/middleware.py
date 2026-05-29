@@ -139,6 +139,21 @@ class DefaultLanguagePrefixRedirectMiddleware:
         if not lang or lang == settings.LANGUAGE_CODE:
             return self.get_response(request)
 
+        # rn.prosim.ps should open the public refresh page without forcing
+        # /ar/ — that prefix is for the admin app on the main host.
+        try:
+            from phone_refresh.middleware import (
+                configured_public_subdomain_host,
+                is_public_refresh_surface_path,
+            )
+
+            host = request.get_host().split(":")[0].lower()
+            if host == configured_public_subdomain_host():
+                if is_public_refresh_surface_path(path):
+                    return self.get_response(request)
+        except Exception:
+            pass
+
         return redirect(f"/{lang}{path}")
 
 

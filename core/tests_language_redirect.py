@@ -39,6 +39,22 @@ class DefaultLanguagePrefixRedirectMiddlewareTests(TestCase):
         response = self.middleware(request)
         self.assertEqual(response.status_code, 200)
 
+    @override_settings(ALLOWED_HOSTS=["rn.prosim.ps", "testserver"])
+    def test_public_subdomain_root_is_not_forced_to_ar_prefix(self):
+        from phone_refresh.models import SiteSettings
+
+        SiteSettings.objects.update_or_create(
+            pk=1,
+            defaults={"public_subdomain": "rn.prosim.ps", "redirect_main_to_subdomain": False},
+        )
+        from phone_refresh.middleware import clear_site_settings_cache
+
+        clear_site_settings_cache()
+
+        request = self.factory.get("/", HTTP_HOST="rn.prosim.ps")
+        response = self.middleware(request)
+        self.assertEqual(response.status_code, 200)
+
     @override_settings(LANGUAGE_CODE="ar")
     def test_no_redirect_when_default_matches_language_code(self):
         AppSettings.objects.update_or_create(pk=1, defaults={"default_language": "ar"})

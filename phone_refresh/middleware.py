@@ -84,6 +84,27 @@ def _is_public_refresh_path(path: str) -> bool:
     return _strip_language_prefix(path).startswith(_PUBLIC_PATH_PREFIX)
 
 
+def _is_public_subdomain_root(path: str) -> bool:
+    """True for ``/``, ``/ar``, ``/ar/``, etc. — the bare public refresh entry."""
+    normalized = _strip_language_prefix(path or "/").rstrip("/") or "/"
+    return normalized == "/"
+
+
+def configured_public_subdomain_host() -> str:
+    """Return the configured public refresh hostname (lowercase) or ``""``."""
+    from phone_refresh.models import SiteSettings
+
+    try:
+        return (SiteSettings.get_solo().public_subdomain or "").strip().lower()
+    except Exception:
+        return ""
+
+
+def is_public_refresh_surface_path(path: str) -> bool:
+    """Paths that belong on the public refresh host (root + page + API)."""
+    return _is_public_subdomain_root(path) or _is_public_refresh_path(path)
+
+
 class PhoneRefreshSubdomainMiddleware:
     """Gate the public refresh page behind a configurable subdomain."""
 
@@ -147,12 +168,8 @@ class PhoneRefreshSubdomainMiddleware:
         if host == configured:
             # ── On the public host: serve ONLY the public refresh
             # surface (+ static / media). Everything else is 404.
-            if path == "/" or path == "":
-                # Serve the public refresh page directly so the URL stays
-                # at the bare subdomain root instead of bouncing through a
-                # 302 to /phone-refresh/. Imported lazily to mirror the
-                # ``SiteSettings`` import below — avoids any app-registry
-                # ordering surprises during early bootstrap.
+            if _is_public_subdomain_root(path):
+                # Serve the public refresh page at /, /ar, /ar/, etc.
                 from phone_refresh.views.public import public_refresh_page
 
                 return public_refresh_page(request)
