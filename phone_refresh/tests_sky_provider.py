@@ -1,101 +1,59 @@
-import os
-from unittest.mock import MagicMock, patch
+import json
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 
-from phone_refresh.providers.captcha.anticaptcha import (
-    AntiCaptchaError,
-    _normalized_min_score,
-    solve_recaptcha_v3_anticaptcha,
-)
-from phone_refresh.providers.sky import SkyProvider
+from phone_refresh.providers.sky import SkyProvider, _SKY_SYSTEM_ERROR_REASONS
 
 
-class AntiCaptchaMinScoreTests(SimpleTestCase):
-    def test_snaps_to_allowed_values(self):
-        self.assertEqual(_normalized_min_score("0.9"), 0.9)
-        self.assertEqual(_normalized_min_score("0.25"), 0.3)
-        self.assertEqual(_normalized_min_score("0.75"), 0.7)
-
-
-class AntiCaptchaApiKeyTests(SimpleTestCase):
-    def test_missing_api_key_raises(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("ANTICAPTCHA_API_KEY", None)
-            with self.assertRaises(AntiCaptchaError):
-                solve_recaptcha_v3_anticaptcha()
-
-
-class AntiCaptchaSolveTests(SimpleTestCase):
-    @patch("phone_refresh.providers.captcha.anticaptcha.time.sleep")
-    @patch("phone_refresh.providers.captcha.anticaptcha.requests.post")
-    def test_create_and_poll_returns_token(self, post_mock, _sleep_mock):
-        create_resp = MagicMock()
-        create_resp.raise_for_status.return_value = None
-        create_resp.json.return_value = {"errorId": 0, "taskId": 99}
-
-        ready_resp = MagicMock()
-        ready_resp.raise_for_status.return_value = None
-        ready_resp.json.return_value = {
-            "errorId": 0,
-            "status": "ready",
-            "solution": {"gRecaptchaResponse": "anticaptcha-token"},
+class SkyProviderTests(SimpleTestCase):
+    @patch("phone_refresh.providers.sky.execute_refresh")
+    def test_success_returns_json_without_error(self, execute_mock):
+        execute_mock.return_value = {
+            "success": True,
+            "message": "تم التحديث بنجاح - رقم العملية: 4520994",
+            "phone": "0523971893",
+            "reason": "success",
+            "task_id": "4520994",
         }
+        raw = SkyProvider().call("0523971893")
+        self.assertIsNone(raw.error)
+        self.assertEqual(raw.status_code, 200)
+        self.assertEqual(raw.json["reason"], "success")
 
-        post_mock.side_effect = [create_resp, ready_resp]
+    @patch("phone_refresh.providers.sky.execute_refresh")
+    def test_not_found_is_business_response(self, execute_mock):
+        execute_mock.return_value = {
+            "success": False,
+            "message": "لم يتم التحديث",
+            "phone": "0555544011",
+            "reason": "not_found",
+        }
+        raw = SkyProvider().call("0555544011")
+        self.assertIsNone(raw.error)
+        self.assertEqual(raw.status_code, 422)
+        self.assertIn("not_found", raw.text)
 
-        token = solve_recaptcha_v3_anticaptcha(api_key="test-key", timeout_sec=30)
-        self.assertEqual(token, "anticaptcha-token")
-        self.assertEqual(post_mock.call_count, 2)
+    @patch("phone_refresh.providers.sky.execute_refresh")
+    def test_proxy_error_sets_raw_error(self, execute_mock):
+        execute_mock.return_value = {
+            "success": False,
+            "message": "فشل الاتصال — تحقق من البروكسي",
+            "phone": "0555544071",
+            "reason": "proxy_error",
+            "error": "Failed to detect egress IP: timeout",
+        }
+        raw = SkyProvider().call("0555544071")
+        self.assertEqual(raw.status_code, 0)
+        self.assertIn("timeout", raw.error or "")
 
+    def test_system_error_reasons_complete(self):
+        self.assertIn("proxy_error", _SKY_SYSTEM_ERROR_REASONS)
+        self.assertIn("login_error", _SKY_SYSTEM_ERROR_REASONS)
 
-class SkyProviderCaptchaTests(SimpleTestCase):
-    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "firefox"}, clear=False)
-    @patch("phone_refresh.providers.sky.solve_sky_recaptcha_v3")
-    def test_default_backend_uses_firefox(self, solve_mock):
-        solve_mock.return_value = "firefox-token"
-        provider = SkyProvider()
-
-        token = provider._fetch_captcha_token()
-
-        self.assertEqual(token, "firefox-token")
-        solve_mock.assert_called_once_with()
-
-    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "anticaptcha"})
-    @patch("phone_refresh.providers.sky.solve_recaptcha_v3_anticaptcha")
-    def test_anticaptcha_backend_when_configured(self, solve_mock):
-        solve_mock.return_value = "anticaptcha-token"
-        provider = SkyProvider()
-
-        token = provider._fetch_captcha_token()
-
-        self.assertEqual(token, "anticaptcha-token")
-        solve_mock.assert_called_once_with()
-
-    @patch.dict("os.environ", {"SKY_CAPTCHA_BACKEND": "bypass"})
-    @patch("phone_refresh.providers.sky.RecaptchaV3Bypass")
-    def test_bypass_backend_when_configured(self, bypass_cls):
-        bypass_cls.return_value.response.return_value = "bypass-token"
-        provider = SkyProvider()
-
-        token = provider._fetch_captcha_token()
-
-        self.assertEqual(token, "bypass-token")
-        bypass_cls.assert_called_once()
-
-
-class SkyProviderPollTests(SimpleTestCase):
-    @patch("phone_refresh.providers.sky.requests.get")
-    def test_poll_stops_on_terminal_failure(self, get_mock):
-        get_mock.return_value = MagicMock(
-            json=lambda: {
-                "success": False,
-                "message": "لقد قمت بتحديث الرقم قبل قليل الرجاء الانتظار",
-            }
-        )
-        provider = SkyProvider()
-
-        result = provider._poll_status("test-id")
-
-        self.assertFalse(result["success"])
-        get_mock.assert_called_once()
+    @patch("phone_refresh.providers.sky.execute_refresh")
+    def test_response_text_is_json(self, execute_mock):
+        payload = {"success": True, "reason": "success", "phone": "0555544071", "message": "ok"}
+        execute_mock.return_value = payload
+        raw = SkyProvider().call("0555544071")
+        self.assertEqual(json.loads(raw.text), payload)

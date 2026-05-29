@@ -1,0 +1,114 @@
+{
+  "test_case": "success_refresh",
+  "phone": "0555544071",
+  "iccid": "899720206491380371",
+  "executed_at": "2026-05-28",
+  "portal_ui": {
+    "title_ar": "تم إصدار المهمة",
+    "body_ar": "4520823 - رقم المهمة"
+  },
+  "our_response": {
+    "success": true,
+    "message": "تم التحديث بنجاح"
+  },
+  "success_rule": "إذا وُجد data[0].ID في CreateNewTaskWithBalanceCheck → نجاح بدون تحقق من الرقم",
+  "api_chain": [
+    {
+      "step": 1,
+      "apiName": "GetSubscriberCosts",
+      "endpoint": "POST https://sales-ps.sky5g.ps:8888/ipa/apis/json/internal/generic/v2",
+      "wildcards": ["0555544071", "1481", "321", "0", "change-status", "0"],
+      "response": {
+        "message": "",
+        "result": "SUCCESS",
+        "columnList": ["ORDER_COST", "ORDER_REFUND", "ORDER_TOTAL_COST"],
+        "data": [
+          {
+            "ORDER_COST": "0",
+            "ORDER_REFUND": "0",
+            "ORDER_TOTAL_COST": "0"
+          }
+        ],
+        "rowsAffected": 0
+      }
+    },
+    {
+      "step": 2,
+      "apiName": "ValidateTaskDataBeforeCreate",
+      "wildcards": ["0555544071", ""],
+      "response": {
+        "message": "",
+        "result": "SUCCESS",
+        "columnList": ["CHECK_RESULT"],
+        "data": [
+          {
+            "CHECK_RESULT": "[{\"check_name\":\"ordered-msisdn-status\",\"check_result\":\"1\"}, {\"check_name\":\"ordered-portability-number-as-existing-temporary-tasks\",\"check_result\":\"0\"}, {\"check_name\":\"ordered-portability-number-existing-tasks\",\"check_result\":\"1\"}, {\"check_name\":\"ordered-portability-number-already-onboarded\",\"check_result\":\"1\"}, {\"check_name\":\"temporary-msisdn-status\",\"check_result\":\"0\"}, {\"check_name\":\"temporary-msisdn-existing-tasks-as-secondary\",\"check_result\":\"0\"}, {\"check_name\":\"temporary-msisdn-existing-tasks-as-primary\",\"check_result\":\"0\"}]"
+          }
+        ],
+        "rowsAffected": 0
+      }
+    },
+    {
+      "step": 3,
+      "apiName": "GetSubscriberStatus",
+      "wildcards": ["511677"],
+      "note": "يُستدعى قبل الإنشاء للتأكد أن حالة الشريحة لم تتغير"
+    },
+    {
+      "step": 4,
+      "apiName": "CreateNewTaskWithBalanceCheck",
+      "wildcards": [
+        "change-status",
+        1550,
+        "511677",
+        "<taskDescription HTML>",
+        "<taskDetails JSON>"
+      ],
+      "response_expected": {
+        "message": "",
+        "result": "SUCCESS",
+        "columnList": ["ID"],
+        "data": [
+          {
+            "ID": "4520823"
+          }
+        ],
+        "rowsAffected": 0
+      },
+      "note": "الاستجابة مأخوذة من سلوك الواجهة (showTaskNumber) بعد التنفيذ الفعلي"
+    }
+  ],
+  "taskDetails": {
+    "actionName": "change-status",
+    "actionType": "تعديل زبون",
+    "existingData": {
+      "subscriber_id": "511677",
+      "msisdn": "0555544071",
+      "iccid": "899720206491380371",
+      "rate_plan_id": "321",
+      "mno_id": "1",
+      "status_id": "301",
+      "period_id": "",
+      "subscriberName": "حمزه",
+      "customer_id": "1492",
+      "subCustomer_id": "1481"
+    },
+    "newData": {
+      "subscriber_id": "511677",
+      "msisdn": "0555544071",
+      "iccid": "899720206491380371",
+      "rate_plan_id": "321",
+      "mno_id": "1",
+      "status_id": "",
+      "period_id": "0",
+      "subscriber_name": "حمزه",
+      "customer_id": "1481",
+      "sub_customer_id": "1481",
+      "price": "55",
+      "sub_customer_obligo_update_value": "0.00",
+      "orderRefund": "0.00",
+      "orderCost": "0.00",
+      "orderTotalCost": "0.00"
+    }
+  }
+}

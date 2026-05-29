@@ -1,0 +1,35 @@
+{
+  "test_case": "disconnected_and_not_charged",
+  "phone": "0502251459",
+  "executed_at": "2026-05-28",
+  "subscriber_before": {
+    "status_id": "1304",
+    "status_name": "مفصول-استقبال مكالمات",
+    "days_to_end_of_plan": "-27",
+    "rate_plan_end_date": "02/05/2026",
+    "mno_name": "بلفون.1",
+    "subscriber_name": "نسرين النحال"
+  },
+  "classification": {
+    "note": "نُرجع status_name و status_id من Sky فقط — بدون تصنيف إضافي"
+  },
+  "expected_response_after_fix": {
+    "success": false,
+    "message": "لم يتم التحديث",
+    "phone": "0502251459",
+    "reason": "not_active",
+    "status_name": "مفصول-استقبال مكالمات",
+    "status_id": "1304"
+  },
+  "refresh_response_before_fix": {
+    "success": true,
+    "message": "تم التحديث بنجاح - رقم العملية: 4521077",
+    "task_id": "4521077",
+    "phone": "0502251459"
+  },
+  "sky_create_api": {
+    "result": "SUCCESS",
+    "data": [{ "ID": "4521077" }],
+    "note": "Sky يصدر مهمة حتى للرقم المفصول/غير المشحون — التصنيف من بيانات الزبون قبل التحديث"
+  }
+}

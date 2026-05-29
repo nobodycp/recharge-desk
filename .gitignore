@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+sky_lab/.env
+sky_lab/.sky_session.json
 *.pem
 *.install-config.json
 install.config.json

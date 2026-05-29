@@ -96,27 +96,23 @@ GUNICORN_THREADS=2
 GUNICORN_TIMEOUT=60
 DJANGO_LOG_LEVEL=INFO
 
-# Sky reCAPTCHA via Playwright Firefox + residential proxy (Runtime only)
-SKY_CAPTCHA_BACKEND=firefox
-SKY_PLAYWRIGHT_HEADLESS=1
-SKY_BROWSER_WAIT_SEC=0
-SKY_PLAYWRIGHT_PAGE_TIMEOUT_MS=45000
-SKY_BROWSER_MAX_AGE_SEC=600
-SKY_PLAYWRIGHT_PROXY=http://LOGIN_s_skyprod:PASSWORD@res.geonix.com:10000
+# Sky Sales Portal (sales-ps.sky5g.ps) — Runtime only
+SKY_SALES_USER=your_username
+SKY_SALES_PASSWORD=your_password
+SKY_SALES_TOTP_SECRET=XXXXXXXXXXXXXXXX
+SKY_SALES_PROXY=http://LOGIN_s_skysales:PASSWORD@res.geonix.com:10000
+SKY_SALES_SESSION_FILE=/app/data/.sky_sales_session.json
 ```
 
-Use a **sticky session** in the Geonix username (e.g. `LOGIN_s_skyprod`) so
-captcha and Sky API share the same exit IP. Optional geo: `LOGIN_c_IL_s_skyprod`.
+Use a **sticky session** in the Geonix username (e.g. `LOGIN_s_skysales`) so
+login and refresh share the same exit IP. Optional geo: `LOGIN_c_IL_s_skysales`.
 
-Set **`SKY_PLAYWRIGHT_PROXY`** from your Geonix residential list. Use **Runtime
-only** in Coolify (never bake into the Docker image). Optional:
-`SKY_CAPTCHA_BACKEND=anticaptcha` with `ANTICAPTCHA_API_KEY`, or
-`SKY_CAPTCHA_BACKEND=bypass` for local dev without a browser.
+Set **`SKY_SALES_PROXY`** from your Geonix residential list. Use **Runtime
+only** in Coolify (never bake into the Docker image). Mount a persistent volume
+at `/app/data` so `SKY_SALES_SESSION_FILE` survives redeploys.
 
-> **Sky provider**: Playwright Firefox runs inside the container (official
-> `playwright/python:v1.60.0-noble` base image — keep `playwright==1.60.0` in
-> `requirements.txt` in sync). Typical captcha solve: ~5–15s with browser
-> reuse. Residential proxy required — datacenter IPs are rejected by Sky.
+> **Sky provider**: HTTP login + TOTP to `sales-ps.sky5g.ps:8888` — no browser
+> required. Residential proxy required — datacenter IPs are rejected by Sky.
 
 > **Important**: `DJANGO_ALLOWED_HOSTS` must list every hostname Coolify
 > will route to this container. Forget one and Django answers `400 Bad
@@ -230,4 +226,4 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
-| Sky refresh fails with captcha error | anti-captcha key missing/invalid or Sky rejected token | Set `ANTICAPTCHA_API_KEY` (Runtime only); check Runtime Logs for `captcha:` errors; verify balance on anti-captcha.com. |
+| Sky refresh fails with login/proxy error | Missing credentials, bad TOTP, or proxy rejected | Set `SKY_SALES_USER`, `SKY_SALES_PASSWORD`, `SKY_SALES_TOTP_SECRET`, and `SKY_SALES_PROXY` (Runtime only); check Runtime Logs for `proxy_error` / `login_error`. |
