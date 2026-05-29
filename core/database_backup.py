@@ -66,8 +66,13 @@ def export_bytes() -> tuple[bytes, str, str]:
         return payload, f"recharge-desk-{stamp}.sqlite3", "application/x-sqlite3"
 
     if info["is_postgresql"] and pg_tools_available():
-        payload, ext = _export_pg_custom()
-        return payload, f"recharge-desk-{stamp}{ext}", "application/octet-stream"
+        try:
+            payload, ext = _export_pg_custom()
+            return payload, f"recharge-desk-{stamp}{ext}", "application/octet-stream"
+        except RuntimeError:
+            # pg_dump may exist (e.g. CI image) while the server is unreachable;
+            # fall back to Django dumpdata using the active app connection.
+            pass
 
     payload = _export_fixture_gz()
     return payload, f"recharge-desk-{stamp}.json.gz", "application/gzip"
