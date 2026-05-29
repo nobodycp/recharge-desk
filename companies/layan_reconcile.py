@@ -85,10 +85,12 @@ class LayanReconcileResult:
     amount_mismatches: list[ReconcilePhoneRow]
     matched: list[ReconcilePhoneRow]
     rd_only: list[ReconcilePhoneRow]
+    logged_other_supplier: list[ReconcilePhoneRow]
     total_not_recorded: Decimal
     total_split_settlements: Decimal
     total_amount_mismatch: Decimal
     total_rd_only: Decimal
+    total_logged_other_supplier: Decimal
     estimated_deficit: Decimal
     balance_gap: Decimal
     row_count: int
@@ -172,10 +174,9 @@ def _rd_sales_by_phone(
     *,
     company=None,
 ) -> tuple[dict[str, Decimal], dict[str, list[str]]]:
-    """Sum cost snapshots by normalized phone across RD sales in the period.
+    """Sum cost snapshots by normalized phone for sales in the period.
 
-    Layan report matching uses all suppliers so a sale logged under Sky (etc.)
-    still counts as recorded. ``company`` limits the queryset when needed.
+    Pass ``company`` to scope matching to one supplier (e.g. Layan only).
     """
     from sales.models import Sale
 
@@ -253,15 +254,18 @@ def reconcile_layan_report(
         for credit in pending_credits.values():
             layan_end += credit
 
-    rd_by_phone, rd_suppliers_by_phone = _rd_sales_by_phone(period_from, period_to)
+    rd_by_phone, rd_layan_suppliers = _rd_sales_by_phone(
+        period_from, period_to, company=company
+    )
+    rd_other_by_phone, rd_other_suppliers = _rd_sales_by_phone(period_from, period_to)
     rd_dep, rd_ded, rd_adj = _rd_ledger_totals(company, period_from, period_to)
 
-    def _supplier_note(ph: str) -> str:
-        names = rd_suppliers_by_phone.get(ph) or []
-        if not names:
-            return ""
-        if len(names) == 1 and names[0] == company.name:
-            return ""
+    def _other_supplier_note(ph: str) -> str:
+        names = [
+            n
+            for n in (rd_other_suppliers.get(ph) or [])
+            if n and n != company.name
+        ]
         return ", ".join(names)
 
     not_recorded: list[ReconcilePhoneRow] = []
@@ -269,6 +273,7 @@ def reconcile_layan_report(
     amount_mismatches: list[ReconcilePhoneRow] = []
     matched: list[ReconcilePhoneRow] = []
     rd_only: list[ReconcilePhoneRow] = []
+    logged_other_supplier: list[ReconcilePhoneRow] = []
 
     all_phones = set(layan_phones) | set(rd_by_phone)
 
@@ -283,8 +288,6 @@ def reconcile_layan_report(
         rd_net = rd_by_phone.get(ph, Decimal("0"))
         gap = layan_net_ph - rd_net
 
-        supplier_note = _supplier_note(ph)
-
         if lay is None and rd_net > 0:
             rd_only.append(
                 ReconcilePhoneRow(
@@ -296,9 +299,9 @@ def reconcile_layan_report(
                     rd_net=rd_net,
                     gap=-rd_net,
                     category="rd_only",
-                    category_label=str(_("In system only")),
+                    category_label=str(_("In Layan sales only")),
                     lines=[],
-                    rd_suppliers=supplier_note,
+                    rd_suppliers=company.name,
                 )
             )
             continue
@@ -321,12 +324,31 @@ def reconcile_layan_report(
                     category="split",
                     category_label=str(_("Settlement on disconnected number")),
                     lines=lines,
-                    rd_suppliers=supplier_note,
+                    rd_suppliers=company.name,
                 )
             )
             continue
 
         if rd_net == 0 and layan_net_ph > Decimal("0"):
+            other_note = _other_supplier_note(ph)
+            other_net = rd_other_by_phone.get(ph, Decimal("0")) - rd_net
+            if other_note and other_net > Decimal("0"):
+                logged_other_supplier.append(
+                    ReconcilePhoneRow(
+                        raw=raw,
+                        phone=ph,
+                        layan_net=layan_net_ph,
+                        layan_charges=layan_chg,
+                        layan_refunds=layan_ref,
+                        rd_net=other_net,
+                        gap=layan_net_ph - other_net,
+                        category="other_supplier",
+                        category_label=str(_("Logged under another supplier")),
+                        lines=lines,
+                        rd_suppliers=other_note,
+                    )
+                )
+                continue
             not_recorded.append(
                 ReconcilePhoneRow(
                     raw=raw,
@@ -337,17 +359,14 @@ def reconcile_layan_report(
                     rd_net=rd_net,
                     gap=gap,
                     category="not_recorded",
-                    category_label=str(_("Not recorded in system")),
+                    category_label=str(_("Not recorded under Layan")),
                     lines=lines,
-                    rd_suppliers=supplier_note,
+                    rd_suppliers=company.name,
                 )
             )
             continue
 
         if abs(gap) > Decimal("0.01") and rd_net > 0:
-            label = str(_("Amount mismatch"))
-            if supplier_note:
-                label = str(_("Amount mismatch (logged under another supplier)"))
             amount_mismatches.append(
                 ReconcilePhoneRow(
                     raw=raw,
@@ -358,9 +377,9 @@ def reconcile_layan_report(
                     rd_net=rd_net,
                     gap=gap,
                     category="mismatch",
-                    category_label=label,
+                    category_label=str(_("Amount mismatch")),
                     lines=lines,
-                    rd_suppliers=supplier_note,
+                    rd_suppliers=company.name,
                 )
             )
             continue
@@ -378,7 +397,7 @@ def reconcile_layan_report(
                     category="matched",
                     category_label=str(_("Matched")),
                     lines=lines,
-                    rd_suppliers=supplier_note,
+                    rd_suppliers=company.name,
                 )
             )
 
@@ -386,6 +405,7 @@ def reconcile_layan_report(
     total_split = sum((r.layan_net for r in split_settlements), Decimal("0"))
     total_mismatch = sum((abs(r.gap) for r in amount_mismatches), Decimal("0"))
     total_rd_only = sum((r.rd_net for r in rd_only), Decimal("0"))
+    total_other = sum((r.layan_net for r in logged_other_supplier), Decimal("0"))
 
     balance_gap = Decimal("0")
     if layan_end is not None:
@@ -408,10 +428,12 @@ def reconcile_layan_report(
         amount_mismatches=amount_mismatches,
         matched=matched,
         rd_only=rd_only,
+        logged_other_supplier=logged_other_supplier,
         total_not_recorded=total_not,
         total_split_settlements=total_split,
         total_amount_mismatch=total_mismatch,
         total_rd_only=total_rd_only,
+        total_logged_other_supplier=total_other,
         estimated_deficit=estimated_deficit,
         row_count=row_count,
         balance_gap=balance_gap,

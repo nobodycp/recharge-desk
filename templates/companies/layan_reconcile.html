@@ -12,7 +12,7 @@
 <div class="app-card card mb-4">
   <div class="card-body p-4">
     <p class="text-secondary small mb-3">
-      {% trans "Upload the same charges report you receive from Layan (Excel). We compare each phone number to sales anywhere in Recharge Desk (any supplier) for the selected period, and highlight gaps against Layan charges." %}
+      {% trans "Upload the Layan charges report (Excel). Matching uses Layan sales in Recharge Desk only; numbers logged under other suppliers are shown separately." %}
     </p>
     <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
       {% csrf_token %}
@@ -78,9 +78,15 @@
     </div>
   </div>
 
-  {% trans "Numbers not recorded in system" as title_not_recorded %}
-  {% trans "Charged on Layan but no sale for this number in Recharge Desk (any supplier) in this period." as help_not_recorded %}
+  {% trans "Numbers not recorded under Layan" as title_not_recorded %}
+  {% trans "Charged on Layan portal but no matching Layan sale in this period." as help_not_recorded %}
   {% include "companies/partials/layan_reconcile_table.html" with section_title=title_not_recorded section_rows=result.not_recorded section_total=result.total_not_recorded section_help=help_not_recorded %}
+
+  {% if result.logged_other_supplier %}
+    {% trans "Logged under another supplier" as title_other %}
+    {% trans "Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix the supplier on the sale." as help_other %}
+    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_other section_rows=result.logged_other_supplier section_total=result.total_logged_other_supplier section_help=help_other %}
+  {% endif %}
 
   {% trans "Settlements on disconnected numbers" as title_split %}
   {% trans "Activation charge plus refund on Layan; small net kept on portal." as help_split %}
@@ -93,8 +99,8 @@
   {% endif %}
 
   {% if result.rd_only %}
-    {% trans "In system only" as title_rd_only %}
-    {% trans "Sales in Recharge Desk without matching charge lines in the uploaded report." as help_rd_only %}
+    {% trans "In Layan sales only" as title_rd_only %}
+    {% trans "Layan sale in Recharge Desk with no matching charge line in the uploaded Layan report." as help_rd_only %}
     {% include "companies/partials/layan_reconcile_table.html" with section_title=title_rd_only section_rows=result.rd_only section_total=result.total_rd_only section_help=help_rd_only %}
   {% endif %}
 

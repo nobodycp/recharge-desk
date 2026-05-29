@@ -2944,6 +2944,38 @@ msgid ""
 msgstr ""
 "مخصوم على ليان دون أي بيع لهذا الرقم في النظام (أي مورد) خلال هذه الفترة."
 
+msgid "Not recorded under Layan"
+msgstr "لم يُسجّل تحت ليان"
+
+msgid "Charged on Layan portal but no matching Layan sale in this period."
+msgstr "مخصوم على بوابة ليان دون بيع ليان مطابق في هذه الفترة."
+
+msgid "Logged under another supplier"
+msgstr "مسجّل تحت مورد آخر"
+
+msgid ""
+"Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix "
+"the supplier on the sale."
+msgstr ""
+"مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على البيع."
+
+msgid "In Layan sales only"
+msgstr "في مبيعات ليان فقط"
+
+msgid ""
+"Layan sale in Recharge Desk with no matching charge line in the uploaded "
+"Layan report."
+msgstr ""
+"بيع ليان في النظام بلا سطر خصم مطابق في كشف ليان المرفوع."
+
+msgid ""
+"Upload the Layan charges report (Excel). Matching uses Layan sales in "
+"Recharge Desk only; numbers logged under other suppliers are shown "
+"separately."
+msgstr ""
+"ارفع كشف خصومات ليان. المطابقة تعتمد مبيعات ليان في النظام فقط؛ الأرقام "
+"المسجّلة تحت مورد آخر تظهر في قسم منفصل."
+
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
 

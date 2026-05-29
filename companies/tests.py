@@ -239,9 +239,43 @@ class LayanReconcileTests(TestCase):
             period_to=date(2026, 5, 31),
         )
         self.assertEqual(len(result.not_recorded), 0)
-        self.assertEqual(len(result.amount_mismatches), 1)
-        self.assertEqual(result.amount_mismatches[0].phone, "0535767941")
-        self.assertEqual(result.amount_mismatches[0].rd_suppliers, "Sky")
+        self.assertEqual(len(result.amount_mismatches), 0)
+        self.assertEqual(len(result.logged_other_supplier), 1)
+        self.assertEqual(result.logged_other_supplier[0].phone, "0535767941")
+        self.assertEqual(result.logged_other_supplier[0].rd_suppliers, "Sky")
+
+    def test_rd_only_lists_layan_sales_not_other_suppliers(self):
+        sky = Company.objects.create(name="Sky", opening_balance=_decimal(0))
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=sky, name="L"),
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        from sales.models import PaymentMethod, Sale
+
+        pm = PaymentMethod.objects.create(name="cash3")
+        Sale.objects.create(
+            company=sky,
+            product=product,
+            reference_number="0599999999",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        buf = self._minimal_workbook([])
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.rd_only), 0)
 
     def test_layan_reconcile_view_requires_layan(self):
         other = Company.objects.create(name="Other Co", opening_balance=_decimal(0))
