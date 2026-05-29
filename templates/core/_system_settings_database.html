@@ -41,6 +41,12 @@
       <input type="hidden" name="form" value="import">
       <input type="hidden" name="tab" value="{{ database_tab_id }}">
 
+      {% if import_form.non_field_errors %}
+        <div class="alert alert-danger mb-0">
+          {{ import_form.non_field_errors }}
+        </div>
+      {% endif %}
+
       <div>
         {{ import_form.backup_file.label_tag }}
         {{ import_form.backup_file }}

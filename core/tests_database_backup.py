@@ -117,3 +117,33 @@ class DatabaseBackupViewTests(TestCase):
             filename="backup.json.gz",
         )
         self.assertTrue(User.objects.filter(username="mgr_db").exists())
+
+    def test_import_full_dump_with_profiles(self):
+        """Regression: auto-created profiles must not block loaddata profiles."""
+        from django.core.management import call_command
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as tmp:
+            call_command(
+                "dumpdata",
+                "auth.user",
+                "accounts.userprofile",
+                "core.appsettings",
+                natural_foreign=True,
+                natural_primary=True,
+                indent=2,
+                stdout=tmp,
+            )
+            path = tmp.name
+
+        try:
+            with open(path, "rb") as fh:
+                raw = gzip.compress(fh.read())
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+        database_backup.import_upload(
+            SimpleUploadedFile("backup.json.gz", raw, content_type="application/gzip"),
+            filename="backup.json.gz",
+        )
+        self.assertEqual(UserProfile.objects.count(), 1)
+        self.assertEqual(User.objects.filter(username="mgr_db").count(), 1)

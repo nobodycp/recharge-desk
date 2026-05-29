@@ -324,37 +324,51 @@ class DashboardChartsTests(_ReportsBase):
 # ============================================================ Company report
 class CompanyReportTests(_ReportsBase):
     def test_empty_company_report_renders(self):
-        r = self.client.get(reverse("reports:company_report", args=[self.company.pk]))
+        r = self.client.get(reverse("companies:company_detail", args=[self.company.pk]))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context["company"], self.company)
         self.assertEqual(r.context["sales_page"].paginator.count, 0)
 
-    def test_sales_and_ledger_grids_are_hx_boosted(self):
-        """Both sub-grids (#company-sales-grid, #company-ledger-grid) use
-        hx-boost so sort headers and pagination links update each table
-        in place. Each carries its own hx-vals partial=... so the view
-        knows which fragment to re-render."""
+    def test_legacy_company_report_url_redirects(self):
         r = self.client.get(reverse("reports:company_report", args=[self.company.pk]))
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(
+            r.url,
+            reverse("companies:company_detail", args=[self.company.pk]),
+        )
+
+    def test_tabs_and_hx_boost(self):
+        r = self.client.get(reverse("companies:company_detail", args=[self.company.pk]))
+        self.assertContains(r, "rd-section-tabs")
         self.assertContains(r, 'id="company-sales-grid"')
         self.assertContains(r, 'id="company-ledger-grid"')
-        self.assertContains(r, 'hx-target="#company-sales-grid"')
-        self.assertContains(r, 'hx-target="#company-ledger-grid"')
-        self.assertContains(r, '"partial": "sales"')
-        self.assertContains(r, '"partial": "ledger"')
+        r_sales = self.client.get(
+            reverse("companies:company_detail", args=[self.company.pk]),
+            {"tab": "sales"},
+        )
+        self.assertContains(r_sales, 'hx-target="#company-sales-grid"')
+        self.assertContains(r_sales, "Balance before")
+        r_ledger = self.client.get(
+            reverse("companies:company_detail", args=[self.company.pk]),
+            {"tab": "ledger"},
+        )
+        self.assertContains(r_ledger, 'hx-target="#company-ledger-grid"')
+        self.assertContains(r_ledger, "Phone / ref")
 
     def test_deposit_post_records_transaction(self):
-        url = reverse("reports:company_report", args=[self.company.pk])
+        url = reverse("companies:company_detail", args=[self.company.pk])
         before = self.company.current_balance
         r = self.client.post(
             url,
             {"dep-amount": "100", "dep-notes": "test deposit", "dep-submit": "1"},
         )
         self.assertEqual(r.status_code, 302)
+        self.assertIn("tab=general", r.url)
         self.company.refresh_from_db()
         self.assertEqual(self.company.current_balance, before + _d(100))
 
     def test_unknown_company_returns_404(self):
-        r = self.client.get(reverse("reports:company_report", args=[99999]))
+        r = self.client.get(reverse("companies:company_detail", args=[99999]))
         self.assertEqual(r.status_code, 404)
 
     def test_period_filter_scopes_aggregates_and_tables(self):
@@ -387,7 +401,7 @@ class CompanyReportTests(_ReportsBase):
         )
 
         today = timezone.localdate()
-        url = reverse("reports:company_report", args=[self.company.pk])
+        url = reverse("companies:company_detail", args=[self.company.pk])
         r = self.client.get(
             url,
             {
@@ -415,7 +429,7 @@ class CompanyReportTests(_ReportsBase):
         record_manual_deposit(
             company=self.company, amount=_d(500), notes="x", user=self.user
         )
-        r = self.client.get(reverse("reports:company_report", args=[self.company.pk]))
+        r = self.client.get(reverse("companies:company_detail", args=[self.company.pk]))
         self.assertEqual(r.status_code, 200)
         self.assertFalse(r.context["period_active"])
         self.assertIsNone(r.context["balance_as_of"])

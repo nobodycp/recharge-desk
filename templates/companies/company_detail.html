@@ -1,0 +1,74 @@
+{% extends "base_management.html" %}
+{% load i18n humanize ui_tags %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ company.name }}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Supplier balance and sales" %}</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{% url 'companies:company_list' %}">{% trans "Back to companies" %}</a>
+    {% if company.phone_refresh_provider == 'layan' or 'layan' in company.name|lower %}
+      <a class="btn btn-outline-primary" href="{% url 'companies:layan_reconcile' company.pk %}">{% trans "Layan report matching" %}</a>
+    {% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'companies:company_edit' company.pk %}">{% trans "Edit" %}</a>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == tab_general %}active{% endif %}"
+       href="{% url 'companies:company_detail' company.pk %}?tab={{ tab_general }}" role="tab">
+      {% trans "General" %}
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == tab_sales %}active{% endif %}"
+       href="{% querystring tab=tab_sales sales_page=1 ledger_page=1 %}" role="tab">
+      {% trans "Sales details" %}
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == tab_ledger %}active{% endif %}"
+       href="{% querystring tab=tab_ledger sales_page=1 ledger_page=1 %}" role="tab">
+      {% trans "Balance ledger" %}
+    </a>
+  </li>
+</ul>
+
+{% if active_tab == tab_general %}
+  {% include "companies/partials/company_detail_general.html" %}
+{% elif active_tab == tab_sales %}
+  <div class="position-relative">
+    <div id="cr-sales-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
+    <div
+      id="company-sales-grid"
+      class="rd-datagrid"
+      hx-boost="true"
+      hx-target="#company-sales-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-indicator="#cr-sales-htmx"
+      hx-vals='{"partial": "sales", "tab": "sales"}'
+    >
+      {% include "reports/partials/company_report_sales.html" %}
+    </div>
+  </div>
+{% else %}
+  <div class="position-relative">
+    <div id="cr-ledger-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
+    <div
+      id="company-ledger-grid"
+      class="rd-datagrid"
+      hx-boost="true"
+      hx-target="#company-ledger-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-indicator="#cr-ledger-htmx"
+      hx-vals='{"partial": "ledger", "tab": "ledger"}'
+    >
+      {% include "reports/partials/company_report_ledger.html" %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

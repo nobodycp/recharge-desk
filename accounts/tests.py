@@ -94,7 +94,7 @@ class PermissionMatrixTests(TestCase):
             reverse("reports:dashboard"),
             reverse("reports:profit_report"),
             reverse("reports:sales_report"),
-            reverse("reports:company_report", args=[c]),
+            reverse("companies:company_detail", args=[c]),
             # accounts
             reverse("accounts:user_list"),
             reverse("accounts:user_create"),

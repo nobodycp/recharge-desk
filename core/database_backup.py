@@ -13,12 +13,16 @@ import os
 import shutil
 import subprocess
 import tempfile
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import connection, connections
+from django.db.models.signals import post_save
 from django.utils.translation import gettext as _
 
 # Sessions are excluded so a restore does not resurrect stale login cookies.
@@ -150,6 +154,20 @@ def import_upload(uploaded, *, filename: str) -> None:
     )
 
 
+@contextmanager
+def _suspend_user_profile_auto_create():
+    """``loaddata`` loads ``auth.user`` before profiles; disable the signal that
+    auto-creates a profile on user save, otherwise ``UserProfile`` rows collide."""
+    from accounts.signals import ensure_profile
+
+    User = get_user_model()
+    post_save.disconnect(ensure_profile, sender=User)
+    try:
+        yield
+    finally:
+        post_save.connect(ensure_profile, sender=User)
+
+
 def _import_fixture(raw: bytes, *, gzipped: bool) -> None:
     if gzipped:
         try:
@@ -166,7 +184,10 @@ def _import_fixture(raw: bytes, *, gzipped: bool) -> None:
     try:
         connection.close()
         call_command("flush", interactive=False, verbosity=0)
-        call_command("loaddata", path, verbosity=0)
+        with _suspend_user_profile_auto_create():
+            call_command("loaddata", path, verbosity=0)
+    except CommandError as exc:
+        raise RuntimeError(str(exc)) from exc
     finally:
         Path(path).unlink(missing_ok=True)
         connection.close()

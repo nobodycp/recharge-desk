@@ -6,10 +6,16 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 
 from accounts.permissions import management_required
-from companies.forms import CompanyForm, ProductLineForm, ProductVariantForm
+from companies.forms import CompanyForm, LayanReportReconcileForm, ProductLineForm, ProductVariantForm
+from companies.layan_reconcile import (
+    company_supports_layan_reconcile,
+    parse_pending_credits,
+    reconcile_layan_report,
+)
 from companies.models import Company, Product, ProductLine
 from companies.query_utils import apply_company_list_ordering
 from core.pagination import paginate_request
+from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
 
 
@@ -59,6 +65,59 @@ def company_create(request):
         request,
         "companies/company_form.html",
         {"form": form, "title": _("New company")},
+    )
+
+
+@management_required
+def company_detail(request, pk):
+    company = get_object_or_404(Company, pk=pk)
+    return render_company_statement(request, company)
+
+
+@management_required
+def layan_reconcile(request, pk):
+    company = get_object_or_404(Company, pk=pk)
+    if not company_supports_layan_reconcile(company):
+        messages.error(request, _("Layan report matching is only available for Layan."))
+        return redirect("companies:company_detail", pk=pk)
+
+    form = LayanReportReconcileForm(request.POST or None, request.FILES or None)
+    result = None
+    if request.method == "POST" and form.is_valid():
+        try:
+            result = reconcile_layan_report(
+                company,
+                form.cleaned_data["report_file"],
+                period_from=form.cleaned_data.get("period_from"),
+                period_to=form.cleaned_data.get("period_to"),
+                pending_credits=parse_pending_credits(
+                    form.cleaned_data.get("pending_credits") or ""
+                ),
+            )
+            messages.success(
+                request,
+                _("Report processed (%(rows)s rows).") % {"rows": result.row_count},
+            )
+        except ImportError:
+            messages.error(
+                request,
+                _("Excel support is not installed (openpyxl). Contact your administrator."),
+            )
+        except Exception as exc:
+            messages.error(
+                request,
+                _("Could not read the report: %(error)s") % {"error": exc},
+            )
+
+    return render(
+        request,
+        "companies/layan_reconcile.html",
+        {
+            "company": company,
+            "form": form,
+            "result": result,
+            "title": _("Layan report matching"),
+        },
     )
 
 

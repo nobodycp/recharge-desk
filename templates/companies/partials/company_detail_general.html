@@ -1,0 +1,144 @@
+{% load i18n humanize ui_tags %}
+<div class="rd-card mb-4">
+  <div class="rd-card-body rd-filter-bar">
+    <form method="get" class="row g-3 align-items-end">
+      <input type="hidden" name="tab" value="{{ tab_general }}">
+      <div class="col-md-4">
+        <label class="form-label" for="cr-period-from">{% trans "Date from" %}</label>
+        <input type="date" class="form-control" id="cr-period-from" name="period_from" value="{% if period_from %}{{ period_from|date:'Y-m-d' }}{% endif %}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="cr-period-to">{% trans "Date to" %}</label>
+        <input type="date" class="form-control" id="cr-period-to" name="period_to" value="{% if period_to %}{{ period_to|date:'Y-m-d' }}{% endif %}">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}?tab={{ tab_general }}">{% trans "Reset (all time)" %}</a>
+      </div>
+    </form>
+    {% if period_active %}
+      <div class="rd-text-muted small mt-2">
+        {% blocktrans with start=period_from|default:"—" end=period_to|default:"—" %}Showing data from {{ start }} to {{ end }}.{% endblocktrans %}
+      </div>
+    {% else %}
+      <div class="rd-text-muted small mt-2">{% trans "Showing all-time data. Pick a date range above to scope the cards and tables below." %}</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Opening balance" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-muted">{{ company.opening_balance|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Total deposits" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-success">{{ deposits_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-label mb-1">{% trans "Consumed (sales)" %}</div>
+      <div class="h4 fw-bold tabular-nums kpi-warning">{{ consumed_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      {% if period_active and balance_as_of != None %}
+        <div class="rd-label mb-1">{% blocktrans with d=period_to %}Balance on {{ d }}{% endblocktrans %}</div>
+        <div class="h4 fw-bold tabular-nums {% if balance_as_of < 0 %}kpi-danger{% elif balance_as_of == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ balance_as_of|intcomma }}</div>
+        <div class="rd-text-muted small">{% trans "Now" %}: <span class="fw-semibold">{{ company.current_balance|intcomma }}</span></div>
+      {% else %}
+        <div class="rd-label mb-1">{% trans "Current balance" %}</div>
+        <div class="h4 fw-bold tabular-nums {% if company.current_balance < 0 %}kpi-danger{% elif company.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ company.current_balance|intcomma }}</div>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-text-muted mb-1">{% trans "Reversals (cancellations)" %}</div>
+      <div class="h5 fw-bold tabular-nums kpi-warning">{{ reversals_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-text-muted mb-1">{% trans "Adjustments" %}</div>
+      <div class="h5 fw-bold tabular-nums kpi-info">{{ adjustments_total|intcomma }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="rd-card h-100"><div class="rd-card-body">
+      <div class="rd-text-muted mb-1">{% trans "Sales count (non-cancelled)" %}</div>
+      <div class="h5 fw-bold tabular-nums kpi-info">{{ agg.cnt|default:0|intcomma }}</div>
+      <div class="rd-text-muted small">{% trans "Total sell" %}: <span class="kpi-info fw-semibold">{{ agg.total_sell|default:0|intcomma }}</span></div>
+      <div class="rd-text-muted small">{% trans "Total profit" %}: <span class="{% if agg.total_profit and agg.total_profit < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-semibold">{{ agg.total_profit|default:0|intcomma }}</span></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="rd-card mb-4">
+      <div class="rd-card-header fw-semibold">{% trans "Manual balance top-up" %}</div>
+      <div class="rd-card-body">
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="tab" value="{{ tab_general }}">
+          {{ deposit_form.amount.label_tag }} {{ deposit_form.amount }}
+          {{ deposit_form.notes.label_tag }} {{ deposit_form.notes }}
+          <button class="btn btn-primary" type="submit" name="dep-submit" value="1">{% trans "Save deposit" %}</button>
+        </form>
+      </div>
+    </div>
+    <div class="rd-card">
+      <div class="rd-card-header fw-semibold">{% trans "Balance adjustment" %}</div>
+      <div class="rd-card-body">
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="tab" value="{{ tab_general }}">
+          {{ adj_form.signed_amount.label_tag }} {{ adj_form.signed_amount }}
+          {{ adj_form.notes.label_tag }} {{ adj_form.notes }}
+          <button class="btn btn-outline-primary" type="submit" name="adj-submit" value="1">{% trans "Save adjustment" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="position-relative mb-3">
+      <div id="cr-sales-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
+      <div
+        id="company-sales-grid"
+        class="rd-datagrid"
+        hx-boost="true"
+        hx-target="#company-sales-grid"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-indicator="#cr-sales-htmx"
+        hx-vals='{"partial": "sales", "tab": "general"}'
+      >
+        {% include "reports/partials/company_report_sales.html" %}
+      </div>
+    </div>
+    <div class="position-relative">
+      <div id="cr-ledger-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
+      <div
+        id="company-ledger-grid"
+        class="rd-datagrid"
+        hx-boost="true"
+        hx-target="#company-ledger-grid"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-indicator="#cr-ledger-htmx"
+        hx-vals='{"partial": "ledger", "tab": "general"}'
+      >
+        {% include "reports/partials/company_report_ledger.html" %}
+      </div>
+    </div>
+  </div>
+</div>

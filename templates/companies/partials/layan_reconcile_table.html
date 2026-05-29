@@ -1,0 +1,53 @@
+{% load i18n %}
+{% if not hide_title %}
+<div class="app-card card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <strong>{{ section_title }}</strong>
+      {% if section_help %}<div class="small text-secondary fw-normal">{{ section_help }}</div>{% endif %}
+    </div>
+    {% if section_total is not None %}
+      <span class="badge text-bg-secondary">{% trans "Total" %}: {{ section_total|floatformat:2 }}</span>
+    {% endif %}
+  </div>
+{% else %}
+<div class="table-responsive">
+{% endif %}
+  {% if section_rows %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>{% trans "Number" %}</th>
+          <th>{% trans "RD supplier" %}</th>
+          <th class="text-end">{% trans "Layan net" %}</th>
+          <th class="text-end">{% trans "RD net" %}</th>
+          <th class="text-end">{% trans "Gap" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section_rows %}
+        <tr>
+          <td>
+            <span class="font-monospace">{{ row.phone }}</span>
+            {% if row.raw != row.phone %}<span class="small text-secondary">({{ row.raw }})</span>{% endif %}
+          </td>
+          <td class="small text-secondary">
+            {% if row.rd_suppliers %}{{ row.rd_suppliers }}{% else %}—{% endif %}
+          </td>
+          <td class="text-end">{{ row.layan_net|floatformat:2 }}</td>
+          <td class="text-end">{{ row.rd_net|floatformat:2 }}</td>
+          <td class="text-end {% if row.gap %}fw-semibold{% endif %}">{{ row.gap|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-secondary small">{% trans "None in this category." %}</div>
+  {% endif %}
+{% if not hide_title %}
+</div>
+{% else %}
+</div>
+{% endif %}

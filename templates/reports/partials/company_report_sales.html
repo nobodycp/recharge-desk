@@ -1,16 +1,17 @@
 {% load i18n humanize ui_tags %}
 <div class="rd-card mb-4 overflow-hidden">
   <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
-    <span class="fw-semibold">{% trans "Sales detail" %}</span>
+    <span class="fw-semibold">{% if sales_table_full %}{% trans "Sales details" %}{% else %}{% trans "Sales detail" %}{% endif %}</span>
     <form
       class="d-flex flex-wrap gap-2 align-items-end"
       method="get"
-      hx-get="{% url 'reports:company_report' company.pk %}"
+      hx-get="{% url 'companies:company_detail' company.pk %}"
       hx-target="#company-sales-grid"
       hx-push-url="true"
       hx-indicator="#cr-sales-htmx"
     >
       <input type="hidden" name="partial" value="sales">
+      <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="sales_sort" value="{{ sales_sort }}">
       <input type="hidden" name="sales_order" value="{{ sales_order }}">
       <input type="hidden" name="ledger_q" value="{{ request.GET.ledger_q }}">
@@ -24,7 +25,7 @@
         <input id="cr-sales-q" type="search" class="form-control form-control-sm" name="sales_q" value="{{ request.GET.sales_q }}" placeholder="{% trans 'Ref, payer, product…' %}">
       </div>
       <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
-      <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:company_report' company.pk %}">{% trans "Reset" %}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}?tab={{ active_tab }}">{% trans "Reset" %}</a>
     </form>
   </div>
   <div class="rd-table-dual">
@@ -42,13 +43,29 @@
               <th>
                 <a class="rd-datagrid-sort {% if sales_sort == 'ref' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'ref' and sales_order == 'desc' %}{% querystring sales_sort='ref' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='ref' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Ref" %}</a>
               </th>
+              {% if sales_table_full %}
+              <th>
+                <a class="rd-datagrid-sort {% if sales_sort == 'payer' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'payer' and sales_order == 'desc' %}{% querystring sales_sort='payer' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='payer' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Payer" %}</a>
+              </th>
+              <th>{% trans "Employee" %}</th>
+              {% endif %}
               <th class="text-end">
                 <a class="rd-datagrid-sort {% if sales_sort == 'sell' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'sell' and sales_order == 'desc' %}{% querystring sales_sort='sell' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='sell' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Sell" %}</a>
               </th>
+              {% if sales_table_full %}
               <th class="text-end">{% trans "Cost" %}</th>
               <th class="text-end">
                 <a class="rd-datagrid-sort {% if sales_sort == 'profit' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'profit' and sales_order == 'desc' %}{% querystring sales_sort='profit' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='profit' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Profit" %}</a>
               </th>
+              <th class="text-end">{% trans "Balance before" %}</th>
+              <th class="text-end">{% trans "Balance after" %}</th>
+              <th>{% trans "Payment" %}</th>
+              {% else %}
+              <th class="text-end">{% trans "Cost" %}</th>
+              <th class="text-end">
+                <a class="rd-datagrid-sort {% if sales_sort == 'profit' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'profit' and sales_order == 'desc' %}{% querystring sales_sort='profit' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='profit' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Profit" %}</a>
+              </th>
+              {% endif %}
               <th>
                 <a class="rd-datagrid-sort {% if sales_sort == 'status' %}is-active is-{{ sales_order }}{% endif %}" href="{% if sales_sort == 'status' and sales_order == 'desc' %}{% querystring sales_sort='status' sales_order='asc' sales_page=1 %}{% else %}{% querystring sales_sort='status' sales_order='desc' sales_page=1 %}{% endif %}">{% trans "Status" %}</a>
               </th>
@@ -60,13 +77,25 @@
                 <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
                 <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
                 <td class="tabular-nums">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
+                {% if sales_table_full %}
+                <td class="text-truncate" style="max-width: 10rem;" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
+                <td class="small">{{ s.operator_name }}</td>
+                {% endif %}
                 <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
+                {% if sales_table_full %}
                 <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
                 <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
+                <td class="tabular-nums text-end kpi-muted">{% if s.balance_before != None %}{{ s.balance_before|intcomma }}{% else %}—{% endif %}</td>
+                <td class="tabular-nums text-end fw-semibold {% if s.balance_after != None and s.balance_after < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{% if s.balance_after != None %}{{ s.balance_after|intcomma }}{% else %}—{% endif %}</td>
+                <td class="small">{% if s.payment_method %}{{ s.payment_method.name }}{% elif s.on_account %}{% trans "On account" %}{% elif s.paid_via_employee %}{% trans "To employee" %}{% else %}—{% endif %}</td>
+                {% else %}
+                <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
+                <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
+                {% endif %}
                 <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="7" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
+              <tr><td colspan="{% if sales_table_full %}12{% else %}7{% endif %}" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -78,6 +107,10 @@
           <div class="small text-secondary">{{ s.created_at }}</div>
           <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
           <div class="tabular-nums">{{ s.reference_number }}</div>
+          {% if sales_table_full %}
+          <div class="small">{{ s.payer_name }} · {{ s.operator_name }}</div>
+          <div class="small rd-text-muted">{% trans "Balance" %}: {% if s.balance_before != None %}{{ s.balance_before|intcomma }}{% else %}—{% endif %} → {% if s.balance_after != None %}{{ s.balance_after|intcomma }}{% else %}—{% endif %}</div>
+          {% endif %}
           <div class="d-flex justify-content-between mt-1">
             <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>
             <span class="{% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-bold">{{ s.profit_snapshot|intcomma }}</span>

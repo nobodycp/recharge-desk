@@ -2,14 +2,14 @@ from django import forms
 from django.contrib import messages
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from accounts.permissions import management_required
 from core.kpi_cache import cached_kpi
 from core.pagination import paginate_request
-from sales.ledger_query_utils import apply_ledger_list_ordering, filter_ledger_queryset
 from sales.query_utils import (
     EXCLUDED_AGGREGATE_STATUSES,
     apply_management_sale_filter_data,
@@ -20,9 +20,7 @@ from sales.query_utils import (
 )
 from companies.models import Company
 from expenses.models import Expense
-from sales.forms import BalanceAdjustmentForm, ManualDepositForm
-from sales.models import CompanyBalanceTransaction, Sale
-from sales.services import record_balance_adjustment, record_manual_deposit
+from sales.models import Sale
 
 
 def _local_today():
@@ -472,174 +470,10 @@ def sales_report(request):
     return render(request, "reports/sales_report.html", ctx)
 
 
-def _parse_company_report_period(request):
-    """Read ``period_from`` / ``period_to`` GET params into ``date`` objects.
-
-    Returns ``(date_from, date_to)``; either side may be ``None`` when the
-    user omits or supplies an invalid value, in which case that bound is
-    treated as open-ended ("all time").
-    """
-    from datetime import date as _date
-
-    def _parse(s):
-        try:
-            return _date.fromisoformat((s or "").strip())
-        except (ValueError, TypeError):
-            return None
-
-    return _parse(request.GET.get("period_from")), _parse(request.GET.get("period_to"))
-
-
-def _apply_period(qs, date_from, date_to, field="created_at"):
-    """Inclusive ``date_from``/``date_to`` filter on a datetime field."""
-    if date_from:
-        qs = qs.filter(**{f"{field}__date__gte": date_from})
-    if date_to:
-        qs = qs.filter(**{f"{field}__date__lte": date_to})
-    return qs
-
-
-def _company_report_sales_queryset(company, request, *, date_from=None, date_to=None):
-    qs = company.sales.select_related(
-        "product",
-        "product__line",
-        "payment_method",
-        "created_by",
-        "employee_recipient",
-        "employee_recipient__user",
-        "employee_recipient__user__profile",
-    )
-    sales_q = (request.GET.get("sales_q") or "").strip()
-    if sales_q:
-        qs = qs.filter(
-            Q(reference_number__icontains=sales_q)
-            | Q(payer_name__icontains=sales_q)
-            | Q(product__line__name__icontains=sales_q)
-            | Q(product__variant_label__icontains=sales_q)
-        )
-    qs = _apply_period(qs, date_from, date_to)
-    return apply_sale_list_ordering(
-        request, qs, sort_param="sales_sort", order_param="sales_order"
-    )
-
-
-def _company_report_ledger_queryset(company, request, *, date_from=None, date_to=None):
-    qs = company.balance_transactions.select_related("created_by")
-    qs = filter_ledger_queryset(qs, request.GET.get("ledger_q") or "")
-    qs = _apply_period(qs, date_from, date_to)
-    return apply_ledger_list_ordering(request, qs)
-
-
 @management_required
 def company_report(request, pk):
-    company = get_object_or_404(Company, pk=pk)
-    deposit_form = ManualDepositForm(request.POST or None, prefix="dep")
-    adj_form = BalanceAdjustmentForm(request.POST or None, prefix="adj")
-
-    if request.method == "POST":
-        if "dep-submit" in request.POST and deposit_form.is_valid():
-            record_manual_deposit(
-                company=company,
-                amount=deposit_form.cleaned_data["amount"],
-                notes=deposit_form.cleaned_data.get("notes") or "",
-                user=request.user,
-            )
-            messages.success(request, _("Deposit recorded."))
-            return redirect("reports:company_report", pk=company.pk)
-        if "adj-submit" in request.POST and adj_form.is_valid():
-            record_balance_adjustment(
-                company=company,
-                signed_amount=adj_form.cleaned_data["signed_amount"],
-                notes=adj_form.cleaned_data.get("notes") or "",
-                user=request.user,
-            )
-            messages.success(request, _("Adjustment recorded."))
-            return redirect("reports:company_report", pk=company.pk)
-
-    period_from, period_to = _parse_company_report_period(request)
-    period_active = bool(period_from or period_to)
-
-    ledger_qs_all = company.balance_transactions.all()
-    ledger_qs_period = _apply_period(ledger_qs_all, period_from, period_to)
-    sales_qs_filtered = _company_report_sales_queryset(
-        company, request, date_from=period_from, date_to=period_to
-    )
-    ledger_qs_filtered = _company_report_ledger_queryset(
-        company, request, date_from=period_from, date_to=period_to
-    )
-
-    sales_page = paginate_request(request, sales_qs_filtered, page_param="sales_page")
-    ledger_page = paginate_request(request, ledger_qs_filtered, page_param="ledger_page")
-
-    deposits = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.DEPOSIT).aggregate(
-        s=Sum("amount")
-    )["s"] or 0
-    consumed = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION).aggregate(
-        s=Sum("amount")
-    )["s"] or 0
-    reversals = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.REVERSAL).aggregate(
-        s=Sum("amount")
-    )["s"] or 0
-    adjustments = ledger_qs_period.filter(entry_type=CompanyBalanceTransaction.EntryType.ADJUSTMENT).aggregate(
-        s=Sum("amount")
-    )["s"] or 0
-
-    sales_non_cancelled = confirmed_sales(sales_qs_filtered)
-    agg = {
-        **sales_non_cancelled.aggregate(cnt=Count("id"), total_sell=Sum("sell_price_actual")),
-        **paid_sales_only(sales_qs_filtered).aggregate(total_profit=Sum("profit_snapshot")),
-    }
-
-    # When the user picked a date range we also expose the *closing*
-    # balance as of ``period_to`` so the "current balance" KPI stays
-    # meaningful for historical lookups. The signed contribution to the
-    # supplier balance per ledger row is +amount for everything except
-    # DEDUCTION which is -amount; ADJUSTMENT.amount is already signed.
-    balance_as_of = None
-    if period_to:
-        from django.db.models import Case, F, Value, When
-
-        ledger_up_to = _apply_period(
-            company.balance_transactions.all(), None, period_to
-        )
-        delta = ledger_up_to.aggregate(
-            d=Sum(
-                Case(
-                    When(
-                        entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
-                        then=-F("amount"),
-                    ),
-                    default=F("amount"),
-                )
-            )
-        )["d"] or 0
-        balance_as_of = (company.opening_balance or 0) + delta
-
-    ctx = {
-        "company": company,
-        "ledger_page": ledger_page,
-        "sales_page": sales_page,
-        "deposits_total": deposits,
-        "consumed_total": consumed,
-        "reversals_total": reversals or 0,
-        "adjustments_total": adjustments or 0,
-        "agg": agg,
-        "deposit_form": deposit_form,
-        "adj_form": adj_form,
-        "title": _("Company report"),
-        "sales_sort": request.GET.get("sales_sort") or "created_at",
-        "sales_order": (request.GET.get("sales_order") or "desc").lower(),
-        "ledger_sort": request.GET.get("ledger_sort") or "created_at",
-        "ledger_order": (request.GET.get("ledger_order") or "desc").lower(),
-        "period_from": period_from,
-        "period_to": period_to,
-        "period_active": period_active,
-        "balance_as_of": balance_as_of,
-    }
-    if request.headers.get("HX-Request"):
-        frag = (request.GET.get("partial") or "").strip()
-        if frag == "sales":
-            return render(request, "reports/partials/company_report_sales.html", ctx)
-        if frag == "ledger":
-            return render(request, "reports/partials/company_report_ledger.html", ctx)
-    return render(request, "reports/company_report.html", ctx)
+    """Legacy URL — redirect to the supplier detail page under Companies."""
+    url = reverse("companies:company_detail", kwargs={"pk": pk})
+    if request.GET:
+        url = f"{url}?{request.GET.urlencode()}"
+    return redirect(url)

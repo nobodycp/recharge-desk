@@ -174,7 +174,7 @@
       <ul class="rd-supplier-list rd-dashboard-balance-list flex-grow-1">
         {% for c in companies %}
           <li>
-            <a class="rd-supplier-row" href="{% url 'reports:company_report' c.pk %}">
+            <a class="rd-supplier-row" href="{% url 'companies:company_detail' c.pk %}">
               <span class="rd-supplier-avatar" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
               <span class="rd-supplier-info">
                 <span class="rd-supplier-name">{{ c.name }}</span>

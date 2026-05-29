@@ -5,12 +5,13 @@
     <form
       class="d-flex flex-wrap gap-2 align-items-end"
       method="get"
-      hx-get="{% url 'reports:company_report' company.pk %}"
+      hx-get="{% url 'companies:company_detail' company.pk %}"
       hx-target="#company-ledger-grid"
       hx-push-url="true"
       hx-indicator="#cr-ledger-htmx"
     >
       <input type="hidden" name="partial" value="ledger">
+      <input type="hidden" name="tab" value="{{ active_tab }}">
       <input type="hidden" name="ledger_sort" value="{{ ledger_sort }}">
       <input type="hidden" name="ledger_order" value="{{ ledger_order }}">
       <input type="hidden" name="sales_q" value="{{ request.GET.sales_q }}">
@@ -24,7 +25,7 @@
         <input id="cr-ledger-q" type="search" class="form-control form-control-sm" name="ledger_q" value="{{ request.GET.ledger_q }}" placeholder="{% trans 'Notes, ref #…' %}">
       </div>
       <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
-      <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:company_report' company.pk %}">{% trans "Reset" %}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}?tab={{ active_tab }}">{% trans "Reset" %}</a>
     </form>
   </div>
   <div class="rd-table-dual">
@@ -39,12 +40,19 @@
               <th>
                 <a class="rd-datagrid-sort {% if ledger_sort == 'entry_type' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'entry_type' and ledger_order == 'desc' %}{% querystring ledger_sort='entry_type' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='entry_type' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Type" %}</a>
               </th>
+              {% if ledger_table_full %}
+              <th class="text-end">{% trans "Balance before" %}</th>
+              <th class="text-end">{% trans "Balance after" %}</th>
+              {% endif %}
               <th class="text-end">
                 <a class="rd-datagrid-sort {% if ledger_sort == 'amount' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'amount' and ledger_order == 'desc' %}{% querystring ledger_sort='amount' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='amount' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Amount" %}</a>
               </th>
+              <th>{% trans "Phone / ref" %}</th>
+              {% if not ledger_table_full %}
               <th>
                 <a class="rd-datagrid-sort {% if ledger_sort == 'reference_id' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'reference_id' and ledger_order == 'desc' %}{% querystring ledger_sort='reference_id' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='reference_id' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Reference" %}</a>
               </th>
+              {% endif %}
               <th>
                 <a class="rd-datagrid-sort {% if ledger_sort == 'by' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'by' and ledger_order == 'desc' %}{% querystring ledger_sort='by' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='by' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "By" %}</a>
               </th>
@@ -55,12 +63,19 @@
               <tr>
                 <td class="small text-secondary text-nowrap">{{ t.created_at }}</td>
                 <td><span class="rd-badge rd-badge--neutral">{{ t.get_entry_type_display }}</span></td>
+                {% if ledger_table_full %}
+                <td class="tabular-nums text-end kpi-muted">{% if t.balance_before != None %}{{ t.balance_before|intcomma }}{% else %}—{% endif %}</td>
+                <td class="tabular-nums text-end fw-semibold {% if t.balance_after != None and t.balance_after < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{% if t.balance_after != None %}{{ t.balance_after|intcomma }}{% else %}—{% endif %}</td>
+                {% endif %}
                 <td class="fw-semibold tabular-nums text-end {% if t.entry_type == 'deduction' %}kpi-warning{% elif t.entry_type == 'deposit' %}kpi-success{% elif t.entry_type == 'reversal' %}kpi-info{% else %}kpi-muted{% endif %}">{{ t.amount|intcomma }}</td>
+                <td class="tabular-nums">{% if t.movement_reference %}{{ t.movement_reference }}{% else %}—{% endif %}</td>
+                {% if not ledger_table_full %}
                 <td class="small">{{ t.get_reference_type_display }} {% if t.reference_id %}#{{ t.reference_id }}{% endif %}</td>
+                {% endif %}
                 <td class="small">{% if t.created_by %}{{ t.created_by.username }}{% else %}—{% endif %}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="5" class="text-center text-secondary py-4">{% trans "No ledger rows." %}</td></tr>
+              <tr><td colspan="{% if ledger_table_full %}7{% else %}6{% endif %}" class="text-center text-secondary py-4">{% trans "No ledger rows." %}</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -74,6 +89,10 @@
             <span class="rd-badge rd-badge--neutral">{{ t.get_entry_type_display }}</span>
             <span class="tabular-nums fw-bold {% if t.entry_type == 'deduction' %}kpi-warning{% elif t.entry_type == 'deposit' %}kpi-success{% elif t.entry_type == 'reversal' %}kpi-info{% else %}kpi-muted{% endif %}">{{ t.amount|intcomma }}</span>
           </div>
+          {% if ledger_table_full %}
+          <div class="small rd-text-muted">{% trans "Balance" %}: {% if t.balance_before != None %}{{ t.balance_before|intcomma }}{% else %}—{% endif %} → {% if t.balance_after != None %}{{ t.balance_after|intcomma }}{% else %}—{% endif %}</div>
+          {% endif %}
+          {% if t.movement_reference %}<div class="tabular-nums small">{{ t.movement_reference }}</div>{% endif %}
           <div class="small mt-1">{{ t.get_reference_type_display }} {% if t.reference_id %}#{{ t.reference_id }}{% endif %}</div>
         </div>
       {% empty %}

@@ -12,3 +12,5 @@ requests>=2.31,<3
 jsonpath-ng>=1.6,<2
 # Sky Sales portal: TOTP from authenticator QR
 pyotp>=2.9,<3
+# Layan charges report import (.xlsx)
+openpyxl>=3.1,<4

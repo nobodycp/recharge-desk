@@ -337,6 +337,14 @@ def system_settings(request):
                 return _settings_redirect(SETTINGS_TAB_DATABASE)
         else:
             messages.error(request, _("Could not import backup. Check the form and try again."))
+            for field, errors in import_form.errors.items():
+                label = (
+                    import_form.fields[field].label
+                    if field in import_form.fields
+                    else field
+                )
+                for err in errors:
+                    messages.error(request, f"{label}: {err}")
 
     elif request.method == "POST" and active_tab == SETTINGS_TAB_GENERAL:
         if form.is_valid():

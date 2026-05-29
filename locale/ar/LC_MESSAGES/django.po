@@ -2497,6 +2497,20 @@ msgid "No ledger rows."
 msgstr "لا توجد حركات في السجل."
 msgid "Sales detail"
 msgstr "تفاصيل المبيعات"
+msgid "Sales details"
+msgstr "تفاصيل المبيعات"
+msgid "General"
+msgstr "عام"
+msgid "Balance before"
+msgstr "الرصيد قبل"
+msgid "Balance after"
+msgstr "الرصيد بعد"
+msgid "Phone / ref"
+msgstr "الرقم / المرجع"
+msgid "Back to companies"
+msgstr "العودة إلى المزودين"
+msgid "Supplier balance and sales"
+msgstr "رصيد المزود والمبيعات"
 msgid "Ref, payer, product…"
 msgstr "المرجع، الدافع، المنتج…"
 
@@ -2785,6 +2799,150 @@ msgstr ""
 
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+msgid "Layan report matching"
+msgstr "مطابقة كشف ليان"
+
+msgid "Layan charges report (.xlsx)"
+msgstr "كشف خصومات ليان (.xlsx)"
+
+msgid "Pending portal credits (optional)"
+msgstr "أرصدة معلّقة على البوابة (اختياري)"
+
+msgid ""
+"One line per entry: phone,credit amount not yet shown on the export "
+"(e.g. pending reversal)."
+msgstr ""
+"سطر لكل رقم: رقم_الهاتف,مبلغ_الإرجاع غير الظاهر بعد في الكشف (مثل عكس "
+"معلّق)."
+
+msgid "Run matching"
+msgstr "تشغيل المطابقة"
+
+msgid ""
+"Upload the same charges report you receive from Layan (Excel). We compare "
+"each phone number to sales in Recharge Desk and highlight financial gaps "
+"for this supplier only."
+msgstr ""
+"ارفع نفس كشف الخصومات الذي تستلمه من ليان (Excel). نطابق كل رقم مع "
+"المبيعات في النظام ونبرز الفجوات المالية لهذا المورد فقط."
+
+msgid "Estimated deficit (Layan)"
+msgstr "العجز التقديري (ليان)"
+
+msgid "Not recorded"
+msgstr "غير مسجّل"
+
+msgid "Disconnected settlements"
+msgstr "تسويات أرقام مفصولة"
+
+msgid "Report rows in period"
+msgstr "صفوف الكشف في الفترة"
+
+msgid "Balance vs report end"
+msgstr "الرصيد مقابل نهاية الكشف"
+
+msgid "Gap"
+msgstr "الفرق"
+
+msgid "End balance not found in file."
+msgstr "رصيد نهاية الكشف غير موجود في الملف."
+
+msgid "Numbers not recorded in system"
+msgstr "أرقام لم تُسجّل بالنظام"
+
+msgid ""
+"Charged on Layan but no matching sale in Recharge Desk for this period."
+msgstr ""
+"مخصومة على ليان دون بيع مطابق في النظام خلال هذه الفترة."
+
+msgid "Settlements on disconnected numbers"
+msgstr "تسويات على أرقام مفصولة"
+
+msgid ""
+"Activation charge plus refund on Layan; small net kept on portal."
+msgstr ""
+"خصم تفعيل ثم إعادة مال على ليان؛ صافي صغير يبقى على البوابة."
+
+msgid "Amount mismatches"
+msgstr "اختلاف المبالغ"
+
+msgid "Both sides have activity but net amounts differ."
+msgstr "يوجد نشاط على الجانبين لكن الصافي مختلف."
+
+msgid "In system only"
+msgstr "في النظام فقط"
+
+msgid ""
+"Sales in Recharge Desk without matching charge lines in the uploaded report."
+msgstr ""
+"مبيعات في النظام بلا سطور خصم مطابقة في الكشف المرفوع."
+
+msgid "Matched numbers"
+msgstr "أرقام متطابقة"
+
+msgid "Layan net"
+msgstr "صافي ليان"
+
+msgid "RD net"
+msgstr "صافي النظام"
+
+msgid "None in this category."
+msgstr "لا يوجد في هذا التصنيف."
+
+msgid "Back to supplier"
+msgstr "العودة للمورد"
+
+msgid "Layan report matching is only available for Layan."
+msgstr "مطابقة كشف ليان متاحة لمورد ليان فقط."
+
+#, python-format
+msgid "Report processed (%(rows)s rows)."
+msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
+
+msgid ""
+"Excel support is not installed (openpyxl). Contact your administrator."
+msgstr ""
+"دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
+
+#, python-format
+msgid "Could not read the report: %(error)s"
+msgstr "تعذّر قراءة الكشف: %(error)s"
+
+msgid "Settlement on disconnected number"
+msgstr "تسوية على رقم مفصول"
+
+msgid "Not recorded in system"
+msgstr "لم يُسجّل بالنظام"
+
+msgid "Amount mismatch"
+msgstr "اختلاف مبلغ"
+
+msgid "Matched"
+msgstr "متطابق"
+
+msgid "Pending credit (manual)"
+msgstr "رصيد معلّق (يدوي)"
+
+msgid "RD supplier"
+msgstr "مورد في النظام"
+
+msgid "Amount mismatch (logged under another supplier)"
+msgstr "اختلاف مبلغ (مسجّل تحت مورد آخر)"
+
+msgid ""
+"Upload the same charges report you receive from Layan (Excel). We compare "
+"each phone number to sales anywhere in Recharge Desk (any supplier) for "
+"the selected period, and highlight gaps against Layan charges."
+msgstr ""
+"ارفع كشف الخصومات من ليان. نطابق كل رقم مع المبيعات في النظام (أي مورد) "
+"خلال الفترة المحددة ونبرز الفجوات مقابل خصومات ليان."
+
+msgid ""
+"Charged on Layan but no sale for this number in Recharge Desk (any "
+"supplier) in this period."
+msgstr ""
+"مخصوم على ليان دون أي بيع لهذا الرقم في النظام (أي مورد) خلال هذه الفترة."
 
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."

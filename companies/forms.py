@@ -73,6 +73,38 @@ class ProductLineForm(forms.ModelForm):
         return cleaned
 
 
+class LayanReportReconcileForm(forms.Form):
+    period_from = forms.DateField(
+        label=_("Date from"),
+        required=False,
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+    )
+    period_to = forms.DateField(
+        label=_("Date to"),
+        required=False,
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+    )
+    report_file = forms.FileField(
+        label=_("Layan charges report (.xlsx)"),
+        widget=forms.ClearableFileInput(attrs={"class": "form-control", "accept": ".xlsx,.xls"}),
+    )
+    pending_credits = forms.CharField(
+        label=_("Pending portal credits (optional)"),
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "rows": 3,
+                "placeholder": "512823671,29",
+            }
+        ),
+        help_text=_(
+            "One line per entry: phone,credit amount not yet shown on the export "
+            "(e.g. pending reversal)."
+        ),
+    )
+
+
 class ProductVariantForm(forms.ModelForm):
     class Meta:
         model = Product

@@ -6,6 +6,12 @@ app_name = "companies"
 
 urlpatterns = [
     path("management/companies/", views.company_list, name="company_list"),
+    path("management/companies/<int:pk>/", views.company_detail, name="company_detail"),
+    path(
+        "management/companies/<int:pk>/layan-reconcile/",
+        views.layan_reconcile,
+        name="layan_reconcile",
+    ),
     path("management/companies/new/", views.company_create, name="company_create"),
     path("management/companies/<int:pk>/edit/", views.company_edit, name="company_edit"),
     path("management/companies/<int:pk>/delete/", views.company_delete, name="company_delete"),
