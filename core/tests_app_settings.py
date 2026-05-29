@@ -63,6 +63,7 @@ class AppSettingsViewTests(TestCase):
         response = self.client.post(
             url,
             {
+                "tab": "general",
                 "require_debt_request_approval": "",
                 "require_settlement_request_approval": "on",
                 "require_payment_request_approval": "on",

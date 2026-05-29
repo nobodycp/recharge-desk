@@ -374,6 +374,22 @@ AR: dict[str, str] = {
     "system settings": "إعدادات النظام",
     "System settings": "إعدادات النظام",
     "System settings updated.": "تم تحديث إعدادات النظام.",
+    "General": "عام",
+    "Database": "قواعد البيانات",
+    "Database backup": "نسخة احتياطية لقاعدة البيانات",
+    "Download a full copy of the application database or restore from a file you saved earlier. Only management users can use this screen.": (
+        "نزّل نسخة كاملة من قاعدة بيانات التطبيق أو استعد من ملف حفظته سابقاً. هذه الشاشة للإدارة فقط."
+    ),
+    "Engine": "المحرك",
+    "Database name": "اسم قاعدة البيانات",
+    "Download backup": "تنزيل النسخة الاحتياطية",
+    "Download database": "تنزيل قاعدة البيانات",
+    "Restore from backup": "استيراد من نسخة احتياطية",
+    "Import database": "استيراد قاعدة البيانات",
+    "Database restored from backup.": "تم استيراد قاعدة البيانات من النسخة الاحتياطية.",
+    "I understand this will erase existing data and replace it with the backup.": (
+        "أفهم أن هذا سيحذف البيانات الحالية ويستبدلها بالنسخة الاحتياطية."
+    ),
     "Refresh phone": "تحديث الهاتف",
     "Phone number": "رقم الهاتف",
     "Close": "إغلاق",

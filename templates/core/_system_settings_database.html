@@ -1,0 +1,75 @@
+{% load i18n %}
+<div class="app-card card mb-4">
+  <div class="card-body p-4">
+    <h2 class="rd-heading-lg mb-2">{% trans "Database backup" %}</h2>
+    <p class="rd-text-muted mb-3">
+      {% trans "Download a full copy of the application database or restore from a file you saved earlier. Only management users can use this screen." %}
+    </p>
+
+    <dl class="row small mb-4">
+      <dt class="col-sm-4">{% trans "Engine" %}</dt>
+      <dd class="col-sm-8">{{ db_info.label }}</dd>
+      <dt class="col-sm-4">{% trans "Database name" %}</dt>
+      <dd class="col-sm-8"><code class="user-select-all">{{ db_info.name }}</code></dd>
+    </dl>
+
+    <div class="mb-4">
+      <h3 class="h6 fw-semibold">{% trans "Download backup" %}</h3>
+      <p class="small text-secondary mb-2">
+        {% if db_info.is_sqlite %}
+          {% trans "Downloads the SQLite database file." %}
+        {% elif pg_tools_available %}
+          {% trans "Downloads a PostgreSQL custom dump (.dump) suitable for pg_restore." %}
+        {% else %}
+          {% trans "Downloads a compressed JSON export (.json.gz) compatible with Django loaddata." %}
+        {% endif %}
+      </p>
+      <a class="btn btn-outline-primary" href="{% url 'core:database_export' %}">
+        {% trans "Download database" %}
+      </a>
+    </div>
+
+    <hr class="my-3">
+
+    <h3 class="h6 fw-semibold text-danger">{% trans "Restore from backup" %}</h3>
+    <p class="small text-secondary mb-3">
+      {% trans "This replaces all current data in the database. Take a fresh download first. Active users may need to sign in again after a restore." %}
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+      {% csrf_token %}
+      <input type="hidden" name="form" value="import">
+      <input type="hidden" name="tab" value="{{ database_tab_id }}">
+
+      <div>
+        {{ import_form.backup_file.label_tag }}
+        {{ import_form.backup_file }}
+        {% if import_form.backup_file.help_text %}
+          <div class="form-text">{{ import_form.backup_file.help_text }}</div>
+        {% endif %}
+        {{ import_form.backup_file.errors }}
+      </div>
+
+      <div>
+        {{ import_form.confirm.label_tag }}
+        {{ import_form.confirm }}
+        {% if import_form.confirm.help_text %}
+          <div class="form-text">{{ import_form.confirm.help_text }}</div>
+        {% endif %}
+        {{ import_form.confirm.errors }}
+      </div>
+
+      <div class="form-check">
+        {{ import_form.acknowledge }}
+        <label class="form-check-label" for="{{ import_form.acknowledge.id_for_label }}">
+          {{ import_form.acknowledge.label }}
+        </label>
+        {{ import_form.acknowledge.errors }}
+      </div>
+
+      <div>
+        <button class="btn btn-danger" type="submit">{% trans "Import database" %}</button>
+      </div>
+    </form>
+  </div>
+</div>

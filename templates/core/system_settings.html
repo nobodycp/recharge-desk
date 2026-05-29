@@ -5,148 +5,25 @@
 <div class="mx-auto" style="max-width: 42rem;">
   <h1 class="rd-heading-xl mb-3">{% trans "System settings" %}</h1>
 
-  <div class="app-card card mb-4">
-    <div class="card-body p-4">
-      <form method="post" class="d-grid gap-3">
-        {% csrf_token %}
+  <ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link {% if active_tab == general_tab_id %}active{% endif %}"
+         href="?tab={{ general_tab_id }}" role="tab">
+        {% trans "General" %}
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link {% if active_tab == database_tab_id %}active{% endif %}"
+         href="?tab={{ database_tab_id }}" role="tab">
+        {% trans "Database" %}
+      </a>
+    </li>
+  </ul>
 
-        <h2 class="rd-heading-lg mb-2">{% trans "Approval workflows" %}</h2>
-        <p class="rd-text-muted mb-3">
-          {% trans "Turn a switch off to skip management approval for that queue. Sales and balances apply immediately." %}
-        </p>
-
-        <div class="form-check form-switch">
-          {{ form.require_debt_request_approval }}
-          <label class="form-check-label fw-semibold" for="{{ form.require_debt_request_approval.id_for_label }}">
-            {{ form.require_debt_request_approval.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "On-account sales posted to customers or distributors. When off, they are recorded on the customer account immediately." %}
-        </p>
-        {{ form.require_debt_request_approval.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.require_settlement_request_approval }}
-          <label class="form-check-label fw-semibold" for="{{ form.require_settlement_request_approval.id_for_label }}">
-            {{ form.require_settlement_request_approval.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "Customer settlement submissions from the sales screen. When off, the payment applies to the balance immediately." %}
-        </p>
-        {{ form.require_settlement_request_approval.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.require_payment_request_approval }}
-          <label class="form-check-label fw-semibold" for="{{ form.require_payment_request_approval.id_for_label }}">
-            {{ form.require_payment_request_approval.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as soon as they are saved." %}
-        </p>
-        {{ form.require_payment_request_approval.errors }}
-
-        <hr class="my-2">
-
-        <h2 class="rd-heading-lg mb-2">{% trans "Sales entry screen" %}</h2>
-        <p class="rd-text-muted mb-3">
-          {% trans "Controls what employees see and how sales are recorded on the entry form." %}
-        </p>
-
-        <div class="form-check form-switch">
-          {{ form.allow_sales_auto_create_customer }}
-          <label class="form-check-label fw-semibold" for="{{ form.allow_sales_auto_create_customer.id_for_label }}">
-            {{ form.allow_sales_auto_create_customer.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "When off, on-account sales require an existing customer — create customers from the Customers screen." %}
-        </p>
-        {{ form.allow_sales_auto_create_customer.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.sales_inventory_enabled }}
-          <label class="form-check-label fw-semibold" for="{{ form.sales_inventory_enabled.id_for_label }}">
-            {{ form.sales_inventory_enabled.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere is unchanged." %}
-        </p>
-        {{ form.sales_inventory_enabled.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.sales_show_refresh_phone }}
-          <label class="form-check-label fw-semibold" for="{{ form.sales_show_refresh_phone.id_for_label }}">
-            {{ form.sales_show_refresh_phone.label }}
-          </label>
-        </div>
-        {{ form.sales_show_refresh_phone.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.sales_show_record_payment }}
-          <label class="form-check-label fw-semibold" for="{{ form.sales_show_record_payment.id_for_label }}">
-            {{ form.sales_show_record_payment.label }}
-          </label>
-        </div>
-        {{ form.sales_show_record_payment.errors }}
-
-        <div class="form-check form-switch mt-2">
-          {{ form.sales_show_employee_payment }}
-          <label class="form-check-label fw-semibold" for="{{ form.sales_show_employee_payment.id_for_label }}">
-            {{ form.sales_show_employee_payment.label }}
-          </label>
-        </div>
-        <p class="small text-secondary mb-0">
-          {% trans "When off, the payment-to-employee option is hidden on the sales entry screen." %}
-        </p>
-        {{ form.sales_show_employee_payment.errors }}
-
-        <hr class="my-2">
-
-        <h2 class="rd-heading-lg mb-2">{% trans "Management panel defaults" %}</h2>
-        <p class="rd-text-muted mb-3">
-          {% trans "Used on first visit before the user picks a language or theme. Personal choices in the header still override these defaults." %}
-        </p>
-
-        <div>
-          {{ form.default_language.label_tag }}
-          {{ form.default_language }}
-          {{ form.default_language.errors }}
-        </div>
-
-        <div>
-          {{ form.default_theme.label_tag }}
-          {{ form.default_theme }}
-          {{ form.default_theme.errors }}
-        </div>
-
-        <hr class="my-2">
-
-        <h2 class="rd-heading-lg mb-2">{% trans "Refresh link defaults" %}</h2>
-        <p class="rd-text-muted mb-3">
-          {% trans "Initial language and theme for the public phone-refresh page before the visitor changes them." %}
-        </p>
-
-        <div>
-          {{ form.public_default_language.label_tag }}
-          {{ form.public_default_language }}
-          {{ form.public_default_language.errors }}
-        </div>
-
-        <div>
-          {{ form.public_default_theme.label_tag }}
-          {{ form.public_default_theme }}
-          {{ form.public_default_theme.errors }}
-        </div>
-
-        <div class="d-flex gap-2">
-          <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  {% if active_tab == database_tab_id %}
+    {% include "core/_system_settings_database.html" %}
+  {% else %}
+    {% include "core/_system_settings_general.html" %}
+  {% endif %}
 </div>
 {% endblock %}

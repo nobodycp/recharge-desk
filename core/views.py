@@ -1,7 +1,7 @@
 from urllib.parse import urlsplit
 
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import translation
@@ -9,8 +9,13 @@ from django.utils.translation import get_language_from_path, gettext_lazy as _
 from django.views.i18n import set_language as django_set_language
 
 from accounts.permissions import is_employee, is_management, management_required
+from core import database_backup
 from core.forms import AppSettingsForm, SiteBrandingForm
+from core.forms_database import DatabaseImportForm
 from core.models import AppSettings, SiteBranding
+
+SETTINGS_TAB_GENERAL = "general"
+SETTINGS_TAB_DATABASE = "database"
 
 
 def set_language_fixed(request):
@@ -293,17 +298,79 @@ def site_branding(request):
     )
 
 
+def _settings_tab(request) -> str:
+    tab = (request.GET.get("tab") or request.POST.get("tab") or SETTINGS_TAB_GENERAL).strip()
+    if tab == SETTINGS_TAB_DATABASE:
+        return SETTINGS_TAB_DATABASE
+    return SETTINGS_TAB_GENERAL
+
+
+def _settings_redirect(tab: str):
+    url = reverse("core:system_settings")
+    if tab == SETTINGS_TAB_DATABASE:
+        return redirect(f"{url}?tab={SETTINGS_TAB_DATABASE}")
+    return redirect(url)
+
+
 @management_required
 def system_settings(request):
     """Singleton editor for recharge-desk behaviour and UI defaults."""
+    active_tab = _settings_tab(request)
     instance = AppSettings.load()
     form = AppSettingsForm(request.POST or None, instance=instance)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, _("System settings updated."))
-        return redirect("core:system_settings")
+    import_form = DatabaseImportForm()
+
+    if request.method == "POST" and request.POST.get("form") == "import":
+        active_tab = SETTINGS_TAB_DATABASE
+        import_form = DatabaseImportForm(request.POST, request.FILES)
+        if import_form.is_valid():
+            uploaded = import_form.cleaned_data["backup_file"]
+            try:
+                database_backup.import_upload(
+                    uploaded,
+                    filename=uploaded.name,
+                )
+            except (ValueError, RuntimeError, FileNotFoundError) as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, _("Database restored from backup."))
+                return _settings_redirect(SETTINGS_TAB_DATABASE)
+        else:
+            messages.error(request, _("Could not import backup. Check the form and try again."))
+
+    elif request.method == "POST" and active_tab == SETTINGS_TAB_GENERAL:
+        if form.is_valid():
+            form.save()
+            messages.success(request, _("System settings updated."))
+            return _settings_redirect(SETTINGS_TAB_GENERAL)
+
     return render(
         request,
         "core/system_settings.html",
-        {"form": form, "settings": instance, "title": _("System settings")},
+        {
+            "form": form,
+            "import_form": import_form,
+            "settings": instance,
+            "title": _("System settings"),
+            "active_tab": active_tab,
+            "general_tab_id": SETTINGS_TAB_GENERAL,
+            "database_tab_id": SETTINGS_TAB_DATABASE,
+            "db_info": database_backup.engine_info(),
+            "pg_tools_available": database_backup.pg_tools_available(),
+        },
     )
+
+
+@management_required
+def database_export(request):
+    """Download a full database backup (format depends on engine)."""
+    try:
+        payload, filename, content_type = database_backup.export_bytes()
+    except (RuntimeError, FileNotFoundError) as exc:
+        messages.error(request, str(exc))
+        return _settings_redirect(SETTINGS_TAB_DATABASE)
+
+    response = HttpResponse(payload, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Length"] = len(payload)
+    return response
