@@ -2851,6 +2851,9 @@ msgstr "رصيد نهاية الكشف غير موجود في الملف."
 msgid "Numbers not recorded in system"
 msgstr "أرقام لم تُسجّل بالنظام"
 
+msgid "Numbers not recorded under Layan"
+msgstr "أرقام غير مسجّلة تحت ليان"
+
 msgid ""
 "Charged on Layan but no matching sale in Recharge Desk for this period."
 msgstr ""
@@ -3027,6 +3030,31 @@ msgstr "دورات"
 #~ "This entry has already been processed by management and can no longer be "
 #~ "changed."
 #~ msgstr "تمّت معالجة هذا الإدخال من قبل الإدارة، ولم يعد بالإمكان تعديله."
+
+msgid "Breakdown"
+msgstr "التفصيل"
+
+msgid "Layan report breakdown"
+msgstr "تفصيل كشف ليان"
+
+msgid "Settlement cycles (charge + refund)"
+msgstr "دورات التسوية (شحنة + إرجاع)"
+
+msgid "Unpaired refunds in report"
+msgstr "إرجاعات غير مربوطة في الكشف"
+
+msgid ""
+"Not counted in settlement total — no matching charge line before this "
+"refund in the report."
+msgstr ""
+"لا تُحسب في مجموع التسوية — لا توجد شحنة مطابقة قبل هذا الإرجاع في "
+"الكشف."
+
+msgid "Recharges outside settlement cycles"
+msgstr "شحنات خارج دورات التسوية"
+
+msgid "Layan portal net in report"
+msgstr "صافي ليان في الكشف"
 
 #~ msgid ""
 #~ "This entry has already been processed by management and can no longer be "
