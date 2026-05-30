@@ -2997,6 +2997,26 @@ msgstr "الفرق"
 msgid "Charge on activation minus refund on disconnect (amount kept on Layan portal)."
 msgstr "خصم التفعيل ناقص إعادة المال عند الفصل (المبلغ الباقي على بوابة ليان)."
 
+msgid "New recharge in period"
+msgstr "شحن جديد في الفترة"
+
+msgid "see matching below"
+msgstr "راجع المطابقة أدناه"
+
+msgid "%(c)s settlement cycle"
+msgid_plural "%(c)s settlement cycles"
+msgstr[0] "%(c)s دورة تسوية"
+msgstr[1] "%(c)s دورات تسوية"
+
+msgid "Layan recharge"
+msgstr "شحن ليان"
+
+msgid "Settlement total"
+msgstr "مجموع التسويات"
+
+msgid "cycles"
+msgstr "دورات"
+
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
 

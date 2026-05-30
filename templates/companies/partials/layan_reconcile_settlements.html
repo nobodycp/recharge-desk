@@ -21,7 +21,15 @@
       <tbody>
         {% for row in section_rows %}
         <tr>
-          <td><span class="font-monospace">{{ row.phone }}</span></td>
+          <td>
+            <span class="font-monospace">{{ row.phone }}</span>
+            {% if row.settlement_cycles > 1 %}
+              <div class="small text-secondary">{% blocktrans count c=row.settlement_cycles %}{{ c }} settlement cycle{% plural %}{{ c }} settlement cycles{% endblocktrans %}</div>
+            {% endif %}
+            {% if row.recharge_amount %}
+              <div class="small text-warning">{% trans "New recharge in period" %}: {{ row.recharge_amount|floatformat:2 }} — {% trans "see matching below" %}</div>
+            {% endif %}
+          </td>
           <td class="text-end fw-semibold">{{ row.layan_net|floatformat:2 }}</td>
         </tr>
         {% endfor %}

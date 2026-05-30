@@ -242,6 +242,54 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.split_settlements[0].layan_net, _decimal("36.17"))
         self.assertEqual(len(result.amount_mismatches), 0)
 
+    def test_multiple_settlements_plus_final_recharge(self):
+        from sales.models import PaymentMethod, Sale
+
+        buf = self._minimal_workbook(
+            [
+                ("0512542435", "تفعيل خط هاتف جديد - We", 30, 3694.61, 3664.61, "06/05/2026 12:44"),
+                ("0512542435", "إعادة مال - We", -29, 3664.61, 3693.61, "06/05/2026 12:46"),
+                ("0512542435", "تفعيل الخط - We", 30, 3693.61, 3663.61, "06/05/2026 12:49"),
+                ("0512542435", "إعادة مال - We", -30, 3663.61, 3693.61, "06/05/2026 12:50"),
+                ("0512542435", "إعادة مال - We", -29, 3632.61, 3661.61, "06/05/2026 14:15"),
+                ("0512542435", "تفعيل الخط - We", 30, 3178.78, 3148.78, "11/05/2026 18:19"),
+            ]
+        )
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L-multi"),
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="cash-multi")
+        Sale.objects.create(
+            company=self.company,
+            product=product,
+            reference_number="0512542435",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        split = result.split_settlements[0]
+        self.assertEqual(split.phone, "0512542435")
+        self.assertEqual(split.layan_net, _decimal(1))
+        self.assertEqual(split.settlement_cycles, 2)
+        self.assertEqual(split.recharge_amount, _decimal(30))
+        matched = [r for r in result.matched if r.phone == "0512542435"]
+        self.assertEqual(len(matched), 1)
+        self.assertEqual(matched[0].layan_net, _decimal(30))
+
     def test_settlement_retained_when_refund_row_before_charge_in_file(self):
         """Excel row order can list refund before activation on the same day."""
         buf = self._minimal_workbook(
