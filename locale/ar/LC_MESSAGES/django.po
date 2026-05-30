@@ -2991,6 +2991,44 @@ msgstr ""
 "ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ "
 "إعادة التفعيل بدون تغيّر رصيد تُتجاهل."
 
+msgid "Portal settlements total"
+msgstr "مجموع تسويات البوابة"
+
+msgid "Portal settlements"
+msgstr "تسويات البوابة"
+
+msgid ""
+"Charge and disconnect on Layan only — not matched to the system. Amount "
+"kept on the portal per number."
+msgstr ""
+"شحن وفصل على ليان فقط — لا تُطابق النظام. مبلغ التسوية الباقي على "
+"البوابة لكل رقم."
+
+msgid "Settlement amount"
+msgstr "مبلغ التسوية"
+
+msgid "New recharge in period"
+msgstr "شحن جديد في الفترة"
+
+msgid "Portal settlement (charge + disconnect)"
+msgstr "تسوية بوابة (شحن + فصل)"
+
+msgid "For match"
+msgstr "للمطابقة"
+
+msgid "Recharge"
+msgstr "شحن"
+
+msgid "Settlement"
+msgstr "تسوية"
+
+msgid ""
+"New recharge (minus any settlement on the same number) differs from the "
+"Layan sale in the system."
+msgstr ""
+"الشحن الجديد (بعد خصم تسوية سابقة على نفس الرقم) يختلف عن بيع ليان في "
+"النظام."
+
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
 
