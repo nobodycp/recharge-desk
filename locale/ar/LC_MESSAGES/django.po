@@ -2603,6 +2603,12 @@ msgstr "مُعبَّأ تلقائياً من بيع سابق"
 msgid "Previously used"
 msgstr "مستخدمة سابقاً"
 
+msgid "Credit account"
+msgstr "حساب أجل"
+
+msgid "Cash payer"
+msgstr "بدون أجل"
+
 msgid "Payer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 

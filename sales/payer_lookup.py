@@ -63,6 +63,7 @@ def latest_payer_for_reference(reference: str) -> str | None:
 class PayerSuggestion(TypedDict):
     name: str
     count: int
+    is_customer_account: bool
 
 
 def payer_name_suggestions(query: str, *, limit: int = 10) -> List[PayerSuggestion]:
@@ -70,12 +71,25 @@ def payer_name_suggestions(query: str, *, limit: int = 10) -> List[PayerSuggesti
     Distinct payer names matching query (case-insensitive), ordered by
     sale frequency then name. Active customer account names are merged in
     when they are not already present from sales history.
+
+    ``is_customer_account`` marks registered credit customers so the sales
+    entry autocomplete can distinguish them from cash-only payer names.
     """
     q = (query or "").strip()
     if len(q) < 2:
         return []
     lim = max(1, min(limit, 25))
     merged: dict[str, PayerSuggestion] = {}
+
+    customer_account_keys: set[str] = set()
+    for name in (
+        Customer.objects.filter(is_active=True, name__icontains=q)
+        .order_by("name")
+        .values_list("name", flat=True)[: lim * 3]
+    ):
+        clean = (name or "").strip()
+        if clean:
+            customer_account_keys.add(clean.casefold())
 
     rows = (
         Sale.objects.exclude(status=Sale.Status.CANCELLED)
@@ -92,7 +106,11 @@ def payer_name_suggestions(query: str, *, limit: int = 10) -> List[PayerSuggesti
         key = name.casefold()
         if key in merged:
             continue
-        merged[key] = PayerSuggestion(name=name, count=int(r["count"]))
+        merged[key] = PayerSuggestion(
+            name=name,
+            count=int(r["count"]),
+            is_customer_account=key in customer_account_keys,
+        )
         if len(merged) >= lim:
             break
 
@@ -107,8 +125,13 @@ def payer_name_suggestions(query: str, *, limit: int = 10) -> List[PayerSuggesti
                 continue
             key = clean.casefold()
             if key in merged:
+                merged[key]["is_customer_account"] = True
                 continue
-            merged[key] = PayerSuggestion(name=clean, count=0)
+            merged[key] = PayerSuggestion(
+                name=clean,
+                count=0,
+                is_customer_account=True,
+            )
             if len(merged) >= lim:
                 break
 

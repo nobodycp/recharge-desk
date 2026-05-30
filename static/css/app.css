@@ -593,9 +593,44 @@
   background: var(--rd-accent-muted, rgba(79, 70, 229, 0.12));
 }
 
+.rd-payer-ac-item-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .rd-payer-ac-item-name {
   font-weight: 600;
   word-break: break-word;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rd-payer-ac-item-badge {
+  flex: 0 0 auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.rd-payer-ac-item-badge--credit {
+  color: var(--bs-warning-text-emphasis, #664d03);
+  background: var(--bs-warning-bg-subtle, rgba(255, 193, 7, 0.18));
+  border: 1px solid var(--bs-warning-border-subtle, rgba(255, 193, 7, 0.35));
+}
+
+.rd-payer-ac-item-badge--cash {
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
 }
 
 .rd-payer-ac-item-meta {

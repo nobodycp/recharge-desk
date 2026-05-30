@@ -79,6 +79,7 @@ class PayerAssistTests(TestCase):
         self.assertIn("Mohammad Saleh", names)
         ahmad = next(x for x in items if x["name"] == "Mohammad Ahmad")
         self.assertGreaterEqual(ahmad["count"], 2)
+        self.assertFalse(ahmad["is_customer_account"])
 
     def test_suggestions_include_active_customers(self):
         Customer.objects.create(name="Suggest Customer", created_by=self.user)
@@ -87,6 +88,15 @@ class PayerAssistTests(TestCase):
         self.assertIn("Suggest Customer", names)
         row = next(x for x in items if x["name"] == "Suggest Customer")
         self.assertEqual(row["count"], 0)
+        self.assertTrue(row["is_customer_account"])
+
+    def test_suggestions_mark_customer_account_from_sales_history(self):
+        Customer.objects.create(name="Shared Name", created_by=self.user)
+        self._make_sale("x", "Shared Name")
+        items = payer_name_suggestions("Shared")
+        row = next(x for x in items if x["name"] == "Shared Name")
+        self.assertEqual(row["count"], 1)
+        self.assertTrue(row["is_customer_account"])
 
     def test_api_requires_login(self):
         c = Client()
@@ -127,12 +137,18 @@ class PayerAssistTests(TestCase):
 
     def test_api_suggestions_json(self):
         self._make_sale("x", "Suggest Me")
+        Customer.objects.create(name="Suggest Customer", created_by=self.user)
         c = Client()
         c.force_login(self.user)
         r = c.get(reverse("sales:api_payer_name_suggestions"), {"q": "Sug"})
         self.assertEqual(r.status_code, 200)
-        names = [x["name"] for x in r.json()["suggestions"]]
+        payload = r.json()["suggestions"]
+        names = [x["name"] for x in payload]
         self.assertIn("Suggest Me", names)
+        cash = next(x for x in payload if x["name"] == "Suggest Me")
+        self.assertFalse(cash["is_customer_account"])
+        credit = next(x for x in payload if x["name"] == "Suggest Customer")
+        self.assertTrue(credit["is_customer_account"])
 
 
 class EsimSaleTests(TestCase):

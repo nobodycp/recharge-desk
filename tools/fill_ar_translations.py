@@ -700,6 +700,8 @@ AR: dict[str, str] = {
     "expense": "مصروف",
     "Paid via employee": "دفع لدى موظف",
     "On account": "آجل",
+    "Credit account": "حساب أجل",
+    "Cash payer": "بدون أجل",
     "View all": "عرض الكل",
     "My entries": "إدخالاتي",
     "Edit entry": "تعديل الإدخال",

@@ -303,7 +303,18 @@ def api_payer_name_suggestions(request):
     if len(q) < 2:
         return JsonResponse({"suggestions": []})
     items = payer_name_suggestions(q, limit=10)
-    return JsonResponse({"suggestions": [{"name": x["name"], "count": x["count"]} for x in items]})
+    return JsonResponse(
+        {
+            "suggestions": [
+                {
+                    "name": x["name"],
+                    "count": x["count"],
+                    "is_customer_account": x["is_customer_account"],
+                }
+                for x in items
+            ]
+        }
+    )
 
 
 def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):

@@ -18,6 +18,8 @@
     var apiSuggest = root.dataset.apiPayerNameSuggestions;
     var hintText = root.dataset.hintPrefilled || "";
     var usedLabel = root.dataset.labelUsed || "";
+    var creditAccountLabel = root.dataset.labelCreditAccount || "";
+    var cashPayerLabel = root.dataset.labelCashPayer || "";
 
     var refTimer = null;
     var nameTimer = null;
@@ -108,10 +110,24 @@
         btn.type = "button";
         btn.className = "rd-payer-ac-item";
         btn.setAttribute("role", "option");
+        var row = document.createElement("span");
+        row.className = "rd-payer-ac-item-row";
         var main = document.createElement("span");
         main.className = "rd-payer-ac-item-name";
         main.textContent = item.name;
-        btn.appendChild(main);
+        row.appendChild(main);
+        var badgeLabel = item.is_customer_account ? creditAccountLabel : cashPayerLabel;
+        if (badgeLabel) {
+          var badge = document.createElement("span");
+          badge.className =
+            "rd-payer-ac-item-badge" +
+            (item.is_customer_account
+              ? " rd-payer-ac-item-badge--credit"
+              : " rd-payer-ac-item-badge--cash");
+          badge.textContent = badgeLabel;
+          row.appendChild(badge);
+        }
+        btn.appendChild(row);
         if (usedLabel && item.count > 0) {
           var meta = document.createElement("span");
           meta.className = "rd-payer-ac-item-meta";
@@ -256,7 +272,11 @@
           if (!data || myId !== nameReqId) return;
           suggestions = (data.suggestions || [])
             .map(function (s) {
-              return { name: s.name, count: s.count };
+              return {
+                name: s.name,
+                count: s.count,
+                is_customer_account: Boolean(s.is_customer_account),
+              };
             })
             .slice(0, 10);
           renderList(suggestions);

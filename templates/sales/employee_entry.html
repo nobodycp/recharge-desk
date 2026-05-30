@@ -58,6 +58,8 @@
             data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
             data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
             data-label-used="{{ _('Previously used')|escapejs }}"
+            data-label-credit-account="{{ _('Credit account')|escapejs }}"
+            data-label-cash-payer="{{ _('Cash payer')|escapejs }}"
           >
             <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
             {{ form.payer_name.errors }}
