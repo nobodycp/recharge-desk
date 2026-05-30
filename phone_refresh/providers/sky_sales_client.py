@@ -305,6 +305,14 @@ class SkySalesClient:
         )
 
     @classmethod
+    def delete_session_file(cls) -> None:
+        path = session_file_path()
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    @classmethod
     def load_session_file(cls) -> SkySalesClient | None:
         path = session_file_path()
         if not path.exists():
@@ -321,6 +329,10 @@ class SkySalesClient:
             proxy_fingerprint=data.get("proxy_fingerprint", ""),
             logged_in_at=float(data.get("logged_in_at") or 0),
         )
+        if sky.pending_otp:
+            # Legacy half-login files from older builds — never resume them.
+            cls.delete_session_file()
+            return None
         client = cls(sky)
         client._apply_proxy()
         return client
@@ -329,12 +341,22 @@ class SkySalesClient:
         self.session.user_name = username
         self.login(username, password)
         self.session.pending_otp = True
-        self.save_session_file()
+        # Do not persist half-login: a saved pending_otp file makes the next
+        # request call confirm2fa without a fresh init2fa and Sky rejects it.
 
     def auto_login(self, username: str, password: str, otp_code: str = "") -> None:
-        self.begin_login(username, password)
         code = resolve_otp_code(otp_code)
-        self.confirm_otp(code)
+        try:
+            self.begin_login(username, password)
+            self.confirm_otp(code)
+        except SkySalesError as exc:
+            if "OTP rejected:" not in str(exc):
+                raise
+            _debug("OTP rejected — fresh login + retry once")
+            self._reset_http_session()
+            self.session = SkySalesSession(jwt_token="", user_name=username)
+            self.begin_login(username, password)
+            self.confirm_otp(resolve_otp_code(otp_code))
 
     def _refresh_jwt(self) -> None:
         token = self._post("/ipa/apis/json/general/genJwtToken", {})
@@ -761,17 +783,6 @@ def client_from_env() -> SkySalesClient:
 
     saved = SkySalesClient.load_session_file()
     client = saved if saved else SkySalesClient(SkySalesSession(jwt_token="", user_name=user))
-
-    if client.session.pending_otp:
-        if not otp and not has_auto_totp():
-            raise SkySalesError("OTP_REQUIRED")
-        client.confirm_otp(resolve_otp_code(otp))
-        current_ip = client.detect_egress_ip()
-        client.session.bound_ip = current_ip
-        client.session.proxy_fingerprint = proxy_fingerprint(sky_sales_proxy_url())
-        client.session.logged_in_at = time.time()
-        client.save_session_file()
-        return client
 
     client.ensure_authenticated(user, password, otp)
     return client
