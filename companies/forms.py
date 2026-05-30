@@ -103,6 +103,18 @@ class LayanReportReconcileForm(forms.Form):
             "(e.g. pending reversal)."
         ),
     )
+    min_settlement_difference = forms.DecimalField(
+        label=_("Minimum settlement difference to show"),
+        required=False,
+        initial=3,
+        min_value=0,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        help_text=_(
+            "Rows in “Settlements on disconnected numbers” with a smaller "
+            "retained amount are hidden (0 shows all)."
+        ),
+    )
 
 
 class ProductVariantForm(forms.ModelForm):

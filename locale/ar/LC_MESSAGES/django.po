@@ -3056,6 +3056,22 @@ msgstr "شحنات خارج دورات التسوية"
 msgid "Layan portal net in report"
 msgstr "صافي ليان في الكشف"
 
+msgid "Minimum settlement difference to show"
+msgstr "أقل فرق تسوية للعرض"
+
+msgid ""
+"Rows in “Settlements on disconnected numbers” with a smaller retained "
+"amount are hidden (0 shows all)."
+msgstr ""
+"صفوف «تسويات على أرقام مفصولة» التي فرقها أصغر من هذه القيمة لا "
+"تُعرض (0 = عرض الكل)."
+
+#, python-format
+msgid ""
+"Showing settlements with difference ≥ %(min)s (%(hidden)s hidden)."
+msgstr ""
+"عرض التسويات التي فرقها ≥ %(min)s (%(hidden)s مخفية)."
+
 #~ msgid ""
 #~ "This entry has already been processed by management and can no longer be "
 #~ "deleted."

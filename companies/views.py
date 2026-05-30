@@ -85,6 +85,9 @@ def layan_reconcile(request, pk):
     result = None
     if request.method == "POST" and form.is_valid():
         try:
+            min_settle = form.cleaned_data.get("min_settlement_difference")
+            if min_settle is None:
+                min_settle = 3
             result = reconcile_layan_report(
                 company,
                 form.cleaned_data["report_file"],
@@ -93,6 +96,7 @@ def layan_reconcile(request, pk):
                 pending_credits=parse_pending_credits(
                     form.cleaned_data.get("pending_credits") or ""
                 ),
+                min_settlement_difference=min_settle,
             )
             messages.success(
                 request,

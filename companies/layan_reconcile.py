@@ -268,6 +268,8 @@ class LayanReconcileResult:
     estimated_deficit: Decimal
     balance_gap: Decimal
     row_count: int
+    min_settlement_difference: Decimal = Decimal("0")
+    split_settlements_hidden_count: int = 0
 
 
 def parse_layan_workbook(
@@ -406,6 +408,10 @@ def _rd_ledger_totals(company, period_from: date | None, period_to: date | None)
     return deposits, deductions, adjustments
 
 
+def _settlement_row_difference(row: ReconcilePhoneRow) -> Decimal:
+    return abs(row.settlement_amount or row.layan_net)
+
+
 def reconcile_layan_report(
     company,
     file_obj: BinaryIO,
@@ -413,6 +419,7 @@ def reconcile_layan_report(
     period_from: date | None,
     period_to: date | None,
     pending_credits: dict[str, Decimal] | None = None,
+    min_settlement_difference: Decimal | None = None,
 ) -> LayanReconcileResult:
     """Match Layan Excel rows to RD sales for one supplier (intended for Layan)."""
     pending_credits = pending_credits or {}
@@ -626,6 +633,17 @@ def reconcile_layan_report(
         reverse=True,
     )
 
+    min_settle = Decimal(min_settlement_difference or 0)
+    split_hidden = 0
+    if min_settle > 0:
+        visible = [
+            r
+            for r in split_settlements
+            if _settlement_row_difference(r) >= min_settle
+        ]
+        split_hidden = len(split_settlements) - len(visible)
+        split_settlements = visible
+
     total_not = sum((r.gap for r in not_recorded), Decimal("0"))
     total_split = sum((r.settlement_amount for r in split_settlements), Decimal("0"))
     total_mismatch = sum((abs(r.gap) for r in amount_mismatches), Decimal("0"))
@@ -662,6 +680,8 @@ def reconcile_layan_report(
         estimated_deficit=estimated_deficit,
         row_count=row_count,
         balance_gap=balance_gap,
+        min_settlement_difference=min_settle,
+        split_settlements_hidden_count=split_hidden,
     )
 
 

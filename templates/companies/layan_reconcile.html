@@ -88,9 +88,16 @@
     {% include "companies/partials/layan_reconcile_table.html" with section_title=title_other section_rows=result.logged_other_supplier section_total=result.total_logged_other_supplier section_help=help_other %}
   {% endif %}
 
-  {% if result.split_settlements %}
+  {% if result.split_settlements or result.split_settlements_hidden_count %}
     {% trans "Settlements on disconnected numbers" as title_split %}
     {% trans "Charge on activation minus refund on disconnect (amount kept on Layan portal)." as help_split %}
+    {% if result.min_settlement_difference > 0 %}
+      <p class="small text-secondary mb-2">
+        {% blocktrans with min=result.min_settlement_difference|floatformat:2 hidden=result.split_settlements_hidden_count %}
+        Showing settlements with difference ≥ {{ min }} ({{ hidden }} hidden).
+        {% endblocktrans %}
+      </p>
+    {% endif %}
     {% include "companies/partials/layan_reconcile_settlements.html" with section_title=title_split section_rows=result.split_settlements section_total=result.total_split_settlements section_help=help_split %}
   {% endif %}
 

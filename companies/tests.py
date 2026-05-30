@@ -361,6 +361,35 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
 
+    def test_settlement_min_difference_hides_small_rows(self):
+        buf = self._minimal_workbook(
+            [
+                ("0522222222", "تفعيل", 30, 970, 940, "02/05/2026 10:00"),
+                ("0522222222", "إعادة مال", -29, 940, 941, "03/05/2026 10:00"),
+            ]
+        )
+        result_all = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+            min_settlement_difference=_decimal(0),
+        )
+        self.assertEqual(len(result_all.split_settlements), 1)
+        self.assertEqual(result_all.split_settlements[0].layan_net, _decimal(1))
+
+        buf.seek(0)
+        result_filtered = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+            min_settlement_difference=_decimal(3),
+        )
+        self.assertEqual(len(result_filtered.split_settlements), 0)
+        self.assertEqual(result_filtered.split_settlements_hidden_count, 1)
+        self.assertEqual(result_filtered.total_split_settlements, _decimal(0))
+
     def test_settlement_ignores_passive_activation_same_day(self):
         """First row is re-activation only (balance unchanged); settlement is 30 − 29 = 1."""
         buf = self._minimal_workbook(
