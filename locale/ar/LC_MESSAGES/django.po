@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-28 09:08+0300\n"
+"POT-Creation-Date: 2026-05-30 12:41+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,55 +18,89 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
+#: accounts/apps.py:8
 msgid "Accounts"
 msgstr "الحسابات"
+#: accounts/forms.py:25 accounts/forms.py:187
+#: templates/accounts/partials/user_list_results.html:12
 msgid "Full name"
 msgstr "الاسم الكامل"
+#: accounts/forms.py:27 templates/accounts/partials/user_list_results.html:15
 msgid "Role"
 msgstr "الدور"
+#: accounts/forms.py:32
 msgid "Profile active"
 msgstr "الملف الشخصي مفعّل"
+#: accounts/forms.py:37 accounts/forms.py:90
 msgid "Login enabled"
 msgstr "تسجيل الدخول مفعّل"
+#: accounts/forms.py:81 accounts/forms.py:182
+#: templates/accounts/partials/user_list_results.html:9
 msgid "Username"
 msgstr "اسم المستخدم"
+#: accounts/forms.py:86 accounts/forms.py:193
 msgid "Profile picture"
 msgstr "صورة الملف الشخصي"
 
+#: accounts/forms.py:92
 msgid "New password"
 msgstr "كلمة المرور الجديدة"
 
+#: accounts/forms.py:95
 msgid "Leave blank to keep the current password."
 msgstr "اتركها فارغة للإبقاء على كلمة المرور الحالية."
 
+#: accounts/forms.py:98
 msgid "Confirm new password"
 msgstr "تأكيد كلمة المرور الجديدة"
 
+#: accounts/forms.py:124 accounts/forms.py:208
 msgid "Username cannot be empty."
 msgstr "لا يمكن أن يكون اسم المستخدم فارغاً."
 
+#: accounts/forms.py:132 accounts/forms.py:215
 msgid "This username is already taken."
 msgstr "اسم المستخدم هذا محجوز مسبقاً."
 
+#: accounts/forms.py:141
 msgid "The two password fields didn't match."
 msgstr "حقلا كلمة المرور غير متطابقين."
 
+#: accounts/forms.py:145
 msgid "Password must be at least 8 characters long."
 msgstr "يجب أن تكون كلمة المرور 8 أحرف على الأقل."
 
+#: accounts/models.py:10 templates/base_management.html:9
 msgid "Management"
 msgstr "الإدارة"
+#: accounts/models.py:11 sales/forms.py:80 sales/forms.py:194
+#: templates/employees/employee_list.html:58
+#: templates/reports/dashboard.html:295
+#: templates/reports/employee_report.html:66
+#: templates/reports/partials/company_report_sales.html:50
+#: templates/reports/partials/sales_report_results.html:46
+#: templates/reports/profit_report.html:81
+#: templates/sales/employee_entry.html:266
+#: templates/sales/partials/awaiting_results.html:15
+#: templates/sales/partials/awaiting_results.html:103
+#: templates/sales/partials/management_sale_list_results.html:24
+#: templates/sales/partials/pending_payments_results.html:35
 msgid "Employee"
 msgstr "موظف"
+#: accounts/models.py:18
 msgid "full name"
 msgstr "الاسم الكامل"
+#: accounts/models.py:20
 msgid "role"
 msgstr "الدور"
+#: accounts/models.py:25
 msgid "profile active"
 msgstr "الملف الشخصي مفعّل"
+#: accounts/models.py:27
 msgid "stale line threshold (days)"
 msgstr "حد عدم النشاط للخطوط (بالأيام)"
 
+#: accounts/models.py:30
 msgid ""
 "Used by the “lines for disconnect” report: numbers whose last non-cancelled "
 "sale is older than this many days appear in the list."
@@ -74,35 +108,48 @@ msgstr ""
 "يُستخدم في تقرير «أرقام للفصل»: الأرقام التي آخر بيع غير ملغى لها أقدم من هذا "
 "العدد من الأيام تظهر في القائمة."
 
+#: accounts/models.py:35
 msgid "avatar"
 msgstr "صورة الحساب"
 
+#: accounts/models.py:39
 msgid "Profile picture shown in the topbar menu."
 msgstr "الصورة الشخصية الظاهرة في القائمة العلوية."
 
+#: accounts/models.py:43
 msgid "user profile"
 msgstr "ملف المستخدم"
+#: accounts/models.py:44
 msgid "user profiles"
 msgstr "ملفات المستخدمين"
+#: accounts/views.py:64
 msgid "Employees & users"
 msgstr "الموظفون والمستخدمون"
+#: accounts/views.py:78
 msgid "User created."
 msgstr "تم إنشاء المستخدم."
+#: accounts/views.py:83 templates/accounts/user_list.html:9
 msgid "Create user"
 msgstr "إنشاء مستخدم"
+#: accounts/views.py:98
 msgid "User updated."
 msgstr "تم تحديث المستخدم."
+#: accounts/views.py:105
 msgid "Edit user"
 msgstr "تعديل المستخدم"
+#: accounts/views.py:117
 msgid "You can't delete your own account."
 msgstr "لا يمكنك حذف حسابك الشخصي."
 
+#: accounts/views.py:119
 msgid "Only a superuser can delete another superuser."
 msgstr "فقط المستخدم الجذر يمكنه حذف مستخدم جذر آخر."
 
+#: accounts/views.py:133
 msgid "This is the last active management account — it can't be deleted."
 msgstr "هذا هو الحساب الإداري الأخير الفعّال — لا يمكن حذفه."
 
+#: accounts/views.py:158
 #, python-format
 msgid ""
 "Can't delete '%(name)s': they are linked to existing sales, customers or "
@@ -112,142 +159,322 @@ msgstr ""
 "لا يمكن حذف \"%(name)s\": فهو مرتبط بمبيعات أو زبائن أو دفعات حالية. عطّل "
 "تسجيل دخوله بدلاً من ذلك بإلغاء تأشير \"تمكين تسجيل الدخول\" في شاشة التعديل."
 
+#: accounts/views.py:165
 #, python-format
 msgid "User '%(name)s' deleted."
 msgstr "تم حذف المستخدم \"%(name)s\"."
 
+#: accounts/views.py:189
 msgid "Password changed."
 msgstr "تم تغيير كلمة المرور."
 
+#: accounts/views.py:199
 msgid "Profile updated."
 msgstr "تم تحديث الملف الشخصي."
 
+#: accounts/views.py:209 templates/accounts/account_settings.html:4
+#: templates/accounts/account_settings.html:8
 msgid "Account settings"
 msgstr "إعدادات الحساب"
 
+#: audit/models.py:22
 msgid "Create"
 msgstr "إنشاء"
 
+#: audit/models.py:23
 msgid "Update"
 msgstr "تحديث"
 
+#: audit/models.py:24 templates/accounts/partials/user_list_results.html:37
+#: templates/accounts/partials/user_list_results.html:65
+#: templates/companies/partials/company_list_results.html:36
+#: templates/companies/partials/company_list_results.html:39
+#: templates/companies/partials/company_list_results.html:73
+#: templates/companies/product_list.html:63
+#: templates/companies/product_list.html:66
+#: templates/customers/customer_detail.html:92
+#: templates/customers/customer_detail.html:141
+#: templates/customers/customer_detail.html:152
+#: templates/customers/customer_detail.html:279
+#: templates/customers/customer_list.html:92
+#: templates/expenses/expense_report.html:87
+#: templates/expenses/partials/expense_list_results.html:38
+#: templates/expenses/partials/expense_list_results.html:67
+#: templates/inventory/_balance_actions.html:21
+#: templates/inventory/movements.html:82
+#: templates/reports/partials/stale_phones_report_results.html:45
+#: templates/sales/partials/employee_recent_actions.html:17
+#: templates/sales/partials/management_sale_list_results.html:80
+#: templates/sales/partials/management_sale_list_results.html:142
+#: templates/sales/partials/pending_payments_results.html:80
+#: templates/sales/partials/pending_payments_results.html:150
+#: templates/sales/payment_method_list.html:34
 msgid "Delete"
 msgstr "حذف"
+#: audit/models.py:25 templates/customers/payment_submissions_list.html:56
+#: templates/customers/payment_submissions_list.html:104
+#: templates/sales/partials/awaiting_results.html:43
+#: templates/sales/partials/awaiting_results.html:117
 msgid "Approve"
 msgstr "موافقة"
 
+#: audit/models.py:26 templates/customers/payment_submissions_list.html:61
+#: templates/customers/payment_submissions_list.html:108
+#: templates/sales/partials/awaiting_results.html:51
+#: templates/sales/partials/awaiting_results.html:125
 msgid "Reject"
 msgstr "رفض"
 
+#: audit/models.py:27 templates/accounts/user_form.html:52
+#: templates/companies/company_form.html:20
+#: templates/companies/product_line_form.html:20
+#: templates/companies/product_variant_form.html:23
+#: templates/customers/customer_form.html:21
+#: templates/expenses/expense_form.html:19
+#: templates/inventory/_action_dialog.html:33
+#: templates/reports/stale_phone_edit.html:18
+#: templates/sales/employee_entry.html:344
+#: templates/sales/employee_entry.html:429
+#: templates/sales/employee_sale_edit.html:74
+#: templates/sales/partials/management_sale_list_results.html:67
+#: templates/sales/partials/management_sale_list_results.html:129
+#: templates/sales/payment_method_form.html:27
+#: templates/sales/sale_edit.html:76
 msgid "Cancel"
 msgstr "إلغاء"
+#: audit/models.py:28 templates/sales/partials/pending_payments_results.html:68
+#: templates/sales/partials/pending_payments_results.html:138
 msgid "Mark paid"
 msgstr "تعليم كمدفوع"
+#: audit/models.py:29 templates/customers/customer_detail.html:169
+#: templates/customers/customer_detail.html:176
+#: templates/sales/employee_entry.html:20
 msgid "Record payment"
 msgstr "تسجيل دفعة"
 
+#: audit/models.py:30
 msgid "Adjust balance"
 msgstr "تعديل الرصيد"
 
+#: audit/models.py:31 templates/customers/customer_list.html:86
 msgid "Write off"
 msgstr "شطب"
 
+#: audit/models.py:41
 msgid "actor"
 msgstr "الفاعل"
 
+#: audit/models.py:44
 msgid "action"
 msgstr "إجراء"
 
+#: audit/models.py:49
 msgid "model"
 msgstr "النموذج"
 
+#: audit/models.py:51
 msgid "Lowercased ``app_label.model_name`` of the affected row."
 msgstr "اسم التطبيق واسم النموذج بحروف صغيرة للصف المتأثر."
 
+#: audit/models.py:54
 msgid "object id"
 msgstr "معرّف العنصر"
 
+#: audit/models.py:60
 msgid "object"
 msgstr "كائن"
 
+#: audit/models.py:64
 msgid "Snapshot of ``str(instance)`` so deletes stay meaningful."
 msgstr "لقطة من ``str(instance)`` حتى تبقى عمليات الحذف ذات معنى."
 
+#: audit/models.py:67
 msgid "changes"
 msgstr "التغييرات"
 
+#: audit/models.py:70
 msgid "Per-field {old, new} for updates; arbitrary context otherwise."
 msgstr "لكل حقل {القديم، الجديد} للتحديثات؛ سياق اعتباطي في الحالات الأخرى."
 
+#: audit/models.py:72
 msgid "IP address"
 msgstr "عنوان IP"
 
+#: audit/models.py:73 customers/models.py:109 customers/models.py:255
+#: employees/models.py:37 employees/models.py:107 inventory/models.py:125
+#: inventory/models.py:191 sales/models.py:179 sales/models.py:290
 msgid "created at"
 msgstr "تاريخ الإنشاء"
+#: audit/models.py:76
 msgid "audit log entry"
 msgstr "إدخال سجل التدقيق"
 
+#: audit/models.py:77
 msgid "audit log"
 msgstr "سجل التدقيق"
 
+#: audit/views.py:67 templates/audit/audit_log_list.html:6
+#: templates/partials/management_nav.html:196
 msgid "Audit log"
 msgstr "سجل التدقيق"
 
+#: companies/forms.py:71
 msgid "Select a package that belongs to this product line."
 msgstr "اختر باقة تنتمي لخط المنتج هذا."
 
+#: companies/forms.py:78 expenses/forms.py:17 expenses/views.py:102
+#: inventory/forms.py:215 reports/views.py:263 sales/forms.py:212
+#: sales/forms.py:279 templates/audit/audit_log_list.html:52
+#: templates/companies/partials/company_detail_general.html:7
+#: templates/customers/customer_detailed_invoice.html:24
+#: templates/customers/customer_statement.html:24
+#: templates/reports/company_report.html:16
+msgid "Date from"
+msgstr "من تاريخ"
+#: companies/forms.py:83 expenses/forms.py:22 expenses/views.py:107
+#: inventory/forms.py:220 reports/views.py:268 sales/forms.py:217
+#: sales/forms.py:286 templates/audit/audit_log_list.html:56
+#: templates/companies/partials/company_detail_general.html:11
+#: templates/customers/customer_detailed_invoice.html:28
+#: templates/customers/customer_statement.html:28
+#: templates/reports/company_report.html:20
+msgid "Date to"
+msgstr "إلى تاريخ"
+#: companies/forms.py:88
+msgid "Layan charges report (.xlsx)"
+msgstr "كشف خصومات ليان (.xlsx)"
+
+#: companies/forms.py:92
+msgid "Pending portal credits (optional)"
+msgstr "أرصدة معلّقة على البوابة (اختياري)"
+
+#: companies/forms.py:102
+msgid ""
+"One line per entry: phone,credit amount not yet shown on the export (e.g. "
+"pending reversal)."
+msgstr ""
+"سطر لكل رقم: رقم_الهاتف,مبلغ_الإرجاع غير الظاهر بعد في الكشف (مثل عكس معلّق)."
+
+#: companies/forms.py:107
+msgid "Minimum settlement difference to show"
+msgstr "أقل فرق تسوية للعرض"
+
+#: companies/forms.py:114
+msgid ""
+"Rows in “Settlements on disconnected numbers” with a smaller retained amount "
+"are hidden (0 shows all)."
+msgstr ""
+"صفوف «تسويات على أرقام مفصولة» التي فرقها أصغر من هذه القيمة لا تُعرض (0 = "
+"عرض الكل)."
+
+#: companies/forms.py:125
 msgid "e.g. 100 GB"
 msgstr "مثلاً 100 جيجا"
 
+#: companies/layan_reconcile.py:440
+msgid "Pending credit (manual)"
+msgstr "رصيد معلّق (يدوي)"
+
+#: companies/layan_reconcile.py:506
+#: templates/companies/layan_reconcile.html:111
+msgid "In Layan sales only"
+msgstr "في مبيعات ليان فقط"
+
+#: companies/layan_reconcile.py:527
+msgid "Settlement on disconnected number"
+msgstr "تسوية على رقم مفصول"
+
+#: companies/layan_reconcile.py:557 templates/companies/layan_reconcile.html:86
+msgid "Logged under another supplier"
+msgstr "مسجّل تحت مورد آخر"
+
+#: companies/layan_reconcile.py:577
+msgid "Not recorded under Layan"
+msgstr "لم يُسجّل تحت ليان"
+
+#: companies/layan_reconcile.py:599
+msgid "Amount mismatch"
+msgstr "اختلاف مبلغ"
+
+#: companies/layan_reconcile.py:621
+msgid "Matched"
+msgstr "متطابق"
+
+#: companies/models.py:13 customers/models.py:15 sales/models.py:12
 msgid "name"
 msgstr "الاسم"
+#: companies/models.py:15 sales/models.py:14
 msgid "icon"
 msgstr "الأيقونة"
 
+#: companies/models.py:19
 msgid "Shown on the employee sales screen instead of the name."
 msgstr "تظهر في شاشة مبيعات الموظف بدلاً من الاسم."
 
+#: companies/models.py:22
 msgid "opening balance"
 msgstr "الرصيد الافتتاحي"
+#: companies/models.py:29 customers/models.py:18 employees/models.py:27
 msgid "current balance"
 msgstr "الرصيد الحالي"
+#: companies/models.py:34 customers/models.py:16 customers/models.py:102
+#: customers/models.py:152 customers/models.py:246 employees/models.py:98
+#: expenses/models.py:19 inventory/models.py:117 sales/models.py:181
+#: sales/models.py:281
 msgid "notes"
 msgstr "ملاحظات"
+#: companies/models.py:36
 msgid "phone refresh provider"
 msgstr "مزوّد تحديث الهاتف"
+#: companies/models.py:40
 msgid "Not set"
 msgstr "غير محدّد"
+#: companies/models.py:47
 msgid ""
 "Which upstream API runs phone refresh for this company. Leave empty to match "
 "from the company name (legacy)."
 msgstr ""
 "مزوّد API الذي ينفّذ التحديث لهذه الشركة. اتركه فارغاً للمطابقة من اسم ا"
 "لشركة (قديم)."
+#: companies/models.py:51 companies/models.py:106 companies/models.py:186
+#: customers/models.py:27 employees/models.py:36 sales/models.py:20
 msgid "active"
 msgstr "نشط"
+#: companies/models.py:56 companies/models.py:86 sales/models.py:47
+#: sales/models.py:267
 msgid "company"
 msgstr "الشركة"
+#: companies/models.py:57
 msgid "companies"
 msgstr "الشركات"
+#: companies/models.py:88 companies/models.py:122 companies/models.py:159
+#: inventory/models.py:29 inventory/models.py:82 inventory/models.py:159
 msgid "product line"
 msgstr "خط المنتج"
 
+#: companies/models.py:90
 msgid "line icon"
 msgstr "أيقونة الخط"
 
+#: companies/models.py:94
 msgid "Default icon for all packages in this line; a package can override."
 msgstr "الأيقونة الافتراضية لجميع باقات هذا الخط؛ ويمكن لكل باقة تجاوزها."
 
+#: companies/models.py:96
 msgid "sort order"
 msgstr "ترتيب العرض"
 
+#: companies/models.py:98
 msgid "estimated unit cost (SIM)"
 msgstr "تكلفة الوحدة التقديرية (شريحة)"
+#: companies/models.py:104
 msgid "Optional. Used for SIM inventory valuation reports."
 msgstr "اختياري. لحساب قيمة مخزون الشرائح في التقارير."
+#: companies/models.py:113
 msgid "default package for sales"
 msgstr "الباقة الافتراضية للمبيعات"
 
+#: companies/models.py:115
 msgid ""
 "If this line has several packages, employees see this one selected first; "
 "they can still pick another."
@@ -255,141 +482,288 @@ msgstr ""
 "إذا كان لهذا الخط أكثر من باقة، يرى الموظف هذه الباقة محدّدة أولاً، ويستطيع "
 "اختيار غيرها."
 
+#: companies/models.py:123
 msgid "product lines"
 msgstr "خطوط المنتجات"
 
+#: companies/models.py:140
 msgid "The default package must belong to this product line."
 msgstr "يجب أن تنتمي الباقة الافتراضية لخط المنتج هذا."
 
+#: companies/models.py:162
 msgid "package"
 msgstr "باقة"
 
+#: companies/models.py:165
 msgid ""
 "Examples: \"100 GB\", \"200 GB\". Leave empty if the line has only one "
 "package."
 msgstr ""
 "أمثلة: «100 جيجا»، «200 جيجا». اتركه فارغاً إذا كان للخط باقة واحدة فقط."
 
+#: companies/models.py:168
 msgid "package icon"
 msgstr "أيقونة الباقة"
 
+#: companies/models.py:172
 msgid "Optional; falls back to the line icon on the employee screen."
 msgstr "اختياري؛ يُستخدم أيقونة الخط في شاشة الموظف عند تركه فارغاً."
 
+#: companies/models.py:175
 msgid "cost price"
 msgstr "سعر التكلفة"
+#: companies/models.py:181
 msgid "default sell price"
 msgstr "سعر البيع الافتراضي"
+#: companies/models.py:191
 msgid "product package"
 msgstr "باقة المنتج"
 
+#: companies/models.py:192
 msgid "product packages"
 msgstr "باقات المنتجات"
 
+#: companies/statement.py:170
+msgid "Deposit recorded."
+msgstr "تم تسجيل الإيداع."
+#: companies/statement.py:179 customers/views/actions.py:79
+#: employees/views.py:100
+msgid "Adjustment recorded."
+msgstr "تم تسجيل التسوية."
+#: companies/views.py:47 templates/companies/company_list.html:6
+#: templates/partials/management_nav.html:102
 msgid "Companies"
 msgstr "الشركات"
+#: companies/views.py:62
 msgid "Company saved."
 msgstr "تم حفظ الشركة."
+#: companies/views.py:67 templates/companies/company_list.html:9
 msgid "New company"
 msgstr "شركة جديدة"
+#: companies/views.py:81
+msgid "Layan report matching is only available for Layan."
+msgstr "مطابقة كشف ليان متاحة لمورد ليان فقط."
+
+#: companies/views.py:103
+#, python-format
+msgid "Report processed (%(rows)s rows)."
+msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
+
+#: companies/views.py:108
+msgid "Excel support is not installed (openpyxl). Contact your administrator."
+msgstr "دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
+
+#: companies/views.py:113
+#, python-format
+msgid "Could not read the report: %(error)s"
+msgstr "تعذّر قراءة الكشف: %(error)s"
+
+#: companies/views.py:123 templates/companies/company_detail.html:12
+#: templates/companies/layan_reconcile.html:6
+msgid "Layan report matching"
+msgstr "مطابقة كشف ليان"
+
+#: companies/views.py:134
 msgid "Company updated."
 msgstr "تم تحديث الشركة."
+#: companies/views.py:139
 msgid "Edit company"
 msgstr "تعديل الشركة"
+#: companies/views.py:152
 msgid "Cannot delete a company that has sales. Cancel or archive sales first."
 msgstr "لا يمكن حذف شركة لها مبيعات. ألغِ المبيعات أو أرشفها أولاً."
 
+#: companies/views.py:157
 #, python-format
 msgid "Company “%(name)s” was deleted."
 msgstr "تم حذف الشركة «%(name)s»."
 
+#: companies/views.py:176 templates/companies/product_list.html:6
+#: templates/partials/management_nav.html:106
 msgid "Products"
 msgstr "المنتجات"
+#: companies/views.py:185
 msgid "Product line saved. Add one or more packages below."
 msgstr "تم حفظ خط المنتج. أضف باقة أو أكثر بالأسفل."
 
+#: companies/views.py:190 templates/companies/product_list.html:9
 msgid "New product line"
 msgstr "خط منتج جديد"
 
+#: companies/views.py:200
 msgid "Product line updated."
 msgstr "تم تحديث خط المنتج."
 
+#: companies/views.py:205
 msgid "Edit product line"
 msgstr "تعديل خط المنتج"
 
+#: companies/views.py:217
 msgid "Package saved."
 msgstr "تم حفظ الباقة."
 
+#: companies/views.py:222
 msgid "New package"
 msgstr "باقة جديدة"
 
+#: companies/views.py:232
 msgid "Package updated."
 msgstr "تم تحديث الباقة."
 
+#: companies/views.py:237
 msgid "Edit package"
 msgstr "تعديل الباقة"
 
+#: companies/views.py:250
 msgid ""
 "Cannot delete this product line because it has sales recorded for one or "
 "more packages."
 msgstr "لا يمكن حذف خط المنتج هذا لوجود مبيعات مسجّلة على باقة أو أكثر منه."
 
+#: companies/views.py:255
 #, python-format
 msgid "Product line was deleted: %(label)s"
 msgstr "تم حذف خط المنتج: %(label)s"
 
+#: companies/views.py:268
 msgid "Cannot delete this package because it has sales recorded."
 msgstr "لا يمكن حذف هذه الباقة لوجود مبيعات مسجّلة عليها."
 
+#: companies/views.py:273
 #, python-format
 msgid "Package was deleted: %(label)s"
 msgstr "تم حذف الباقة: %(label)s"
 
+#: core/database_backup.py:47
+msgid "PostgreSQL"
+msgstr ""
+
+#: core/database_backup.py:49
+msgid "SQLite"
+msgstr ""
+
+#: core/database_backup.py:64
+msgid "Database file not found."
+msgstr ""
+
+#: core/database_backup.py:149
+msgid "PostgreSQL dump files require a PostgreSQL database."
+msgstr ""
+
+#: core/database_backup.py:158
+msgid ""
+"Unsupported file type. Use .json.gz, .json, .dump (PostgreSQL), or .sqlite3 "
+"(SQLite)."
+msgstr ""
+
+#: core/database_backup.py:181
+msgid "Invalid gzip archive."
+msgstr ""
+
+#: core/database_backup.py:204
+msgid "SQLite files can only be imported into a SQLite database."
+msgstr ""
+
+#: core/database_backup.py:218
+msgid ""
+"pg_restore is not installed on this server. Import a .json.gz backup instead."
+msgstr ""
+
+#: core/forms.py:41
 msgid "Debt requests require approval"
 msgstr "طلبات الدين تتطلب موافقة"
+#: core/forms.py:42
 msgid "Settlement requests require approval"
 msgstr "طلبات التسديد تتطلب موافقة"
+#: core/forms.py:43
 msgid "Payment requests require approval"
 msgstr "طلبات الدفع تتطلب موافقة"
+#: core/forms.py:44
 msgid "Create customers from sales entry"
 msgstr "إنشاء زبائن من شاشة المبيعات"
+#: core/forms.py:45
 msgid "Inventory (New SIM) on sales entry"
 msgstr "المخزون (شريحة جديدة) في شاشة المبيعات"
+#: core/forms.py:46
 msgid "Number refresh button on sales entry"
 msgstr "زر تحديث الأرقام في شاشة المبيعات"
+
+#: core/forms.py:47
 msgid "Record payment button on sales entry"
 msgstr "زر تسجيل الدفعة في شاشة المبيعات"
+#: core/forms.py:48
 msgid "Payment to employee button on sales entry"
 msgstr "زر دفع لدى موظف في شاشة المبيعات"
+#: core/forms.py:49 core/models.py:190
 msgid "Default language"
 msgstr "اللغة الافتراضية"
+#: core/forms.py:50 core/models.py:196
 msgid "Default theme"
 msgstr "الثيم الافتراضي"
+#: core/forms.py:51
 msgid "Refresh link default language"
 msgstr "اللغة الافتراضية لرابط التحديث"
+#: core/forms.py:52
 msgid "Refresh link default theme"
 msgstr "الثيم الافتراضي لرابط التحديث"
+#: core/forms.py:65
 msgid "e.g. Recharge Desk"
 msgstr "مثال: المحاسب الشامل"
 
+#: core/forms.py:72
 msgid "e.g. Management"
 msgstr "مثال: الإدارة"
 
+#: core/forms.py:79
 msgid "Site name"
 msgstr "اسم الموقع"
 
+#: core/forms.py:80
 msgid "Sidebar tagline"
 msgstr "سطر تعريف الشريط الجانبي"
 
+#: core/forms.py:81 templates/accounts/login.html:22
 msgid "Site logo"
 msgstr "شعار الموقع"
 
+#: core/forms.py:82 templates/core/site_branding.html:60
 msgid "Browser tab icon"
 msgstr "أيقونة تبويب المتصفح"
 
+#: core/forms_database.py:9
+msgid "Backup file"
+msgstr ""
+
+#: core/forms_database.py:10
+msgid ""
+"JSON (.json / .json.gz), PostgreSQL custom dump (.dump), or SQLite "
+"(.sqlite3)."
+msgstr ""
+
+#: core/forms_database.py:13
+msgid "Confirmation"
+msgstr "الإشعارات"
+
+
+#: core/forms_database.py:14
+#, python-format
+msgid "Type %(word)s to confirm you want to replace all current data."
+msgstr ""
+
+#: core/forms_database.py:18
+msgid ""
+"I understand this will erase existing data and replace it with the backup."
+msgstr "أفهم أن هذا سيحذف البيانات الحالية ويستبدلها بالنسخة الاحتياطية."
+#: core/forms_database.py:26
+#, python-format
+msgid "Type \"%(word)s\" exactly to confirm."
+msgstr ""
+
+#: core/models.py:45
 msgid "site name"
 msgstr "اسم الموقع"
 
+#: core/models.py:49
 msgid ""
 "Displayed in the browser tab title, the sidebar header, and the login page. "
 "Leave empty to keep the default name."
@@ -397,9 +771,11 @@ msgstr ""
 "يظهر في عنوان تبويب المتصفح، ورأس الشريط الجانبي، وصفحة تسجيل الدخول. اتركه "
 "فارغاً للإبقاء على الاسم الافتراضي."
 
+#: core/models.py:54
 msgid "tagline"
 msgstr "سطر تعريفي"
 
+#: core/models.py:58
 msgid ""
 "Short text shown under the site name in the sidebar. Leave empty to keep the "
 "default."
@@ -407,73 +783,98 @@ msgstr ""
 "نص قصير يظهر تحت اسم الموقع في الشريط الجانبي. اتركه فارغاً للإبقاء على "
 "الافتراضي."
 
+#: core/models.py:63
 msgid "logo"
 msgstr "الشعار"
 
+#: core/models.py:67
 msgid "Shown above the login form. Resized automatically."
 msgstr "يظهر أعلى نموذج تسجيل الدخول. يُصغَّر حجمه تلقائياً."
 
+#: core/models.py:70
 msgid "favicon"
 msgstr "أيقونة المتصفح"
 
+#: core/models.py:74
 msgid "Shown in the browser tab and bookmarks. Resized automatically."
 msgstr "تظهر في تبويب المتصفح والإشارات المرجعية. يتم تصغير حجمها تلقائياً."
 
+#: core/models.py:76 core/models.py:213 employees/models.py:38
+#: inventory/models.py:192 reports/models.py:23 sales/models.py:180
 msgid "updated at"
 msgstr "تاريخ التحديث"
+#: core/models.py:81 core/models.py:82
 msgid "site branding"
 msgstr "هوية الموقع"
 
+#: core/models.py:129 core/models.py:210
 msgid "Light"
 msgstr "فاتح"
+#: core/models.py:130 core/models.py:210
 msgid "Dark"
 msgstr "داكن"
+#: core/models.py:131
 msgid "System (match device)"
 msgstr "تلقائي (حسب الجهاز)"
+#: core/models.py:134
 msgid "Allow creating customers from sales entry"
 msgstr "السماح بإنشاء زبائن من شاشة المبيعات"
+#: core/models.py:137
 msgid ""
 "When off, on-account sales require an existing customer created from the "
 "Customers screen."
 msgstr "عند الإيقاف، تتطلب مبيعات الآجل زبوناً موجوداً مسبقاً من شاشة الزبائن."
+#: core/models.py:142
 msgid "Require approval for debt requests"
 msgstr "طلبات الدين تتطلب موافقة"
+#: core/models.py:145
 msgid ""
 "When off, on-account sales post to the customer immediately without awaiting "
 "management approval."
 msgstr ""
 "عند الإيقاف، تُسجَّل مبيعات الآجل على حساب الزبون فوراً دون انتظار موافق"
 "ة الإدارة."
+#: core/models.py:150
 msgid "Require approval for settlement requests"
 msgstr "طلبات التسديد تتطلب موافقة"
+#: core/models.py:153
 msgid ""
 "When off, customer settlement submissions apply to the balance immediately "
 "without management approval."
 msgstr ""
 "عند الإيقاف، تُطبَّق طلبات تسديد الزبون على الرصيد فوراً دون موافقة الإد"
 "ارة."
+#: core/models.py:158
 msgid "Require approval for payment requests"
 msgstr "طلبات الدفع تتطلب موافقة"
+#: core/models.py:161
 msgid ""
 "When off, cash sales are marked paid immediately without appearing in "
 "pending payments."
 msgstr ""
 "عند الإيقاف، تُعلَّم المبيعات النقدية مدفوعة فوراً دون الظهور في المدفوع"
 "ات المعلّقة."
+#: core/models.py:166
 msgid "Show inventory (New SIM) on sales entry"
 msgstr "عرض المخزون (شريحة جديدة) في شاشة المبيعات"
+#: core/models.py:169
 msgid ""
 "When off, the New SIM option is hidden on the employee sales screen. "
 "Inventory management elsewhere is unchanged."
 msgstr ""
 "عند الإيقاف، يُخفى خيار شريحة جديدة في شاشة مبيعات الموظف. إدارة المخزون"
 " في باقي الشاشات دون تغيير."
+#: core/models.py:174
 msgid "Show number refresh on sales entry"
 msgstr "عرض تحديث الأرقام في شاشة المبيعات"
+
+#: core/models.py:178
 msgid "Show record payment on sales entry"
 msgstr "عرض تسجيل الدفعة في شاشة المبيعات"
+#: core/models.py:182
 msgid "Show payment to employee on sales entry"
 msgstr "عرض دفع لدى موظف في شاشة المبيعات"
+#: core/models.py:185
 #, fuzzy
 #| msgid ""
 #| "When off, the New SIM option is hidden on the employee sales screen. "
@@ -485,217 +886,397 @@ msgstr ""
 "عند الإيقاف، يُخفى خيار شريحة جديدة في شاشة مبيعات الموظف. إدارة المخزون في "
 "باقي الشاشات دون تغيير."
 
+#: core/models.py:202
 msgid "Public refresh page default language"
 msgstr "اللغة الافتراضية لصفحة التحديث العامة"
+#: core/models.py:208
 msgid "Public refresh page default theme"
 msgstr "الثيم الافتراضي لصفحة التحديث العامة"
+#: core/models.py:216 core/models.py:217
 msgid "system settings"
 msgstr "إعدادات النظام"
+#: core/tests_app_settings.py:108 customers/services.py:106
 msgid ""
 "Customer not found. Check the name or ask management to add the customer."
 msgstr "الزبون غير موجود. تحقّق من الاسم أو اطلب من الإدارة إضافته."
+#: core/views.py:57 templates/core/forbidden.html:8
+#: templates/core/forbidden.html:19
 msgid "Access denied"
 msgstr "الوصول مرفوض"
+#: core/views.py:135 expenses/forms.py:10 inventory/forms.py:238
+#: reports/forms.py:28 sales/forms.py:250 templates/accounts/user_list.html:26
+#: templates/base_management.html:71 templates/base_management.html:89
+#: templates/companies/company_list.html:26 templates/core/search.html:6
+#: templates/core/search.html:34
+#: templates/customers/payment_submissions_list.html:16
+#: templates/employees/employee_list.html:42 templates/inventory/cards.html:19
+#: templates/reports/partials/company_report_ledger.html:24
+#: templates/reports/partials/company_report_sales.html:24
+#: templates/reports/sales_report.html:22
+#: templates/sales/awaiting_approvals.html:28
+#: templates/sales/management_sale_list.html:32
+#: templates/sales/pending_payments.html:32
 msgid "Search"
 msgstr "بحث"
 
+#: core/views.py:162 templates/partials/nav_notifications.html:33
 msgid "Needs attention"
 msgstr "يحتاج للاهتمام"
 
+#: core/views.py:163 templates/partials/nav_notifications.html:69
 msgid "All caught up."
 msgstr "كل شي تمام، لا يوجد طلبات معلّقة."
 
+#: core/views.py:213 sales/views/management.py:60
+#: templates/base_employee.html:9 templates/core/search.html:53
+#: templates/partials/management_nav.html:44
+#: templates/reports/employee_report.html:67
+#: templates/sales/management_sale_list.html:6
 msgid "Sales"
 msgstr "المبيعات"
+#: core/views.py:227
 msgid "Owes"
 msgstr "يدين بـ"
 
+#: core/views.py:230
 msgid "Credit"
 msgstr "رصيد دائن"
 
+#: core/views.py:232 templates/customers/_invoice_summary.html:29
 msgid "Settled"
 msgstr "مُسوَّى"
 
+#: core/views.py:240 customers/views/crud.py:57 templates/core/search.html:97
+#: templates/customers/customer_list.html:6
+#: templates/customers/payment_submissions_list.html:9
+#: templates/inventory/_nav.html:14 templates/inventory/_nav.html:35
+#: templates/partials/management_nav.html:29
+#: templates/sales/awaiting_approvals.html:14
 msgid "Customers"
 msgstr "الزبائن"
 
+#: core/views.py:267 templates/customers/_invoice_summary.html:20
+#: templates/reports/dashboard.html:20
 msgid "Payments"
 msgstr "الدفعات"
 
+#: core/views.py:274
 msgid "See all results"
 msgstr "عرض كل النتائج"
 
+#: core/views.py:275
 msgid "No results"
 msgstr "لا توجد نتائج"
 
+#: core/views.py:276
 msgid "Type at least 2 characters…"
 msgstr "اكتب حرفين على الأقل…"
 
+#: core/views.py:292
 msgid "Branding updated."
 msgstr "تم تحديث هوية الموقع."
 
+#: core/views.py:297 templates/core/site_branding.html:6
+#: templates/partials/management_nav.html:188
 msgid "Site branding"
 msgstr "هوية الموقع"
 
+#: core/views.py:336
+msgid "Database restored from backup."
+msgstr "تم استيراد قاعدة البيانات من النسخة الاحتياطية."
+#: core/views.py:339
+msgid "Could not import backup. Check the form and try again."
+msgstr ""
+
+#: core/views.py:352
 msgid "System settings updated."
 msgstr "تم تحديث إعدادات النظام."
+#: core/views.py:362 templates/core/system_settings.html:6
+#: templates/partials/management_nav.html:192
 msgid "System settings"
 msgstr "إعدادات النظام"
+#: customers/forms.py:15 inventory/forms.py:58 inventory/forms.py:209
+#: templates/core/search.html:154
+#: templates/customers/_invoice_letterhead.html:35
+#: templates/customers/payment_submissions_list.html:33
+#: templates/inventory/_allocate_from_main.html:12
+#: templates/inventory/cards.html:40 templates/inventory/customer_list.html:62
+#: templates/inventory/line_detail.html:54
+#: templates/inventory/line_detail.html:91
+#: templates/inventory/line_detail.html:131
+#: templates/inventory/movements.html:62
+#: templates/sales/employee_entry.html:374
+#: templates/sales/partials/awaiting_results.html:9
 msgid "Customer"
 msgstr "الزبون"
 
+#: customers/forms.py:20 customers/forms.py:89 employees/forms.py:43
+#: sales/forms.py:385 templates/core/search.html:67
+#: templates/core/search.html:155 templates/customers/customer_detail.html:114
+#: templates/customers/customer_detail.html:262
+#: templates/customers/payment_submissions_list.html:34
+#: templates/employees/employee_detail.html:47
+#: templates/employees/employee_detail.html:76
+#: templates/expenses/expense_report.html:72
+#: templates/expenses/partials/expense_list_results.html:18
+#: templates/reports/dashboard.html:296
+#: templates/reports/partials/company_report_ledger.html:48
+#: templates/sales/partials/awaiting_results.html:14
+#: templates/sales/partials/pending_payments_results.html:32
 msgid "Amount"
 msgstr "المبلغ"
+#: customers/forms.py:34 customers/forms.py:96 sales/forms.py:64
+#: sales/forms.py:200 sales/forms.py:267
+#: templates/customers/payment_submissions_list.html:35
+#: templates/customers/payment_submissions_list.html:88
+#: templates/sales/employee_entry.html:395
 msgid "Payment method"
 msgstr "طريقة الدفع"
+#: customers/forms.py:39 customers/forms.py:101 customers/forms.py:120
+#: customers/views/statements.py:224 employees/forms.py:50
+#: inventory/forms.py:30 inventory/forms.py:73 inventory/forms.py:115
+#: inventory/forms.py:189 sales/forms.py:121 sales/forms.py:392
+#: sales/forms.py:406 templates/customers/customer_statement.html:135
+#: templates/customers/payment_submissions_list.html:37
+#: templates/customers/payment_submissions_list.html:97
+#: templates/inventory/_action_dialog.html:29
+#: templates/inventory/line_detail.html:92
+#: templates/inventory/movements.html:63
+#: templates/sales/employee_entry.html:234
+#: templates/sales/employee_entry.html:421
+#: templates/sales/partials/awaiting_results.html:59
+#: templates/sales/partials/awaiting_results.html:108
+#: templates/sales/partials/pending_payments_results.html:89
+#: templates/sales/partials/pending_payments_results.html:125
 msgid "Notes"
 msgstr "ملاحظات"
+#: customers/forms.py:55 customers/forms.py:75 sales/forms.py:25
+#: templates/sales/employee_entry.html:40
 msgid "Phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
+#: customers/forms.py:60
 msgid ""
 "Optional. Adds a first phone link so future sales auto-suggest this customer."
 msgstr ""
 "اختياري. يضيف ربطاً برقم هاتف أوّل ليقترح النظام هذا الزبون تلقائياً في "
 "المبيعات القادمة."
 
+#: customers/forms.py:80
 msgid "Label"
 msgstr "الوصف"
 
+#: customers/forms.py:114 sales/forms.py:400
 msgid "Signed adjustment (+/-)"
 msgstr "تسوية موقعة (+/-)"
+#: customers/forms.py:128 customers/services.py:373
 msgid "Adjustment amount must be non-zero."
 msgstr "مبلغ التعديل لا يمكن أن يكون صفر."
 
+#: customers/models.py:23
 msgid ""
 "Positive: customer owes the shop. Negative: shop holds credit for the "
 "customer (overpayment)."
 msgstr ""
 "الموجب: الزبون يدين للمحل. السالب: المحل يحتفظ برصيد للزبون (دفعة زائدة)."
 
+#: customers/models.py:32 customers/models.py:253 employees/models.py:105
+#: expenses/models.py:25 inventory/models.py:123 sales/models.py:177
+#: sales/models.py:288
 msgid "created by"
 msgstr "أنشأه"
+#: customers/models.py:38 customers/models.py:56 customers/models.py:93
+#: customers/models.py:143 customers/models.py:217 inventory/models.py:21
+#: inventory/models.py:105 inventory/models.py:171 sales/models.py:92
 msgid "customer"
 msgstr "زبون"
 
+#: customers/models.py:39
 msgid "customers"
 msgstr "الزبائن"
 
+#: customers/models.py:58 employees/models.py:97 sales/models.py:56
 msgid "phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
+#: customers/models.py:59
 msgid "label"
 msgstr "وصف"
 
+#: customers/models.py:63
 msgid "customer phone"
 msgstr "هاتف زبون"
 
+#: customers/models.py:64
 msgid "customer phones"
 msgstr "هواتف الزبائن"
 
+#: customers/models.py:95 customers/models.py:145 customers/models.py:225
+#: employees/models.py:77 expenses/models.py:13 sales/models.py:274
 msgid "amount"
 msgstr "المبلغ"
+#: customers/models.py:100 customers/models.py:150 sales/models.py:23
+#: sales/models.py:64
 msgid "payment method"
 msgstr "طريقة الدفع"
+#: customers/models.py:107
 msgid "recorded by"
 msgstr "سجَّلها"
 
+#: customers/models.py:112
 msgid "customer payment"
 msgstr "دفعة زبون"
 
+#: customers/models.py:113
 msgid "customer payments"
 msgstr "دفعات الزبائن"
 
+#: customers/models.py:135 sales/models.py:37 sales/views/management.py:143
+#: templates/customers/customer_detail.html:35
+#: templates/partials/management_nav.html:17
+#: templates/sales/awaiting_approvals.html:6
 msgid "Awaiting approval"
 msgstr "طلبات الدين"
 
+#: customers/models.py:136
 msgid "Approved"
 msgstr "موافقة"
 
+#: customers/models.py:137
 msgid "Rejected"
 msgstr "رفض"
 
+#: customers/models.py:154 inventory/models.py:162 sales/models.py:168
 msgid "status"
 msgstr "الحالة"
+#: customers/models.py:164
 msgid "submitted by"
 msgstr "مُقدَّم بواسطة"
+#: customers/models.py:166
 msgid "submitted at"
 msgstr "آخر تحديث"
 
+#: customers/models.py:173 sales/models.py:111
 msgid "approved by"
 msgstr "وافق عليها"
 
+#: customers/models.py:175 sales/models.py:104
 msgid "approved at"
 msgstr "تاريخ الموافقة"
 
+#: customers/models.py:182
 msgid "rejected by"
 msgstr "أنشأه"
 
+#: customers/models.py:184
 msgid "rejected at"
 msgstr "تاريخ الإنشاء"
 
+#: customers/models.py:185
 msgid "reject reason"
 msgstr "سبب الرفض"
+#: customers/models.py:188
 msgid "customer payment submission"
 msgstr "دفعات الزبائن"
 
+#: customers/models.py:189
 msgid "customer payment submissions"
 msgstr "دفعات الزبائن"
 
+#: customers/models.py:208 customers/views/statements.py:222
+#: templates/customers/customer_detailed_invoice.html:54
+#: templates/customers/customer_detailed_invoice.html:72
+#: templates/customers/customer_statement.html:132
+#: templates/customers/customer_statement.html:148
 msgid "Charge"
 msgstr "سحب"
 
+#: customers/models.py:209 customers/views/statements.py:223
+#: templates/customers/customer_detail.html:128
+#: templates/customers/customer_detailed_invoice.html:55
+#: templates/customers/customer_detailed_invoice.html:73
+#: templates/customers/customer_detailed_invoice.html:85
+#: templates/customers/customer_statement.html:133
+#: templates/customers/customer_statement.html:149
+#: templates/reports/partials/company_report_sales.html:62
 msgid "Payment"
 msgstr "دفعة"
 
+#: customers/models.py:210 customers/views/statements.py:248
+#: employees/models.py:62 inventory/models.py:68 sales/models.py:254
+#: templates/customers/customer_detailed_invoice.html:74
+#: templates/customers/customer_statement.html:150
 msgid "Adjustment"
 msgstr "تسوية"
+#: customers/models.py:211 customers/views/statements.py:252
+#: employees/models.py:63 sales/models.py:255
+#: templates/customers/customer_detailed_invoice.html:75
+#: templates/customers/customer_statement.html:151
 msgid "Reversal"
 msgstr "عكس حركة"
+#: customers/models.py:220 employees/models.py:72 sales/models.py:270
 msgid "type"
 msgstr "النوع"
+#: customers/models.py:228
 msgid "Always stored positive; entry_type signs it."
 msgstr "تُخزَّن دائماً موجبة؛ نوع الحركة هو الذي يحدد إشارتها."
 
+#: customers/models.py:236 employees/models.py:94 inventory/models.py:113
+#: inventory/models.py:179 sales/models.py:202
 msgid "sale"
 msgstr "عملية بيع"
+#: customers/models.py:244
 msgid "payment"
 msgstr "دفعة"
 
+#: customers/models.py:258
 msgid "customer ledger entry"
 msgstr "حركة سجل الزبون"
 
+#: customers/models.py:259
 msgid "customer ledger entries"
 msgstr "حركات سجل الزبائن"
 
+#: customers/services.py:58
 msgid "Customer name is required."
 msgstr "اسم الزبون مطلوب."
 
+#: customers/services.py:97
 msgid "Payer name is required for on-account sales."
 msgstr "اسم الدافع مطلوب للمبيعات الآجلة."
 
+#: customers/services.py:120 customers/views/actions.py:178
 msgid "Phone is required."
 msgstr "رقم الهاتف مطلوب."
 
+#: customers/services.py:134
 msgid "Only awaiting sales can be approved."
 msgstr "يمكن الموافقة على المبيعات بانتظار الموافقة فقط."
 
+#: customers/services.py:136
 msgid "This sale is not flagged as on-account or has no customer."
 msgstr "هذا البيع غير معلَّم كآجل أو لا يحتوي على زبون."
 
+#: customers/services.py:176
 msgid "Only awaiting sales can be rejected."
 msgstr "يمكن رفض المبيعات بانتظار الموافقة فقط."
 
+#: customers/services.py:197 customers/services.py:241
+#: customers/services.py:267
 msgid "Payment amount must be positive."
 msgstr "يجب أن تكون قيمة الدفعة موجبة."
 
+#: customers/services.py:264
 msgid "Customer is inactive."
 msgstr "توقيع الزبون"
 
+#: customers/services.py:296
 msgid "Only awaiting submissions can be approved."
 msgstr "يمكن الموافقة فقط على طلبات الدفعات التي بانتظار الموافقة."
 
+#: customers/services.py:328
 msgid "Only awaiting submissions can be rejected."
 msgstr "يمكن الرفض فقط لطلبات الدفعات التي بانتظار الموافقة."
 
+#: customers/services.py:620
 msgid ""
 "Delete the payment from the customer's payment list instead — this ledger "
 "row is just its mirror entry."
@@ -703,11 +1284,11 @@ msgstr ""
 "احذف الدفعة من قائمة دفعات الزبون بدلاً من ذلك — هذا الصف في السجل ما هو إلا "
 "انعكاس لتلك الدفعة."
 
+#: customers/views/actions.py:56
 msgid "Payment recorded."
 msgstr "تم تسجيل الدفعة."
 
-msgid "Adjustment recorded."
-msgstr "تم تسجيل التسوية."
+#: customers/views/actions.py:96
 #, python-format
 msgid ""
 "Account closed. %(count)d sale(s) written off · loss recorded: %(loss)s · "
@@ -716,553 +1297,884 @@ msgstr ""
 "تم إغلاق الحساب. تم شطب %(count)d بيع · الخسارة المسجّلة: %(loss)s · الدين "
 "المُلغى: %(debt)s."
 
+#: customers/views/actions.py:143
 msgid "Payment removed and settlements reversed."
 msgstr "تم حذف الدفعة وإلغاء التسديدات المرتبطة بها."
 
+#: customers/views/actions.py:168
 msgid "Ledger entry removed."
 msgstr "تم حذف حركة السجل."
 
+#: customers/views/actions.py:189
 msgid "Phone added."
 msgstr "تمت إضافة الرقم."
 
+#: customers/views/actions.py:199
 msgid "Phone removed."
 msgstr "تمت إزالة الرقم."
 
+#: customers/views/api.py:52
 msgid "Name is required."
 msgstr "الاسم مطلوب."
 
+#: customers/views/crud.py:81
 msgid "Customer created."
 msgstr "تم إنشاء الزبون."
 
+#: customers/views/crud.py:86 templates/customers/customer_list.html:18
 msgid "New customer"
 msgstr "زبون جديد"
 
+#: customers/views/crud.py:96
 msgid "Customer updated."
 msgstr "تم تحديث بيانات الزبون."
 
+#: customers/views/crud.py:101 templates/customers/customer_list.html:81
 msgid "Edit customer"
 msgstr "تعديل الزبون"
 
+#: customers/views/crud.py:185
 #, python-format
 msgid "Customer “%(name)s” and all linked records were deleted."
 msgstr "تم حذف الزبون «%(name)s» وكل البيانات المرتبطة به."
 
+#: customers/views/payment_submissions.py:23 inventory/forms.py:158
+#: inventory/forms.py:165 inventory/forms.py:177
+#: templates/inventory/_action_dialog.html:25
 msgid "Reason"
 msgstr "السبب"
 
+#: customers/views/payment_submissions.py:48
+#: templates/customers/payment_submissions_list.html:6
 msgid "Customer payments awaiting approval"
 msgstr "دفعات الزبائن بانتظار الموافقة"
 
+#: customers/views/payment_submissions.py:69
 msgid "Payment approved and applied to the customer account."
 msgstr "تمت الموافقة على الدفعة وتطبيقها على حساب الزبون."
 
+#: customers/views/payment_submissions.py:95
 msgid "Submission rejected."
 msgstr "تم رفض الطلب."
 
+#: customers/views/statements.py:185
+#: templates/customers/customer_statement.html:6
+#: templates/customers/customer_statement.html:40
 msgid "Customer statement"
 msgstr "كشف حساب الزبون"
 
+#: customers/views/statements.py:200
+#: templates/customers/customer_detail.html:14
+#: templates/customers/customer_detailed_invoice.html:7
+#: templates/customers/customer_detailed_invoice.html:40
+#: templates/customers/customer_statement.html:15
 msgid "Detailed invoice"
 msgstr "فاتورة مفصّلة"
 
+#: customers/views/statements.py:218
+#: templates/customers/customer_detail.html:56
+#: templates/customers/customer_detail.html:112
+#: templates/customers/customer_detail.html:262
+#: templates/customers/customer_detailed_invoice.html:50
+#: templates/customers/customer_statement.html:128
+#: templates/employees/employee_detail.html:44
+#: templates/employees/employee_detail.html:74
+#: templates/expenses/expense_report.html:72
+#: templates/expenses/partials/expense_list_results.html:9
 msgid "Date"
 msgstr "التاريخ"
+#: customers/views/statements.py:219
+#: templates/customers/customer_detail.html:113
+#: templates/customers/customer_detailed_invoice.html:51
+#: templates/customers/customer_statement.html:129
+#: templates/employees/employee_detail.html:75
+#: templates/inventory/line_detail.html:89
+#: templates/inventory/movements.html:59
+#: templates/reports/partials/company_report_ledger.html:41
 msgid "Type"
 msgstr "النوع"
+#: customers/views/statements.py:220
+#: templates/customers/customer_statement.html:130
 msgid "Description"
 msgstr "الوصف"
 
+#: customers/views/statements.py:221 templates/core/search.html:64
+#: templates/customers/customer_detail.html:57
+#: templates/customers/customer_detail.html:115
+#: templates/customers/customer_detailed_invoice.html:53
+#: templates/customers/customer_statement.html:131
+#: templates/reports/partials/company_report_ledger.html:53
 msgid "Reference"
 msgstr "المرجع"
+#: customers/views/statements.py:265 sales/models.py:260
+#: templates/companies/partials/company_detail_general.html:32
+#: templates/customers/customer_detailed_invoice.html:62
+#: templates/customers/customer_statement.html:140
+#: templates/reports/company_report.html:41
 msgid "Opening balance"
 msgstr "الرصيد الافتتاحي"
+#: customers/views/statements.py:266
 msgid "Charges total"
 msgstr "إجمالي المسحوبات"
 
+#: customers/views/statements.py:267
 msgid "Payments total"
 msgstr "إجمالي المدفوعات"
 
+#: customers/views/statements.py:268
 msgid "Closing balance"
 msgstr "الرصيد الختامي"
 
+#: employees/apps.py:8
 msgid "Employees & payroll"
 msgstr "الموظفون والرواتب"
+#: employees/forms.py:15
 msgid "User"
 msgstr "المستخدم"
+#: employees/forms.py:46
 msgid "Positive credits the employee; negative debits them."
 msgstr "موجب يُضاف للموظف؛ سالب يُخصم منه."
+#: employees/forms.py:58
 msgid "Amount cannot be zero."
 msgstr "المبلغ لا يمكن أن يكون صفراً."
+#: employees/models.py:17
 msgid "user"
 msgstr "تعديل المستخدم"
 
+#: employees/models.py:20
 msgid "monthly salary"
 msgstr "الراتب الشهري"
+#: employees/models.py:32
 msgid ""
 "Positive: the shop owes the employee (salary / credits). Negative: the "
 "employee holds cash on behalf of the shop."
 msgstr ""
 "موجب: المحل مدين للموظف (راتب/دائن). سالب: الموظف يحتفظ بمبلغ نيابة عن ا"
 "لمحل."
+#: employees/models.py:41 employees/models.py:69
 msgid "employee"
 msgstr "موظف"
+#: employees/models.py:42
 msgid "employees"
 msgstr "الموظفين"
+#: employees/models.py:60
 msgid "Salary accrual"
 msgstr "استحقاق راتب"
+#: employees/models.py:61
 msgid "Sales payment received"
 msgstr "دفعة مبيعات مستلمة"
+#: employees/models.py:80
 msgid "Positive: shop owes employee. Negative: employee owes shop."
 msgstr "موجب: المحل مدين للموظف. سالب: الموظف مدين للمحل."
+#: employees/models.py:83
 msgid "salary month"
 msgstr "هذا الشهر"
 
+#: employees/models.py:86
 msgid "First day of the month for salary accrual rows."
 msgstr "أول يوم في الشهر لصفوف استحقاق الراتب."
+#: employees/models.py:96 sales/models.py:59
 msgid "payer name"
 msgstr "اسم الدافع"
+#: employees/models.py:114 expenses/models.py:31
 msgid "expense"
 msgstr "مصروف"
+#: employees/models.py:118
 msgid "employee ledger entry"
 msgstr "حركة كشف موظف"
+#: employees/models.py:119
 msgid "employee ledger entries"
 msgstr "حركات كشف الموظف"
+#: employees/services.py:27
 msgid "Only salary accrual rows can create expenses."
 msgstr "المصروفات تُنشأ من صفوف استحقاق الراتب فقط."
+#: employees/services.py:29
 msgid "Salary accrual row is missing salary month."
 msgstr "صف استحقاق الراتب بلا شهر محدّد."
+#: employees/services.py:167
 msgid "Sale is not an employee payment sale."
 msgstr "هذه ليست مبيعة دفع لدى موظف."
+#: employees/services.py:237 inventory/services.py:466
 msgid "Adjustment amount cannot be zero."
 msgstr "مبلغ التسوية لا يمكن أن يكون صفراً."
+#: employees/views.py:36 templates/employees/employee_list.html:6
+#: templates/partials/management_nav.html:184
 msgid "Employees"
 msgstr "الموظفين"
+#: employees/views.py:48
 msgid "Employee saved."
 msgstr "تم حفظ الموظف."
+#: employees/views.py:53
 msgid "New employee"
 msgstr "موظف جديد"
+#: employees/views.py:63
 msgid "Employee updated."
 msgstr "تم تحديث الموظف."
+#: employees/views.py:68
 msgid "Edit employee"
 msgstr "تعديل موظف"
+#: employees/views.py:127
 msgid "Invalid month."
 msgstr "شهر غير صالح."
+#: employees/views.py:135
 #, python-format
 msgid "Salary accrual complete: %(count)s new entries for %(month)s."
 msgstr "اكتمل استحقاق الرواتب: %(count)s قيداً جديداً لشهر %(month)s."
+#: expenses/forms.py:12
 msgid "Title, category, notes…"
 msgstr "العنوان، الفئة، الملاحظات…"
 
-msgid "Date from"
-msgstr "من تاريخ"
-msgid "Date to"
-msgstr "إلى تاريخ"
+#: expenses/forms.py:27 templates/expenses/expense_report.html:72
+#: templates/expenses/partials/expense_list_results.html:15
 msgid "Category"
 msgstr "التصنيف"
+#: expenses/models.py:10
 msgid "title"
 msgstr "العنوان"
+#: expenses/models.py:11
 msgid "category"
 msgstr "التصنيف"
+#: expenses/models.py:18
 msgid "date"
 msgstr "التاريخ"
+#: expenses/models.py:32
 msgid "expenses"
 msgstr "المصروفات"
+#: expenses/views.py:38 templates/expenses/expense_list.html:6
+#: templates/partials/management_nav.html:48
+#: templates/reports/dashboard.html:130
 msgid "Expenses"
 msgstr "المصروفات"
+#: expenses/views.py:54
 msgid "Expense saved."
 msgstr "تم حفظ المصروف."
+#: expenses/views.py:59 templates/expenses/expense_list.html:9
 msgid "New expense"
 msgstr "مصروف جديد"
+#: expenses/views.py:69
 msgid "Expense updated."
 msgstr "تم تحديث المصروف."
+#: expenses/views.py:74
 msgid "Edit expense"
 msgstr "تعديل المصروف"
+#: expenses/views.py:91
 #, python-format
 msgid "Expense \"%(title)s\" deleted."
 msgstr "تم حذف المصروف «%(title)s»."
 
+#: expenses/views.py:148 templates/expenses/expense_report.html:5
+#: templates/partials/management_nav.html:85
 msgid "Expense report"
 msgstr "تقرير المصروفات"
+#: inventory/apps.py:8 inventory/views.py:98
+#: templates/partials/management_nav.html:52
 msgid "SIM inventory"
 msgstr "مخزون الشرائح"
+#: inventory/forms.py:20 inventory/forms.py:63 inventory/forms.py:105
+#: inventory/forms.py:203 inventory/forms.py:250
+#: templates/companies/product_list.html:18
+#: templates/companies/product_variant_form.html:7
+#: templates/customers/customer_detail.html:209
+#: templates/inventory/cards.html:38
+#: templates/inventory/customer_detail.html:30
+#: templates/inventory/customer_list.html:63
+#: templates/inventory/main_stock.html:61 templates/inventory/movements.html:60
+#: templates/inventory/overview.html:27
 msgid "Product line"
 msgstr "خط المنتج"
 
+#: inventory/forms.py:25 inventory/forms.py:68 inventory/forms.py:110
+#: inventory/forms.py:184 templates/customers/customer_detail.html:210
+#: templates/inventory/_action_dialog.html:21
+#: templates/inventory/customer_detail.html:31
+#: templates/inventory/customer_list.html:64
+#: templates/inventory/line_detail.html:55
+#: templates/inventory/main_stock.html:62
 msgid "Quantity"
 msgstr "الكمية"
+#: inventory/forms.py:37 inventory/forms.py:80 inventory/forms.py:122
 msgid "Serial numbers (optional)"
 msgstr "أرقام الشرائح (اختياري)"
+#: inventory/forms.py:39 inventory/forms.py:82 inventory/forms.py:124
 msgid "One serial or ICCID per line; count must match quantity."
 msgstr "رقم شريحة أو ICCID في كل سطر؛ يجب أن يطابق العدد."
+#: inventory/forms.py:45 inventory/forms.py:88 inventory/forms.py:130
 msgid "One per line"
 msgstr "واحد في كل سطر"
+#: inventory/forms.py:143
 msgid "Serial or ICCID"
 msgstr "الرقم التسلسلي أو ICCID"
+#: inventory/forms.py:146
 msgid "Search serial / ICCID…"
 msgstr "بحث برقم الشريحة / ICCID…"
+#: inventory/forms.py:153 templates/inventory/_action_dialog.html:13
 msgid "New quantity"
 msgstr "الكمية الجديدة"
+#: inventory/forms.py:173 templates/inventory/_action_dialog.html:17
 msgid "Adjustment (+/-)"
 msgstr "تسوية موقعة (+/-)"
 
+#: inventory/forms.py:197
 msgid "Movement type"
 msgstr "نوع الحركة"
+#: inventory/forms.py:199 inventory/forms.py:229 sales/forms.py:207
+#: sales/forms.py:224 sales/forms.py:274 templates/audit/audit_log_list.html:27
+#: templates/audit/audit_log_list.html:36
+#: templates/audit/audit_log_list.html:45 templates/reports/dashboard.html:100
 msgid "All"
 msgstr "الكل"
+#: inventory/forms.py:245
 msgid "Customer name…"
 msgstr "اسم الزبون…"
+#: inventory/models.py:9 sales/models.py:151 templates/inventory/_nav.html:10
+#: templates/inventory/_nav.html:31 templates/inventory/line_detail.html:18
 msgid "Main stock"
 msgstr "المخزون الرئيسي"
+#: inventory/models.py:10 sales/models.py:150
 msgid "Customer stock"
 msgstr "مخزون الزبون"
+#: inventory/models.py:13
 msgid "location"
 msgstr "الموقع"
+#: inventory/models.py:31 inventory/models.py:84
 msgid "quantity"
 msgstr "الكمية"
+#: inventory/models.py:34
 msgid "SIM stock balance"
 msgstr "رصيد مخزون الشرائح"
+#: inventory/models.py:35
 msgid "SIM stock balances"
 msgstr "أرصدة مخزون الشرائح"
+#: inventory/models.py:65
 msgid "Main receive"
 msgstr "استلام للمخزون الرئيسي"
+#: inventory/models.py:66
 msgid "Allocate to customer"
 msgstr "توزيع على زبون"
+#: inventory/models.py:67
 msgid "Return from customer"
 msgstr "مرتجع من زبون"
+#: inventory/models.py:69 inventory/models.py:146
+#: templates/inventory/_balance_actions.html:16
+#: templates/inventory/_balance_actions.html:19
 msgid "Damaged"
 msgstr "تالف"
+#: inventory/models.py:70
 msgid "Sale consume"
 msgstr "خصم بيع"
+#: inventory/models.py:71
 msgid "Sale reversal"
 msgstr "استرجاع بيع"
+#: inventory/models.py:74
 msgid "movement type"
 msgstr "نوع الحركة"
+#: inventory/models.py:89
 msgid "from balance"
 msgstr "من الرصيد"
+#: inventory/models.py:97
 msgid "to balance"
 msgstr "إلى الرصيد"
+#: inventory/models.py:128 sales/models.py:163
 msgid "SIM stock movement"
 msgstr "حركة مخزون الشرائح"
+#: inventory/models.py:129 inventory/views.py:552
 msgid "SIM stock movements"
 msgstr "حركات مخزون الشرائح"
+#: inventory/models.py:143
 msgid "In main stock"
 msgstr "المخزون الرئيسي"
 
+#: inventory/models.py:144
 msgid "With customer"
 msgstr "عند الزبائن"
 
+#: inventory/models.py:145
 msgid "Consumed (sold)"
 msgstr "المستهلك (مبيعات)"
 
+#: inventory/models.py:149
 msgid "serial or ICCID"
 msgstr "رقم الشريحة أو ICCID"
+#: inventory/models.py:187
 msgid "movement"
 msgstr "الحركات"
 
+#: inventory/models.py:195
 msgid "SIM card"
 msgstr "شريحة مسجّلة"
+#: inventory/models.py:196 inventory/views.py:632
 msgid "SIM cards"
 msgstr "شرائح مسجّلة"
+#: inventory/serial_utils.py:25
 #, python-format
 msgid "Provide exactly %(qty)s serial number(s), one per line."
 msgstr "أدخل بالضبط %(qty)s رقماً تسلسلياً، واحداً في كل سطر."
+#: inventory/serial_utils.py:31
 msgid "Duplicate serial numbers in the list."
 msgstr "أرقام تسلسلية مكررة في القائمة."
+#: inventory/services.py:62
 msgid "Multiple customers share this payer name. Use a unique registered name."
 msgstr "أكثر من زبون يشاركون اسم الدافع هذا. استخدم اسماً مسجلاً فريداً."
+#: inventory/services.py:76 inventory/services.py:545
 #, python-format
 msgid "Customer “%(name)s” has no SIM stock for %(line)s."
 msgstr "الزبون «%(name)s» لا يملك مخزون شرائح لـ %(line)s."
+#: inventory/services.py:86
 #, python-format
 msgid "Will deduct from customer “%(name)s” stock (%(qty)s available)."
 msgstr "سيُخصم من مخزون الزبون «%(name)s» (%(qty)s متاح)."
+#: inventory/services.py:95
 #, python-format
 msgid "Will deduct from main stock (%(qty)s available)."
 msgstr "سيُخصم من المخزون الرئيسي (%(qty)s متاح)."
+#: inventory/services.py:134
 #, python-format
 msgid "Serial “%(serial)s” is already registered."
 msgstr "الرقم «%(serial)s» مسجّل مسبقاً."
+#: inventory/services.py:203
 #, python-format
 msgid "Serial “%(serial)s” was not found in the expected stock location."
 msgstr "الرقم «%(serial)s» غير موجود في موقع المخزون المتوقع."
+#: inventory/services.py:259 inventory/services.py:296
+#: inventory/services.py:345 inventory/services.py:490
 msgid "Quantity must be at least 1."
 msgstr "يجب أن تكون الكمية 1 على الأقل."
+#: inventory/services.py:304
 msgid "Insufficient main stock for this product line."
 msgstr "المخزون الرئيسي غير كافٍ لهذا الخط."
+#: inventory/services.py:355
 msgid "Insufficient customer stock for this product line."
 msgstr "مخزون الزبون غير كافٍ لهذا الخط."
+#: inventory/services.py:397
 msgid "A reason is required."
 msgstr "السبب مطلوب."
+#: inventory/services.py:399
 msgid "Quantity cannot be negative."
 msgstr "لا يمكن أن تكون الكمية سالبة."
+#: inventory/services.py:425 inventory/views.py:258 inventory/views.py:499
+#: templates/inventory/_balance_actions.html:24
 msgid "Cleared for testing"
 msgstr "مُصفَّر للاختبار"
+#: inventory/services.py:435
 msgid "Clear the balance before deleting it."
 msgstr "صفِّر الرصيد قبل حذفه."
+#: inventory/services.py:449
 msgid ""
 "Sale-linked movements cannot be deleted. Cancel the sale or adjust stock "
 "instead."
 msgstr "لا يمكن حذف حركات مرتبطة ببيع. ألغِ البيع أو عدّل المخزون بدلاً من ذلك."
+#: inventory/services.py:464
 msgid "A reason is required for adjustments."
 msgstr "سبب التسوية مطلوب."
+#: inventory/services.py:470
 msgid "Adjustment would make stock negative."
 msgstr "التسوية ستجعل المخزون سالباً."
+#: inventory/services.py:493
 msgid "Insufficient stock to mark as damaged."
 msgstr "المخزون غير كافٍ لتسجيل تالف."
+#: inventory/services.py:509
 msgid "Insufficient SIM stock."
 msgstr "مخزون الشرائح غير كافٍ."
+#: inventory/services.py:530
 #, python-format
 msgid ""
 "Multiple customers share the payer name “%(name)s”. Cannot deduct SIM stock."
 msgstr "أكثر من زبون يشاركون اسم الدافع «%(name)s». لا يمكن خصم مخزون الشرائح."
+#: inventory/services.py:558
 #, python-format
 msgid "Insufficient main SIM stock for %(line)s."
 msgstr "المخزون الرئيسي للشرائح غير كافٍ لـ %(line)s."
+#: inventory/services.py:619
 msgid "Cannot reverse SIM: customer stock source unknown."
 msgstr "تعذّر استرجاع الشريحة: مصدر مخزون الزبون غير معروف."
+#: inventory/views.py:131
 msgid "Main stock updated."
 msgstr "تم تحديث المخزون الرئيسي."
+#: inventory/views.py:141
 msgid "Main SIM stock"
 msgstr "المخزون الرئيسي للشرائح"
+#: inventory/views.py:164
 msgid "Main stock set."
 msgstr "تم تعيين المخزون الرئيسي."
+#: inventory/views.py:168 inventory/views.py:193 inventory/views.py:243
+#: inventory/views.py:428 inventory/views.py:482
 msgid "Invalid form."
 msgstr "نموذج غير صالح."
+#: inventory/views.py:189 inventory/views.py:424
 msgid "Quantity updated."
 msgstr "تم تحديث الكمية."
+#: inventory/views.py:214 inventory/views.py:451
 msgid "Balance adjusted."
 msgstr "تم تسوية الرصيد."
+#: inventory/views.py:218 inventory/views.py:455
 msgid "Invalid adjustment."
 msgstr "تسوية غير صالحة."
+#: inventory/views.py:239 inventory/views.py:478
 msgid "Damaged stock recorded."
 msgstr "تم تسجيل الشرائح التالفة."
+#: inventory/views.py:259 inventory/views.py:500
 msgid "Balance cleared."
 msgstr "تم تصفير الرصيد."
+#: inventory/views.py:275 inventory/views.py:518
 msgid "Balance row deleted."
 msgstr "تم حذف صف الرصيد."
+#: inventory/views.py:314
 msgid "Stock allocated to customer."
 msgstr "تم توزيع المخزون على الزبون."
+#: inventory/views.py:340
 msgid "Customer SIM stock"
 msgstr "مخزون شرائح الزبائن"
+#: inventory/views.py:377
 msgid "Stock returned to main."
 msgstr "تم إرجاع المخزون إلى الرئيسي."
+#: inventory/views.py:647
 msgid "Movement deleted."
 msgstr "تم حذف الحركة."
+#: phone_refresh/models.py:41
 msgid ""
 "English slug used in API responses, e.g. 'refreshed', 'queued'. Lowercase "
 "letters, digits, dashes and underscores only."
 msgstr ""
 "رمز إنجليزي في ردود API، مثل refreshed أو queued. أحرف لاتينية صغيرة وأر"
 "قام وشرطات وشرطة سفلية فقط."
+#: phone_refresh/models.py:47
 msgid "Arabic display name, e.g. 'تم التحديث'."
 msgstr "اسم العرض بالعربية، مثال: «تم التحديث»."
+#: phone_refresh/models.py:51
 msgid "System-defined statuses cannot be deleted from the UI."
 msgstr "الحالات المعرّفة من النظام لا يمكن حذفها من الواجهة."
+#: phone_refresh/models.py:125
 msgid "Substring, regex, or JSON path expression depending on match type."
 msgstr "جزء نصّي أو تعبير منتظم أو مسار JSON حسب نوع المطابقة."
+#: phone_refresh/models.py:130
 msgid "For JSON path / HTTP status: the value to compare against."
 msgstr "لمسار JSON / حالة HTTP: القيمة المُقارَن بها."
+#: phone_refresh/models.py:139
 msgid "Lower runs first; first match wins."
 msgstr "الأقل أولوية يُنفَّذ أولاً؛ أول تطابق يفوز."
+#: phone_refresh/models.py:167
 msgid "Message shown to the customer (Arabic)."
 msgstr "المحل يدين للزبون (دفعة زائدة)."
 
+#: phone_refresh/models.py:206
 msgid "Where the refresh attempt was triggered from."
 msgstr "مصدر محاولة التحديث."
+#: phone_refresh/models.py:216
 msgid "First ~500 chars of the raw upstream response (for debugging)."
 msgstr "أول ~500 حرف من رد المزوّد الخام (للتشخيص)."
+#: phone_refresh/models.py:257
 msgid "When off, the public refresh API/page returns the SERVICE_OFF message."
 msgstr "عند الإيقاف، تُرجع واجهة/صفحة التحديث العامة رسالة SERVICE_OFF."
+#: phone_refresh/models.py:262
 msgid ""
 "When on, look up the phone in sales_sale.reference_number to choose the "
 "provider. When off, every refresh routes through ``default_provider``."
 msgstr ""
 "عند التفعيل: البحث عن الرقم في المبيعات لاختيار المزوّد. عند الإيقاف: كل"
 " التحديثات عبر المزوّد الافتراضي."
+#: phone_refresh/models.py:268
 msgid ""
 "Include last_refresh_at / seconds_since_last_refresh in the public API "
 "response."
 msgstr "إدراج last_refresh_at و seconds_since_last_refresh في رد API العام."
+#: phone_refresh/models.py:272
 msgid "Per-phone cooldown between successful refreshes (in seconds)."
 msgstr "مهلة بين التحديثات الناجحة لكل رقم (بالثواني)."
+#: phone_refresh/models.py:278
 msgid "Used when DB precheck is disabled. Empty → return ERROR."
 msgstr "يُستخدم عند تعطيل الفحص المسبق في قاعدة البيانات. فارغ → خطأ."
+#: phone_refresh/models.py:314
 msgid ""
 "When ON, the public API endpoint requires a valid Authorization: Bearer "
 "<token> header."
 msgstr ""
 "عند التفعيل: نقطة API العامة تتطلب ترويسة Authorization: Bearer <token> "
 "صالحة."
+#: phone_refresh/models.py:320
 msgid "Max public API requests per IP per minute."
 msgstr "الحد الأقصى لطلبات API العامة لكل IP في الدقيقة."
+#: phone_refresh/models.py:324
 msgid "Max public API requests per IP per hour."
 msgstr "الحد الأقصى لطلبات API العامة لكل IP في الساعة."
+#: phone_refresh/models.py:329
 msgid ""
 "When ON, the public /phone-refresh/ form remains accessible without a token "
 "even when require_token is ON."
 msgstr ""
 "عند التفعيل: نموذج /phone-refresh/ العام يبقى متاحاً بلا رمز حتى مع تفعي"
 "ل require_token."
+#: phone_refresh/models.py:335
 msgid "One origin per line. Empty = allow any origin."
 msgstr "أصل واحد في كل سطر. فارغ = السماح بأي أصل."
+#: phone_refresh/models.py:379
 msgid "Friendly label for this token (e.g. where it's used)."
 msgstr "وصف مختصر للرمز (مثلاً أين يُستخدم)."
+#: phone_refresh/models.py:384
 msgid "sha256 of the raw token; raw value is shown only once on creation."
 msgstr "sha256 للرمز الخام؛ تُعرض القيمة الأصلية مرة واحدة عند الإنشاء."
+#: phone_refresh/models.py:388
 msgid "First 8 chars of the raw token, for identification in lists."
 msgstr "أول 8 أحرف من الرمز الخام للتعرّف في القوائم."
+#: reports/forms.py:9
 msgid "Days without a new sale entry"
 msgstr "أيام من دون إدخال بيع جديد"
+#: reports/forms.py:17 reports/models.py:15
+#: templates/reports/partials/stale_phones_report_results.html:23
+#: templates/reports/stale_phone_edit.html:10
 msgid "SIM / chip"
 msgstr "الشريحة / رقم الشريحة"
+#: reports/forms.py:34 templates/reports/sales_report.html:23
+#: templates/sales/management_sale_list.html:33
+#: templates/sales/pending_payments.html:33
 msgid "Reference, payer, company…"
 msgstr "المرجع، الدافع، الشركة…"
 
+#: reports/forms.py:40 sales/forms.py:15 sales/forms.py:182 sales/forms.py:261
+#: templates/companies/product_list.html:17 templates/core/search.html:66
+#: templates/reports/dashboard.html:293
+#: templates/reports/partials/sales_report_results.html:37
+#: templates/reports/partials/stale_phones_report_results.html:14
+#: templates/reports/profit_report.html:39
+#: templates/sales/employee_entry.html:144
+#: templates/sales/partials/awaiting_results.html:10
+#: templates/sales/partials/awaiting_results.html:85
+#: templates/sales/partials/management_sale_list_results.html:12
+#: templates/sales/partials/pending_payments_results.html:21
 msgid "Company"
 msgstr "الشركة"
+#: reports/forms.py:46 sales/forms.py:20 sales/forms.py:188
+#: templates/customers/customer_detail.html:58
+#: templates/customers/customer_statement.html:70
+#: templates/reports/dashboard.html:294
+#: templates/reports/partials/company_report_sales.html:41
+#: templates/reports/partials/sales_report_results.html:40
+#: templates/reports/partials/stale_phones_report_results.html:20
+#: templates/reports/profit_report.html:100
+#: templates/sales/employee_entry.html:171
+#: templates/sales/partials/awaiting_results.html:11
+#: templates/sales/partials/awaiting_results.html:89
+#: templates/sales/partials/management_sale_list_results.html:15
+#: templates/sales/partials/pending_payments_results.html:24
 msgid "Product"
 msgstr "المنتج"
+#: reports/models.py:9
 msgid "normalized reference"
 msgstr "المرجع المعياري"
 
+#: reports/models.py:13
 msgid "Lowercased trimmed sale reference / phone key."
 msgstr "مرجع البيع بعد تصغير الأحرف وإزالة الفراغات من الطرفين (مفتاح الرقم)."
 
+#: reports/models.py:17
 msgid "last display reference"
 msgstr "آخر مرجع معروض"
 
+#: reports/models.py:20
 msgid "Most recent raw reference as entered on a sale."
 msgstr "آخر مرجع كما أُدخل في البيع."
 
+#: reports/models.py:22
 msgid "hidden from stale list"
 msgstr "مخفي من قائمة الركود"
 
+#: reports/models.py:26 reports/models.py:27
 msgid "phone line tracking"
 msgstr "متابعة خط الهاتف"
 
+#: reports/views.py:229
 msgid "Dashboard"
 msgstr "لوحة التحكم"
+#: reports/views.py:325 templates/partials/management_nav.html:69
+#: templates/reports/profit_report.html:5
 msgid "Profit report"
 msgstr "تقرير الأرباح"
+#: reports/views.py:403
 msgid "Unknown"
 msgstr "غير معروف"
 
+#: reports/views.py:417 templates/partials/management_nav.html:77
+#: templates/reports/employee_report.html:5
 msgid "Employee performance"
 msgstr "أداء الموظفين"
 
+#: reports/views.py:464 templates/partials/management_nav.html:73
+#: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
-msgid "Deposit recorded."
-msgstr "تم تسجيل الإيداع."
-msgid "Company report"
-msgstr "تقرير الشركة"
+#: reports/views_stale_phones.py:61
 msgid "Threshold saved."
 msgstr "تم حفظ العتبة."
+#: reports/views_stale_phones.py:63
 msgid "Could not save threshold."
 msgstr "تعذّر حفظ العتبة."
+#: reports/views_stale_phones.py:82 templates/partials/management_nav.html:81
+#: templates/reports/stale_phones_report.html:6
 msgid "Lines for disconnect"
 msgstr "أرقام للفصل"
+#: reports/views_stale_phones.py:140
 msgid "Line updated."
 msgstr "تم تحديث الخط."
+#: reports/views_stale_phones.py:142 templates/accounts/login.html:60
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
+#: reports/views_stale_phones.py:152 templates/companies/product_list.html:36
+#: templates/companies/product_list.html:76
+#: templates/reports/stale_phone_edit.html:5
 msgid "Edit line"
 msgstr "تعديل الخط"
+#: reports/views_stale_phones.py:174
 msgid "Removed from this list."
 msgstr "أُزيل من هذه القائمة."
+#: sales/_i18n_payment_methods.py:12
 msgid "Jawwal Pay"
 msgstr "جوال باي"
 
+#: sales/_i18n_payment_methods.py:13
 msgid "Bank of Palestine"
 msgstr "بنك فلسطين"
 
+#: sales/_i18n_payment_methods.py:14
 msgid "Palpay"
 msgstr "بال باي"
 
+#: sales/forms.py:37 templates/sales/employee_entry.html:64
 msgid "Payer name"
 msgstr "اسم الدافع"
+#: sales/forms.py:50 templates/sales/employee_entry.html:184
 msgid "Selling price"
 msgstr "سعر البيع"
+#: sales/forms.py:70 templates/reports/partials/company_report_sales.html:90
+#: templates/sales/employee_entry.html:270
+#: templates/sales/employee_recent.html:70
+#: templates/sales/employee_sale_edit.html:36
 msgid "On account"
 msgstr "آجل"
+#: sales/forms.py:75 templates/partials/sale_employee_payment_badge.html:5
+#: templates/partials/sale_employee_payment_badge.html:6
+#: templates/sales/employee_entry.html:99
+#: templates/sales/employee_entry.html:100
+#: templates/sales/employee_sale_edit.html:34
 msgid "Payment to employee"
 msgstr "دفع لدى موظف"
+#: sales/forms.py:108 sales/models.py:142
 msgid "SIM serial or ICCID"
 msgstr "رقم الشريحة أو ICCID"
+#: sales/forms.py:115
 msgid "Optional"
 msgstr "العمليات"
 
+#: sales/forms.py:147
 msgid "Selected product does not belong to the company."
 msgstr "المنتج المختار لا يتبع الشركة المحددة."
+#: sales/forms.py:156
 msgid "Payment to employee is disabled on the sales screen."
 msgstr "الدفع لدى موظف معطّل في شاشة المبيعات."
+#: sales/forms.py:160
 msgid "Choose either on-account or payment to employee, not both."
 msgstr "اختر إما الآجل أو الدفع لدى موظف، وليس الاثنين."
+#: sales/forms.py:166
 msgid "You are not registered as a payroll employee."
 msgstr "حسابك غير مسجّل في نظام الموظفين."
+#: sales/forms.py:176 sales/forms.py:379
 msgid "Pick a payment method."
 msgstr "اختر طريقة الدفع."
+#: sales/forms.py:206 sales/forms.py:273 templates/core/search.html:68
+#: templates/customers/customer_detail.html:60
+#: templates/employees/employee_list.html:61 templates/inventory/cards.html:39
+#: templates/inventory/line_detail.html:130
+#: templates/reports/dashboard.html:297
+#: templates/reports/partials/company_report_sales.html:70
+#: templates/reports/partials/sales_report_results.html:57
+#: templates/sales/employee_sale_edit.html:60
+#: templates/sales/partials/management_sale_list_results.html:33
+#: templates/sales/sale_edit.html:62
 msgid "Status"
 msgstr "الحالة"
+#: sales/forms.py:222 templates/reports/dashboard.html:49
+#: templates/sales/employee_entry.html:191
 msgid "eSIM"
 msgstr "eSIM"
 
+#: sales/forms.py:225
 msgid "eSIM only"
 msgstr "eSIM فقط"
 
+#: sales/forms.py:226
 msgid "Non-eSIM"
 msgstr "بدون eSIM"
 
+#: sales/forms.py:255
 msgid "Phone, shipment number, payer name…"
 msgstr "الهاتف أو رقم الشحنة أو اسم الدافع…"
 
+#: sales/forms.py:307
 msgid "'Date from' must be on or before 'Date to'."
 msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
 
+#: sales/models.py:18
 msgid "Shown on the employee sales screen instead of the method name."
 msgstr "تظهر في شاشة مبيعات الموظف بدلاً من اسم الطريقة."
 
+#: sales/models.py:24
 msgid "payment methods"
 msgstr "طرق الدفع"
+#: sales/models.py:38 templates/customers/customer_detail.html:75
+#: templates/reports/dashboard.html:16
 msgid "Pending"
 msgstr "معلّق"
+#: sales/models.py:39 templates/customers/customer_detail.html:77
 msgid "Paid"
 msgstr "مدفوع"
+#: sales/models.py:40 templates/customers/customer_detail.html:79
 msgid "Cancelled"
 msgstr "ملغى"
+#: sales/models.py:41 templates/partials/sale_status_badge.html:12
 msgid "Written off"
 msgstr "مشطوب"
 
+#: sales/models.py:53
 msgid "product"
 msgstr "المنتج"
+#: sales/models.py:69
 msgid "on account"
 msgstr "آجل"
 
+#: sales/models.py:71
 msgid ""
 "Customer credit sale: needs management approval and is settled later by a "
 "customer payment."
 msgstr "بيع آجل للزبون: يحتاج إلى موافقة الإدارة ويُسدَّد لاحقاً بدفعة من الزبون."
 
+#: sales/models.py:74
 msgid "payment to employee"
 msgstr "دفع لدى موظف"
+#: sales/models.py:77
 msgid ""
 "Cash received by an employee on behalf of the shop; no payment method at "
 "entry."
 msgstr "نقد استلمه موظف نيابة عن المحل؛ بلا طريقة دفع عند الإدخال."
+#: sales/models.py:84
 msgid "employee recipient"
 msgstr "موظف المستلم"
+#: sales/models.py:100
 msgid "settled by payment"
 msgstr "مسدَّدة بدفعة"
 
+#: sales/models.py:114
 msgid "actual selling price"
 msgstr "سعر البيع الفعلي"
+#: sales/models.py:120
 msgid "cost price (snapshot)"
 msgstr "سعر التكلفة (لقطة)"
+#: sales/models.py:125
 msgid "profit (snapshot)"
 msgstr "الربح (لقطة)"
+#: sales/models.py:130 templates/partials/sale_loss_badge.html:3
+#: templates/reports/dashboard.html:86
 msgid "Loss"
 msgstr "الخسائر"
 
+#: sales/models.py:136
 msgid ""
 "When selling price is 0, equals supplier cost recorded as an explicit loss; "
 "otherwise 0."
@@ -1270,203 +2182,276 @@ msgstr ""
 "عندما يكون سعر البيع صفراً، يساوي تكلفة المورّد المسجّلة كخسارة صريحة؛ وإلا فهو "
 "صفر."
 
+#: sales/models.py:139
 msgid "eSIM sale"
 msgstr "بيع eSIM"
 
+#: sales/models.py:140
 msgid "new SIM sale"
 msgstr "بيع شريحة جديدة"
+#: sales/models.py:145
 msgid "Optional. Links this sale to a tracked SIM card at approval time."
 msgstr "اختياري. ربط البيع بشريحة مسجّلة عند الموافقة."
+#: sales/models.py:147
 msgid "SIM consumed at"
 msgstr "تاريخ خصم الشريحة"
+#: sales/models.py:149
 msgid "Not deducted"
 msgstr "لم يُخصم"
+#: sales/models.py:154
 msgid "SIM deducted from"
 msgstr "خُصمت الشريحة من"
+#: sales/models.py:182
 msgid "marked paid at"
 msgstr "تاريخ التعليم كمدفوع"
+#: sales/models.py:189
 msgid "marked paid by"
 msgstr "عُلِّم كمدفوع بواسطة"
+#: sales/models.py:191
 msgid "cancelled at"
 msgstr "تاريخ الإلغاء"
+#: sales/models.py:198
 msgid "cancelled by"
 msgstr "ألغاه"
+#: sales/models.py:203
 msgid "sales"
 msgstr "المبيعات"
+#: sales/models.py:252
 msgid "Deposit"
 msgstr "إيداع"
+#: sales/models.py:253
 msgid "Deduction"
 msgstr "خصم"
+#: sales/models.py:258 templates/inventory/cards.html:41
+#: templates/inventory/line_detail.html:132
 msgid "Sale"
 msgstr "بيع"
+#: sales/models.py:259
 msgid "Manual"
 msgstr "يدوي"
+#: sales/models.py:261
 msgid "Cancellation"
 msgstr "إلغاء"
+#: sales/models.py:276
 msgid "reference type"
 msgstr "نوع المرجع"
+#: sales/models.py:280
 msgid "reference id"
 msgstr "معرّف المرجع"
+#: sales/models.py:293
 msgid "balance transaction"
 msgstr "حركة رصيد"
+#: sales/models.py:294
 msgid "balance transactions"
 msgstr "حركات الرصيد"
+#: sales/services.py:53
 msgid "Product does not belong to the selected company."
 msgstr "المنتج لا ينتمي إلى الشركة المحدّدة."
 
+#: sales/services.py:55
 msgid "Inactive company or product."
 msgstr "الشركة أو المنتج غير نشط."
 
+#: sales/services.py:57
 msgid "A sale cannot be both on-account and paid via employee."
 msgstr "لا يمكن أن تكون المبيعة آجل ودفع لدى موظف معاً."
+#: sales/services.py:60
 msgid "Employee payment sales require an employee recipient."
 msgstr "مبيعات الدفع لدى موظف تتطلب موظفاً مستلماً."
+#: sales/services.py:62
 msgid "Employee payment sales must not have a payment method."
 msgstr "المبيعات الآجلة يجب ألا تحوي طريقة دفع وقت الإدخال."
 
+#: sales/services.py:65
 msgid "On-account sales require a customer."
 msgstr "المبيعات الآجلة تستلزم تحديد زبون."
 
+#: sales/services.py:67
 msgid "On-account sales must not have a payment method at entry time."
 msgstr "المبيعات الآجلة يجب ألا تحوي طريقة دفع وقت الإدخال."
 
+#: sales/services.py:70
 msgid "Payment method is required for non on-account sales."
 msgstr "طريقة الدفع مطلوبة للمبيعات غير الآجلة."
 
+#: sales/services.py:154
 msgid "Payment method is required for this sale."
 msgstr "طريقة الدفع مطلوبة لهذه المبيعة."
+#: sales/services.py:188
 msgid "Only pending sales can be marked as paid."
 msgstr "لا يمكن تعليم البيع كمدفوع إلا للمبيعات المعلّقة."
 
+#: sales/services.py:406
 msgid "Sale is already cancelled."
 msgstr "هذا البيع ملغى مسبقاً."
 
+#: sales/services.py:408
 msgid "Cancellation already recorded for this sale."
 msgstr "تم تسجيل الإلغاء لهذا البيع مسبقاً."
 
+#: sales/services.py:476
 msgid "Amount must be positive."
 msgstr "يجب أن تكون القيمة موجبة."
 
+#: sales/views/bulk.py:26
 msgid "No sales selected."
 msgstr "لم يتم اختيار أي بيع."
 
+#: sales/views/bulk.py:38
 #, python-format
 msgid "Marked %(n)s sale(s) as paid."
 msgstr "تم تعليم %(n)s بيع كمدفوع."
 
+#: sales/views/bulk.py:42
 #, python-format
 msgid "%(n)s sale(s) could not be updated (already settled or on-account)."
 msgstr "تعذّر تحديث %(n)s من المبيعات (إما مسدّدة مسبقاً أو على حساب الزبون)."
 
+#: sales/views/bulk.py:46
 msgid "No pending sales were updated."
 msgstr "لم يُحدَّث أي بيع معلّق."
 
+#: sales/views/employee.py:154
 msgid "Recorded on account and posted to the customer."
 msgstr "تم التسجيل على الحساب وإضافته للزبون مباشرة."
+#: sales/views/employee.py:159
 msgid "Sale recorded; payment credited to employee ledger."
 msgstr "تم تسجيل البيع؛ أُضيفت الدفعة إلى كشف الموظف."
+#: sales/views/employee.py:162
 msgid "Sale recorded and marked paid."
 msgstr "تم تسجيل البيع واعتباره مدفوعاً."
+#: sales/views/employee.py:164
 msgid "Recorded as on-account; awaiting management approval."
 msgstr "تم تسجيلها كبيع آجل؛ بانتظار موافقة الإدارة."
 
+#: sales/views/employee.py:166
 msgid "Sale recorded successfully."
 msgstr "تم تسجيل البيع بنجاح."
+#: sales/views/employee.py:188
 msgid "New sale"
 msgstr "بيع جديد"
+#: sales/views/employee.py:209
 msgid "Recording payments from the sales screen is disabled."
 msgstr "تسجيل الدفعات من شاشة المبيعات معطّل."
+#: sales/views/employee.py:227
 msgid "Payment recorded on the customer account."
 msgstr "تم تسجيل الدفعة على حساب الزبون."
+#: sales/views/employee.py:229
 msgid "Payment submitted for management approval."
 msgstr "تم إرسال الدفعة لموافقة الإدارة."
 
+#: sales/views/employee.py:242
 msgid "Error"
 msgstr "خطأ"
+#: sales/views/employee.py:243
 msgid "Number refresh is disabled on the sales screen."
 msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
-msgid "Phone number is required."
-msgstr "رقم الهاتف مطلوب."
-msgid ""
-"Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058."
-msgstr ""
-"يجب أن يكون الرقم 10 خانات ويبدأ بـ 050 أو 051 أو 052 أو 053 أو 054 أو 0"
-"55 أو 058."
-msgid "Not registered"
-msgstr "غير مسجّل"
-msgid "This phone number is not registered in the system."
-msgstr "رقم الهاتف هذا غير مسجّل في النظام."
+
+#: sales/views/employee.py:282
 msgid "Inventory is disabled on the sales screen."
 msgstr "المخزون معطّل في شاشة المبيعات."
+#: sales/views/employee.py:286
 msgid "Payer name and product are required."
 msgstr "اسم الدافع والمنتج مطلوبان."
+#: sales/views/employee.py:292
 msgid "Product not found."
 msgstr "المنتج غير موجود."
+#: sales/views/employee.py:394 templates/reports/dashboard.html:90
+#: templates/reports/dashboard.html:238
 msgid "Today"
 msgstr "اليوم"
 
+#: sales/views/employee.py:397
 #, python-format
 msgid "%(start)s → %(end)s"
 msgstr "%(start)s → %(end)s"
 
+#: sales/views/employee.py:402
 #, python-format
 msgid "From %(start)s"
 msgstr "من %(start)s"
 
+#: sales/views/employee.py:404
 #, python-format
 msgid "Up to %(end)s"
 msgstr "حتى %(end)s"
 
+#: sales/views/employee.py:406
 msgid "All entries"
 msgstr "كل الإدخالات"
 
+#: sales/views/employee.py:416 templates/sales/employee_recent.html:3
+#: templates/sales/employee_recent.html:7
 msgid "My entries"
 msgstr "إدخالاتي"
+#: sales/views/employee.py:440 sales/views/employee.py:489
 #, python-format
 msgid "You can only edit or delete your last %(count)s entries."
 msgstr "يمكنك تعديل أو حذف آخر %(count)s إدخالات فقط."
+#: sales/views/employee.py:466 sales/views/management.py:248
 msgid "Sale updated."
 msgstr "تم تحديث البيع."
+#: sales/views/employee.py:477 templates/sales/employee_sale_edit.html:3
+#: templates/sales/employee_sale_edit.html:7
 msgid "Edit entry"
 msgstr "تعديل الإدخال"
+#: sales/views/employee.py:499
 #, python-format
 msgid "Could not delete this entry: %(reason)s"
 msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
 
+#: sales/views/employee.py:506
 msgid "Entry was permanently removed."
 msgstr "أُزيل الإدخال نهائياً."
+#: sales/views/management.py:106 templates/partials/management_nav.html:25
+#: templates/sales/management_sale_list.html:14
+#: templates/sales/pending_payments.html:6
 msgid "Pending payments"
 msgstr "المدفوعات المعلّقة"
+#: sales/views/management.py:188
 msgid "Sale approved and posted to the customer's account."
 msgstr "تمت الموافقة على البيع وقيدُه على حساب الزبون."
 
+#: sales/views/management.py:199
 msgid "Sale rejected and supplier balance restored."
 msgstr "تم رفض البيع واسترجاع رصيد المورّد."
 
+#: sales/views/management.py:210
 msgid "Marked as paid."
 msgstr "تم التعليم كمدفوع."
+#: sales/views/management.py:221
 msgid "Sale cancelled and supplier balance restored."
 msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
+#: sales/views/management.py:259
 msgid "Edit sale"
 msgstr "تعديل البيع"
 
+#: sales/views/management.py:273
 #, python-format
 msgid "Could not delete this sale: %(reason)s"
 msgstr "تعذّر حذف البيع: %(reason)s"
 
+#: sales/views/management.py:280
 msgid "Sale was permanently removed from the system."
 msgstr "تم حذف البيع نهائياً من النظام."
 
+#: sales/views/payment_methods.py:22 templates/partials/management_nav.html:110
+#: templates/sales/payment_method_list.html:6
 msgid "Payment methods"
 msgstr "طرق الدفع"
+#: sales/views/payment_methods.py:31
 msgid "Payment method saved."
 msgstr "تم حفظ طريقة الدفع."
+#: sales/views/payment_methods.py:36
 msgid "New payment method"
 msgstr "طريقة دفع جديدة"
+#: sales/views/payment_methods.py:46
 msgid "Payment method updated."
 msgstr "تم تحديث طريقة الدفع."
+#: sales/views/payment_methods.py:51
 msgid "Edit payment method"
 msgstr "تعديل طريقة الدفع"
+#: sales/views/payment_methods.py:72
 #, python-format
 msgid ""
 "Cannot delete “%(name)s” because existing sales or customer payments still "
@@ -1476,50 +2461,135 @@ msgstr ""
 "لا يمكن حذف \"%(name)s\" لأن مبيعات أو دفعات زبائن لا تزال مرتبطة بها. "
 "اجعلها غير نشطة بدلاً من ذلك، أو حوّل هذه السجلات لطريقة أخرى أولاً."
 
+#: sales/views/payment_methods.py:81
 #, python-format
 msgid "Payment method “%(name)s” was deleted."
 msgstr "تم حذف طريقة الدفع \"%(name)s\"."
 
+#: templates/accounts/account_settings.html:45
 msgid "PNG or JPG. Will be resized automatically."
 msgstr "PNG أو JPG. سيتم تصغيرها تلقائياً."
 
+#: templates/accounts/account_settings.html:49
+#: templates/sales/employee_sale_edit.html:73 templates/sales/sale_edit.html:75
 msgid "Save changes"
 msgstr "حفظ التغييرات"
 
+#: templates/accounts/account_settings.html:58
 msgid "Change password"
 msgstr "تغيير كلمة المرور"
 
+#: templates/accounts/account_settings.html:73
 msgid "Update password"
 msgstr "تحديث كلمة المرور"
 
+#: templates/accounts/login.html:9 templates/accounts/login.html:28
+#: templates/accounts/login.html:63
 msgid "Sign in"
 msgstr "تسجيل الدخول"
+#: templates/accounts/partials/user_list_results.html:18
+#: templates/accounts/partials/user_list_results.html:57
+#: templates/companies/partials/company_list_results.html:18
+#: templates/companies/product_list.html:22
+#: templates/customers/customer_list.html:62
+#: templates/customers/customer_list.html:78
+#: templates/employees/employee_list.html:78
+#: templates/sales/payment_method_list.html:19
 msgid "Active"
 msgstr "نشط"
+#: templates/accounts/partials/user_list_results.html:20
+#: templates/companies/partials/company_list_results.html:20
+#: templates/customers/customer_detail.html:61
+#: templates/customers/customer_detail.html:117
+#: templates/customers/customer_detail.html:262
+#: templates/customers/customer_list.html:63
+#: templates/customers/payment_submissions_list.html:38
+#: templates/employees/employee_list.html:62
+#: templates/expenses/expense_report.html:72
+#: templates/expenses/partials/expense_list_results.html:21
+#: templates/inventory/_balance_actions.html:25
+#: templates/inventory/customer_detail.html:32
+#: templates/inventory/customer_list.html:65
+#: templates/inventory/main_stock.html:63 templates/inventory/movements.html:64
+#: templates/inventory/overview.html:34
+#: templates/reports/partials/stale_phones_report_results.html:28
+#: templates/sales/partials/awaiting_results.html:16
+#: templates/sales/partials/management_sale_list_results.html:35
+#: templates/sales/partials/pending_payments_results.html:37
 msgid "Actions"
 msgstr "إجراءات"
 
+#: templates/accounts/partials/user_list_results.html:29
+#: templates/companies/partials/company_list_results.html:29
+#: templates/companies/partials/company_list_results.html:55
+#: templates/companies/product_list.html:57
 msgid "Yes"
 msgstr "نعم"
+#: templates/accounts/partials/user_list_results.html:29
+#: templates/companies/partials/company_list_results.html:29
+#: templates/companies/partials/company_list_results.html:55
+#: templates/companies/product_list.html:57
 msgid "No"
 msgstr "لا"
+#: templates/accounts/partials/user_list_results.html:32
+#: templates/accounts/partials/user_list_results.html:60
+#: templates/companies/company_detail.html:14
+#: templates/companies/partials/company_list_results.html:32
+#: templates/companies/partials/company_list_results.html:69
+#: templates/companies/product_list.html:59
+#: templates/customers/customer_list.html:81
+#: templates/employees/employee_detail.html:10
+#: templates/expenses/expense_report.html:83
+#: templates/expenses/partials/expense_list_results.html:34
+#: templates/expenses/partials/expense_list_results.html:63
+#: templates/reports/partials/stale_phones_report_results.html:42
+#: templates/sales/partials/employee_recent_actions.html:4
+#: templates/sales/partials/management_sale_list_results.html:55
+#: templates/sales/partials/management_sale_list_results.html:117
+#: templates/sales/payment_method_list.html:26
 msgid "Edit"
 msgstr "تعديل"
+#: templates/accounts/partials/user_list_results.html:35
+#: templates/accounts/partials/user_list_results.html:63
+#: templates/accounts/user_form.html:70
 msgid "Delete this user permanently? This cannot be undone."
 msgstr "حذف هذا المستخدم نهائياً؟ لا يمكن التراجع."
 
+#: templates/accounts/partials/user_list_results.html:37
 msgid "Delete user"
 msgstr "حذف المستخدم"
 
+#: templates/accounts/partials/user_list_results.html:44
+#: templates/accounts/partials/user_list_results.html:71
 msgid "No users."
 msgstr "لا يوجد مستخدمون."
+#: templates/accounts/partials/user_list_results.html:57
+#: templates/customers/customer_detail.html:9
+#: templates/customers/customer_list.html:78
+#: templates/employees/employee_list.html:80
+#: templates/sales/payment_method_list.html:21
 msgid "Inactive"
 msgstr "غير نشط"
+#: templates/accounts/user_form.html:51
+#: templates/companies/company_form.html:19
+#: templates/companies/product_line_form.html:19
+#: templates/companies/product_variant_form.html:22
+#: templates/core/_system_settings_general.html:141
+#: templates/core/site_branding.html:85
+#: templates/customers/customer_form.html:20
+#: templates/employees/employee_form.html:33
+#: templates/expenses/expense_form.html:18
+#: templates/inventory/_action_dialog.html:34
+#: templates/reports/stale_phone_edit.html:17
+#: templates/sales/payment_method_form.html:26
 msgid "Save"
 msgstr "حفظ"
+#: templates/accounts/user_form.html:61
+#: templates/sales/payment_method_form.html:36
 msgid "Danger zone"
 msgstr "منطقة خطرة"
 
+#: templates/accounts/user_form.html:63
 #, python-format
 msgid ""
 "Permanently delete the user <strong>%(name)s</strong>. If they are linked to "
@@ -1530,148 +2600,695 @@ msgstr ""
 "زبون أو دفعة فسيتم رفض الحذف — عطّل تسجيل الدخول بدلاً من ذلك بإلغاء تأشير "
 "«تمكين تسجيل الدخول» بالأعلى."
 
+#: templates/accounts/user_form.html:73
 msgid "Delete user permanently"
 msgstr "حذف المستخدم نهائياً"
 
+#: templates/accounts/user_list.html:6
+#: templates/partials/management_nav.html:180
 msgid "Users"
 msgstr "المستخدمون"
+#: templates/accounts/user_list.html:7
 msgid "Staff accounts and roles."
 msgstr "حسابات الموظفين والصلاحيات."
 
+#: templates/accounts/user_list.html:27
 msgid "Username or full name…"
 msgstr "اسم المستخدم أو الاسم الكامل…"
 
+#: templates/accounts/user_list.html:30 templates/audit/audit_log_list.html:60
+#: templates/companies/company_list.html:30
+#: templates/companies/partials/company_detail_general.html:15
+#: templates/customers/customer_detailed_invoice.html:32
+#: templates/customers/customer_list.html:45
+#: templates/customers/customer_statement.html:32
+#: templates/customers/payment_submissions_list.html:19
+#: templates/employees/employee_list.html:46
+#: templates/expenses/expense_list.html:31
+#: templates/expenses/expense_report.html:15
+#: templates/inventory/customer_list.html:43
+#: templates/inventory/movements.html:36
+#: templates/reports/company_report.html:24
+#: templates/reports/employee_report.html:17
+#: templates/reports/partials/company_report_ledger.html:27
+#: templates/reports/partials/company_report_sales.html:27
+#: templates/reports/profit_report.html:15
+#: templates/reports/sales_report.html:34
+#: templates/reports/stale_phones_report.html:60
+#: templates/sales/awaiting_approvals.html:31
+#: templates/sales/employee_recent.html:49
+#: templates/sales/management_sale_list.html:44
+#: templates/sales/pending_payments.html:43
 msgid "Apply"
 msgstr "تطبيق"
+#: templates/accounts/user_list.html:31 templates/audit/audit_log_list.html:61
+#: templates/companies/company_list.html:31
+#: templates/customers/customer_list.html:48
+#: templates/customers/payment_submissions_list.html:20
+#: templates/employees/employee_list.html:47
+#: templates/expenses/expense_list.html:32
+#: templates/expenses/expense_report.html:16 templates/inventory/cards.html:20
+#: templates/inventory/customer_list.html:44
+#: templates/inventory/movements.html:37
+#: templates/reports/employee_report.html:18
+#: templates/reports/partials/company_report_ledger.html:28
+#: templates/reports/partials/company_report_sales.html:28
+#: templates/reports/profit_report.html:16
+#: templates/reports/sales_report.html:35
+#: templates/reports/stale_phones_report.html:61
+#: templates/sales/awaiting_approvals.html:32
+#: templates/sales/employee_recent.html:50
+#: templates/sales/management_sale_list.html:45
+#: templates/sales/pending_payments.html:44
 msgid "Reset"
 msgstr "إعادة ضبط"
+#: templates/audit/audit_log_list.html:7
 msgid "Append-only record of who changed what."
 msgstr "سجل لا يقبل التعديل لكل التغييرات."
 
+#: templates/audit/audit_log_list.html:14
 msgid "Filters"
 msgstr "الفلاتر"
 
+#: templates/audit/audit_log_list.html:21
 msgid "Search target"
 msgstr "البحث في الهدف"
 
+#: templates/audit/audit_log_list.html:22
 msgid "Object id or text"
 msgstr "معرّف أو نص"
 
+#: templates/audit/audit_log_list.html:25
+#: templates/audit/audit_log_list.html:74
 msgid "Action"
 msgstr "الإجراء"
 
+#: templates/audit/audit_log_list.html:34
 msgid "Model"
 msgstr "النموذج"
 
+#: templates/audit/audit_log_list.html:43
+#: templates/audit/audit_log_list.html:73
 msgid "Actor"
 msgstr "الفاعل"
 
+#: templates/audit/audit_log_list.html:72
+#: templates/customers/payment_submissions_list.html:32
+#: templates/inventory/line_detail.html:88
+#: templates/inventory/movements.html:58 templates/reports/dashboard.html:292
+#: templates/reports/partials/company_report_ledger.html:38
+#: templates/reports/partials/company_report_sales.html:38
+#: templates/reports/partials/sales_report_results.html:34
+#: templates/sales/partials/awaiting_results.html:8
+#: templates/sales/partials/management_sale_list_results.html:9
+#: templates/sales/partials/pending_payments_results.html:18
 msgid "When"
 msgstr "متى"
+#: templates/audit/audit_log_list.html:75
 msgid "Target"
 msgstr "الهدف"
 
+#: templates/audit/audit_log_list.html:76
 msgid "Changes"
 msgstr "التغييرات"
 
+#: templates/audit/audit_log_list.html:95
 msgid "View"
 msgstr "عرض"
 
+#: templates/audit/audit_log_list.html:105
 msgid "No audit events match your filters."
 msgstr "لا توجد أحداث تطابق الفلاتر."
 
+#: templates/base_employee.html:22 templates/base_management.html:124
 msgid "Sales entry"
 msgstr "إدخال مبيعات"
+#: templates/base_employee.html:27 templates/base_management.html:115
 msgid "Language"
 msgstr "اللغة"
 
+#: templates/base_management.html:54
 msgid "Open menu"
 msgstr "فتح القائمة"
 
+#: templates/base_management.html:72
 msgid "Search (press /)"
 msgstr "بحث (اضغط /)"
 
+#: templates/base_management.html:95
 msgid "Search reference, customer, payment…"
 msgstr "ابحث في المرجع، الزبون، الدفعة…"
 
+#: templates/companies/company_detail.html:7
+msgid "Supplier balance and sales"
+msgstr "رصيد المزود والمبيعات"
+
+#: templates/companies/company_detail.html:10
+msgid "Back to companies"
+msgstr "العودة إلى المزودين"
+
+#: templates/companies/company_detail.html:22
+#: templates/core/system_settings.html:12
+msgid "General"
+msgstr "عام"
+#: templates/companies/company_detail.html:28
+#: templates/reports/partials/company_report_sales.html:4
+msgid "Sales details"
+msgstr "تفاصيل المبيعات"
+
+#: templates/companies/company_detail.html:34
+#: templates/reports/partials/company_report_ledger.html:4
+msgid "Balance ledger"
+msgstr "سجل الرصيد"
+#: templates/companies/company_form.html:26
+#: templates/companies/partials/company_list_results.html:34
+#: templates/companies/partials/company_list_results.html:71
 msgid "Delete this company? This cannot be undone."
 msgstr "حذف هذه الشركة؟ لا يمكن التراجع."
 
+#: templates/companies/company_form.html:28
 msgid "Delete company"
 msgstr "حذف الشركة"
 
+#: templates/companies/company_form.html:31
+#: templates/companies/partials/company_list_results.html:39
 msgid "Cannot delete: company has sales."
 msgstr "لا يمكن الحذف: للشركة مبيعات."
 
+#: templates/companies/company_form.html:31
+#: templates/companies/product_line_form.html:31
+#: templates/companies/product_variant_form.html:34
 msgid "Delete unavailable (has sales)"
 msgstr "الحذف غير متاح (لها مبيعات)"
 
+#: templates/companies/company_list.html:7
 msgid "Suppliers and balance overview."
 msgstr "نظرة على المورّدين والأرصدة"
 
+#: templates/companies/company_list.html:27
 msgid "Company name or notes…"
 msgstr "اسم الشركة أو الملاحظات…"
 
-msgid "Name"
-msgstr "الاسم"
-msgid "Opening"
-msgstr "افتتاحي"
+#: templates/companies/layan_reconcile.html:9
+msgid "Back to supplier"
+msgstr "العودة للمورد"
+
+#: templates/companies/layan_reconcile.html:15
+msgid ""
+"Upload the Layan charges report (Excel). Only rows where the portal balance "
+"before and after differ are counted; re-activations with unchanged balance "
+"are ignored."
+msgstr ""
+"ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ إعادة "
+"التفعيل بدون تغيّر رصيد تُتجاهل."
+
+#: templates/companies/layan_reconcile.html:27
+msgid "Run matching"
+msgstr "تشغيل المطابقة"
+
+#: templates/companies/layan_reconcile.html:37
+msgid "Estimated deficit (Layan)"
+msgstr "العجز التقديري (ليان)"
+
+#: templates/companies/layan_reconcile.html:40
+msgid "Not recorded"
+msgstr "غير مسجّل"
+
+#: templates/companies/layan_reconcile.html:41
+#: templates/companies/layan_reconcile.html:92
+msgid "Settlements on disconnected numbers"
+msgstr "تسويات على أرقام مفصولة"
+
+#: templates/companies/layan_reconcile.html:49
+msgid "Report rows in period"
+msgstr "صفوف الكشف في الفترة"
+
+#: templates/companies/layan_reconcile.html:64
+msgid "Balance vs report end"
+msgstr "الرصيد مقابل نهاية الكشف"
+
+#: templates/companies/layan_reconcile.html:68
+msgid "Layan"
+msgstr "صافي ليان"
+
+
+#: templates/companies/layan_reconcile.html:71
+#: templates/companies/partials/layan_reconcile_table.html:25
+msgid "Gap"
+msgstr "الفرق"
+
+#: templates/companies/layan_reconcile.html:74
+msgid "End balance not found in file."
+msgstr "رصيد نهاية الكشف غير موجود في الملف."
+
+#: templates/companies/layan_reconcile.html:81
+msgid "Numbers not recorded under Layan"
+msgstr "أرقام غير مسجّلة تحت ليان"
+
+#: templates/companies/layan_reconcile.html:82
+msgid "Charged on Layan portal but no matching Layan sale in this period."
+msgstr "مخصوم على بوابة ليان دون بيع ليان مطابق في هذه الفترة."
+
+#: templates/companies/layan_reconcile.html:87
+msgid ""
+"Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix the "
+"supplier on the sale."
+msgstr ""
+"مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على البيع."
+
+#: templates/companies/layan_reconcile.html:93
+msgid ""
+"Charge on activation minus refund on disconnect (amount kept on Layan "
+"portal)."
+msgstr "خصم التفعيل ناقص إعادة المال عند الفصل (المبلغ الباقي على بوابة ليان)."
+
+#: templates/companies/layan_reconcile.html:96
+msgid ""
+"\n"
+"        Showing settlements with difference ≥ %(min)s (%(hidden)s hidden).\n"
+"        "
+msgstr ""
+"\n"
+"عرض التسويات التي فرقها ≥ %(min)s (%(hidden)s مخفية).\n"
+"        "
+
+
+#: templates/companies/layan_reconcile.html:105
+msgid "Amount mismatches"
+msgstr "اختلاف المبالغ"
+
+#: templates/companies/layan_reconcile.html:106
+msgid "Both sides have activity but net amounts differ."
+msgstr "يوجد نشاط على الجانبين لكن الصافي مختلف."
+
+#: templates/companies/layan_reconcile.html:112
+msgid ""
+"Layan sale in Recharge Desk with no matching charge line in the uploaded "
+"Layan report."
+msgstr "بيع ليان في النظام بلا سطر خصم مطابق في كشف ليان المرفوع."
+
+#: templates/companies/layan_reconcile.html:118
+msgid "Matched numbers"
+msgstr "أرقام متطابقة"
+
+#: templates/companies/partials/company_detail_general.html:16
+#: templates/reports/company_report.html:25
+msgid "Reset (all time)"
+msgstr "إعادة تعيين (كل الفترات)"
+
+#: templates/companies/partials/company_detail_general.html:21
+#: templates/reports/company_report.html:30
+#, python-format
+msgid "Showing data from %(start)s to %(end)s."
+msgstr "تعرض البيانات من %(start)s إلى %(end)s."
+
+#: templates/companies/partials/company_detail_general.html:24
+#: templates/reports/company_report.html:33
+msgid ""
+"Showing all-time data. Pick a date range above to scope the cards and tables "
+"below."
+msgstr ""
+"تعرض كل البيانات. اختر نطاق تاريخ بالأعلى لقصر البطاقات والجداول التالية "
+"عليه."
+
+#: templates/companies/partials/company_detail_general.html:38
+#: templates/reports/company_report.html:47
+msgid "Total deposits"
+msgstr "إجمالي الإيداعات"
+#: templates/companies/partials/company_detail_general.html:44
+#: templates/reports/company_report.html:53
+msgid "Consumed (sales)"
+msgstr "المستهلك (مبيعات)"
+#: templates/companies/partials/company_detail_general.html:51
+#: templates/reports/company_report.html:60
+#, python-format
+msgid "Balance on %(d)s"
+msgstr "الرصيد بتاريخ %(d)s"
+
+#: templates/companies/partials/company_detail_general.html:53
+#: templates/reports/company_report.html:62
+msgid "Now"
+msgstr "الآن"
+
+#: templates/companies/partials/company_detail_general.html:55
+#: templates/companies/partials/company_list_results.html:15
+#: templates/companies/partials/company_list_results.html:63
+#: templates/customers/customer_detail.html:23
+#: templates/employees/employee_detail.html:18
+#: templates/reports/company_report.html:64
 msgid "Current balance"
 msgstr "الرصيد الحالي"
-msgid "Report"
-msgstr "تقرير"
+#: templates/companies/partials/company_detail_general.html:65
+#: templates/reports/company_report.html:74
+msgid "Reversals (cancellations)"
+msgstr "العكس (إلغاءات)"
+#: templates/companies/partials/company_detail_general.html:71
+#: templates/reports/company_report.html:80
+msgid "Adjustments"
+msgstr "التسويات"
+#: templates/companies/partials/company_detail_general.html:77
+#: templates/reports/company_report.html:86
+msgid "Sales count (non-cancelled)"
+msgstr "عدد المبيعات (غير الملغاة)"
+#: templates/companies/partials/company_detail_general.html:79
+#: templates/reports/company_report.html:88
+msgid "Total sell"
+msgstr "إجمالي البيع"
+#: templates/companies/partials/company_detail_general.html:80
+#: templates/reports/company_report.html:89
+#: templates/reports/profit_report.html:26
+msgid "Total profit"
+msgstr "إجمالي الربح"
+#: templates/companies/partials/company_detail_general.html:88
+#: templates/reports/company_report.html:97
+msgid "Manual balance top-up"
+msgstr "تعبئة رصيد يدوية"
+#: templates/companies/partials/company_detail_general.html:95
+#: templates/reports/company_report.html:103
+msgid "Save deposit"
+msgstr "حفظ الإيداع"
+#: templates/companies/partials/company_detail_general.html:100
+#: templates/customers/customer_detail.html:185
+#: templates/reports/company_report.html:108
+msgid "Balance adjustment"
+msgstr "تسوية الرصيد"
+#: templates/companies/partials/company_detail_general.html:107
+#: templates/customers/customer_detail.html:191
+#: templates/reports/company_report.html:114
+msgid "Save adjustment"
+msgstr "حفظ التسوية"
+#: templates/companies/partials/company_list_results.html:9
+#: templates/core/search.html:108 templates/customers/customer_list.html:59
+msgid "Name"
+msgstr "الاسم"
+#: templates/companies/partials/company_list_results.html:12
+#: templates/companies/partials/company_list_results.html:59
+#: templates/customers/_invoice_summary.html:12
+msgid "Opening"
+msgstr "افتتاحي"
+#: templates/companies/partials/company_list_results.html:31
+#: templates/companies/partials/company_list_results.html:68
+#: templates/customers/customer_detailed_invoice.html:52
+#: templates/employees/employee_detail.html:77
+msgid "Details"
+msgstr "التفاصيل"
+
+#: templates/companies/partials/company_list_results.html:44
+#: templates/companies/partials/company_list_results.html:79
 msgid "No companies."
 msgstr "لا توجد شركات."
+#: templates/companies/partials/layan_reconcile_activity_detail.html:3
+msgid "Layan report breakdown"
+msgstr "تفصيل كشف ليان"
+
+#: templates/companies/partials/layan_reconcile_activity_detail.html:7
+msgid "Settlement cycles (charge + refund)"
+msgstr "دورات التسوية (شحنة + إرجاع)"
+
+#: templates/companies/partials/layan_reconcile_activity_detail.html:24
+msgid "Unpaired refunds in report"
+msgstr "إرجاعات غير مربوطة في الكشف"
+
+#: templates/companies/partials/layan_reconcile_activity_detail.html:34
+msgid ""
+"Not counted in settlement total — no matching charge line before this refund "
+"in the report."
+msgstr ""
+"لا تُحسب في مجموع التسوية — لا توجد شحنة مطابقة قبل هذا الإرجاع في الكشف."
+
+#: templates/companies/partials/layan_reconcile_activity_detail.html:40
+msgid "Recharges outside settlement cycles"
+msgstr "شحنات خارج دورات التسوية"
+
+#: templates/companies/partials/layan_reconcile_activity_detail.html:54
+msgid "Layan portal net in report"
+msgstr "صافي ليان في الكشف"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:9
+#: templates/companies/partials/layan_reconcile_table.html:10
+#: templates/customers/customer_statement.html:72
+#: templates/customers/customer_statement.html:102
+#: templates/inventory/line_detail.html:34 templates/inventory/overview.html:30
+msgid "Total"
+msgstr "الإجمالي"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:17
+#: templates/companies/partials/layan_reconcile_table.html:21
+msgid "Number"
+msgstr ""
+
+#: templates/companies/partials/layan_reconcile_settlements.html:18
+msgid "Difference"
+msgstr "الفرق"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:27
+#, python-format
+msgid "%(c)s settlement cycle"
+msgid_plural "%(c)s settlement cycles"
+msgstr[0] "%(c)s دورة تسوية"
+msgstr[1] "%(c)s دورات تسوية"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:30
+msgid "New recharge in period"
+msgstr "شحن جديد في الفترة"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:30
+msgid "see matching below"
+msgstr "راجع المطابقة أدناه"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:34
+#: templates/companies/partials/layan_reconcile_table.html:42
+msgid "Breakdown"
+msgstr "التفصيل"
+
+#: templates/companies/partials/layan_reconcile_settlements.html:46
+#: templates/companies/partials/layan_reconcile_table.html:59
+msgid "None in this category."
+msgstr "لا يوجد في هذا التصنيف."
+
+#: templates/companies/partials/layan_reconcile_table.html:22
+msgid "RD supplier"
+msgstr "مورد في النظام"
+
+#: templates/companies/partials/layan_reconcile_table.html:23
+msgid "Layan recharge"
+msgstr "شحن ليان"
+
+#: templates/companies/partials/layan_reconcile_table.html:24
+msgid "RD net"
+msgstr "صافي النظام"
+
+#: templates/companies/partials/layan_reconcile_table.html:36
+msgid "Settlement total"
+msgstr "مجموع التسويات"
+
+#: templates/companies/partials/layan_reconcile_table.html:37
+msgid "cycles"
+msgstr "دورات"
+
+#: templates/companies/product_line_form.html:26
+#: templates/companies/product_list.html:39
 msgid "Delete this product line and all its packages? This cannot be undone."
 msgstr "حذف خط المنتج هذا وكل باقاته؟ لا يمكن التراجع."
 
+#: templates/companies/product_line_form.html:28
 msgid "Delete product line"
 msgstr "حذف خط المنتج"
 
+#: templates/companies/product_line_form.html:31
+#: templates/companies/product_list.html:44
+#: templates/companies/product_list.html:84
 msgid "Cannot delete: this line has sales."
 msgstr "لا يمكن الحذف: للخط مبيعات."
 
+#: templates/companies/product_list.html:7
 msgid "Lines, packages, and pricing."
 msgstr "خطوط المنتج والباقات والأسعار"
 
+#: templates/companies/product_list.html:19
 msgid "Package"
 msgstr "الباقة"
 
+#: templates/companies/product_list.html:20
+#: templates/reports/partials/company_report_sales.html:56
+#: templates/reports/partials/company_report_sales.html:64
+#: templates/reports/partials/sales_report_results.html:52
 msgid "Cost"
 msgstr "التكلفة"
+#: templates/companies/product_list.html:21
 msgid "Default sell"
 msgstr "البيع الافتراضي"
+#: templates/companies/product_list.html:37
+#: templates/companies/product_list.html:77
 msgid "Add package"
 msgstr "إضافة باقة"
 
+#: templates/companies/product_list.html:41
+#: templates/companies/product_list.html:44
+#: templates/companies/product_list.html:81
+#: templates/companies/product_list.html:84
 msgid "Delete line"
 msgstr "حذف الخط"
 
+#: templates/companies/product_list.html:52
 msgid "Sales default"
 msgstr "الافتراضي للمبيعات"
 
+#: templates/companies/product_list.html:61
+#: templates/companies/product_variant_form.html:29
 msgid "Delete this package? This cannot be undone."
 msgstr "حذف هذه الباقة؟ لا يمكن التراجع."
 
+#: templates/companies/product_list.html:66
+#: templates/companies/product_variant_form.html:34
 msgid "Cannot delete: package has sales."
 msgstr "لا يمكن الحذف: للباقة مبيعات."
 
+#: templates/companies/product_list.html:79
 msgid "Delete this product line? This cannot be undone."
 msgstr "حذف خط المنتج هذا؟ لا يمكن التراجع."
 
+#: templates/companies/product_list.html:88
 msgid "No packages yet."
 msgstr "لا توجد باقات بعد."
 
+#: templates/companies/product_list.html:94
 msgid "No product lines."
 msgstr "لا توجد خطوط منتجات."
 
+#: templates/companies/product_variant_form.html:31
 msgid "Delete package"
 msgstr "حذف الباقة"
 
+#: templates/core/_system_settings_database.html:4
+msgid "Database backup"
+msgstr "نسخة احتياطية لقاعدة البيانات"
+#: templates/core/_system_settings_database.html:6
+msgid ""
+"Download a full copy of the application database or restore from a file you "
+"saved earlier. Only management users can use this screen."
+msgstr ""
+"نزّل نسخة كاملة من قاعدة بيانات التطبيق أو استعد من ملف حفظته سابقاً. هذ"
+"ه الشاشة للإدارة فقط."
+#: templates/core/_system_settings_database.html:10
+msgid "Engine"
+msgstr "المحرك"
+#: templates/core/_system_settings_database.html:12
+msgid "Database name"
+msgstr "اسم قاعدة البيانات"
+#: templates/core/_system_settings_database.html:17
+msgid "Download backup"
+msgstr "تنزيل النسخة الاحتياطية"
+#: templates/core/_system_settings_database.html:20
+msgid "Downloads the SQLite database file."
+msgstr ""
+
+#: templates/core/_system_settings_database.html:22
+msgid "Downloads a PostgreSQL custom dump (.dump) suitable for pg_restore."
+msgstr ""
+
+#: templates/core/_system_settings_database.html:24
+msgid ""
+"Downloads a compressed JSON export (.json.gz) compatible with Django "
+"loaddata."
+msgstr ""
+
+#: templates/core/_system_settings_database.html:28
+msgid "Download database"
+msgstr "تنزيل قاعدة البيانات"
+#: templates/core/_system_settings_database.html:34
+msgid "Restore from backup"
+msgstr "استيراد من نسخة احتياطية"
+#: templates/core/_system_settings_database.html:36
+msgid ""
+"This replaces all current data in the database. Take a fresh download first. "
+"Active users may need to sign in again after a restore."
+msgstr ""
+
+#: templates/core/_system_settings_database.html:77
+msgid "Import database"
+msgstr "استيراد قاعدة البيانات"
+#: templates/core/_system_settings_general.html:8
+msgid "Approval workflows"
+msgstr "سير الموافقات"
+#: templates/core/_system_settings_general.html:10
+msgid ""
+"Turn a switch off to skip management approval for that queue. Sales and "
+"balances apply immediately."
+msgstr ""
+"عطّل المفتاح لتجاوز موافقة الإدارة على هذا الطابور. تُسجَّل المبيعات وال"
+"أرصدة فوراً."
+#: templates/core/_system_settings_general.html:20
+msgid ""
+"On-account sales posted to customers or distributors. When off, they are "
+"recorded on the customer account immediately."
+msgstr ""
+"مبيعات الآجل المسجّلة للزبائن أو الموزّعين. عند الإيقاف، تُسجَّل على حسا"
+"ب الزبون مباشرة."
+#: templates/core/_system_settings_general.html:31
+msgid ""
+"Customer settlement submissions from the sales screen. When off, the payment "
+"applies to the balance immediately."
+msgstr ""
+"طلبات تسديد الزبون من شاشة المبيعات. عند الإيقاف، تُطبَّق الدفعة على الر"
+"صيد فوراً."
+#: templates/core/_system_settings_general.html:42
+msgid ""
+"Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as "
+"soon as they are saved."
+msgstr ""
+"مبيعات نقدية بانتظار «تعليم مدفوع». عند الإيقاف، تُعلَّم المبيعات النقدي"
+"ة الجديدة مدفوعة عند الحفظ."
+#: templates/core/_system_settings_general.html:48
+msgid "Sales entry screen"
+msgstr "شاشة إدخال المبيعات"
+#: templates/core/_system_settings_general.html:50
+msgid ""
+"Controls what employees see and how sales are recorded on the entry form."
+msgstr "يتحكّم فيما يراه الموظفون وكيف تُسجَّل المبيعات في نموذج الإدخال."
+#: templates/core/_system_settings_general.html:60
+msgid ""
+"When off, on-account sales require an existing customer — create customers "
+"from the Customers screen."
+msgstr ""
+"عند الإيقاف، تتطلب مبيعات الآجل زبوناً موجوداً — أنشئ الزبائن من شاشة ال"
+"زبائن."
+#: templates/core/_system_settings_general.html:71
+msgid ""
+"When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere "
+"is unchanged."
+msgstr ""
+"عند الإيقاف، يُخفى خيار شريحة جديدة في إدخال المبيعات. إدارة المخزون في "
+"باقي الشاشات دون تغيير."
+#: templates/core/_system_settings_general.html:98
+msgid ""
+"When off, the payment-to-employee option is hidden on the sales entry screen."
+msgstr "عند الإيقاف، يُخفى خيار الدفع لدى موظف من شاشة إدخال المبيعات."
+#: templates/core/_system_settings_general.html:104
+msgid "Management panel defaults"
+msgstr "افتراضيات لوحة الإدارة"
+#: templates/core/_system_settings_general.html:106
+msgid ""
+"Used on first visit before the user picks a language or theme. Personal "
+"choices in the header still override these defaults."
+msgstr ""
+"تُستخدم في الزيارة الأولى قبل اختيار المستخدم للغة أو الثيم. الاختيارات "
+"الشخصية في الشريط العلوي تبقى لها الأولوية."
+#: templates/core/_system_settings_general.html:123
+msgid "Refresh link defaults"
+msgstr "افتراضيات رابط التحديث"
+#: templates/core/_system_settings_general.html:125
+msgid ""
+"Initial language and theme for the public phone-refresh page before the "
+"visitor changes them."
+msgstr "اللغة والثيم الابتدائيان لصفحة التحديث العامة قبل أن يغيّرها الزائر."
+#: templates/core/forbidden.html:22
 msgid "You do not have permission to view this page."
 msgstr "ليس لديك صلاحية لعرض هذه الصفحة."
+#: templates/core/forbidden.html:23
 msgid "Go home"
 msgstr "الرئيسية"
+#: templates/core/search.html:9
 #, python-format
 msgid "Found %(n)s result for “%(q)s”."
 msgid_plural "Found %(n)s results for “%(q)s”."
@@ -1682,42 +3299,73 @@ msgstr[3] "%(n)s نتائج لـ “%(q)s”."
 msgstr[4] "%(n)s نتيجة لـ “%(q)s”."
 msgstr[5] "%(n)s نتيجة لـ “%(q)s”."
 
+#: templates/core/search.html:12
 msgid "Type a reference number, customer name, phone, or numeric ID."
 msgstr "اكتب رقم مرجع أو اسم زبون أو رقم هاتف أو معرّف رقمي."
 
+#: templates/core/search.html:21
 msgid "Search across sales, customers, and payments"
 msgstr "ابحث في المبيعات والزبائن والدفعات"
 
+#: templates/core/search.html:28
 msgid "e.g. 0599…, customer name, payment notes"
 msgstr "مثال: 0599…، اسم الزبون، ملاحظات دفعة"
 
+#: templates/core/search.html:44
 msgid "No matches across sales, customers, or payments."
 msgstr "لا نتائج في المبيعات أو الزبائن أو الدفعات."
 
+#: templates/core/search.html:57 templates/core/search.html:101
 msgid "View all matches"
 msgstr "عرض كل النتائج"
 
+#: templates/core/search.html:65 templates/employees/employee_detail.html:46
+#: templates/reports/partials/company_report_sales.html:48
+#: templates/sales/partials/awaiting_results.html:13
+#: templates/sales/partials/awaiting_results.html:98
+#: templates/sales/partials/management_sale_list_results.html:21
+#: templates/sales/partials/pending_payments_results.html:29
+#: templates/sales/partials/pending_payments_results.html:114
 msgid "Payer"
 msgstr "الدافع"
+#: templates/core/search.html:69 templates/core/search.html:157
+#: templates/sales/sale_edit.html:63
 msgid "Created"
 msgstr "تاريخ الإنشاء"
 
+#: templates/core/search.html:83 templates/core/search.html:131
+#: templates/core/search.html:170
 msgid "Open"
 msgstr "فتح"
 
+#: templates/core/search.html:109 templates/customers/customer_list.html:61
+#: templates/employees/employee_list.html:60
+#: templates/reports/partials/company_report_ledger.html:93
+#: templates/reports/partials/company_report_sales.html:112
 msgid "Balance"
 msgstr "الرصيد"
+#: templates/core/search.html:110 templates/customers/customer_detail.html:229
+#: templates/customers/customer_list.html:60
 msgid "Phones"
 msgstr "أرقام الهاتف"
 
+#: templates/core/search.html:145
 msgid "Customer payments"
 msgstr "دفعات الزبائن"
 
+#: templates/core/search.html:156 templates/customers/customer_detail.html:262
+#: templates/customers/customer_statement.html:100
+#: templates/reports/partials/sales_report_results.html:48
+#: templates/reports/profit_report.html:59
+#: templates/sales/partials/pending_payments_results.html:30
+#: templates/sales/partials/pending_payments_results.html:119
 msgid "Method"
 msgstr "الطريقة"
+#: templates/core/site_branding.html:13
 msgid "Site name and tagline"
 msgstr "اسم الموقع والسطر التعريفي"
 
+#: templates/core/site_branding.html:15
 msgid ""
 "These appear in the browser tab title, the sidebar header above the logo, "
 "and the login page heading. Leave both empty to fall back to the built-in "
@@ -1727,9 +3375,11 @@ msgstr ""
 "اللوجو، وعنوان صفحة تسجيل الدخول. اتركهما فارغتين للرجوع إلى القيم "
 "الافتراضية."
 
+#: templates/core/site_branding.html:34
 msgid "Login page logo"
 msgstr "شعار صفحة تسجيل الدخول"
 
+#: templates/core/site_branding.html:36
 msgid ""
 "This image appears above the sign-in form. Upload a transparent PNG or SVG-"
 "rendered PNG for best results — the file is automatically resized so it "
@@ -1738,12 +3388,15 @@ msgstr ""
 "تظهر هذه الصورة أعلى نموذج تسجيل الدخول. يُفضّل رفع صورة PNG بخلفية شفافة — "
 "يتم تصغير الملف تلقائياً ليتم تحميله بسرعة."
 
+#: templates/core/site_branding.html:43
 msgid "Current logo"
 msgstr "الشعار الحالي"
 
+#: templates/core/site_branding.html:48
 msgid "No logo uploaded yet — the login page shows just the title."
 msgstr "لم يتم رفع شعار بعد — صفحة تسجيل الدخول تعرض العنوان فقط."
 
+#: templates/core/site_branding.html:62
 msgid ""
 "Shown in the browser tab, bookmarks, and home-screen shortcuts. Use a square "
 "image for best results."
@@ -1751,172 +3404,162 @@ msgstr ""
 "تظهر في تبويب المتصفح والإشارات المرجعية واختصارات الشاشة الرئيسية. استخدم "
 "صورة مربعة للحصول على أفضل النتائج."
 
+#: templates/core/site_branding.html:69
 msgid "Current icon"
 msgstr "الأيقونة الحالية"
 
+#: templates/core/site_branding.html:74
 msgid "No tab icon uploaded yet — the browser shows its default."
 msgstr "لم يتم رفع أيقونة بعد — المتصفح يعرض الأيقونة الافتراضية."
 
-msgid "Approval workflows"
-msgstr "سير الموافقات"
-msgid ""
-"Turn a switch off to skip management approval for that queue. Sales and "
-"balances apply immediately."
-msgstr ""
-"عطّل المفتاح لتجاوز موافقة الإدارة على هذا الطابور. تُسجَّل المبيعات وال"
-"أرصدة فوراً."
-msgid ""
-"On-account sales posted to customers or distributors. When off, they are "
-"recorded on the customer account immediately."
-msgstr ""
-"مبيعات الآجل المسجّلة للزبائن أو الموزّعين. عند الإيقاف، تُسجَّل على حسا"
-"ب الزبون مباشرة."
-msgid ""
-"Customer settlement submissions from the sales screen. When off, the payment "
-"applies to the balance immediately."
-msgstr ""
-"طلبات تسديد الزبون من شاشة المبيعات. عند الإيقاف، تُطبَّق الدفعة على الر"
-"صيد فوراً."
-msgid ""
-"Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as "
-"soon as they are saved."
-msgstr ""
-"مبيعات نقدية بانتظار «تعليم مدفوع». عند الإيقاف، تُعلَّم المبيعات النقدي"
-"ة الجديدة مدفوعة عند الحفظ."
-msgid "Sales entry screen"
-msgstr "شاشة إدخال المبيعات"
-msgid ""
-"Controls what employees see and how sales are recorded on the entry form."
-msgstr "يتحكّم فيما يراه الموظفون وكيف تُسجَّل المبيعات في نموذج الإدخال."
-msgid ""
-"When off, on-account sales require an existing customer — create customers "
-"from the Customers screen."
-msgstr ""
-"عند الإيقاف، تتطلب مبيعات الآجل زبوناً موجوداً — أنشئ الزبائن من شاشة ال"
-"زبائن."
-msgid ""
-"When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere "
-"is unchanged."
-msgstr ""
-"عند الإيقاف، يُخفى خيار شريحة جديدة في إدخال المبيعات. إدارة المخزون في "
-"باقي الشاشات دون تغيير."
-msgid ""
-"When off, the payment-to-employee option is hidden on the sales entry screen."
-msgstr "عند الإيقاف، يُخفى خيار الدفع لدى موظف من شاشة إدخال المبيعات."
-msgid "Management panel defaults"
-msgstr "افتراضيات لوحة الإدارة"
-msgid ""
-"Used on first visit before the user picks a language or theme. Personal "
-"choices in the header still override these defaults."
-msgstr ""
-"تُستخدم في الزيارة الأولى قبل اختيار المستخدم للغة أو الثيم. الاختيارات "
-"الشخصية في الشريط العلوي تبقى لها الأولوية."
-msgid "Refresh link defaults"
-msgstr "افتراضيات رابط التحديث"
-msgid ""
-"Initial language and theme for the public phone-refresh page before the "
-"visitor changes them."
-msgstr "اللغة والثيم الابتدائيان لصفحة التحديث العامة قبل أن يغيّرها الزائر."
+#: templates/core/system_settings.html:18
+msgid "Database"
+msgstr "قواعد البيانات"
+#: templates/customers/_invoice_letterhead.html:21
 msgid "Issued"
 msgstr "تاريخ الإصدار"
 
+#: templates/customers/_invoice_letterhead.html:44
 msgid "Period"
 msgstr "الفترة"
 
+#: templates/customers/_invoice_signature.html:12
 msgid "Customer signature"
 msgstr "توقيع الزبون"
 
+#: templates/customers/_invoice_signature.html:17
 msgid "Authorised signature"
 msgstr "توقيع المسؤول"
 
+#: templates/customers/_invoice_summary.html:16
 msgid "Charges"
 msgstr "المسحوبات"
 
+#: templates/customers/_invoice_summary.html:24
 msgid "Closing"
 msgstr "ختامي"
 
+#: templates/customers/_invoice_summary.html:27
 msgid "Customer owes the shop"
 msgstr "الزبون مدين للمحل"
 
+#: templates/customers/_invoice_summary.html:28
 msgid "Shop owes the customer"
 msgstr "المحل مدين للزبون"
 
+#: templates/customers/customer_detail.html:8
 msgid "Customer account"
 msgstr "حساب الزبون"
 
+#: templates/customers/customer_detail.html:13
 msgid "Statement"
 msgstr "كشف حساب"
 
+#: templates/customers/customer_detail.html:15
+#: templates/employees/employee_detail.html:11
+#: templates/employees/employee_form.html:8
+#: templates/reports/company_report.html:9
+#: templates/reports/stale_phones_report.html:11
+#: templates/sales/employee_sale_edit.html:12 templates/sales/sale_edit.html:15
 msgid "Back"
 msgstr "رجوع"
+#: templates/customers/customer_detail.html:23
 msgid "Outstanding debt"
 msgstr "الدين المستحق"
 
+#: templates/customers/customer_detail.html:23
 msgid "Credit on file"
 msgstr "رصيد للزبون"
 
+#: templates/customers/customer_detail.html:29
 msgid "Customer owes the shop."
 msgstr "الزبون يدين للمحل."
 
+#: templates/customers/customer_detail.html:29
 msgid "Shop owes the customer (overpayment)."
 msgstr "المحل يدين للزبون (دفعة زائدة)."
 
+#: templates/customers/customer_detail.html:29
+#: templates/employees/employee_detail.html:23
 msgid "Settled."
 msgstr "مساوٍ."
+#: templates/customers/customer_detail.html:41
 msgid "Pending on account"
 msgstr "معلّق على الحساب"
 
+#: templates/customers/customer_detail.html:51
 msgid "On-account sales"
 msgstr "مبيعات الآجل"
 
+#: templates/customers/customer_detail.html:59
 msgid "Price"
 msgstr "السعر"
 
+#: templates/customers/customer_detail.html:73
 msgid "Awaiting"
 msgstr "بانتظار"
 
+#: templates/customers/customer_detail.html:90
 msgid ""
 "Permanently delete this sale and reverse it from the customer balance and "
 "reports?"
 msgstr "حذف هذا البيع نهائياً وإلغاء أثره من رصيد الزبون والتقارير؟"
 
+#: templates/customers/customer_detail.html:91
+#: templates/sales/partials/management_sale_list_results.html:80
+#: templates/sales/partials/management_sale_list_results.html:142
+#: templates/sales/partials/pending_payments_results.html:80
+#: templates/sales/partials/pending_payments_results.html:150
 msgid "Delete permanently"
 msgstr "حذف نهائي"
 
+#: templates/customers/customer_detail.html:96
 msgid "No on-account sales."
 msgstr "لا توجد مبيعات آجلة."
 
+#: templates/customers/customer_detail.html:107
+#: templates/employees/employee_list.html:84
 msgid "Ledger"
 msgstr "كشف الحركات"
+#: templates/customers/customer_detail.html:116
+#: templates/expenses/partials/expense_list_results.html:20
+#: templates/expenses/partials/expense_list_results.html:61
+#: templates/reports/partials/company_report_ledger.html:57
 msgid "By"
 msgstr "بواسطة"
+#: templates/customers/customer_detail.html:139
+#: templates/customers/customer_detail.html:277
 msgid ""
 "Delete this payment? Any sales it had settled will be moved back to pending."
 msgstr ""
 "حذف هذه الدفعة؟ سيتم إرجاع كل الشحنات التي كانت قد سُدّدت بها إلى حالة غير "
 "مدفوع."
 
+#: templates/customers/customer_detail.html:140
+#: templates/customers/customer_detail.html:278
 msgid "Delete payment"
 msgstr "حذف الدفعة"
 
+#: templates/customers/customer_detail.html:150
 msgid "Delete this ledger entry and reverse it from the customer balance?"
 msgstr "حذف هذه الحركة وإلغاء أثرها من رصيد الزبون؟"
 
+#: templates/customers/customer_detail.html:151
 msgid "Delete ledger entry"
 msgstr "حذف حركة السجل"
 
+#: templates/customers/customer_detail.html:157
+#: templates/employees/employee_detail.html:96
 msgid "No ledger entries."
 msgstr "لا توجد حركات في الكشف."
+#: templates/customers/customer_detail.html:178
 msgid ""
 "FIFO settlement: the oldest pending charges get marked Paid first; any extra "
 "remains as customer credit."
 msgstr ""
 "تسديد بنظام FIFO: تُسدَّد أقدم المديونيات أولاً، وأي مبلغ زائد يبقى رصيداً للزبون."
 
-msgid "Balance adjustment"
-msgstr "تسوية الرصيد"
-msgid "Save adjustment"
-msgstr "حفظ التسوية"
+#: templates/customers/customer_detail.html:193
 msgid ""
 "Touches the customer balance only. Does not affect sales, profit, or loss "
 "reports. Payments settle manual debt before marking on-account sales paid."
@@ -1925,88 +3568,127 @@ msgstr ""
 "تُوجَّه الدفعات أولاً لتسديد التسوية اليدوية والدين غير المرتبط بمبيعات، ثم تُعلَّم "
 "مبيعات الآجل كمدفوعة."
 
+#: templates/customers/customer_detail.html:201
 msgid "SIM stock"
 msgstr "مخزون الشرائح"
+#: templates/customers/customer_detail.html:202
 msgid "Manage"
 msgstr "إدارة"
+#: templates/customers/customer_detail.html:220
 msgid "No SIM stock for this customer."
 msgstr "لا يوجد مخزون شرائح لهذا الزبون."
+#: templates/customers/customer_detail.html:238
 msgid "Remove this phone?"
 msgstr "إزالة هذا الرقم؟"
 
+#: templates/customers/customer_detail.html:240
 msgid "Remove"
 msgstr "إزالة"
 
+#: templates/customers/customer_detail.html:244
 msgid "No phones linked."
 msgstr "لا توجد أرقام هواتف مرتبطة."
 
+#: templates/customers/customer_detail.html:250
+#: templates/inventory/main_stock.html:40
 msgid "Add"
 msgstr "إضافة"
 
+#: templates/customers/customer_detail.html:257
 msgid "Recent payments"
 msgstr "آخر الدفعات"
 
+#: templates/customers/customer_detail.html:283
 msgid "No payments yet."
 msgstr "لا توجد دفعات بعد."
 
+#: templates/customers/customer_detailed_invoice.html:10
+#: templates/customers/customer_statement.html:9
 #, python-format
 msgid " · From %(start)s to %(end)s"
 msgstr " · من %(start)s إلى %(end)s"
 
+#: templates/customers/customer_detailed_invoice.html:14
 msgid "Summary statement"
 msgstr "كشف ملخّص"
 
+#: templates/customers/customer_detailed_invoice.html:15
+#: templates/customers/customer_statement.html:13
 msgid "Back to customer"
 msgstr "العودة إلى الزبون"
 
+#: templates/customers/customer_detailed_invoice.html:16
+#: templates/customers/customer_statement.html:16
 msgid "Print"
 msgstr "طباعة"
 
+#: templates/customers/customer_detailed_invoice.html:33
+#: templates/customers/customer_statement.html:33
 msgid "This month"
 msgstr "هذا الشهر"
 
+#: templates/customers/customer_detailed_invoice.html:44
 msgid "All transactions (chronological)"
 msgstr "كل الحركات (ترتيب زمني)"
 
-msgid "Details"
-msgstr "التفاصيل"
-
+#: templates/customers/customer_detailed_invoice.html:56
+#: templates/customers/customer_statement.html:134
 msgid "Running balance"
 msgstr "الرصيد الجاري"
 
+#: templates/customers/customer_detailed_invoice.html:88
+#: templates/employees/employee_detail.html:111
 msgid "Manual adjustment"
 msgstr "تعديل يدوي"
 
+#: templates/customers/customer_detailed_invoice.html:110
+#: templates/customers/customer_statement.html:176
 msgid "No activity in this period."
 msgstr "لا توجد حركة في هذه الفترة."
 
+#: templates/customers/customer_detailed_invoice.html:116
+#: templates/customers/customer_statement.html:181
 msgid "Period totals"
 msgstr "إجمالي الفترة"
 
+#: templates/customers/customer_list.html:7
 msgid "Customers buying on account and their balances."
 msgstr "الزبائن الذين يشترون بالآجل وأرصدتهم."
 
+#: templates/customers/customer_list.html:12
+#: templates/customers/customer_statement.html:14
+#: templates/sales/awaiting_approvals.html:12
+#: templates/sales/management_sale_list.html:12
+#: templates/sales/pending_payments.html:12
 msgid "Export CSV"
 msgstr "تصدير CSV"
 
+#: templates/customers/customer_list.html:16
 msgid "Export payments CSV"
 msgstr "تصدير الدفعات CSV"
 
+#: templates/customers/customer_list.html:25
+#: templates/reports/dashboard.html:74
 msgid "Total customer debt"
 msgstr "إجمالي ديون الزبائن"
 
+#: templates/customers/customer_list.html:31
 msgid "Total credit on file"
 msgstr "إجمالي الرصيد للزبائن"
 
+#: templates/customers/customer_list.html:41
 msgid "Search by name or phone"
 msgstr "بحث بالاسم أو رقم الهاتف"
 
+#: templates/customers/customer_list.html:76
 msgid "credit"
 msgstr "رصيد له"
 
+#: templates/customers/customer_list.html:76
 msgid "debt"
 msgstr "دين"
 
+#: templates/customers/customer_list.html:84
 msgid ""
 "Close this customer's account and book the outstanding debt as a loss? Their "
 "unpaid sales will be marked as written off, the cost will appear under "
@@ -2015,9 +3697,11 @@ msgstr ""
 "إغلاق حساب هذا الزبون وتحويل الدين المستحق إلى خسارة؟ سيتم تعليم مبيعاته غير "
 "المدفوعة كمشطوبة، وستظهر التكلفة تحت الخسائر، وسيتم تعطيل حساب الزبون."
 
+#: templates/customers/customer_list.html:86
 msgid "Write off & close account"
 msgstr "شطب وإغلاق الحساب"
 
+#: templates/customers/customer_list.html:90
 msgid ""
 "Permanently delete this customer? All their sales, payments, ledger entries "
 "and phones will be removed. This cannot be undone."
@@ -2025,38 +3709,51 @@ msgstr ""
 "حذف هذا الزبون نهائياً؟ ستُحذف كل مبيعاته ودفعاته وسجل الرصيد وأرقام الهاتف. "
 "لا يمكن التراجع."
 
+#: templates/customers/customer_list.html:92
 msgid "Delete customer"
 msgstr "حذف الزبون"
 
+#: templates/customers/customer_list.html:98
 msgid "No customers yet."
 msgstr "لا يوجد زبائن بعد."
 
+#: templates/customers/customer_statement.html:49
 msgid "Manual adjustments"
 msgstr "تسويات يدوية"
 
+#: templates/customers/customer_statement.html:55
 msgid "Reversals (write-offs / cancellations)"
 msgstr "عكسيات (شطب / إلغاء)"
 
+#: templates/customers/customer_statement.html:65
 msgid "What they took (by product)"
 msgstr "ما الذي سحبه (حسب المنتج)"
 
+#: templates/customers/customer_statement.html:71
+#: templates/customers/customer_statement.html:101
+#: templates/reports/profit_report.html:39
+#: templates/reports/profit_report.html:59
+#: templates/reports/profit_report.html:81
+#: templates/reports/profit_report.html:100
 msgid "Count"
 msgstr "العدد"
-msgid "Total"
-msgstr "الإجمالي"
-
+#: templates/customers/customer_statement.html:86
 msgid "No on-account sales in this period."
 msgstr "لا توجد مبيعات على الحساب في هذه الفترة."
 
+#: templates/customers/customer_statement.html:95
 msgid "How they paid (by method)"
 msgstr "كيف دفع (حسب طريقة الدفع)"
 
+#: templates/customers/customer_statement.html:113
 msgid "No payments in this period."
 msgstr "لا توجد مدفوعات في هذه الفترة."
 
+#: templates/customers/customer_statement.html:123
 msgid "Activity"
 msgstr "الحركة"
 
+#: templates/customers/customer_statement.html:197
 msgid ""
 "Closing balance = opening balance + charges − payments + signed adjustments "
 "− reversals."
@@ -2064,217 +3761,333 @@ msgstr ""
 "الرصيد الختامي = الرصيد الافتتاحي + المسحوبات − المدفوعات + التسويات "
 "(بإشارتها) − العكسيات."
 
+#: templates/customers/payment_submissions_list.html:7
 msgid ""
 "Employee-submitted payments. Approve to apply to the customer account and "
 "FIFO settlement."
 msgstr "دفعات قدّمها الموظفون. وافِق لتطبيقها على حساب الزبون وتسوية FIFO."
 
+#: templates/customers/payment_submissions_list.html:17
 msgid "Customer, employee, method…"
 msgstr "زبون، موظف، طريقة دفع…"
 
+#: templates/customers/payment_submissions_list.html:36
+#: templates/customers/payment_submissions_list.html:92
 msgid "Submitted by"
 msgstr "مُقدَّمة بواسطة"
 
+#: templates/customers/payment_submissions_list.html:60
+#: templates/customers/payment_submissions_list.html:100
 msgid "Reject reason (optional)"
 msgstr "سبب الرفض (اختياري)"
 
+#: templates/customers/payment_submissions_list.html:69
+#: templates/customers/payment_submissions_list.html:113
 msgid "Nothing awaiting approval."
 msgstr "لا توجد طلبات بانتظار الموافقة."
 
+#: templates/employees/employee_detail.html:23
 msgid "Shop owes the employee."
 msgstr "المحل مدين للموظف."
+#: templates/employees/employee_detail.html:23
 msgid "Employee holds cash for the shop."
 msgstr "الموظف يحتفظ بمبلغ نيابة عن المحل."
+#: templates/employees/employee_detail.html:29
+#: templates/employees/employee_list.html:59
 msgid "Monthly salary"
 msgstr "الراتب الشهري"
+#: templates/employees/employee_detail.html:39
 msgid "Received sales payments"
 msgstr "دفعات مبيعات مستلمة"
+#: templates/employees/employee_detail.html:45
 msgid "Phone"
 msgstr "أرقام الهاتف"
 
+#: templates/employees/employee_detail.html:59
 msgid "No sales payments yet."
 msgstr "لا توجد دفعات مبيعات بعد."
+#: templates/employees/employee_detail.html:69
 msgid "Movement statement"
 msgstr "كشف حركات"
+#: templates/employees/employee_detail.html:126
 msgid "Record adjustment"
 msgstr "تسجيل دفعة"
 
+#: templates/employees/employee_list.html:7
 msgid "Payroll accounts, balances, and salary accrual."
 msgstr "حسابات الرواتب والأرصدة واستحقاق الراتب."
+#: templates/employees/employee_list.html:10
 msgid "Add employee"
 msgstr "إضافة موظف"
+#: templates/employees/employee_list.html:19
 msgid "Accrue salaries for month"
 msgstr "استحقاق رواتب الشهر"
+#: templates/employees/employee_list.html:29
 msgid "Run salary accrual"
 msgstr "تشغيل استحقاق الرواتب"
+#: templates/employees/employee_list.html:32
 msgid "Also runnable via: python manage.py accrue_employee_salaries"
 msgstr "يمكن تشغيله أيضاً عبر: python manage.py accrue_employee_salaries"
+#: templates/employees/employee_list.html:43
 msgid "Username or name…"
 msgstr "اسم المستخدم أو الاسم…"
+#: templates/employees/employee_list.html:88
 msgid "No employees yet."
 msgstr "لا يوجد موظفون بعد."
+#: templates/expenses/expense_list.html:7
 msgid "Operational spend tracking."
 msgstr "متابعة المصروفات التشغيلية."
 
+#: templates/expenses/expense_report.html:6
 msgid "Category breakdown and totals"
 msgstr "التصنيفات والإجماليات"
+#: templates/expenses/expense_report.html:26
 msgid "Total profit (same date filter)"
 msgstr "إجمالي الربح (نفس نطاق التاريخ)"
+#: templates/expenses/expense_report.html:34
 msgid "Total expenses (filtered)"
 msgstr "إجمالي المصروفات (بعد التصفية)"
+#: templates/expenses/expense_report.html:42
 msgid "Net profit"
 msgstr "صافي الربح"
+#: templates/expenses/expense_report.html:44
 msgid "Profit minus expenses"
 msgstr "الربح ناقص المصروفات"
+#: templates/expenses/expense_report.html:53
 msgid "By category"
 msgstr "حسب التصنيف"
+#: templates/expenses/expense_report.html:60
+#: templates/reports/profit_report.html:48
+#: templates/reports/profit_report.html:67
+#: templates/reports/profit_report.html:89
+#: templates/reports/profit_report.html:111
+#: templates/reports/profit_report.html:129
+#: templates/reports/profit_report.html:144
 msgid "No data."
 msgstr "لا توجد بيانات."
+#: templates/expenses/expense_report.html:68
+#: templates/partials/pagination.html:45
 msgid "Rows"
 msgstr "الصفوف"
+#: templates/expenses/expense_report.html:72
+#: templates/expenses/partials/expense_list_results.html:12
 msgid "Title"
 msgstr "العنوان"
+#: templates/expenses/expense_report.html:84
+#: templates/expenses/partials/expense_list_results.html:35
+#: templates/expenses/partials/expense_list_results.html:64
 msgid "Delete this expense?"
 msgstr "حذف هذا المصروف؟"
 
+#: templates/expenses/expense_report.html:93
+#: templates/expenses/partials/expense_list_results.html:44
+#: templates/expenses/partials/expense_list_results.html:72
 msgid "No expenses."
 msgstr "لا توجد مصروفات."
+#: templates/inventory/_action_dialog.html:7
+#: templates/inventory/_serials_paste_field.html:36
+#: templates/sales/employee_entry.html:312
+#: templates/sales/employee_entry.html:367
 msgid "Close"
 msgstr "إغلاق"
+#: templates/inventory/_allocate_from_main.html:2
 msgid "Allocate from main"
 msgstr "توزيع من الرئيسي"
+#: templates/inventory/_allocate_from_main.html:4
 msgid "Move SIMs from main stock to a customer."
 msgstr "نقل شرائح من المخزون الرئيسي إلى زبون."
+#: templates/inventory/_allocate_from_main.html:24
 msgid "Type customer name…"
 msgstr "اسم الزبون…"
 
+#: templates/inventory/_allocate_from_main.html:30
+#: templates/inventory/customer_list.html:32
 msgid "Customer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 
+#: templates/inventory/_allocate_from_main.html:53
 msgid "Allocate"
 msgstr "توزيع"
+#: templates/inventory/_balance_actions.html:14
+#: templates/inventory/_balance_actions.html:17
 msgid "Set quantity"
 msgstr "تعيين الكمية"
 
+#: templates/inventory/_balance_actions.html:15
+#: templates/inventory/_balance_actions.html:18
 msgid "Adjust"
 msgstr "تعديل"
+#: templates/inventory/_balance_actions.html:20
 msgid "Clear"
 msgstr "تصفير"
+#: templates/inventory/_balance_actions.html:22
 msgid "Clear this balance to zero?"
 msgstr "تصفير هذا الرصيد؟"
+#: templates/inventory/_balance_actions.html:23
 msgid "Delete this balance row? (Must be zero first.)"
 msgstr "حذف صف الرصيد هذا؟ (يجب أن يكون صفراً أولاً.)"
+#: templates/inventory/_nav.html:2
 msgid "SIM inventory sections"
 msgstr "أقسام مخزون الشرائح"
+#: templates/inventory/_nav.html:6 templates/inventory/_nav.html:27
 msgid "Overview"
 msgstr "نظرة عامة"
+#: templates/inventory/_nav.html:18 templates/inventory/_nav.html:39
 msgid "Movements"
 msgstr "الحركات"
+#: templates/inventory/_nav.html:22 templates/inventory/_nav.html:43
+#: templates/inventory/line_detail.html:117
 msgid "Serial lookup"
 msgstr "بحث برقم الشريحة"
+#: templates/inventory/_return_to_main.html:2
 msgid "Return to main"
 msgstr "إرجاع للرئيسي"
+#: templates/inventory/_return_to_main.html:4
 msgid "Move SIMs back from this customer to main stock."
 msgstr "إرجاع شرائح من هذا الزبون إلى المخزون الرئيسي."
+#: templates/inventory/_return_to_main.html:26
 msgid "Return"
 msgstr "إرجاع"
+#: templates/inventory/_serials_paste_field.html:17
 msgid "Add serial numbers…"
 msgstr "إضافة أرقام الشرائح…"
+#: templates/inventory/_serials_paste_field.html:35
 msgid "Serial numbers"
 msgstr "أرقام الشرائح"
+#: templates/inventory/_serials_paste_field.html:38
 msgid "Paste one serial or ICCID per line. Changes apply immediately."
 msgstr "الصق رقماً تسلسلياً أو ICCID في كل سطر. التغييرات تُطبَّق فوراً."
+#: templates/inventory/_serials_paste_field.html:48
 msgid "Serial count does not match quantity."
 msgstr "عدد الأرقام لا يطابق الكمية."
+#: templates/inventory/cards.html:7
 msgid "Search tracked SIM serial numbers and ICCIDs."
 msgstr "بحث في أرقام الشرائح و ICCID المسجّلة."
+#: templates/inventory/cards.html:37 templates/inventory/line_detail.html:129
 msgid "Serial / ICCID"
 msgstr "الرقم التسلسلي / ICCID"
+#: templates/inventory/cards.html:56
 msgid "No SIM cards found."
 msgstr "لم يُعثر على شرائح."
+#: templates/inventory/customer_detail.html:8
 msgid "Back to customer stock list"
 msgstr "العودة إلى قائمة مخزون الزبائن"
+#: templates/inventory/customer_detail.html:51
 msgid "No stock for this customer."
 msgstr "لا يوجد مخزون لهذا الزبون."
+#: templates/inventory/customer_list.html:7
 msgid "SIM stock held with distributors and customers."
 msgstr "مخزون الشرائح لدى الموزّعين والزبائن."
+#: templates/inventory/customer_list.html:91
 msgid "No customer stock."
 msgstr "لا يوجد مخزون عند الزبائن."
+#: templates/inventory/line_detail.html:8
 msgid "Back to inventory overview"
 msgstr "العودة إلى نظرة عامة المخزون"
 
+#: templates/inventory/line_detail.html:26 templates/inventory/overview.html:29
 msgid "With customers"
 msgstr "عند الزبائن"
+#: templates/inventory/line_detail.html:44
 msgid "Stock by customer"
 msgstr "المخزون حسب الزبون"
 
+#: templates/inventory/line_detail.html:75
 msgid "Recent movements"
 msgstr "آخر الحركات"
 
+#: templates/inventory/line_detail.html:76
 msgid "All movements"
 msgstr "كل الحركات"
 
+#: templates/inventory/line_detail.html:90
+#: templates/inventory/movements.html:61
 msgid "Qty"
 msgstr "الكمية"
+#: templates/inventory/line_detail.html:106
 msgid "No movements yet."
 msgstr "لا توجد حركات بعد."
 
+#: templates/inventory/line_detail.html:116
 msgid "Tracked SIM cards"
 msgstr "الشرائح المسجّلة"
 
+#: templates/inventory/line_detail.html:146
 msgid "No serial numbers recorded for this line yet."
 msgstr "لا توجد أرقام شرائح مسجّلة لهذا الخط بعد."
 
+#: templates/inventory/main_stock.html:7
 msgid "Receive, adjust, and track main SIM stock by product line."
 msgstr "استلام وتسوية ومتابعة مخزون الشرائح الرئيسي حسب خط المنتج."
+#: templates/inventory/main_stock.html:16
 msgid "Receive stock"
 msgstr "استلام مخزون"
+#: templates/inventory/main_stock.html:17
 msgid "Add plastic SIMs to main inventory for a product line."
 msgstr "إضافة شرائح بلاستيكية للمخزون الرئيسي لخط منتج."
+#: templates/inventory/main_stock.html:82
 msgid "No main stock yet."
 msgstr "لا يوجد مخزون رئيسي بعد."
+#: templates/inventory/movements.html:7
 msgid "Full history of SIM stock changes."
 msgstr "السجل الكامل لتغييرات مخزون الشرائح."
+#: templates/inventory/movements.html:79
 msgid "Delete this movement? (Does not reverse stock.)"
 msgstr "حذف هذه الحركة؟ (لا يعكس المخزون.)"
+#: templates/inventory/movements.html:90
 msgid "No movements."
 msgstr "لا توجد حركات."
+#: templates/inventory/overview.html:7
 msgid "Plastic SIM counts by product line (main stock + with distributors)."
 msgstr "أعداد الشرائح البلاستيكية حسب خط المنتج (رئيسي + عند الموزّعين)."
+#: templates/inventory/overview.html:28
 msgid "Main"
 msgstr "رئيسي"
+#: templates/inventory/overview.html:32
 msgid "Est. value"
 msgstr "القيمة التقديرية"
+#: templates/inventory/overview.html:61 templates/inventory/overview.html:64
 msgid "Set main stock"
 msgstr "تعيين المخزون الرئيسي"
+#: templates/inventory/overview.html:72
 msgid "No product lines yet."
 msgstr "لا توجد خطوط منتج بعد."
+#: templates/partials/filter_card_open.html:20
 msgid "Search & filters"
 msgstr "البحث والفلاتر"
 
+#: templates/partials/management_nav.html:5
 msgid "Main navigation"
 msgstr "التنقّل الرئيسي"
 
+#: templates/partials/management_nav.html:13 templates/reports/dashboard.html:5
 msgid "Operational snapshot"
 msgstr "لمحة تشغيلية"
+#: templates/partials/management_nav.html:21
 msgid "Settlement requests"
 msgstr "طلبات التسديد"
 
+#: templates/partials/management_nav.html:37
 msgid "Operations"
 msgstr "العمليات"
 
+#: templates/partials/management_nav.html:62
 msgid "Reports"
 msgstr "التقارير"
 
+#: templates/partials/management_nav.html:95
 msgid "Catalog"
 msgstr "الكتالوج"
 
+#: templates/partials/management_nav.html:173
 msgid "Administration"
 msgstr "الإدارة"
 
+#: templates/partials/nav_notifications.html:14
 msgid "Notifications"
 msgstr "الإشعارات"
 
+#: templates/partials/nav_notifications.html:27
 #, python-format
 msgid "%(n)s item needs attention"
 msgid_plural "%(n)s items need attention"
@@ -2285,147 +4098,153 @@ msgstr[3] "%(n)s عناصر تحتاج انتباه"
 msgstr[4] "%(n)s عنصراً يحتاج انتباه"
 msgstr[5] "%(n)s عنصر يحتاج انتباه"
 
+#: templates/partials/nav_notifications.html:38
 msgid "Debt requests awaiting approval"
 msgstr "طلبات ديون بانتظار الموافقة"
 
+#: templates/partials/nav_notifications.html:47
 msgid "Payment requests awaiting approval"
 msgstr "طلبات دفع بانتظار الموافقة"
 
+#: templates/partials/nav_notifications.html:56
 msgid "Settlement requests awaiting approval"
 msgstr "طلبات التسديد بانتظار الموافقة"
 
+#: templates/partials/pagination.html:4
 msgid "Pagination"
 msgstr "الترقيم"
 
+#: templates/partials/pagination.html:7
 #, python-format
 msgid "Page %(p)s of %(t)s · %(c)s records"
 msgstr "صفحة %(p)s من %(t)s · %(c)s سجل"
 
+#: templates/partials/pagination.html:13
 msgid "First"
 msgstr "الأولى"
 
+#: templates/partials/pagination.html:16 templates/partials/pagination.html:20
 msgid "Previous"
 msgstr "السابقة"
 
+#: templates/partials/pagination.html:34 templates/partials/pagination.html:40
 msgid "Next"
 msgstr "التالية"
 
+#: templates/partials/pagination.html:37
 msgid "Last"
 msgstr "الأخيرة"
 
+#: templates/partials/sale_employee_payment_badge.html:5
 #, python-format
 msgid "Payment to employee: %(name)s"
 msgstr "دفع لدى موظف: %(name)s"
+#: templates/partials/sale_esim_badge.html:3
 msgid "eSIM: extra cost applied to this sale"
 msgstr "eSIM: تكلفة إضافية على هذه المبيعة"
+#: templates/partials/sale_loss_badge.html:3
 msgid "Loss sale: selling price was zero; supplier cost is recorded as loss."
 msgstr "بيع خسارة: سعر البيع صفر؛ تُسجَّل تكلفة المورّد كخسارة."
 
+#: templates/partials/sale_new_sim_badge.html:3
 msgid "New SIM: stock deducted on approval"
 msgstr "شريحة جديدة: يُخصم المخزون عند الموافقة"
+#: templates/partials/sale_new_sim_badge.html:3
+#: templates/sales/employee_entry.html:203
 msgid "New SIM"
 msgstr "شريحة جديدة"
+#: templates/partials/sale_status_badge.html:4
 msgid "NotPaid"
 msgstr "غير مدفوع"
 
+#: templates/partials/theme_toggle.html:10
+#: templates/partials/theme_toggle.html:11
 msgid "Toggle color theme"
 msgstr "تبديل المظهر"
 
+#: templates/partials/user_menu.html:7
 #, python-format
 msgid "Account menu for %(name)s"
 msgstr "قائمة الحساب لـ %(name)s"
 
+#: templates/partials/user_menu.html:40
 msgid "Settings"
 msgstr "الإعدادات"
 
+#: templates/partials/user_menu.html:53
 msgid "Log out"
 msgstr "تسجيل الخروج"
+#: templates/reports/company_report.html:7
 msgid "Supplier statement & internal ledger"
 msgstr "كشف المورّد وسجل الرصيد الداخلي"
-msgid "Reset (all time)"
-msgstr "إعادة تعيين (كل الفترات)"
-
-#, python-format
-msgid "Showing data from %(start)s to %(end)s."
-msgstr "تعرض البيانات من %(start)s إلى %(end)s."
-
-msgid ""
-"Showing all-time data. Pick a date range above to scope the cards and tables "
-"below."
-msgstr ""
-"تعرض كل البيانات. اختر نطاق تاريخ بالأعلى لقصر البطاقات والجداول التالية "
-"عليه."
-
-msgid "Total deposits"
-msgstr "إجمالي الإيداعات"
-msgid "Consumed (sales)"
-msgstr "المستهلك (مبيعات)"
-#, python-format
-msgid "Balance on %(d)s"
-msgstr "الرصيد بتاريخ %(d)s"
-
-msgid "Now"
-msgstr "الآن"
-
-msgid "Reversals (cancellations)"
-msgstr "العكس (إلغاءات)"
-msgid "Adjustments"
-msgstr "التسويات"
-msgid "Sales count (non-cancelled)"
-msgstr "عدد المبيعات (غير الملغاة)"
-msgid "Total sell"
-msgstr "إجمالي البيع"
-msgid "Total profit"
-msgstr "إجمالي الربح"
-msgid "Manual balance top-up"
-msgstr "تعبئة رصيد يدوية"
-msgid "Save deposit"
-msgstr "حفظ الإيداع"
+#: templates/reports/dashboard.html:25
 msgid "Debts"
 msgstr "ديون"
 
+#: templates/reports/dashboard.html:30
 msgid "Settlements"
 msgstr "تسديدات"
 
+#: templates/reports/dashboard.html:43
 msgid "Today's sales"
 msgstr "مبيعات اليوم"
+#: templates/reports/dashboard.html:48
+#: templates/reports/employee_report.html:36
+#: templates/reports/employee_report.html:68
+#: templates/reports/profit_report.html:39
 msgid "Volume"
 msgstr "الحجم"
+#: templates/reports/dashboard.html:61
 msgid "Today's profit"
 msgstr "ربح اليوم"
+#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:160
 msgid "Paid sales only"
 msgstr "المبيعات المدفوعة فقط"
 
+#: templates/reports/dashboard.html:95 templates/reports/profit_report.html:140
 msgid "Month"
 msgstr "الشهر"
+#: templates/reports/dashboard.html:119
 msgid "This month profit"
 msgstr "ربح هذا الشهر"
+#: templates/reports/dashboard.html:135
 msgid "Net (month)"
 msgstr "الصافي (شهري)"
+#: templates/reports/dashboard.html:141
 msgid "All-time totals"
 msgstr "إجماليات كلّيّة"
 
+#: templates/reports/dashboard.html:146
 msgid "All-time profit"
 msgstr "الربح الكلي"
+#: templates/reports/dashboard.html:151
 msgid "All-time expenses"
 msgstr "المصروفات الكلية"
+#: templates/reports/dashboard.html:156
 msgid "Net profit (all time)"
 msgstr "صافي الربح (كلّي)"
+#: templates/reports/dashboard.html:170
 msgid "Supplier balances"
 msgstr "أرصدة المورّدين"
+#: templates/reports/dashboard.html:172 templates/sales/employee_entry.html:250
 msgid "View all"
 msgstr "عرض الكل"
+#: templates/reports/dashboard.html:183
 msgid "Overdrawn"
 msgstr "مكشوف"
 
+#: templates/reports/dashboard.html:183
 msgid "Empty"
 msgstr "مستنفد"
 
+#: templates/reports/dashboard.html:183
 msgid "Available"
 msgstr "متاح"
 
+#: templates/reports/dashboard.html:191
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."
+#: templates/reports/dashboard.html:204
 #, python-format
 msgid "Sales last %(n)s day"
 msgid_plural "Sales last %(n)s days"
@@ -2436,337 +4255,521 @@ msgstr[3] "المبيعات في آخر %(n)s أيام"
 msgstr[4] "المبيعات في آخر %(n)s يوماً"
 msgstr[5] "المبيعات في آخر %(n)s يوم"
 
+#: templates/reports/dashboard.html:206
 msgid "Total volume"
 msgstr "إجمالي الحجم"
 
+#: templates/reports/dashboard.html:208
 msgid "Avg per day"
 msgstr "متوسط يومي"
 
+#: templates/reports/dashboard.html:211
 msgid "Open profit report"
 msgstr "فتح تقرير الأرباح"
 
+#: templates/reports/dashboard.html:215
 msgid "Daily sales volume"
 msgstr "حجم المبيعات اليومي"
 
+#: templates/reports/dashboard.html:242
+#: templates/reports/employee_report.html:88
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
+#: templates/reports/dashboard.html:251
 msgid "Top companies (this month, by profit)"
 msgstr "أفضل الشركات (هذا الشهر، حسب الربح)"
 
+#: templates/reports/dashboard.html:274
 msgid "No paid sales this month yet."
 msgstr "لا توجد مبيعات مدفوعة هذا الشهر بعد."
 
+#: templates/reports/dashboard.html:284
 msgid "Recent activity"
 msgstr "النشاط الأخير"
+#: templates/reports/dashboard.html:285
 msgid "View all sales"
 msgstr "عرض كل المبيعات"
 
+#: templates/reports/dashboard.html:311
 msgid "No sales yet."
 msgstr "لا توجد مبيعات بعد."
+#: templates/reports/employee_report.html:7
 #, python-format
 msgid "From %(start)s to %(end)s. Excludes cancelled sales."
 msgstr "من %(start)s إلى %(end)s. باستثناء المبيعات الملغاة."
 
+#: templates/reports/employee_report.html:28
 msgid "Sales count"
 msgstr "عدد المبيعات"
 
+#: templates/reports/employee_report.html:44
 msgid "Profit (paid only)"
 msgstr "الأرباح (المدفوعة فقط)"
 
+#: templates/reports/employee_report.html:52
 msgid "Active staff"
 msgstr "الموظفون النشطون"
 
+#: templates/reports/employee_report.html:60
 msgid "Per-employee breakdown"
 msgstr "تفصيل لكل موظف"
 
+#: templates/reports/employee_report.html:69
+#: templates/reports/partials/company_report_sales.html:58
+#: templates/reports/partials/company_report_sales.html:66
+#: templates/reports/partials/sales_report_results.html:54
+#: templates/reports/profit_report.html:39
+#: templates/reports/profit_report.html:59
+#: templates/reports/profit_report.html:81
+#: templates/reports/profit_report.html:100
+#: templates/reports/profit_report.html:125
+#: templates/reports/profit_report.html:140
+#: templates/sales/employee_entry.html:225
+#: templates/sales/partials/management_sale_list_results.html:30
 msgid "Profit"
 msgstr "الربح"
+#: templates/reports/employee_report.html:70
 msgid "Avg. ticket"
 msgstr "متوسط الفاتورة"
 
+#: templates/reports/employee_report.html:71
 msgid "Top company"
 msgstr "الشركة الأفضل"
 
-msgid "Balance ledger"
-msgstr "سجل الرصيد"
+#: templates/reports/partials/company_report_ledger.html:25
 msgid "Notes, ref #…"
 msgstr "ملاحظات، رقم المرجع…"
 
-msgid "No ledger rows."
-msgstr "لا توجد حركات في السجل."
-msgid "Sales detail"
-msgstr "تفاصيل المبيعات"
-msgid "Sales details"
-msgstr "تفاصيل المبيعات"
-msgid "General"
-msgstr "عام"
+#: templates/reports/partials/company_report_ledger.html:44
+#: templates/reports/partials/company_report_sales.html:60
 msgid "Balance before"
 msgstr "الرصيد قبل"
+
+#: templates/reports/partials/company_report_ledger.html:45
+#: templates/reports/partials/company_report_sales.html:61
 msgid "Balance after"
 msgstr "الرصيد بعد"
+
+#: templates/reports/partials/company_report_ledger.html:50
 msgid "Phone / ref"
 msgstr "الرقم / المرجع"
-msgid "Back to companies"
-msgstr "العودة إلى المزودين"
-msgid "Supplier balance and sales"
-msgstr "رصيد المزود والمبيعات"
+
+#: templates/reports/partials/company_report_ledger.html:78
+#: templates/reports/partials/company_report_ledger.html:99
+msgid "No ledger rows."
+msgstr "لا توجد حركات في السجل."
+#: templates/reports/partials/company_report_sales.html:4
+msgid "Sales detail"
+msgstr "تفاصيل المبيعات"
+#: templates/reports/partials/company_report_sales.html:25
 msgid "Ref, payer, product…"
 msgstr "المرجع، الدافع، المنتج…"
 
+#: templates/reports/partials/company_report_sales.html:44
+#: templates/reports/partials/sales_report_results.html:43
+#: templates/sales/partials/awaiting_results.html:12
+#: templates/sales/partials/management_sale_list_results.html:18
+#: templates/sales/partials/pending_payments_results.html:27
 msgid "Ref"
 msgstr "المرجع"
+#: templates/reports/partials/company_report_sales.html:53
+#: templates/reports/partials/sales_report_results.html:50
+#: templates/sales/partials/management_sale_list_results.html:27
 msgid "Sell"
 msgstr "البيع"
+#: templates/reports/partials/company_report_sales.html:90
+msgid "To employee"
+msgstr "موظف"
+
+
+#: templates/reports/partials/company_report_sales.html:98
+#: templates/reports/partials/company_report_sales.html:121
+#: templates/sales/partials/management_sale_list_results.html:88
+#: templates/sales/partials/management_sale_list_results.html:147
 msgid "No sales."
 msgstr "لا توجد مبيعات."
+#: templates/reports/partials/sales_report_results.html:5
 msgid "Filtered profit (excl. cancelled)"
 msgstr "الربح بعد التصفية (باستثناء الملغاة)"
+#: templates/reports/partials/sales_report_results.html:11
 msgid "Filtered volume"
 msgstr "الحجم بعد التصفية"
+#: templates/reports/partials/sales_report_results.html:17
 msgid "Filtered rows"
 msgstr "الصفوف بعد التصفية"
+#: templates/reports/partials/sales_report_results.html:24
 msgid "Results"
 msgstr "النتائج"
+#: templates/reports/partials/sales_report_results.html:25
 msgid "Sortable columns · shareable URL state"
 msgstr "أعمدة قابلة للفرز · رابط قابل للمشاركة بحالة الفلاتر"
 
+#: templates/reports/partials/sales_report_results.html:76
+#: templates/reports/partials/sales_report_results.html:95
 msgid "No rows."
 msgstr "لا توجد صفوف."
+#: templates/reports/partials/stale_phones_report_results.html:8
 msgid "Number / reference"
 msgstr "الرقم / المرجع"
+#: templates/reports/partials/stale_phones_report_results.html:11
 msgid "Customer or payer"
 msgstr "الزبون أو الدافع"
+#: templates/reports/partials/stale_phones_report_results.html:17
 msgid "Days since last sale"
 msgstr "أيام منذ آخر بيع"
+#: templates/reports/partials/stale_phones_report_results.html:26
 msgid "Last sale entry"
 msgstr "آخر إدخال بيع"
+#: templates/reports/partials/stale_phones_report_results.html:43
 msgid ""
 "Remove this line from the report only? Sales in the system are not deleted; "
 "the number can appear again if it becomes idle."
 msgstr ""
 "إزالة هذا السطر من التقرير فقط؟ لا تُحذف المبيعات من النظام؛ قد يظهر الر"
 "قم مجدداً إذا عاد راكداً."
+#: templates/reports/partials/stale_phones_report_results.html:52
 msgid "No lines match this threshold."
 msgstr "لا توجد خطوط تطابق هذه العتبة."
+#: templates/reports/profit_report.html:6
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
+#: templates/reports/profit_report.html:36
 msgid "By company"
 msgstr "حسب الشركة"
+#: templates/reports/profit_report.html:56
 msgid "By payment method"
 msgstr "حسب طريقة الدفع"
+#: templates/reports/profit_report.html:78
 msgid "By employee"
 msgstr "حسب الموظف"
+#: templates/reports/profit_report.html:97
 msgid "By product"
 msgstr "حسب المنتج"
+#: templates/reports/profit_report.html:122
 msgid "Daily profit trend"
 msgstr "اتجاه الربح اليومي"
+#: templates/reports/profit_report.html:125
 msgid "Day"
 msgstr "اليوم"
+#: templates/reports/profit_report.html:137
 msgid "Monthly profit trend"
 msgstr "اتجاه الربح الشهري"
+#: templates/reports/sales_report.html:6
 msgid "Filter, review, and export-friendly table layout"
 msgstr "تصفية ومراجعة وجدول مناسب للتصدير"
+#: templates/reports/stale_phones_report.html:8
 #, python-format
 msgid ""
 "Numbers whose last sale entry (excluding cancelled) is older than %(d)s days."
 msgstr "الأرقام التي آخر إدخال بيع لها (باستثناء الملغاة) أقدم من %(d)s يوماً."
 
+#: templates/reports/stale_phones_report.html:18
 msgid "Idle threshold"
 msgstr "عتبة عدم النشاط"
+#: templates/reports/stale_phones_report.html:31
 msgid "Save threshold"
 msgstr "حفظ العتبة"
+#: templates/reports/stale_phones_report.html:35
 msgid "Saved on your user profile until you change it again."
 msgstr "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى."
+#: templates/sales/awaiting_approvals.html:7
 msgid "On-account sales waiting for management approval."
 msgstr "مبيعات الآجل بانتظار موافقة الإدارة."
 
+#: templates/sales/awaiting_approvals.html:29
 msgid "Reference, payer, customer, company…"
 msgstr "المرجع، الدافع، الزبون، الشركة…"
 
+#: templates/sales/awaiting_approvals.html:51
+#: templates/sales/management_sale_list.html:65
+#: templates/sales/pending_payments.html:64
 msgid "Could not complete the action."
 msgstr "تعذّر تنفيذ العملية."
 
+#: templates/sales/employee_entry.html:11
+#: templates/sales/employee_entry.html:311
 msgid "Refresh numbers"
 msgstr "تحديث الأرقام"
+
+#: templates/sales/employee_entry.html:48
+#: templates/sales/employee_entry.html:73
+#: templates/sales/employee_entry.html:333
 msgid "Paste from clipboard"
 msgstr "لصق من الحافظة"
 
+#: templates/sales/employee_entry.html:49
+#: templates/sales/employee_entry.html:74
+#: templates/sales/employee_entry.html:334
 msgid "Could not read clipboard. Allow paste permission or use Ctrl+V."
 msgstr "تعذّر قراءة الحافظة. اسمح بإذن اللصق أو استخدم Ctrl+V."
+#: templates/sales/employee_entry.html:50
+#: templates/sales/employee_entry.html:75
+#: templates/sales/employee_entry.html:335
 msgid "Paste"
 msgstr "لصق"
 
+#: templates/sales/employee_entry.html:59
 msgid "Filled from a previous sale"
 msgstr "مُعبَّأ تلقائياً من بيع سابق"
 
+#: templates/sales/employee_entry.html:60
 msgid "Previously used"
 msgstr "مستخدمة سابقاً"
 
+#: templates/sales/employee_entry.html:61
 msgid "Credit account"
 msgstr "حساب أجل"
-
+#: templates/sales/employee_entry.html:62
 msgid "Cash payer"
 msgstr "بدون أجل"
-
+#: templates/sales/employee_entry.html:82
 msgid "Payer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 
+#: templates/sales/employee_entry.html:90
 msgid "Where did you receive the money?"
 msgstr "أين استلمت المبلغ؟"
+#: templates/sales/employee_entry.html:98
 msgid "Payment to employee: ON"
 msgstr "دفع لدى موظف: مفعّل"
+#: templates/sales/employee_entry.html:107
 msgid "On account: ON"
 msgstr "آجل: مفعّل"
+#: templates/sales/employee_entry.html:108
+#: templates/sales/employee_entry.html:109
 msgid "Mark as on account"
 msgstr "تسجيل آجل"
+#: templates/sales/employee_entry.html:119
 #, python-format
 msgid "Payment will be recorded to your account: %(name)s"
 msgstr "ستُسجّل الدفعة في حسابك: %(name)s"
+#: templates/sales/employee_entry.html:122
 msgid "Your balance:"
 msgstr "رصيدك:"
+#: templates/sales/employee_entry.html:137
+#: templates/sales/employee_entry.html:409
+#: templates/sales/payment_method_list.html:39
 msgid "No payment methods."
 msgstr "لا توجد طرق دفع."
+#: templates/sales/employee_entry.html:165
 msgid "No active companies."
 msgstr "لا توجد شركات نشطة."
+#: templates/sales/employee_entry.html:178
+#: templates/sales/partials/employee_product_tiles.html:6
 msgid "Choose a company to see products."
 msgstr "اختر شركة لعرض المنتجات."
+#: templates/sales/employee_entry.html:219
 msgid "Estimate"
 msgstr "التقدير"
 
+#: templates/sales/employee_entry.html:221
 msgid "Supplier cost"
 msgstr "تكلفة المورّد"
 
+#: templates/sales/employee_entry.html:228
 msgid "eSIM: extra supplier cost is included in the estimate above."
 msgstr "eSIM: تكلفة المورّد الإضافية مضمَّنة في التقدير أعلاه."
 
+#: templates/sales/employee_entry.html:229
 msgid ""
 "Selling price is 0: supplier cost will be recorded as a loss in the system."
 msgstr "سعر البيع صفر: ستُسجَّل تكلفة المورّد كخسارة في النظام."
 
+#: templates/sales/employee_entry.html:232
+#: templates/sales/employee_entry.html:419
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
 
+#: templates/sales/employee_entry.html:241
 msgid "Save sale"
 msgstr "حفظ البيع"
+#: templates/sales/employee_entry.html:249
 msgid "Recent entries"
 msgstr "آخر الإدخالات"
+#: templates/sales/employee_entry.html:285
 msgid "No recent entries yet."
 msgstr "لا توجد إدخالات حديثة بعد."
+#: templates/sales/employee_entry.html:297
 msgid "Enter a phone number."
 msgstr "أدخل رقم الهاتف."
+#: templates/sales/employee_entry.html:298
+msgid ""
+"Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058."
+msgstr ""
+"يجب أن يكون الرقم 10 خانات ويبدأ بـ 050 أو 051 أو 052 أو 053 أو 054 أو 0"
+"55 أو 058."
+#: templates/sales/employee_entry.html:299
 msgid "Refreshing…"
 msgstr "جاري التحديث…"
+#: templates/sales/employee_entry.html:300
+#, python-brace-format
+msgid "{body} (last refresh {time} ago)"
+msgstr "{body} (آخر تحديث منذ {time})"
+
+#: templates/sales/employee_entry.html:301
+msgid "less than a minute"
+msgstr "أقل من دقيقة"
+
+#: templates/sales/employee_entry.html:302
+msgid "hour"
+msgstr "ساعة"
+
+#: templates/sales/employee_entry.html:303
+msgid "hours"
+msgstr "ساعات"
+
+#: templates/sales/employee_entry.html:304
+msgid "minute"
+msgstr "دقيقة"
+
+#: templates/sales/employee_entry.html:305
+msgid "minutes"
+msgstr "دقائق"
+
+#: templates/sales/employee_entry.html:306
+msgid "and"
+msgstr "و"
+
+#: templates/sales/employee_entry.html:315
 msgid ""
 "Same routing and messages as the public refresh page, without rate limits."
 msgstr ""
 "نفس التوجيه والرسائل كصفحة التحديث العامة، بدون حدود على عدد المحاولات."
-msgid "{body} (last refresh {time} ago)"
-msgstr "{body} (آخر تحديث منذ {time})"
-msgid "less than a minute"
-msgstr "أقل من دقيقة"
-msgid "hour"
-msgstr "ساعة"
-msgid "hours"
-msgstr "ساعات"
-msgid "minute"
-msgstr "دقيقة"
-msgid "minutes"
-msgstr "دقائق"
-msgid "and"
-msgstr "و"
+
+#: templates/sales/employee_entry.html:317
 msgid "Phone number"
 msgstr "رقم الهاتف"
+#: templates/sales/employee_entry.html:345
 msgid "Refresh"
 msgstr "تحديث"
+#: templates/sales/employee_entry.html:360
 msgid "Choose a customer from the suggestions list."
 msgstr "اختر زبوناً من قائمة الاقتراحات."
 
+#: templates/sales/employee_entry.html:361
 msgid "Choose a payment method tile."
 msgstr "اختر بلاطة طريقة الدفع."
+#: templates/sales/employee_entry.html:366
 msgid "Record customer payment"
 msgstr "تسجيل دفعة زبون"
 
+#: templates/sales/employee_entry.html:372
 msgid ""
 "Submitted for management approval before it affects the customer balance."
 msgstr "سيتم إرسالها لموافقة الإدارة قبل أن تؤثر على رصيد الزبون."
 
+#: templates/sales/employee_entry.html:380
 msgid "Type name or phone…"
 msgstr "اكتب الاسم أو رقم الهاتف…"
 
+#: templates/sales/employee_entry.html:385
 msgid "Current balance (owed to shop)"
 msgstr "الرصيد الحالي (المستحق للمحل)"
 
+#: templates/sales/employee_entry.html:430
 msgid "Submit"
 msgstr "إرسال"
 
+#: templates/sales/employee_entry.html:862
 msgid "Enter payer name and product to preview SIM stock."
 msgstr "أدخل اسم الدافع والمنتج لمعاينة مخزون الشرائح."
+#: templates/sales/employee_recent.html:9
 msgid "Sales you entered. You can edit or delete only your last 10 entries."
 msgstr "مبيعاتك المُدخلة. يمكنك تعديل أو حذف آخر 10 إدخالات فقط."
+#: templates/sales/employee_recent.html:15
 msgid "Back to sales entry"
 msgstr "العودة إلى إدخال المبيعات"
 
+#: templates/sales/employee_recent.html:88
 msgid "No entries today yet."
 msgstr "لا توجد إدخالات اليوم بعد."
 
+#: templates/sales/employee_recent.html:90
 msgid "No entries match the selected date range."
 msgstr "لا توجد إدخالات ضمن النطاق الزمني المحدد."
 
+#: templates/sales/employee_sale_edit.html:9 templates/sales/sale_edit.html:11
 #, python-format
 msgid "%(company)s · %(product)s · %(ref)s"
 msgstr "%(company)s · %(product)s · %(ref)s"
 
+#: templates/sales/employee_sale_edit.html:18
 msgid ""
 "Company, product and eSIM flag can't be changed here. If those need fixing, "
 "delete this entry and create a new one."
 msgstr ""
 "لا يمكن تغيير الشركة أو المنتج أو خيار eSIM هنا. للتصحيح، احذف الإدخال و"
 "أنشئ واحداً جديداً."
+#: templates/sales/management_sale_list.html:7
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
 
+#: templates/sales/partials/awaiting_results.html:49
+#: templates/sales/partials/awaiting_results.html:123
 msgid "Reject this sale? Supplier balance will be restored."
 msgstr "رفض هذا البيع؟ سيتم استرجاع رصيد المورّد."
 
+#: templates/sales/partials/awaiting_results.html:66
+#: templates/sales/partials/awaiting_results.html:130
 msgid "No sales awaiting approval."
 msgstr "لا توجد مبيعات بانتظار الموافقة."
 
+#: templates/sales/partials/awaiting_results.html:94
+#: templates/sales/partials/management_sale_list_results.html:106
+#: templates/sales/partials/pending_payments_results.html:110
 msgid "Copy"
 msgstr "نسخ"
 
+#: templates/sales/partials/employee_product_tiles.html:45
 msgid "Default"
 msgstr "الافتراضي"
 
+#: templates/sales/partials/employee_recent_actions.html:14
 msgid ""
 "Delete this entry permanently? Supplier balance will be corrected. This "
 "cannot be undone."
 msgstr "حذف هذا الإدخال نهائياً؟ يُصحَّح رصيد المورّد. لا يمكن التراجع."
+#: templates/sales/partials/management_sale_list_results.html:46
+#: templates/sales/partials/pending_payments_results.html:51
 msgid "Copy reference"
 msgstr "نسخ المرجع"
 
+#: templates/sales/partials/management_sale_list_results.html:64
+#: templates/sales/partials/management_sale_list_results.html:126
 msgid "Cancel this sale?"
 msgstr "إلغاء هذا البيع؟"
+#: templates/sales/partials/management_sale_list_results.html:77
+#: templates/sales/partials/management_sale_list_results.html:139
+#: templates/sales/partials/pending_payments_results.html:77
+#: templates/sales/partials/pending_payments_results.html:147
 msgid ""
 "Permanently delete this sale? Ledger rows will be removed and supplier "
 "balance corrected. This cannot be undone."
 msgstr ""
 "حذف هذا البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
 
+#: templates/sales/partials/pending_payments_results.html:6
 msgid "Mark selected as paid"
 msgstr "تعليم المحدد كمدفوع"
 
+#: templates/sales/partials/pending_payments_results.html:8
 msgid "Select pending rows, then apply."
 msgstr "اختر الصفوف المعلّقة ثم طبّق."
 
+#: templates/sales/partials/pending_payments_results.html:16
 msgid "Select"
 msgstr "تحديد"
 
+#: templates/sales/partials/pending_payments_results.html:44
 msgid "Select sale"
 msgstr "تحديد البيع"
 
+#: templates/sales/partials/pending_payments_results.html:96
+#: templates/sales/partials/pending_payments_results.html:155
 msgid "No pending sales."
 msgstr "لا توجد مبيعات معلّقة."
+#: templates/sales/payment_method_form.html:38
 msgid ""
 "Deleting a payment method is permanent. If existing sales or customer "
 "payments still reference it, the delete will be blocked — mark it inactive "
@@ -2775,26 +4778,35 @@ msgstr ""
 "حذف طريقة الدفع لا يمكن التراجع عنه. إذا كانت هناك مبيعات أو دفعات زبائن لا "
 "تزال مرتبطة بها، سيتم منع الحذف — اجعلها غير نشطة بدلاً من ذلك."
 
+#: templates/sales/payment_method_form.html:44
+#: templates/sales/payment_method_list.html:31
 #, python-format
 msgid "Delete payment method “%(name)s”? This cannot be undone."
 msgstr "حذف طريقة الدفع \"%(name)s\"؟ لا يمكن التراجع عن هذا الإجراء."
 
+#: templates/sales/payment_method_form.html:47
 msgid "Delete payment method"
 msgstr "حذف طريقة الدفع"
 
+#: templates/sales/payment_method_list.html:7
 msgid "Tiles shown on the employee sales screen."
 msgstr "البطاقات الظاهرة في شاشة مبيعات الموظف."
 
+#: templates/sales/payment_method_list.html:9
 msgid "New"
 msgstr "جديد"
+#: templates/sales/pending_payments.html:7
 msgid "Mark sales paid when funds are received."
 msgstr "تعليم المبيعات كمدفوعة عند استلام الأموال."
 
+#: templates/sales/pending_payments.html:14
 msgid "All sales"
 msgstr "كل المبيعات"
+#: templates/sales/sale_edit.html:9
 msgid "Adjust safe fields on this sale."
 msgstr "تعديل الحقول الآمنة لهذا البيع."
 
+#: templates/sales/sale_edit.html:21
 msgid ""
 "Company, product, and eSIM flag are not editable here because they would "
 "change the supplier-balance ledger. Cancel and re-create the sale if those "
@@ -2803,228 +4815,88 @@ msgstr ""
 "لا يمكن تعديل الشركة والمنتج وعلامة eSIM من هنا لأنها تؤثر على سجل رصيد "
 "المورّد. ألغِ البيع وأعِد إنشاءه إذا احتجت تغيير ذلك."
 
+#: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
-msgid "Layan report matching"
-msgstr "مطابقة كشف ليان"
+#~ msgid "Company report"
+#~ msgstr "تقرير الشركة"
 
-msgid "Layan charges report (.xlsx)"
-msgstr "كشف خصومات ليان (.xlsx)"
+#~ msgid "Phone number is required."
+#~ msgstr "رقم الهاتف مطلوب."
 
-msgid "Pending portal credits (optional)"
-msgstr "أرصدة معلّقة على البوابة (اختياري)"
+#~ msgid "Not registered"
+#~ msgstr "غير مسجّل"
 
-msgid ""
-"One line per entry: phone,credit amount not yet shown on the export "
-"(e.g. pending reversal)."
-msgstr ""
-"سطر لكل رقم: رقم_الهاتف,مبلغ_الإرجاع غير الظاهر بعد في الكشف (مثل عكس "
-"معلّق)."
+#~ msgid "This phone number is not registered in the system."
+#~ msgstr "رقم الهاتف هذا غير مسجّل في النظام."
 
-msgid "Run matching"
-msgstr "تشغيل المطابقة"
+#~ msgid "Report"
+#~ msgstr "تقرير"
 
-msgid ""
-"Upload the same charges report you receive from Layan (Excel). We compare "
-"each phone number to sales in Recharge Desk and highlight financial gaps "
-"for this supplier only."
-msgstr ""
-"ارفع نفس كشف الخصومات الذي تستلمه من ليان (Excel). نطابق كل رقم مع "
-"المبيعات في النظام ونبرز الفجوات المالية لهذا المورد فقط."
+#~ msgid ""
+#~ "Upload the same charges report you receive from Layan (Excel). We compare "
+#~ "each phone number to sales in Recharge Desk and highlight financial gaps "
+#~ "for this supplier only."
+#~ msgstr ""
+#~ "ارفع نفس كشف الخصومات الذي تستلمه من ليان (Excel). نطابق كل رقم مع "
+#~ "المبيعات في النظام ونبرز الفجوات المالية لهذا المورد فقط."
 
-msgid "Estimated deficit (Layan)"
-msgstr "العجز التقديري (ليان)"
+#~ msgid "Disconnected settlements"
+#~ msgstr "تسويات أرقام مفصولة"
 
-msgid "Not recorded"
-msgstr "غير مسجّل"
+#~ msgid "Numbers not recorded in system"
+#~ msgstr "أرقام لم تُسجّل بالنظام"
 
-msgid "Disconnected settlements"
-msgstr "تسويات أرقام مفصولة"
+#~ msgid ""
+#~ "Charged on Layan but no matching sale in Recharge Desk for this period."
+#~ msgstr "مخصومة على ليان دون بيع مطابق في النظام خلال هذه الفترة."
 
-msgid "Report rows in period"
-msgstr "صفوف الكشف في الفترة"
+#~ msgid "Activation charge plus refund on Layan; small net kept on portal."
+#~ msgstr "خصم تفعيل ثم إعادة مال على ليان؛ صافي صغير يبقى على البوابة."
 
-msgid "Balance vs report end"
-msgstr "الرصيد مقابل نهاية الكشف"
+#~ msgid ""
+#~ "Activation plus refund on Layan (disconnect). These numbers never appear "
+#~ "under amount mismatches; enter your manual settlement total separately."
+#~ msgstr ""
+#~ "تفعيل وإعادة مال على ليان (فصل). لا تظهر هذه الأرقام تحت اختلاف المبالغ؛ "
+#~ "أدخل مجموع التسويات اليدوي (مثلاً 100 ₪) بشكل منفصل."
 
-msgid "Gap"
-msgstr "الفرق"
+#~ msgid "In system only"
+#~ msgstr "في النظام فقط"
 
-msgid "End balance not found in file."
-msgstr "رصيد نهاية الكشف غير موجود في الملف."
+#~ msgid ""
+#~ "Sales in Recharge Desk without matching charge lines in the uploaded "
+#~ "report."
+#~ msgstr "مبيعات في النظام بلا سطور خصم مطابقة في الكشف المرفوع."
 
-msgid "Numbers not recorded in system"
-msgstr "أرقام لم تُسجّل بالنظام"
+#~ msgid "Not recorded in system"
+#~ msgstr "لم يُسجّل بالنظام"
 
-msgid "Numbers not recorded under Layan"
-msgstr "أرقام غير مسجّلة تحت ليان"
+#~ msgid "Amount mismatch (logged under another supplier)"
+#~ msgstr "اختلاف مبلغ (مسجّل تحت مورد آخر)"
 
-msgid ""
-"Charged on Layan but no matching sale in Recharge Desk for this period."
-msgstr ""
-"مخصومة على ليان دون بيع مطابق في النظام خلال هذه الفترة."
+#~ msgid ""
+#~ "Upload the same charges report you receive from Layan (Excel). We compare "
+#~ "each phone number to sales anywhere in Recharge Desk (any supplier) for "
+#~ "the selected period, and highlight gaps against Layan charges."
+#~ msgstr ""
+#~ "ارفع كشف الخصومات من ليان. نطابق كل رقم مع المبيعات في النظام (أي مورد) "
+#~ "خلال الفترة المحددة ونبرز الفجوات مقابل خصومات ليان."
 
-msgid "Settlements on disconnected numbers"
-msgstr "تسويات على أرقام مفصولة"
+#~ msgid ""
+#~ "Charged on Layan but no sale for this number in Recharge Desk (any "
+#~ "supplier) in this period."
+#~ msgstr ""
+#~ "مخصوم على ليان دون أي بيع لهذا الرقم في النظام (أي مورد) خلال هذه الفترة."
 
-msgid ""
-"Activation charge plus refund on Layan; small net kept on portal."
-msgstr ""
-"خصم تفعيل ثم إعادة مال على ليان؛ صافي صغير يبقى على البوابة."
-
-msgid ""
-"Activation plus refund on Layan (disconnect). These numbers never appear "
-"under amount mismatches; enter your manual settlement total separately."
-msgstr ""
-"تفعيل وإعادة مال على ليان (فصل). لا تظهر هذه الأرقام تحت اختلاف المبالغ؛ "
-"أدخل مجموع التسويات اليدوي (مثلاً 100 ₪) بشكل منفصل."
-
-msgid "Amount mismatches"
-msgstr "اختلاف المبالغ"
-
-msgid "Both sides have activity but net amounts differ."
-msgstr "يوجد نشاط على الجانبين لكن الصافي مختلف."
-
-msgid "In system only"
-msgstr "في النظام فقط"
-
-msgid ""
-"Sales in Recharge Desk without matching charge lines in the uploaded report."
-msgstr ""
-"مبيعات في النظام بلا سطور خصم مطابقة في الكشف المرفوع."
-
-msgid "Matched numbers"
-msgstr "أرقام متطابقة"
-
-msgid "Layan net"
-msgstr "صافي ليان"
-
-msgid "RD net"
-msgstr "صافي النظام"
-
-msgid "None in this category."
-msgstr "لا يوجد في هذا التصنيف."
-
-msgid "Back to supplier"
-msgstr "العودة للمورد"
-
-msgid "Layan report matching is only available for Layan."
-msgstr "مطابقة كشف ليان متاحة لمورد ليان فقط."
-
-#, python-format
-msgid "Report processed (%(rows)s rows)."
-msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
-
-msgid ""
-"Excel support is not installed (openpyxl). Contact your administrator."
-msgstr ""
-"دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
-
-#, python-format
-msgid "Could not read the report: %(error)s"
-msgstr "تعذّر قراءة الكشف: %(error)s"
-
-msgid "Settlement on disconnected number"
-msgstr "تسوية على رقم مفصول"
-
-msgid "Not recorded in system"
-msgstr "لم يُسجّل بالنظام"
-
-msgid "Amount mismatch"
-msgstr "اختلاف مبلغ"
-
-msgid "Matched"
-msgstr "متطابق"
-
-msgid "Pending credit (manual)"
-msgstr "رصيد معلّق (يدوي)"
-
-msgid "RD supplier"
-msgstr "مورد في النظام"
-
-msgid "Amount mismatch (logged under another supplier)"
-msgstr "اختلاف مبلغ (مسجّل تحت مورد آخر)"
-
-msgid ""
-"Upload the same charges report you receive from Layan (Excel). We compare "
-"each phone number to sales anywhere in Recharge Desk (any supplier) for "
-"the selected period, and highlight gaps against Layan charges."
-msgstr ""
-"ارفع كشف الخصومات من ليان. نطابق كل رقم مع المبيعات في النظام (أي مورد) "
-"خلال الفترة المحددة ونبرز الفجوات مقابل خصومات ليان."
-
-msgid ""
-"Charged on Layan but no sale for this number in Recharge Desk (any "
-"supplier) in this period."
-msgstr ""
-"مخصوم على ليان دون أي بيع لهذا الرقم في النظام (أي مورد) خلال هذه الفترة."
-
-msgid "Not recorded under Layan"
-msgstr "لم يُسجّل تحت ليان"
-
-msgid "Charged on Layan portal but no matching Layan sale in this period."
-msgstr "مخصوم على بوابة ليان دون بيع ليان مطابق في هذه الفترة."
-
-msgid "Logged under another supplier"
-msgstr "مسجّل تحت مورد آخر"
-
-msgid ""
-"Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix "
-"the supplier on the sale."
-msgstr ""
-"مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على البيع."
-
-msgid "In Layan sales only"
-msgstr "في مبيعات ليان فقط"
-
-msgid ""
-"Layan sale in Recharge Desk with no matching charge line in the uploaded "
-"Layan report."
-msgstr ""
-"بيع ليان في النظام بلا سطر خصم مطابق في كشف ليان المرفوع."
-
-msgid ""
-"Upload the Layan charges report (Excel). Matching uses Layan sales in "
-"Recharge Desk only; numbers logged under other suppliers are shown "
-"separately."
-msgstr ""
-"ارفع كشف خصومات ليان. المطابقة تعتمد مبيعات ليان في النظام فقط؛ الأرقام "
-"المسجّلة تحت مورد آخر تظهر في قسم منفصل."
-
-msgid ""
-"Upload the Layan charges report (Excel). Only rows where the portal "
-"balance before and after differ are counted; re-activations with "
-"unchanged balance are ignored."
-msgstr ""
-"ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ "
-"إعادة التفعيل بدون تغيّر رصيد تُتجاهل."
-
-msgid "Difference"
-msgstr "الفرق"
-
-msgid "Charge on activation minus refund on disconnect (amount kept on Layan portal)."
-msgstr "خصم التفعيل ناقص إعادة المال عند الفصل (المبلغ الباقي على بوابة ليان)."
-
-msgid "New recharge in period"
-msgstr "شحن جديد في الفترة"
-
-msgid "see matching below"
-msgstr "راجع المطابقة أدناه"
-
-msgid "%(c)s settlement cycle"
-msgid_plural "%(c)s settlement cycles"
-msgstr[0] "%(c)s دورة تسوية"
-msgstr[1] "%(c)s دورات تسوية"
-
-msgid "Layan recharge"
-msgstr "شحن ليان"
-
-msgid "Settlement total"
-msgstr "مجموع التسويات"
-
-msgid "cycles"
-msgstr "دورات"
+#~ msgid ""
+#~ "Upload the Layan charges report (Excel). Matching uses Layan sales in "
+#~ "Recharge Desk only; numbers logged under other suppliers are shown "
+#~ "separately."
+#~ msgstr ""
+#~ "ارفع كشف خصومات ليان. المطابقة تعتمد مبيعات ليان في النظام فقط؛ الأرقام "
+#~ "المسجّلة تحت مورد آخر تظهر في قسم منفصل."
 
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
@@ -3036,47 +4908,6 @@ msgstr "دورات"
 #~ "This entry has already been processed by management and can no longer be "
 #~ "changed."
 #~ msgstr "تمّت معالجة هذا الإدخال من قبل الإدارة، ولم يعد بالإمكان تعديله."
-
-msgid "Breakdown"
-msgstr "التفصيل"
-
-msgid "Layan report breakdown"
-msgstr "تفصيل كشف ليان"
-
-msgid "Settlement cycles (charge + refund)"
-msgstr "دورات التسوية (شحنة + إرجاع)"
-
-msgid "Unpaired refunds in report"
-msgstr "إرجاعات غير مربوطة في الكشف"
-
-msgid ""
-"Not counted in settlement total — no matching charge line before this "
-"refund in the report."
-msgstr ""
-"لا تُحسب في مجموع التسوية — لا توجد شحنة مطابقة قبل هذا الإرجاع في "
-"الكشف."
-
-msgid "Recharges outside settlement cycles"
-msgstr "شحنات خارج دورات التسوية"
-
-msgid "Layan portal net in report"
-msgstr "صافي ليان في الكشف"
-
-msgid "Minimum settlement difference to show"
-msgstr "أقل فرق تسوية للعرض"
-
-msgid ""
-"Rows in “Settlements on disconnected numbers” with a smaller retained "
-"amount are hidden (0 shows all)."
-msgstr ""
-"صفوف «تسويات على أرقام مفصولة» التي فرقها أصغر من هذه القيمة لا "
-"تُعرض (0 = عرض الكل)."
-
-#, python-format
-msgid ""
-"Showing settlements with difference ≥ %(min)s (%(hidden)s hidden)."
-msgstr ""
-"عرض التسويات التي فرقها ≥ %(min)s (%(hidden)s مخفية)."
 
 #~ msgid ""
 #~ "This entry has already been processed by management and can no longer be "
