@@ -137,6 +137,9 @@ def _phone_activity_breakdown(lay: LayanPhoneAgg) -> PhoneActivityBreakdown:
                 break
         if not paired:
             recharge_total += amount
+    if cycles > 0:
+        # Same-day re-activation rows (no balance move) still debit Layan portal.
+        settlement_net += _same_day_passive_charges(lay)
     return PhoneActivityBreakdown(
         settlement_net=settlement_net,
         recharge_total=recharge_total,
