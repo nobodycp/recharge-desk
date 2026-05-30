@@ -20,7 +20,7 @@
         <tr>
           <th>{% trans "Number" %}</th>
           <th>{% trans "RD supplier" %}</th>
-          <th class="text-end">{% trans "For match" %}</th>
+          <th class="text-end">{% trans "Layan net" %}</th>
           <th class="text-end">{% trans "RD net" %}</th>
           <th class="text-end">{% trans "Gap" %}</th>
         </tr>
@@ -31,12 +31,6 @@
           <td>
             <span class="font-monospace">{{ row.phone }}</span>
             {% if row.raw != row.phone %}<span class="small text-secondary">({{ row.raw }})</span>{% endif %}
-            {% if row.settlement_amount %}
-              <div class="small text-secondary">
-                {% trans "Recharge" %}: {{ row.recharge_amount|floatformat:2 }}
-                · {% trans "Settlement" %}: {{ row.settlement_amount|floatformat:2 }}
-              </div>
-            {% endif %}
           </td>
           <td class="small text-secondary">
             {% if row.rd_suppliers %}{{ row.rd_suppliers }}{% else %}—{% endif %}

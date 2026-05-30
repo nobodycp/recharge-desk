@@ -76,50 +76,15 @@ class LayanPhoneAgg:
         return self.refunds < 0
 
 
-@dataclass
-class PhoneActivityBreakdown:
-    """Charge + disconnect cycles vs later recharges on the same number."""
+def _is_disconnect_settlement(lay: LayanPhoneAgg | None) -> bool:
+    """Activation charge on Layan plus a refund (disconnect settlement).
 
-    settlement_net: Decimal
-    recharge_total: Decimal
-    had_settlement: bool
-
-    @property
-    def layan_for_match(self) -> Decimal:
-        """New recharge(s) minus settlement retained on the portal."""
-        if self.recharge_total <= 0:
-            return Decimal("0")
-        return self.recharge_total - self.settlement_net
-
-
-def _phone_activity_breakdown(lay: LayanPhoneAgg) -> PhoneActivityBreakdown:
-    """Split portal lines into settlement (charge then refund) and new recharge."""
-    ordered = sorted(lay.lines, key=lambda x: x[0])
-    settlement_net = Decimal("0")
-    recharge_total = Decimal("0")
-    had_settlement = False
-    i = 0
-    while i < len(ordered):
-        _d, amount, _op = ordered[i]
-        if amount > 0:
-            if i + 1 < len(ordered) and ordered[i + 1][1] < 0:
-                had_settlement = True
-                settlement_net += amount + ordered[i + 1][1]
-                i += 2
-                continue
-            recharge_total += amount
-            i += 1
-        elif amount < 0:
-            settlement_net += amount
-            had_settlement = True
-            i += 1
-        else:
-            i += 1
-    return PhoneActivityBreakdown(
-        settlement_net=settlement_net,
-        recharge_total=recharge_total,
-        had_settlement=had_settlement,
-    )
+    These are tracked separately from amount mismatches; the user may enter
+    a manual settlement total (e.g. 100 ₪) outside this report.
+    """
+    if not lay:
+        return False
+    return lay.has_refund and lay.charges >= Decimal("20")
 
 
 @dataclass
@@ -135,8 +100,6 @@ class ReconcilePhoneRow:
     category_label: str
     lines: list
     rd_suppliers: str = ""
-    settlement_amount: Decimal = Decimal("0")
-    recharge_amount: Decimal = Decimal("0")
 
 
 @dataclass
@@ -356,17 +319,13 @@ def reconcile_layan_report(
     for ph in sorted(all_phones):
         lay = layan_phones.get(ph)
         raw = lay.raw if lay else ph
-        lines = lay.lines if lay else []
+        layan_net_ph = lay.net if lay else Decimal("0")
         layan_chg = lay.charges if lay else Decimal("0")
         layan_ref = lay.refunds if lay else Decimal("0")
-        breakdown = _phone_activity_breakdown(lay) if lay else PhoneActivityBreakdown(
-            Decimal("0"), Decimal("0"), False
-        )
-        settlement_amt = breakdown.settlement_net
-        recharge_amt = breakdown.recharge_total
-        layan_match = breakdown.layan_for_match
+        has_refund = lay.has_refund if lay else False
+        lines = lay.lines if lay else []
         rd_net = rd_by_phone.get(ph, Decimal("0"))
-        gap = layan_match - rd_net
+        gap = layan_net_ph - rd_net
 
         if lay is None and rd_net > 0:
             rd_only.append(
@@ -389,29 +348,25 @@ def reconcile_layan_report(
         if lay is None:
             continue
 
-        if breakdown.had_settlement:
+        if _is_disconnect_settlement(lay):
             split_settlements.append(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=settlement_amt,
+                    layan_net=layan_net_ph,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
-                    rd_net=Decimal("0"),
-                    gap=Decimal("0"),
-                    category="settlement",
-                    category_label=str(_("Portal settlement (charge + disconnect)")),
+                    rd_net=rd_net,
+                    gap=gap,
+                    category="split",
+                    category_label=str(_("Settlement on disconnected number")),
                     lines=lines,
                     rd_suppliers=company.name,
-                    settlement_amount=settlement_amt,
-                    recharge_amount=recharge_amt,
                 )
             )
-
-        if recharge_amt <= 0:
             continue
 
-        if rd_net == 0 and layan_match > Decimal("0"):
+        if rd_net == 0 and layan_net_ph > Decimal("0"):
             other_note = _other_supplier_note(ph)
             other_net = rd_other_by_phone.get(ph, Decimal("0")) - rd_net
             if other_note and other_net > Decimal("0"):
@@ -419,17 +374,15 @@ def reconcile_layan_report(
                     ReconcilePhoneRow(
                         raw=raw,
                         phone=ph,
-                        layan_net=layan_match,
+                        layan_net=layan_net_ph,
                         layan_charges=layan_chg,
                         layan_refunds=layan_ref,
                         rd_net=other_net,
-                        gap=layan_match - other_net,
+                        gap=layan_net_ph - other_net,
                         category="other_supplier",
                         category_label=str(_("Logged under another supplier")),
                         lines=lines,
                         rd_suppliers=other_note,
-                        settlement_amount=settlement_amt,
-                        recharge_amount=recharge_amt,
                     )
                 )
                 continue
@@ -437,7 +390,7 @@ def reconcile_layan_report(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_match,
+                    layan_net=layan_net_ph,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
                     rd_net=rd_net,
@@ -446,8 +399,6 @@ def reconcile_layan_report(
                     category_label=str(_("Not recorded under Layan")),
                     lines=lines,
                     rd_suppliers=company.name,
-                    settlement_amount=settlement_amt,
-                    recharge_amount=recharge_amt,
                 )
             )
             continue
@@ -457,7 +408,7 @@ def reconcile_layan_report(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_match,
+                    layan_net=layan_net_ph,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
                     rd_net=rd_net,
@@ -466,18 +417,16 @@ def reconcile_layan_report(
                     category_label=str(_("Amount mismatch")),
                     lines=lines,
                     rd_suppliers=company.name,
-                    settlement_amount=settlement_amt,
-                    recharge_amount=recharge_amt,
                 )
             )
             continue
 
-        if recharge_amt > 0 or rd_net > 0:
+        if layan_chg > 0 or rd_net > 0:
             matched.append(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_match,
+                    layan_net=layan_net_ph,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
                     rd_net=rd_net,
@@ -486,13 +435,11 @@ def reconcile_layan_report(
                     category_label=str(_("Matched")),
                     lines=lines,
                     rd_suppliers=company.name,
-                    settlement_amount=settlement_amt,
-                    recharge_amount=recharge_amt,
                 )
             )
 
     total_not = sum((r.gap for r in not_recorded), Decimal("0"))
-    total_split = sum((r.settlement_amount for r in split_settlements), Decimal("0"))
+    total_split = sum((r.layan_net for r in split_settlements), Decimal("0"))
     total_mismatch = sum((abs(r.gap) for r in amount_mismatches), Decimal("0"))
     total_rd_only = sum((r.rd_net for r in rd_only), Decimal("0"))
     total_other = sum((r.layan_net for r in logged_other_supplier), Decimal("0"))
@@ -501,7 +448,7 @@ def reconcile_layan_report(
     if layan_end is not None:
         balance_gap = company.current_balance - layan_end
 
-    estimated_deficit = total_not
+    estimated_deficit = total_not + total_split
 
     return LayanReconcileResult(
         period_from=period_from,

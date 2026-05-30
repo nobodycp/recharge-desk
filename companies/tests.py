@@ -198,8 +198,7 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.total_not_recorded, _decimal(30))
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].phone, "0522222222")
-        self.assertEqual(result.split_settlements[0].settlement_amount, _decimal(1))
-        self.assertEqual(result.estimated_deficit, _decimal(30))
+        self.assertEqual(result.estimated_deficit, _decimal(31))
 
     def test_disconnect_with_sale_goes_to_split_not_mismatch(self):
         buf = self._minimal_workbook(
@@ -238,52 +237,6 @@ class LayanReconcileTests(TestCase):
         )
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].phone, "0535768111")
-        self.assertEqual(result.split_settlements[0].settlement_amount, _decimal("36.17"))
-        self.assertEqual(len(result.amount_mismatches), 0)
-
-    def test_recharge_after_settlement_matches_rd_minus_settlement(self):
-        from sales.models import PaymentMethod, Sale
-
-        buf = self._minimal_workbook(
-            [
-                ("0599000001", "تفعيل", 30, 1000, 970, "01/05/2026 10:00"),
-                ("0599000001", "إعادة مال", -29, 970, 971, "02/05/2026 10:00"),
-                ("0599000001", "تفعيل", 30, 971, 941, "03/05/2026 10:00"),
-            ]
-        )
-        product = Product.objects.create(
-            line=ProductLine.objects.create(company=self.company, name="L4"),
-            variant_label="v4",
-            cost_price=_decimal(30),
-            default_sell_price=_decimal(50),
-        )
-        pm = PaymentMethod.objects.create(name="cash6")
-        Sale.objects.create(
-            company=self.company,
-            product=product,
-            reference_number="0599000001",
-            payer_name="test",
-            payment_method=pm,
-            cost_price_snapshot=_decimal(29),
-            sell_price_actual=_decimal(50),
-            profit_snapshot=_decimal(21),
-            loss_snapshot=_decimal(0),
-            status=Sale.Status.PAID,
-            created_by=self.user,
-        )
-        result = reconcile_layan_report(
-            self.company,
-            buf,
-            period_from=date(2026, 5, 1),
-            period_to=date(2026, 5, 31),
-        )
-        self.assertEqual(len(result.split_settlements), 1)
-        self.assertEqual(result.split_settlements[0].settlement_amount, _decimal(1))
-        self.assertEqual(result.split_settlements[0].recharge_amount, _decimal(30))
-        matched = [r for r in result.matched if r.phone == "0599000001"]
-        self.assertEqual(len(matched), 1)
-        self.assertEqual(matched[0].layan_net, _decimal(29))
-        self.assertEqual(matched[0].recharge_amount, _decimal(30))
         self.assertEqual(len(result.amount_mismatches), 0)
 
     def test_skips_reactivation_when_balance_unchanged(self):

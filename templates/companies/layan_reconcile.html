@@ -38,7 +38,7 @@
           <div class="h4 mb-0 text-danger">{{ result.estimated_deficit|floatformat:2 }}</div>
           <div class="small text-secondary mt-1">
             {% trans "Not recorded" %}: {{ result.total_not_recorded|floatformat:2 }}
-            · {% trans "Portal settlements total" %}: {{ result.total_split_settlements|floatformat:2 }}
+            · {% trans "Disconnected settlements" %}: {{ result.total_split_settlements|floatformat:2 }}
           </div>
         </div>
       </div>
@@ -88,15 +88,13 @@
     {% include "companies/partials/layan_reconcile_table.html" with section_title=title_other section_rows=result.logged_other_supplier section_total=result.total_logged_other_supplier section_help=help_other %}
   {% endif %}
 
-  {% if result.split_settlements %}
-    {% trans "Portal settlements" as title_split %}
-    {% trans "Charge and disconnect on Layan only — not matched to the system. Amount kept on the portal per number." as help_split %}
-    {% include "companies/partials/layan_reconcile_settlements.html" with section_title=title_split section_rows=result.split_settlements section_total=result.total_split_settlements section_help=help_split %}
-  {% endif %}
+  {% trans "Settlements on disconnected numbers" as title_split %}
+  {% trans "Activation plus refund on Layan (disconnect). These numbers never appear under amount mismatches; enter your manual settlement total separately." as help_split %}
+  {% include "companies/partials/layan_reconcile_table.html" with section_title=title_split section_rows=result.split_settlements section_total=result.total_split_settlements section_help=help_split %}
 
   {% if result.amount_mismatches %}
     {% trans "Amount mismatches" as title_mismatch %}
-    {% trans "New recharge (minus any settlement on the same number) differs from the Layan sale in the system." as help_mismatch %}
+    {% trans "Both sides have activity but net amounts differ." as help_mismatch %}
     {% include "companies/partials/layan_reconcile_table.html" with section_title=title_mismatch section_rows=result.amount_mismatches section_total=result.total_amount_mismatch section_help=help_mismatch %}
   {% endif %}
 
