@@ -1,0 +1,60 @@
+{% load i18n %}
+<div class="small text-secondary mt-1 p-2 rounded bg-body-secondary">
+  <div class="fw-semibold text-body mb-2">{% trans "Layan report breakdown" %}</div>
+
+  {% if detail.cycles %}
+    <div class="mb-2">
+      <div class="text-body">{% trans "Settlement cycles (charge + refund)" %}</div>
+      <ul class="mb-0 ps-3">
+        {% for c in detail.cycles %}
+          <li class="mb-1">
+            <span class="text-success">+{{ c.charge_amount|floatformat:2 }}</span>
+            <span class="text-danger">{{ c.refund_amount|floatformat:2 }}</span>
+            → <strong class="text-body">{{ c.retained|floatformat:2 }}</strong>
+            <span class="d-block">{{ c.charge_at|date:"d/m/Y H:i" }} — {{ c.refund_at|date:"d/m/Y H:i" }}</span>
+            <span class="d-block text-secondary">{{ c.charge_op }} / {{ c.refund_op }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if detail.orphan_refunds %}
+    <div class="mb-2">
+      <div class="text-warning">{% trans "Unpaired refunds in report" %}</div>
+      <ul class="mb-0 ps-3">
+        {% for r in detail.orphan_refunds %}
+          <li>
+            <span class="text-danger">{{ r.amount|floatformat:2 }}</span>
+            <span>{{ r.at|date:"d/m/Y H:i" }}</span>
+            <span class="d-block text-secondary">{{ r.op }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="text-secondary">{% trans "Not counted in settlement total — no matching charge line before this refund in the report." %}</div>
+    </div>
+  {% endif %}
+
+  {% if detail.recharges %}
+    <div class="mb-2">
+      <div class="text-body">{% trans "Recharges outside settlement cycles" %}</div>
+      <ul class="mb-0 ps-3">
+        {% for r in detail.recharges %}
+          <li>
+            <span class="text-success">+{{ r.amount|floatformat:2 }}</span>
+            <span>{{ r.at|date:"d/m/Y H:i" }}</span>
+            <span class="d-block text-secondary">{{ r.op }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="text-body">
+    {% trans "Layan portal net in report" %}:
+    <span class="font-monospace">{{ detail.layan_charges|floatformat:2 }}</span>
+    <span class="text-danger font-monospace">{{ detail.layan_refunds|floatformat:2 }}</span>
+    =
+    <strong class="font-monospace">{{ detail.layan_net_movement|floatformat:2 }}</strong>
+  </div>
+</div>

@@ -29,6 +29,12 @@
             {% if row.recharge_amount %}
               <div class="small text-warning">{% trans "New recharge in period" %}: {{ row.recharge_amount|floatformat:2 }} — {% trans "see matching below" %}</div>
             {% endif %}
+            {% if row.activity_detail %}
+              <details class="mt-1">
+                <summary class="text-primary user-select-none" style="cursor:pointer;">{% trans "Breakdown" %}</summary>
+                {% include "companies/partials/layan_reconcile_activity_detail.html" with detail=row.activity_detail %}
+              </details>
+            {% endif %}
           </td>
           <td class="text-end fw-semibold">{{ row.layan_net|floatformat:2 }}</td>
         </tr>

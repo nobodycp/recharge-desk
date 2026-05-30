@@ -329,9 +329,20 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(split.layan_net, _decimal(1))
         self.assertEqual(split.settlement_cycles, 2)
         self.assertEqual(split.recharge_amount, _decimal(30))
+        detail = split.activity_detail
+        self.assertIsNotNone(detail)
+        self.assertEqual(len(detail.cycles), 2)
+        self.assertEqual(detail.cycles[0].retained, _decimal(1))
+        self.assertEqual(detail.cycles[1].retained, _decimal(0))
+        self.assertEqual(len(detail.orphan_refunds), 1)
+        self.assertEqual(detail.orphan_refunds[0].amount, _decimal(-29))
+        self.assertEqual(len(detail.recharges), 1)
+        self.assertEqual(detail.recharges[0].amount, _decimal(30))
+        self.assertEqual(detail.layan_net_movement, _decimal(2))
         matched = [r for r in result.matched if r.phone == "0512542435"]
         self.assertEqual(len(matched), 1)
         self.assertEqual(matched[0].layan_net, _decimal(30))
+        self.assertIsNotNone(matched[0].activity_detail)
 
     def test_settlement_retained_when_refund_row_before_charge_in_file(self):
         """Excel row order can list refund before activation on the same day."""

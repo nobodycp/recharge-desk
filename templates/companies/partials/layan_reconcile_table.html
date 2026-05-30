@@ -37,6 +37,12 @@
                 {% if row.settlement_cycles > 1 %}({{ row.settlement_cycles }} {% trans "cycles" %}){% endif %}
               </div>
             {% endif %}
+            {% if row.activity_detail %}
+              <details class="mt-1">
+                <summary class="text-primary user-select-none" style="cursor:pointer;">{% trans "Breakdown" %}</summary>
+                {% include "companies/partials/layan_reconcile_activity_detail.html" with detail=row.activity_detail %}
+              </details>
+            {% endif %}
           </td>
           <td class="small text-secondary">
             {% if row.rd_suppliers %}{{ row.rd_suppliers }}{% else %}—{% endif %}
