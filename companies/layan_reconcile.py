@@ -533,6 +533,11 @@ def reconcile_layan_report(
                 )
             )
 
+    split_settlements.sort(
+        key=lambda r: r.settlement_amount or r.layan_net,
+        reverse=True,
+    )
+
     total_not = sum((r.gap for r in not_recorded), Decimal("0"))
     total_split = sum((r.settlement_amount for r in split_settlements), Decimal("0"))
     total_mismatch = sum((abs(r.gap) for r in amount_mismatches), Decimal("0"))
