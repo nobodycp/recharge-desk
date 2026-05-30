@@ -350,8 +350,8 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
 
-    def test_settlement_includes_same_day_passive_activation(self):
-        """Re-activation (no balance move) + extension + partial refund → retained 31."""
+    def test_settlement_ignores_passive_activation_same_day(self):
+        """First row is re-activation only (balance unchanged); settlement is 30 − 29 = 1."""
         buf = self._minimal_workbook(
             [
                 ("0512937705", "تفعيل خط هاتف جديد - We", 30, 2650.78, 2650.78, "12/05/2026 10:59"),
@@ -367,8 +367,7 @@ class LayanReconcileTests(TestCase):
         )
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].phone, "0512937705")
-        self.assertEqual(result.split_settlements[0].layan_net, _decimal(31))
-        self.assertEqual(result.total_split_settlements, _decimal(31))
+        self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
 
     def test_settlement_shows_retained_difference_only(self):
         buf = self._minimal_workbook(
