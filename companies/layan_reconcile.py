@@ -12,6 +12,10 @@ from django.utils.translation import gettext_lazy as _
 
 REFUND_MARKERS = ("إعادة مال",)
 DEPOSIT_OP = "دفع جديد"
+BALANCE_BEFORE_COL = 7
+BALANCE_AFTER_COL = 8
+COST_COL = 10
+DATE_COL = 12
 
 
 def norm_phone(raw: str) -> str:
@@ -23,6 +27,24 @@ def norm_phone(raw: str) -> str:
     if len(d) == 9 and d[0] == "5":
         d = "0" + d
     return d
+
+
+def _row_affects_balance(row) -> bool:
+    """True when the portal balance actually moved (before ≠ after).
+
+    Rows like re-activation (``تفعيل خط هاتف جديد``) often show a cost
+    column but keep the same balance; those must not enter reconciliation.
+    """
+    if len(row) <= BALANCE_AFTER_COL:
+        return True
+    before = row[BALANCE_BEFORE_COL]
+    after = row[BALANCE_AFTER_COL]
+    if before in (None, "", "-") or after in (None, "", "-"):
+        return True
+    try:
+        return Decimal(str(before)) != Decimal(str(after))
+    except Exception:
+        return True
 
 
 def _parse_dt(value) -> datetime | None:
@@ -134,11 +156,11 @@ def parse_layan_workbook(
         if raw in ("-", ""):
             continue
         op = str(row[3] or "")
-        cost = row[10]
+        cost = row[COST_COL] if len(row) > COST_COL else None
         if cost is None or cost == "-":
             continue
         amount = Decimal(str(cost))
-        dt = _parse_dt(row[12] if len(row) > 12 else None)
+        dt = _parse_dt(row[DATE_COL] if len(row) > DATE_COL else None)
         if not dt:
             continue
         d = dt.date()
@@ -146,16 +168,22 @@ def parse_layan_workbook(
             continue
         if period_to and d > period_to:
             continue
-        parsed_rows += 1
-        net_movement += amount
 
         if op == DEPOSIT_OP:
+            parsed_rows += 1
+            net_movement += amount
             deposits += amount
             if report_end_dt is None or dt > report_end_dt:
                 report_end_dt = dt
-                if len(row) > 8 and row[8] is not None:
-                    report_end_balance = Decimal(str(row[8]))
+                if row[BALANCE_AFTER_COL] is not None:
+                    report_end_balance = Decimal(str(row[BALANCE_AFTER_COL]))
             continue
+
+        if not _row_affects_balance(row):
+            continue
+
+        parsed_rows += 1
+        net_movement += amount
 
         ph = norm_phone(raw)
         if not ph:
@@ -172,8 +200,8 @@ def parse_layan_workbook(
 
         if report_end_dt is None or dt >= report_end_dt:
             report_end_dt = dt
-            if len(row) > 8 and row[8] is not None:
-                report_end_balance = Decimal(str(row[8]))
+            if row[BALANCE_AFTER_COL] is not None:
+                report_end_balance = Decimal(str(row[BALANCE_AFTER_COL]))
 
     wb.close()
     return by_phone, deposits, net_movement, report_end_balance, parsed_rows

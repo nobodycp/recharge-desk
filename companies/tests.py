@@ -148,9 +148,9 @@ class LayanReconcileTests(TestCase):
         ws = wb.active
         ws.append(["h1", "h2"])
         ws.append(["h1", "h2"])
-        for raw, op, cost, bal, dt in rows:
-            # Columns: 0=phone, 3=op, 8=balance, 10=cost, 12=date (Layan export layout)
-            row = [raw, None, None, op] + [None] * 4 + [bal, None, cost, None, dt]
+        for raw, op, cost, bal_before, bal_after, dt in rows:
+            # 0=phone, 3=op, 7=before, 8=after, 10=cost, 12=date
+            row = [raw, None, None, op, None, None, None, bal_before, bal_after, None, cost, None, dt]
             ws.append(row)
         buf = BytesIO()
         wb.save(buf)
@@ -162,9 +162,9 @@ class LayanReconcileTests(TestCase):
 
         buf = self._minimal_workbook(
             [
-                ("0511111111", "تفعيل", 30, 970, "01/05/2026 10:00"),
-                ("0522222222", "تفعيل", 30, 940, "02/05/2026 10:00"),
-                ("0522222222", "إعادة مال", -29, 941, "03/05/2026 10:00"),
+                ("0511111111", "تفعيل", 30, 1000, 970, "01/05/2026 10:00"),
+                ("0522222222", "تفعيل", 30, 970, 940, "02/05/2026 10:00"),
+                ("0522222222", "إعادة مال", -29, 940, 941, "03/05/2026 10:00"),
             ]
         )
         product = Product.objects.create(
@@ -203,8 +203,8 @@ class LayanReconcileTests(TestCase):
     def test_disconnect_with_sale_goes_to_split_not_mismatch(self):
         buf = self._minimal_workbook(
             [
-                ("0535768111", "تفعيل", 70, 900, "14/05/2026 10:00"),
-                ("0535768111", "إعادة مال", -33.83, 934, "16/05/2026 10:00"),
+                ("0535768111", "تفعيل", 70, 1000, 930, "14/05/2026 10:00"),
+                ("0535768111", "إعادة مال", -33.83, 930, 934, "16/05/2026 10:00"),
             ]
         )
         product = Product.objects.create(
@@ -239,6 +239,52 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.split_settlements[0].phone, "0535768111")
         self.assertEqual(len(result.amount_mismatches), 0)
 
+    def test_skips_reactivation_when_balance_unchanged(self):
+        buf = self._minimal_workbook(
+            [
+                (
+                    "0512816409",
+                    "تفعيل خط هاتف جديد - We",
+                    60,
+                    500,
+                    500,
+                    "10/05/2026 10:00",
+                ),
+                ("0512816409", "تفعيل", 30, 500, 470, "11/05/2026 10:00"),
+            ]
+        )
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L3"),
+            variant_label="v3",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        from sales.models import PaymentMethod, Sale
+
+        pm = PaymentMethod.objects.create(name="cash5")
+        Sale.objects.create(
+            company=self.company,
+            product=product,
+            reference_number="0512816409",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        row = next(r for r in result.matched if r.phone == "0512816409")
+        self.assertEqual(row.layan_net, _decimal(30))
+        self.assertEqual(len(result.amount_mismatches), 0)
+
     def test_reconcile_finds_sale_under_other_supplier(self):
         sky = Company.objects.create(
             name="Sky",
@@ -247,7 +293,7 @@ class LayanReconcileTests(TestCase):
             current_balance=_decimal(0),
         )
         buf = self._minimal_workbook(
-            [("0535767941", "تفعيل", 30, 970, "14/05/2026 10:00")],
+            [("0535767941", "تفعيل", 30, 1000, 970, "14/05/2026 10:00")],
         )
         product = Product.objects.create(
             line=ProductLine.objects.create(company=sky, name="L"),

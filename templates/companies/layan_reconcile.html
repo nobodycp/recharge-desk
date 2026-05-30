@@ -12,7 +12,7 @@
 <div class="app-card card mb-4">
   <div class="card-body p-4">
     <p class="text-secondary small mb-3">
-      {% trans "Upload the Layan charges report (Excel). Matching uses Layan sales in Recharge Desk only; numbers logged under other suppliers are shown separately." %}
+      {% trans "Upload the Layan charges report (Excel). Only rows where the portal balance before and after differ are counted; re-activations with unchanged balance are ignored." %}
     </p>
     <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
       {% csrf_token %}

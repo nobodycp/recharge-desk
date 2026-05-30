@@ -2983,6 +2983,14 @@ msgstr ""
 "ارفع كشف خصومات ليان. المطابقة تعتمد مبيعات ليان في النظام فقط؛ الأرقام "
 "المسجّلة تحت مورد آخر تظهر في قسم منفصل."
 
+msgid ""
+"Upload the Layan charges report (Excel). Only rows where the portal "
+"balance before and after differ are counted; re-activations with "
+"unchanged balance are ignored."
+msgstr ""
+"ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ "
+"إعادة التفعيل بدون تغيّر رصيد تُتجاهل."
+
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
 
