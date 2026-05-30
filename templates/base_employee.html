@@ -23,7 +23,7 @@
     <div class="d-flex align-items-center gap-2">
       <form action="{% url 'set_language' %}" method="post" class="d-flex mb-0">
         {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <label class="visually-hidden" for="rd-lang-emp">{% trans "Language" %}</label>
         <select name="language" id="rd-lang-emp" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
           {% get_current_language as LANGUAGE_CODE %}

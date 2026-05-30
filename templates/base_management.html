@@ -111,7 +111,7 @@
           </div>
           <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0">
             {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
             <select name="language" id="rd-lang-mgmt" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
               {% get_current_language as LANGUAGE_CODE %}

@@ -32,9 +32,12 @@ are present.
 from __future__ import annotations
 
 from typing import Iterable
+from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
+from django.shortcuts import redirect
 from django.utils import translation
+from django.utils.translation import get_language_from_path
 
 
 # NOTE on third-party origins
@@ -100,9 +103,43 @@ def _build_csp_header() -> str:
     return "; ".join(parts)
 
 
-from django.conf import settings
-from django.shortcuts import redirect
-from django.utils.translation import get_language_from_path
+def _strip_language_prefix(path: str) -> str:
+    """Drop an optional ``/xx/`` locale segment from ``path``."""
+    path = path or "/"
+    for code, _ in settings.LANGUAGES:
+        prefix = f"/{code}/"
+        if path.startswith(prefix):
+            return "/" + path[len(prefix) :]
+        if path == f"/{code}":
+            return "/"
+    return path
+
+
+def _language_uses_url_prefix(lang: str) -> bool:
+    """True when this locale is exposed as ``/{lang}/…`` (not the default code)."""
+    return lang != settings.LANGUAGE_CODE
+
+
+def _path_for_language(path: str, lang: str) -> str | None:
+    """Return the canonical path for ``lang``, or ``None`` when already correct."""
+    if not lang:
+        return None
+    path = path or "/"
+    path_lang = get_language_from_path(path)
+    if _language_uses_url_prefix(lang):
+        if path_lang == lang:
+            return None
+        return f"/{lang}{_strip_language_prefix(path)}"
+    if path_lang is None:
+        return None
+    return _strip_language_prefix(path)
+
+
+def _redirect_for_request(request, new_path: str):
+    """Preserve query string / fragment when normalizing locale prefixes."""
+    parts = urlsplit(request.get_full_path())
+    location = urlunsplit(("", "", new_path, parts.query, parts.fragment))
+    return redirect(location)
 
 
 class DefaultLanguagePrefixRedirectMiddleware:
@@ -118,14 +155,23 @@ class DefaultLanguagePrefixRedirectMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self.cookie_name = getattr(settings, "LANGUAGE_COOKIE_NAME", "django_language")
 
     def __call__(self, request):
         path = request.path or "/"
         if any(path.startswith(prefix) for prefix in self._SKIP_PREFIXES):
             return self.get_response(request)
-        if get_language_from_path(path) is not None:
-            return self.get_response(request)
         if not getattr(settings, "USE_I18N", False):
+            return self.get_response(request)
+
+        user_lang = (request.COOKIES.get(self.cookie_name) or "").strip()
+        if user_lang:
+            target = _path_for_language(path, user_lang)
+            if target and target != path:
+                return _redirect_for_request(request, target)
+            return self.get_response(request)
+
+        if get_language_from_path(path) is not None:
             return self.get_response(request)
 
         lang = settings.LANGUAGE_CODE
@@ -154,7 +200,10 @@ class DefaultLanguagePrefixRedirectMiddleware:
         except Exception:
             pass
 
-        return redirect(f"/{lang}{path}")
+        target = _path_for_language(path, lang)
+        if target and target != path:
+            return _redirect_for_request(request, target)
+        return self.get_response(request)
 
 
 class SecurityHeadersMiddleware:

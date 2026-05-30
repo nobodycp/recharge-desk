@@ -29,6 +29,26 @@ class DefaultLanguagePrefixRedirectMiddlewareTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "/ar/login/")
 
+    def test_bare_login_passes_through_when_user_chose_english(self):
+        request = self.factory.get("/login/", HTTP_HOST="s.prosim.ps")
+        request.COOKIES["django_language"] = "en"
+        response = self.middleware(request)
+        self.assertEqual(response.status_code, 200)
+
+    def test_ar_prefixed_path_redirects_to_english_when_user_chose_english(self):
+        request = self.factory.get("/ar/employee/sales/", HTTP_HOST="s.prosim.ps")
+        request.COOKIES["django_language"] = "en"
+        response = self.middleware(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/employee/sales/")
+
+    def test_bare_employee_sales_redirects_to_ar_when_user_chose_arabic(self):
+        request = self.factory.get("/employee/sales/", HTTP_HOST="s.prosim.ps")
+        request.COOKIES["django_language"] = "ar"
+        response = self.middleware(request)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/ar/employee/sales/")
+
     def test_prefixed_path_passes_through(self):
         request = self.factory.get("/ar/login/", HTTP_HOST="s.prosim.ps")
         response = self.middleware(request)
