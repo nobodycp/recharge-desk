@@ -2991,6 +2991,12 @@ msgstr ""
 "ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ "
 "إعادة التفعيل بدون تغيّر رصيد تُتجاهل."
 
+msgid "Difference"
+msgstr "الفرق"
+
+msgid "Charge on activation minus refund on disconnect (amount kept on Layan portal)."
+msgstr "خصم التفعيل ناقص إعادة المال عند الفصل (المبلغ الباقي على بوابة ليان)."
+
 #~ msgid "Select the employee who received the payment."
 #~ msgstr "اختر الموظف الذي استلم الدفعة."
 

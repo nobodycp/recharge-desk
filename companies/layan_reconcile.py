@@ -76,6 +76,21 @@ class LayanPhoneAgg:
         return self.refunds < 0
 
 
+def _settlement_retained(lay: LayanPhoneAgg) -> Decimal:
+    """Portal amount kept after charge + disconnect (e.g. 30 − 29 = 1)."""
+    ordered = sorted(lay.lines, key=lambda x: x[0])
+    total = Decimal("0")
+    i = 0
+    while i < len(ordered):
+        _d, amount, _op = ordered[i]
+        if amount > 0 and i + 1 < len(ordered) and ordered[i + 1][1] < 0:
+            total += amount + ordered[i + 1][1]
+            i += 2
+        else:
+            i += 1
+    return total
+
+
 def _is_disconnect_settlement(lay: LayanPhoneAgg | None) -> bool:
     """Activation charge on Layan plus a refund (disconnect settlement).
 
@@ -349,15 +364,16 @@ def reconcile_layan_report(
             continue
 
         if _is_disconnect_settlement(lay):
+            retained = _settlement_retained(lay)
             split_settlements.append(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_net_ph,
+                    layan_net=retained,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
-                    rd_net=rd_net,
-                    gap=gap,
+                    rd_net=Decimal("0"),
+                    gap=Decimal("0"),
                     category="split",
                     category_label=str(_("Settlement on disconnected number")),
                     lines=lines,

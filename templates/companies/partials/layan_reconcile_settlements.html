@@ -1,0 +1,34 @@
+{% load i18n %}
+<div class="app-card card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <strong>{{ section_title }}</strong>
+      {% if section_help %}<div class="small text-secondary fw-normal">{{ section_help }}</div>{% endif %}
+    </div>
+    {% if section_total is not None %}
+      <span class="badge text-bg-secondary">{% trans "Total" %}: {{ section_total|floatformat:2 }}</span>
+    {% endif %}
+  </div>
+  {% if section_rows %}
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>{% trans "Number" %}</th>
+          <th class="text-end">{% trans "Difference" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section_rows %}
+        <tr>
+          <td><span class="font-monospace">{{ row.phone }}</span></td>
+          <td class="text-end fw-semibold">{{ row.layan_net|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-secondary small">{% trans "None in this category." %}</div>
+  {% endif %}
+</div>

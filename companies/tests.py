@@ -198,6 +198,8 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.total_not_recorded, _decimal(30))
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].phone, "0522222222")
+        self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
+        self.assertEqual(result.total_split_settlements, _decimal(1))
         self.assertEqual(result.estimated_deficit, _decimal(31))
 
     def test_disconnect_with_sale_goes_to_split_not_mismatch(self):
@@ -237,7 +239,25 @@ class LayanReconcileTests(TestCase):
         )
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.split_settlements[0].phone, "0535768111")
+        self.assertEqual(result.split_settlements[0].layan_net, _decimal("36.17"))
         self.assertEqual(len(result.amount_mismatches), 0)
+
+    def test_settlement_shows_retained_difference_only(self):
+        buf = self._minimal_workbook(
+            [
+                ("0512067446", "تفعيل", 30, 1000, 970, "10/05/2026 10:00"),
+                ("0512067446", "إعادة مال", -29, 970, 971, "11/05/2026 10:00"),
+            ]
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.split_settlements), 1)
+        self.assertEqual(result.split_settlements[0].phone, "0512067446")
+        self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
 
     def test_skips_reactivation_when_balance_unchanged(self):
         buf = self._minimal_workbook(
