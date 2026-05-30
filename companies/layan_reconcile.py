@@ -90,14 +90,38 @@ class PhoneActivityBreakdown:
         return self.recharge_total
 
 
+def _same_day_passive_charges(lay: LayanPhoneAgg) -> Decimal:
+    """Re-activation rows (no balance move) on a day that also has a real charge.
+
+    Layan often shows both on the report; only one sale exists in RD.
+    """
+    balance_days = {
+        (ln[0].date() if hasattr(ln[0], "date") else ln[0])
+        for ln in lay.lines
+        if len(ln) > 3 and ln[3] and ln[1] > 0
+    }
+    total = Decimal("0")
+    for ln in lay.lines:
+        if len(ln) < 4 or ln[3] or ln[1] <= 0:
+            continue
+        d = ln[0].date() if hasattr(ln[0], "date") else ln[0]
+        if d in balance_days:
+            total += ln[1]
+    return total
+
+
 def _phone_activity_breakdown(lay: LayanPhoneAgg) -> PhoneActivityBreakdown:
     """Pair each charge with the next refund by time; leftover charges are recharges."""
-    ordered = sorted(lay.lines, key=lambda x: x[0])
+    ordered = sorted(
+        (ln for ln in lay.lines if len(ln) > 3 and ln[3]),
+        key=lambda x: x[0],
+    )
     settlement_net = Decimal("0")
     recharge_total = Decimal("0")
     used_refunds: set[int] = set()
     cycles = 0
-    for i, (_dt, amount, _op) in enumerate(ordered):
+    for i, ln in enumerate(ordered):
+        amount = ln[1]
         if amount <= 0:
             continue
         paired = False
@@ -216,24 +240,25 @@ def parse_layan_workbook(
                     report_end_balance = Decimal(str(row[BALANCE_AFTER_COL]))
             continue
 
-        if not _row_affects_balance(row):
-            continue
-
-        parsed_rows += 1
-        net_movement += amount
-
         ph = norm_phone(raw)
         if not ph:
             continue
+        affects = _row_affects_balance(row)
         agg = by_phone.get(ph)
         if not agg:
             agg = LayanPhoneAgg(raw=raw, phone=ph)
             by_phone[ph] = agg
+        agg.lines.append((dt, amount, op[:50], affects))
+
+        if not affects:
+            continue
+
+        parsed_rows += 1
+        net_movement += amount
         if amount > 0:
             agg.charges += amount
         else:
             agg.refunds += amount
-        agg.lines.append((dt, amount, op[:50]))
 
         if report_end_dt is None or dt >= report_end_dt:
             report_end_dt = dt
@@ -324,7 +349,9 @@ def reconcile_layan_report(
             agg = LayanPhoneAgg(raw=ph, phone=nph)
             layan_phones[nph] = agg
         agg.refunds -= credit
-        agg.lines.append((period_to or date.today(), -credit, _("Pending credit (manual)")))
+        agg.lines.append(
+            (period_to or date.today(), -credit, _("Pending credit (manual)"), True)
+        )
 
     if layan_end is not None:
         for credit in pending_credits.values():
@@ -365,11 +392,13 @@ def reconcile_layan_report(
             if lay
             else PhoneActivityBreakdown(Decimal("0"), Decimal("0"), 0, False)
         )
-        layan_match = (
+        passive_same_day = _same_day_passive_charges(lay) if lay else Decimal("0")
+        base_match = (
             breakdown.layan_for_match
             if breakdown.had_settlement
             else layan_net_ph
         )
+        layan_match = base_match + passive_same_day
         rd_net = rd_by_phone.get(ph, Decimal("0"))
         gap = layan_match - rd_net
 

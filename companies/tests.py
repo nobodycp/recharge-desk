@@ -242,6 +242,49 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.split_settlements[0].layan_net, _decimal("36.17"))
         self.assertEqual(len(result.amount_mismatches), 0)
 
+    def test_same_day_reactivation_counts_as_extra_layan_charge(self):
+        from sales.models import PaymentMethod, Sale
+
+        buf = self._minimal_workbook(
+            [
+                ("0512796404", "تفعيل خط هاتف جديد - We", 30, 3631.61, 3631.61, "06/05/2026 14:35"),
+                ("0512796404", "دفعه يدويه - We", 30, 3601.61, 3571.61, "06/05/2026 15:29"),
+            ]
+        )
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L-passive"),
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="cash-passive")
+        Sale.objects.create(
+            company=self.company,
+            product=product,
+            reference_number="0512796404",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.split_settlements), 0)
+        self.assertEqual(len(result.matched), 0)
+        self.assertEqual(len(result.amount_mismatches), 1)
+        row = result.amount_mismatches[0]
+        self.assertEqual(row.phone, "0512796404")
+        self.assertEqual(row.layan_net, _decimal(60))
+        self.assertEqual(row.rd_net, _decimal(30))
+
     def test_multiple_settlements_plus_final_recharge(self):
         from sales.models import PaymentMethod, Sale
 
