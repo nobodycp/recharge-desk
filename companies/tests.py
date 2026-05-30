@@ -242,6 +242,23 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.split_settlements[0].layan_net, _decimal("36.17"))
         self.assertEqual(len(result.amount_mismatches), 0)
 
+    def test_settlement_retained_when_refund_row_before_charge_in_file(self):
+        """Excel row order can list refund before activation on the same day."""
+        buf = self._minimal_workbook(
+            [
+                ("0515099739", "إعادة مال - We", -29, 3442.95, 3413.95, "24/05/2026 15:21"),
+                ("0515099739", "تفعيل خط هاتف جديد - We", 30, 3980.85, 4010.85, "24/05/2026 11:31"),
+            ]
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.split_settlements), 1)
+        self.assertEqual(result.split_settlements[0].layan_net, _decimal(1))
+
     def test_settlement_shows_retained_difference_only(self):
         buf = self._minimal_workbook(
             [

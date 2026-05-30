@@ -77,17 +77,25 @@ class LayanPhoneAgg:
 
 
 def _settlement_retained(lay: LayanPhoneAgg) -> Decimal:
-    """Portal amount kept after charge + disconnect (e.g. 30 − 29 = 1)."""
+    """Portal amount kept after charge then disconnect (e.g. 30 − 29 = 1).
+
+    Pairs each activation with the next refund by time, so row order in the
+    Excel file does not matter.
+    """
     ordered = sorted(lay.lines, key=lambda x: x[0])
     total = Decimal("0")
-    i = 0
-    while i < len(ordered):
-        _d, amount, _op = ordered[i]
-        if amount > 0 and i + 1 < len(ordered) and ordered[i + 1][1] < 0:
-            total += amount + ordered[i + 1][1]
-            i += 2
-        else:
-            i += 1
+    used_refund_idxs: set[int] = set()
+    for i, (_dt, amount, _op) in enumerate(ordered):
+        if amount <= 0:
+            continue
+        for j in range(i + 1, len(ordered)):
+            if j in used_refund_idxs:
+                continue
+            _dt2, refund_amt, _op2 = ordered[j]
+            if refund_amt < 0:
+                total += amount + refund_amt
+                used_refund_idxs.add(j)
+                break
     return total
 
 
@@ -211,7 +219,7 @@ def parse_layan_workbook(
             agg.charges += amount
         else:
             agg.refunds += amount
-        agg.lines.append((d, amount, op[:50]))
+        agg.lines.append((dt, amount, op[:50]))
 
         if report_end_dt is None or dt >= report_end_dt:
             report_end_dt = dt
