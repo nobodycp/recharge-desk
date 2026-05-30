@@ -2864,6 +2864,13 @@ msgid ""
 msgstr ""
 "خصم تفعيل ثم إعادة مال على ليان؛ صافي صغير يبقى على البوابة."
 
+msgid ""
+"Activation plus refund on Layan (disconnect). These numbers never appear "
+"under amount mismatches; enter your manual settlement total separately."
+msgstr ""
+"تفعيل وإعادة مال على ليان (فصل). لا تظهر هذه الأرقام تحت اختلاف المبالغ؛ "
+"أدخل مجموع التسويات اليدوي (مثلاً 100 ₪) بشكل منفصل."
+
 msgid "Amount mismatches"
 msgstr "اختلاف المبالغ"
 

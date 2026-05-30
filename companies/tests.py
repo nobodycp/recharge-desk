@@ -200,6 +200,45 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(result.split_settlements[0].phone, "0522222222")
         self.assertEqual(result.estimated_deficit, _decimal(31))
 
+    def test_disconnect_with_sale_goes_to_split_not_mismatch(self):
+        buf = self._minimal_workbook(
+            [
+                ("0535768111", "تفعيل", 70, 900, "14/05/2026 10:00"),
+                ("0535768111", "إعادة مال", -33.83, 934, "16/05/2026 10:00"),
+            ]
+        )
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L2"),
+            variant_label="v2",
+            cost_price=_decimal(45),
+            default_sell_price=_decimal(50),
+        )
+        from sales.models import PaymentMethod, Sale
+
+        pm = PaymentMethod.objects.create(name="cash4")
+        Sale.objects.create(
+            company=self.company,
+            product=product,
+            reference_number="0535768111",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(45),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(5),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.split_settlements), 1)
+        self.assertEqual(result.split_settlements[0].phone, "0535768111")
+        self.assertEqual(len(result.amount_mismatches), 0)
+
     def test_reconcile_finds_sale_under_other_supplier(self):
         sky = Company.objects.create(
             name="Sky",

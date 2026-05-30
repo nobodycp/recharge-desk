@@ -54,6 +54,17 @@ class LayanPhoneAgg:
         return self.refunds < 0
 
 
+def _is_disconnect_settlement(lay: LayanPhoneAgg | None) -> bool:
+    """Activation charge on Layan plus a refund (disconnect settlement).
+
+    These are tracked separately from amount mismatches; the user may enter
+    a manual settlement total (e.g. 100 ₪) outside this report.
+    """
+    if not lay:
+        return False
+    return lay.has_refund and lay.charges >= Decimal("20")
+
+
 @dataclass
 class ReconcilePhoneRow:
     raw: str
@@ -309,9 +320,7 @@ def reconcile_layan_report(
         if lay is None:
             continue
 
-        # Disconnected: charge then refund on Layan; small net kept on portal
-        is_split = has_refund and layan_chg >= Decimal("20") and layan_net_ph <= Decimal("10")
-        if is_split:
+        if _is_disconnect_settlement(lay):
             split_settlements.append(
                 ReconcilePhoneRow(
                     raw=raw,
