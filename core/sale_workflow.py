@@ -17,9 +17,9 @@ def finalize_sale_after_entry(
     if on_account:
         if settings.require_debt_request_approval:
             return "pending_debt"
-        from customers.services import approve_sale
+        from customers.services import post_on_account_sale
 
-        approve_sale(sale=sale, user=user)
+        post_on_account_sale(sale=sale, user=user)
         return "posted_debt"
 
     if settings.require_payment_request_approval:

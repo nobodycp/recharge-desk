@@ -1,7 +1,7 @@
 """Employee-facing sales views: entry form, JSON helpers, product fragment."""
 
 from django.contrib import messages
-from django.db import DatabaseError, IntegrityError
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -125,31 +125,32 @@ def employee_entry(request):
                 form.cleaned_data.get("employee_recipient") if paid_via_employee else None
             )
             is_new_sim = bool(form.cleaned_data.get("is_new_sim")) and app_settings.sales_inventory_enabled
-            sale = create_sale(
-                company=form.cleaned_data["company"],
-                product=form.cleaned_data["product"],
-                reference_number=form.cleaned_data["reference_number"],
-                payer_name=form.cleaned_data["payer_name"],
-                payment_method=form.cleaned_data["payment_method"]
-                if not on_account and not paid_via_employee
-                else None,
-                sell_price_actual=form.cleaned_data["sell_price_actual"],
-                notes=form.cleaned_data.get("notes") or "",
-                user=request.user,
-                is_esim=bool(form.cleaned_data.get("is_esim")),
-                is_new_sim=is_new_sim,
-                sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
-                on_account=on_account,
-                customer=customer,
-                paid_via_employee=paid_via_employee,
-                employee_recipient=employee_recipient,
-            )
-            outcome = finalize_sale_after_entry(
-                sale=sale,
-                user=request.user,
-                on_account=on_account,
-                paid_via_employee=paid_via_employee,
-            )
+            with transaction.atomic():
+                sale = create_sale(
+                    company=form.cleaned_data["company"],
+                    product=form.cleaned_data["product"],
+                    reference_number=form.cleaned_data["reference_number"],
+                    payer_name=form.cleaned_data["payer_name"],
+                    payment_method=form.cleaned_data["payment_method"]
+                    if not on_account and not paid_via_employee
+                    else None,
+                    sell_price_actual=form.cleaned_data["sell_price_actual"],
+                    notes=form.cleaned_data.get("notes") or "",
+                    user=request.user,
+                    is_esim=bool(form.cleaned_data.get("is_esim")),
+                    is_new_sim=is_new_sim,
+                    sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
+                    on_account=on_account,
+                    customer=customer,
+                    paid_via_employee=paid_via_employee,
+                    employee_recipient=employee_recipient,
+                )
+                outcome = finalize_sale_after_entry(
+                    sale=sale,
+                    user=request.user,
+                    on_account=on_account,
+                    paid_via_employee=paid_via_employee,
+                )
             if outcome == "posted_debt":
                 messages.success(request, _("Recorded on account and posted to the customer."))
             elif outcome in ("paid", "paid_employee"):

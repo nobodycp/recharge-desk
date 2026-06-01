@@ -125,31 +125,38 @@ def add_customer_phone(*, customer: Customer, phone: str, label: str = "") -> Cu
 
 
 @transaction.atomic
-def approve_sale(*, sale, user):
-    """Approve an AWAITING on-account sale: post the customer charge."""
+def post_on_account_sale(*, sale, user):
+    """Post an on-account sale to the customer ledger."""
     from sales.models import Sale  # local import to avoid app-loading cycles
 
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
-    if sale_locked.status != Sale.Status.AWAITING:
-        raise ValueError(_("Only awaiting sales can be approved."))
     if not sale_locked.on_account or sale_locked.customer_id is None:
         raise ValueError(_("This sale is not flagged as on-account or has no customer."))
 
     customer_locked = Customer.objects.select_for_update().get(pk=sale_locked.customer_id)
 
-    sale_locked.status = Sale.Status.PENDING
-    sale_locked.approved_at = timezone.now()
-    sale_locked.approved_by = user
-    sale_locked.save(update_fields=["status", "approved_at", "approved_by", "updated_at"])
+    if sale_locked.status == Sale.Status.AWAITING:
+        sale_locked.status = Sale.Status.PENDING
+        sale_locked.approved_at = timezone.now()
+        sale_locked.approved_by = user
+        sale_locked.save(update_fields=["status", "approved_at", "approved_by", "updated_at"])
+    elif sale_locked.status != Sale.Status.PENDING:
+        raise ValueError(_("Only awaiting or pending on-account sales can be posted."))
 
-    CustomerLedger.objects.create(
+    charge_exists = CustomerLedger.objects.filter(
         customer=customer_locked,
         entry_type=CustomerLedger.EntryType.CHARGE,
-        amount=sale_locked.sell_price_actual,
         sale=sale_locked,
-        created_by=user,
-    )
-    _apply_balance_delta(customer_locked, sale_locked.sell_price_actual)
+    ).exists()
+    if not charge_exists:
+        CustomerLedger.objects.create(
+            customer=customer_locked,
+            entry_type=CustomerLedger.EntryType.CHARGE,
+            amount=sale_locked.sell_price_actual,
+            sale=sale_locked,
+            created_by=user,
+        )
+        _apply_balance_delta(customer_locked, sale_locked.sell_price_actual)
 
     # New charge may be auto-covered by an existing credit.
     reapply_settlements_for_customer(customer=customer_locked, triggering_payment=None, user=user)
@@ -163,6 +170,17 @@ def approve_sale(*, sale, user):
 
     consume_sim_for_sale(sale=sale_locked, user=user)
     return sale_locked
+
+
+@transaction.atomic
+def approve_sale(*, sale, user):
+    """Approve an AWAITING on-account sale: post the customer charge."""
+    from sales.models import Sale  # local import to avoid app-loading cycles
+
+    sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    if sale_locked.status != Sale.Status.AWAITING:
+        raise ValueError(_("Only awaiting sales can be approved."))
+    return post_on_account_sale(sale=sale_locked, user=user)
 
 
 @transaction.atomic

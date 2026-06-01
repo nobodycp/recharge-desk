@@ -549,15 +549,28 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
             product_line=product_line,
             customer=resolved,
         )
-        if balance.quantity < 1:
+        if balance.quantity >= 1:
+            _deduct_from_balance(balance=balance)
+            deducted_from = Sale.SimDeductedFrom.CUSTOMER
+            from_balance = balance
+            movement_customer = resolved
+        elif sale_locked.on_account and sale_locked.customer_id == resolved.pk:
+            balance = _get_balance_for_update(
+                location=SimStockBalance.Location.MAIN, product_line=product_line
+            )
+            if balance.quantity < 1:
+                raise ValueError(
+                    _("Insufficient main SIM stock for %(line)s.") % {"line": product_line.name}
+                )
+            _deduct_from_balance(balance=balance)
+            deducted_from = Sale.SimDeductedFrom.MAIN
+            from_balance = balance
+            movement_customer = None
+        else:
             raise ValueError(
                 _("Customer “%(name)s” has no SIM stock for %(line)s.")
                 % {"name": resolved.name, "line": product_line.name}
             )
-        _deduct_from_balance(balance=balance)
-        deducted_from = Sale.SimDeductedFrom.CUSTOMER
-        from_balance = balance
-        movement_customer = resolved
     else:
         balance = _get_balance_for_update(
             location=SimStockBalance.Location.MAIN, product_line=product_line

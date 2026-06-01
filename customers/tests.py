@@ -6,6 +6,8 @@ from django.test import TestCase
 
 from companies.models import Company, Product, ProductLine
 from customers.models import Customer, CustomerLedger, CustomerPayment, CustomerPaymentSubmission
+from inventory.models import SimStockBalance, SimStockMovement
+from inventory.services import receive_main_stock
 from customers.services import (
     approve_customer_payment_submission,
     approve_sale,
@@ -17,12 +19,14 @@ from customers.services import (
     record_customer_payment,
     reject_customer_payment_submission,
     reject_sale,
+    post_on_account_sale,
     submit_customer_payment_submission,
     write_off_customer_balance,
 )
 from sales.models import PaymentMethod, Sale
 from sales.query_utils import confirmed_sales
 from sales.services import cancel_sale, create_sale, delete_sale_permanently
+from core.sale_workflow import finalize_sale_after_entry
 
 User = get_user_model()
 
@@ -108,6 +112,104 @@ class CreateOnAccountSaleTests(CustomerARTestCase):
         self.assertTrue(s.on_account)
         self.assertIsNone(s.payment_method)
         self.assertEqual(s.customer_id, c.pk)
+
+    def test_on_account_sale_posts_directly_when_approval_disabled(self):
+        from core.models import AppSettings
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_debt_request_approval": False,
+                "require_settlement_request_approval": True,
+                "require_payment_request_approval": True,
+                "sales_inventory_enabled": True,
+            },
+        )
+        c = self._new_customer()
+
+        s = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="direct-debt",
+            payer_name=c.name,
+            payment_method=None,
+            sell_price_actual=_decimal(120),
+            notes="",
+            user=self.user,
+            on_account=True,
+            customer=c,
+        )
+        outcome = finalize_sale_after_entry(
+            sale=s,
+            user=self.user,
+            on_account=True,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        self.assertEqual(outcome, "posted_debt")
+        self.assertEqual(s.status, Sale.Status.PENDING)
+        self.assertEqual(c.current_balance, _decimal(120))
+        self.assertTrue(
+            CustomerLedger.objects.filter(
+                customer=c,
+                sale=s,
+                entry_type=CustomerLedger.EntryType.CHARGE,
+            ).exists()
+        )
+
+    def test_new_sim_on_account_sale_posts_and_consumes_stock_when_approval_disabled(self):
+        from core.models import AppSettings
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_debt_request_approval": False,
+                "require_settlement_request_approval": True,
+                "require_payment_request_approval": True,
+                "sales_inventory_enabled": True,
+            },
+        )
+        c = self._new_customer()
+        receive_main_stock(product_line=self.line, qty=2, notes="", user=self.user)
+
+        s = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="direct-new-sim",
+            payer_name=c.name,
+            payment_method=None,
+            sell_price_actual=_decimal(120),
+            notes="",
+            user=self.user,
+            on_account=True,
+            customer=c,
+            is_new_sim=True,
+        )
+        outcome = finalize_sale_after_entry(
+            sale=s,
+            user=self.user,
+            on_account=True,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        main = SimStockBalance.objects.get(
+            location=SimStockBalance.Location.MAIN,
+            product_line=self.line,
+            customer=None,
+        )
+        self.assertEqual(outcome, "posted_debt")
+        self.assertEqual(s.status, Sale.Status.PENDING)
+        self.assertIsNotNone(s.sim_consumed_at)
+        self.assertEqual(s.sim_deducted_from, Sale.SimDeductedFrom.MAIN)
+        self.assertEqual(main.quantity, 1)
+        self.assertTrue(
+            SimStockMovement.objects.filter(
+                sale=s,
+                movement_type=SimStockMovement.MovementType.SALE_CONSUME,
+            ).exists()
+        )
 
     def test_on_account_requires_customer(self):
         with self.assertRaises(ValueError):
