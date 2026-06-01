@@ -1,7 +1,5 @@
 {% load i18n %}
-<div class="rd-card overflow-hidden">
-  <div class="rd-card-header py-2 border-bottom">
-    <span class="fw-semibold">{% trans "Received sales payments" %}</span>
-  </div>
-  {% include "employees/partials/employee_payments_table.html" %}
+<div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
+  <span class="fw-semibold">{% trans "Received sales payments" %}</span>
 </div>
+{% include "employees/partials/employee_payments_table.html" %}

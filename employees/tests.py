@@ -207,6 +207,96 @@ class EmployeePayrollTests(TestCase):
         self.assertContains(resp, "bonus")
         self.assertNotContains(resp, "cashbox")
 
+    def test_employee_detail_sorts_ledger_entries_by_amount(self):
+        create_adjustment(
+            employee=self.employee,
+            amount=Decimal("10"),
+            notes="ledger-low-note",
+            user=self.mgmt,
+        )
+        create_adjustment(
+            employee=self.employee,
+            amount=Decimal("30"),
+            notes="ledger-high-note",
+            user=self.mgmt,
+        )
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.get(
+            reverse("employees:employee_detail", args=[self.employee.pk]),
+            {"ledger_sort": "amount", "ledger_order": "desc"},
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-datagrid-sort")
+        self.assertLess(
+            resp.content.decode().index("ledger-high-note"),
+            resp.content.decode().index("ledger-low-note"),
+        )
+
+    def test_employee_detail_sorts_payments_by_payer(self):
+        EmployeeLedgerEntry.objects.create(
+            employee=self.employee,
+            entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED,
+            amount=Decimal("-20"),
+            phone="222",
+            payer_name="Zed",
+            created_by=self.mgmt,
+        )
+        EmployeeLedgerEntry.objects.create(
+            employee=self.employee,
+            entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED,
+            amount=Decimal("-10"),
+            phone="111",
+            payer_name="Adam",
+            created_by=self.mgmt,
+        )
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.get(
+            reverse("employees:employee_detail", args=[self.employee.pk]),
+            {
+                "tab": "payments",
+                "payments_sort": "payer",
+                "payments_order": "asc",
+            },
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-datagrid-sort")
+        self.assertLess(
+            resp.content.decode().index("Adam"),
+            resp.content.decode().index("Zed"),
+        )
+
+    def test_employee_payments_table_shows_sale_context_columns(self):
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0591111111",
+            payer_name="Context Payer",
+            payment_method=None,
+            sell_price_actual=Decimal("40"),
+            notes="context note",
+            user=self.emp_user,
+            paid_via_employee=True,
+            employee_recipient=self.employee,
+        )
+        mark_sale_paid(sale=sale, user=self.mgmt)
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.get(
+            reverse("employees:employee_detail", args=[self.employee.pk]),
+            {"tab": "payments"},
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Co")
+        self.assertContains(resp, "Line — Pkg")
+        self.assertContains(resp, "context note")
+        self.assertContains(resp, "Context Payer")
+        self.assertContains(resp, "40")
+
     def test_management_can_delete_employee_ledger_entry_from_detail(self):
         entry = create_adjustment(
             employee=self.employee,

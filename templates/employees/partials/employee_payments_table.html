@@ -1,26 +1,66 @@
-{% load i18n humanize %}
-<div class="table-responsive">
-  <table class="table table-sm align-middle mb-0">
-    <thead>
-      <tr>
-        <th>{% trans "Date" %}</th>
-        <th>{% trans "Phone" %}</th>
-        <th>{% trans "Payer" %}</th>
-        <th class="text-end">{% trans "Amount" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in sales_payments_page %}
-        <tr>
-          <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
-          <td class="text-nowrap">{{ row.phone }}</td>
-          <td>{{ row.payer_name }}</td>
-          <td class="text-end tabular-nums kpi-expense">{{ row.amount|intcomma }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No sales payments yet." %}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% load i18n humanize ui_tags %}
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>
+              <a class="rd-datagrid-sort {% if payments_sort == 'created_at' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'created_at' and payments_order == 'desc' %}{% querystring payments_sort='created_at' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='created_at' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Date" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if payments_sort == 'company' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'company' and payments_order == 'desc' %}{% querystring payments_sort='company' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='company' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Company" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if payments_sort == 'product' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'product' and payments_order == 'desc' %}{% querystring payments_sort='product' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='product' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Product" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if payments_sort == 'notes' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'notes' and payments_order == 'desc' %}{% querystring payments_sort='notes' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='notes' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Notes" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if payments_sort == 'payer' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'payer' and payments_order == 'desc' %}{% querystring payments_sort='payer' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='payer' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Payer" %}</a>
+            </th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if payments_sort == 'amount' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'amount' and payments_order == 'desc' %}{% querystring payments_sort='amount' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='amount' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Amount" %}</a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sales_payments_page %}
+            <tr>
+              <td class="small text-secondary text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="fw-medium">{% if row.reference_sale %}{{ row.reference_sale.company.name }}{% else %}—{% endif %}</td>
+              <td>{% if row.reference_sale %}{{ row.reference_sale.product.display_name }}{% else %}—{% endif %}</td>
+              <td class="small text-secondary">
+                {% if row.notes %}{{ row.notes }}{% else %}—{% endif %}
+              </td>
+              <td class="fw-medium">{{ row.payer_name }}</td>
+              <td class="text-end tabular-nums fw-semibold kpi-expense">{{ row.amount|intcomma }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No sales payments yet." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none rd-mobile-stack p-2">
+    {% for row in sales_payments_page %}
+      <div class="rd-mobile-row-card">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="small text-secondary">{{ row.created_at|date:"Y-m-d H:i" }}</div>
+          <span class="tabular-nums fw-bold kpi-expense">{{ row.amount|intcomma }}</span>
+        </div>
+        {% if row.reference_sale %}
+          <div class="fw-semibold mt-1">{{ row.reference_sale.company.name }}</div>
+          <div class="small">{{ row.reference_sale.product.display_name }}</div>
+        {% endif %}
+        {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
+        {% if row.payer_name %}<div class="small mt-1">{% trans "Payer" %}: {{ row.payer_name }}</div>{% endif %}
+      </div>
+    {% empty %}
+      <div class="text-center text-secondary py-4">{% trans "No sales payments yet." %}</div>
+    {% endfor %}
+  </div>
 </div>
 {% include "partials/pagination.html" with page_obj=sales_payments_page page_key="payments_page" %}

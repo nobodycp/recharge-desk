@@ -64,7 +64,7 @@
                       hx-confirm="{% trans 'Cancel this sale?' %}"
                     >
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Cancel" %}</button>
+                      <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
                     </form>
                   {% endif %}
                   <form
@@ -77,7 +77,7 @@
                     hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
                   >
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
                   </form>
                 </div>
               </td>
@@ -126,7 +126,7 @@
               hx-confirm="{% trans 'Cancel this sale?' %}"
             >
               {% csrf_token %}
-              <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Cancel" %}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Cancel" %}</button>
             </form>
           {% endif %}
           <form
@@ -139,7 +139,7 @@
             hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
           >
             {% csrf_token %}
-            <button class="btn btn-sm btn-outline-secondary" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+            <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
           </form>
         </div>
       </div>

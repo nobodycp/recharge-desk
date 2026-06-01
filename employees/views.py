@@ -26,6 +26,20 @@ from employees.services import (
 
 TAB_PAYMENTS = "payments"
 TAB_LEDGER = "ledger"
+LEDGER_SORT_FIELDS = {
+    "created_at": "created_at",
+    "type": "entry_type",
+    "amount": "amount",
+    "details": "phone",
+}
+PAYMENTS_SORT_FIELDS = {
+    "created_at": "created_at",
+    "company": "reference_sale__company__name",
+    "product": "reference_sale__product__line__name",
+    "notes": "notes",
+    "payer": "payer_name",
+    "amount": "amount",
+}
 
 
 def _employee_active_tab(request):
@@ -33,6 +47,22 @@ def _employee_active_tab(request):
     if tab in (TAB_PAYMENTS, TAB_LEDGER):
         return tab
     return TAB_LEDGER
+
+
+def _employee_sort(request, *, sort_param, order_param, default_sort, default_order, fields):
+    sort = (request.GET.get(sort_param) or default_sort).strip()
+    order = (request.GET.get(order_param) or default_order).lower()
+    if sort not in fields:
+        sort = default_sort
+    if order not in ("asc", "desc"):
+        order = default_order
+    return sort, order
+
+
+def _apply_employee_ordering(qs, *, sort, order, fields):
+    prefix = "" if order == "asc" else "-"
+    field = fields[sort]
+    return qs.order_by(f"{prefix}{field}", f"{prefix}pk")
 
 
 @management_required
@@ -118,11 +148,31 @@ def employee_detail(request, pk):
         ledger_qs = ledger_qs.filter(created_at__date__gte=date_from)
     if date_to := ledger_filter_data.get("ledger_date_to"):
         ledger_qs = ledger_qs.filter(created_at__date__lte=date_to)
+    ledger_sort, ledger_order = _employee_sort(
+        request,
+        sort_param="ledger_sort",
+        order_param="ledger_order",
+        default_sort="created_at",
+        default_order="desc",
+        fields=LEDGER_SORT_FIELDS,
+    )
+    ledger_qs = _apply_employee_ordering(
+        ledger_qs,
+        sort=ledger_sort,
+        order=ledger_order,
+        fields=LEDGER_SORT_FIELDS,
+    )
     ledger_page = paginate_request(request, ledger_qs, page_param="ledger_page")
 
     payments_qs = employee.ledger_entries.filter(
         entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED
-    ).select_related("reference_sale", "created_by")
+    ).select_related(
+        "reference_sale",
+        "reference_sale__company",
+        "reference_sale__product",
+        "reference_sale__product__line",
+        "created_by",
+    )
     payments_filter_form = EmployeeSalesPaymentFilterForm(request.GET or None)
     payments_filter_data = (
         payments_filter_form.cleaned_data if payments_filter_form.is_valid() else {}
@@ -143,6 +193,20 @@ def employee_detail(request, pk):
         payments_qs = payments_qs.filter(created_at__date__gte=date_from)
     if date_to := payments_filter_data.get("payments_date_to"):
         payments_qs = payments_qs.filter(created_at__date__lte=date_to)
+    payments_sort, payments_order = _employee_sort(
+        request,
+        sort_param="payments_sort",
+        order_param="payments_order",
+        default_sort="created_at",
+        default_order="desc",
+        fields=PAYMENTS_SORT_FIELDS,
+    )
+    payments_qs = _apply_employee_ordering(
+        payments_qs,
+        sort=payments_sort,
+        order=payments_order,
+        fields=PAYMENTS_SORT_FIELDS,
+    )
     sales_payments_page = paginate_request(
         request,
         payments_qs,
@@ -172,9 +236,13 @@ def employee_detail(request, pk):
         "tab_payments": TAB_PAYMENTS,
         "tab_ledger": TAB_LEDGER,
         "ledger_page": ledger_page,
+        "ledger_sort": ledger_sort,
+        "ledger_order": ledger_order,
         "ledger_filter_form": ledger_filter_form,
         "ledger_filter_active": ledger_filter_active,
         "sales_payments_page": sales_payments_page,
+        "payments_sort": payments_sort,
+        "payments_order": payments_order,
         "payments_filter_form": payments_filter_form,
         "payments_filter_active": payments_filter_active,
         "adj_form": adj_form,

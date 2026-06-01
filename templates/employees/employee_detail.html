@@ -16,15 +16,13 @@
   <div class="col-12 col-md-4">
     <div class="rd-card p-3 h-100">
       <div class="small text-secondary">{% trans "Current balance" %}</div>
-      <div class="h4 mb-0 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
+      <div class="h4 mb-2 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
         {{ employee.current_balance|intcomma }}
       </div>
-    </div>
-  </div>
-  <div class="col-12 col-md-4">
-    <div class="rd-card p-3 h-100">
-      <div class="small text-secondary">{% trans "Monthly salary" %}</div>
-      <div class="h4 mb-0 tabular-nums">{{ employee.monthly_salary|intcomma }}</div>
+      <div class="border-top pt-2 mt-2">
+        <div class="small text-secondary">{% trans "Monthly salary" %}</div>
+        <div class="h6 mb-0 tabular-nums fw-semibold">{{ employee.monthly_salary|intcomma }}</div>
+      </div>
     </div>
   </div>
   <div class="col-12 col-md-4">
@@ -78,19 +76,21 @@
   >
     <input type="hidden" name="partial" value="payments">
     <input type="hidden" name="tab" value="{{ tab_payments }}">
-    <div class="col-12 col-md-6 col-lg-4">
+    <input type="hidden" name="payments_sort" value="{{ payments_sort }}">
+    <input type="hidden" name="payments_order" value="{{ payments_order }}">
+    <div class="col-12 col-lg-4">
       <label class="form-label" for="{{ payments_filter_form.payments_q.id_for_label }}">{{ payments_filter_form.payments_q.label }}</label>
       {{ payments_filter_form.payments_q }}
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-6 col-lg-2">
       <label class="form-label" for="{{ payments_filter_form.payments_date_from.id_for_label }}">{{ payments_filter_form.payments_date_from.label }}</label>
       {{ payments_filter_form.payments_date_from }}
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-6 col-lg-2">
       <label class="form-label" for="{{ payments_filter_form.payments_date_to.id_for_label }}">{{ payments_filter_form.payments_date_to.label }}</label>
       {{ payments_filter_form.payments_date_to }}
     </div>
-    <div class="col-12 d-flex flex-wrap gap-2">
+    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2">
       <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_payments }}">{% trans "Reset" %}</a>
     </div>
@@ -100,7 +100,7 @@
   <div class="position-relative">
     <div
       id="employee-payments-grid"
-      class="rd-datagrid"
+      class="rd-card overflow-hidden rd-datagrid"
       hx-boost="true"
       hx-target="#employee-payments-grid"
       hx-swap="innerHTML"
@@ -123,23 +123,25 @@
   >
     <input type="hidden" name="partial" value="ledger">
     <input type="hidden" name="tab" value="{{ tab_ledger }}">
-    <div class="col-12 col-md-6 col-lg-4">
+    <input type="hidden" name="ledger_sort" value="{{ ledger_sort }}">
+    <input type="hidden" name="ledger_order" value="{{ ledger_order }}">
+    <div class="col-12 col-lg-3">
       <label class="form-label" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
       {{ ledger_filter_form.ledger_q }}
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-6 col-lg-2">
       <label class="form-label" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
       {{ ledger_filter_form.ledger_entry_type }}
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-6 col-lg-2">
       <label class="form-label" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
       {{ ledger_filter_form.ledger_date_from }}
     </div>
-    <div class="col-md-4 col-lg-3">
+    <div class="col-6 col-lg-2">
       <label class="form-label" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
       {{ ledger_filter_form.ledger_date_to }}
     </div>
-    <div class="col-12 d-flex flex-wrap gap-2">
+    <div class="col-6 col-lg-3 d-flex flex-wrap gap-2">
       <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
       <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_ledger }}">{% trans "Reset" %}</a>
     </div>
@@ -149,7 +151,7 @@
   <div class="position-relative">
     <div
       id="employee-ledger-grid"
-      class="rd-datagrid"
+      class="rd-card overflow-hidden rd-datagrid"
       hx-boost="true"
       hx-target="#employee-ledger-grid"
       hx-swap="innerHTML"

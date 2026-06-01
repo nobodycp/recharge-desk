@@ -1,48 +1,93 @@
-{% load i18n humanize %}
-<div class="table-responsive">
-  <table class="table table-sm align-middle mb-0">
-    <thead>
-      <tr>
-        <th>{% trans "Date" %}</th>
-        <th>{% trans "Type" %}</th>
-        <th class="text-end">{% trans "Amount" %}</th>
-        <th>{% trans "Details" %}</th>
-        <th class="text-end">{% trans "Actions" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in ledger_page %}
-        <tr id="employee-ledger-row-{{ row.pk }}">
-          <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
-          <td>{{ row.get_entry_type_display }}</td>
-          <td class="text-end tabular-nums {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}text-success{% endif %}">
-            {{ row.amount|intcomma }}
-          </td>
-          <td class="small">
-            {% if row.phone %}{{ row.phone }}{% endif %}
+{% load i18n humanize ui_tags %}
+<div class="rd-table-dual rd-datagrid-body">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>
+              <a class="rd-datagrid-sort {% if ledger_sort == 'created_at' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'created_at' and ledger_order == 'desc' %}{% querystring ledger_sort='created_at' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='created_at' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Date" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if ledger_sort == 'type' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'type' and ledger_order == 'desc' %}{% querystring ledger_sort='type' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='type' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Type" %}</a>
+            </th>
+            <th class="text-end">
+              <a class="rd-datagrid-sort {% if ledger_sort == 'amount' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'amount' and ledger_order == 'desc' %}{% querystring ledger_sort='amount' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='amount' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Amount" %}</a>
+            </th>
+            <th>
+              <a class="rd-datagrid-sort {% if ledger_sort == 'details' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'details' and ledger_order == 'desc' %}{% querystring ledger_sort='details' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='details' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Details" %}</a>
+            </th>
+            <th class="text-end">{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in ledger_page %}
+            <tr id="employee-ledger-row-{{ row.pk }}">
+              <td class="small text-secondary text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+              <td><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></td>
+              <td class="text-end tabular-nums fw-semibold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">
+                {{ row.amount|intcomma }}
+              </td>
+              <td class="small">
+                {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
+                {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
+                {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
+                {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
+              </td>
+              <td class="text-end">
+                <form
+                  method="post"
+                  action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+                  class="d-inline-block m-0"
+                  hx-post="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+                  hx-target="body"
+                  hx-swap="outerHTML"
+                  hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
+                >
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No ledger entries." %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none rd-mobile-stack p-2">
+    {% for row in ledger_page %}
+      <div class="rd-mobile-row-card">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="small text-secondary">{{ row.created_at|date:"Y-m-d H:i" }}</div>
+          <span class="tabular-nums fw-bold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">{{ row.amount|intcomma }}</span>
+        </div>
+        <div class="mt-1"><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></div>
+        {% if row.phone or row.payer_name or row.salary_month %}
+          <div class="small mt-2">
+            {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
             {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
             {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
-            {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
-          </td>
-          <td class="text-end">
-            <form
-              method="post"
-              action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
-              class="d-inline-block m-0"
-              hx-post="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
-              hx-target="body"
-              hx-swap="outerHTML"
-              hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
-            >
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
-            </form>
-          </td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          </div>
+        {% endif %}
+        {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
+        <form
+          method="post"
+          action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+          class="mt-2"
+          hx-post="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+          hx-target="body"
+          hx-swap="outerHTML"
+          hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
+        >
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="text-center text-secondary py-4">{% trans "No ledger entries." %}</div>
+    {% endfor %}
+  </div>
 </div>
 {% include "partials/pagination.html" with page_obj=ledger_page page_key="ledger_page" %}
