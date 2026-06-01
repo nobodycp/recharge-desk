@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -192,6 +193,24 @@ class EmployeePayrollTests(TestCase):
         self.assertEqual(self.employee.current_balance, Decimal("0"))
         self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
         self.assertEqual(Expense.objects.count(), 0)
+
+    def test_delete_ledger_entry_does_not_lock_nullable_expense_join(self):
+        entry = create_adjustment(
+            employee=self.employee,
+            amount=Decimal("15"),
+            notes="manual without expense",
+            user=self.mgmt,
+        )
+
+        with connection.execute_wrapper(self._assert_no_for_update_outer_expense_join):
+            delete_ledger_entry(entry=entry)
+
+        self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
+
+    def _assert_no_for_update_outer_expense_join(self, execute, sql, params, many, context):
+        normalized = " ".join(sql.lower().split())
+        self.assertNotIn("left outer join", normalized)
+        return execute(sql, params, many, context)
 
     def test_employee_detail_filters_ledger_entries(self):
         create_adjustment(employee=self.employee, amount=Decimal("10"), notes="bonus", user=self.mgmt)

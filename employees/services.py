@@ -252,17 +252,19 @@ def delete_ledger_entry(*, entry: EmployeeLedgerEntry) -> EmployeeProfile:
     """Remove one employee ledger row and reverse its balance impact."""
     locked_entry = (
         EmployeeLedgerEntry.objects.select_for_update()
-        .select_related("employee", "expense")
+        .select_related("employee")
         .get(pk=entry.pk)
     )
     employee_locked = EmployeeProfile.objects.select_for_update().get(
         pk=locked_entry.employee_id
     )
-    expense = locked_entry.expense
+    expense_id = locked_entry.expense_id
     amount = locked_entry.amount
     locked_entry.delete()
-    if expense is not None:
-        expense.delete()
+    if expense_id:
+        from expenses.models import Expense
+
+        Expense.objects.filter(pk=expense_id).delete()
     _apply_balance_delta(employee_locked, -amount)
     return employee_locked
 
