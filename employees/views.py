@@ -34,11 +34,12 @@ LEDGER_SORT_FIELDS = {
 }
 PAYMENTS_SORT_FIELDS = {
     "created_at": "created_at",
+    "ref": "phone",
+    "payer": "payer_name",
+    "amount": "amount",
     "company": "reference_sale__company__name",
     "product": "reference_sale__product__line__name",
     "notes": "notes",
-    "payer": "payer_name",
-    "amount": "amount",
 }
 
 
