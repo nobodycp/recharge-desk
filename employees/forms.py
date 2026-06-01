@@ -60,7 +60,7 @@ class EmployeeAdjustmentForm(forms.Form):
 
 
 class EmployeeLedgerFilterForm(forms.Form):
-    q = forms.CharField(
+    ledger_q = forms.CharField(
         label=_("Search"),
         required=False,
         widget=forms.TextInput(
@@ -71,20 +71,20 @@ class EmployeeLedgerFilterForm(forms.Form):
             }
         ),
     )
-    entry_type = forms.ChoiceField(
+    ledger_entry_type = forms.ChoiceField(
         label=_("Type"),
         choices=[("", _("All"))] + list(EmployeeLedgerEntry.EntryType.choices),
         required=False,
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
-    date_from = forms.DateField(
+    ledger_date_from = forms.DateField(
         label=_("Date from"),
         required=False,
         widget=forms.DateInput(
             attrs={"class": "form-control form-control-sm", "type": "date"}
         ),
     )
-    date_to = forms.DateField(
+    ledger_date_to = forms.DateField(
         label=_("Date to"),
         required=False,
         widget=forms.DateInput(
@@ -94,8 +94,8 @@ class EmployeeLedgerFilterForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        df = cleaned.get("date_from")
-        dt = cleaned.get("date_to")
+        df = cleaned.get("ledger_date_from")
+        dt = cleaned.get("ledger_date_to")
         if df and dt and df > dt:
             raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
         return cleaned

@@ -196,7 +196,7 @@ class EmployeePayrollTests(TestCase):
 
         resp = self.client.get(
             reverse("employees:employee_detail", args=[self.employee.pk]),
-            {"q": "bonus"},
+            {"ledger_q": "bonus"},
         )
 
         self.assertEqual(resp.status_code, 200)

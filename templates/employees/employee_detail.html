@@ -67,8 +67,7 @@
     <div class="rd-card">
       <div class="rd-card-body">
         <h2 class="h5 mb-3">{% trans "Movement statement" %}</h2>
-        {% active_filter_count as ledger_active %}
-        {% include "partials/filter_card_open.html" with active_count=ledger_active indicator_id="employee-ledger-htmx-indicator" %}
+        {% include "partials/filter_card_open.html" with active_count=ledger_filter_active indicator_id="employee-ledger-htmx-indicator" %}
           <form
             method="get"
             class="row g-3 align-items-end"
@@ -78,20 +77,20 @@
             hx-indicator="#employee-ledger-htmx-indicator"
           >
             <div class="col-12 col-md-6">
-              <label class="form-label" for="{{ ledger_filter_form.q.id_for_label }}">{{ ledger_filter_form.q.label }}</label>
-              {{ ledger_filter_form.q }}
+              <label class="form-label" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
+              {{ ledger_filter_form.ledger_q }}
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.entry_type.id_for_label }}">{{ ledger_filter_form.entry_type.label }}</label>
-              {{ ledger_filter_form.entry_type }}
+              <label class="form-label" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
+              {{ ledger_filter_form.ledger_entry_type }}
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.date_from.id_for_label }}">{{ ledger_filter_form.date_from.label }}</label>
-              {{ ledger_filter_form.date_from }}
+              <label class="form-label" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
+              {{ ledger_filter_form.ledger_date_from }}
             </div>
             <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.date_to.id_for_label }}">{{ ledger_filter_form.date_to.label }}</label>
-              {{ ledger_filter_form.date_to }}
+              <label class="form-label" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
+              {{ ledger_filter_form.ledger_date_to }}
             </div>
             {% if ledger_filter_form.non_field_errors %}
               <div class="col-12 text-danger small">{{ ledger_filter_form.non_field_errors }}</div>

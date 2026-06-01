@@ -35,7 +35,7 @@
               hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
             >
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Delete" %}</button>
+              <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
             </form>
           </td>
         </tr>

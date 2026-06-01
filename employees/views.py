@@ -86,7 +86,10 @@ def employee_detail(request, pk):
     ledger_filter_data = (
         ledger_filter_form.cleaned_data if ledger_filter_form.is_valid() else {}
     )
-    ledger_q = (ledger_filter_data.get("q") or "").strip()
+    ledger_filter_active = sum(
+        1 for name in ledger_filter_form.fields if ledger_filter_data.get(name)
+    )
+    ledger_q = (ledger_filter_data.get("ledger_q") or "").strip()
     if ledger_q:
         ledger_qs = ledger_qs.filter(
             Q(phone__icontains=ledger_q)
@@ -95,11 +98,11 @@ def employee_detail(request, pk):
             | Q(reference_sale__reference_number__icontains=ledger_q)
             | Q(reference_sale__payer_name__icontains=ledger_q)
         )
-    if entry_type := ledger_filter_data.get("entry_type"):
+    if entry_type := ledger_filter_data.get("ledger_entry_type"):
         ledger_qs = ledger_qs.filter(entry_type=entry_type)
-    if date_from := ledger_filter_data.get("date_from"):
+    if date_from := ledger_filter_data.get("ledger_date_from"):
         ledger_qs = ledger_qs.filter(created_at__date__gte=date_from)
-    if date_to := ledger_filter_data.get("date_to"):
+    if date_to := ledger_filter_data.get("ledger_date_to"):
         ledger_qs = ledger_qs.filter(created_at__date__lte=date_to)
     ledger_page = paginate_request(request, ledger_qs)
     sales_payments = employee.ledger_entries.filter(
@@ -127,6 +130,7 @@ def employee_detail(request, pk):
         "employee": employee,
         "ledger_page": ledger_page,
         "ledger_filter_form": ledger_filter_form,
+        "ledger_filter_active": ledger_filter_active,
         "sales_payments": sales_payments,
         "adj_form": adj_form,
         "title": employee.display_name,
