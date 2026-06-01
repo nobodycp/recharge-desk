@@ -9,7 +9,7 @@ from django.test.utils import CaptureQueriesContext
 from companies.layan_reconcile import norm_phone, reconcile_layan_report
 from companies.models import Company, Product, ProductLine
 from io import BytesIO
-from datetime import date
+from datetime import date, datetime
 
 User = get_user_model()
 
@@ -157,6 +157,15 @@ class LayanReconcileTests(TestCase):
         buf.seek(0)
         return buf
 
+    def _create_may_sale(self, **kwargs):
+        from django.utils import timezone
+        from sales.models import Sale
+
+        sale = Sale.objects.create(**kwargs)
+        sale.created_at = timezone.make_aware(datetime(2026, 5, 15, 12, 0))
+        sale.save(update_fields=["created_at"])
+        return sale
+
     def test_reconcile_not_recorded_and_split(self):
         from sales.models import PaymentMethod, Sale
 
@@ -174,7 +183,7 @@ class LayanReconcileTests(TestCase):
             default_sell_price=_decimal(50),
         )
         pm = PaymentMethod.objects.create(name="cash")
-        Sale.objects.create(
+        self._create_may_sale(
             company=self.company,
             product=product,
             reference_number="0533333333",
@@ -218,7 +227,7 @@ class LayanReconcileTests(TestCase):
         from sales.models import PaymentMethod, Sale
 
         pm = PaymentMethod.objects.create(name="cash4")
-        Sale.objects.create(
+        self._create_may_sale(
             company=self.company,
             product=product,
             reference_number="0535768111",
@@ -258,7 +267,7 @@ class LayanReconcileTests(TestCase):
             default_sell_price=_decimal(50),
         )
         pm = PaymentMethod.objects.create(name="cash-passive")
-        Sale.objects.create(
+        self._create_may_sale(
             company=self.company,
             product=product,
             reference_number="0512796404",
@@ -305,7 +314,7 @@ class LayanReconcileTests(TestCase):
             default_sell_price=_decimal(50),
         )
         pm = PaymentMethod.objects.create(name="cash-multi")
-        Sale.objects.create(
+        self._create_may_sale(
             company=self.company,
             product=product,
             reference_number="0512542435",
@@ -449,7 +458,7 @@ class LayanReconcileTests(TestCase):
         from sales.models import PaymentMethod, Sale
 
         pm = PaymentMethod.objects.create(name="cash5")
-        Sale.objects.create(
+        self._create_may_sale(
             company=self.company,
             product=product,
             reference_number="0512816409",
@@ -491,7 +500,7 @@ class LayanReconcileTests(TestCase):
         from sales.models import PaymentMethod, Sale
 
         pm = PaymentMethod.objects.create(name="cash2")
-        Sale.objects.create(
+        self._create_may_sale(
             company=sky,
             product=product,
             reference_number="0535767941",
@@ -527,7 +536,7 @@ class LayanReconcileTests(TestCase):
         from sales.models import PaymentMethod, Sale
 
         pm = PaymentMethod.objects.create(name="cash3")
-        Sale.objects.create(
+        self._create_may_sale(
             company=sky,
             product=product,
             reference_number="0599999999",
