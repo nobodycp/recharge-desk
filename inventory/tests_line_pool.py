@@ -6,9 +6,11 @@ from django.test import TestCase
 from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
 from inventory.models import SimStockBalance
-from inventory.services import receive_main_stock
+from inventory.forms import ReceiveMainStockForm
+from inventory.services import allocate_to_customer, receive_main_stock
 from sales.models import PaymentMethod
 from sales.services import create_sale, mark_sale_paid
+from customers.models import Customer
 
 User = get_user_model()
 
@@ -55,6 +57,27 @@ class SharedSimLinePoolTests(TestCase):
         )
         self.assertEqual(main.quantity, 7)
         self.assertEqual(SimStockBalance.objects.filter(location="main").count(), 1)
+
+    def test_receive_form_lists_one_shared_line_per_name(self):
+        form = ReceiveMainStockForm()
+        labels = [form.fields["product_line"].label_from_instance(line) for line in form.fields["product_line"].queryset]
+
+        self.assertEqual(labels.count("Sleekom"), 1)
+        self.assertFalse(any("Sky" in label or "Areen" in label for label in labels))
+
+    def test_allocate_missing_serial_raises_validation_error(self):
+        receive_main_stock(product_line=self.line_sky, qty=1, notes="", user=self.mgmt)
+        customer = Customer.objects.create(name="Dealer Missing Serial", created_by=self.mgmt)
+
+        with self.assertRaisesMessage(ValueError, "not registered in main stock"):
+            allocate_to_customer(
+                customer=customer,
+                product_line=self.line_sky,
+                qty=1,
+                notes="",
+                user=self.mgmt,
+                serials=["missing-serial"],
+            )
 
     def test_sale_under_areen_deducts_shared_sleekom_pool(self):
         receive_main_stock(product_line=self.line_sky, qty=3, notes="", user=self.mgmt)

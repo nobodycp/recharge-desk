@@ -126,6 +126,11 @@
                   <td class="small">
                     {% if l.sale_id %}#{{ l.sale_id }}{% endif %}
                     {% if l.payment_id %}{% trans "Payment" %} #{{ l.payment_id }}{% endif %}
+                    {% if l.notes %}
+                      <div class="text-secondary mt-1">{{ l.notes }}</div>
+                    {% elif l.payment_id and l.payment.notes %}
+                      <div class="text-secondary mt-1">{{ l.payment.notes }}</div>
+                    {% endif %}
                   </td>
                   <td class="small">{% if l.created_by %}{{ l.created_by.username }}{% endif %}</td>
                   <td class="text-end">

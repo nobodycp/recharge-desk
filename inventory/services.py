@@ -151,11 +151,20 @@ def _move_cards_to_customer(
     movement: SimStockMovement,
 ) -> None:
     for serial in serials:
-        card = SimCard.objects.select_for_update().get(
-            serial_or_iccid__iexact=serial,
-            product_line=product_line,
-            status=SimCard.Status.IN_MAIN,
+        card = (
+            SimCard.objects.select_for_update()
+            .filter(
+                serial_or_iccid__iexact=serial,
+                product_line=product_line,
+                status=SimCard.Status.IN_MAIN,
+            )
+            .first()
         )
+        if card is None:
+            raise ValueError(
+                _("Serial “%(serial)s” is not registered in main stock for %(line)s.")
+                % {"serial": serial, "line": product_line.name}
+            )
         card.status = SimCard.Status.WITH_CUSTOMER
         card.customer = customer
         card.movement = movement
