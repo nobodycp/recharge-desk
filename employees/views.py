@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
@@ -209,7 +210,10 @@ def employee_ledger_delete(request, pk, entry_pk):
     delete_ledger_entry(entry=entry)
     messages.success(request, _("Ledger entry deleted."))
     if request.headers.get("HX-Request") == "true":
-        return HttpResponse("", status=200)
+        next_url = f"{reverse('employees:employee_detail', args=[employee.pk])}?tab={TAB_LEDGER}"
+        response = HttpResponse(status=204)
+        response["HX-Redirect"] = next_url
+        return response
     fallback = request.META.get("HTTP_REFERER") or "employees:employee_detail"
     if isinstance(fallback, str) and fallback.startswith("/"):
         return redirect(fallback)

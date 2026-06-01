@@ -44,12 +44,14 @@ class EmployeeAdjustmentForm(forms.Form):
         max_digits=14,
         decimal_places=2,
         help_text=_("Positive credits the employee; negative debits them."),
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01"}),
     )
     notes = forms.CharField(
         label=_("Notes"),
         required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        widget=forms.TextInput(
+            attrs={"class": "form-control form-control-sm", "placeholder": _("Optional notes")},
+        ),
     )
 
     def clean_amount(self):

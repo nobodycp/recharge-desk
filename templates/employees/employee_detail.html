@@ -7,27 +7,46 @@
     <p class="rd-text-muted mb-0">{{ employee.user.username }}</p>
   </div>
   <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-primary" href="{% url 'employees:employee_edit' employee.pk %}">{% trans "Edit" %}</a>
-    <a class="btn btn-outline-secondary" href="{% url 'employees:employee_list' %}">{% trans "Back" %}</a>
+    <a class="btn btn-outline-primary btn-sm" href="{% url 'employees:employee_edit' employee.pk %}">{% trans "Edit" %}</a>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_list' %}">{% trans "Back" %}</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-4 align-items-stretch">
   <div class="col-12 col-md-4">
-    <div class="rd-card p-3">
+    <div class="rd-card p-3 h-100">
       <div class="small text-secondary">{% trans "Current balance" %}</div>
-      <div class="h3 mb-0 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
+      <div class="h4 mb-0 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
         {{ employee.current_balance|intcomma }}
-      </div>
-      <div class="small text-secondary mt-1">
-        {% if employee.current_balance > 0 %}{% trans "Shop owes the employee." %}{% elif employee.current_balance < 0 %}{% trans "Employee holds cash for the shop." %}{% else %}{% trans "Settled." %}{% endif %}
       </div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="rd-card p-3">
+    <div class="rd-card p-3 h-100">
       <div class="small text-secondary">{% trans "Monthly salary" %}</div>
       <div class="h4 mb-0 tabular-nums">{{ employee.monthly_salary|intcomma }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="rd-card p-3 h-100">
+      <div class="small fw-semibold mb-2">{% trans "Manual adjustment" %}</div>
+      <form method="post" novalidate class="row g-2 align-items-end">
+        {% csrf_token %}
+        <input type="hidden" name="form_kind" value="adjustment">
+        <div class="col-5">
+          <label class="form-label small mb-1" for="{{ adj_form.amount.id_for_label }}">{{ adj_form.amount.label }}</label>
+          {{ adj_form.amount }}
+          {{ adj_form.amount.errors }}
+        </div>
+        <div class="col-7">
+          <label class="form-label small mb-1" for="{{ adj_form.notes.id_for_label }}">{{ adj_form.notes.label }}</label>
+          {{ adj_form.notes }}
+          {{ adj_form.notes.errors }}
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Record adjustment" %}</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -47,65 +66,99 @@
   </li>
 </ul>
 
-<div class="row g-3">
-  <div class="col-12 col-lg-7">
-    {% if active_tab == tab_payments %}
-      <div class="position-relative">
-        <div id="employee-payments-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
-        <div
-          id="employee-payments-grid"
-          class="rd-datagrid"
-          hx-boost="true"
-          hx-target="#employee-payments-grid"
-          hx-swap="innerHTML"
-          hx-push-url="true"
-          hx-indicator="#employee-payments-htmx"
-          hx-vals='{"partial": "payments", "tab": "payments"}'
-        >
-          {% include "employees/partials/employee_payments_results.html" %}
-        </div>
-      </div>
-    {% else %}
-      <div class="position-relative">
-        <div id="employee-ledger-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
-        <div
-          id="employee-ledger-grid"
-          class="rd-datagrid"
-          hx-boost="true"
-          hx-target="#employee-ledger-grid"
-          hx-swap="innerHTML"
-          hx-push-url="true"
-          hx-indicator="#employee-ledger-htmx"
-          hx-vals='{"partial": "ledger", "tab": "ledger"}'
-        >
-          {% include "employees/partials/employee_ledger_results.html" %}
-        </div>
-      </div>
-    {% endif %}
-  </div>
+{% if active_tab == tab_payments %}
+  {% include "partials/filter_card_open.html" with active_count=payments_filter_active indicator_id="employee-payments-htmx" %}
+  <form
+    method="get"
+    class="row g-3 align-items-end"
+    hx-get="{% url 'employees:employee_detail' employee.pk %}"
+    hx-target="#employee-payments-grid"
+    hx-push-url="true"
+    hx-indicator="#employee-payments-htmx"
+  >
+    <input type="hidden" name="partial" value="payments">
+    <input type="hidden" name="tab" value="{{ tab_payments }}">
+    <div class="col-12 col-md-6 col-lg-4">
+      <label class="form-label" for="{{ payments_filter_form.payments_q.id_for_label }}">{{ payments_filter_form.payments_q.label }}</label>
+      {{ payments_filter_form.payments_q }}
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label" for="{{ payments_filter_form.payments_date_from.id_for_label }}">{{ payments_filter_form.payments_date_from.label }}</label>
+      {{ payments_filter_form.payments_date_from }}
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label" for="{{ payments_filter_form.payments_date_to.id_for_label }}">{{ payments_filter_form.payments_date_to.label }}</label>
+      {{ payments_filter_form.payments_date_to }}
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+      <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_payments }}">{% trans "Reset" %}</a>
+    </div>
+  </form>
+  {% include "partials/filter_card_close.html" %}
 
-  <div class="col-12 col-lg-5">
-    <div class="rd-card">
-      <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Manual adjustment" %}</h2>
-        <form method="post" novalidate>
-          {% csrf_token %}
-          <input type="hidden" name="form_kind" value="adjustment">
-          <div class="mb-3">
-            <label class="form-label" for="{{ adj_form.amount.id_for_label }}">{{ adj_form.amount.label }}</label>
-            {{ adj_form.amount }}
-            {% if adj_form.amount.help_text %}<div class="form-text">{{ adj_form.amount.help_text }}</div>{% endif %}
-            {{ adj_form.amount.errors }}
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="{{ adj_form.notes.id_for_label }}">{{ adj_form.notes.label }}</label>
-            {{ adj_form.notes }}
-            {{ adj_form.notes.errors }}
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm">{% trans "Record adjustment" %}</button>
-        </form>
-      </div>
+  <div class="position-relative">
+    <div
+      id="employee-payments-grid"
+      class="rd-datagrid"
+      hx-boost="true"
+      hx-target="#employee-payments-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-indicator="#employee-payments-htmx"
+      hx-vals='{"partial": "payments", "tab": "payments"}'
+    >
+      {% include "employees/partials/employee_payments_results.html" %}
     </div>
   </div>
-</div>
+{% else %}
+  {% include "partials/filter_card_open.html" with active_count=ledger_filter_active indicator_id="employee-ledger-htmx" %}
+  <form
+    method="get"
+    class="row g-3 align-items-end"
+    hx-get="{% url 'employees:employee_detail' employee.pk %}"
+    hx-target="#employee-ledger-grid"
+    hx-push-url="true"
+    hx-indicator="#employee-ledger-htmx"
+  >
+    <input type="hidden" name="partial" value="ledger">
+    <input type="hidden" name="tab" value="{{ tab_ledger }}">
+    <div class="col-12 col-md-6 col-lg-4">
+      <label class="form-label" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
+      {{ ledger_filter_form.ledger_q }}
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
+      {{ ledger_filter_form.ledger_entry_type }}
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
+      {{ ledger_filter_form.ledger_date_from }}
+    </div>
+    <div class="col-md-4 col-lg-3">
+      <label class="form-label" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
+      {{ ledger_filter_form.ledger_date_to }}
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+      <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_ledger }}">{% trans "Reset" %}</a>
+    </div>
+  </form>
+  {% include "partials/filter_card_close.html" %}
+
+  <div class="position-relative">
+    <div
+      id="employee-ledger-grid"
+      class="rd-datagrid"
+      hx-boost="true"
+      hx-target="#employee-ledger-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-indicator="#employee-ledger-htmx"
+      hx-vals='{"partial": "ledger", "tab": "ledger"}'
+    >
+      {% include "employees/partials/employee_ledger_results.html" %}
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

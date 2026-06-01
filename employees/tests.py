@@ -227,3 +227,29 @@ class EmployeePayrollTests(TestCase):
         self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
         self.employee.refresh_from_db()
         self.assertEqual(self.employee.current_balance, Decimal("0"))
+
+    def test_htmx_delete_employee_ledger_entry_redirects_to_fresh_detail(self):
+        entry = create_adjustment(
+            employee=self.employee,
+            amount=Decimal("15"),
+            notes="manual",
+            user=self.mgmt,
+        )
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.post(
+            reverse(
+                "employees:employee_ledger_delete",
+                args=[self.employee.pk, entry.pk],
+            ),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(
+            resp["HX-Redirect"],
+            f"{reverse('employees:employee_detail', args=[self.employee.pk])}?tab=ledger",
+        )
+        self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("0"))
