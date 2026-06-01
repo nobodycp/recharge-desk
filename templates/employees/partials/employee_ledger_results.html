@@ -1,50 +1,82 @@
 {% load i18n humanize %}
-<div class="table-responsive">
-  <table class="table table-sm align-middle mb-0">
-    <thead>
-      <tr>
-        <th>{% trans "Date" %}</th>
-        <th>{% trans "Type" %}</th>
-        <th class="text-end">{% trans "Amount" %}</th>
-        <th>{% trans "Details" %}</th>
-        <th class="text-end">{% trans "Actions" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in ledger_page %}
-        <tr id="employee-ledger-row-{{ row.pk }}">
-          <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
-          <td>{{ row.get_entry_type_display }}</td>
-          <td class="text-end tabular-nums {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}text-success{% endif %}">
-            {{ row.amount|intcomma }}
-          </td>
-          <td class="small">
-            {% if row.phone %}{{ row.phone }}{% endif %}
-            {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
-            {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
-            {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
-          </td>
-          <td class="text-end">
-            <form
-              method="post"
-              action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
-              class="d-inline-block m-0"
-              hx-post="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
-              hx-target="#employee-ledger-row-{{ row.pk }}"
-              hx-swap="outerHTML swap:200ms"
-              hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
-            >
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
-            </form>
-          </td>
+<div class="rd-card overflow-hidden">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
+    <span class="fw-semibold">{% trans "Movement statement" %}</span>
+    <form
+      class="d-flex flex-wrap gap-2 align-items-end"
+      method="get"
+      hx-get="{% url 'employees:employee_detail' employee.pk %}"
+      hx-target="#employee-ledger-grid"
+      hx-push-url="true"
+      hx-indicator="#employee-ledger-htmx"
+    >
+      <input type="hidden" name="partial" value="ledger">
+      <input type="hidden" name="tab" value="{{ tab_ledger }}">
+      <div>
+        <label class="visually-hidden" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
+        {{ ledger_filter_form.ledger_q }}
+      </div>
+      <div>
+        <label class="visually-hidden" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
+        {{ ledger_filter_form.ledger_entry_type }}
+      </div>
+      <div>
+        <label class="visually-hidden" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
+        {{ ledger_filter_form.ledger_date_from }}
+      </div>
+      <div>
+        <label class="visually-hidden" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
+        {{ ledger_filter_form.ledger_date_to }}
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_ledger }}">{% trans "Reset" %}</a>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Type" %}</th>
+          <th class="text-end">{% trans "Amount" %}</th>
+          <th>{% trans "Details" %}</th>
+          <th class="text-end">{% trans "Actions" %}</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for row in ledger_page %}
+          <tr id="employee-ledger-row-{{ row.pk }}">
+            <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ row.get_entry_type_display }}</td>
+            <td class="text-end tabular-nums {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}text-success{% endif %}">
+              {{ row.amount|intcomma }}
+            </td>
+            <td class="small">
+              {% if row.phone %}{{ row.phone }}{% endif %}
+              {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
+              {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
+              {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
+            </td>
+            <td class="text-end">
+              <form
+                method="post"
+                action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+                class="d-inline-block m-0"
+                hx-post="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
+                hx-target="#employee-ledger-row-{{ row.pk }}"
+                hx-swap="outerHTML swap:200ms"
+                hx-confirm="{% trans 'Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone.' %}"
+              >
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-center py-3 text-secondary">{% trans "No ledger entries." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with page_obj=ledger_page page_key="ledger_page" %}
 </div>
-{% if ledger_page.has_other_pages %}
-  <div class="mt-3">{% include "partials/pagination.html" with page_obj=ledger_page %}</div>
-{% endif %}

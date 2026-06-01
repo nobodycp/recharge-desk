@@ -171,6 +171,10 @@ class EmployeePayrollTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Holder")
 
+        resp = self.client.get(reverse("employees:employee_detail", args=[self.employee.pk]))
+        self.assertContains(resp, "rd-section-tabs")
+        self.assertContains(resp, "employee-ledger-grid")
+
     def test_delete_ledger_entry_reverses_balance_and_salary_expense(self):
         month = timezone.localdate().replace(day=1)
         entry = accrue_salary_for_month(

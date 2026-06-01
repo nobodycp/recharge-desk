@@ -13,6 +13,7 @@ from employees.forms import (
     EmployeeAdjustmentForm,
     EmployeeLedgerFilterForm,
     EmployeeProfileForm,
+    EmployeeSalesPaymentFilterForm,
 )
 from employees.models import EmployeeLedgerEntry, EmployeeProfile
 from employees.services import (
@@ -21,6 +22,16 @@ from employees.services import (
     default_accrual_month,
     delete_ledger_entry,
 )
+
+TAB_PAYMENTS = "payments"
+TAB_LEDGER = "ledger"
+
+
+def _employee_active_tab(request):
+    tab = (request.GET.get("tab") or "").strip()
+    if tab in (TAB_PAYMENTS, TAB_LEDGER):
+        return tab
+    return TAB_LEDGER
 
 
 @management_required
@@ -81,6 +92,8 @@ def employee_detail(request, pk):
         EmployeeProfile.objects.select_related("user", "user__profile"),
         pk=pk,
     )
+    active_tab = _employee_active_tab(request)
+
     ledger_qs = employee.ledger_entries.select_related("reference_sale", "created_by")
     ledger_filter_form = EmployeeLedgerFilterForm(request.GET or None)
     ledger_filter_data = (
@@ -104,10 +117,36 @@ def employee_detail(request, pk):
         ledger_qs = ledger_qs.filter(created_at__date__gte=date_from)
     if date_to := ledger_filter_data.get("ledger_date_to"):
         ledger_qs = ledger_qs.filter(created_at__date__lte=date_to)
-    ledger_page = paginate_request(request, ledger_qs)
-    sales_payments = employee.ledger_entries.filter(
+    ledger_page = paginate_request(request, ledger_qs, page_param="ledger_page")
+
+    payments_qs = employee.ledger_entries.filter(
         entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED
-    ).select_related("reference_sale")[:20]
+    ).select_related("reference_sale", "created_by")
+    payments_filter_form = EmployeeSalesPaymentFilterForm(request.GET or None)
+    payments_filter_data = (
+        payments_filter_form.cleaned_data if payments_filter_form.is_valid() else {}
+    )
+    payments_filter_active = sum(
+        1 for name in payments_filter_form.fields if payments_filter_data.get(name)
+    )
+    payments_q = (payments_filter_data.get("payments_q") or "").strip()
+    if payments_q:
+        payments_qs = payments_qs.filter(
+            Q(phone__icontains=payments_q)
+            | Q(payer_name__icontains=payments_q)
+            | Q(notes__icontains=payments_q)
+            | Q(reference_sale__reference_number__icontains=payments_q)
+            | Q(reference_sale__payer_name__icontains=payments_q)
+        )
+    if date_from := payments_filter_data.get("payments_date_from"):
+        payments_qs = payments_qs.filter(created_at__date__gte=date_from)
+    if date_to := payments_filter_data.get("payments_date_to"):
+        payments_qs = payments_qs.filter(created_at__date__lte=date_to)
+    sales_payments_page = paginate_request(
+        request,
+        payments_qs,
+        page_param="payments_page",
+    )
 
     adj_form = EmployeeAdjustmentForm()
     if request.method == "POST" and request.POST.get("form_kind") == "adjustment":
@@ -128,15 +167,32 @@ def employee_detail(request, pk):
 
     ctx = {
         "employee": employee,
+        "active_tab": active_tab,
+        "tab_payments": TAB_PAYMENTS,
+        "tab_ledger": TAB_LEDGER,
         "ledger_page": ledger_page,
         "ledger_filter_form": ledger_filter_form,
         "ledger_filter_active": ledger_filter_active,
-        "sales_payments": sales_payments,
+        "sales_payments_page": sales_payments_page,
+        "payments_filter_form": payments_filter_form,
+        "payments_filter_active": payments_filter_active,
         "adj_form": adj_form,
         "title": employee.display_name,
     }
     if request.headers.get("HX-Request") == "true":
-        return render(request, "employees/partials/employee_ledger_results.html", ctx)
+        frag = (request.GET.get("partial") or "").strip()
+        if frag == TAB_PAYMENTS:
+            return render(
+                request,
+                "employees/partials/employee_payments_results.html",
+                ctx,
+            )
+        if frag == TAB_LEDGER:
+            return render(
+                request,
+                "employees/partials/employee_ledger_results.html",
+                ctx,
+            )
 
     return render(
         request,

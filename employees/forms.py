@@ -99,3 +99,39 @@ class EmployeeLedgerFilterForm(forms.Form):
         if df and dt and df > dt:
             raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
         return cleaned
+
+
+class EmployeeSalesPaymentFilterForm(forms.Form):
+    payments_q = forms.CharField(
+        label=_("Search"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "placeholder": _("Phone, payer, notes…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
+    payments_date_from = forms.DateField(
+        label=_("Date from"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+    payments_date_to = forms.DateField(
+        label=_("Date to"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        df = cleaned.get("payments_date_from")
+        dt = cleaned.get("payments_date_to")
+        if df and dt and df > dt:
+            raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
+        return cleaned

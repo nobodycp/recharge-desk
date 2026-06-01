@@ -1,0 +1,56 @@
+{% load i18n humanize %}
+<div class="rd-card mb-3 overflow-hidden">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
+    <span class="fw-semibold">{% trans "Received sales payments" %}</span>
+    <form
+      class="d-flex flex-wrap gap-2 align-items-end"
+      method="get"
+      hx-get="{% url 'employees:employee_detail' employee.pk %}"
+      hx-target="#employee-payments-grid"
+      hx-push-url="true"
+      hx-indicator="#employee-payments-htmx"
+    >
+      <input type="hidden" name="partial" value="payments">
+      <input type="hidden" name="tab" value="{{ tab_payments }}">
+      <div>
+        <label class="visually-hidden" for="{{ payments_filter_form.payments_q.id_for_label }}">{{ payments_filter_form.payments_q.label }}</label>
+        {{ payments_filter_form.payments_q }}
+      </div>
+      <div>
+        <label class="visually-hidden" for="{{ payments_filter_form.payments_date_from.id_for_label }}">{{ payments_filter_form.payments_date_from.label }}</label>
+        {{ payments_filter_form.payments_date_from }}
+      </div>
+      <div>
+        <label class="visually-hidden" for="{{ payments_filter_form.payments_date_to.id_for_label }}">{{ payments_filter_form.payments_date_to.label }}</label>
+        {{ payments_filter_form.payments_date_to }}
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Apply" %}</button>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_payments }}">{% trans "Reset" %}</a>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>{% trans "Date" %}</th>
+          <th>{% trans "Phone" %}</th>
+          <th>{% trans "Payer" %}</th>
+          <th class="text-end">{% trans "Amount" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in sales_payments_page %}
+          <tr>
+            <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="text-nowrap">{{ row.phone }}</td>
+            <td>{{ row.payer_name }}</td>
+            <td class="text-end tabular-nums kpi-expense">{{ row.amount|intcomma }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No sales payments yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with page_obj=sales_payments_page page_key="payments_page" %}
+</div>

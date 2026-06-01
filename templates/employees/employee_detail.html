@@ -32,87 +32,56 @@
   </div>
 </div>
 
+<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == tab_payments %}active{% endif %}"
+       href="{% querystring tab=tab_payments payments_page=1 ledger_page=1 %}" role="tab">
+      {% trans "Received sales payments" %}
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == tab_ledger %}active{% endif %}"
+       href="{% querystring tab=tab_ledger payments_page=1 ledger_page=1 %}" role="tab">
+      {% trans "Movement statement" %}
+    </a>
+  </li>
+</ul>
+
 <div class="row g-3">
   <div class="col-12 col-lg-7">
-    <div class="rd-card mb-3">
-      <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Received sales payments" %}</h2>
-        <div class="table-responsive">
-          <table class="table table-sm align-middle mb-0">
-            <thead>
-              <tr>
-                <th>{% trans "Date" %}</th>
-                <th>{% trans "Phone" %}</th>
-                <th>{% trans "Payer" %}</th>
-                <th class="text-end">{% trans "Amount" %}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in sales_payments %}
-                <tr>
-                  <td class="small text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
-                  <td class="text-nowrap">{{ row.phone }}</td>
-                  <td>{{ row.payer_name }}</td>
-                  <td class="text-end tabular-nums kpi-expense">{{ row.amount|intcomma }}</td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="4" class="text-center py-3 text-secondary">{% trans "No sales payments yet." %}</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="rd-card">
-      <div class="rd-card-body">
-        <h2 class="h5 mb-3">{% trans "Movement statement" %}</h2>
-        {% include "partials/filter_card_open.html" with active_count=ledger_filter_active indicator_id="employee-ledger-htmx-indicator" %}
-          <form
-            method="get"
-            class="row g-3 align-items-end"
-            hx-get="{% url 'employees:employee_detail' employee.pk %}"
-            hx-target="#employee-ledger-results"
-            hx-push-url="true"
-            hx-indicator="#employee-ledger-htmx-indicator"
-          >
-            <div class="col-12 col-md-6">
-              <label class="form-label" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
-              {{ ledger_filter_form.ledger_q }}
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
-              {{ ledger_filter_form.ledger_entry_type }}
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
-              {{ ledger_filter_form.ledger_date_from }}
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-              <label class="form-label" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
-              {{ ledger_filter_form.ledger_date_to }}
-            </div>
-            {% if ledger_filter_form.non_field_errors %}
-              <div class="col-12 text-danger small">{{ ledger_filter_form.non_field_errors }}</div>
-            {% endif %}
-            <div class="col-12 d-flex flex-wrap gap-2">
-              <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-              <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}">{% trans "Reset" %}</a>
-            </div>
-          </form>
-        {% include "partials/filter_card_close.html" %}
+    {% if active_tab == tab_payments %}
+      <div class="position-relative">
+        <div id="employee-payments-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
         <div
-          id="employee-ledger-results"
+          id="employee-payments-grid"
+          class="rd-datagrid"
           hx-boost="true"
-          hx-target="#employee-ledger-results"
+          hx-target="#employee-payments-grid"
           hx-swap="innerHTML"
           hx-push-url="true"
-          hx-indicator="#employee-ledger-htmx-indicator"
+          hx-indicator="#employee-payments-htmx"
+          hx-vals='{"partial": "payments", "tab": "payments"}'
+        >
+          {% include "employees/partials/employee_payments_results.html" %}
+        </div>
+      </div>
+    {% else %}
+      <div class="position-relative">
+        <div id="employee-ledger-htmx" class="htmx-indicator position-absolute top-0 end-0 m-2 spinner-border spinner-border-sm text-primary" style="z-index:4;" role="status" aria-hidden="true"></div>
+        <div
+          id="employee-ledger-grid"
+          class="rd-datagrid"
+          hx-boost="true"
+          hx-target="#employee-ledger-grid"
+          hx-swap="innerHTML"
+          hx-push-url="true"
+          hx-indicator="#employee-ledger-htmx"
+          hx-vals='{"partial": "ledger", "tab": "ledger"}'
         >
           {% include "employees/partials/employee_ledger_results.html" %}
         </div>
       </div>
-    </div>
+    {% endif %}
   </div>
 
   <div class="col-12 col-lg-5">
