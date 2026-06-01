@@ -1,7 +1,10 @@
 {% load i18n %}
-{% trans "Allocate from main" as allocate_title %}
-{% include "partials/filter_card_open.html" with filter_title=allocate_title active_count=0 card_open=allocate_panel_open hide_badge=True no_filter_badge=True %}
-    <p class="rd-text-muted small mb-3">{% trans "Move SIMs from main stock to a customer." %}</p>
+<div class="rd-card mb-3 overflow-hidden">
+  <div class="rd-card-header py-2">
+    <div class="fw-semibold">{% trans "Allocate from main" %}</div>
+    <div class="rd-text-muted small fw-normal">{% trans "Move SIMs from main stock to a customer." %}</div>
+  </div>
+  <div class="rd-card-body">
     <form method="post" class="rd-inventory-receive-form">
       {% csrf_token %}
       <input type="hidden" name="action" value="allocate">
@@ -55,4 +58,5 @@
       </div>
       {% if allocate_form.serials.help_text %}<div class="form-text mt-1">{{ allocate_form.serials.help_text }}</div>{% endif %}
     </form>
-{% include "partials/filter_card_close.html" %}
+  </div>
+</div>

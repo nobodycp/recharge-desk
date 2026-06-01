@@ -106,7 +106,7 @@ def inventory_overview(request):
 
 @employee_required
 def inventory_main(request):
-    line_ids = [line.pk for line in distinct_sim_product_lines()]
+    line_ids = [canonical_product_line(line).pk for line in ProductLine.objects.filter(is_active=True)]
     balances = (
         SimStockBalance.objects.filter(
             location=SimStockBalance.Location.MAIN,
@@ -532,18 +532,24 @@ def inventory_movements(request):
         "to_balance",
     )
     form = MovementFilterForm(request.GET or None)
+    filter_active = 0
     if form.is_valid():
         d = form.cleaned_data
         if d.get("movement_type"):
             qs = qs.filter(movement_type=d["movement_type"])
+            filter_active += 1
         if d.get("product_line"):
             qs = qs.filter(product_line=canonical_product_line(d["product_line"]))
+            filter_active += 1
         if d.get("customer"):
             qs = qs.filter(customer=d["customer"])
+            filter_active += 1
         if d.get("date_from"):
             qs = qs.filter(created_at__date__gte=d["date_from"])
+            filter_active += 1
         if d.get("date_to"):
             qs = qs.filter(created_at__date__lte=d["date_to"])
+            filter_active += 1
     page_obj = paginate_request(request, qs)
     return render(
         request,
@@ -552,6 +558,7 @@ def inventory_movements(request):
             "title": _("SIM stock movements"),
             "page_obj": page_obj,
             "filter_form": form,
+            "filter_active": filter_active,
             "read_only": not is_management(request.user),
             "base_template": _inventory_base_template(request),
         },
@@ -621,9 +628,11 @@ def inventory_line_detail(request, line_id):
 def inventory_cards(request):
     qs = SimCard.objects.select_related("product_line", "customer", "sale").order_by("-created_at")
     form = SimCardSearchForm(request.GET or None)
+    filter_active = 0
     if form.is_valid() and form.cleaned_data.get("q"):
         q = form.cleaned_data["q"]
         qs = qs.filter(serial_or_iccid__icontains=q)
+        filter_active = 1
     page_obj = paginate_request(request, qs)
     return render(
         request,
@@ -632,6 +641,7 @@ def inventory_cards(request):
             "title": _("SIM cards"),
             "page_obj": page_obj,
             "filter_form": form,
+            "filter_active": filter_active,
             "read_only": not is_management(request.user),
             "base_template": _inventory_base_template(request),
         },

@@ -9,11 +9,6 @@
 </div>
 {% include "inventory/_nav.html" %}
 
-{% if not read_only and allocate_form %}
-  {% include "inventory/_allocate_from_main.html" with show_customer_picker=True allocate_panel_open=allocate_panel_open %}
-  <script src="{% static 'js/inventory-serials-paste.js' %}{{ static_cache_query }}" defer></script>
-{% endif %}
-
 {% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-5">
@@ -45,6 +40,11 @@
       </div>
     </form>
 {% include "partials/filter_card_close.html" %}
+
+{% if not read_only and allocate_form %}
+  {% include "inventory/_allocate_from_main.html" with show_customer_picker=True allocate_panel_open=True %}
+  <script src="{% static 'js/inventory-serials-paste.js' %}{{ static_cache_query }}" defer></script>
+{% endif %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-table-dual rd-datagrid-body">

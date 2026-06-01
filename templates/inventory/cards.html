@@ -9,56 +9,78 @@
 </div>
 {% include "inventory/_nav.html" %}
 
-<form method="get" class="rd-card mb-3">
-  <div class="rd-card-body row g-3 align-items-end">
-    <div class="col-md-6">
+{% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-6 col-lg-4">
       {{ filter_form.q.label_tag }}
       {{ filter_form.q }}
     </div>
-    <div class="col-auto d-flex gap-2">
+    <div class="col-12 d-flex flex-wrap gap-2">
       <button type="submit" class="btn btn-primary btn-sm">{% trans "Search" %}</button>
       <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_cards' %}{% else %}{% url 'inventory:cards' %}{% endif %}">{% trans "Reset" %}</a>
     </div>
-  </div>
-</form>
+  </form>
+{% include "partials/filter_card_close.html" %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
-  <div class="table-responsive">
-    <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
-      <colgroup>
-        <col class="rd-col-serial">
-        <col class="rd-col-line">
-        <col class="rd-col-type">
-        <col class="rd-col-customer">
-        <col class="rd-col-qty">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>{% trans "Serial / ICCID" %}</th>
-          <th>{% trans "Product line" %}</th>
-          <th>{% trans "Status" %}</th>
-          <th>{% trans "Customer" %}</th>
-          <th>{% trans "Sale" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for card in page_obj %}
-          <tr>
-            <td class="font-monospace rd-inventory-stock-table__line">{{ card.serial_or_iccid|default:"—" }}</td>
-            <td class="rd-inventory-stock-table__line">{{ card.product_line.name }}</td>
-            <td>{{ card.get_status_display }}</td>
-            <td class="rd-inventory-stock-table__customer">{% if card.customer %}{{ card.customer.name }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
-            <td class="rd-inventory-stock-table__qty">{% if card.sale_id %}#{{ card.sale_id }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="5">
-              <div class="empty-state my-3">{% trans "No SIM cards found." %}</div>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>{% trans "SIM cards" %}</span>
+  </div>
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell rd-data-shell--inventory-actions">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+          <colgroup>
+            <col class="rd-col-serial">
+            <col class="rd-col-line">
+            <col class="rd-col-type">
+            <col class="rd-col-customer">
+            <col class="rd-col-qty">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>{% trans "Serial / ICCID" %}</th>
+              <th>{% trans "Product line" %}</th>
+              <th>{% trans "Status" %}</th>
+              <th>{% trans "Customer" %}</th>
+              <th>{% trans "Sale" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for card in page_obj %}
+              <tr>
+                <td class="font-monospace rd-inventory-stock-table__line">{{ card.serial_or_iccid|default:"—" }}</td>
+                <td class="rd-inventory-stock-table__line">{{ card.product_line.name }}</td>
+                <td>{{ card.get_status_display }}</td>
+                <td class="rd-inventory-stock-table__customer">{% if card.customer %}{{ card.customer.name }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+                <td class="rd-inventory-stock-table__qty">{% if card.sale_id %}#{{ card.sale_id }}{% else %}<span class="text-secondary">—</span>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state border-0 mb-0">{% trans "No SIM cards found." %}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for card in page_obj %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="font-monospace fw-semibold">{{ card.serial_or_iccid|default:"—" }}</div>
+            <span class="rd-badge rd-badge--neutral">{{ card.get_status_display }}</span>
+          </div>
+          <div class="small mt-2">{{ card.product_line.name }}</div>
+          {% if card.customer %}<div class="small text-secondary mt-1">{{ card.customer.name }}</div>{% endif %}
+          {% if card.sale_id %}<div class="small text-secondary mt-1">{% trans "Sale" %} #{{ card.sale_id }}</div>{% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No SIM cards found." %}</div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 {% include "partials/pagination.html" with page_obj=page_obj %}

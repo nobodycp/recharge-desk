@@ -3,10 +3,13 @@
 
 {% block content %}
 <div class="mx-auto" style="max-width: 42rem;">
-  <h1 class="rd-heading-xl mb-3">{% trans "Site branding" %}</h1>
+  <div class="rd-page-header">
+    <h1 class="rd-heading-xl mb-1">{% trans "Site branding" %}</h1>
+    <p class="rd-text-muted mb-0">{% trans "Control the public name, login logo, and browser icon." %}</p>
+  </div>
 
-  <div class="app-card card mb-4">
-    <div class="card-body p-4">
+  <div class="rd-card mb-4">
+    <div class="rd-card-body">
       <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
         {% csrf_token %}
 
@@ -37,7 +40,7 @@
         </p>
 
         {% if branding.logo %}
-          <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
+          <div class="rd-card p-3 d-flex align-items-center gap-3">
             <img src="{{ branding.logo.url }}" alt="" style="max-height: 5rem; max-width: 12rem; object-fit: contain;">
             <div class="small rd-text-muted">
               <div>{% trans "Current logo" %}</div>
@@ -63,7 +66,7 @@
         </p>
 
         {% if branding.favicon %}
-          <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bs-body-bg); border: 1px solid var(--bs-border-color);">
+          <div class="rd-card p-3 d-flex align-items-center gap-3">
             <img src="{{ branding.favicon.url }}" alt="" style="width: 2rem; height: 2rem; object-fit: contain;">
             <div class="small rd-text-muted">
               <div>{% trans "Current icon" %}</div>

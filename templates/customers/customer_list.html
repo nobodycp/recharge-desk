@@ -1,5 +1,5 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize ui_tags %}
 {% block content %}
 <div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
   <div>
@@ -34,72 +34,98 @@
   </div>
 </div>
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-12 col-md-6">
-        <label class="form-label small mb-1" for="cust-q">{% trans "Search by name or phone" %}</label>
-        <input id="cust-q" type="search" name="q" value="{{ q }}" class="form-control" autocomplete="off">
+{% active_filter_count as customer_active %}
+{% include "partials/filter_card_open.html" with active_count=customer_active %}
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label" for="cust-q">{% trans "Search by name or phone" %}</label>
+        <input id="cust-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" autocomplete="off">
       </div>
-      <div class="col-md-3">
-        <button class="btn btn-primary w-100" type="submit">{% trans "Apply" %}</button>
-      </div>
-      <div class="col-md-3">
-        <a class="btn btn-outline-secondary w-100" href="{% url 'customers:customer_list' %}">{% trans "Reset" %}</a>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_list' %}">{% trans "Reset" %}</a>
       </div>
     </form>
-  </div>
-</div>
+{% include "partials/filter_card_close.html" %}
 
-<div class="rd-card overflow-hidden">
-  <div class="table-responsive">
-    <table class="table mb-0 align-middle rd-table-modern">
-      <thead>
-        <tr>
-          <th>{% trans "Name" %}</th>
-          <th>{% trans "Phones" %}</th>
-          <th class="text-end">{% trans "Balance" %}</th>
-          <th>{% trans "Active" %}</th>
-          <th class="text-end">{% trans "Actions" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in page_obj %}
-          <tr>
-            <td>
-              <a href="{% url 'customers:customer_detail' c.pk %}" class="fw-semibold">{{ c.name }}</a>
-            </td>
-            <td class="small text-secondary">
-              {% for p in c.phones.all|slice:":3" %}<span class="rd-badge rd-badge--neutral me-1">{{ p.phone }}</span>{% endfor %}
-            </td>
-            <td class="text-end tabular-nums fw-semibold {% if c.current_balance > 0 %}kpi-expense{% elif c.current_balance < 0 %}text-success{% endif %}">
-              {% if c.current_balance < 0 %}{{ c.current_balance|cut:"-"|intcomma }} <span class="small text-success fw-normal">{% trans "credit" %}</span>{% elif c.current_balance > 0 %}{{ c.current_balance|intcomma }} <span class="small kpi-expense fw-normal">{% trans "debt" %}</span>{% else %}{{ c.current_balance|intcomma }}{% endif %}
-            </td>
-            <td>{% if c.is_active %}<span class="rd-badge">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}</td>
-            <td class="text-end">
-              <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}" title="{% trans 'Edit customer' %}">{% trans "Edit" %}</a>
-                {% if c.current_balance > 0 %}
-                  <form method="post" action="{% url 'customers:customer_write_off' c.pk %}" class="d-inline m-0"
-                        onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-warning" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
-                  </form>
-                {% endif %}
-                <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline m-0"
-                      onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
-                  {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete customer' %}">{% trans "Delete" %}</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-center py-4 text-secondary">{% trans "No customers yet." %}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>{% trans "Customers" %}</span>
   </div>
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Phones" %}</th>
+              <th class="text-end">{% trans "Balance" %}</th>
+              <th>{% trans "Active" %}</th>
+              <th class="text-end">{% trans "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in page_obj %}
+              <tr>
+                <td>
+                  <a href="{% url 'customers:customer_detail' c.pk %}" class="fw-semibold">{{ c.name }}</a>
+                </td>
+                <td class="small text-secondary">
+                  {% for p in c.phones.all|slice:":3" %}<span class="rd-badge rd-badge--neutral me-1">{{ p.phone }}</span>{% endfor %}
+                </td>
+                <td class="text-end tabular-nums fw-semibold {% if c.current_balance > 0 %}kpi-expense{% elif c.current_balance < 0 %}text-success{% endif %}">
+                  {% if c.current_balance < 0 %}{{ c.current_balance|cut:"-"|intcomma }} <span class="small text-success fw-normal">{% trans "credit" %}</span>{% elif c.current_balance > 0 %}{{ c.current_balance|intcomma }} <span class="small kpi-expense fw-normal">{% trans "debt" %}</span>{% else %}{{ c.current_balance|intcomma }}{% endif %}
+                </td>
+                <td>{% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}</td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}" title="{% trans 'Edit customer' %}">{% trans "Edit" %}</a>
+                    {% if c.current_balance > 0 %}
+                      <form method="post" action="{% url 'customers:customer_write_off' c.pk %}" class="d-inline m-0"
+                            onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-warning" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
+                      </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline m-0"
+                          onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete customer' %}">{% trans "Delete" %}</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No customers yet." %}</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for c in page_obj %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <a href="{% url 'customers:customer_detail' c.pk %}" class="fw-semibold">{{ c.name }}</a>
+            {% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}
+          </div>
+          <div class="small text-secondary mt-2">
+            {% for p in c.phones.all|slice:":3" %}<span class="rd-badge rd-badge--neutral me-1">{{ p.phone }}</span>{% endfor %}
+          </div>
+          <div class="tabular-nums fw-bold mt-2 {% if c.current_balance > 0 %}kpi-expense{% elif c.current_balance < 0 %}text-success{% endif %}">
+            {% if c.current_balance < 0 %}{{ c.current_balance|cut:"-"|intcomma }} {% trans "credit" %}{% elif c.current_balance > 0 %}{{ c.current_balance|intcomma }} {% trans "debt" %}{% else %}{{ c.current_balance|intcomma }}{% endif %}
+          </div>
+          <div class="d-flex flex-wrap gap-1 mt-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}">{% trans "Edit" %}</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'customers:customer_detail' c.pk %}">{% trans "Open" %}</a>
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No customers yet." %}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
 </div>
-{% include "partials/pagination.html" with page_obj=page_obj %}
 {% endblock %}

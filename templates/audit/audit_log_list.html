@@ -1,5 +1,5 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize ui_tags %}
 {% block content %}
 <div class="rd-page-header">
   <div>
@@ -8,15 +8,9 @@
   </div>
 </div>
 
-<details class="rd-filter-card mb-3">
-  <summary class="rd-card rd-card-body" style="cursor:pointer; list-style:none;">
-    <div class="d-flex justify-content-between align-items-center">
-      <span class="fw-semibold">{% trans "Filters" %}</span>
-      <span class="badge bg-primary-subtle text-primary" data-rd-filter-count style="display:none;">0</span>
-    </div>
-  </summary>
-  <div class="rd-card rd-card-body mt-2">
-    <form method="get" class="row g-2 align-items-end">
+{% active_filter_count as audit_active %}
+{% include "partials/filter_card_open.html" with active_count=audit_active %}
+    <form method="get" class="row g-3 align-items-end">
       <div class="col-12 col-md-6 col-lg-4">
         <label class="form-label" for="audit-q">{% trans "Search target" %}</label>
         <input type="search" id="audit-q" name="q" class="form-control form-control-sm" value="{{ request.GET.q|default:'' }}" placeholder="{% trans 'Object id or text' %}">
@@ -56,62 +50,82 @@
         <label class="form-label" for="audit-to">{% trans "Date to" %}</label>
         <input type="date" id="audit-to" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to|default:'' }}">
       </div>
-      <div class="col-12 col-md-auto">
+      <div class="col-12 d-flex flex-wrap gap-2">
         <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-link btn-sm" href="{% url 'audit:audit_log_list' %}">{% trans "Reset" %}</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'audit:audit_log_list' %}">{% trans "Reset" %}</a>
       </div>
     </form>
-  </div>
-</details>
+{% include "partials/filter_card_close.html" %}
 
-<div class="rd-card">
-  <div class="table-responsive">
-    <table class="table align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>{% trans "When" %}</th>
-          <th>{% trans "Actor" %}</th>
-          <th>{% trans "Action" %}</th>
-          <th>{% trans "Target" %}</th>
-          <th>{% trans "Changes" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in page_obj.object_list %}
-          <tr>
-            <td class="text-secondary small">{{ row.created_at|date:"Y-m-d H:i:s" }}</td>
-            <td>
-              {% if row.actor %}{{ row.actor.username }}{% else %}<span class="text-muted">—</span>{% endif %}
-              {% if row.ip %}<div class="text-secondary small">{{ row.ip }}</div>{% endif %}
-            </td>
-            <td><span class="badge bg-secondary-subtle text-secondary">{{ row.get_action_display }}</span></td>
-            <td>
-              <div><code class="small">{{ row.model_label }}#{{ row.object_id|default:"—" }}</code></div>
-              <div class="small">{{ row.object_repr|default:"" }}</div>
-            </td>
-            <td>
-              {% if row.changes %}
-                <details>
-                  <summary class="small text-secondary" style="cursor:pointer;">{% trans "View" %}</summary>
-                  <pre class="small mb-0 mt-1" style="white-space:pre-wrap; word-break:break-word;">{{ row.changes|pprint }}</pre>
-                </details>
-              {% else %}
-                <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="5" class="text-center text-secondary py-4">{% trans "No audit events match your filters." %}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>{% trans "Audit events" %}</span>
+  </div>
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr>
+              <th>{% trans "When" %}</th>
+              <th>{% trans "Actor" %}</th>
+              <th>{% trans "Action" %}</th>
+              <th>{% trans "Target" %}</th>
+              <th>{% trans "Changes" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in page_obj.object_list %}
+              <tr>
+                <td class="text-secondary small">{{ row.created_at|date:"Y-m-d H:i:s" }}</td>
+                <td>
+                  {% if row.actor %}{{ row.actor.username }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  {% if row.ip %}<div class="text-secondary small">{{ row.ip }}</div>{% endif %}
+                </td>
+                <td><span class="rd-badge rd-badge--neutral">{{ row.get_action_display }}</span></td>
+                <td>
+                  <div><code class="small">{{ row.model_label }}#{{ row.object_id|default:"—" }}</code></div>
+                  <div class="small">{{ row.object_repr|default:"" }}</div>
+                </td>
+                <td>
+                  {% if row.changes %}
+                    <details>
+                      <summary class="small text-secondary" style="cursor:pointer;">{% trans "View" %}</summary>
+                      <pre class="small mb-0 mt-1" style="white-space:pre-wrap; word-break:break-word;">{{ row.changes|pprint }}</pre>
+                    </details>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No audit events match your filters." %}</div></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for row in page_obj.object_list %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="small text-secondary">{{ row.created_at|date:"Y-m-d H:i:s" }}</div>
+            <span class="rd-badge rd-badge--neutral">{{ row.get_action_display }}</span>
+          </div>
+          <div class="fw-semibold mt-2">{% if row.actor %}{{ row.actor.username }}{% else %}—{% endif %}</div>
+          <div><code class="small">{{ row.model_label }}#{{ row.object_id|default:"—" }}</code></div>
+          {% if row.object_repr %}<div class="small mt-1">{{ row.object_repr }}</div>{% endif %}
+          {% if row.ip %}<div class="small text-secondary mt-1">{{ row.ip }}</div>{% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No audit events match your filters." %}</div>
+      {% endfor %}
+    </div>
   </div>
   {% if page_obj.has_other_pages %}
-    <div class="rd-card-footer">
-      {% include "partials/pagination.html" with page_obj=page_obj %}
-    </div>
+    {% include "partials/pagination.html" with page_obj=page_obj %}
   {% endif %}
 </div>
 {% endblock %}

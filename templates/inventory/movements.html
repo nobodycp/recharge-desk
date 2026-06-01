@@ -9,26 +9,25 @@
 </div>
 {% include "inventory/_nav.html" %}
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body rd-filter-bar">
+{% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
     <form method="get" class="row g-3 align-items-end">
-      <div class="col-md-2">
+      <div class="col-md-4 col-lg-2">
         <label class="form-label" for="{{ filter_form.movement_type.id_for_label }}">{{ filter_form.movement_type.label }}</label>
         {{ filter_form.movement_type }}
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4 col-lg-3">
         <label class="form-label" for="{{ filter_form.product_line.id_for_label }}">{{ filter_form.product_line.label }}</label>
         {{ filter_form.product_line }}
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4 col-lg-3">
         <label class="form-label" for="{{ filter_form.customer.id_for_label }}">{{ filter_form.customer.label }}</label>
         {{ filter_form.customer }}
       </div>
-      <div class="col-md-2">
+      <div class="col-6 col-lg-2">
         <label class="form-label" for="{{ filter_form.date_from.id_for_label }}">{{ filter_form.date_from.label }}</label>
         {{ filter_form.date_from }}
       </div>
-      <div class="col-md-2">
+      <div class="col-6 col-lg-2">
         <label class="form-label" for="{{ filter_form.date_to.id_for_label }}">{{ filter_form.date_to.label }}</label>
         {{ filter_form.date_to }}
       </div>
@@ -37,10 +36,12 @@
         <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_movements' %}{% else %}{% url 'inventory:movements' %}{% endif %}">{% trans "Reset" %}</a>
       </div>
     </form>
-  </div>
-</div>
+{% include "partials/filter_card_close.html" %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>{% trans "Movements" %}</span>
+  </div>
   <div class="rd-table-dual rd-datagrid-body">
     <div class="rd-data-shell rd-data-shell--inventory-actions">
       <div class="table-responsive border-0">

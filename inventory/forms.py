@@ -11,8 +11,22 @@ def _sim_line_queryset():
     return ProductLine.objects.filter(pk__in=ids).order_by("name")
 
 
+def _all_active_line_queryset():
+    return ProductLine.objects.filter(is_active=True).select_related("company").order_by(
+        "company__name",
+        "sort_order",
+        "name",
+        "pk",
+    )
+
+
 def _sim_line_label(line: ProductLine) -> str:
     return line.name
+
+
+def _line_with_company_label(line: ProductLine) -> str:
+    company_name = getattr(line.company, "name", "")
+    return f"{company_name} — {line.name}" if company_name else line.name
 
 
 class ReceiveMainStockForm(forms.Form):
@@ -36,21 +50,20 @@ class ReceiveMainStockForm(forms.Form):
     serials = forms.CharField(
         label=_("Serial numbers (optional)"),
         required=False,
-        help_text=_("One serial or ICCID per line; count must match quantity."),
         widget=forms.Textarea(
             attrs={
                 "class": "form-control form-control-sm font-monospace rd-inv-serials-input",
                 "rows": 1,
                 "autocomplete": "off",
-                "placeholder": _("One per line"),
+                "placeholder": _("One serial or ICCID per line; count must match quantity."),
             }
         ),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["product_line"].queryset = _sim_line_queryset()
-        self.fields["product_line"].label_from_instance = _sim_line_label
+        self.fields["product_line"].queryset = _all_active_line_queryset()
+        self.fields["product_line"].label_from_instance = _line_with_company_label
 
 
 class AllocateToCustomerForm(forms.Form):
@@ -143,7 +156,7 @@ class SimCardSearchForm(forms.Form):
         label=_("Serial or ICCID"),
         required=False,
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": _("Search serial / ICCID…")}
+            attrs={"class": "form-control form-control-sm", "placeholder": _("Search serial / ICCID…")}
         ),
     )
 
@@ -197,29 +210,29 @@ class MovementFilterForm(forms.Form):
         label=_("Movement type"),
         required=False,
         choices=[("", _("All"))],
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
     product_line = forms.ModelChoiceField(
         label=_("Product line"),
         queryset=ProductLine.objects.none(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
     customer = forms.ModelChoiceField(
         label=_("Customer"),
         queryset=Customer.objects.all().order_by("name"),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
     date_from = forms.DateField(
         label=_("Date from"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(attrs={"class": "form-control form-control-sm", "type": "date"}),
     )
     date_to = forms.DateField(
         label=_("Date to"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(attrs={"class": "form-control form-control-sm", "type": "date"}),
     )
 
     def __init__(self, *args, **kwargs):

@@ -1488,16 +1488,59 @@ body.app-shell {
   transition: opacity var(--rd-transition);
 }
 
-/* Legacy app-card alignment */
+/* Legacy Bootstrap compatibility: old `.card` / `.app-card` should still
+   render like the Recharge Desk card, but new templates must use `.rd-card`. */
+.app-shell .card,
 .app-card {
   border-radius: var(--rd-radius-md);
   border: 1px solid var(--bs-border-color);
   box-shadow: var(--rd-shadow-xs);
   background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
 }
 
+.app-shell .card-header,
 .app-card .card-header {
+  padding: 0.85rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-secondary-bg));
+  border-bottom: 1px solid var(--bs-border-color);
   border-radius: var(--rd-radius-md) var(--rd-radius-md) 0 0;
+}
+
+.app-shell .card-body {
+  padding: 1.1rem 1.2rem;
+}
+
+.app-shell .card-footer,
+.rd-card-footer {
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 22%, var(--bs-secondary-bg));
+  border-top: 1px solid var(--bs-border-color);
+  border-radius: 0 0 var(--rd-radius-md) var(--rd-radius-md);
+}
+
+.app-shell .rd-card.overflow-hidden > .table-responsive:not(.rd-table-wrap),
+.app-shell .card.overflow-hidden > .table-responsive:not(.rd-table-wrap) {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.app-shell .rd-card > .table-responsive:not(.rd-table-wrap) .table,
+.app-shell .card > .table-responsive:not(.rd-table-wrap) .table {
+  margin-bottom: 0;
+}
+
+.app-shell .rd-card > .table-responsive:not(.rd-table-wrap) .table thead th,
+.app-shell .card > .table-responsive:not(.rd-table-wrap) .table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  background: color-mix(in srgb, var(--bs-secondary-bg) 92%, var(--bs-tertiary-bg));
+  border-bottom: 1px solid var(--bs-border-color);
+  white-space: nowrap;
 }
 
 /* Login alignment */
@@ -1969,6 +2012,14 @@ tr.rd-row-pending {
   flex-wrap: wrap;
   gap: 0.65rem 0.75rem;
   align-items: flex-end;
+}
+
+.rd-inventory-receive-form.row {
+  --bs-gutter-y: 0.75rem;
+}
+
+.rd-inventory-receive-form .form-text {
+  font-size: 0.72rem;
 }
 
 .rd-inv-field--line {
