@@ -13,6 +13,8 @@ from employees.services import (
     accrue_salary_for_month,
     accrue_salaries_for_month,
     compute_balance_from_ledger,
+    create_adjustment,
+    delete_ledger_entry,
     record_sales_payment_received,
 )
 from sales.models import PaymentMethod, Sale
@@ -168,3 +170,56 @@ class EmployeePayrollTests(TestCase):
         resp = self.client.get(reverse("employees:employee_list"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Holder")
+
+    def test_delete_ledger_entry_reverses_balance_and_salary_expense(self):
+        month = timezone.localdate().replace(day=1)
+        entry = accrue_salary_for_month(
+            employee=self.employee,
+            salary_month=month,
+            user=self.mgmt,
+        )
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("3000"))
+        self.assertEqual(Expense.objects.count(), 1)
+
+        delete_ledger_entry(entry=entry)
+
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("0"))
+        self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
+        self.assertEqual(Expense.objects.count(), 0)
+
+    def test_employee_detail_filters_ledger_entries(self):
+        create_adjustment(employee=self.employee, amount=Decimal("10"), notes="bonus", user=self.mgmt)
+        create_adjustment(employee=self.employee, amount=Decimal("-5"), notes="cashbox", user=self.mgmt)
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.get(
+            reverse("employees:employee_detail", args=[self.employee.pk]),
+            {"q": "bonus"},
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "bonus")
+        self.assertNotContains(resp, "cashbox")
+
+    def test_management_can_delete_employee_ledger_entry_from_detail(self):
+        entry = create_adjustment(
+            employee=self.employee,
+            amount=Decimal("15"),
+            notes="manual",
+            user=self.mgmt,
+        )
+        self.client.login(username="mgmt", password="x")
+
+        resp = self.client.post(
+            reverse(
+                "employees:employee_ledger_delete",
+                args=[self.employee.pk, entry.pk],
+            )
+        )
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("0"))

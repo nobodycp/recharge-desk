@@ -247,6 +247,26 @@ def create_adjustment(
     return entry
 
 
+@transaction.atomic
+def delete_ledger_entry(*, entry: EmployeeLedgerEntry) -> EmployeeProfile:
+    """Remove one employee ledger row and reverse its balance impact."""
+    locked_entry = (
+        EmployeeLedgerEntry.objects.select_for_update()
+        .select_related("employee", "expense")
+        .get(pk=entry.pk)
+    )
+    employee_locked = EmployeeProfile.objects.select_for_update().get(
+        pk=locked_entry.employee_id
+    )
+    expense = locked_entry.expense
+    amount = locked_entry.amount
+    locked_entry.delete()
+    if expense is not None:
+        expense.delete()
+    _apply_balance_delta(employee_locked, -amount)
+    return employee_locked
+
+
 def month_bounds(year: int, month: int) -> tuple[date, date]:
     last = monthrange(year, month)[1]
     return date(year, month, 1), date(year, month, last)

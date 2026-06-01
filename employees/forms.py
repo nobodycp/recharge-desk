@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from employees.models import EmployeeProfile
+from employees.models import EmployeeLedgerEntry, EmployeeProfile
 
 User = get_user_model()
 
@@ -57,3 +57,45 @@ class EmployeeAdjustmentForm(forms.Form):
         if amount == Decimal("0"):
             raise forms.ValidationError(_("Amount cannot be zero."))
         return amount
+
+
+class EmployeeLedgerFilterForm(forms.Form):
+    q = forms.CharField(
+        label=_("Search"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "placeholder": _("Phone, payer, notes…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
+    entry_type = forms.ChoiceField(
+        label=_("Type"),
+        choices=[("", _("All"))] + list(EmployeeLedgerEntry.EntryType.choices),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    date_from = forms.DateField(
+        label=_("Date from"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+    date_to = forms.DateField(
+        label=_("Date to"),
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "form-control form-control-sm", "type": "date"}
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        df = cleaned.get("date_from")
+        dt = cleaned.get("date_to")
+        if df and dt and df > dt:
+            raise forms.ValidationError(_("'Date from' must be on or before 'Date to'."))
+        return cleaned

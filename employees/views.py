@@ -2,18 +2,24 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
 from core.pagination import paginate_request
-from employees.forms import EmployeeAdjustmentForm, EmployeeProfileForm
+from employees.forms import (
+    EmployeeAdjustmentForm,
+    EmployeeLedgerFilterForm,
+    EmployeeProfileForm,
+)
 from employees.models import EmployeeLedgerEntry, EmployeeProfile
 from employees.services import (
     accrue_salaries_for_month,
     create_adjustment,
     default_accrual_month,
+    delete_ledger_entry,
 )
 
 
@@ -75,10 +81,27 @@ def employee_detail(request, pk):
         EmployeeProfile.objects.select_related("user", "user__profile"),
         pk=pk,
     )
-    ledger_page = paginate_request(
-        request,
-        employee.ledger_entries.select_related("reference_sale", "created_by"),
+    ledger_qs = employee.ledger_entries.select_related("reference_sale", "created_by")
+    ledger_filter_form = EmployeeLedgerFilterForm(request.GET or None)
+    ledger_filter_data = (
+        ledger_filter_form.cleaned_data if ledger_filter_form.is_valid() else {}
     )
+    ledger_q = (ledger_filter_data.get("q") or "").strip()
+    if ledger_q:
+        ledger_qs = ledger_qs.filter(
+            Q(phone__icontains=ledger_q)
+            | Q(payer_name__icontains=ledger_q)
+            | Q(notes__icontains=ledger_q)
+            | Q(reference_sale__reference_number__icontains=ledger_q)
+            | Q(reference_sale__payer_name__icontains=ledger_q)
+        )
+    if entry_type := ledger_filter_data.get("entry_type"):
+        ledger_qs = ledger_qs.filter(entry_type=entry_type)
+    if date_from := ledger_filter_data.get("date_from"):
+        ledger_qs = ledger_qs.filter(created_at__date__gte=date_from)
+    if date_to := ledger_filter_data.get("date_to"):
+        ledger_qs = ledger_qs.filter(created_at__date__lte=date_to)
+    ledger_page = paginate_request(request, ledger_qs)
     sales_payments = employee.ledger_entries.filter(
         entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED
     ).select_related("reference_sale")[:20]
@@ -100,17 +123,37 @@ def employee_detail(request, pk):
                 messages.success(request, _("Adjustment recorded."))
                 return redirect("employees:employee_detail", pk=employee.pk)
 
+    ctx = {
+        "employee": employee,
+        "ledger_page": ledger_page,
+        "ledger_filter_form": ledger_filter_form,
+        "sales_payments": sales_payments,
+        "adj_form": adj_form,
+        "title": employee.display_name,
+    }
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "employees/partials/employee_ledger_results.html", ctx)
+
     return render(
         request,
         "employees/employee_detail.html",
-        {
-            "employee": employee,
-            "ledger_page": ledger_page,
-            "sales_payments": sales_payments,
-            "adj_form": adj_form,
-            "title": employee.display_name,
-        },
+        ctx,
     )
+
+
+@management_required
+@require_POST
+def employee_ledger_delete(request, pk, entry_pk):
+    employee = get_object_or_404(EmployeeProfile, pk=pk)
+    entry = get_object_or_404(EmployeeLedgerEntry, pk=entry_pk, employee=employee)
+    delete_ledger_entry(entry=entry)
+    messages.success(request, _("Ledger entry deleted."))
+    if request.headers.get("HX-Request") == "true":
+        return HttpResponse("", status=200)
+    fallback = request.META.get("HTTP_REFERER") or "employees:employee_detail"
+    if isinstance(fallback, str) and fallback.startswith("/"):
+        return redirect(fallback)
+    return redirect("employees:employee_detail", pk=employee.pk)
 
 
 @management_required
