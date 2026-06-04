@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "employees",
     "audit",
     "phone_refresh",
+    "sms_gateway",
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,43 @@
+from sms_gateway.views.device_api import (
+    sms_inbound,
+    sms_outbox,
+    sms_delivery,
+)
+from sms_gateway.views.settings import (
+    settings_index,
+    settings_general_save,
+    api_gateway_save,
+    api_gateway_test,
+    inbound_simulate,
+    reply_policy_save,
+    device_create,
+    device_update,
+    device_regenerate_token,
+    device_reactivate,
+    device_delete,
+    access_rule_create,
+    access_rule_delete,
+    reports_list,
+    outbound_resend,
+)
+
+__all__ = [
+    "sms_inbound",
+    "sms_outbox",
+    "sms_delivery",
+    "settings_index",
+    "settings_general_save",
+    "api_gateway_save",
+    "api_gateway_test",
+    "inbound_simulate",
+    "reply_policy_save",
+    "device_create",
+    "device_update",
+    "device_regenerate_token",
+    "device_reactivate",
+    "device_delete",
+    "access_rule_create",
+    "access_rule_delete",
+    "reports_list",
+    "outbound_resend",
+]

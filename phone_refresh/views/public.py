@@ -248,9 +248,12 @@ def public_refresh_api(request):
     # bearer token) is recorded as "api". This keeps the two public
     # entry-points distinguishable in the reports view without adding a
     # second URL just for source tracking.
-    source = (
-        RefreshSource.WEB if client_hint == RefreshSource.WEB else RefreshSource.API
-    )
+    if client_hint == RefreshSource.WEB:
+        source = RefreshSource.WEB
+    elif client_hint == RefreshSource.SMS:
+        source = RefreshSource.SMS
+    else:
+        source = RefreshSource.API
     result = refresh_phone(str(phone), ip=ip or None, source=source)
 
     payload = {

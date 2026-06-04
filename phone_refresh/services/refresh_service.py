@@ -212,6 +212,7 @@ def refresh_phone(
         RefreshSource.API,
         RefreshSource.WEB,
         RefreshSource.EMPLOYEE,
+        RefreshSource.SMS,
         RefreshSource.INTERNAL_TEST,
     }:
         source = RefreshSource.WEB

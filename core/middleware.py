@@ -151,7 +151,16 @@ class DefaultLanguagePrefixRedirectMiddleware:
     bookmarks and bare-domain entry without forcing every link to carry a prefix.
     """
 
-    _SKIP_PREFIXES = ("/healthz", "/admin", "/i18n/", "/static/", "/media/")
+    _SKIP_PREFIXES = (
+        "/healthz",
+        "/admin",
+        "/i18n/",
+        "/static/",
+        "/media/",
+        # Device-facing SMS gateway API: locale-free machine endpoints. A
+        # language redirect here would turn the device POST into a GET.
+        "/sms-gateway/api/",
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response

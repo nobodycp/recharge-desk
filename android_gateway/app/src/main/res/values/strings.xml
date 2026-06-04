@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">بوابة رسائل بروسيم</string>
+    <string name="subtitle">تستقبل رسائل المشتركين، تحدّث الأرقام عبر السيرفر، وترسل الرد تلقائياً.</string>
+
+    <string name="label_base_url">رابط السيرفر</string>
+    <string name="hint_base_url">https://s.prosim.ps</string>
+    <string name="label_token">توكن الجهاز</string>
+    <string name="hint_token">الصق التوكن هنا</string>
+    <string name="label_poll">فترة سحب الردود (ثوانٍ)</string>
+    <string name="label_enabled">تشغيل الخدمة</string>
+
+    <string name="btn_save">حفظ وتشغيل</string>
+    <string name="btn_test">اختبار الاتصال</string>
+    <string name="btn_permissions">منح صلاحيات الرسائل</string>
+    <string name="btn_default_sms">جعله تطبيق الرسائل الافتراضي</string>
+
+    <string name="saved_running">تم الحفظ — الخدمة تعمل</string>
+    <string name="saved_stopped">تم الحفظ — الخدمة متوقفة</string>
+    <string name="testing">جارٍ الاختبار…</string>
+    <string name="test_ok">الاتصال ناجح: %1$s</string>
+    <string name="test_fail">فشل الاتصال: %1$s</string>
+    <string name="test_need_config">أدخل رابط السيرفر والتوكن أولاً</string>
+    <string name="already_default">التطبيق هو تطبيق الرسائل الافتراضي بالفعل</string>
+    <string name="compose_not_supported">هذا تطبيق بوابة خدمة، لا يدعم كتابة الرسائل</string>
+
+    <string name="status_line">الحالة: الخدمة %1$s | التطبيق الافتراضي: %2$s</string>
+    <string name="on">تعمل</string>
+    <string name="off">متوقفة</string>
+    <string name="yes">نعم</string>
+    <string name="no">لا</string>
+
+    <string name="channel_name">خدمة بوابة الرسائل</string>
+    <string name="notif_running">البوابة تعمل في الخلفية</string>
+</resources>

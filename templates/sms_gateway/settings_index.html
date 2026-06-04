@@ -1,0 +1,342 @@
+{% extends "base_management.html" %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
+    <p class="rd-text-muted mb-0">خدمة تحديث الأرقام عبر الرسائل النصية: الإعدادات، بوابة API، الأجهزة، والردود.</p>
+  </div>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'sms_gateway:reports' %}">التقارير</a>
+</div>
+
+<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
+  <li class="nav-item"><a class="nav-link {% if active_tab == general_tab_id %}active{% endif %}" href="?tab={{ general_tab_id }}">عام</a></li>
+  <li class="nav-item"><a class="nav-link {% if active_tab == api_tab_id %}active{% endif %}" href="?tab={{ api_tab_id }}">بوابة API</a></li>
+  <li class="nav-item"><a class="nav-link {% if active_tab == devices_tab_id %}active{% endif %}" href="?tab={{ devices_tab_id }}">الأجهزة</a></li>
+  <li class="nav-item"><a class="nav-link {% if active_tab == replies_tab_id %}active{% endif %}" href="?tab={{ replies_tab_id }}">الردود والقوائم</a></li>
+</ul>
+
+{% if active_tab == general_tab_id %}
+  <form method="post" action="{% url 'sms_gateway:settings_general_save' %}">
+    {% csrf_token %}
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">إعدادات الخدمة العامة</div>
+      <div class="rd-card-body row g-3">
+        <div class="col-md-4 form-check form-switch">
+          {{ general_form.service_enabled }}
+          <label class="form-check-label" for="{{ general_form.service_enabled.id_for_label }}">تشغيل الخدمة</label>
+        </div>
+        <div class="col-md-4 form-check form-switch">
+          {{ general_form.replies_master_enabled }}
+          <label class="form-check-label" for="{{ general_form.replies_master_enabled.id_for_label }}">تفعيل كل الردود</label>
+        </div>
+        <div class="col-md-4 form-check form-switch">
+          {{ general_form.send_service_off_reply }}
+          <label class="form-check-label" for="{{ general_form.send_service_off_reply.id_for_label }}">إرسال رسالة عند إيقاف الخدمة</label>
+        </div>
+        <div class="col-12">
+          <label class="form-label">رسالة الإيقاف (اختياري)</label>
+          {{ general_form.service_off_message }}
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">رقم الاختبار</div>
+      <div class="rd-card-body row g-3">
+        <div class="col-md-4">
+          <label class="form-label">رقم الاختبار</label>
+          {{ general_form.test_number }}
+          <div class="form-text">عند وصول رسالة من هذا الرقم يرد النظام برسالة فحص دون تحديث حقيقي.</div>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">رسالة فحص الجاهزية</label>
+          {{ general_form.test_reply_message }}
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">إعدادات المُرسِل والحدود</div>
+      <div class="rd-card-body row g-3">
+        <div class="col-md-4">
+          <label class="form-label">حد رسائل المُرسِل</label>
+          {{ general_form.sender_max_messages }}
+          <div class="form-text">0 = بلا حد.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">نافذة المُرسِل (دقائق)</label>
+          {{ general_form.sender_window_minutes }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">السقف اليومي الإجمالي</label>
+          {{ general_form.global_daily_cap }}
+          <div class="form-text">إجمالي الردود يوميًا عبر كل الأجهزة. 0 = بلا حد.</div>
+        </div>
+        <div class="col-md-4 form-check form-switch">
+          {{ general_form.allowlist_mode }}
+          <label class="form-check-label" for="{{ general_form.allowlist_mode.id_for_label }}">وضع السماح الحصري</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">إعدادات الإرسال والأجهزة</div>
+      <div class="rd-card-body row g-3">
+        <div class="col-md-4">
+          <label class="form-label">مهلة المطالبة (ثوانٍ)</label>
+          {{ general_form.claim_timeout_seconds }}
+          <div class="form-text">إعادة الرد للطابور لو لم يؤكد الجهاز إرساله خلالها.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">إيقاف تلقائي بعد فشل</label>
+          {{ general_form.auto_pause_threshold }}
+          <div class="form-text">عدد مرات الفشل المتتالي قبل إيقاف الجهاز. 0 = تعطيل.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">أقصى محاولات إرسال</label>
+          {{ general_form.max_send_attempts }}
+        </div>
+      </div>
+    </div>
+
+    <div class="rd-card mb-3">
+      <div class="rd-card-header fw-semibold">الصيانة والتنبيهات</div>
+      <div class="rd-card-body row g-3">
+        <div class="col-md-6">
+          <label class="form-label">الاحتفاظ بالسجلات (أيام)</label>
+          {{ general_form.log_retention_days }}
+          <div class="form-text">0 = الاحتفاظ دائمًا. يُنفّذ عبر أمر sms_purge_logs.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">تنبيه فصل الجهاز (دقائق)</label>
+          {{ general_form.heartbeat_alert_minutes }}
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">حفظ</button>
+  </form>
+
+{% elif active_tab == api_tab_id %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
+      <form method="post" action="{% url 'sms_gateway:api_gateway_save' %}" class="row g-3">
+        {% csrf_token %}
+        <div class="col-12">
+          <label class="form-label">رابط API التحديث (اتركه فارغاً لاستخدام رابط التحديث الداخلي)</label>
+          {{ api_form.refresh_api_url }}
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">توكن API (اختياري)</label>
+          {{ api_form.refresh_api_token }}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">المهلة (ثوانٍ)</label>
+          {{ api_form.refresh_api_timeout }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">اسم حقل الرقم</label>
+          {{ api_form.refresh_api_phone_field }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">مسار الحالة</label>
+          {{ api_form.refresh_api_status_path }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">مسار العنوان</label>
+          {{ api_form.refresh_api_title_path }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">مسار النص</label>
+          {{ api_form.refresh_api_body_path }}
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="rd-card mb-3">
+    <div class="rd-card-header fw-semibold">اختبار بوابة API</div>
+    <div class="rd-card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">رقم تجريبي</label>
+          <input type="text" id="sms-api-test-phone" class="form-control" dir="ltr" placeholder="0555555555">
+        </div>
+        <div class="col-md-3">
+          <button type="button" class="btn btn-outline-primary" id="sms-api-test-btn">اختبار</button>
+        </div>
+      </div>
+      <pre id="sms-api-test-result" class="mt-3 d-none" dir="ltr" style="white-space:pre-wrap; background:var(--bs-tertiary-bg,#f8f9fa); padding:.75rem; border-radius:.375rem;"></pre>
+    </div>
+  </div>
+
+  <div class="rd-card">
+    <div class="rd-card-header fw-semibold">محاكاة رسالة واردة (بدون إرسال فعلي)</div>
+    <div class="rd-card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">رقم المُرسِل</label>
+          <input type="text" id="sms-sim-from" class="form-control" dir="ltr" placeholder="0595108208">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">نص الرسالة</label>
+          <input type="text" id="sms-sim-text" class="form-control" dir="auto" placeholder="حدثلي 0555544071">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-outline-primary w-100" id="sms-sim-btn">محاكاة</button>
+        </div>
+      </div>
+      <pre id="sms-sim-result" class="mt-3 d-none" dir="auto" style="white-space:pre-wrap; background:var(--bs-tertiary-bg,#f8f9fa); padding:.75rem; border-radius:.375rem;"></pre>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    function csrf() { var el = document.querySelector('input[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+    function post(url, body, onok) {
+      fetch(url, { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        body: JSON.stringify(body) })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) { onok(res.d); })
+        .catch(function (e) { onok({ ok: false, error: String(e) }); });
+    }
+    var testBtn = document.getElementById('sms-api-test-btn');
+    if (testBtn) testBtn.addEventListener('click', function () {
+      var out = document.getElementById('sms-api-test-result');
+      out.classList.remove('d-none'); out.textContent = 'جاري الاختبار…';
+      post('{% url "sms_gateway:api_gateway_test" %}', { phone: document.getElementById('sms-api-test-phone').value },
+        function (d) { out.textContent = JSON.stringify(d, null, 2); });
+    });
+    var simBtn = document.getElementById('sms-sim-btn');
+    if (simBtn) simBtn.addEventListener('click', function () {
+      var out = document.getElementById('sms-sim-result');
+      out.classList.remove('d-none'); out.textContent = 'جاري المحاكاة…';
+      post('{% url "sms_gateway:inbound_simulate" %}',
+        { from: document.getElementById('sms-sim-from').value, text: document.getElementById('sms-sim-text').value },
+        function (d) { out.textContent = JSON.stringify(d, null, 2); });
+    });
+  })();
+  </script>
+
+{% elif active_tab == devices_tab_id %}
+  {% if heartbeat_alerts %}
+    <div class="alert alert-warning">تنبيه: أجهزة لم تتواصل مؤخراً: {% for d in heartbeat_alerts %}<span class="rd-badge rd-badge--cancelled">{{ d.name }}</span> {% endfor %}</div>
+  {% endif %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-header fw-semibold">إضافة جهاز</div>
+    <div class="rd-card-body">
+      <form method="post" action="{% url 'sms_gateway:device_create' %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-3"><label class="form-label">الاسم</label>{{ device_form.name }}</div>
+        <div class="col-md-2"><label class="form-label">الرقم</label>{{ device_form.phone_number }}</div>
+        <div class="col-md-1"><label class="form-label">الأولوية</label>{{ device_form.priority }}</div>
+        <div class="col-md-2"><label class="form-label">حد يومي</label>{{ device_form.daily_send_limit }}</div>
+        <div class="col-md-1 form-check form-switch">{{ device_form.is_active }}<label class="form-check-label">فعّال</label></div>
+        <div class="col-md-1 form-check form-switch">{{ device_form.can_send }}<label class="form-check-label">يرسل</label></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">إضافة</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="rd-card overflow-hidden">
+    <div class="table-responsive">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead><tr>
+          <th>الاسم</th><th>الرقم</th><th class="text-end">الأولوية</th><th>الحالة</th>
+          <th>يرسل</th><th class="text-end">اليوم/الحد</th><th>آخر اتصال</th><th class="text-end">إجراءات</th>
+        </tr></thead>
+        <tbody>
+          {% for d in devices %}
+            <tr>
+              <td class="fw-semibold">{{ d.name }}</td>
+              <td class="tabular-nums">{{ d.phone_number|default:"—" }}</td>
+              <td class="text-end tabular-nums">{{ d.priority }}</td>
+              <td>
+                {% if d.is_auto_paused %}<span class="rd-badge rd-badge--cancelled">موقوف تلقائياً</span>
+                {% elif d.is_active %}<span class="rd-badge rd-badge--paid">فعّال</span>
+                {% else %}<span class="rd-badge rd-badge--neutral">معطّل</span>{% endif %}
+              </td>
+              <td>{% if d.can_send %}نعم{% else %}لا{% endif %}</td>
+              <td class="text-end tabular-nums">{{ d.sent_today }}/{{ d.daily_send_limit|default:"∞" }}</td>
+              <td class="small text-secondary">{{ d.last_seen_at|default:"—" }}</td>
+              <td class="text-end">
+                <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                  <form method="post" action="{% url 'sms_gateway:device_regenerate_token' d.pk %}" class="d-inline m-0">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" type="submit">توكن جديد</button></form>
+                  {% if d.is_auto_paused or not d.is_active %}
+                  <form method="post" action="{% url 'sms_gateway:device_reactivate' d.pk %}" class="d-inline m-0">{% csrf_token %}<button class="btn btn-sm btn-outline-primary" type="submit">إعادة تفعيل</button></form>
+                  {% endif %}
+                  <form method="post" action="{% url 'sms_gateway:device_delete' d.pk %}" class="d-inline m-0" onsubmit="return confirm('حذف الجهاز؟');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="text-center py-4 text-secondary">لا توجد أجهزة. أضف هاتف البوابة الرئيسي.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% elif active_tab == replies_tab_id %}
+  <div class="rd-card mb-3">
+    <div class="rd-card-header fw-semibold">سياسة الردود لكل حالة</div>
+    <div class="rd-card-body">
+      <form method="post" action="{% url 'sms_gateway:reply_policy_save' %}">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table align-middle rd-table-modern mb-3">
+            <thead><tr><th>الحالة</th><th>يرد؟</th><th>نص بديل (اختياري)</th></tr></thead>
+            <tbody>
+              {% for p in reply_policies %}
+                <tr>
+                  <td><span class="rd-badge rd-badge--neutral">{{ p.status.label }}</span> <code class="small">{{ p.status.code }}</code></td>
+                  <td class="form-check form-switch">
+                    <input type="checkbox" class="form-check-input" name="reply_enabled_{{ p.status_id }}" {% if p.reply_enabled %}checked{% endif %}>
+                  </td>
+                  <td><input type="text" class="form-control form-control-sm" dir="auto" name="override_{{ p.status_id }}" value="{{ p.message_override }}"></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <button type="submit" class="btn btn-primary">حفظ سياسات الردود</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="rd-card">
+    <div class="rd-card-header fw-semibold">قائمة الحظر / السماح</div>
+    <div class="rd-card-body">
+      <form method="post" action="{% url 'sms_gateway:access_rule_create' %}" class="row g-2 align-items-end mb-3">
+        {% csrf_token %}
+        <div class="col-md-4"><label class="form-label">رقم أو بادئة</label>{{ access_rule_form.value }}</div>
+        <div class="col-md-3"><label class="form-label">النوع</label>{{ access_rule_form.mode }}</div>
+        <div class="col-md-3"><label class="form-label">ملاحظة</label>{{ access_rule_form.note }}</div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">إضافة</button></div>
+      </form>
+      <div class="table-responsive">
+        <table class="table align-middle rd-table-modern mb-0">
+          <thead><tr><th>القيمة</th><th>النوع</th><th>ملاحظة</th><th class="text-end"></th></tr></thead>
+          <tbody>
+            {% for r in access_rules %}
+              <tr>
+                <td class="tabular-nums">{{ r.value }}</td>
+                <td>{% if r.mode == 'block' %}<span class="rd-badge rd-badge--cancelled">حظر</span>{% else %}<span class="rd-badge rd-badge--paid">سماح</span>{% endif %}</td>
+                <td class="small text-secondary">{{ r.note|default:"—" }}</td>
+                <td class="text-end"><form method="post" action="{% url 'sms_gateway:access_rule_delete' r.pk %}" class="d-inline m-0" onsubmit="return confirm('حذف القاعدة؟');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center py-3 text-secondary">لا توجد قواعد.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

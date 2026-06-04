@@ -4,7 +4,7 @@
   class="rd-sidebar-nav rd-sidebar-nav--accordion"
   aria-label="{% trans 'Main navigation' %}"
   data-rd-sidebar-nav
-  data-rd-nav-active-section="{% if ns == 'accounts' and un != 'login' and un != 'logout' %}administration{% elif ns == 'employees' %}administration{% elif ns == 'core' and un == 'site_branding' %}administration{% elif ns == 'core' and un == 'system_settings' %}administration{% elif ns == 'audit' %}administration{% elif ns == 'companies' %}catalog{% elif ns == 'sales' and un == 'payment_method_list' or ns == 'sales' and un == 'payment_method_create' or ns == 'sales' and un == 'payment_method_edit' %}catalog{% elif ns == 'reports' and un != 'dashboard' %}reports{% elif ns == 'expenses' and un == 'expense_report' %}reports{% elif ns == 'sales' and un == 'management_sale_list' %}operations{% elif ns == 'expenses' and un != 'expense_report' %}operations{% elif ns == 'inventory' %}operations{% elif ns == 'phone_refresh' %}update-link{% endif %}"
+  data-rd-nav-active-section="{% if ns == 'accounts' and un != 'login' and un != 'logout' %}administration{% elif ns == 'employees' %}administration{% elif ns == 'core' and un == 'site_branding' %}administration{% elif ns == 'core' and un == 'system_settings' %}administration{% elif ns == 'audit' %}administration{% elif ns == 'companies' %}catalog{% elif ns == 'sales' and un == 'payment_method_list' or ns == 'sales' and un == 'payment_method_create' or ns == 'sales' and un == 'payment_method_edit' %}catalog{% elif ns == 'reports' and un != 'dashboard' %}reports{% elif ns == 'expenses' and un == 'expense_report' %}reports{% elif ns == 'sales' and un == 'management_sale_list' %}operations{% elif ns == 'expenses' and un != 'expense_report' %}operations{% elif ns == 'inventory' %}operations{% elif ns == 'phone_refresh' %}update-link{% elif ns == 'sms_gateway' %}messages-update{% endif %}"
 >
   {# ── Pinned quick-access (always visible, no accordion) ── #}
   <div class="rd-nav-pinned" data-rd-nav-pinned>
@@ -143,22 +143,19 @@
   </div>
 
   {# ── تحديث الرسائل (Messages Update) ── #}
-  {# TODO: Wire up real Django URL routes for the sub-items below (currently href="#" placeholders). #}
-  <div class="rd-nav-group" data-rd-nav-group="messages-update">
-    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="false">
+  <div class="rd-nav-group{% if ns == 'sms_gateway' %} is-open{% endif %}" data-rd-nav-group="messages-update">
+    <button type="button" class="rd-nav-group-toggle" data-rd-nav-group-toggle aria-expanded="{% if ns == 'sms_gateway' %}true{% else %}false{% endif %}">
       <span class="rd-nav-group-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
       <span class="rd-nav-group-label">تحديث الرسائل</span>
       <span class="rd-nav-group-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
     </button>
     <div class="rd-nav-group-panel">
       <div class="rd-nav-group-panel-inner">
-        {# TODO: Replace href="#" with real {% url %} once the backend route exists. #}
-        <a class="rd-nav-link" href="#">
+        <a class="rd-nav-link {% if ns == 'sms_gateway' and un != 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:settings' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
           <span>اعدادات</span>
         </a>
-        {# TODO: Replace href="#" with real {% url %} once the backend route exists. #}
-        <a class="rd-nav-link" href="#">
+        <a class="rd-nav-link {% if ns == 'sms_gateway' and un == 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:reports' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
           <span>تقارير</span>
         </a>

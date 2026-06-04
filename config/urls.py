@@ -24,6 +24,9 @@ urlpatterns = [
     # Must not live only under i18n_patterns: LocaleMiddleware resets language
     # for un-prefixed paths, which breaks translate_url() inside set_language.
     path("i18n/setlang/", set_language_fixed, name="set_language"),
+    # Device-facing SMS gateway API: kept OUTSIDE i18n_patterns so machine
+    # clients hit stable, locale-free URLs (no /ar/ 302 that would break POST).
+    path("", include("sms_gateway.api_urls")),
 ]
 
 urlpatterns += i18n_patterns(
@@ -38,6 +41,7 @@ urlpatterns += i18n_patterns(
     path("", include("employees.urls")),
     path("", include("audit.urls")),
     path("", include("phone_refresh.urls")),
+    path("", include("sms_gateway.urls")),
     prefix_default_language=False,
 )
 
