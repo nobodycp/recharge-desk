@@ -94,7 +94,7 @@ class SmsGatewaySettings(models.Model):
         _("refresh API URL"),
         max_length=500,
         blank=True,
-        help_text=_("Full URL of the refresh API. Leave empty to use the internal phone-refresh endpoint."),
+        help_text=_("Full URL of an external refresh API. Leave empty to call the internal refresh engine directly (recommended)."),
     )
     refresh_api_token = models.CharField(_("refresh API token"), max_length=255, blank=True)
     refresh_api_timeout = models.PositiveIntegerField(_("refresh API timeout (s)"), default=30)

@@ -1,9 +1,10 @@
-"""HTTP client for the configurable refresh API gateway.
+"""Refresh source client for the SMS gateway.
 
-The SMS service does not call the refresh engine in-process; it POSTs to
-an admin-configured URL (default: the internal phone-refresh endpoint) so
-the source can later be swapped to an external API from the GUI without a
-code change. The response is parsed using configurable dotted paths.
+When no external gateway URL is configured the refresh engine is called
+in-process (no HTTP). When an admin sets ``refresh_api_url`` the service
+POSTs to that URL instead, so the source can be swapped to an external API
+from the GUI without a code change. HTTP responses are parsed using the
+configurable dotted paths.
 """
 from __future__ import annotations
 
@@ -11,7 +12,6 @@ import logging
 from dataclasses import dataclass
 
 import requests
-from django.urls import reverse
 
 from sms_gateway.models import SmsGatewaySettings
 
@@ -40,15 +40,34 @@ def _dotted_get(data, path: str):
     return current
 
 
-def _resolve_url(settings_obj: SmsGatewaySettings, *, request=None) -> str:
-    url = (settings_obj.refresh_api_url or "").strip()
-    if url:
-        return url
-    path = reverse("phone_refresh:public_api")
-    if request is not None:
-        return request.build_absolute_uri(path)
-    # Fallback for non-request contexts (cron/tests): localhost loopback.
-    return f"http://127.0.0.1:8000{path}"
+def _call_in_process(phone: str) -> SmsRefreshOutcome:
+    """Run the refresh engine in-process (no HTTP).
+
+    Used when no external gateway URL is configured. Calling our own public
+    API over HTTP would loop back out through the public hostname and get
+    blocked by Cloudflare's bot challenge (HTTP 403 "Just a moment"), so for
+    the internal engine we invoke the service directly.
+    """
+    from phone_refresh.models import RefreshSource
+    from phone_refresh.services.refresh_service import refresh_phone
+
+    try:
+        result = refresh_phone(phone, source=RefreshSource.SMS)
+    except Exception as exc:  # noqa: BLE001 — never break inbound processing
+        log.warning("in-process refresh failed for %s: %s", phone, exc)
+        return SmsRefreshOutcome(
+            status_code="error",
+            title="خطأ",
+            body="تعذّر تنفيذ التحديث حالياً. يرجى المحاولة لاحقاً.",
+            error=str(exc),
+        )
+    return SmsRefreshOutcome(
+        status_code=result.status.code,
+        title=result.message_title or "",
+        body=result.message_body or "",
+        http_status=200,
+        error=None,
+    )
 
 
 def call_refresh_api(
@@ -57,9 +76,16 @@ def call_refresh_api(
     settings_obj: SmsGatewaySettings | None = None,
     request=None,
 ) -> SmsRefreshOutcome:
-    """Call the configured refresh API for ``phone`` and parse the reply."""
+    """Call the configured refresh source for ``phone`` and parse the reply.
+
+    When ``refresh_api_url`` is empty the internal engine is called directly
+    in-process; otherwise the configured external HTTP gateway is used.
+    """
     s = settings_obj or SmsGatewaySettings.load()
-    url = _resolve_url(s, request=request)
+    url = (s.refresh_api_url or "").strip()
+    if not url:
+        return _call_in_process(phone)
+
     payload = {s.refresh_api_phone_field or "phone_number": phone, "client": "sms"}
     headers = {"Content-Type": "application/json"}
     if s.refresh_api_token:
