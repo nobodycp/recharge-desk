@@ -59,6 +59,10 @@ class EmployeeLedgerEntry(models.Model):
     class EntryType(models.TextChoices):
         SALARY_ACCRUAL = "salary_accrual", _("Salary accrual")
         SALES_PAYMENT_RECEIVED = "sales_payment_received", _("Sales payment received")
+        CUSTOMER_PAYMENT_RECEIVED = (
+            "customer_payment_received",
+            _("Customer payment received"),
+        )
         ADJUSTMENT = "adjustment", _("Adjustment")
         REVERSAL = "reversal", _("Reversal")
 
@@ -92,6 +96,14 @@ class EmployeeLedgerEntry(models.Model):
         blank=True,
         related_name="employee_ledger_entries",
         verbose_name=_("sale"),
+    )
+    reference_customer_payment = models.ForeignKey(
+        "customers.CustomerPayment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employee_ledger_entries",
+        verbose_name=_("customer payment"),
     )
     payer_name = models.CharField(_("payer name"), max_length=200, blank=True)
     phone = models.CharField(_("phone or shipment number"), max_length=64, blank=True)
@@ -131,6 +143,11 @@ class EmployeeLedgerEntry(models.Model):
                 fields=["reference_sale"],
                 condition=Q(entry_type="sales_payment_received"),
                 name="emp_sale_payment_unique_sale",
+            ),
+            models.UniqueConstraint(
+                fields=["reference_customer_payment"],
+                condition=Q(entry_type="customer_payment_received"),
+                name="emp_cust_payment_unique_pay",
             ),
         ]
 

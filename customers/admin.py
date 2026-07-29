@@ -29,19 +29,27 @@ class CustomerPaymentSubmissionAdmin(admin.ModelAdmin):
         "customer",
         "amount",
         "payment_method",
+        "paid_via_employee",
         "status",
         "created_by",
         "created_at",
     )
-    list_filter = ("status", "payment_method")
+    list_filter = ("status", "payment_method", "paid_via_employee")
     search_fields = ("customer__name", "notes")
     readonly_fields = ("created_at",)
 
 
 @admin.register(CustomerPayment)
 class CustomerPaymentAdmin(admin.ModelAdmin):
-    list_display = ("customer", "amount", "payment_method", "created_by", "created_at")
-    list_filter = ("payment_method",)
+    list_display = (
+        "customer",
+        "amount",
+        "payment_method",
+        "paid_via_employee",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("payment_method", "paid_via_employee")
     search_fields = ("customer__name",)
     readonly_fields = ("created_at",)
 

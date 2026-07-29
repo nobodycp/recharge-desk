@@ -164,7 +164,7 @@
               <td>{{ p.id }}</td>
               <td>{{ p.customer.name }}</td>
               <td class="tabular-nums">{{ p.amount|intcomma }}</td>
-              <td>{{ p.payment_method.name }}</td>
+              <td>{% if p.paid_via_employee %}{% trans "To employee" %}{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</td>
               <td><span class="text-secondary small">{{ p.created_at|date:"Y-m-d H:i" }}</span></td>
               <td class="text-end">
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>

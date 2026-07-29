@@ -270,7 +270,13 @@
               {% for p in payments %}
                 <tr id="customer-payment-row-{{ p.pk }}">
                   <td class="small text-nowrap">{{ p.created_at|date:"Y-m-d H:i" }}</td>
-                  <td>{{ p.payment_method.name|tdb }}</td>
+                  <td>
+                    {% if p.paid_via_employee %}
+                      {% trans "To employee" %}{% if p.employee_recipient %} · {{ p.employee_recipient.display_name }}{% endif %}
+                    {% elif p.payment_method %}
+                      {{ p.payment_method.name|tdb }}
+                    {% else %}—{% endif %}
+                  </td>
                   <td class="text-end tabular-nums text-success">{{ p.amount|intcomma }}</td>
                   <td class="text-end">
                     <button

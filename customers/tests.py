@@ -979,3 +979,110 @@ class CustomerPaymentSubmissionFlowTests(CustomerARTestCase):
             ).count(),
             1,
         )
+
+    def test_paid_via_employee_debits_employee_on_approve(self):
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+
+        profile = EmployeeProfile.objects.create(user=self.emp, monthly_salary=_decimal(0))
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 500), user=self.user)
+
+        sub = submit_customer_payment_submission(
+            customer=c,
+            amount=_decimal(200),
+            payment_method=None,
+            notes="cash to cashier",
+            user=self.emp,
+            paid_via_employee=True,
+            employee_recipient=profile,
+        )
+        self.assertTrue(sub.paid_via_employee)
+        self.assertIsNone(sub.payment_method_id)
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_balance, _decimal(0))
+
+        payment = approve_customer_payment_submission(submission=sub, user=self.user)
+        self.assertTrue(payment.paid_via_employee)
+        self.assertEqual(payment.employee_recipient_id, profile.pk)
+        self.assertIsNone(payment.payment_method_id)
+
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(300))
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_balance, _decimal(-200))
+        entry = EmployeeLedgerEntry.objects.get(reference_customer_payment=payment)
+        self.assertEqual(
+            entry.entry_type,
+            EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+        )
+        self.assertEqual(entry.amount, _decimal(-200))
+        self.assertEqual(entry.payer_name, c.name)
+
+    def test_delete_employee_held_payment_reverses_employee_ledger(self):
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+
+        profile = EmployeeProfile.objects.create(user=self.emp, monthly_salary=_decimal(0))
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 100), user=self.user)
+        payment = record_customer_payment(
+            customer=c,
+            amount=_decimal(40),
+            payment_method=None,
+            user=self.user,
+            paid_via_employee=True,
+            employee_recipient=profile,
+        )
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_balance, _decimal(-40))
+
+        delete_customer_payment(payment=payment, user=self.user)
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_balance, _decimal(0))
+        self.assertFalse(
+            EmployeeLedgerEntry.objects.filter(
+                entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED
+            ).exists()
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(100))
+
+    def test_employee_http_post_paid_via_employee(self):
+        from django.urls import reverse
+
+        from core.models import AppSettings
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": False,
+                "sales_show_record_payment": True,
+                "sales_show_employee_payment": True,
+            },
+        )
+        EmployeeProfile.objects.create(user=self.emp, monthly_salary=_decimal(0))
+        c = self._new_customer()
+        approve_sale(sale=self._new_on_account_sale(c, 90), user=self.user)
+        self.client.force_login(self.emp)
+        r = self.client.post(
+            reverse("sales:employee_submit_customer_payment_submission"),
+            {
+                "customer": str(c.pk),
+                "amount": "30.00",
+                "paid_via_employee": "1",
+                "notes": "held",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        payment = CustomerPayment.objects.get(customer=c, amount=_decimal(30))
+        self.assertTrue(payment.paid_via_employee)
+        self.assertIsNone(payment.payment_method_id)
+        self.assertEqual(payment.employee_recipient.user_id, self.emp.pk)
+        self.assertTrue(
+            EmployeeLedgerEntry.objects.filter(
+                reference_customer_payment=payment,
+                entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+            ).exists()
+        )
+        c.refresh_from_db()
+        self.assertEqual(c.current_balance, _decimal(60))

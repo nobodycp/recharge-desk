@@ -134,7 +134,11 @@ def customer_detail(request, pk):
         page_param="phones_page",
     )
     payments = customer.payments.select_related(
-        "payment_method", "created_by"
+        "payment_method",
+        "created_by",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
     ).order_by("-created_at")[:200]
 
     from inventory.models import SimStockBalance

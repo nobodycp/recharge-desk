@@ -46,7 +46,13 @@
                   <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false">{{ row.customer.name }}</a>
                 </td>
                 <td class="tabular-nums text-end fw-semibold">{{ row.amount|intcomma }}</td>
-                <td>{{ row.payment_method.name }}</td>
+                <td>
+                  {% if row.paid_via_employee %}
+                    {% trans "To employee" %}{% if row.employee_recipient %} · {{ row.employee_recipient.display_name }}{% endif %}
+                  {% elif row.payment_method %}
+                    {{ row.payment_method.name }}
+                  {% else %}—{% endif %}
+                </td>
                 <td class="small text-secondary">{{ row.created_by.username }}</td>
                 <td class="small">{% if row.notes %}{{ row.notes|truncatechars:80 }}{% else %}—{% endif %}</td>
                 <td class="text-end">
@@ -86,7 +92,13 @@
           </div>
           <div class="mt-2">
             <span class="rd-mobile-k d-block">{% trans "Payment method" %}</span>
-            <span class="rd-mobile-v">{{ row.payment_method.name }}</span>
+            <span class="rd-mobile-v">
+              {% if row.paid_via_employee %}
+                {% trans "To employee" %}{% if row.employee_recipient %} · {{ row.employee_recipient.display_name }}{% endif %}
+              {% elif row.payment_method %}
+                {{ row.payment_method.name }}
+              {% else %}—{% endif %}
+            </span>
           </div>
           <div class="mt-1">
             <span class="rd-mobile-k d-block">{% trans "Submitted by" %}</span>

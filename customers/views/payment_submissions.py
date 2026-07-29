@@ -30,7 +30,14 @@ class RejectSubmissionForm(forms.Form):
 def customer_payment_submissions_list(request):
     qs = (
         CustomerPaymentSubmission.objects.filter(status=CustomerPaymentSubmission.Status.AWAITING)
-        .select_related("customer", "payment_method", "created_by")
+        .select_related(
+            "customer",
+            "payment_method",
+            "created_by",
+            "employee_recipient",
+            "employee_recipient__user",
+            "employee_recipient__user__profile",
+        )
         .order_by("created_at", "id")
     )
     q = (request.GET.get("q") or "").strip()
@@ -39,6 +46,8 @@ def customer_payment_submissions_list(request):
             Q(customer__name__icontains=q)
             | Q(created_by__username__icontains=q)
             | Q(payment_method__name__icontains=q)
+            | Q(employee_recipient__user__username__icontains=q)
+            | Q(employee_recipient__user__profile__full_name__icontains=q)
         )
     page_obj = paginate_request(request, qs)
     return render(

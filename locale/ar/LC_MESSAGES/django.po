@@ -1463,6 +1463,21 @@ msgstr "استحقاق راتب"
 #: employees/models.py:61
 msgid "Sales payment received"
 msgstr "دفعة مبيعات مستلمة"
+
+msgid "Customer payment received"
+msgstr "دفعة زبون مستلمة"
+
+msgid "Customer payment"
+msgstr "دفعة زبون"
+
+msgid "Payment recorded on the customer account and credited to employee ledger."
+msgstr "تم تسجيل الدفعة على حساب الزبون وإضافتها لدفتر الموظف."
+
+msgid "Employee recipient is required for employee-held payments."
+msgstr "يجب تحديد الموظف عند الدفع لدى موظف."
+
+msgid "Payment is not an employee-held customer payment."
+msgstr "هذه الدفعة ليست دفعة مستلمة لدى موظف."
 #: employees/models.py:80
 msgid "Positive: shop owes employee. Negative: employee owes shop."
 msgstr "موجب: المحل مدين للموظف. سالب: الموظف مدين للمحل."
