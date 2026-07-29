@@ -310,9 +310,11 @@ def delete_ledger_entry(*, entry: EmployeeLedgerEntry, user=None) -> EmployeePro
     Customer-payment-received rows also delete the linked customer payment
     (customer ledger, balance, and FIFO settlements) so both sides stay in sync.
     """
+    # Avoid select_related on nullable FKs here: PostgreSQL rejects
+    # FOR UPDATE with LEFT OUTER JOIN (see employees.tests).
     locked_entry = (
         EmployeeLedgerEntry.objects.select_for_update()
-        .select_related("employee", "reference_customer_payment")
+        .select_related("employee")
         .get(pk=entry.pk)
     )
     employee_locked = EmployeeProfile.objects.select_for_update().get(
@@ -324,12 +326,13 @@ def delete_ledger_entry(*, entry: EmployeeLedgerEntry, user=None) -> EmployeePro
         == EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED
         and locked_entry.reference_customer_payment_id
     ):
+        from customers.models import CustomerPayment
         from customers.services import delete_customer_payment
 
-        delete_customer_payment(
-            payment=locked_entry.reference_customer_payment,
-            user=user,
+        payment = CustomerPayment.objects.select_for_update().get(
+            pk=locked_entry.reference_customer_payment_id
         )
+        delete_customer_payment(payment=payment, user=user)
         employee_locked.refresh_from_db(fields=["current_balance"])
         return employee_locked
 
