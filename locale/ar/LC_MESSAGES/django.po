@@ -1473,6 +1473,9 @@ msgstr "دفعة زبون"
 msgid "Payment recorded on the customer account and credited to employee ledger."
 msgstr "تم تسجيل الدفعة على حساب الزبون وإضافتها لدفتر الموظف."
 
+msgid "Ledger entry and linked customer payment deleted."
+msgstr "تم حذف قيد الموظف والدفعة المرتبطة من سجل الزبون."
+
 msgid "Applied immediately to the customer account."
 msgstr "تُطبَّق فوراً على حساب الزبون."
 
