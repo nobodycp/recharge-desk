@@ -1476,8 +1476,11 @@ msgstr "تم تسجيل الدفعة على حساب الزبون وإضافته
 msgid "Applied immediately to the customer account."
 msgstr "تُطبَّق فوراً على حساب الزبون."
 
-msgid "Applied immediately: customer balance and your employee ledger."
-msgstr "تُطبَّق فوراً: على رصيد الزبون ودفتر الموظف لديك."
+msgid "Applied immediately to the customer and your employee ledger."
+msgstr "تُطبَّق فوراً على حساب الزبون ودفتر الموظف."
+
+#~ msgid "Applied immediately: customer balance and your employee ledger."
+#~ msgstr "تُطبَّق فوراً: على رصيد الزبون ودفتر الموظف لديك."
 
 msgid "Employee recipient is required for employee-held payments."
 msgstr "يجب تحديد الموظف عند الدفع لدى موظف."
