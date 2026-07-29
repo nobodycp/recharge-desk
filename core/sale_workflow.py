@@ -39,8 +39,15 @@ def finalize_sale_after_entry(
 
 
 def finalize_payment_submission_after_entry(*, submission, user) -> bool:
-    """Return True when the submission was applied immediately."""
-    if AppSettings.load().require_settlement_request_approval:
+    """Return True when the submission was applied immediately.
+
+    Employee-held payments always apply immediately (same as sales
+    ``paid_via_employee``), even when settlement approval is enabled.
+    """
+    if (
+        AppSettings.load().require_settlement_request_approval
+        and not submission.paid_via_employee
+    ):
         return False
     from customers.services import approve_customer_payment_submission
 

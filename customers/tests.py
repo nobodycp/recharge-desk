@@ -1052,37 +1052,46 @@ class CustomerPaymentSubmissionFlowTests(CustomerARTestCase):
         from core.models import AppSettings
         from employees.models import EmployeeLedgerEntry, EmployeeProfile
 
+        # Settlement approval ON must not queue employee-held payments.
         AppSettings.objects.update_or_create(
             pk=1,
             defaults={
-                "require_settlement_request_approval": False,
+                "require_settlement_request_approval": True,
                 "sales_show_record_payment": True,
                 "sales_show_employee_payment": True,
             },
         )
-        EmployeeProfile.objects.create(user=self.emp, monthly_salary=_decimal(0))
-        c = self._new_customer()
+        profile = EmployeeProfile.objects.create(user=self.emp, monthly_salary=_decimal(0))
+        c = self._new_customer(name="Sami")
         approve_sale(sale=self._new_on_account_sale(c, 90), user=self.user)
         self.client.force_login(self.emp)
         r = self.client.post(
             reverse("sales:employee_submit_customer_payment_submission"),
             {
                 "customer": str(c.pk),
-                "amount": "30.00",
+                "amount": "50.00",
                 "paid_via_employee": "1",
                 "notes": "held",
             },
         )
         self.assertEqual(r.status_code, 302)
-        payment = CustomerPayment.objects.get(customer=c, amount=_decimal(30))
+        self.assertFalse(
+            CustomerPaymentSubmission.objects.filter(
+                customer=c, status=CustomerPaymentSubmission.Status.AWAITING
+            ).exists()
+        )
+        payment = CustomerPayment.objects.get(customer=c, amount=_decimal(50))
         self.assertTrue(payment.paid_via_employee)
         self.assertIsNone(payment.payment_method_id)
         self.assertEqual(payment.employee_recipient.user_id, self.emp.pk)
-        self.assertTrue(
-            EmployeeLedgerEntry.objects.filter(
-                reference_customer_payment=payment,
-                entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
-            ).exists()
+        entry = EmployeeLedgerEntry.objects.get(
+            reference_customer_payment=payment,
+            entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
         )
+        self.assertEqual(entry.amount, _decimal(-50))
+        self.assertEqual(entry.payer_name, "Sami")
+        self.assertEqual(entry.employee_id, profile.pk)
         c.refresh_from_db()
-        self.assertEqual(c.current_balance, _decimal(60))
+        self.assertEqual(c.current_balance, _decimal(40))
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_balance, _decimal(-50))

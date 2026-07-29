@@ -369,7 +369,12 @@
       <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
         {% csrf_token %}
         <div class="modal-body">
-          <p class="small text-secondary mb-2 rd-pay-sub-note">{% trans "Submitted for management approval before it affects the customer balance." %}</p>
+          <p
+            class="small text-secondary mb-2 rd-pay-sub-note"
+            id="rd-pay-sub-note"
+            data-note-method="{% if app_settings.require_settlement_request_approval %}{% trans 'Submitted for management approval before it affects the customer balance.' %}{% else %}{% trans 'Applied immediately to the customer account.' %}{% endif %}"
+            data-note-employee="{% trans 'Applied immediately: customer balance and your employee ledger.' %}"
+          >{% if app_settings.require_settlement_request_approval %}{% trans "Submitted for management approval before it affects the customer balance." %}{% else %}{% trans "Applied immediately to the customer account." %}{% endif %}</p>
           <div class="mb-3 rd-pay-sub-block">
             <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
             <input
@@ -473,9 +478,17 @@
     var empPayBtn = document.getElementById("rd-pay-sub-employee-toggle");
     var empPayHint = document.getElementById("rd-pay-sub-employee-hint");
     var payTiles = document.getElementById("rd-pay-sub-payment-tiles");
+    var payNote = document.getElementById("rd-pay-sub-note");
     var tmr;
     function isPaySubViaEmployee() {
       return !!(empPayHid && empPayHid.value);
+    }
+    function syncPaySubNote(viaEmployee) {
+      if (!payNote) return;
+      var text = viaEmployee
+        ? payNote.getAttribute("data-note-employee")
+        : payNote.getAttribute("data-note-method");
+      if (text) payNote.textContent = text;
     }
     function setPaySubViaEmployee(enabled) {
       if (!empPayHid || !empPayBtn) return;
@@ -491,6 +504,7 @@
           t.classList.remove("is-active");
         });
         if (empPayHint) empPayHint.hidden = false;
+        syncPaySubNote(true);
       } else {
         empPayHid.value = "";
         empPayBtn.classList.remove("btn-info");
@@ -499,6 +513,7 @@
         empPayBtn.textContent = empPayBtn.getAttribute("data-off-label") || "Employee";
         if (payTiles) payTiles.classList.remove("opacity-50");
         if (empPayHint) empPayHint.hidden = true;
+        syncPaySubNote(false);
       }
     }
     function clearCustomer() {
