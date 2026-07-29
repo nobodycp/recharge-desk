@@ -281,8 +281,18 @@ def employee_detail(request, pk):
 def employee_ledger_delete(request, pk, entry_pk):
     employee = get_object_or_404(EmployeeProfile, pk=pk)
     entry = get_object_or_404(EmployeeLedgerEntry, pk=entry_pk, employee=employee)
-    delete_ledger_entry(entry=entry)
-    messages.success(request, _("Ledger entry deleted."))
+    was_customer_payment = (
+        entry.entry_type == EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED
+        and entry.reference_customer_payment_id
+    )
+    delete_ledger_entry(entry=entry, user=request.user)
+    if was_customer_payment:
+        messages.success(
+            request,
+            _("Ledger entry and linked customer payment deleted."),
+        )
+    else:
+        messages.success(request, _("Ledger entry deleted."))
     if request.headers.get("HX-Request") == "true":
         next_url = f"{reverse('employees:employee_detail', args=[employee.pk])}?tab={TAB_LEDGER}"
         response = HttpResponse(status=204)

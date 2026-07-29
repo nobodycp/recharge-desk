@@ -362,3 +362,40 @@ class EmployeePayrollTests(TestCase):
         self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
         self.employee.refresh_from_db()
         self.assertEqual(self.employee.current_balance, Decimal("0"))
+
+    def test_delete_customer_payment_ledger_also_removes_customer_payment(self):
+        from customers.models import CustomerLedger, CustomerPayment
+        from customers.services import create_customer, record_customer_payment
+
+        customer = create_customer(name="Sami", user=self.mgmt)
+        payment = record_customer_payment(
+            customer=customer,
+            amount=Decimal("50"),
+            payment_method=None,
+            user=self.mgmt,
+            paid_via_employee=True,
+            employee_recipient=self.employee,
+        )
+        entry = EmployeeLedgerEntry.objects.get(
+            reference_customer_payment=payment,
+            entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+        )
+        self.employee.refresh_from_db()
+        customer.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("-50"))
+        self.assertEqual(customer.current_balance, Decimal("-50"))
+
+        delete_ledger_entry(entry=entry, user=self.mgmt)
+
+        self.assertFalse(EmployeeLedgerEntry.objects.filter(pk=entry.pk).exists())
+        self.assertFalse(CustomerPayment.objects.filter(pk=payment.pk).exists())
+        self.assertFalse(
+            CustomerLedger.objects.filter(
+                customer=customer,
+                entry_type=CustomerLedger.EntryType.PAYMENT,
+            ).exists()
+        )
+        self.employee.refresh_from_db()
+        customer.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("0"))
+        self.assertEqual(customer.current_balance, Decimal("0"))

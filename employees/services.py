@@ -304,16 +304,35 @@ def create_adjustment(
 
 
 @transaction.atomic
-def delete_ledger_entry(*, entry: EmployeeLedgerEntry) -> EmployeeProfile:
-    """Remove one employee ledger row and reverse its balance impact."""
+def delete_ledger_entry(*, entry: EmployeeLedgerEntry, user=None) -> EmployeeProfile:
+    """Remove one employee ledger row and reverse its balance impact.
+
+    Customer-payment-received rows also delete the linked customer payment
+    (customer ledger, balance, and FIFO settlements) so both sides stay in sync.
+    """
     locked_entry = (
         EmployeeLedgerEntry.objects.select_for_update()
-        .select_related("employee")
+        .select_related("employee", "reference_customer_payment")
         .get(pk=entry.pk)
     )
     employee_locked = EmployeeProfile.objects.select_for_update().get(
         pk=locked_entry.employee_id
     )
+
+    if (
+        locked_entry.entry_type
+        == EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED
+        and locked_entry.reference_customer_payment_id
+    ):
+        from customers.services import delete_customer_payment
+
+        delete_customer_payment(
+            payment=locked_entry.reference_customer_payment,
+            user=user,
+        )
+        employee_locked.refresh_from_db(fields=["current_balance"])
+        return employee_locked
+
     expense_id = locked_entry.expense_id
     amount = locked_entry.amount
     locked_entry.delete()
