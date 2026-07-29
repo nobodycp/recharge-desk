@@ -82,7 +82,7 @@
                 </div>
               {% elif entry.payment %}
                 <div class="fw-medium">
-                  {% if entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
+                  {% if entry.payment.paid_via_employee %}{% trans "To employee" %}{% elif entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
                 </div>
               {% elif entry.entry_type == 'adjustment' %}
                 <div class="fw-medium">{% trans "Manual adjustment" %}</div>

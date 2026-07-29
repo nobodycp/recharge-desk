@@ -369,7 +369,12 @@
       <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
         {% csrf_token %}
         <div class="modal-body">
-          <p class="small text-secondary mb-2 rd-pay-sub-note">{% trans "Submitted for management approval before it affects the customer balance." %}</p>
+          <p
+            class="small text-secondary mb-2 rd-pay-sub-note"
+            id="rd-pay-sub-note"
+            data-note-method="{% if app_settings.require_settlement_request_approval %}{% trans 'Submitted for management approval before it affects the customer balance.' %}{% else %}{% trans 'Applied immediately to the customer account.' %}{% endif %}"
+            data-note-employee="{% trans 'Applied immediately: customer balance and your employee ledger.' %}"
+          >{% if app_settings.require_settlement_request_approval %}{% trans "Submitted for management approval before it affects the customer balance." %}{% else %}{% trans "Applied immediately to the customer account." %}{% endif %}</p>
           <div class="mb-3 rd-pay-sub-block">
             <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
             <input
@@ -392,9 +397,32 @@
             {{ pay_sub_form.amount.errors }}
           </div>
           <div class="mb-3 rd-pay-sub-block">
-            <div class="form-label small fw-semibold mb-1">{% trans "Payment method" %}</div>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+              <div class="form-label small fw-semibold mb-0">{% trans "Payment method" %}</div>
+              {% if acting_employee and app_settings.sales_show_employee_payment %}
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-info rd-pay-sub-employee-toggle"
+                id="rd-pay-sub-employee-toggle"
+                aria-pressed="false"
+                data-on-label="{% trans 'Payment to employee: ON' %}"
+                data-off-label="{% trans 'Payment to employee' %}"
+              >{% trans "Payment to employee" %}</button>
+              {% endif %}
+            </div>
             {{ pay_sub_form.payment_method }}
+            {{ pay_sub_form.paid_via_employee }}
             {{ pay_sub_form.payment_method.errors }}
+            {% if acting_employee and app_settings.sales_show_employee_payment %}
+            <div id="rd-pay-sub-employee-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
+              <span>
+                {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
+              </span>
+              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
+                {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
+              </span>
+            </div>
+            {% endif %}
             <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="rd-pay-sub-payment-tiles">
               {% for pm in payment_methods %}
                 <div class="col">
@@ -446,7 +474,48 @@
     var balLine = document.getElementById("rd-pay-sub-balance-line");
     var balVal = document.getElementById("rd-pay-sub-balance-val");
     var pmHid = document.getElementById("id_pay_sub_payment_method");
+    var empPayHid = document.getElementById("id_pay_sub_paid_via_employee");
+    var empPayBtn = document.getElementById("rd-pay-sub-employee-toggle");
+    var empPayHint = document.getElementById("rd-pay-sub-employee-hint");
+    var payTiles = document.getElementById("rd-pay-sub-payment-tiles");
+    var payNote = document.getElementById("rd-pay-sub-note");
     var tmr;
+    function isPaySubViaEmployee() {
+      return !!(empPayHid && empPayHid.value);
+    }
+    function syncPaySubNote(viaEmployee) {
+      if (!payNote) return;
+      var text = viaEmployee
+        ? payNote.getAttribute("data-note-employee")
+        : payNote.getAttribute("data-note-method");
+      if (text) payNote.textContent = text;
+    }
+    function setPaySubViaEmployee(enabled) {
+      if (!empPayHid || !empPayBtn) return;
+      if (enabled) {
+        empPayHid.value = "1";
+        empPayBtn.classList.remove("btn-outline-info");
+        empPayBtn.classList.add("btn-info");
+        empPayBtn.setAttribute("aria-pressed", "true");
+        empPayBtn.textContent = empPayBtn.getAttribute("data-on-label") || "ON";
+        if (payTiles) payTiles.classList.add("opacity-50");
+        if (pmHid) pmHid.value = "";
+        document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
+          t.classList.remove("is-active");
+        });
+        if (empPayHint) empPayHint.hidden = false;
+        syncPaySubNote(true);
+      } else {
+        empPayHid.value = "";
+        empPayBtn.classList.remove("btn-info");
+        empPayBtn.classList.add("btn-outline-info");
+        empPayBtn.setAttribute("aria-pressed", "false");
+        empPayBtn.textContent = empPayBtn.getAttribute("data-off-label") || "Employee";
+        if (payTiles) payTiles.classList.remove("opacity-50");
+        if (empPayHint) empPayHint.hidden = true;
+        syncPaySubNote(false);
+      }
+    }
     function clearCustomer() {
       if (custHid) custHid.value = "";
       if (balLine) balLine.hidden = true;
@@ -504,6 +573,9 @@
     }
     document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (tile) {
       tile.addEventListener("click", function () {
+        if (isPaySubViaEmployee()) {
+          setPaySubViaEmployee(false);
+        }
         document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
           t.classList.remove("is-active");
         });
@@ -511,6 +583,11 @@
         if (pmHid) pmHid.value = tile.getAttribute("data-payment-id") || "";
       });
     });
+    if (empPayBtn) {
+      empPayBtn.addEventListener("click", function () {
+        setPaySubViaEmployee(!isPaySubViaEmployee());
+      });
+    }
     function resetPaySubModal() {
       clearCustomer();
       if (acBox) {
@@ -525,6 +602,7 @@
       if (f) f.reset();
       if (custHid) custHid.value = "";
       if (balLine) balLine.hidden = true;
+      setPaySubViaEmployee(false);
       var notesDetails = document.getElementById("rd-pay-sub-notes-details");
       if (notesDetails) notesDetails.removeAttribute("open");
     }
@@ -574,7 +652,7 @@
           window.alert(modal.getAttribute("data-msg-customer") || "");
           return;
         }
-        if (!pmHid || !String(pmHid.value || "").trim()) {
+        if (!isPaySubViaEmployee() && (!pmHid || !String(pmHid.value || "").trim())) {
           e.preventDefault();
           window.alert(modal.getAttribute("data-msg-payment") || "");
         }

@@ -98,6 +98,23 @@ class CustomerPayment(models.Model):
         on_delete=models.PROTECT,
         related_name="customer_payments",
         verbose_name=_("payment method"),
+        null=True,
+        blank=True,
+    )
+    paid_via_employee = models.BooleanField(
+        _("payment to employee"),
+        default=False,
+        help_text=_(
+            "Cash received by an employee on behalf of the shop; no payment method at entry."
+        ),
+    )
+    employee_recipient = models.ForeignKey(
+        "employees.EmployeeProfile",
+        on_delete=models.PROTECT,
+        related_name="customer_payments_received",
+        verbose_name=_("employee recipient"),
+        null=True,
+        blank=True,
     )
     notes = models.TextField(_("notes"), blank=True)
     created_by = models.ForeignKey(
@@ -148,6 +165,23 @@ class CustomerPaymentSubmission(models.Model):
         on_delete=models.PROTECT,
         related_name="customer_payment_submissions",
         verbose_name=_("payment method"),
+        null=True,
+        blank=True,
+    )
+    paid_via_employee = models.BooleanField(
+        _("payment to employee"),
+        default=False,
+        help_text=_(
+            "Cash received by an employee on behalf of the shop; no payment method at entry."
+        ),
+    )
+    employee_recipient = models.ForeignKey(
+        "employees.EmployeeProfile",
+        on_delete=models.PROTECT,
+        related_name="customer_payment_submissions_received",
+        verbose_name=_("employee recipient"),
+        null=True,
+        blank=True,
     )
     notes = models.TextField(_("notes"), blank=True)
     status = models.CharField(

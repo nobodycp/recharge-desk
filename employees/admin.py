@@ -14,6 +14,7 @@ class EmployeeLedgerInline(admin.TabularInline):
         "payer_name",
         "phone",
         "reference_sale",
+        "reference_customer_payment",
         "notes",
         "created_by",
         "created_at",
@@ -33,4 +34,4 @@ class EmployeeLedgerEntryAdmin(admin.ModelAdmin):
     list_display = ("employee", "entry_type", "amount", "salary_month", "created_at")
     list_filter = ("entry_type",)
     search_fields = ("payer_name", "phone", "employee__user__username")
-    raw_id_fields = ("employee", "reference_sale", "created_by")
+    raw_id_fields = ("employee", "reference_sale", "reference_customer_payment", "created_by")

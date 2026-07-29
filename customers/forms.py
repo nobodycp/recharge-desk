@@ -33,7 +33,13 @@ class EmployeeCustomerPaymentSubmissionForm(forms.Form):
     payment_method = forms.ModelChoiceField(
         label=_("Payment method"),
         queryset=PaymentMethod.objects.filter(is_active=True).order_by("name"),
+        required=False,
         widget=forms.HiddenInput(attrs={"id": "id_pay_sub_payment_method"}),
+    )
+    paid_via_employee = forms.BooleanField(
+        label=_("Payment to employee"),
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "id_pay_sub_paid_via_employee"}),
     )
     notes = forms.CharField(
         label=_("Notes"),
@@ -46,6 +52,36 @@ class EmployeeCustomerPaymentSubmissionForm(forms.Form):
             }
         ),
     )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        from employees.services import get_acting_employee_profile
+
+        self.acting_employee = get_acting_employee_profile(self.user)
+
+    def clean(self):
+        cleaned = super().clean()
+        paid_via_employee = bool(cleaned.get("paid_via_employee"))
+        payment_method = cleaned.get("payment_method")
+        if paid_via_employee:
+            from core.models import AppSettings
+
+            if not AppSettings.load().sales_show_employee_payment:
+                raise forms.ValidationError(
+                    _("Payment to employee is disabled on the sales screen.")
+                )
+            cleaned["payment_method"] = None
+            if not self.acting_employee:
+                raise forms.ValidationError(
+                    _("You are not registered as a payroll employee.")
+                )
+            cleaned["employee_recipient"] = self.acting_employee
+        else:
+            cleaned["employee_recipient"] = None
+            if not payment_method:
+                self.add_error("payment_method", _("This field is required."))
+        return cleaned
 
 
 class CustomerForm(forms.ModelForm):

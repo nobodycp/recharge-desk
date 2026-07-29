@@ -215,6 +215,62 @@ def reverse_sales_payment_for_sale(*, sale) -> None:
 
 
 @transaction.atomic
+def record_customer_payment_received(*, payment, user) -> EmployeeLedgerEntry:
+    """Debit employee when a customer payment paid via them is applied."""
+    if not payment.paid_via_employee or not payment.employee_recipient_id:
+        raise ValueError(_("Payment is not an employee-held customer payment."))
+    existing = EmployeeLedgerEntry.objects.filter(
+        reference_customer_payment=payment,
+        entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+    ).first()
+    if existing:
+        return existing
+
+    employee_locked = EmployeeProfile.objects.select_for_update().get(
+        pk=payment.employee_recipient_id
+    )
+    amount = -Decimal(payment.amount)
+    phone = ""
+    customer = getattr(payment, "customer", None)
+    if customer is not None:
+        first_phone = customer.phones.order_by("pk").values_list("phone", flat=True).first()
+        phone = first_phone or ""
+    entry = EmployeeLedgerEntry.objects.create(
+        employee=employee_locked,
+        entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+        amount=amount,
+        reference_customer_payment=payment,
+        payer_name=customer.name if customer is not None else "",
+        phone=phone,
+        notes=payment.notes or "",
+        created_by=user,
+    )
+    _apply_balance_delta(employee_locked, amount)
+    return entry
+
+
+@transaction.atomic
+def reverse_customer_payment_received(*, payment) -> None:
+    """Undo employee ledger row when an employee-held customer payment is deleted."""
+    rows = list(
+        EmployeeLedgerEntry.objects.filter(
+            reference_customer_payment=payment,
+            entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+        )
+    )
+    if not rows:
+        return
+    employee_id = payment.employee_recipient_id or rows[0].employee_id
+    employee_locked = EmployeeProfile.objects.select_for_update().get(pk=employee_id)
+    delta = Decimal("0")
+    for row in rows:
+        delta -= row.amount
+    EmployeeLedgerEntry.objects.filter(pk__in=[r.pk for r in rows]).delete()
+    if delta:
+        _apply_balance_delta(employee_locked, delta)
+
+
+@transaction.atomic
 def sync_sales_payment_ledger_for_sale(*, sale, user) -> None:
     """Refresh employee ledger row after a paid employee-payment sale is edited."""
     from sales.models import Sale

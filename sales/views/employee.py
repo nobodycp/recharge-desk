@@ -198,7 +198,7 @@ def employee_entry(request):
             "selected_product_id": selected_product_id,
             "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
             "esim_extra": ESIM_EXTRA_COST,
-            "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(),
+            "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(user=request.user),
         },
     )
 
@@ -206,26 +206,41 @@ def employee_entry(request):
 @employee_required
 @require_POST
 def employee_submit_customer_payment_submission(request):
-    if not AppSettings.load().sales_show_record_payment:
+    app_settings = AppSettings.load()
+    if not app_settings.sales_show_record_payment:
         messages.error(request, _("Recording payments from the sales screen is disabled."))
         return redirect("sales:employee_entry")
-    form = EmployeeCustomerPaymentSubmissionForm(request.POST)
+    form = EmployeeCustomerPaymentSubmissionForm(request.POST, user=request.user)
     if not form.is_valid():
         flash_form_errors(request, form)
         return redirect("sales:employee_entry")
+    paid_via_employee = (
+        bool(form.cleaned_data.get("paid_via_employee"))
+        and app_settings.sales_show_employee_payment
+    )
     try:
         submission = submit_customer_payment_submission(
             customer=form.cleaned_data["customer"],
             amount=form.cleaned_data["amount"],
-            payment_method=form.cleaned_data["payment_method"],
+            payment_method=form.cleaned_data.get("payment_method"),
             notes=form.cleaned_data.get("notes") or "",
             user=request.user,
+            paid_via_employee=paid_via_employee,
+            employee_recipient=form.cleaned_data.get("employee_recipient")
+            if paid_via_employee
+            else None,
         )
     except ValueError as exc:
         messages.error(request, str(exc))
     else:
         if finalize_payment_submission_after_entry(submission=submission, user=request.user):
-            messages.success(request, _("Payment recorded on the customer account."))
+            if paid_via_employee:
+                messages.success(
+                    request,
+                    _("Payment recorded on the customer account and credited to employee ledger."),
+                )
+            else:
+                messages.success(request, _("Payment recorded on the customer account."))
         else:
             messages.success(request, _("Payment submitted for management approval."))
     return redirect("sales:employee_entry")

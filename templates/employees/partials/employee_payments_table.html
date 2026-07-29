@@ -35,8 +35,20 @@
               <td class="tabular-nums text-nowrap">{{ row.phone }}</td>
               <td class="fw-medium">{{ row.payer_name }}</td>
               <td class="text-end tabular-nums fw-semibold kpi-expense">{{ row.amount|intcomma }}</td>
-              <td class="fw-medium">{% if row.reference_sale %}{{ row.reference_sale.company.name }}{% else %}—{% endif %}</td>
-              <td>{% if row.reference_sale %}{{ row.reference_sale.product.display_name }}{% else %}—{% endif %}</td>
+              <td class="fw-medium">
+                {% if row.reference_sale %}
+                  {{ row.reference_sale.company.name }}
+                {% elif row.reference_customer_payment %}
+                  {% trans "Customer payment" %}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if row.reference_sale %}
+                  {{ row.reference_sale.product.display_name }}
+                {% elif row.reference_customer_payment and row.reference_customer_payment.customer %}
+                  {{ row.reference_customer_payment.customer.name }}
+                {% else %}—{% endif %}
+              </td>
               <td class="small text-secondary text-end">{% if row.notes %}{{ row.notes }}{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
@@ -58,6 +70,11 @@
         {% if row.reference_sale %}
           <div class="fw-semibold mt-2">{{ row.reference_sale.company.name }}</div>
           <div class="small">{{ row.reference_sale.product.display_name }}</div>
+        {% elif row.reference_customer_payment %}
+          <div class="fw-semibold mt-2">{% trans "Customer payment" %}</div>
+          {% if row.reference_customer_payment.customer %}
+            <div class="small">{{ row.reference_customer_payment.customer.name }}</div>
+          {% endif %}
         {% endif %}
         {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
       </div>

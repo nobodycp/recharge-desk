@@ -166,12 +166,17 @@ def employee_detail(request, pk):
     ledger_page = paginate_request(request, ledger_qs, page_param="ledger_page")
 
     payments_qs = employee.ledger_entries.filter(
-        entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED
+        entry_type__in=[
+            EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED,
+            EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+        ]
     ).select_related(
         "reference_sale",
         "reference_sale__company",
         "reference_sale__product",
         "reference_sale__product__line",
+        "reference_customer_payment",
+        "reference_customer_payment__customer",
         "created_by",
     )
     payments_filter_form = EmployeeSalesPaymentFilterForm(request.GET or None)

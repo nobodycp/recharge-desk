@@ -150,3 +150,41 @@ class SaleWorkflowSettingsTests(TestCase):
         self.assertTrue(applied)
         self.assertEqual(sub.status, CustomerPaymentSubmission.Status.APPROVED)
         self.assertEqual(self.customer.current_balance, Decimal("-15"))
+
+    def test_employee_held_settlement_skips_approval_queue(self):
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={"require_settlement_request_approval": True},
+        )
+        emp_user = User.objects.create_user(username="anas", password="x")
+        UserProfile.objects.update_or_create(
+            user=emp_user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        employee = EmployeeProfile.objects.create(user=emp_user, monthly_salary=Decimal("0"))
+        sub = submit_customer_payment_submission(
+            customer=self.customer,
+            amount=Decimal("50"),
+            payment_method=None,
+            notes="",
+            user=emp_user,
+            paid_via_employee=True,
+            employee_recipient=employee,
+        )
+        applied = finalize_payment_submission_after_entry(submission=sub, user=emp_user)
+        sub.refresh_from_db()
+        self.customer.refresh_from_db()
+        employee.refresh_from_db()
+        self.assertTrue(applied)
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.APPROVED)
+        self.assertEqual(self.customer.current_balance, Decimal("-50"))
+        self.assertEqual(employee.current_balance, Decimal("-50"))
+        self.assertTrue(
+            EmployeeLedgerEntry.objects.filter(
+                employee=employee,
+                entry_type=EmployeeLedgerEntry.EntryType.CUSTOMER_PAYMENT_RECEIVED,
+                amount=Decimal("-50"),
+            ).exists()
+        )
