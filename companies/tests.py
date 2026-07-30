@@ -70,15 +70,25 @@ class CompanyListQueryCountTests(TestCase):
         with CaptureQueriesContext(connection) as ctx:
             resp = self.client.get("/management/products/")
         self.assertEqual(resp.status_code, 200)
-        # 6 product lines + 6 variants × 2 EXISTS each = 12 extra
-        # queries before the annotation. After: zero per-row EXISTS.
-        self.assertLess(
-            len(ctx.captured_queries),
-            12,
-            f"product_list issued {len(ctx.captured_queries)} queries; "
+        # Annotation folds is_deletable into the list/prefetch SELECTs
+        # (EXISTS appears there as has_sales_annotated). A regression is a
+        # standalone per-row EXISTS query outside those annotated SELECTs.
+        per_row_exists = [
+            q["sql"]
+            for q in ctx.captured_queries
+            if "EXISTS" in q["sql"].upper()
+            and "sales_sale" in q["sql"]
+            and "has_sales_annotated" not in q["sql"]
+        ]
+        self.assertEqual(
+            per_row_exists,
+            [],
             "ProductLine.is_deletable / Product.is_deletable probably "
             "regressed to per-row EXISTS.",
         )
+        # Mobile dual-layout: page scroll, not an internal data-shell scroll.
+        self.assertContains(resp, "rd-mobile-stack")
+        self.assertContains(resp, "d-none d-md-block rd-data-shell")
 
     def test_is_deletable_property_still_works_without_annotation(self):
         """When called outside a list view (e.g. in a detail page) the
