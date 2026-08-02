@@ -140,6 +140,9 @@ def update_sale_fields(
               notes. Profit and loss snapshots are recomputed from the new
               selling price against the original cost snapshot.
 
+    For posted on-account sales, the customer CHARGE ledger row and
+    ``customer.current_balance`` are synced to the new selling price.
+
     Out of scope here: company / product / is_esim — those would require
     reversing and re-applying balance transactions and are best handled
     by cancelling and re-creating the sale.
@@ -175,6 +178,11 @@ def update_sale_fields(
             "updated_at",
         ]
     )
+    if sale_locked.on_account and sale_locked.customer_id:
+        from customers.services import sync_on_account_charge_for_sale
+
+        sync_on_account_charge_for_sale(sale=sale_locked, user=user)
+        sale_locked.refresh_from_db()
     changes = diff_fields(before, snapshot(sale_locked, _SALE_AUDITED_FIELDS))
     if changes:
         audit_record(AuditAction.UPDATE, sale_locked, actor=user, changes=changes)

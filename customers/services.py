@@ -184,6 +184,83 @@ def approve_sale(*, sale, user):
 
 
 @transaction.atomic
+def sync_on_account_charge_for_sale(*, sale, user) -> None:
+    """Keep the customer CHARGE ledger + balance aligned after a sale edit.
+
+    When ``sell_price_actual`` changes on a posted on-account sale, the Sale
+    row alone is not enough — the CHARGE ledger amount and
+    ``customer.current_balance`` must move by the same delta. If the sale was
+    already FIFO-settled (PAID), it is reopened and settlements are reapplied
+    so payment headroom stays consistent with the new face amount.
+    """
+    from sales.models import Sale  # local import to avoid app-loading cycles
+
+    sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    if not sale_locked.on_account or not sale_locked.customer_id:
+        return
+    if sale_locked.status in (
+        Sale.Status.AWAITING,
+        Sale.Status.CANCELLED,
+        Sale.Status.WRITTEN_OFF,
+    ):
+        # Not posted yet, or already closed out of the AR ledger.
+        return
+
+    customer_locked = Customer.objects.select_for_update().get(pk=sale_locked.customer_id)
+    charges = list(
+        CustomerLedger.objects.select_for_update()
+        .filter(
+            customer=customer_locked,
+            sale=sale_locked,
+            entry_type=CustomerLedger.EntryType.CHARGE,
+        )
+        .order_by("id")
+    )
+    if not charges:
+        return
+
+    old_total = sum((Decimal(row.amount) for row in charges), Decimal("0"))
+    new_amount = Decimal(sale_locked.sell_price_actual)
+    if new_amount < 0:
+        raise ValueError(_("Sale amount cannot be negative."))
+
+    delta = new_amount - old_total
+    if delta != 0:
+        primary = charges[0]
+        primary.amount = new_amount
+        primary.save(update_fields=["amount"])
+        extras = [row.pk for row in charges[1:]]
+        if extras:
+            # Collapse accidental duplicate CHARGE rows onto the new amount.
+            CustomerLedger.objects.filter(pk__in=extras).delete()
+        _apply_balance_delta(customer_locked, delta)
+
+    # Re-evaluate FIFO settlement whenever the face amount changed (or even
+    # if it didn't but duplicates were cleaned — delta covers that).
+    if sale_locked.status == Sale.Status.PAID and delta != 0:
+        sale_locked.status = Sale.Status.PENDING
+        sale_locked.paid_at = None
+        sale_locked.paid_by = None
+        sale_locked.payment_method = None
+        sale_locked.customer_payment = None
+        sale_locked.save(
+            update_fields=[
+                "status",
+                "paid_at",
+                "paid_by",
+                "payment_method",
+                "customer_payment",
+                "updated_at",
+            ]
+        )
+
+    if delta != 0:
+        reapply_settlements_for_customer(
+            customer=customer_locked, triggering_payment=None, user=user
+        )
+
+
+@transaction.atomic
 def reject_sale(*, sale, user):
     """Reject an AWAITING on-account sale: cancel it (refund supplier balance)."""
     from sales.models import Sale  # local import to avoid app-loading cycles

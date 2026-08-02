@@ -25,7 +25,7 @@ from customers.services import (
 )
 from sales.models import PaymentMethod, Sale
 from sales.query_utils import confirmed_sales
-from sales.services import cancel_sale, create_sale, delete_sale_permanently
+from sales.services import cancel_sale, create_sale, delete_sale_permanently, update_sale_fields
 from core.sale_workflow import finalize_sale_after_entry
 
 User = get_user_model()
@@ -295,6 +295,140 @@ class ApproveRejectTests(CustomerARTestCase):
         self.assertEqual(s.status, Sale.Status.CANCELLED)
         self.assertEqual(c.current_balance, _decimal(0))
         self.assertEqual(CustomerLedger.objects.filter(customer=c).count(), 0)
+
+
+class UpdateOnAccountSaleAmountTests(CustomerARTestCase):
+    """Editing sell_price_actual must keep CHARGE ledger + customer balance in sync."""
+
+    def test_increasing_amount_updates_charge_and_balance(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s, user=self.user)
+
+        update_sale_fields(
+            sale=s,
+            payment_method=None,
+            payer_name=c.name,
+            reference_number=s.reference_number,
+            sell_price_actual=_decimal(250),
+            notes="",
+            user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        charge = CustomerLedger.objects.get(
+            customer=c, sale=s, entry_type=CustomerLedger.EntryType.CHARGE
+        )
+        self.assertEqual(s.sell_price_actual, _decimal(250))
+        self.assertEqual(charge.amount, _decimal(250))
+        self.assertEqual(c.current_balance, _decimal(250))
+
+    def test_decreasing_amount_updates_charge_and_balance(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s, user=self.user)
+
+        update_sale_fields(
+            sale=s,
+            payment_method=None,
+            payer_name=c.name,
+            reference_number=s.reference_number,
+            sell_price_actual=_decimal(150),
+            notes="",
+            user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        charge = CustomerLedger.objects.get(
+            customer=c, sale=s, entry_type=CustomerLedger.EntryType.CHARGE
+        )
+        self.assertEqual(s.sell_price_actual, _decimal(150))
+        self.assertEqual(charge.amount, _decimal(150))
+        self.assertEqual(c.current_balance, _decimal(150))
+
+    def test_awaiting_sale_edit_does_not_create_charge(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+
+        update_sale_fields(
+            sale=s,
+            payment_method=None,
+            payer_name=c.name,
+            reference_number=s.reference_number,
+            sell_price_actual=_decimal(180),
+            notes="",
+            user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        self.assertEqual(s.sell_price_actual, _decimal(180))
+        self.assertEqual(c.current_balance, _decimal(0))
+        self.assertFalse(
+            CustomerLedger.objects.filter(customer=c, sale=s).exists()
+        )
+
+    def test_increasing_settled_sale_reopens_when_payment_no_longer_covers(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 100)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(100), payment_method=self.cash, user=self.user
+        )
+        s.refresh_from_db()
+        self.assertEqual(s.status, Sale.Status.PAID)
+
+        update_sale_fields(
+            sale=s,
+            payment_method=None,
+            payer_name=c.name,
+            reference_number=s.reference_number,
+            sell_price_actual=_decimal(150),
+            notes="",
+            user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        charge = CustomerLedger.objects.get(
+            customer=c, sale=s, entry_type=CustomerLedger.EntryType.CHARGE
+        )
+        self.assertEqual(charge.amount, _decimal(150))
+        self.assertEqual(c.current_balance, _decimal(50))
+        self.assertEqual(s.status, Sale.Status.PENDING)
+        self.assertIsNone(s.customer_payment_id)
+
+    def test_decreasing_settled_sale_stays_paid(self):
+        c = self._new_customer()
+        s = self._new_on_account_sale(c, 200)
+        approve_sale(sale=s, user=self.user)
+        record_customer_payment(
+            customer=c, amount=_decimal(200), payment_method=self.cash, user=self.user
+        )
+        s.refresh_from_db()
+        self.assertEqual(s.status, Sale.Status.PAID)
+
+        update_sale_fields(
+            sale=s,
+            payment_method=None,
+            payer_name=c.name,
+            reference_number=s.reference_number,
+            sell_price_actual=_decimal(150),
+            notes="",
+            user=self.user,
+        )
+
+        s.refresh_from_db()
+        c.refresh_from_db()
+        charge = CustomerLedger.objects.get(
+            customer=c, sale=s, entry_type=CustomerLedger.EntryType.CHARGE
+        )
+        self.assertEqual(charge.amount, _decimal(150))
+        # Payment 200 vs charge 150 → customer credit of 50.
+        self.assertEqual(c.current_balance, _decimal(-50))
+        self.assertEqual(s.status, Sale.Status.PAID)
 
 
 class RecordPaymentFifoTests(CustomerARTestCase):
