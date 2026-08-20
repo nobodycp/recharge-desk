@@ -30,7 +30,7 @@
     id="employee-sale-form"
     data-esim-extra="{{ esim_extra|unlocalize }}"
     data-sim-preview-url="{% if app_settings.sales_inventory_enabled %}{% url 'sales:api_sim_stock_preview' %}{% endif %}"
-    data-msg-phone-prefix="{% trans 'صحّح رقم الشريحة اكتب' %}"
+    data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
   >
           {% csrf_token %}
           {% if form.non_field_errors %}

@@ -18,7 +18,7 @@ ALLOWED_SALE_PHONE_PREFIXES: tuple[str, ...] = (
 
 SALE_PHONE_RE = re.compile(r"^05[0-5]\d{7}$")
 
-SALE_PHONE_PREFIX_ERROR = _("صحّح رقم الشريحة اكتب")
+SALE_PHONE_PREFIX_ERROR = _("صحصح رقم الشريحه اكتب")
 
 
 def normalize_sale_phone(raw: str) -> str:

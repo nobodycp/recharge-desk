@@ -5388,8 +5388,8 @@ msgstr ""
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
-msgid "صحّح رقم الشريحة اكتب"
-msgstr "صحّح رقم الشريحة اكتب"
+msgid "صحصح رقم الشريحه اكتب"
+msgstr "صحصح رقم الشريحه اكتب"
 
 #~ msgid "Applied immediately: customer balance and your employee ledger."
 #~ msgstr "تُطبَّق فوراً: على رصيد الزبون ودفتر الموظف لديك."

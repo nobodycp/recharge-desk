@@ -1184,7 +1184,7 @@ class SalePhonePrefixValidationTests(TestCase):
         before = Sale.objects.count()
         resp = self._post_sale("0591234567")
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "صحّح رقم الشريحة اكتب")
+        self.assertContains(resp, "صحصح رقم الشريحه اكتب")
         self.assertEqual(Sale.objects.count(), before)
 
     def test_employee_entry_accepts_050(self):
