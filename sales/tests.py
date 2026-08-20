@@ -622,7 +622,7 @@ class EmployeeRecentSalesTests(TestCase):
             data={
                 "payment_method": self.pm2.pk,
                 "payer_name": "Fixed",
-                "reference_number": "0590000111",
+                "reference_number": "0500000111",
                 "sell_price_actual": "12.00",
                 "notes": "",
             },
@@ -631,7 +631,7 @@ class EmployeeRecentSalesTests(TestCase):
         s.refresh_from_db()
         self.assertEqual(s.payer_name, "Fixed")
         self.assertEqual(s.payment_method_id, self.pm2.pk)
-        self.assertEqual(s.reference_number, "0590000111")
+        self.assertEqual(s.reference_number, "0500000111")
         self.assertEqual(s.sell_price_actual, Decimal("12.00"))
 
     def test_employee_edit_blocked_outside_last_ten(self):
@@ -1113,3 +1113,83 @@ class EmployeeRefreshPhoneTests(TestCase):
         refresh_mock.assert_called_once()
         _args, kwargs = refresh_mock.call_args
         self.assertEqual(kwargs.get("source"), "employee")
+
+
+class SalePhonePrefixValidationTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.company = Company.objects.create(
+            name="Phone Co",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="L")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="P",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="CashPhone")
+        cls.emp = User.objects.create_user("phone_emp", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client.force_login(self.emp)
+
+    def _post_sale(self, reference_number):
+        return self.client.post(
+            reverse("sales:employee_entry"),
+            {
+                "company": self.company.pk,
+                "product": self.product.pk,
+                "reference_number": reference_number,
+                "payer_name": "Tester",
+                "sell_price_actual": "10",
+                "payment_method": self.pm.pk,
+            },
+        )
+
+    def test_allows_prefixes_050_to_055(self):
+        from sales.phone_validation import validate_sale_phone_prefix
+
+        for prefix in ("050", "051", "052", "053", "054", "055"):
+            self.assertEqual(
+                validate_sale_phone_prefix(f"{prefix}1234567"),
+                f"{prefix}1234567",
+            )
+
+    def test_rejects_059_and_058(self):
+        from django.core.exceptions import ValidationError
+
+        from sales.phone_validation import SALE_PHONE_PREFIX_ERROR, validate_sale_phone_prefix
+
+        for bad in ("0591234567", "0581234567", "0561234567", "123", "05012"):
+            with self.assertRaises(ValidationError) as ctx:
+                validate_sale_phone_prefix(bad)
+            self.assertEqual(ctx.exception.messages[0], str(SALE_PHONE_PREFIX_ERROR))
+
+    def test_normalizes_972_and_nine_digit(self):
+        from sales.phone_validation import validate_sale_phone_prefix
+
+        self.assertEqual(validate_sale_phone_prefix("972501234567"), "0501234567")
+        self.assertEqual(validate_sale_phone_prefix("501234567"), "0501234567")
+
+    def test_employee_entry_rejects_bad_prefix(self):
+        before = Sale.objects.count()
+        resp = self._post_sale("0591234567")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "صحّح رقم الشريحة اكتب")
+        self.assertEqual(Sale.objects.count(), before)
+
+    def test_employee_entry_accepts_050(self):
+        before = Sale.objects.count()
+        resp = self._post_sale("0501234567")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(Sale.objects.count(), before + 1)
+        self.assertEqual(Sale.objects.latest("pk").reference_number, "0501234567")

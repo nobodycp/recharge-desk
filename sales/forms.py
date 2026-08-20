@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from companies.models import Company, Product
 from sales.models import PaymentMethod, Sale
+from sales.phone_validation import validate_sale_phone_prefix
 
 User = get_user_model()
 
@@ -138,6 +139,9 @@ class EmployeeSaleForm(forms.Form):
         self.fields["employee_recipient"].queryset = EmployeeProfile.objects.filter(
             is_active=True
         ).select_related("user", "user__profile")
+
+    def clean_reference_number(self):
+        return validate_sale_phone_prefix(self.cleaned_data.get("reference_number") or "")
 
     def clean(self):
         cleaned = super().clean()
@@ -360,6 +364,9 @@ class ManagementSaleEditForm(forms.ModelForm):
         self.fields["payment_method"].queryset = (
             PaymentMethod.objects.filter(is_active=True).order_by("name")
         )
+
+    def clean_reference_number(self):
+        return validate_sale_phone_prefix(self.cleaned_data.get("reference_number") or "")
 
 
 class EmployeeSaleEditForm(ManagementSaleEditForm):

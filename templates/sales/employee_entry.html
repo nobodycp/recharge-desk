@@ -30,6 +30,7 @@
     id="employee-sale-form"
     data-esim-extra="{{ esim_extra|unlocalize }}"
     data-sim-preview-url="{% if app_settings.sales_inventory_enabled %}{% url 'sales:api_sim_stock_preview' %}{% endif %}"
+    data-msg-phone-prefix="{% trans 'صحّح رقم الشريحة اكتب' %}"
   >
           {% csrf_token %}
           {% if form.non_field_errors %}
@@ -1214,6 +1215,22 @@
         }
       });
     });
+
+    var saleForm = document.getElementById("employee-sale-form");
+    var saleRefInput = document.getElementById("id_reference_number");
+    if (saleForm && saleRefInput) {
+      saleForm.addEventListener("submit", function (e) {
+        var digits = String(saleRefInput.value || "").replace(/\D/g, "");
+        if (digits.indexOf("972") === 0) digits = "0" + digits.slice(3);
+        if (digits.length === 9 && digits.charAt(0) === "5") digits = "0" + digits;
+        if (!/^05[0-5]\d{7}$/.test(digits)) {
+          e.preventDefault();
+          window.alert(saleForm.getAttribute("data-msg-phone-prefix") || "");
+          saleRefInput.focus();
+        }
+      });
+    }
+
     var ph = document.getElementById("id_product");
     if (ph && ph.value) {
       var ps = document.querySelector('.employee-package-chip[data-product-id="' + ph.value + '"]');
