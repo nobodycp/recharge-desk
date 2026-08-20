@@ -12,7 +12,7 @@
 <div class="app-card card mb-4">
   <div class="card-body p-4">
     <p class="text-secondary small mb-3">
-      {% trans "Upload the Layan charges report (Excel). Only rows where the portal balance before and after differ are counted; re-activations with unchanged balance are ignored." %}
+      {% trans "Upload the Layan charges report (Excel). Matching lists: numbers in Layan not in the system, numbers in the system not in Layan, settlements (charge + disconnect), and sales differences above the minimum you enter." %}
     </p>
     <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
       {% csrf_token %}
@@ -78,9 +78,15 @@
     </div>
   </div>
 
-  {% trans "Numbers not recorded under Layan" as title_not_recorded %}
-  {% trans "Charged on Layan portal but no matching Layan sale in this period." as help_not_recorded %}
+  {% trans "In Layan, not in system" as title_not_recorded %}
+  {% trans "Number appears on the Layan report but has no matching Layan sale in the system for this period." as help_not_recorded %}
   {% include "companies/partials/layan_reconcile_table.html" with section_title=title_not_recorded section_rows=result.not_recorded section_total=result.total_not_recorded section_help=help_not_recorded %}
+
+  {% if result.rd_only %}
+    {% trans "In system, not in Layan" as title_rd_only %}
+    {% trans "Layan sale in the system with no matching line in the uploaded Layan report." as help_rd_only %}
+    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_rd_only section_rows=result.rd_only section_total=result.total_rd_only section_help=help_rd_only %}
+  {% endif %}
 
   {% if result.logged_other_supplier %}
     {% trans "Logged under another supplier" as title_other %}
@@ -90,7 +96,7 @@
 
   {% if result.split_settlements or result.split_settlements_hidden_count %}
     {% trans "Settlements on disconnected numbers" as title_split %}
-    {% trans "Charge on activation minus refund on disconnect (amount kept on Layan portal)." as help_split %}
+    {% trans "Charge and disconnect in the same period (balance withdrawal, refund, and retained loss)." as help_split %}
     {% if result.min_settlement_difference > 0 %}
       <p class="small text-secondary mb-2">
         {% blocktrans with min=result.min_settlement_difference|floatformat:2 hidden=result.split_settlements_hidden_count %}
@@ -102,15 +108,9 @@
   {% endif %}
 
   {% if result.amount_mismatches %}
-    {% trans "Amount mismatches" as title_mismatch %}
-    {% trans "Both sides have activity but net amounts differ." as help_mismatch %}
+    {% trans "Sales differences (Layan vs system)" as title_mismatch %}
+    {% trans "Both sides have the number, but Layan and system amounts differ by more than the minimum entered above (e.g. Layan 60 vs one sale of 30 in the system)." as help_mismatch %}
     {% include "companies/partials/layan_reconcile_table.html" with section_title=title_mismatch section_rows=result.amount_mismatches section_total=result.total_amount_mismatch section_help=help_mismatch %}
-  {% endif %}
-
-  {% if result.rd_only %}
-    {% trans "In Layan sales only" as title_rd_only %}
-    {% trans "Layan sale in Recharge Desk with no matching charge line in the uploaded Layan report." as help_rd_only %}
-    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_rd_only section_rows=result.rd_only section_total=result.total_rd_only section_help=help_rd_only %}
   {% endif %}
 
   <details class="app-card card mt-3">

@@ -162,6 +162,32 @@ def _same_day_passive_charges(lay: LayanPhoneAgg) -> Decimal:
     return total
 
 
+def _all_positive_costs(lay: LayanPhoneAgg) -> Decimal:
+    """Sum of every positive cost line (balance-moving and passive)."""
+    return sum(
+        (ln[1] for ln in lay.lines if len(ln) > 1 and ln[1] > 0),
+        Decimal("0"),
+    )
+
+
+def _layan_presence_amount(
+    lay: LayanPhoneAgg,
+    breakdown: PhoneActivityBreakdown,
+    layan_match: Decimal,
+) -> Decimal:
+    """Amount shown when listing a Layan-only number (presence, not only net)."""
+    if layan_match > 0:
+        return layan_match
+    if breakdown.had_settlement and breakdown.settlement_net != 0:
+        return abs(breakdown.settlement_net)
+    positives = _all_positive_costs(lay)
+    if positives > 0:
+        return positives
+    if lay.refunds < 0:
+        return abs(lay.refunds)
+    return Decimal("0")
+
+
 def _phone_activity_breakdown(lay: LayanPhoneAgg) -> PhoneActivityBreakdown:
     """Pair each charge with the next refund by time; leftover charges are recharges."""
     ordered = sorted(
@@ -421,8 +447,19 @@ def reconcile_layan_report(
     pending_credits: dict[str, Decimal] | None = None,
     min_settlement_difference: Decimal | None = None,
 ) -> LayanReconcileResult:
-    """Match Layan Excel rows to RD sales for one supplier (intended for Layan)."""
+    """Match Layan Excel rows to RD sales for one supplier (intended for Layan).
+
+    Categories (by design):
+    1. In Layan, not in system — any Layan number with no Layan-company sale
+    2. In system, not in Layan — any Layan-company sale missing from the report
+    3. Settlements — charge + disconnect in the period (retained / loss amount)
+    4. Sales differences — both sides present and |gap| exceeds the entered minimum
+    """
     pending_credits = pending_credits or {}
+    min_diff = Decimal(min_settlement_difference or 0)
+    # Tiny floor so exact equals still count as matched when min_diff is 0.
+    mismatch_threshold = min_diff if min_diff > 0 else Decimal("0.01")
+
     layan_phones, layan_dep, layan_net, layan_end, row_count = parse_layan_workbook(
         file_obj, period_from=period_from, period_to=period_to
     )
@@ -492,6 +529,7 @@ def reconcile_layan_report(
             breakdown.to_detail(layan_chg, layan_ref) if lay else None
         )
 
+        # --- 2. In system, not in Layan ---
         if lay is None and rd_net > 0:
             rd_only.append(
                 ReconcilePhoneRow(
@@ -503,7 +541,7 @@ def reconcile_layan_report(
                     rd_net=rd_net,
                     gap=-rd_net,
                     category="rd_only",
-                    category_label=str(_("In Layan sales only")),
+                    category_label=str(_("In system, not in Layan")),
                     lines=[],
                     rd_suppliers=company.name,
                 )
@@ -513,6 +551,7 @@ def reconcile_layan_report(
         if lay is None:
             continue
 
+        # --- 3. Settlements (charge + disconnect in period) ---
         if breakdown.had_settlement:
             split_settlements.append(
                 ReconcilePhoneRow(
@@ -533,26 +572,35 @@ def reconcile_layan_report(
                     activity_detail=activity_detail,
                 )
             )
+            # Pure settlement: no leftover recharge to treat as a sale row.
+            if breakdown.recharge_total <= 0:
+                continue
 
-        if breakdown.had_settlement and breakdown.recharge_total <= 0:
-            continue
+        # Presence amount for listing Layan-only numbers (includes passive /
+        # orphan rows that the old net<=0 skip used to hide).
+        presence_amount = _layan_presence_amount(lay, breakdown, layan_match)
+        has_layan_signal = (
+            layan_match > 0
+            or presence_amount > 0
+            or bool(lines)
+        )
 
-        if not breakdown.had_settlement and layan_match <= 0:
-            continue
-
-        if rd_net == 0 and layan_match > Decimal("0"):
+        # --- 1. In Layan, not in system ---
+        if rd_net <= 0 and has_layan_signal:
+            display_net = layan_match if layan_match > 0 else presence_amount
+            display_gap = display_net
             other_note = _other_supplier_note(ph)
-            other_net = rd_other_by_phone.get(ph, Decimal("0")) - rd_net
+            other_net = rd_other_by_phone.get(ph, Decimal("0"))
             if other_note and other_net > Decimal("0"):
                 logged_other_supplier.append(
                     ReconcilePhoneRow(
                         raw=raw,
                         phone=ph,
-                        layan_net=layan_match,
+                        layan_net=display_net,
                         layan_charges=layan_chg,
                         layan_refunds=layan_ref,
                         rd_net=other_net,
-                        gap=layan_match - other_net,
+                        gap=display_net - other_net,
                         category="other_supplier",
                         category_label=str(_("Logged under another supplier")),
                         lines=lines,
@@ -568,13 +616,13 @@ def reconcile_layan_report(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_match,
+                    layan_net=display_net,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
-                    rd_net=rd_net,
-                    gap=gap,
+                    rd_net=Decimal("0"),
+                    gap=display_gap,
                     category="not_recorded",
-                    category_label=str(_("Not recorded under Layan")),
+                    category_label=str(_("In Layan, not in system")),
                     lines=lines,
                     rd_suppliers=company.name,
                     settlement_amount=breakdown.settlement_net,
@@ -585,7 +633,36 @@ def reconcile_layan_report(
             )
             continue
 
-        if abs(gap) > Decimal("0.01") and rd_net > 0:
+        # Layan presence without a balance-moving sale amount: both sides have
+        # the number, but there is nothing meaningful to diff as a sale.
+        if layan_match <= 0 and rd_net > 0:
+            matched.append(
+                ReconcilePhoneRow(
+                    raw=raw,
+                    phone=ph,
+                    layan_net=presence_amount,
+                    layan_charges=layan_chg,
+                    layan_refunds=layan_ref,
+                    rd_net=rd_net,
+                    gap=presence_amount - rd_net,
+                    category="matched",
+                    category_label=str(_("Matched")),
+                    lines=lines,
+                    rd_suppliers=company.name,
+                    settlement_amount=breakdown.settlement_net,
+                    recharge_amount=breakdown.recharge_total,
+                    settlement_cycles=breakdown.settlement_cycles,
+                    activity_detail=activity_detail,
+                )
+            )
+            continue
+
+        # No sale-side activity left to compare (e.g. settlement handled above).
+        if layan_match <= 0 and rd_net <= 0:
+            continue
+
+        # --- 4. Sales differences (both sides; gap above entered minimum) ---
+        if rd_net > 0 and abs(gap) > mismatch_threshold:
             amount_mismatches.append(
                 ReconcilePhoneRow(
                     raw=raw,
@@ -596,7 +673,7 @@ def reconcile_layan_report(
                     rd_net=rd_net,
                     gap=gap,
                     category="mismatch",
-                    category_label=str(_("Amount mismatch")),
+                    category_label=str(_("Sales difference (Layan vs system)")),
                     lines=lines,
                     rd_suppliers=company.name,
                     settlement_amount=breakdown.settlement_net,
@@ -612,11 +689,11 @@ def reconcile_layan_report(
                 ReconcilePhoneRow(
                     raw=raw,
                     phone=ph,
-                    layan_net=layan_match,
+                    layan_net=layan_match if layan_match > 0 else presence_amount,
                     layan_charges=layan_chg,
                     layan_refunds=layan_ref,
                     rd_net=rd_net,
-                    gap=gap,
+                    gap=gap if layan_match > 0 else (presence_amount - rd_net),
                     category="matched",
                     category_label=str(_("Matched")),
                     lines=lines,
@@ -633,18 +710,28 @@ def reconcile_layan_report(
         reverse=True,
     )
 
-    min_settle = Decimal(min_settlement_difference or 0)
     split_hidden = 0
-    if min_settle > 0:
+    if min_diff > 0:
         visible = [
             r
             for r in split_settlements
-            if _settlement_row_difference(r) >= min_settle
+            if _settlement_row_difference(r) >= min_diff
         ]
         split_hidden = len(split_settlements) - len(visible)
         split_settlements = visible
 
-    total_not = sum((r.gap for r in not_recorded), Decimal("0"))
+    # Deficit: balance-affecting Layan charges missing from RD + settlement retained.
+    total_not = sum(
+        (
+            r.gap
+            for r in not_recorded
+            if r.layan_charges > 0 or r.recharge_amount > 0
+        ),
+        Decimal("0"),
+    )
+    # Presence-only rows (passive / orphan) still listed; count their gap for the
+    # section total so the UI total matches the visible column.
+    total_not_section = sum((r.gap for r in not_recorded), Decimal("0"))
     total_split = sum((r.settlement_amount for r in split_settlements), Decimal("0"))
     total_mismatch = sum((abs(r.gap) for r in amount_mismatches), Decimal("0"))
     total_rd_only = sum((r.rd_net for r in rd_only), Decimal("0"))
@@ -672,7 +759,7 @@ def reconcile_layan_report(
         matched=matched,
         rd_only=rd_only,
         logged_other_supplier=logged_other_supplier,
-        total_not_recorded=total_not,
+        total_not_recorded=total_not_section,
         total_split_settlements=total_split,
         total_amount_mismatch=total_mismatch,
         total_rd_only=total_rd_only,
@@ -680,7 +767,7 @@ def reconcile_layan_report(
         estimated_deficit=estimated_deficit,
         row_count=row_count,
         balance_gap=balance_gap,
-        min_settlement_difference=min_settle,
+        min_settlement_difference=min_diff,
         split_settlements_hidden_count=split_hidden,
     )
 

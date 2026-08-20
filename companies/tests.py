@@ -295,6 +295,7 @@ class LayanReconcileTests(TestCase):
             buf,
             period_from=date(2026, 5, 1),
             period_to=date(2026, 5, 31),
+            min_settlement_difference=_decimal(3),
         )
         self.assertEqual(len(result.split_settlements), 0)
         self.assertEqual(len(result.matched), 0)
@@ -303,6 +304,107 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(row.phone, "0512796404")
         self.assertEqual(row.layan_net, _decimal(60))
         self.assertEqual(row.rd_net, _decimal(30))
+
+    def test_sales_difference_respects_minimum_threshold(self):
+        """Gaps at or below the entered minimum are treated as matched."""
+        from sales.models import PaymentMethod, Sale
+
+        buf = self._minimal_workbook(
+            [
+                ("0512796404", "تفعيل خط هاتف جديد - We", 30, 3631.61, 3631.61, "06/05/2026 14:35"),
+                ("0512796404", "دفعه يدويه - We", 30, 3601.61, 3571.61, "06/05/2026 15:29"),
+            ]
+        )
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L-thresh"),
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="cash-thresh")
+        self._create_may_sale(
+            company=self.company,
+            product=product,
+            reference_number="0512796404",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        buf.seek(0)
+        result_high = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+            min_settlement_difference=_decimal(50),
+        )
+        self.assertEqual(len(result_high.amount_mismatches), 0)
+        self.assertEqual(len(result_high.matched), 1)
+        self.assertEqual(result_high.matched[0].layan_net, _decimal(60))
+
+    def test_passive_only_layan_number_shows_as_not_in_system(self):
+        """Passive re-activation used to be hidden; must appear as Layan-only."""
+        buf = self._minimal_workbook(
+            [
+                (
+                    "0512816409",
+                    "تفعيل خط هاتف جديد - We",
+                    60,
+                    500,
+                    500,
+                    "10/05/2026 10:00",
+                ),
+            ]
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.not_recorded), 1)
+        self.assertEqual(result.not_recorded[0].phone, "0512816409")
+        self.assertEqual(result.not_recorded[0].layan_net, _decimal(60))
+        self.assertEqual(result.not_recorded[0].rd_net, _decimal(0))
+
+    def test_rd_only_lists_system_sale_missing_from_layan(self):
+        from sales.models import PaymentMethod, Sale
+
+        product = Product.objects.create(
+            line=ProductLine.objects.create(company=self.company, name="L-rd"),
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="cash-rd-only")
+        self._create_may_sale(
+            company=self.company,
+            product=product,
+            reference_number="0588888888",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(30),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(20),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        buf = self._minimal_workbook([])
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(len(result.rd_only), 1)
+        self.assertEqual(result.rd_only[0].phone, "0588888888")
+        self.assertEqual(result.rd_only[0].rd_net, _decimal(30))
 
     def test_multiple_settlements_plus_final_recharge(self):
         from sales.models import PaymentMethod, Sale

@@ -104,15 +104,16 @@ class LayanReportReconcileForm(forms.Form):
         ),
     )
     min_settlement_difference = forms.DecimalField(
-        label=_("Minimum settlement difference to show"),
+        label=_("Minimum difference to show"),
         required=False,
         initial=3,
         min_value=0,
         decimal_places=2,
         widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
         help_text=_(
-            "Rows in “Settlements on disconnected numbers” with a smaller "
-            "retained amount are hidden (0 shows all)."
+            "Used for settlements (charge + disconnect retained amount) and for "
+            "sales differences between Layan and the system. Rows with a smaller "
+            "difference are hidden (0 shows all)."
         ),
     )
 

@@ -356,16 +356,17 @@ msgstr ""
 "سطر لكل رقم: رقم_الهاتف,مبلغ_الإرجاع غير الظاهر بعد في الكشف (مثل عكس معلّق)."
 
 #: companies/forms.py:107
-msgid "Minimum settlement difference to show"
-msgstr "أقل فرق تسوية للعرض"
+msgid "Minimum difference to show"
+msgstr "أقل فرق للعرض"
 
 #: companies/forms.py:114
 msgid ""
-"Rows in “Settlements on disconnected numbers” with a smaller retained amount "
-"are hidden (0 shows all)."
+"Used for settlements (charge + disconnect retained amount) and for sales "
+"differences between Layan and the system. Rows with a smaller difference are "
+"hidden (0 shows all)."
 msgstr ""
-"صفوف «تسويات على أرقام مفصولة» التي فرقها أصغر من هذه القيمة لا تُعرض (0 = "
-"عرض الكل)."
+"يُستخدم للتسويات (المبلغ المتبقي بعد شحن وفصل) ولاختلاف المبيعات بين ليان "
+"والنظام. الصفوف ذات الفرق الأصغر تُخفى (0 = عرض الكل)."
 
 #: companies/forms.py:125
 msgid "e.g. 100 GB"
@@ -375,28 +376,29 @@ msgstr "مثلاً 100 جيجا"
 msgid "Pending credit (manual)"
 msgstr "رصيد معلّق (يدوي)"
 
-#: companies/layan_reconcile.py:506
-#: templates/companies/layan_reconcile.html:111
-msgid "In Layan sales only"
-msgstr "في مبيعات ليان فقط"
+#: companies/layan_reconcile.py
+#: templates/companies/layan_reconcile.html
+msgid "In system, not in Layan"
+msgstr "مسجّل بالنظام وغير مسجّل بليان"
 
-#: companies/layan_reconcile.py:527
+#: companies/layan_reconcile.py
 msgid "Settlement on disconnected number"
 msgstr "تسوية على رقم مفصول"
 
-#: companies/layan_reconcile.py:557 templates/companies/layan_reconcile.html:86
+#: companies/layan_reconcile.py templates/companies/layan_reconcile.html
 msgid "Logged under another supplier"
 msgstr "مسجّل تحت مورد آخر"
 
-#: companies/layan_reconcile.py:577
-msgid "Not recorded under Layan"
-msgstr "لم يُسجّل تحت ليان"
+#: companies/layan_reconcile.py
+#: templates/companies/layan_reconcile.html
+msgid "In Layan, not in system"
+msgstr "مسجّل بليان وغير مسجّل بالنظام"
 
-#: companies/layan_reconcile.py:599
-msgid "Amount mismatch"
-msgstr "اختلاف مبلغ"
+#: companies/layan_reconcile.py
+msgid "Sales difference (Layan vs system)"
+msgstr "اختلاف مبيعات (ليان مقابل النظام)"
 
-#: companies/layan_reconcile.py:621
+#: companies/layan_reconcile.py
 msgid "Matched"
 msgstr "متطابق"
 
@@ -2822,12 +2824,12 @@ msgstr "العودة للمورد"
 
 #: templates/companies/layan_reconcile.html:15
 msgid ""
-"Upload the Layan charges report (Excel). Only rows where the portal balance "
-"before and after differ are counted; re-activations with unchanged balance "
-"are ignored."
+"Upload the Layan charges report (Excel). Matching lists: numbers in Layan "
+"not in the system, numbers in the system not in Layan, settlements (charge + "
+"disconnect), and sales differences above the minimum you enter."
 msgstr ""
-"ارفع كشف ليان. تُحسب فقط الحركات التي تغيّر «الرصيد قبل» و«الرصيد بعد»؛ إعادة "
-"التفعيل بدون تغيّر رصيد تُتجاهل."
+"ارفع كشف ليان. القوائم: أرقام بليان وغير مسجّلة بالنظام، أرقام بالنظام وغير "
+"مسجّلة بليان، التسويات (شحن وفصل)، واختلاف المبيعات فوق الحد الذي تدخله."
 
 #: templates/companies/layan_reconcile.html:27
 msgid "Run matching"
@@ -2868,13 +2870,12 @@ msgstr "الفرق"
 msgid "End balance not found in file."
 msgstr "رصيد نهاية الكشف غير موجود في الملف."
 
-#: templates/companies/layan_reconcile.html:81
-msgid "Numbers not recorded under Layan"
-msgstr "أرقام غير مسجّلة تحت ليان"
-
 #: templates/companies/layan_reconcile.html:82
-msgid "Charged on Layan portal but no matching Layan sale in this period."
-msgstr "مخصوم على بوابة ليان دون بيع ليان مطابق في هذه الفترة."
+msgid ""
+"Number appears on the Layan report but has no matching Layan sale in the "
+"system for this period."
+msgstr ""
+"الرقم ظاهر في كشف ليان ولا يوجد له بيع ليان مطابق في النظام لهذه الفترة."
 
 #: templates/companies/layan_reconcile.html:87
 msgid ""
@@ -2885,9 +2886,9 @@ msgstr ""
 
 #: templates/companies/layan_reconcile.html:93
 msgid ""
-"Charge on activation minus refund on disconnect (amount kept on Layan "
-"portal)."
-msgstr "خصم التفعيل ناقص إعادة المال عند الفصل (المبلغ الباقي على بوابة ليان)."
+"Charge and disconnect in the same period (balance withdrawal, refund, and "
+"retained loss)."
+msgstr "شحن وفصل في نفس الفترة (سحب رصيد واسترجاع وخسارة بالمبلغ المتبقي)."
 
 #: templates/companies/layan_reconcile.html:96
 msgid ""
@@ -2901,18 +2902,20 @@ msgstr ""
 
 
 #: templates/companies/layan_reconcile.html:105
-msgid "Amount mismatches"
-msgstr "اختلاف المبالغ"
+msgid "Sales differences (Layan vs system)"
+msgstr "اختلاف المبيعات بين ليان والنظام"
 
 #: templates/companies/layan_reconcile.html:106
-msgid "Both sides have activity but net amounts differ."
-msgstr "يوجد نشاط على الجانبين لكن الصافي مختلف."
-
-#: templates/companies/layan_reconcile.html:112
 msgid ""
-"Layan sale in Recharge Desk with no matching charge line in the uploaded "
-"Layan report."
-msgstr "بيع ليان في النظام بلا سطر خصم مطابق في كشف ليان المرفوع."
+"Both sides have the number, but Layan and system amounts differ by more than "
+"the minimum entered above (e.g. Layan 60 vs one sale of 30 in the system)."
+msgstr ""
+"الرقم موجود على الجانبين لكن مبالغ ليان والنظام تختلف بأكثر من الحد المدخل "
+"أعلاه (مثلاً ليان 60 مقابل بيع واحد بـ 30 في النظام)."
+
+#: templates/companies/layan_reconcile.html
+msgid "Layan sale in the system with no matching line in the uploaded Layan report."
+msgstr "بيع ليان في النظام بلا سطر مطابق في كشف ليان المرفوع."
 
 #: templates/companies/layan_reconcile.html:118
 msgid "Matched numbers"
