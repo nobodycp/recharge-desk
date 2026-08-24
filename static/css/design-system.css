@@ -2228,6 +2228,14 @@ tr.rd-row-pending {
   display: none !important;
 }
 
+/* Bootstrap's `.d-grid`/`.d-flex` utilities carry `!important`, which beats
+ * the browser's default (non-important) `[hidden] { display: none }` rule.
+ * Without this, JS-toggled field groups inside the action dialog stay
+ * visually visible even when marked `hidden`, showing every field at once. */
+.rd-inv-dialog [hidden] {
+  display: none !important;
+}
+
 .rd-inv-dialog__backdrop {
   position: fixed;
   inset: 0;

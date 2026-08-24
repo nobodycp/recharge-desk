@@ -64,6 +64,11 @@ urlpatterns = [
         name="customer_damaged",
     ),
     path(
+        "management/inventory/customers/<int:pk>/balances/<int:balance_pk>/manual-sale/",
+        views.inventory_customer_manual_sale,
+        name="customer_manual_sale",
+    ),
+    path(
         "management/inventory/customers/<int:pk>/balances/<int:balance_pk>/clear/",
         views.inventory_customer_clear,
         name="customer_clear",

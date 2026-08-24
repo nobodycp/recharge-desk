@@ -1,13 +1,32 @@
 {% load i18n %}
 {% if not read_only %}
+{% if scope == 'customer' %}
 <button
   type="button"
   class="btn btn-sm btn-outline-secondary rd-inv-actions-toggle"
-  data-inv-set-url="{% if scope == 'customer' %}{% url 'inventory:customer_set' customer.pk balance.pk %}{% else %}{% url 'inventory:main_set' balance.pk %}{% endif %}"
-  data-inv-adjust-url="{% if scope == 'customer' %}{% url 'inventory:customer_adjust' customer.pk balance.pk %}{% else %}{% url 'inventory:main_adjust' balance.pk %}{% endif %}"
-  data-inv-damaged-url="{% if scope == 'customer' %}{% url 'inventory:customer_damaged' customer.pk balance.pk %}{% else %}{% url 'inventory:main_damaged' balance.pk %}{% endif %}"
-  data-inv-clear-url="{% if scope == 'customer' %}{% url 'inventory:customer_clear' customer.pk balance.pk %}{% else %}{% url 'inventory:main_clear' balance.pk %}{% endif %}"
-  data-inv-delete-url="{% if scope == 'customer' %}{% url 'inventory:customer_delete' customer.pk balance.pk %}{% else %}{% url 'inventory:main_delete' balance.pk %}{% endif %}"
+  data-inv-edit-url="{% url 'inventory:customer_set' customer.pk balance.pk %}"
+  data-inv-manual-sale-url="{% url 'inventory:customer_manual_sale' customer.pk balance.pk %}"
+  data-inv-clear-url="{% url 'inventory:customer_clear' customer.pk balance.pk %}"
+  data-inv-qty="{{ balance.quantity }}"
+  data-inv-max="{{ balance.quantity }}"
+  data-inv-next="{{ next_url }}"
+  data-inv-title-edit="{% trans 'Edit quantity' %}"
+  data-inv-title-manual-sale="{% trans 'Manual sale' %}"
+  data-inv-label-edit="{% trans 'Edit' %}"
+  data-inv-label-manual-sale="{% trans 'Manual sale' %}"
+  data-inv-label-clear="{% trans 'Clear' %}"
+  data-inv-confirm-clear="{% filter escapejs %}{% trans 'Zero out this balance completely?' %}{% endfilter %}"
+  data-inv-clear-reason="{% trans 'Zeroed out' %}"
+>{% trans "Actions" %}</button>
+{% else %}
+<button
+  type="button"
+  class="btn btn-sm btn-outline-secondary rd-inv-actions-toggle"
+  data-inv-set-url="{% url 'inventory:main_set' balance.pk %}"
+  data-inv-adjust-url="{% url 'inventory:main_adjust' balance.pk %}"
+  data-inv-damaged-url="{% url 'inventory:main_damaged' balance.pk %}"
+  data-inv-clear-url="{% url 'inventory:main_clear' balance.pk %}"
+  data-inv-delete-url="{% url 'inventory:main_delete' balance.pk %}"
   data-inv-qty="{{ balance.quantity }}"
   data-inv-max="{{ balance.quantity }}"
   data-inv-next="{{ next_url }}"
@@ -23,4 +42,5 @@
   data-inv-confirm-delete="{% filter escapejs %}{% trans 'Delete this balance row? (Must be zero first.)' %}{% endfilter %}"
   data-inv-clear-reason="{% trans 'Cleared for testing' %}"
 >{% trans "Actions" %}</button>
+{% endif %}
 {% endif %}

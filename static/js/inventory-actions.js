@@ -56,18 +56,20 @@
   }
 
   function showFields(action) {
-    var showSet = action === "set";
+    var showSetQty = action === "set" || action === "edit";
     var showAdjust = action === "adjust";
-    var showDamaged = action === "damaged";
-    if (fieldSetQty) fieldSetQty.hidden = !showSet;
+    var showDamagedQty = action === "damaged" || action === "manual_sale";
+    var showReason = action === "set" || action === "adjust";
+    var showNotes = action === "damaged" || action === "manual_sale" || action === "edit";
+    if (fieldSetQty) fieldSetQty.hidden = !showSetQty;
     if (fieldDelta) fieldDelta.hidden = !showAdjust;
-    if (fieldDamagedQty) fieldDamagedQty.hidden = !showDamaged;
-    if (fieldReason) fieldReason.hidden = showDamaged;
-    if (fieldNotes) fieldNotes.hidden = !showDamaged;
-    if (inputSetQty) inputSetQty.required = showSet;
+    if (fieldDamagedQty) fieldDamagedQty.hidden = !showDamagedQty;
+    if (fieldReason) fieldReason.hidden = !showReason;
+    if (fieldNotes) fieldNotes.hidden = !showNotes;
+    if (inputSetQty) inputSetQty.required = showSetQty;
     if (inputDelta) inputDelta.required = showAdjust;
-    if (inputDamagedQty) inputDamagedQty.required = showDamaged;
-    if (inputReason) inputReason.required = !showDamaged;
+    if (inputDamagedQty) inputDamagedQty.required = showDamagedQty;
+    if (inputReason) inputReason.required = showReason;
   }
 
   function openAction(btn) {
@@ -96,9 +98,9 @@
     showFields(action);
     openDialog();
 
-    if (action === "set" && inputSetQty) inputSetQty.focus();
+    if ((action === "set" || action === "edit") && inputSetQty) inputSetQty.focus();
     else if (action === "adjust" && inputDelta) inputDelta.focus();
-    else if (action === "damaged" && inputDamagedQty) inputDamagedQty.focus();
+    else if ((action === "damaged" || action === "manual_sale") && inputDamagedQty) inputDamagedQty.focus();
   }
 
   function placePopover(toggle) {
@@ -149,6 +151,12 @@
       );
     }
 
+    if (d.invEditUrl) {
+      html += actionBtn("edit", d.invEditUrl, d.invTitleEdit || "", d.invLabelEdit || "");
+    }
+    if (d.invManualSaleUrl) {
+      html += actionBtn("manual_sale", d.invManualSaleUrl, d.invTitleManualSale || "", d.invLabelManualSale || "");
+    }
     if (d.invSetUrl) {
       html += actionBtn("set", d.invSetUrl, d.invTitleSet || "", d.invLabelSet || "");
     }

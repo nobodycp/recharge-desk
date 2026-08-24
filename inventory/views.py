@@ -15,6 +15,8 @@ from inventory.forms import (
     AllocateToCustomerForm,
     ClearBalanceForm,
     CustomerStockFilterForm,
+    EditBalanceQuantityForm,
+    ManualSaleForm,
     MarkDamagedForm,
     MovementFilterForm,
     ReceiveMainStockForm,
@@ -34,6 +36,7 @@ from inventory.services import (
     ensure_main_balance,
     mark_damaged,
     receive_main_stock,
+    record_manual_sale,
     return_from_customer,
     set_balance_quantity,
 )
@@ -412,16 +415,44 @@ def inventory_customer_set(request, pk, balance_pk):
         location=SimStockBalance.Location.CUSTOMER,
         customer=customer,
     )
-    form = SetBalanceQuantityForm(request.POST)
+    form = EditBalanceQuantityForm(request.POST)
     if form.is_valid():
         try:
             set_balance_quantity(
                 balance=balance,
                 new_quantity=form.cleaned_data["quantity"],
-                reason=form.cleaned_data["reason"],
+                reason=form.cleaned_data.get("notes") or "",
                 user=request.user,
+                require_reason=False,
             )
             messages.success(request, _("Quantity updated."))
+        except ValueError as exc:
+            messages.error(request, str(exc))
+    else:
+        messages.error(request, _("Invalid form."))
+    return _redirect_next(request, "inventory:customer_detail", pk=customer.pk)
+
+
+@management_required
+@require_POST
+def inventory_customer_manual_sale(request, pk, balance_pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    balance = get_object_or_404(
+        SimStockBalance,
+        pk=balance_pk,
+        location=SimStockBalance.Location.CUSTOMER,
+        customer=customer,
+    )
+    form = ManualSaleForm(request.POST)
+    if form.is_valid():
+        try:
+            record_manual_sale(
+                balance=balance,
+                qty=form.cleaned_data["quantity"],
+                notes=form.cleaned_data.get("notes") or "",
+                user=request.user,
+            )
+            messages.success(request, _("Manual sale recorded."))
         except ValueError as exc:
             messages.error(request, str(exc))
     else:

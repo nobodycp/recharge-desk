@@ -71,7 +71,7 @@
                 <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
                 {% if not read_only %}
                 <td class="text-end rd-inventory-stock-table__actions">
-                  {% include "inventory/_balance_actions.html" with balance=b scope="main" read_only=read_only next_url=request.path %}
+                  {% include "inventory/_balance_actions.html" with balance=b scope="main" read_only=read_only next_url=request.get_full_path %}
                 </td>
                 {% endif %}
               </tr>
@@ -95,7 +95,7 @@
           </div>
           {% if not read_only %}
             <div class="mt-2">
-              {% include "inventory/_balance_actions.html" with balance=b scope="main" read_only=read_only next_url=request.path %}
+              {% include "inventory/_balance_actions.html" with balance=b scope="main" read_only=read_only next_url=request.get_full_path %}
             </div>
           {% endif %}
         </div>
