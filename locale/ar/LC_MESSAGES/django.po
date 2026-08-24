@@ -2898,6 +2898,7 @@ msgstr "لا"
 #: templates/sales/partials/management_sale_list_results.html:55
 #: templates/sales/partials/management_sale_list_results.html:117
 #: templates/sales/payment_method_list.html:26
+#: templates/inventory/_balance_actions.html
 msgid "Edit"
 msgstr "تعديل"
 
@@ -5390,6 +5391,39 @@ msgstr "لقطة التكلفة:"
 
 msgid "صحصح رقم الشريحه اكتب"
 msgstr "صحصح رقم الشريحه اكتب"
+
+#: inventory/models.py:71 inventory/views.py
+#: templates/inventory/_balance_actions.html
+msgid "Manual sale"
+msgstr "بيع يدوي"
+
+#: inventory/views.py
+msgid "Manual sale recorded."
+msgstr "تم تسجيل البيع اليدوي."
+
+#: inventory/services.py
+msgid "Insufficient stock for a manual sale."
+msgstr "المخزون غير كافٍ لإجراء بيع يدوي."
+
+#: templates/inventory/_balance_actions.html
+msgid "Edit quantity"
+msgstr "تعديل الكمية"
+
+#: templates/inventory/_action_dialog.html
+msgid "Notes (optional)"
+msgstr "ملاحظات (اختياري)"
+
+#: templates/inventory/_balance_actions.html
+msgid "Zero out this balance completely?"
+msgstr "تصفير هذا الرصيد بالكامل؟"
+
+#: templates/inventory/_balance_actions.html
+msgid "Zeroed out"
+msgstr "تم التصفير"
+
+#: inventory/services.py
+msgid "Quantity edited (%(old)s → %(new)s)"
+msgstr "تم تعديل الكمية (%(old)s → %(new)s)"
 
 #~ msgid "Applied immediately: customer balance and your employee ledger."
 #~ msgstr "تُطبَّق فوراً: على رصيد الزبون ودفتر الموظف لديك."

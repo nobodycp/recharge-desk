@@ -399,10 +399,11 @@ def set_balance_quantity(
     new_quantity: int,
     reason: str,
     user,
+    require_reason: bool = True,
 ) -> SimStockMovement | None:
-    """Set absolute quantity (for testing / corrections)."""
+    """Set absolute quantity (for testing / corrections / manual edits)."""
     reason = (reason or "").strip()
-    if not reason:
+    if require_reason and not reason:
         raise ValueError(_("A reason is required."))
     if new_quantity < 0:
         raise ValueError(_("Quantity cannot be negative."))
@@ -413,6 +414,13 @@ def set_balance_quantity(
     delta = new_quantity - old_qty
     locked.quantity = new_quantity
     locked.save(update_fields=["quantity"])
+    if reason:
+        notes = f"{reason} ({old_qty} → {new_quantity})"
+    else:
+        notes = str(_("Quantity edited (%(old)s → %(new)s)")) % {
+            "old": old_qty,
+            "new": new_quantity,
+        }
     return _record_movement(
         movement_type=SimStockMovement.MovementType.ADJUSTMENT,
         product_line=locked.product_line,
@@ -421,7 +429,7 @@ def set_balance_quantity(
         from_balance=locked if delta < 0 else None,
         to_balance=locked if delta > 0 else None,
         customer=locked.customer,
-        notes=f"{reason} ({old_qty} → {new_quantity})",
+        notes=notes,
     )
 
 
@@ -504,6 +512,29 @@ def mark_damaged(
     locked.save(update_fields=["quantity"])
     return _record_movement(
         movement_type=SimStockMovement.MovementType.DAMAGED,
+        product_line=locked.product_line,
+        quantity=qty,
+        user=user,
+        from_balance=locked,
+        customer=locked.customer,
+        notes=notes,
+    )
+
+
+@transaction.atomic
+def record_manual_sale(
+    *, balance: SimStockBalance, qty: int, notes: str, user
+) -> SimStockMovement:
+    """Deduct SIMs a customer sold outside the system (manual/offline sale)."""
+    if qty < 1:
+        raise ValueError(_("Quantity must be at least 1."))
+    locked = SimStockBalance.objects.select_for_update().get(pk=balance.pk)
+    if locked.quantity < qty:
+        raise ValueError(_("Insufficient stock for a manual sale."))
+    locked.quantity -= qty
+    locked.save(update_fields=["quantity"])
+    return _record_movement(
+        movement_type=SimStockMovement.MovementType.MANUAL_SALE,
         product_line=locked.product_line,
         quantity=qty,
         user=user,

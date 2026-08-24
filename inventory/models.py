@@ -67,6 +67,7 @@ class SimStockMovement(models.Model):
         RETURN_FROM_CUSTOMER = "return_from_customer", _("Return from customer")
         ADJUSTMENT = "adjustment", _("Adjustment")
         DAMAGED = "damaged", _("Damaged")
+        MANUAL_SALE = "manual_sale", _("Manual sale")
         SALE_CONSUME = "sale_consume", _("Sale consume")
         SALE_REVERSAL = "sale_reversal", _("Sale reversal")
 

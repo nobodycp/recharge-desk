@@ -191,6 +191,32 @@ class MarkDamagedForm(forms.Form):
     )
 
 
+class ManualSaleForm(forms.Form):
+    quantity = forms.IntegerField(
+        label=_("Quantity"),
+        min_value=1,
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": "1"}),
+    )
+    notes = forms.CharField(
+        label=_("Notes"),
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+    )
+
+
+class EditBalanceQuantityForm(forms.Form):
+    quantity = forms.IntegerField(
+        label=_("New quantity"),
+        min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
+    )
+    notes = forms.CharField(
+        label=_("Notes"),
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+    )
+
+
 class MovementFilterForm(forms.Form):
     movement_type = forms.ChoiceField(
         label=_("Movement type"),
