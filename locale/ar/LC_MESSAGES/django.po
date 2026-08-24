@@ -5425,6 +5425,18 @@ msgstr "تم التصفير"
 msgid "Quantity edited (%(old)s → %(new)s)"
 msgstr "تم تعديل الكمية (%(old)s → %(new)s)"
 
+#: templates/inventory/movements.html
+msgid "Delete this movement? This will reverse its effect on stock."
+msgstr "حذف هذه الحركة؟ سيتم عكس تأثيرها على المخزون."
+
+#: inventory/services.py
+msgid ""
+"Cannot delete: reversing this movement would drop “%(line)s” stock below "
+"zero. Delete more recent movements for this product line first."
+msgstr ""
+"لا يمكن الحذف: عكس هذه الحركة سيجعل مخزون “%(line)s” أقل من صفر. احذف "
+"الحركات الأحدث لهذا الخط أولاً."
+
 #~ msgid "Applied immediately: customer balance and your employee ledger."
 #~ msgstr "تُطبَّق فوراً: على رصيد الزبون ودفتر الموظف لديك."
 

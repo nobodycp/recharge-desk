@@ -7,14 +7,16 @@ from django.urls import reverse
 from accounts.models import UserProfile
 from companies.models import Company, ProductLine
 from customers.models import Customer
-from inventory.models import SimStockBalance, SimStockMovement
+from inventory.models import SimCard, SimStockBalance, SimStockMovement
 from inventory.services import (
     allocate_to_customer,
     clear_balance,
     delete_balance_row,
     delete_movement,
+    mark_damaged,
     receive_main_stock,
     record_manual_sale,
+    return_from_customer,
     set_balance_quantity,
 )
 
@@ -140,6 +142,152 @@ class ManualSaleTests(TestCase):
         )
         with self.assertRaises(ValueError):
             record_manual_sale(balance=balance, qty=5, notes="", user=self.user)
+
+
+class DeleteMovementReversesStockTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name="Co", current_balance=Decimal("0"))
+        cls.line = ProductLine.objects.create(company=cls.company, name="Sleekom")
+        cls.user = User.objects.create_user("mgr_undo", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.customer = Customer.objects.create(name="Undo Customer", created_by=cls.user)
+
+    def _main_balance(self):
+        return SimStockBalance.objects.get(
+            location=SimStockBalance.Location.MAIN, product_line=self.line
+        )
+
+    def _customer_balance(self):
+        return SimStockBalance.objects.get(
+            location=SimStockBalance.Location.CUSTOMER,
+            product_line=self.line,
+            customer=self.customer,
+        )
+
+    def test_delete_main_receive_movement_reverses_balance(self):
+        receive_main_stock(product_line=self.line, qty=5, notes="", user=self.user)
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.MAIN_RECEIVE
+        )
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._main_balance().quantity, 0)
+
+    def test_delete_main_receive_with_serial_deletes_card(self):
+        receive_main_stock(
+            product_line=self.line, qty=1, notes="", user=self.user, serials=["1111"]
+        )
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.MAIN_RECEIVE
+        )
+        self.assertTrue(SimCard.objects.filter(serial_or_iccid="1111").exists())
+        delete_movement(movement=movement, user=self.user)
+        self.assertFalse(SimCard.objects.filter(serial_or_iccid="1111").exists())
+        self.assertEqual(self._main_balance().quantity, 0)
+
+    def test_delete_allocate_movement_reverses_both_balances(self):
+        receive_main_stock(product_line=self.line, qty=10, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=self.line, qty=4, notes="", user=self.user
+        )
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.ALLOCATE_TO_CUSTOMER
+        )
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._main_balance().quantity, 10)
+        self.assertEqual(self._customer_balance().quantity, 0)
+
+    def test_delete_allocate_with_serial_moves_card_back_to_main(self):
+        receive_main_stock(
+            product_line=self.line, qty=1, notes="", user=self.user, serials=["2222"]
+        )
+        allocate_to_customer(
+            customer=self.customer,
+            product_line=self.line,
+            qty=1,
+            notes="",
+            user=self.user,
+            serials=["2222"],
+        )
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.ALLOCATE_TO_CUSTOMER
+        )
+        delete_movement(movement=movement, user=self.user)
+        card = SimCard.objects.get(serial_or_iccid="2222")
+        self.assertEqual(card.status, SimCard.Status.IN_MAIN)
+        self.assertIsNone(card.customer)
+        self.assertEqual(self._main_balance().quantity, 1)
+        self.assertEqual(self._customer_balance().quantity, 0)
+
+    def test_delete_return_from_customer_reverses_both_balances(self):
+        receive_main_stock(product_line=self.line, qty=10, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=self.line, qty=6, notes="", user=self.user
+        )
+        return_from_customer(
+            customer=self.customer, product_line=self.line, qty=2, notes="", user=self.user
+        )
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.RETURN_FROM_CUSTOMER
+        )
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._main_balance().quantity, 4)
+        self.assertEqual(self._customer_balance().quantity, 6)
+
+    def test_delete_damaged_movement_restores_quantity(self):
+        receive_main_stock(product_line=self.line, qty=10, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=self.line, qty=5, notes="", user=self.user
+        )
+        mark_damaged(balance=self._customer_balance(), qty=3, notes="", user=self.user)
+        self.assertEqual(self._customer_balance().quantity, 2)
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.DAMAGED
+        )
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._customer_balance().quantity, 5)
+
+    def test_delete_manual_sale_movement_restores_quantity(self):
+        receive_main_stock(product_line=self.line, qty=10, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=self.line, qty=5, notes="", user=self.user
+        )
+        record_manual_sale(balance=self._customer_balance(), qty=2, notes="", user=self.user)
+        self.assertEqual(self._customer_balance().quantity, 3)
+        movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.MANUAL_SALE
+        )
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._customer_balance().quantity, 5)
+
+    def test_delete_set_quantity_adjustment_reverses_change(self):
+        receive_main_stock(product_line=self.line, qty=5, notes="", user=self.user)
+        set_balance_quantity(
+            balance=self._main_balance(), new_quantity=9, reason="test", user=self.user
+        )
+        self.assertEqual(self._main_balance().quantity, 9)
+        movement = SimStockMovement.objects.filter(
+            movement_type=SimStockMovement.MovementType.ADJUSTMENT
+        ).latest("id")
+        delete_movement(movement=movement, user=self.user)
+        self.assertEqual(self._main_balance().quantity, 5)
+
+    def test_delete_movement_rejects_when_reversal_would_go_negative(self):
+        receive_main_stock(product_line=self.line, qty=5, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=self.line, qty=5, notes="", user=self.user
+        )
+        receive_movement = SimStockMovement.objects.get(
+            movement_type=SimStockMovement.MovementType.MAIN_RECEIVE
+        )
+        # Main stock is now 0 (all 5 were allocated to the customer), so
+        # reversing the original receive would push it negative.
+        with self.assertRaises(ValueError):
+            delete_movement(movement=receive_movement, user=self.user)
+        self.assertEqual(self._main_balance().quantity, 0)
 
 
 class CustomerBalanceActionViewTests(TestCase):
