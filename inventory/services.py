@@ -457,7 +457,15 @@ def delete_balance_row(*, balance: SimStockBalance, user) -> None:
 
 @transaction.atomic
 def delete_movement(*, movement: SimStockMovement, user) -> None:
-    """Delete a movement log entry (does not reverse stock — testing only)."""
+    """Delete a movement log entry and reverse its effect on stock.
+
+    The movement log is the only record of a stock change, so deleting an
+    entry without undoing what it did leaves the balances (and any tracked
+    SIM cards it touched) out of sync with history. This puts back whatever
+    quantity the movement moved: ``from_balance`` (the side that lost
+    stock) is credited back, and ``to_balance`` (the side that gained
+    stock) is debited.
+    """
     if movement.movement_type in (
         SimStockMovement.MovementType.SALE_CONSUME,
         SimStockMovement.MovementType.SALE_REVERSAL,
@@ -465,7 +473,56 @@ def delete_movement(*, movement: SimStockMovement, user) -> None:
         raise ValueError(
             _("Sale-linked movements cannot be deleted. Cancel the sale or adjust stock instead.")
         )
-    movement.delete()
+    locked = SimStockMovement.objects.select_for_update().get(pk=movement.pk)
+
+    from_balance = (
+        SimStockBalance.objects.select_for_update().get(pk=locked.from_balance_id)
+        if locked.from_balance_id
+        else None
+    )
+    to_balance = (
+        SimStockBalance.objects.select_for_update().get(pk=locked.to_balance_id)
+        if locked.to_balance_id
+        else None
+    )
+
+    if to_balance is not None and to_balance.quantity < locked.quantity:
+        raise ValueError(
+            _(
+                "Cannot delete: reversing this movement would drop “%(line)s” "
+                "stock below zero. Delete more recent movements for this "
+                "product line first."
+            )
+            % {"line": to_balance.product_line.name}
+        )
+
+    if from_balance is not None:
+        from_balance.quantity += locked.quantity
+        from_balance.save(update_fields=["quantity"])
+    if to_balance is not None:
+        to_balance.quantity -= locked.quantity
+        to_balance.save(update_fields=["quantity"])
+
+    cards = list(SimCard.objects.select_for_update().filter(movement=locked))
+    for card in cards:
+        if locked.movement_type == SimStockMovement.MovementType.MAIN_RECEIVE:
+            # The card only exists because this movement created it.
+            card.delete()
+        elif locked.movement_type == SimStockMovement.MovementType.ALLOCATE_TO_CUSTOMER:
+            card.status = SimCard.Status.IN_MAIN
+            card.customer = None
+            card.movement = None
+            card.save(update_fields=["status", "customer", "movement", "updated_at"])
+        elif locked.movement_type == SimStockMovement.MovementType.RETURN_FROM_CUSTOMER:
+            card.status = SimCard.Status.WITH_CUSTOMER
+            card.customer = locked.customer
+            card.movement = None
+            card.save(update_fields=["status", "customer", "movement", "updated_at"])
+        else:
+            card.movement = None
+            card.save(update_fields=["movement", "updated_at"])
+
+    locked.delete()
 
 
 @transaction.atomic
