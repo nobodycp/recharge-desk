@@ -4,7 +4,6 @@ from django.db import models, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
-from datetime import date
 
 from accounts.permissions import management_required
 from companies.forms import (
@@ -144,16 +143,7 @@ def sky_reconcile(request, pk):
         messages.error(request, _("Sky report matching is only available for Sky."))
         return redirect("companies:company_detail", pk=pk)
 
-    initial = {}
-    if request.method == "GET":
-        # Sensible first range: full previous calendar month if today is early
-        # in a month; otherwise leave blank — August 2026 preset for first run.
-        initial = {
-            "period_from": date(2026, 8, 1),
-            "period_to": date(2026, 8, 31),
-            "min_amount_diff": 3,
-        }
-    form = SkyReportReconcileForm(request.POST or None, initial=initial)
+    form = SkyReportReconcileForm(request.POST or None)
     result = None
     if request.method == "POST" and form.is_valid():
         period_from = form.cleaned_data["period_from"]

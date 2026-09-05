@@ -244,6 +244,9 @@ class SkyReconcileMatchTests(TestCase):
         self.assertEqual(r.status_code, 302)
         r = self.client.get(reverse("companies:sky_reconcile", args=[self.company.pk]))
         self.assertEqual(r.status_code, 200)
+        form = r.context["form"]
+        self.assertIsNone(form["period_from"].value())
+        self.assertIsNone(form["period_to"].value())
 
         with patch(
             "companies.views.fetch_sky_rows_for_reconcile",
