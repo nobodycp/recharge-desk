@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 03:43+0300\n"
+"POT-Creation-Date: 2026-09-05 05:27+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -384,42 +384,74 @@ msgstr ""
 msgid "Date to must be on or after date from."
 msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
 
-
 #: companies/forms.py:159
 msgid "e.g. 100 GB"
 msgstr "مثلاً 100 جيجا"
 
-#: companies/layan_reconcile.py:477
+#: companies/layan_reconcile.py:508
 msgid "Pending credit (manual)"
 msgstr "رصيد معلّق (يدوي)"
 
-#: companies/layan_reconcile.py:544 templates/companies/layan_reconcile.html:86
+#: companies/layan_reconcile.py:575
+#: templates/companies/layan_reconcile.html:150
 msgid "In system, not in Layan"
 msgstr "مسجّل بالنظام وغير مسجّل بليان"
 
-#: companies/layan_reconcile.py:566 companies/sky_reconcile.py:390
+#: companies/layan_reconcile.py:597 companies/sky_reconcile.py:541
 msgid "Settlement on disconnected number"
 msgstr "تسوية على رقم مفصول"
 
-#: companies/layan_reconcile.py:605 companies/sky_reconcile.py:425
-#: templates/companies/layan_reconcile.html:92
-#: templates/companies/sky_reconcile.html:92
+#: companies/layan_reconcile.py:636 companies/sky_reconcile.py:576
+#: templates/companies/layan_reconcile.html:159
+#: templates/companies/sky_reconcile.html:145
 msgid "Logged under another supplier"
 msgstr "مسجّل تحت مورد آخر"
 
-#: companies/layan_reconcile.py:625 templates/companies/layan_reconcile.html:81
+#: companies/layan_reconcile.py:656
+#: templates/companies/layan_reconcile.html:139
 msgid "In Layan, not in system"
 msgstr "مسجّل بليان وغير مسجّل بالنظام"
 
-#: companies/layan_reconcile.py:649 companies/layan_reconcile.py:698
-#: companies/sky_reconcile.py:467 companies/sky_reconcile.py:507
+#: companies/layan_reconcile.py:680 companies/layan_reconcile.py:729
+#: companies/sky_reconcile.py:618 companies/sky_reconcile.py:658
+#: templates/companies/layan_reconcile.html:129
+#: templates/companies/sky_reconcile.html:115
 msgid "Matched"
 msgstr "متطابق"
 
-#: companies/layan_reconcile.py:676
+#: companies/layan_reconcile.py:707
 msgid "Sales difference (Layan vs system)"
 msgstr "اختلاف مبيعات (ليان مقابل النظام)"
 
+#: companies/layan_reconcile.py:821
+#, python-format
+msgid ""
+"In Layan for %(amount)s — no matching sale in the system for this period."
+msgstr "في ليان بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
+#: companies/layan_reconcile.py:826
+#, python-format
+msgid "In the system for %(amount)s — not found on the uploaded Layan report."
+msgstr "في النظام بمبلغ %(amount)s — غير موجود في كشف ليان المرفوع."
+#: companies/layan_reconcile.py:831
+#, python-format
+msgid "Charged on Layan (%(layan)s) but logged under %(suppliers)s."
+msgstr "مخصوم في ليان (%(layan)s) لكنه مسجّل تحت %(suppliers)s."
+#: companies/layan_reconcile.py:837
+msgid ""
+"Charge + disconnect settlement on Layan. Review retained amount; it is "
+"included in estimated deficit."
+msgstr "تسوية شحن+فصل في ليان. راجع المبلغ المحفوظ؛ وهو داخل العجز المقدّر."
+#: companies/layan_reconcile.py:844
+#, python-format
+msgid "Layan cost %(layan)s is higher than system %(rd)s by %(gap)s."
+msgstr "تكلفة ليان %(layan)s أعلى من النظام %(rd)s بمقدار %(gap)s."
+#: companies/layan_reconcile.py:852
+#, python-format
+msgid "System cost %(rd)s is higher than Layan %(layan)s by %(gap)s."
+msgstr "تكلفة النظام %(rd)s أعلى من ليان %(layan)s بمقدار %(gap)s."
+#: companies/layan_reconcile.py:860
+msgid "Layan and system costs match within the minimum difference."
+msgstr "تكاليف ليان والنظام متطابقة ضمن الحد الأدنى للفرق."
 #: companies/models.py:13 customers/models.py:15 sales/models.py:12
 #: sms_gateway/models.py:142
 msgid "name"
@@ -545,17 +577,48 @@ msgstr "باقة المنتج"
 msgid "product packages"
 msgstr "باقات المنتجات"
 
-#: companies/sky_reconcile.py:226
+#: companies/sky_reconcile.py:256
 msgid "before + delta ≠ after"
 msgstr ""
 
-#: companies/sky_reconcile.py:369 templates/companies/sky_reconcile.html:86
+#: companies/sky_reconcile.py:336
+#, python-format
+msgid "In Sky for %(amount)s — no matching sale in the system for this period."
+msgstr "في سكاي بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
+#: companies/sky_reconcile.py:341
+#, python-format
+msgid "In the system for %(amount)s — not found on the Sky balance report."
+msgstr "في النظام بمبلغ %(amount)s — غير موجود في تقرير رصيد سكاي."
+#: companies/sky_reconcile.py:346
+#, python-format
+msgid "Charged on Sky (%(sky)s) but logged under %(suppliers)s."
+msgstr "مخصوم في سكاي (%(sky)s) لكنه مسجّل تحت %(suppliers)s."
+#: companies/sky_reconcile.py:352
+msgid ""
+"Charge + disconnect settlement on Sky. Informational only — not included in "
+"estimated deficit."
+msgstr "تسوية شحن+فصل في سكاي. للمعلومة فقط — لا تدخل في العجز المقدّر."
+#: companies/sky_reconcile.py:359
+#, python-format
+msgid "Sky cost %(sky)s is higher than system %(rd)s by %(gap)s."
+msgstr "تكلفة سكاي %(sky)s أعلى من النظام %(rd)s بمقدار %(gap)s."
+#: companies/sky_reconcile.py:368
+#, python-format
+msgid "System cost %(rd)s is higher than Sky %(sky)s by %(gap)s."
+msgstr "تكلفة النظام %(rd)s أعلى من سكاي %(sky)s بمقدار %(gap)s."
+#: companies/sky_reconcile.py:377
+msgid "Often eSIM fee or package cost mismatch — compare lines below."
+msgstr "غالباً فرق رسوم eSIM أو سعر الباقة — قارن الأسطر بالأسفل."
+#: companies/sky_reconcile.py:381
+msgid "Sky and system costs match within the minimum difference."
+msgstr "تكاليف سكاي والنظام متطابقة ضمن الحد الأدنى للفرق."
+#: companies/sky_reconcile.py:520 templates/companies/sky_reconcile.html:136
 msgid "In system, not in Sky"
 msgstr "في النظام وغير موجود في سكاي"
-#: companies/sky_reconcile.py:445 templates/companies/sky_reconcile.html:81
+#: companies/sky_reconcile.py:596 templates/companies/sky_reconcile.html:125
 msgid "In Sky, not in system"
 msgstr "في سكاي وغير موجود في النظام"
-#: companies/sky_reconcile.py:487
+#: companies/sky_reconcile.py:638
 msgid "Amount mismatch"
 msgstr ""
 
@@ -603,12 +666,15 @@ msgstr "مطابقة كشف ليان"
 msgid "Sky report matching is only available for Sky."
 msgstr "مطابقة كشف سكاي متاحة لشركة سكاي فقط."
 #: companies/views.py:175
+#, python-format
 msgid "Sky report processed (%(rows)s rows)."
 msgstr "تمت معالجة تقرير سكاي (%(rows)s صف)."
 #: companies/views.py:183
+#, python-format
 msgid "Could not fetch Sky report: %(error)s"
 msgstr "تعذّر جلب تقرير سكاي: %(error)s"
 #: companies/views.py:188
+#, python-format
 msgid "Could not run Sky matching: %(error)s"
 msgstr "تعذّر تشغيل مطابقة سكاي: %(error)s"
 #: companies/views.py:198 templates/companies/company_detail.html:15
@@ -1124,7 +1190,6 @@ msgstr "حسابك غير مسجّل في نظام الموظفين."
 msgid "This field is required."
 msgstr "رقم الهاتف مطلوب."
 
-
 #: customers/forms.py:91 customers/forms.py:111 sales/forms.py:26
 #: templates/sales/employee_entry.html:41
 msgid "Phone or shipment number"
@@ -1341,7 +1406,6 @@ msgstr "هذا البيع غير معلَّم كآجل أو لا يحتوي عل
 msgid "Only awaiting or pending on-account sales can be posted."
 msgstr "يمكن الموافقة على المبيعات بانتظار الموافقة فقط."
 
-
 #: customers/services.py:182
 msgid "Only awaiting sales can be approved."
 msgstr "يمكن الموافقة على المبيعات بانتظار الموافقة فقط."
@@ -1349,7 +1413,6 @@ msgstr "يمكن الموافقة على المبيعات بانتظار الم�
 #: customers/services.py:225
 msgid "Sale amount cannot be negative."
 msgstr "لا يمكن أن تكون الكمية سالبة."
-
 
 #: customers/services.py:271
 msgid "Only awaiting sales can be rejected."
@@ -1367,7 +1430,6 @@ msgstr "يجب تحديد الموظف عند الدفع لدى موظف."
 #: customers/services.py:301 customers/services.py:395
 msgid "Payment method is required."
 msgstr "طريقة الدفع مطلوبة لهذه المبيعة."
-
 
 #: customers/services.py:385
 msgid "Customer is inactive."
@@ -1553,14 +1615,12 @@ msgstr "موجب يُضاف للموظف؛ سالب يُخصم منه."
 msgid "Optional notes"
 msgstr "العمليات"
 
-
 #: employees/forms.py:60
 msgid "Amount cannot be zero."
 msgstr "المبلغ لا يمكن أن يكون صفراً."
 #: employees/forms.py:71 employees/forms.py:113
 msgid "Phone, payer, notes…"
 msgstr "المرجع، الدافع، المنتج…"
-
 
 #: employees/forms.py:78 inventory/forms.py:224 inventory/forms.py:254
 #: sales/forms.py:211 sales/forms.py:228 sales/forms.py:278
@@ -1665,7 +1725,6 @@ msgstr "تم حذف قيد الموظف والدفعة المرتبطة من س�
 #: employees/views.py:295
 msgid "Ledger entry deleted."
 msgstr "تم حذف حركة السجل."
-
 
 #: employees/views.py:318
 msgid "Invalid month."
@@ -2265,8 +2324,10 @@ msgstr "اختر طريقة الدفع."
 #: templates/sales/sale_edit.html:62
 msgid "Status"
 msgstr "الحالة"
-#: sales/forms.py:226 templates/reports/dashboard.html:49
-#: templates/sales/employee_entry.html:192
+#: sales/forms.py:226
+#: templates/companies/partials/layan_reconcile_review_table.html:59
+#: templates/companies/partials/sky_reconcile_table.html:54
+#: templates/reports/dashboard.html:49 templates/sales/employee_entry.html:192
 msgid "eSIM"
 msgstr "eSIM"
 
@@ -2639,7 +2700,6 @@ msgstr "تم حذف طريقة الدفع \"%(name)s\"."
 msgid "service enabled"
 msgstr "تسجيل الدخول مفعّل"
 
-
 #: sms_gateway/models.py:27
 msgid ""
 "When off, no real refresh runs; optionally reply with the service-off "
@@ -2665,7 +2725,6 @@ msgstr ""
 #: sms_gateway/models.py:41
 msgid "test number"
 msgstr "رقم الهاتف"
-
 
 #: sms_gateway/models.py:43
 msgid "test reply message"
@@ -2760,16 +2819,13 @@ msgstr ""
 msgid "phone field name"
 msgstr "رقم الهاتف أو الشحنة"
 
-
 #: sms_gateway/models.py:106
 msgid "status path"
 msgstr "الحالة"
 
-
 #: sms_gateway/models.py:107
 msgid "title path"
 msgstr "العنوان"
-
 
 #: sms_gateway/models.py:108
 msgid "body path"
@@ -2778,7 +2834,6 @@ msgstr ""
 #: sms_gateway/models.py:143
 msgid "phone number"
 msgstr "رقم الهاتف"
-
 
 #: sms_gateway/models.py:147
 msgid "priority"
@@ -2808,7 +2863,6 @@ msgstr ""
 msgid "reply enabled"
 msgstr "تسجيل الدخول مفعّل"
 
-
 #: sms_gateway/models.py:209
 msgid "SMS message override"
 msgstr ""
@@ -2821,16 +2875,13 @@ msgstr ""
 msgid "Allow"
 msgstr "توزيع"
 
-
 #: sms_gateway/models.py:228
 msgid "number or prefix"
 msgstr "الزبون أو الدافع"
 
-
 #: sms_gateway/models.py:247
 msgid "Received"
 msgstr "استلام مخزون"
-
 
 #: sms_gateway/models.py:248
 msgid "Processed"
@@ -2860,7 +2911,6 @@ msgstr ""
 msgid "from"
 msgstr "من تاريخ"
 
-
 #: sms_gateway/models.py:264
 msgid "raw text"
 msgstr ""
@@ -2868,7 +2918,6 @@ msgstr ""
 #: sms_gateway/models.py:265
 msgid "extracted number"
 msgstr "أرقام متطابقة"
-
 
 #: sms_gateway/models.py:303
 msgid "Queued"
@@ -3139,9 +3188,8 @@ msgstr "الفاعل"
 msgid "Audit events"
 msgstr "تعديل المصروف"
 
-
 #: templates/audit/audit_log_list.html:70
-#: templates/companies/sky_reconcile.html:120
+#: templates/companies/sky_reconcile.html:193
 #: templates/customers/payment_submissions_list.html:32
 #: templates/inventory/line_detail.html:88
 #: templates/inventory/movements.html:59 templates/reports/dashboard.html:292
@@ -3246,110 +3294,154 @@ msgstr "العودة للمورد"
 
 #: templates/companies/layan_reconcile.html:15
 msgid ""
-"Upload the Layan charges report (Excel). Matching lists: numbers in Layan "
-"not in the system, numbers in the system not in Layan, settlements (charge + "
-"disconnect), and sales differences above the minimum you enter."
+"Upload the Layan charges Excel report. After matching, use the priority "
+"cards and open one tab at a time — same review flow as Sky, without live "
+"portal fetch."
 msgstr ""
-"ارفع كشف ليان. القوائم: أرقام بليان وغير مسجّلة بالنظام، أرقام بالنظام وغير "
-"مسجّلة بليان، التسويات (شحن وفصل)، واختلاف المبيعات فوق الحد الذي تدخله."
-
-#: templates/companies/layan_reconcile.html:27
-#: templates/companies/sky_reconcile.html:27
+"ارفع كشف ليان (Excel). بعد المطابقة استخدم بطاقات الأولوية وافتح تبويباً"
+" واحداً كل مرة — نفس أسلوب سكاي بدون سحب حي من البوابة."
+#: templates/companies/layan_reconcile.html:47
+#: templates/companies/sky_reconcile.html:36
 msgid "Run matching"
 msgstr "تشغيل المطابقة"
 
-#: templates/companies/layan_reconcile.html:37
-msgid "Estimated deficit (Layan)"
-msgstr "العجز التقديري (ليان)"
-
-#: templates/companies/layan_reconcile.html:40
-#: templates/companies/sky_reconcile.html:40
-msgid "Not recorded"
-msgstr "غير مسجّل"
-
-#: templates/companies/layan_reconcile.html:41
-#: templates/companies/layan_reconcile.html:98
-#: templates/companies/sky_reconcile.html:98
-msgid "Settlements on disconnected numbers"
-msgstr "تسويات على أرقام مفصولة"
-
-#: templates/companies/layan_reconcile.html:49
-#: templates/companies/sky_reconcile.html:49
-msgid "Report rows in period"
-msgstr "صفوف الكشف في الفترة"
-
-#: templates/companies/layan_reconcile.html:64
-#: templates/companies/sky_reconcile.html:64
-msgid "Balance vs report end"
-msgstr "الرصيد مقابل نهاية الكشف"
-
-#: templates/companies/layan_reconcile.html:68
-msgid "Layan"
-msgstr "صافي ليان"
-
-#: templates/companies/layan_reconcile.html:71
-#: templates/companies/partials/layan_reconcile_table.html:25
-#: templates/companies/partials/sky_reconcile_table.html:25
-#: templates/companies/sky_reconcile.html:71
-msgid "Gap"
-msgstr "الفرق"
-
-#: templates/companies/layan_reconcile.html:74
-msgid "End balance not found in file."
-msgstr "رصيد نهاية الكشف غير موجود في الملف."
-
+#: templates/companies/layan_reconcile.html:58
+#: templates/companies/sky_reconcile.html:47
+msgid "1 · Review first"
+msgstr "1 · راجع أولاً"
+#: templates/companies/layan_reconcile.html:61
+#: templates/companies/sky_reconcile.html:50
+msgid "Missing / wrong supplier"
+msgstr "ناقص أو مورّد خاطئ"
+#: templates/companies/layan_reconcile.html:70
+#: templates/companies/sky_reconcile.html:59
+msgid "2 · Cost differences"
+msgstr "2 · فروقات التكلفة"
+#: templates/companies/layan_reconcile.html:73
+msgid "Layan vs system amount"
+msgstr "مبلغ ليان مقابل النظام"
 #: templates/companies/layan_reconcile.html:82
-msgid ""
-"Number appears on the Layan report but has no matching Layan sale in the "
-"system for this period."
-msgstr ""
-"الرقم ظاهر في كشف ليان ولا يوجد له بيع ليان مطابق في النظام لهذه الفترة."
-
-#: templates/companies/layan_reconcile.html:87
+msgid "3 · Settlements"
+msgstr "3 · التسويات"
+#: templates/companies/layan_reconcile.html:85
+msgid "Included in estimated deficit"
+msgstr "داخلة في العجز المقدّر"
+#: templates/companies/layan_reconcile.html:88
+msgid "hidden"
+msgstr "مخفي"
+#: templates/companies/layan_reconcile.html:97
+#: templates/companies/sky_reconcile.html:83
+msgid "Estimated deficit"
+msgstr "العجز المقدّر"
+#: templates/companies/layan_reconcile.html:100
+msgid "report rows"
+msgstr "صفوف الكشف"
+#: templates/companies/layan_reconcile.html:111
+#: templates/companies/sky_reconcile.html:97
+msgid "Review first"
+msgstr "راجع أولاً"
+#: templates/companies/layan_reconcile.html:117
+#: templates/companies/sky_reconcile.html:103
+msgid "Cost differences"
+msgstr "فروقات التكلفة"
+#: templates/companies/layan_reconcile.html:123
+#: templates/reports/dashboard.html:30
+msgid "Settlements"
+msgstr "التسويات"
+#: templates/companies/layan_reconcile.html:140
+#: templates/companies/sky_reconcile.html:126
+msgid "These usually need a sale recorded (or a correction)."
+msgstr "عادة تحتاج تسجيل مبيع (أو تصحيح)."
+#: templates/companies/layan_reconcile.html:144
+#: templates/companies/layan_reconcile.html:202
+#: templates/companies/sky_reconcile.html:130
+msgid "Section total"
+msgstr "مجموع القسم"
+#: templates/companies/layan_reconcile.html:151
 msgid ""
 "Layan sale in the system with no matching line in the uploaded Layan report."
 msgstr "بيع ليان في النظام بلا سطر مطابق في كشف ليان المرفوع."
 
-#: templates/companies/layan_reconcile.html:93
+#: templates/companies/layan_reconcile.html:165
+#: templates/companies/sky_reconcile.html:151
+msgid "Nothing in the review-first queue."
+msgstr "لا يوجد شيء في طابور المراجعة الأولى."
+#: templates/companies/layan_reconcile.html:172
+msgid "Sales differences (Layan vs system)"
+msgstr "اختلاف المبيعات بين ليان والنظام"
+
+#: templates/companies/layan_reconcile.html:174
 msgid ""
-"Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix the "
-"supplier on the sale."
+"Open “Compare Layan vs system lines” on a row to see report lines and local "
+"sales."
+msgstr "افتح «قارن أسطر ليان والنظام» لرؤية أسطر الكشف والمبيعات المحلية."
+#: templates/companies/layan_reconcile.html:179
+#: templates/companies/sky_reconcile.html:165
+msgid "Absolute gap total"
+msgstr "مجموع الفروقات المطلقة"
+#: templates/companies/layan_reconcile.html:186
+msgid ""
+"Settlements are charge + disconnect cycles. For Layan, retained settlement "
+"amounts are still included in estimated deficit (unlike Sky)."
 msgstr ""
-"مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على البيع."
-
-#: templates/companies/layan_reconcile.html:99
-msgid ""
-"Charge and disconnect in the same period (balance withdrawal, refund, and "
-"retained loss)."
-msgstr "شحن وفصل في نفس الفترة (سحب رصيد واسترجاع وخسارة بالمبلغ المتبقي)."
-
-#: templates/companies/layan_reconcile.html:102
-#, python-format
+"التسويات هي شحن+فصل. في ليان ما زال مبلغ التسوية المحفوظ يدخل العجز المق"
+"دّر (بخلاف سكاي)."
+#: templates/companies/layan_reconcile.html:190
+#, fuzzy, python-format
+#| msgid ""
+#| "\n"
+#| "        Showing settlements with difference ≥ %(min)s (%(hidden)s "
+#| "hidden).\n"
+#| "        "
 msgid ""
 "\n"
-"        Showing settlements with difference ≥ %(min)s (%(hidden)s hidden).\n"
-"        "
+"          Showing settlements with difference ≥ %(min)s (%(hidden)s "
+"hidden).\n"
+"          "
 msgstr ""
 "\n"
 "عرض التسويات التي فرقها ≥ %(min)s (%(hidden)s مخفية).\n"
 "        "
 
-#: templates/companies/layan_reconcile.html:111
-msgid "Sales differences (Layan vs system)"
-msgstr "اختلاف المبيعات بين ليان والنظام"
+#: templates/companies/layan_reconcile.html:198
+#: templates/companies/sky_reconcile.html:177
+msgid "Settlements on disconnected numbers"
+msgstr "تسويات على أرقام مفصولة"
 
-#: templates/companies/layan_reconcile.html:112
-msgid ""
-"Both sides have the number, but Layan and system amounts differ by more than "
-"the minimum entered above (e.g. Layan 60 vs one sale of 30 in the system)."
-msgstr ""
-"الرقم موجود على الجانبين لكن مبالغ ليان والنظام تختلف بأكثر من الحد المدخل "
-"أعلاه (مثلاً ليان 60 مقابل بيع واحد بـ 30 في النظام)."
-
-#: templates/companies/layan_reconcile.html:118
-#: templates/companies/sky_reconcile.html:146
+#: templates/companies/layan_reconcile.html:206
+#: templates/companies/sky_reconcile.html:217
+msgid "No informational items."
+msgstr "لا عناصر للمعلومة."
+#: templates/companies/layan_reconcile.html:213
+#: templates/companies/sky_reconcile.html:224
 msgid "Matched numbers"
 msgstr "أرقام متطابقة"
+
+#: templates/companies/layan_reconcile.html:214
+#: templates/companies/sky_reconcile.html:225
+msgid "Within the minimum difference — usually no action."
+msgstr "ضمن الحد الأدنى للفرق — عادة لا يلزم إجراء."
+#: templates/companies/layan_reconcile.html:223
+#: templates/companies/sky_reconcile.html:234
+msgid "Balance vs report end"
+msgstr "الرصيد مقابل نهاية الكشف"
+
+#: templates/companies/layan_reconcile.html:225
+#: templates/companies/partials/layan_reconcile_review_table.html:9
+msgid "Layan"
+msgstr "صافي ليان"
+
+#: templates/companies/layan_reconcile.html:226
+#: templates/companies/partials/layan_reconcile_review_table.html:11
+#: templates/companies/partials/layan_reconcile_table.html:25
+#: templates/companies/partials/sky_reconcile_table.html:11
+#: templates/companies/sky_reconcile.html:237
+msgid "Gap"
+msgstr "الفرق"
+
+#: templates/companies/layan_reconcile.html:229
+msgid "End balance not found in file."
+msgstr "رصيد نهاية الكشف غير موجود في الملف."
 
 #: templates/companies/partials/company_detail_general.html:16
 #: templates/reports/company_report.html:25
@@ -3484,21 +3576,51 @@ msgstr "شحنات خارج دورات التسوية"
 msgid "Layan portal net in report"
 msgstr "صافي ليان في الكشف"
 
+#: templates/companies/partials/layan_reconcile_review_table.html:7
+#: templates/companies/partials/layan_reconcile_settlements.html:17
+#: templates/companies/partials/layan_reconcile_table.html:21
+#: templates/companies/partials/sky_reconcile_table.html:7
+#: templates/companies/sky_reconcile.html:192
+msgid "Number"
+msgstr ""
+
+#: templates/companies/partials/layan_reconcile_review_table.html:8
+#: templates/companies/partials/sky_reconcile_table.html:8
+msgid "Why"
+msgstr "السبب"
+#: templates/companies/partials/layan_reconcile_review_table.html:10
+#: templates/companies/partials/sky_reconcile_table.html:10
+msgid "System"
+msgstr ""
+
+#: templates/companies/partials/layan_reconcile_review_table.html:26
+msgid "Compare Layan vs system lines"
+msgstr "قارن أسطر ليان والنظام"
+#: templates/companies/partials/layan_reconcile_review_table.html:29
+msgid "Layan report lines"
+msgstr "أسطر كشف ليان"
+#: templates/companies/partials/layan_reconcile_review_table.html:50
+#: templates/companies/partials/sky_reconcile_table.html:45
+msgid "System sales"
+msgstr "مبيعات النظام"
+#: templates/companies/partials/layan_reconcile_review_table.html:65
+#: templates/companies/partials/sky_reconcile_table.html:60
+msgid "No system sale in this period."
+msgstr "لا مبيع في النظام لهذه الفترة."
+#: templates/companies/partials/layan_reconcile_review_table.html:82
+#: templates/companies/partials/layan_reconcile_settlements.html:46
+#: templates/companies/partials/layan_reconcile_table.html:59
+#: templates/companies/partials/sky_reconcile_table.html:77
+msgid "None in this category."
+msgstr "لا يوجد في هذا التصنيف."
+
 #: templates/companies/partials/layan_reconcile_settlements.html:9
 #: templates/companies/partials/layan_reconcile_table.html:10
-#: templates/companies/partials/sky_reconcile_table.html:10
 #: templates/customers/customer_statement.html:72
 #: templates/customers/customer_statement.html:102
 #: templates/inventory/line_detail.html:34 templates/inventory/overview.html:30
 msgid "Total"
 msgstr "الإجمالي"
-
-#: templates/companies/partials/layan_reconcile_settlements.html:17
-#: templates/companies/partials/layan_reconcile_table.html:21
-#: templates/companies/partials/sky_reconcile_table.html:21
-#: templates/companies/sky_reconcile.html:119
-msgid "Number"
-msgstr ""
 
 #: templates/companies/partials/layan_reconcile_settlements.html:18
 msgid "Difference"
@@ -3521,18 +3643,10 @@ msgstr "راجع المطابقة أدناه"
 
 #: templates/companies/partials/layan_reconcile_settlements.html:34
 #: templates/companies/partials/layan_reconcile_table.html:42
-#: templates/companies/partials/sky_reconcile_table.html:42
 msgid "Breakdown"
 msgstr "التفصيل"
 
-#: templates/companies/partials/layan_reconcile_settlements.html:46
-#: templates/companies/partials/layan_reconcile_table.html:59
-#: templates/companies/partials/sky_reconcile_table.html:59
-msgid "None in this category."
-msgstr "لا يوجد في هذا التصنيف."
-
 #: templates/companies/partials/layan_reconcile_table.html:22
-#: templates/companies/partials/sky_reconcile_table.html:22
 msgid "RD supplier"
 msgstr "مورد في النظام"
 
@@ -3541,23 +3655,28 @@ msgid "Layan recharge"
 msgstr "شحن ليان"
 
 #: templates/companies/partials/layan_reconcile_table.html:24
-#: templates/companies/partials/sky_reconcile_table.html:24
 msgid "RD net"
 msgstr "صافي النظام"
 
 #: templates/companies/partials/layan_reconcile_table.html:36
-#: templates/companies/partials/sky_reconcile_table.html:36
 msgid "Settlement total"
 msgstr "مجموع التسويات"
 
 #: templates/companies/partials/layan_reconcile_table.html:37
-#: templates/companies/partials/sky_reconcile_table.html:37
 msgid "cycles"
 msgstr "دورات"
 
-#: templates/companies/partials/sky_reconcile_table.html:23
-msgid "Sky cost"
-msgstr "تكلفة سكاي"
+#: templates/companies/partials/sky_reconcile_table.html:9
+#: templates/companies/sky_reconcile.html:236
+msgid "Sky"
+msgstr ""
+
+#: templates/companies/partials/sky_reconcile_table.html:26
+msgid "Compare Sky vs system lines"
+msgstr "قارن أسطر سكاي والنظام"
+#: templates/companies/partials/sky_reconcile_table.html:29
+msgid "Sky charges"
+msgstr "خصومات سكاي"
 #: templates/companies/product_line_form.html:26
 #: templates/companies/product_list.html:40
 #: templates/companies/product_list.html:111
@@ -3645,98 +3764,69 @@ msgid "Delete package"
 msgstr "حذف الباقة"
 
 #: templates/companies/sky_reconcile.html:15
-#, fuzzy
-#| msgid ""
-#| "Upload the Layan charges report (Excel). Matching lists: numbers in Layan "
-#| "not in the system, numbers in the system not in Layan, settlements "
-#| "(charge + disconnect), and sales differences above the minimum you enter."
 msgid ""
-"Pulls the Sky balance report (بيانات رصيد) live for the selected dates. "
-"Matching lists: numbers in Sky not in the system, numbers in the system not "
-"in Sky, settlements (charge + disconnect — informational), amount "
-"differences, and balance anomalies."
+"Start with the red/amber cards after matching. Open one tab at a time. Each "
+"number shows why it flagged and a Sky vs system line compare."
 msgstr ""
-"ارفع كشف ليان. القوائم: أرقام بليان وغير مسجّلة بالنظام، أرقام بالنظام وغير "
-"مسجّلة بليان، التسويات (شحن وفصل)، واختلاف المبيعات فوق الحد الذي تدخله."
-
-#: templates/companies/sky_reconcile.html:37
-msgid "Estimated deficit (Sky)"
-msgstr "العجز المقدّر (سكاي)"
-#: templates/companies/sky_reconcile.html:41
-msgid "Settlements (excluded)"
-msgstr "تسويات (مستثناة من العجز)"
-#: templates/companies/sky_reconcile.html:68
-msgid "Sky"
-msgstr ""
-
+"بعد المطابقة ابدأ بالبطاقات الحمراء/البرتقالية. افتح تبويباً واحداً كل م"
+"رة. كل رقم يوضح السبب ومقارنة أسطر سكاي والنظام."
+#: templates/companies/sky_reconcile.html:62
+msgid "Sky vs system amount"
+msgstr "مبلغ سكاي مقابل النظام"
+#: templates/companies/sky_reconcile.html:71
+msgid "3 · Info only"
+msgstr "3 · للمعلومة فقط"
 #: templates/companies/sky_reconcile.html:74
-msgid "End balance not found in Sky report."
-msgstr "لم يُعثر على رصيد ختامي في تقرير سكاي."
-#: templates/companies/sky_reconcile.html:82
-#, fuzzy
-#| msgid ""
-#| "Number appears on the Layan report but has no matching Layan sale in the "
-#| "system for this period."
+msgid "Settlements (not in deficit)"
+msgstr "تسويات (خارج العجز)"
+#: templates/companies/sky_reconcile.html:86
+msgid "Sky rows"
+msgstr "صفوف سكاي"
+#: templates/companies/sky_reconcile.html:109
+msgid "Info only"
+msgstr "للمعلومة فقط"
+#: templates/companies/sky_reconcile.html:137
 msgid ""
-"Number appears on the Sky report but has no matching Sky sale in the system "
-"for this period."
-msgstr ""
-"الرقم ظاهر في كشف ليان ولا يوجد له بيع ليان مطابق في النظام لهذه الفترة."
-
-#: templates/companies/sky_reconcile.html:87
-msgid "Sky sale in the system with no matching line in the Sky balance report."
-msgstr "بيع ليان في النظام بلا سطر مطابق في كشف ليان المرفوع."
-
-
-#: templates/companies/sky_reconcile.html:93
-#, fuzzy
-#| msgid ""
-#| "Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix "
-#| "the supplier on the sale."
-msgid ""
-"Charged on Sky but the sale was recorded under another supplier — fix the "
-"supplier on the sale."
-msgstr ""
-"مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على البيع."
-
-#: templates/companies/sky_reconcile.html:99
-msgid ""
-"Charge and disconnect in the same period. Shown for review only — not "
-"included in estimated deficit."
-msgstr "شحن وفصل في نفس الفترة (سحب رصيد واسترجاع وخسارة بالمبلغ المتبقي)."
-
-
-#: templates/companies/sky_reconcile.html:104
+"Sale exists locally but Sky report has no charge for this number in the "
+"period."
+msgstr "المبيع موجود محلياً لكن تقرير سكاي بلا خصم لهذا الرقم في الفترة."
+#: templates/companies/sky_reconcile.html:158
 msgid "Sales differences (Sky vs system)"
 msgstr "فروقات المبيعات (سكاي مقابل النظام)"
-#: templates/companies/sky_reconcile.html:105
+#: templates/companies/sky_reconcile.html:160
 msgid ""
-"Both sides have the number, but Sky cost (summed, including eSIM lines) and "
-"system cost differ by more than the minimum."
+"Open “Compare Sky vs system lines” on a row to see eSIM splits and package "
+"costs (like 75 vs 80)."
 msgstr ""
-
-#: templates/companies/sky_reconcile.html:112
+"افتح «قارن أسطر سكاي والنظام» على الصف لترى تقسيم eSIM وتكاليف الباقة (م"
+"ثل 75 مقابل 80)."
+#: templates/companies/sky_reconcile.html:172
+msgid ""
+"Settlements are charge + disconnect cycles. They are shown so you do not "
+"treat them as missing sales, and they do not increase estimated deficit."
+msgstr ""
+"التسويات هي شحن + فصل. تُعرض حتى لا تُحسب كمبيعات ناقصة، ولا تزيد العجز "
+"المقدّر."
+#: templates/companies/sky_reconcile.html:185
 msgid "Balance anomalies"
 msgstr "شواذ الرصيد"
-#: templates/companies/sky_reconcile.html:113
+#: templates/companies/sky_reconcile.html:186
 msgid "Sky rows where before + delta does not equal after."
 msgstr ""
 
-#: templates/companies/sky_reconcile.html:121
+#: templates/companies/sky_reconcile.html:194
 msgid "Op"
 msgstr "فتح"
 
-
-#: templates/companies/sky_reconcile.html:122
+#: templates/companies/sky_reconcile.html:195
 msgid "Before"
 msgstr "الرصيد قبل"
 
-
-#: templates/companies/sky_reconcile.html:123
+#: templates/companies/sky_reconcile.html:196
 msgid "Delta"
 msgstr ""
 
-#: templates/companies/sky_reconcile.html:124
+#: templates/companies/sky_reconcile.html:197
 msgid "After"
 msgstr ""
 
@@ -4423,7 +4513,6 @@ msgid ""
 "This cannot be undone."
 msgstr "حذف هذا الإدخال نهائياً؟ يُصحَّح رصيد المورّد. لا يمكن التراجع."
 
-
 #: templates/employees/partials/employee_payments_table.html:12
 #: templates/reports/partials/stale_phones_report_results.html:8
 msgid "Number / reference"
@@ -4803,10 +4892,6 @@ msgstr "كشف المورّد وسجل الرصيد الداخلي"
 #: templates/reports/dashboard.html:25
 msgid "Debts"
 msgstr "ديون"
-
-#: templates/reports/dashboard.html:30
-msgid "Settlements"
-msgstr "تسديدات"
 
 #: templates/reports/dashboard.html:43
 msgid "Today's sales"
@@ -5444,6 +5529,79 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid ""
+#~ "Upload the Layan charges report (Excel). Matching lists: numbers in Layan "
+#~ "not in the system, numbers in the system not in Layan, settlements "
+#~ "(charge + disconnect), and sales differences above the minimum you enter."
+#~ msgstr ""
+#~ "ارفع كشف ليان. القوائم: أرقام بليان وغير مسجّلة بالنظام، أرقام بالنظام "
+#~ "وغير مسجّلة بليان، التسويات (شحن وفصل)، واختلاف المبيعات فوق الحد الذي "
+#~ "تدخله."
+
+#~ msgid "Estimated deficit (Layan)"
+#~ msgstr "العجز التقديري (ليان)"
+
+#~ msgid "Not recorded"
+#~ msgstr "غير مسجّل"
+
+#~ msgid "Report rows in period"
+#~ msgstr "صفوف الكشف في الفترة"
+
+#~ msgid ""
+#~ "Number appears on the Layan report but has no matching Layan sale in the "
+#~ "system for this period."
+#~ msgstr ""
+#~ "الرقم ظاهر في كشف ليان ولا يوجد له بيع ليان مطابق في النظام لهذه الفترة."
+
+#~ msgid ""
+#~ "Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix "
+#~ "the supplier on the sale."
+#~ msgstr ""
+#~ "مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على "
+#~ "البيع."
+
+#~ msgid ""
+#~ "Charge and disconnect in the same period (balance withdrawal, refund, and "
+#~ "retained loss)."
+#~ msgstr "شحن وفصل في نفس الفترة (سحب رصيد واسترجاع وخسارة بالمبلغ المتبقي)."
+
+#~ msgid ""
+#~ "Both sides have the number, but Layan and system amounts differ by more "
+#~ "than the minimum entered above (e.g. Layan 60 vs one sale of 30 in the "
+#~ "system)."
+#~ msgstr ""
+#~ "الرقم موجود على الجانبين لكن مبالغ ليان والنظام تختلف بأكثر من الحد "
+#~ "المدخل أعلاه (مثلاً ليان 60 مقابل بيع واحد بـ 30 في النظام)."
+
+#, fuzzy
+#~| msgid ""
+#~| "Upload the Layan charges report (Excel). Matching lists: numbers in "
+#~| "Layan not in the system, numbers in the system not in Layan, settlements "
+#~| "(charge + disconnect), and sales differences above the minimum you enter."
+#~ msgid ""
+#~ "Pulls the Sky balance report (بيانات رصيد) live for the selected dates. "
+#~ "Matching lists: numbers in Sky not in the system, numbers in the system "
+#~ "not in Sky, settlements (charge + disconnect — informational), amount "
+#~ "differences, and balance anomalies."
+#~ msgstr ""
+#~ "ارفع كشف ليان. القوائم: أرقام بليان وغير مسجّلة بالنظام، أرقام بالنظام "
+#~ "وغير مسجّلة بليان، التسويات (شحن وفصل)، واختلاف المبيعات فوق الحد الذي "
+#~ "تدخله."
+
+#~ msgid "End balance not found in Sky report."
+#~ msgstr "لم يُعثر على رصيد ختامي في تقرير سكاي."
+
+#, fuzzy
+#~| msgid ""
+#~| "Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix "
+#~| "the supplier on the sale."
+#~ msgid ""
+#~ "Charged on Sky but the sale was recorded under another supplier — fix the "
+#~ "supplier on the sale."
+#~ msgstr ""
+#~ "مخصوم على ليان لكن البيع مسجّل تحت Sky أو Areen وغيرها — صحّح المورد على "
+#~ "البيع."
 
 #~ msgid "Filters"
 #~ msgstr "الفلاتر"

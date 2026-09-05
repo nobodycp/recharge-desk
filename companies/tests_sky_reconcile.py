@@ -193,6 +193,12 @@ class SkyReconcileMatchTests(TestCase):
         self.assertIn("0544444444", mismatch)
         self.assertGreater(result.estimated_deficit, 0)
         self.assertEqual(result.total_split_settlements, Decimal("0"))
+        mismatch_row = next(r for r in result.amount_mismatches if r.phone == "0544444444")
+        self.assertIn("50.00", mismatch_row.reason)
+        self.assertIn("45.00", mismatch_row.reason)
+        self.assertTrue(mismatch_row.rd_sales)
+        self.assertEqual(result.action_count, 2)  # not_recorded + rd_only
+        self.assertEqual(result.mismatch_count, 1)
 
     def test_esim_sum_matches_rd_snapshot(self):
         self._sale(self.company, self.product, "0577777777", Decimal("50"))

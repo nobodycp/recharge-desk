@@ -267,6 +267,13 @@ class ReconcilePhoneRow:
     recharge_amount: Decimal = Decimal("0")
     settlement_cycles: int = 0
     activity_detail: PhoneActivityDetail | None = None
+    reason: str = ""
+    rd_sales: list = field(default_factory=list)
+
+    @property
+    def sky_net(self) -> Decimal:
+        """Alias for shared review-table templates (provider cost column)."""
+        return self.layan_net
 
 
 @dataclass
@@ -296,6 +303,30 @@ class LayanReconcileResult:
     row_count: int
     min_settlement_difference: Decimal = Decimal("0")
     split_settlements_hidden_count: int = 0
+
+    @property
+    def action_rows(self) -> list[ReconcilePhoneRow]:
+        return list(self.not_recorded) + list(self.rd_only) + list(self.logged_other_supplier)
+
+    @property
+    def action_count(self) -> int:
+        return len(self.action_rows)
+
+    @property
+    def action_total(self) -> Decimal:
+        return (
+            self.total_not_recorded
+            + self.total_rd_only
+            + self.total_logged_other_supplier
+        )
+
+    @property
+    def mismatch_count(self) -> int:
+        return len(self.amount_mismatches)
+
+    @property
+    def info_count(self) -> int:
+        return len(self.split_settlements)
 
 
 def parse_layan_workbook(
@@ -743,6 +774,11 @@ def reconcile_layan_report(
 
     estimated_deficit = total_not + total_split
 
+    rd_sales_map = _layan_rd_sales_by_phone_details(company, period_from, period_to)
+
+    def _finish(rows: list[ReconcilePhoneRow]) -> list[ReconcilePhoneRow]:
+        return [_annotate_layan_row(r, rd_sales_map=rd_sales_map) for r in rows]
+
     return LayanReconcileResult(
         period_from=period_from,
         period_to=period_to,
@@ -753,12 +789,12 @@ def reconcile_layan_report(
         rd_deductions=rd_ded,
         rd_adjustments=rd_adj,
         rd_balance_end=company.current_balance,
-        not_recorded=not_recorded,
-        split_settlements=split_settlements,
-        amount_mismatches=amount_mismatches,
-        matched=matched,
-        rd_only=rd_only,
-        logged_other_supplier=logged_other_supplier,
+        not_recorded=_finish(not_recorded),
+        split_settlements=_finish(split_settlements),
+        amount_mismatches=_finish(amount_mismatches),
+        matched=_finish(matched),
+        rd_only=_finish(rd_only),
+        logged_other_supplier=_finish(logged_other_supplier),
         total_not_recorded=total_not_section,
         total_split_settlements=total_split,
         total_amount_mismatch=total_mismatch,
@@ -770,6 +806,119 @@ def reconcile_layan_report(
         min_settlement_difference=min_diff,
         split_settlements_hidden_count=split_hidden,
     )
+
+
+def explain_layan_row(
+    *,
+    category: str,
+    layan_net: Decimal,
+    rd_net: Decimal,
+    gap: Decimal,
+    other_suppliers: str = "",
+) -> str:
+    if category == "not_recorded":
+        return str(
+            _("In Layan for %(amount)s — no matching sale in the system for this period.")
+            % {"amount": f"{layan_net:.2f}"}
+        )
+    if category == "rd_only":
+        return str(
+            _("In the system for %(amount)s — not found on the uploaded Layan report.")
+            % {"amount": f"{rd_net:.2f}"}
+        )
+    if category == "other_supplier":
+        return str(
+            _("Charged on Layan (%(layan)s) but logged under %(suppliers)s.")
+            % {"layan": f"{layan_net:.2f}", "suppliers": other_suppliers or "—"}
+        )
+    if category == "settlement":
+        return str(
+            _(
+                "Charge + disconnect settlement on Layan. Review retained amount; "
+                "it is included in estimated deficit."
+            )
+        )
+    if category == "amount_mismatch":
+        if gap > 0:
+            return str(
+                _("Layan cost %(layan)s is higher than system %(rd)s by %(gap)s.")
+                % {
+                    "layan": f"{layan_net:.2f}",
+                    "rd": f"{rd_net:.2f}",
+                    "gap": f"{gap:.2f}",
+                }
+            )
+        return str(
+            _("System cost %(rd)s is higher than Layan %(layan)s by %(gap)s.")
+            % {
+                "layan": f"{layan_net:.2f}",
+                "rd": f"{rd_net:.2f}",
+                "gap": f"{abs(gap):.2f}",
+            }
+        )
+    if category == "matched":
+        return str(_("Layan and system costs match within the minimum difference."))
+    return ""
+
+
+def _layan_rd_sales_by_phone_details(
+    company,
+    period_from: date | None,
+    period_to: date | None,
+) -> dict[str, list]:
+    from sales.models import Sale
+
+    qs = (
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .filter(company=company)
+        .select_related("product")
+        .order_by("created_at")
+    )
+    if period_from:
+        qs = qs.filter(created_at__date__gte=period_from)
+    if period_to:
+        qs = qs.filter(created_at__date__lte=period_to)
+    out: dict[str, list] = {}
+    for sale in qs:
+        phone = norm_phone(sale.reference_number or "")
+        if not phone:
+            continue
+        product = sale.product
+        label = getattr(product, "variant_label", None) or str(product)
+        out.setdefault(phone, []).append(
+            {
+                "id": sale.pk,
+                "at": sale.created_at,
+                "cost": Decimal(sale.cost_price_snapshot),
+                "product": label,
+                "is_esim": bool(sale.is_esim),
+                "status": sale.status,
+            }
+        )
+    return out
+
+
+def _annotate_layan_row(
+    row: ReconcilePhoneRow,
+    *,
+    rd_sales_map: dict[str, list],
+) -> ReconcilePhoneRow:
+    row.reason = explain_layan_row(
+        category=row.category,
+        layan_net=row.layan_net,
+        rd_net=row.rd_net,
+        gap=row.gap,
+        other_suppliers=row.rd_suppliers if row.category == "other_supplier" else "",
+    )
+    if row.category in (
+        "amount_mismatch",
+        "rd_only",
+        "not_recorded",
+        "other_supplier",
+        "settlement",
+    ):
+        row.rd_sales = list(rd_sales_map.get(row.phone) or [])
+    return row
 
 
 def company_supports_layan_reconcile(company) -> bool:

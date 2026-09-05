@@ -12,114 +12,241 @@
 <div class="app-card card mb-4">
   <div class="card-body p-4">
     <p class="text-secondary small mb-3">
-      {% trans "Upload the Layan charges report (Excel). Matching lists: numbers in Layan not in the system, numbers in the system not in Layan, settlements (charge + disconnect), and sales differences above the minimum you enter." %}
+      {% trans "Upload the Layan charges Excel report. After matching, use the priority cards and open one tab at a time — same review flow as Sky, without live portal fetch." %}
     </p>
-    <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+    <form method="post" enctype="multipart/form-data" class="row g-3 align-items-end">
       {% csrf_token %}
-      {% for field in form %}
-        <div>
-          {{ field.label_tag }}
-          {{ field }}
-          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-          {{ field.errors }}
-        </div>
-      {% endfor %}
-      <button class="btn btn-primary" type="submit">{% trans "Run matching" %}</button>
+      <div class="col-md-3">
+        {{ form.period_from.label_tag }}
+        {{ form.period_from }}
+        {{ form.period_from.errors }}
+      </div>
+      <div class="col-md-3">
+        {{ form.period_to.label_tag }}
+        {{ form.period_to }}
+        {{ form.period_to.errors }}
+      </div>
+      <div class="col-md-3">
+        {{ form.min_settlement_difference.label_tag }}
+        {{ form.min_settlement_difference }}
+        {% if form.min_settlement_difference.help_text %}<div class="form-text">{{ form.min_settlement_difference.help_text }}</div>{% endif %}
+        {{ form.min_settlement_difference.errors }}
+      </div>
+      <div class="col-md-3">
+        {{ form.report_file.label_tag }}
+        {{ form.report_file }}
+        {{ form.report_file.errors }}
+      </div>
+      <div class="col-12">
+        {{ form.pending_credits.label_tag }}
+        {{ form.pending_credits }}
+        {% if form.pending_credits.help_text %}<div class="form-text">{{ form.pending_credits.help_text }}</div>{% endif %}
+        {{ form.pending_credits.errors }}
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100" type="submit">{% trans "Run matching" %}</button>
+      </div>
     </form>
   </div>
 </div>
 
 {% if result %}
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="app-card card h-100">
+  <div class="row g-3 mb-3" id="layan-rec-priority">
+    <div class="col-md-3">
+      <button type="button" class="app-card card h-100 w-100 text-start border-danger-subtle" data-layan-panel="action">
         <div class="card-body">
-          <div class="small text-secondary">{% trans "Estimated deficit (Layan)" %}</div>
-          <div class="h4 mb-0 text-danger">{{ result.estimated_deficit|floatformat:2 }}</div>
-          <div class="small text-secondary mt-1">
-            {% trans "Not recorded" %}: {{ result.total_not_recorded|floatformat:2 }}
-            · {% trans "Settlements on disconnected numbers" %}: {{ result.total_split_settlements|floatformat:2 }}
+          <div class="small text-danger">{% trans "1 · Review first" %}</div>
+          <div class="h4 mb-1">{{ result.action_count }}</div>
+          <div class="small text-secondary">
+            {% trans "Missing / wrong supplier" %}
+            · {{ result.action_total|floatformat:2 }}
           </div>
         </div>
-      </div>
+      </button>
     </div>
-    <div class="col-md-4">
-      <div class="app-card card h-100">
+    <div class="col-md-3">
+      <button type="button" class="app-card card h-100 w-100 text-start border-warning-subtle" data-layan-panel="mismatch">
         <div class="card-body">
-          <div class="small text-secondary">{% trans "Report rows in period" %}</div>
-          <div class="h4 mb-0">{{ result.row_count|intcomma }}</div>
-          {% if result.period_from or result.period_to %}
-            <div class="small text-secondary mt-1">
-              {% if result.period_from %}{{ result.period_from }}{% else %}—{% endif %}
-              →
-              {% if result.period_to %}{{ result.period_to }}{% else %}—{% endif %}
-            </div>
-          {% endif %}
+          <div class="small text-warning-emphasis">{% trans "2 · Cost differences" %}</div>
+          <div class="h4 mb-1">{{ result.mismatch_count }}</div>
+          <div class="small text-secondary">
+            {% trans "Layan vs system amount" %}
+            · {{ result.total_amount_mismatch|floatformat:2 }}
+          </div>
         </div>
-      </div>
+      </button>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
+      <button type="button" class="app-card card h-100 w-100 text-start border-secondary-subtle" data-layan-panel="info">
+        <div class="card-body">
+          <div class="small text-secondary">{% trans "3 · Settlements" %}</div>
+          <div class="h4 mb-1">{{ result.info_count }}</div>
+          <div class="small text-secondary">
+            {% trans "Included in estimated deficit" %}
+            · {{ result.total_split_settlements|floatformat:2 }}
+            {% if result.split_settlements_hidden_count %}
+              · {{ result.split_settlements_hidden_count }} {% trans "hidden" %}
+            {% endif %}
+          </div>
+        </div>
+      </button>
+    </div>
+    <div class="col-md-3">
       <div class="app-card card h-100">
         <div class="card-body">
-          <div class="small text-secondary">{% trans "Balance vs report end" %}</div>
-          {% if result.layan_end_balance is not None %}
-            <div class="h5 mb-0">
-              RD {{ result.rd_balance_end|floatformat:2 }}
-              · {% trans "Layan" %} {{ result.layan_end_balance|floatformat:2 }}
-            </div>
-            <div class="small mt-1 {% if result.balance_gap %}text-warning{% else %}text-secondary{% endif %}">
-              {% trans "Gap" %}: {{ result.balance_gap|floatformat:2 }}
-            </div>
-          {% else %}
-            <div class="small text-secondary">{% trans "End balance not found in file." %}</div>
-          {% endif %}
+          <div class="small text-secondary">{% trans "Estimated deficit" %}</div>
+          <div class="h4 mb-1 text-danger">{{ result.estimated_deficit|floatformat:2 }}</div>
+          <div class="small text-secondary">
+            {{ result.row_count|intcomma }} {% trans "report rows" %}
+            {% if result.period_from %}· {{ result.period_from }} → {{ result.period_to }}{% endif %}
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  {% trans "In Layan, not in system" as title_not_recorded %}
-  {% trans "Number appears on the Layan report but has no matching Layan sale in the system for this period." as help_not_recorded %}
-  {% include "companies/partials/layan_reconcile_table.html" with section_title=title_not_recorded section_rows=result.not_recorded section_total=result.total_not_recorded section_help=help_not_recorded %}
+  <ul class="nav nav-tabs rd-section-tabs mb-3" id="layan-rec-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" type="button" role="tab" data-layan-panel="action" aria-selected="true">
+        {% trans "Review first" %}
+        <span class="badge text-bg-danger ms-1">{{ result.action_count }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" type="button" role="tab" data-layan-panel="mismatch" aria-selected="false">
+        {% trans "Cost differences" %}
+        <span class="badge text-bg-warning text-dark ms-1">{{ result.mismatch_count }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" type="button" role="tab" data-layan-panel="info" aria-selected="false">
+        {% trans "Settlements" %}
+        <span class="badge text-bg-secondary ms-1">{{ result.info_count }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" type="button" role="tab" data-layan-panel="ok" aria-selected="false">
+        {% trans "Matched" %}
+        <span class="badge text-bg-success ms-1">{{ result.matched|length }}</span>
+      </button>
+    </li>
+  </ul>
 
-  {% if result.rd_only %}
-    {% trans "In system, not in Layan" as title_rd_only %}
-    {% trans "Layan sale in the system with no matching line in the uploaded Layan report." as help_rd_only %}
-    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_rd_only section_rows=result.rd_only section_total=result.total_rd_only section_help=help_rd_only %}
-  {% endif %}
-
-  {% if result.logged_other_supplier %}
-    {% trans "Logged under another supplier" as title_other %}
-    {% trans "Charged on Layan but the sale was recorded under Sky, Areen, etc. — fix the supplier on the sale." as help_other %}
-    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_other section_rows=result.logged_other_supplier section_total=result.total_logged_other_supplier section_help=help_other %}
-  {% endif %}
-
-  {% if result.split_settlements or result.split_settlements_hidden_count %}
-    {% trans "Settlements on disconnected numbers" as title_split %}
-    {% trans "Charge and disconnect in the same period (balance withdrawal, refund, and retained loss)." as help_split %}
-    {% if result.min_settlement_difference > 0 %}
-      <p class="small text-secondary mb-2">
-        {% blocktrans with min=result.min_settlement_difference|floatformat:2 hidden=result.split_settlements_hidden_count %}
-        Showing settlements with difference ≥ {{ min }} ({{ hidden }} hidden).
-        {% endblocktrans %}
-      </p>
-    {% endif %}
-    {% include "companies/partials/layan_reconcile_settlements.html" with section_title=title_split section_rows=result.split_settlements section_total=result.total_split_settlements section_help=help_split %}
-  {% endif %}
-
-  {% if result.amount_mismatches %}
-    {% trans "Sales differences (Layan vs system)" as title_mismatch %}
-    {% trans "Both sides have the number, but Layan and system amounts differ by more than the minimum entered above (e.g. Layan 60 vs one sale of 30 in the system)." as help_mismatch %}
-    {% include "companies/partials/layan_reconcile_table.html" with section_title=title_mismatch section_rows=result.amount_mismatches section_total=result.total_amount_mismatch section_help=help_mismatch %}
-  {% endif %}
-
-  <details class="app-card card mt-3">
-    <summary class="card-body py-3 user-select-none" style="cursor:pointer;">
-      {% trans "Matched numbers" %} ({{ result.matched|length }})
-    </summary>
-    <div class="card-body border-top pt-0">
-      {% include "companies/partials/layan_reconcile_table.html" with section_title="" section_rows=result.matched section_total=None section_help="" hide_title=True %}
+  <div id="layan-rec-panels">
+    <div class="layan-rec-panel" data-layan-panel-id="action">
+      <div class="app-card card mb-3">
+        <div class="card-header">
+          <strong>{% trans "In Layan, not in system" %}</strong>
+          <div class="small text-secondary fw-normal">{% trans "These usually need a sale recorded (or a correction)." %}</div>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.not_recorded %}
+        {% if result.total_not_recorded %}
+          <div class="card-footer small text-secondary">{% trans "Section total" %}: {{ result.total_not_recorded|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+      {% if result.rd_only %}
+      <div class="app-card card mb-3">
+        <div class="card-header">
+          <strong>{% trans "In system, not in Layan" %}</strong>
+          <div class="small text-secondary fw-normal">{% trans "Layan sale in the system with no matching line in the uploaded Layan report." %}</div>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.rd_only %}
+      </div>
+      {% endif %}
+      {% if result.logged_other_supplier %}
+      <div class="app-card card mb-3">
+        <div class="card-header">
+          <strong>{% trans "Logged under another supplier" %}</strong>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.logged_other_supplier %}
+      </div>
+      {% endif %}
+      {% if not result.action_count %}
+        <div class="app-card card"><div class="card-body text-secondary">{% trans "Nothing in the review-first queue." %}</div></div>
+      {% endif %}
     </div>
-  </details>
+
+    <div class="layan-rec-panel d-none" data-layan-panel-id="mismatch">
+      <div class="app-card card mb-3">
+        <div class="card-header">
+          <strong>{% trans "Sales differences (Layan vs system)" %}</strong>
+          <div class="small text-secondary fw-normal">
+            {% trans "Open “Compare Layan vs system lines” on a row to see report lines and local sales." %}
+          </div>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.amount_mismatches %}
+        {% if result.total_amount_mismatch %}
+          <div class="card-footer small text-secondary">{% trans "Absolute gap total" %}: {{ result.total_amount_mismatch|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="layan-rec-panel d-none" data-layan-panel-id="info">
+      <div class="alert alert-secondary small mb-3">
+        {% trans "Settlements are charge + disconnect cycles. For Layan, retained settlement amounts are still included in estimated deficit (unlike Sky)." %}
+      </div>
+      {% if result.min_settlement_difference > 0 and result.split_settlements_hidden_count %}
+        <p class="small text-secondary mb-2">
+          {% blocktrans with min=result.min_settlement_difference|floatformat:2 hidden=result.split_settlements_hidden_count %}
+          Showing settlements with difference ≥ {{ min }} ({{ hidden }} hidden).
+          {% endblocktrans %}
+        </p>
+      {% endif %}
+      {% if result.split_settlements %}
+      <div class="app-card card mb-3">
+        <div class="card-header">
+          <strong>{% trans "Settlements on disconnected numbers" %}</strong>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.split_settlements %}
+        {% if result.total_split_settlements %}
+          <div class="card-footer small text-secondary">{% trans "Section total" %}: {{ result.total_split_settlements|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+      {% else %}
+        <div class="app-card card"><div class="card-body text-secondary">{% trans "No informational items." %}</div></div>
+      {% endif %}
+    </div>
+
+    <div class="layan-rec-panel d-none" data-layan-panel-id="ok">
+      <div class="app-card card">
+        <div class="card-header">
+          <strong>{% trans "Matched numbers" %}</strong>
+          <div class="small text-secondary fw-normal">{% trans "Within the minimum difference — usually no action." %}</div>
+        </div>
+        {% include "companies/partials/layan_reconcile_review_table.html" with section_rows=result.matched %}
+      </div>
+    </div>
+  </div>
+
+  {% if result.layan_end_balance is not None %}
+  <p class="small text-secondary mt-3 mb-0">
+    {% trans "Balance vs report end" %}:
+    RD {{ result.rd_balance_end|floatformat:2 }}
+    · {% trans "Layan" %} {{ result.layan_end_balance|floatformat:2 }}
+    · {% trans "Gap" %}: {{ result.balance_gap|floatformat:2 }}
+  </p>
+  {% else %}
+  <p class="small text-secondary mt-3 mb-0">{% trans "End balance not found in file." %}</p>
+  {% endif %}
+
+  <script>
+  (function () {
+    function showPanel(id) {
+      document.querySelectorAll("#layan-rec-panels .layan-rec-panel").forEach(function (el) {
+        el.classList.toggle("d-none", el.getAttribute("data-layan-panel-id") !== id);
+      });
+      document.querySelectorAll("#layan-rec-tabs [data-layan-panel]").forEach(function (btn) {
+        var on = btn.getAttribute("data-layan-panel") === id;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
+    document.querySelectorAll("[data-layan-panel]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        showPanel(el.getAttribute("data-layan-panel"));
+      });
+    });
+  })();
+  </script>
 {% endif %}
 {% endblock %}

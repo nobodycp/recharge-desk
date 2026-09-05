@@ -1,12 +1,12 @@
 {% load i18n %}
 {% if section_rows %}
 <div class="table-responsive">
-  <table class="table table-sm table-hover mb-0 align-middle sky-rec-table">
+  <table class="table table-sm table-hover mb-0 align-middle">
     <thead>
       <tr>
         <th style="min-width:11rem">{% trans "Number" %}</th>
         <th>{% trans "Why" %}</th>
-        <th class="text-end">{% trans "Sky" %}</th>
+        <th class="text-end">{% trans "Layan" %}</th>
         <th class="text-end">{% trans "System" %}</th>
         <th class="text-end">{% trans "Gap" %}</th>
       </tr>
@@ -23,10 +23,10 @@
         <td class="small" style="max-width:28rem">
           <div class="text-body">{{ row.reason }}</div>
           <details class="mt-1">
-            <summary class="text-primary user-select-none" style="cursor:pointer;">{% trans "Compare Sky vs system lines" %}</summary>
+            <summary class="text-primary user-select-none" style="cursor:pointer;">{% trans "Compare Layan vs system lines" %}</summary>
             <div class="row g-2 mt-1 small">
               <div class="col-md-6">
-                <div class="fw-semibold mb-1">{% trans "Sky charges" %}</div>
+                <div class="fw-semibold mb-1">{% trans "Layan report lines" %}</div>
                 {% if row.lines %}
                   <ul class="mb-0 ps-3">
                     {% for ln in row.lines %}
@@ -39,6 +39,11 @@
                   </ul>
                 {% else %}
                   <div class="text-secondary">—</div>
+                {% endif %}
+                {% if row.activity_detail %}
+                  <div class="mt-2">
+                    {% include "companies/partials/layan_reconcile_activity_detail.html" with detail=row.activity_detail %}
+                  </div>
                 {% endif %}
               </div>
               <div class="col-md-6">
@@ -63,7 +68,7 @@
             </div>
           </details>
         </td>
-        <td class="text-end font-monospace">{{ row.sky_net|floatformat:2 }}</td>
+        <td class="text-end font-monospace">{{ row.layan_net|floatformat:2 }}</td>
         <td class="text-end font-monospace">{{ row.rd_net|floatformat:2 }}</td>
         <td class="text-end font-monospace fw-semibold {% if row.gap > 0 %}text-danger{% elif row.gap < 0 %}text-primary{% endif %}">
           {% if row.gap > 0 %}+{% endif %}{{ row.gap|floatformat:2 }}
