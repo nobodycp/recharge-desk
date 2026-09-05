@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 05:27+0300\n"
+"POT-Creation-Date: 2026-09-05 23:16+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -374,17 +374,14 @@ msgstr ""
 "يُستخدم للتسويات (المبلغ المتبقي بعد شحن وفصل) ولاختلاف المبيعات بين ليان "
 "والنظام. الصفوف ذات الفرق الأصغر تُخفى (0 = عرض الكل)."
 
-#: companies/forms.py:140
-msgid ""
-"Sales differences between Sky and the system below this amount are treated "
-"as matched (0 shows all differences)."
-msgstr ""
-
-#: companies/forms.py:150
+#: companies/forms.py:139
+msgid "Below this amount counts as matched. Use 0 to show all."
+msgstr "تحت هذا المبلغ يُحسب متطابقاً. استخدم 0 لعرض كل الفروقات."
+#: companies/forms.py:147
 msgid "Date to must be on or after date from."
 msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
 
-#: companies/forms.py:159
+#: companies/forms.py:156
 msgid "e.g. 100 GB"
 msgstr "مثلاً 100 جيجا"
 
@@ -629,125 +626,125 @@ msgstr "تم تسجيل الإيداع."
 #: employees/views.py:236
 msgid "Adjustment recorded."
 msgstr "تم تسجيل التسوية."
-#: companies/views.py:59 templates/companies/company_list.html:6
+#: companies/views.py:58 templates/companies/company_list.html:6
 #: templates/partials/management_nav.html:102
 msgid "Companies"
 msgstr "الشركات"
-#: companies/views.py:74
+#: companies/views.py:73
 msgid "Company saved."
 msgstr "تم حفظ الشركة."
-#: companies/views.py:79 templates/companies/company_list.html:9
+#: companies/views.py:78 templates/companies/company_list.html:9
 msgid "New company"
 msgstr "شركة جديدة"
-#: companies/views.py:93
+#: companies/views.py:92
 msgid "Layan report matching is only available for Layan."
 msgstr "مطابقة كشف ليان متاحة لمورد ليان فقط."
 
-#: companies/views.py:115
+#: companies/views.py:114
 #, python-format
 msgid "Report processed (%(rows)s rows)."
 msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
 
-#: companies/views.py:120
+#: companies/views.py:119
 msgid "Excel support is not installed (openpyxl). Contact your administrator."
 msgstr "دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
 
-#: companies/views.py:125
+#: companies/views.py:124
 #, python-format
 msgid "Could not read the report: %(error)s"
 msgstr "تعذّر قراءة الكشف: %(error)s"
 
-#: companies/views.py:135 templates/companies/company_detail.html:12
+#: companies/views.py:134 templates/companies/company_detail.html:12
 #: templates/companies/layan_reconcile.html:6
 msgid "Layan report matching"
 msgstr "مطابقة كشف ليان"
 
-#: companies/views.py:144
+#: companies/views.py:143
 msgid "Sky report matching is only available for Sky."
 msgstr "مطابقة كشف سكاي متاحة لشركة سكاي فقط."
-#: companies/views.py:175
+#: companies/views.py:165
 #, python-format
 msgid "Sky report processed (%(rows)s rows)."
 msgstr "تمت معالجة تقرير سكاي (%(rows)s صف)."
-#: companies/views.py:183
+#: companies/views.py:173
 #, python-format
 msgid "Could not fetch Sky report: %(error)s"
 msgstr "تعذّر جلب تقرير سكاي: %(error)s"
-#: companies/views.py:188
+#: companies/views.py:178
 #, python-format
 msgid "Could not run Sky matching: %(error)s"
 msgstr "تعذّر تشغيل مطابقة سكاي: %(error)s"
-#: companies/views.py:198 templates/companies/company_detail.html:15
+#: companies/views.py:188 templates/companies/company_detail.html:15
 #: templates/companies/sky_reconcile.html:6
 msgid "Sky report matching"
 msgstr "مطابقة كشف سكاي"
-#: companies/views.py:209
+#: companies/views.py:199
 msgid "Company updated."
 msgstr "تم تحديث الشركة."
-#: companies/views.py:214
+#: companies/views.py:204
 msgid "Edit company"
 msgstr "تعديل الشركة"
-#: companies/views.py:227
+#: companies/views.py:217
 msgid "Cannot delete a company that has sales. Cancel or archive sales first."
 msgstr "لا يمكن حذف شركة لها مبيعات. ألغِ المبيعات أو أرشفها أولاً."
 
-#: companies/views.py:232
+#: companies/views.py:222
 #, python-format
 msgid "Company “%(name)s” was deleted."
 msgstr "تم حذف الشركة «%(name)s»."
 
-#: companies/views.py:251 templates/companies/product_list.html:6
+#: companies/views.py:241 templates/companies/product_list.html:6
 #: templates/partials/management_nav.html:106
 msgid "Products"
 msgstr "المنتجات"
-#: companies/views.py:260
+#: companies/views.py:250
 msgid "Product line saved. Add one or more packages below."
 msgstr "تم حفظ خط المنتج. أضف باقة أو أكثر بالأسفل."
 
-#: companies/views.py:265 templates/companies/product_list.html:9
+#: companies/views.py:255 templates/companies/product_list.html:9
 msgid "New product line"
 msgstr "خط منتج جديد"
 
-#: companies/views.py:275
+#: companies/views.py:265
 msgid "Product line updated."
 msgstr "تم تحديث خط المنتج."
 
-#: companies/views.py:280
+#: companies/views.py:270
 msgid "Edit product line"
 msgstr "تعديل خط المنتج"
 
-#: companies/views.py:292
+#: companies/views.py:282
 msgid "Package saved."
 msgstr "تم حفظ الباقة."
 
-#: companies/views.py:297
+#: companies/views.py:287
 msgid "New package"
 msgstr "باقة جديدة"
 
-#: companies/views.py:307
+#: companies/views.py:297
 msgid "Package updated."
 msgstr "تم تحديث الباقة."
 
-#: companies/views.py:312
+#: companies/views.py:302
 msgid "Edit package"
 msgstr "تعديل الباقة"
 
-#: companies/views.py:325
+#: companies/views.py:315
 msgid ""
 "Cannot delete this product line because it has sales recorded for one or "
 "more packages."
 msgstr "لا يمكن حذف خط المنتج هذا لوجود مبيعات مسجّلة على باقة أو أكثر منه."
 
-#: companies/views.py:330
+#: companies/views.py:320
 #, python-format
 msgid "Product line was deleted: %(label)s"
 msgstr "تم حذف خط المنتج: %(label)s"
 
-#: companies/views.py:343
+#: companies/views.py:333
 msgid "Cannot delete this package because it has sales recorded."
 msgstr "لا يمكن حذف هذه الباقة لوجود مبيعات مسجّلة عليها."
 
-#: companies/views.py:348
+#: companies/views.py:338
 #, python-format
 msgid "Package was deleted: %(label)s"
 msgstr "تم حذف الباقة: %(label)s"
@@ -3302,6 +3299,7 @@ msgstr ""
 " واحداً كل مرة — نفس أسلوب سكاي بدون سحب حي من البوابة."
 #: templates/companies/layan_reconcile.html:47
 #: templates/companies/sky_reconcile.html:36
+#: templates/companies/sky_reconcile.html:277
 msgid "Run matching"
 msgstr "تشغيل المطابقة"
 
@@ -3763,13 +3761,6 @@ msgstr "لا توجد خطوط منتجات."
 msgid "Delete package"
 msgstr "حذف الباقة"
 
-#: templates/companies/sky_reconcile.html:15
-msgid ""
-"Start with the red/amber cards after matching. Open one tab at a time. Each "
-"number shows why it flagged and a Sky vs system line compare."
-msgstr ""
-"بعد المطابقة ابدأ بالبطاقات الحمراء/البرتقالية. افتح تبويباً واحداً كل م"
-"رة. كل رقم يوضح السبب ومقارنة أسطر سكاي والنظام."
 #: templates/companies/sky_reconcile.html:62
 msgid "Sky vs system amount"
 msgstr "مبلغ سكاي مقابل النظام"
@@ -3830,6 +3821,26 @@ msgstr ""
 msgid "After"
 msgstr ""
 
+#: templates/companies/sky_reconcile.html:264
+msgid ""
+"Choose a period, then run matching. Live Sky charges are compared to sales "
+"in the system."
+msgstr "حدد الفترة ثم شغّل المطابقة. تُقارن خصومات سكاي الحية بمبيعات النظام."
+#: templates/companies/sky_reconcile.html:270
+msgid "Set the date range"
+msgstr "حدد نطاق التاريخ"
+#: templates/companies/sky_reconcile.html:271
+msgid "From / to — the days you want to review."
+msgstr "من / إلى — الأيام التي تريد مراجعتها."
+#: templates/companies/sky_reconcile.html:278
+msgid "Fetches the Sky balance report for that period."
+msgstr "يجلب تقرير رصيد سكاي لتلك الفترة."
+#: templates/companies/sky_reconcile.html:284
+msgid "Review red and amber first"
+msgstr "راجع الأحمر والبرتقالي أولاً"
+#: templates/companies/sky_reconcile.html:285
+msgid "Open one tab at a time; each row explains the gap."
+msgstr "افتح تبويباً واحداً كل مرة؛ كل صف يوضح سبب الفرق."
 #: templates/core/_system_settings_database.html:4
 msgid "Database backup"
 msgstr "نسخة احتياطية لقاعدة البيانات"
@@ -5529,6 +5540,13 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid ""
+#~ "Start with the red/amber cards after matching. Open one tab at a time. "
+#~ "Each number shows why it flagged and a Sky vs system line compare."
+#~ msgstr ""
+#~ "بعد المطابقة ابدأ بالبطاقات الحمراء/البرتقالية. افتح تبويباً واحداً كل مرة. "
+#~ "كل رقم يوضح السبب ومقارنة أسطر سكاي والنظام."
 
 #~ msgid ""
 #~ "Upload the Layan charges report (Excel). Matching lists: numbers in Layan "

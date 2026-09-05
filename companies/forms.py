@@ -136,10 +136,7 @@ class SkyReportReconcileForm(forms.Form):
         min_value=0,
         decimal_places=2,
         widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-        help_text=_(
-            "Sales differences between Sky and the system below this amount are "
-            "treated as matched (0 shows all differences)."
-        ),
+        help_text=_("Below this amount counts as matched. Use 0 to show all."),
     )
 
     def clean(self):

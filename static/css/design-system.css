@@ -1607,6 +1607,118 @@ body.app-shell {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 40%, var(--bs-secondary-bg));
 }
 
+/* Sky reconcile — compact run strip + waiting steps */
+.sky-rec-run__form {
+  display: grid;
+  gap: 0.75rem;
+  align-items: start;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .sky-rec-run__form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(7rem, 0.85fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+  }
+}
+
+.sky-rec-run__field,
+.sky-rec-run__cta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sky-rec-run__label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--bs-body-color);
+  height: 1.2em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sky-rec-run__label--spacer {
+  visibility: hidden;
+  user-select: none;
+}
+
+.sky-rec-run__form .form-control,
+.sky-rec-run__btn {
+  height: 2.4rem;
+  box-sizing: border-box;
+}
+
+.sky-rec-run__btn {
+  min-width: 9.25rem;
+  padding-inline: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.sky-rec-run__hint {
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--bs-secondary-color);
+}
+
+.sky-rec-waiting {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-secondary-bg));
+}
+
+.sky-rec-waiting__lead {
+  color: var(--bs-secondary-color);
+  max-width: 36rem;
+}
+
+.sky-rec-waiting__steps {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .sky-rec-waiting__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.sky-rec-waiting__step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--rd-radius-md);
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+  box-shadow: var(--rd-shadow-xs);
+}
+
+.sky-rec-waiting__num {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--rd-accent);
+  background: var(--rd-accent-muted);
+}
+
 /* Sticky save — employee */
 .sticky-save {
   position: sticky;

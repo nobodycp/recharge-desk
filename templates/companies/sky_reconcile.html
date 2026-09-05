@@ -9,33 +9,33 @@
   <a class="btn btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}">{% trans "Back to supplier" %}</a>
 </div>
 
-<div class="app-card card mb-4">
-  <div class="card-body p-4">
-    <p class="text-secondary small mb-3">
-      {% trans "Start with the red/amber cards after matching. Open one tab at a time. Each number shows why it flagged and a Sky vs system line compare." %}
-    </p>
-    <form method="post" class="row g-3 align-items-end">
+<div class="app-card card sky-rec-run mb-3">
+  <div class="card-body py-3 px-3 px-md-4">
+    <form method="post" class="sky-rec-run__form">
       {% csrf_token %}
-      <div class="col-md-3">
-        {{ form.period_from.label_tag }}
+      <div class="sky-rec-run__field">
+        <label class="sky-rec-run__label" for="{{ form.period_from.id_for_label }}">{{ form.period_from.label }}</label>
         {{ form.period_from }}
         {{ form.period_from.errors }}
       </div>
-      <div class="col-md-3">
-        {{ form.period_to.label_tag }}
+      <div class="sky-rec-run__field">
+        <label class="sky-rec-run__label" for="{{ form.period_to.id_for_label }}">{{ form.period_to.label }}</label>
         {{ form.period_to }}
         {{ form.period_to.errors }}
       </div>
-      <div class="col-md-3">
-        {{ form.min_amount_diff.label_tag }}
+      <div class="sky-rec-run__field sky-rec-run__field--threshold">
+        <label class="sky-rec-run__label" for="{{ form.min_amount_diff.id_for_label }}">{{ form.min_amount_diff.label }}</label>
         {{ form.min_amount_diff }}
-        {% if form.min_amount_diff.help_text %}<div class="form-text">{{ form.min_amount_diff.help_text }}</div>{% endif %}
         {{ form.min_amount_diff.errors }}
       </div>
-      <div class="col-md-3">
-        <button class="btn btn-primary w-100" type="submit">{% trans "Run matching" %}</button>
+      <div class="sky-rec-run__cta">
+        <span class="sky-rec-run__label sky-rec-run__label--spacer" aria-hidden="true">&nbsp;</span>
+        <button class="btn btn-primary sky-rec-run__btn" type="submit">{% trans "Run matching" %}</button>
       </div>
     </form>
+    {% if form.min_amount_diff.help_text %}
+      <p class="sky-rec-run__hint mb-0">{{ form.min_amount_diff.help_text }}</p>
+    {% endif %}
   </div>
 </div>
 
@@ -257,5 +257,36 @@
     });
   })();
   </script>
+{% else %}
+  <div class="app-card card sky-rec-waiting">
+    <div class="card-body">
+      <p class="sky-rec-waiting__lead mb-3">
+        {% trans "Choose a period, then run matching. Live Sky charges are compared to sales in the system." %}
+      </p>
+      <ol class="sky-rec-waiting__steps list-unstyled mb-0">
+        <li class="sky-rec-waiting__step">
+          <span class="sky-rec-waiting__num">1</span>
+          <div>
+            <strong>{% trans "Set the date range" %}</strong>
+            <div class="small text-secondary">{% trans "From / to — the days you want to review." %}</div>
+          </div>
+        </li>
+        <li class="sky-rec-waiting__step">
+          <span class="sky-rec-waiting__num">2</span>
+          <div>
+            <strong>{% trans "Run matching" %}</strong>
+            <div class="small text-secondary">{% trans "Fetches the Sky balance report for that period." %}</div>
+          </div>
+        </li>
+        <li class="sky-rec-waiting__step">
+          <span class="sky-rec-waiting__num">3</span>
+          <div>
+            <strong>{% trans "Review red and amber first" %}</strong>
+            <div class="small text-secondary">{% trans "Open one tab at a time; each row explains the gap." %}</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
 {% endif %}
 {% endblock %}
