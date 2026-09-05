@@ -4,9 +4,16 @@ from django.db import models, transaction
 from django.db.models import Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
+from datetime import date
 
 from accounts.permissions import management_required
-from companies.forms import CompanyForm, LayanReportReconcileForm, ProductLineForm, ProductVariantForm
+from companies.forms import (
+    CompanyForm,
+    LayanReportReconcileForm,
+    ProductLineForm,
+    ProductVariantForm,
+    SkyReportReconcileForm,
+)
 from companies.layan_reconcile import (
     company_supports_layan_reconcile,
     parse_pending_credits,
@@ -14,6 +21,11 @@ from companies.layan_reconcile import (
 )
 from companies.models import Company, Product, ProductLine
 from companies.query_utils import apply_company_list_ordering
+from companies.sky_reconcile import (
+    company_supports_sky_reconcile,
+    fetch_sky_rows_for_reconcile,
+    reconcile_sky_report,
+)
 from core.pagination import paginate_request
 from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
@@ -121,6 +133,69 @@ def layan_reconcile(request, pk):
             "form": form,
             "result": result,
             "title": _("Layan report matching"),
+        },
+    )
+
+
+@management_required
+def sky_reconcile(request, pk):
+    company = get_object_or_404(Company, pk=pk)
+    if not company_supports_sky_reconcile(company):
+        messages.error(request, _("Sky report matching is only available for Sky."))
+        return redirect("companies:company_detail", pk=pk)
+
+    initial = {}
+    if request.method == "GET":
+        # Sensible first range: full previous calendar month if today is early
+        # in a month; otherwise leave blank — August 2026 preset for first run.
+        initial = {
+            "period_from": date(2026, 8, 1),
+            "period_to": date(2026, 8, 31),
+            "min_amount_diff": 3,
+        }
+    form = SkyReportReconcileForm(request.POST or None, initial=initial)
+    result = None
+    if request.method == "POST" and form.is_valid():
+        period_from = form.cleaned_data["period_from"]
+        period_to = form.cleaned_data["period_to"]
+        min_diff = form.cleaned_data.get("min_amount_diff")
+        if min_diff is None:
+            min_diff = 3
+        try:
+            rows = fetch_sky_rows_for_reconcile(period_from, period_to)
+            result = reconcile_sky_report(
+                company,
+                rows,
+                period_from=period_from,
+                period_to=period_to,
+                min_amount_diff=min_diff,
+            )
+            messages.success(
+                request,
+                _("Sky report processed (%(rows)s rows).") % {"rows": result.row_count},
+            )
+        except Exception as exc:
+            from phone_refresh.providers.sky_sales_client import SkySalesError
+
+            if isinstance(exc, SkySalesError):
+                messages.error(
+                    request,
+                    _("Could not fetch Sky report: %(error)s") % {"error": exc},
+                )
+            else:
+                messages.error(
+                    request,
+                    _("Could not run Sky matching: %(error)s") % {"error": exc},
+                )
+
+    return render(
+        request,
+        "companies/sky_reconcile.html",
+        {
+            "company": company,
+            "form": form,
+            "result": result,
+            "title": _("Sky report matching"),
         },
     )
 

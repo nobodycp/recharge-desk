@@ -12,6 +12,11 @@ urlpatterns = [
         views.layan_reconcile,
         name="layan_reconcile",
     ),
+    path(
+        "management/companies/<int:pk>/sky-reconcile/",
+        views.sky_reconcile,
+        name="sky_reconcile",
+    ),
     path("management/companies/new/", views.company_create, name="company_create"),
     path("management/companies/<int:pk>/edit/", views.company_edit, name="company_edit"),
     path("management/companies/<int:pk>/delete/", views.company_delete, name="company_delete"),

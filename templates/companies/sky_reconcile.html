@@ -1,0 +1,153 @@
+{% extends "base_management.html" %}
+{% load i18n humanize %}
+{% block content %}
+<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+  <div>
+    <h1 class="rd-heading-xl mb-1">{% trans "Sky report matching" %}</h1>
+    <p class="rd-text-muted mb-0">{{ company.name }}</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}">{% trans "Back to supplier" %}</a>
+</div>
+
+<div class="app-card card mb-4">
+  <div class="card-body p-4">
+    <p class="text-secondary small mb-3">
+      {% trans "Pulls the Sky balance report (بيانات رصيد) live for the selected dates. Matching lists: numbers in Sky not in the system, numbers in the system not in Sky, settlements (charge + disconnect — informational), amount differences, and balance anomalies." %}
+    </p>
+    <form method="post" class="d-grid gap-3">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">{% trans "Run matching" %}</button>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="app-card card h-100">
+        <div class="card-body">
+          <div class="small text-secondary">{% trans "Estimated deficit (Sky)" %}</div>
+          <div class="h4 mb-0 text-danger">{{ result.estimated_deficit|floatformat:2 }}</div>
+          <div class="small text-secondary mt-1">
+            {% trans "Not recorded" %}: {{ result.total_not_recorded|floatformat:2 }}
+            · {% trans "Settlements (excluded)" %}: {{ result.total_split_settlements|floatformat:2 }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="app-card card h-100">
+        <div class="card-body">
+          <div class="small text-secondary">{% trans "Report rows in period" %}</div>
+          <div class="h4 mb-0">{{ result.row_count|intcomma }}</div>
+          {% if result.period_from or result.period_to %}
+            <div class="small text-secondary mt-1">
+              {% if result.period_from %}{{ result.period_from }}{% else %}—{% endif %}
+              →
+              {% if result.period_to %}{{ result.period_to }}{% else %}—{% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="app-card card h-100">
+        <div class="card-body">
+          <div class="small text-secondary">{% trans "Balance vs report end" %}</div>
+          {% if result.sky_end_balance is not None %}
+            <div class="h5 mb-0">
+              RD {{ result.rd_balance_end|floatformat:2 }}
+              · {% trans "Sky" %} {{ result.sky_end_balance|floatformat:2 }}
+            </div>
+            <div class="small mt-1 {% if result.balance_gap %}text-warning{% else %}text-secondary{% endif %}">
+              {% trans "Gap" %}: {{ result.balance_gap|floatformat:2 }}
+            </div>
+          {% else %}
+            <div class="small text-secondary">{% trans "End balance not found in Sky report." %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% trans "In Sky, not in system" as title_not_recorded %}
+  {% trans "Number appears on the Sky report but has no matching Sky sale in the system for this period." as help_not_recorded %}
+  {% include "companies/partials/sky_reconcile_table.html" with section_title=title_not_recorded section_rows=result.not_recorded section_total=result.total_not_recorded section_help=help_not_recorded %}
+
+  {% if result.rd_only %}
+    {% trans "In system, not in Sky" as title_rd_only %}
+    {% trans "Sky sale in the system with no matching line in the Sky balance report." as help_rd_only %}
+    {% include "companies/partials/sky_reconcile_table.html" with section_title=title_rd_only section_rows=result.rd_only section_total=result.total_rd_only section_help=help_rd_only %}
+  {% endif %}
+
+  {% if result.logged_other_supplier %}
+    {% trans "Logged under another supplier" as title_other %}
+    {% trans "Charged on Sky but the sale was recorded under another supplier — fix the supplier on the sale." as help_other %}
+    {% include "companies/partials/sky_reconcile_table.html" with section_title=title_other section_rows=result.logged_other_supplier section_total=result.total_logged_other_supplier section_help=help_other %}
+  {% endif %}
+
+  {% if result.split_settlements %}
+    {% trans "Settlements on disconnected numbers" as title_split %}
+    {% trans "Charge and disconnect in the same period. Shown for review only — not included in estimated deficit." as help_split %}
+    {% include "companies/partials/layan_reconcile_settlements.html" with section_title=title_split section_rows=result.split_settlements section_total=result.total_split_settlements section_help=help_split %}
+  {% endif %}
+
+  {% if result.amount_mismatches %}
+    {% trans "Sales differences (Sky vs system)" as title_mismatch %}
+    {% trans "Both sides have the number, but Sky cost (summed, including eSIM lines) and system cost differ by more than the minimum." as help_mismatch %}
+    {% include "companies/partials/sky_reconcile_table.html" with section_title=title_mismatch section_rows=result.amount_mismatches section_total=result.total_amount_mismatch section_help=help_mismatch %}
+  {% endif %}
+
+  {% if result.balance_anomalies %}
+    <div class="app-card card mb-3">
+      <div class="card-header">
+        <strong>{% trans "Balance anomalies" %}</strong>
+        <div class="small text-secondary fw-normal">{% trans "Sky rows where before + delta does not equal after." %}</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th>{% trans "Number" %}</th>
+              <th>{% trans "When" %}</th>
+              <th>{% trans "Op" %}</th>
+              <th class="text-end">{% trans "Before" %}</th>
+              <th class="text-end">{% trans "Delta" %}</th>
+              <th class="text-end">{% trans "After" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in result.balance_anomalies %}
+            <tr>
+              <td class="font-monospace">{{ a.phone }}</td>
+              <td class="small">{{ a.at|default:"—" }}</td>
+              <td class="small">{{ a.op }}</td>
+              <td class="text-end">{{ a.before }}</td>
+              <td class="text-end">{{ a.delta }}</td>
+              <td class="text-end">{{ a.after }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+  <details class="app-card card mt-3">
+    <summary class="card-body py-3 user-select-none" style="cursor:pointer;">
+      {% trans "Matched numbers" %} ({{ result.matched|length }})
+    </summary>
+    <div class="card-body border-top pt-0">
+      {% include "companies/partials/sky_reconcile_table.html" with section_title="" section_rows=result.matched section_total=None section_help="" hide_title=True %}
+    </div>
+  </details>
+{% endif %}
+{% endblock %}

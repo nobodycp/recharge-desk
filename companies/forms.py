@@ -118,6 +118,39 @@ class LayanReportReconcileForm(forms.Form):
     )
 
 
+class SkyReportReconcileForm(forms.Form):
+    period_from = forms.DateField(
+        label=_("Date from"),
+        required=True,
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+    )
+    period_to = forms.DateField(
+        label=_("Date to"),
+        required=True,
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+    )
+    min_amount_diff = forms.DecimalField(
+        label=_("Minimum difference to show"),
+        required=False,
+        initial=3,
+        min_value=0,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        help_text=_(
+            "Sales differences between Sky and the system below this amount are "
+            "treated as matched (0 shows all differences)."
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get("period_from")
+        end = cleaned.get("period_to")
+        if start and end and end < start:
+            self.add_error("period_to", _("Date to must be on or after date from."))
+        return cleaned
+
+
 class ProductVariantForm(forms.ModelForm):
     class Meta:
         model = Product

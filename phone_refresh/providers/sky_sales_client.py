@@ -7,6 +7,7 @@ import json
 import os
 import time
 from dataclasses import asdict, dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -190,6 +191,18 @@ class SkySalesClient:
 
     def __init__(self, session: SkySalesSession | None = None):
         self.http = requests.Session()
+        self._configure_http()
+        self.session = session or SkySalesSession(jwt_token="")
+        for name, value in self.session.cookies.items():
+            self.http.cookies.set(name, value)
+
+    def _configure_http(self) -> None:
+        """Build headers/proxy for Sky calls.
+
+        ``trust_env=False`` so HTTP(S)_PROXY from the shell/IDE does not
+        hijack ipify or the Sky portal — only explicit ``SKY_SALES_PROXY``.
+        """
+        self.http.trust_env = False
         self.http.headers.update(
             {
                 "Content-Type": "application/json; charset=utf-8",
@@ -198,14 +211,14 @@ class SkySalesClient:
             }
         )
         self._apply_proxy()
-        self.session = session or SkySalesSession(jwt_token="")
-        for name, value in self.session.cookies.items():
-            self.http.cookies.set(name, value)
 
     def _apply_proxy(self) -> None:
         proxy = sky_sales_proxy_url()
         if proxy:
             self.http.proxies.update({"http": proxy, "https": proxy})
+        else:
+            # Drop any leftover proxies (e.g. after env change / session reuse).
+            self.http.proxies.clear()
 
     def detect_egress_ip(self) -> str:
         try:
@@ -215,6 +228,16 @@ class SkySalesClient:
         except requests.RequestException as exc:
             raise SkySalesError(f"Failed to detect egress IP: {exc}") from exc
 
+    def current_egress_ip(self) -> str:
+        """Egress IP used to invalidate sessions when the proxy path changes.
+
+        Direct (no ``SKY_SALES_PROXY``): skip ipify entirely — local/Django
+        processes often cannot resolve it, and Sky login does not need it.
+        """
+        if not sky_sales_proxy_url():
+            return ""
+        return self.detect_egress_ip()
+
     def _is_session_ready(self) -> bool:
         return bool(
             self.session.jwt_token
@@ -223,7 +246,8 @@ class SkySalesClient:
         )
 
     def _ip_or_proxy_changed(self, current_ip: str) -> bool:
-        if self.session.bound_ip and self.session.bound_ip != current_ip:
+        # Direct mode: never treat missing/blank IP as a change.
+        if current_ip and self.session.bound_ip and self.session.bound_ip != current_ip:
             _debug(f"IP changed {self.session.bound_ip} -> {current_ip}")
             return True
         current_fp = proxy_fingerprint(sky_sales_proxy_url())
@@ -249,19 +273,12 @@ class SkySalesClient:
     def _reset_http_session(self) -> None:
         self.http.cookies.clear()
         self.http = requests.Session()
-        self.http.headers.update(
-            {
-                "Content-Type": "application/json; charset=utf-8",
-                "Origin": f"https://{HOST}",
-                "Referer": f"https://{HOST}/",
-            }
-        )
-        self._apply_proxy()
+        self._configure_http()
 
     def force_new_session(self, username: str, password: str, otp_code: str = "") -> str:
-        """Login + TOTP; bind session to current egress IP."""
-        current_ip = self.detect_egress_ip()
-        _debug(f"new session login via IP {current_ip}")
+        """Login + TOTP; optionally bind session to egress IP when using a proxy."""
+        current_ip = self.current_egress_ip()
+        _debug(f"new session login via IP {current_ip or 'direct'}")
         self._reset_http_session()
         self.session = SkySalesSession(jwt_token="", user_name=username)
         self.auto_login(username, password, otp_code)
@@ -279,7 +296,7 @@ class SkySalesClient:
         *,
         force: bool = False,
     ) -> None:
-        current_ip = self.detect_egress_ip()
+        current_ip = self.current_egress_ip()
 
         if force or not self._is_session_ready() or self._ip_or_proxy_changed(current_ip):
             self.force_new_session(username, password, otp_code)
@@ -287,9 +304,10 @@ class SkySalesClient:
 
         try:
             self._probe_session()
-            self.session.bound_ip = current_ip
+            if current_ip:
+                self.session.bound_ip = current_ip
             self.save_session_file()
-            _debug(f"reusing session on IP {current_ip}")
+            _debug(f"reusing session on IP {current_ip or 'direct'}")
         except (SkySalesSessionError, requests.RequestException) as exc:
             _debug(f"session invalid ({exc}), re-login")
             self.force_new_session(username, password, otp_code)
@@ -454,6 +472,23 @@ class SkySalesClient:
             "/ipa/apis/json/internal/generic/v2",
             {"apiName": api_name, "wildcards": wildcards},
         )
+
+    def fetch_balance_report(self, date_from: date, date_to: date) -> list[dict[str, Any]]:
+        """Pull Sky template 22 (بيانات رصيد) for the logged-in eot user."""
+        if not self.session.eot_user_id:
+            raise SkySalesError("eot_user_id missing — login first")
+        from_s = date_from.strftime("%d/%m/%Y")
+        to_s = date_to.strftime("%d/%m/%Y")
+        data = self.generic_api(
+            "GetEot4RReportData",
+            [22, self.session.eot_user_id, from_s, to_s],
+        )
+        if data.get("result") and str(data.get("result")).upper() not in (
+            "SUCCESS",
+            "OK",
+        ):
+            raise SkySalesError(f"GetEot4RReportData failed: {data.get('result')}")
+        return self._rows(data)
 
     @staticmethod
     def _rows(data: dict[str, Any]) -> list[dict[str, Any]]:

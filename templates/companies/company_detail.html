@@ -11,6 +11,9 @@
     {% if company.phone_refresh_provider == 'layan' or 'layan' in company.name|lower %}
       <a class="btn btn-outline-primary" href="{% url 'companies:layan_reconcile' company.pk %}">{% trans "Layan report matching" %}</a>
     {% endif %}
+    {% if company.phone_refresh_provider == 'sky' or 'sky' in company.name|lower or 'سكاي' in company.name %}
+      <a class="btn btn-outline-primary" href="{% url 'companies:sky_reconcile' company.pk %}">{% trans "Sky report matching" %}</a>
+    {% endif %}
     <a class="btn btn-outline-secondary" href="{% url 'companies:company_edit' company.pk %}">{% trans "Edit" %}</a>
   </div>
 </div>
