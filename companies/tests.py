@@ -183,6 +183,13 @@ class CompanyListQueryCountTests(TestCase):
         product.refresh_from_db()
         self.assertTrue(product.is_active)
 
+    def test_product_variant_form_omits_package_icon(self):
+        from companies.forms import ProductVariantForm
+
+        form = ProductVariantForm()
+        self.assertNotIn("icon", form.fields)
+        self.assertIn("variant_label", form.fields)
+
     def test_is_deletable_property_still_works_without_annotation(self):
         """When called outside a list view (e.g. in a detail page) the
         property must keep firing its own EXISTS — it should not be

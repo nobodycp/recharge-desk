@@ -5825,3 +5825,16 @@ msgstr "هذه الباقة مؤرشفة مسبقاً."
 msgid "This package is already active."
 msgstr "هذه الباقة نشطة مسبقاً."
 
+msgid ""
+"Optional shared icon for this line on the sales screen. If empty, the full "
+"line name is shown."
+msgstr ""
+"أيقونة مشتركة اختيارية لهذا الخط في شاشة المبيعات. إذا تُركت فارغة، يظهر اسم "
+"الخط كاملاً."
+
+msgid "Unused. The product-line icon is shown for all packages."
+msgstr "غير مستخدمة. تُعرض أيقونة خط المنتج لكل الباقات."
+
+msgid "Optional. If empty, the full payment method name is shown on the sales screen."
+msgstr "اختياري. إذا تُركت فارغة، يظهر اسم طريقة الدفع كاملاً في شاشة المبيعات."
+

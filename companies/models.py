@@ -91,7 +91,10 @@ class ProductLine(models.Model):
         upload_to="icons/product_lines/",
         blank=True,
         null=True,
-        help_text=_("Default icon for all packages in this line; a package can override."),
+        help_text=_(
+            "Optional shared icon for this line on the sales screen. "
+            "If empty, the full line name is shown."
+        ),
     )
     sort_order = models.PositiveSmallIntegerField(_("sort order"), default=0)
     estimated_unit_cost = models.DecimalField(
@@ -172,7 +175,7 @@ class Product(models.Model):
         upload_to="icons/products/",
         blank=True,
         null=True,
-        help_text=_("Optional; falls back to the line icon on the employee screen."),
+        help_text=_("Unused. The product-line icon is shown for all packages."),
     )
     cost_price = models.DecimalField(
         _("cost price"),

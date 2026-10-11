@@ -488,6 +488,14 @@ AR: dict[str, str] = {
     "Company, line, or package…": "شركة أو خط أو باقة…",
     "Product lines": "خطوط المنتج",
     "Show archived packages": "إظهار الباقات المؤرشفة",
+    "Optional shared icon for this line on the sales screen. If empty, the full line name is shown.": (
+        "أيقونة مشتركة اختيارية لهذا الخط في شاشة المبيعات. إذا تُركت فارغة، يظهر اسم الخط كاملاً."
+    ),
+    "Unused. The product-line icon is shown for all packages.": "غير مستخدمة. تُعرض أيقونة خط المنتج لكل الباقات.",
+    "Optional. If empty, the full payment method name is shown on the sales screen.": (
+        "اختياري. إذا تُركت فارغة، يظهر اسم طريقة الدفع كاملاً في شاشة المبيعات."
+    ),
+
     "Archived": "مؤرشف",
     "Archive": "أرشفة",
     "Restore": "استعادة",

@@ -727,6 +727,24 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse("sales:employee_recent_sales"))
 
+    def test_entry_page_shows_full_names_when_icons_missing(self):
+        """Without uploaded icons, payment method and product-line tiles
+        must show the full name text — not a single-letter fallback."""
+        self.line.name = "wecom"
+        self.line.save(update_fields=["name"])
+        self.pm.name = "Bank Transfer"
+        self.pm.save(update_fields=["name"])
+
+        resp = self.client.get(
+            reverse("sales:employee_entry"),
+            {"company": str(self.company.pk)},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'class="employee-chip-label"')
+        self.assertContains(resp, "wecom")
+        self.assertContains(resp, "Bank Transfer")
+        self.assertNotContains(resp, 'class="employee-chip-icon-fallback"')
+
     def test_date_filter_returns_past_day(self):
         from datetime import timedelta
 

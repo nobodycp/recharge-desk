@@ -15,7 +15,9 @@ class PaymentMethod(models.Model):
         upload_to="icons/payment_methods/",
         blank=True,
         null=True,
-        help_text=_("Shown on the employee sales screen instead of the method name."),
+        help_text=_(
+            "Optional. If empty, the full payment method name is shown on the sales screen."
+        ),
     )
     is_active = models.BooleanField(_("active"), default=True)
 
