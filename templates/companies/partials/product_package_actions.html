@@ -1,0 +1,19 @@
+{% load i18n %}
+{# Expects: v (Product), optional extra_class #}
+<a class="btn btn-sm btn-outline-secondary {% if extra_class %}{{ extra_class }}{% endif %}" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
+{% if v.is_deletable %}
+  <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+  </form>
+{% elif v.is_active %}
+  <form method="post" action="{% url 'companies:product_variant_archive' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-outline-warning" title="{% trans 'Hide from new sales; keep past sales' %}">{% trans "Archive" %}</button>
+  </form>
+{% else %}
+  <form method="post" action="{% url 'companies:product_variant_unarchive' v.pk %}" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-outline-primary">{% trans "Restore" %}</button>
+  </form>
+{% endif %}

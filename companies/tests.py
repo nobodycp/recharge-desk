@@ -113,6 +113,72 @@ class CompanyListQueryCountTests(TestCase):
         self.assertContains(by_package, "L3")
         self.assertContains(by_package, "P3")
 
+    def test_archive_package_with_sales_hides_it_without_deleting_sales(self):
+        from sales.models import PaymentMethod, Sale
+
+        self.client.force_login(self.user)
+        company = Company.objects.get(name="Co0")
+        product = Product.objects.get(variant_label="P0")
+        pm = PaymentMethod.objects.create(name="CashArchive")
+        sale = Sale.objects.create(
+            company=company,
+            product=product,
+            reference_number="0599000111",
+            payer_name="Archive Test",
+            payment_method=pm,
+            sell_price_actual=_decimal(50),
+            cost_price_snapshot=_decimal(5),
+            profit_snapshot=_decimal(45),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+        )
+        self.assertFalse(product.is_deletable)
+
+        # Hard delete blocked.
+        blocked = self.client.post(
+            reverse("companies:product_variant_delete", args=[product.pk])
+        )
+        self.assertEqual(blocked.status_code, 302)
+        self.assertTrue(Product.objects.filter(pk=product.pk).exists())
+
+        archived = self.client.post(
+            reverse("companies:product_variant_archive", args=[product.pk])
+        )
+        self.assertEqual(archived.status_code, 302)
+        product.refresh_from_db()
+        self.assertFalse(product.is_active)
+        sale.refresh_from_db()
+        self.assertEqual(sale.product_id, product.pk)
+
+        # Hidden from default product list (ignore flash messages).
+        listing = self.client.get("/management/products/")
+        visible_labels = [
+            v.variant_label
+            for line in listing.context["lines"]
+            for v in line.variants.all()
+        ]
+        self.assertNotIn("P0", visible_labels)
+
+        # Visible again when showing archived.
+        with_archived = self.client.get(
+            "/management/products/", {"show_archived": "1"}
+        )
+        archived_labels = [
+            v.variant_label
+            for line in with_archived.context["lines"]
+            for v in line.variants.all()
+        ]
+        self.assertIn("P0", archived_labels)
+        self.assertContains(with_archived, "Archived")
+
+        restored = self.client.post(
+            reverse("companies:product_variant_unarchive", args=[product.pk])
+        )
+        self.assertEqual(restored.status_code, 302)
+        product.refresh_from_db()
+        self.assertTrue(product.is_active)
+
     def test_is_deletable_property_still_works_without_annotation(self):
         """When called outside a list view (e.g. in a detail page) the
         property must keep firing its own EXISTS — it should not be

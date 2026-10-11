@@ -1,7 +1,7 @@
 from django.apps import apps
 from django.contrib import messages
 from django.db import models, transaction
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 
@@ -228,10 +228,19 @@ def product_list(request):
     Product = apps.get_model("companies", "Product")
     q = (request.GET.get("q") or "").strip()
     company_id = (request.GET.get("company") or "").strip()
+    show_archived = (request.GET.get("show_archived") or "").strip() in {
+        "1",
+        "true",
+        "on",
+        "yes",
+    }
 
     variants_qs = Product.objects.annotate(
         has_sales_annotated=_has_sales_subquery("product_id"),
     ).order_by("variant_label", "pk")
+    if not show_archived:
+        variants_qs = variants_qs.filter(is_active=True)
+
     lines = (
         ProductLine.objects.select_related("company", "default_package")
         .annotate(has_sales_annotated=_has_sales_subquery("product__line_id"))
@@ -241,11 +250,23 @@ def product_list(request):
     if company_id.isdigit():
         lines = lines.filter(company_id=int(company_id))
     if q:
+        package_match = Q(variants__variant_label__icontains=q)
+        if not show_archived:
+            package_match &= Q(variants__is_active=True)
         lines = lines.filter(
-            Q(name__icontains=q)
-            | Q(company__name__icontains=q)
-            | Q(variants__variant_label__icontains=q)
+            Q(name__icontains=q) | Q(company__name__icontains=q) | package_match
         ).distinct()
+    if not show_archived:
+        # Hide lines whose packages are all archived; keep empty lines so new
+        # packages can still be added.
+        lines = lines.annotate(
+            total_packages=Count("variants", distinct=True),
+            active_packages=Count(
+                "variants",
+                filter=Q(variants__is_active=True),
+                distinct=True,
+            ),
+        ).filter(Q(active_packages__gt=0) | Q(total_packages=0))
 
     companies = Company.objects.order_by("name")
     return render(
@@ -256,6 +277,7 @@ def product_list(request):
             "companies": companies,
             "q": q,
             "company_id": company_id,
+            "show_archived": show_archived,
             "expand_packages": bool(q),
             "title": _("Products"),
         },
@@ -350,10 +372,59 @@ def product_variant_delete(request, pk):
     if not variant.is_deletable:
         messages.error(
             request,
-            _("Cannot delete this package because it has sales recorded."),
+            _(
+                "Cannot delete this package because it has sales recorded. "
+                "Archive it instead to hide it from new sales."
+            ),
         )
         return redirect("companies:product_list")
     label = variant.display_name
     variant.delete()
     messages.success(request, _("Package was deleted: %(label)s") % {"label": label})
+    return redirect("companies:product_list")
+
+
+def _clear_default_package_if_needed(variant: Product) -> None:
+    ProductLine.objects.filter(default_package_id=variant.pk).update(default_package=None)
+
+
+@management_required
+@transaction.atomic
+def product_variant_archive(request, pk):
+    """Hide a package from pickers/lists without deleting historical sales."""
+    variant = get_object_or_404(Product.objects.select_related("line"), pk=pk)
+    if request.method != "POST":
+        return redirect("companies:product_list")
+    if not variant.is_active:
+        messages.info(request, _("This package is already archived."))
+        return redirect("companies:product_list")
+    _clear_default_package_if_needed(variant)
+    variant.is_active = False
+    variant.save(update_fields=["is_active", "updated_at"])
+    messages.success(
+        request,
+        _(
+            "Package archived: %(label)s. It is hidden from new sales; "
+            "past sales are unchanged."
+        )
+        % {"label": variant.display_name},
+    )
+    return redirect("companies:product_list")
+
+
+@management_required
+@transaction.atomic
+def product_variant_unarchive(request, pk):
+    variant = get_object_or_404(Product.objects.select_related("line"), pk=pk)
+    if request.method != "POST":
+        return redirect("companies:product_list")
+    if variant.is_active:
+        messages.info(request, _("This package is already active."))
+        return redirect("companies:product_list")
+    variant.is_active = True
+    variant.save(update_fields=["is_active", "updated_at"])
+    messages.success(
+        request,
+        _("Package restored: %(label)s") % {"label": variant.display_name},
+    )
     return redirect("companies:product_list")

@@ -31,4 +31,14 @@ urlpatterns = [
     ),
     path("management/products/packages/<int:pk>/edit/", views.product_variant_edit, name="product_variant_edit"),
     path("management/products/packages/<int:pk>/delete/", views.product_variant_delete, name="product_variant_delete"),
+    path(
+        "management/products/packages/<int:pk>/archive/",
+        views.product_variant_archive,
+        name="product_variant_archive",
+    ),
+    path(
+        "management/products/packages/<int:pk>/unarchive/",
+        views.product_variant_unarchive,
+        name="product_variant_unarchive",
+    ),
 ]

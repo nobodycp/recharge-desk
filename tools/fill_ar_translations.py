@@ -487,6 +487,21 @@ AR: dict[str, str] = {
     "Search lines or packages": "بحث في الخطوط أو الباقات",
     "Company, line, or package…": "شركة أو خط أو باقة…",
     "Product lines": "خطوط المنتج",
+    "Show archived packages": "إظهار الباقات المؤرشفة",
+    "Archived": "مؤرشف",
+    "Archive": "أرشفة",
+    "Restore": "استعادة",
+    "Archive package": "أرشفة الباقة",
+    "Restore package": "استعادة الباقة",
+    "Hide from new sales; keep past sales": "إخفاء من المبيعات الجديدة مع الإبقاء على المبيعات السابقة",
+    "Archive this package? It will be hidden from new sales. Past sales stay unchanged.": (
+        "أرشفة هذه الباقة؟ ستُخفى من المبيعات الجديدة. المبيعات السابقة تبقى كما هي."
+    ),
+    "Has sales — archive to hide it without affecting history.": (
+        "لها مبيعات — أرشفها لإخفائها دون التأثير على السجل."
+    ),
+    "Archived — hidden from new sales.": "مؤرشفة — مخفية من المبيعات الجديدة.",
+
     "Choose a payment method tile.": "اختر بلاطة طريقة الدفع.",
     "A reason is required.": "السبب مطلوب.",
     "Phone number is required.": "رقم الهاتف مطلوب.",

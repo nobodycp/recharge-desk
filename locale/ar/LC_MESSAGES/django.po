@@ -5779,3 +5779,49 @@ msgstr "لقطة التكلفة:"
 
 #~ msgid "Locked: management has already processed this entry."
 #~ msgstr "مقفل: تمّت معالجة هذا الإدخال من قبل الإدارة."
+
+msgid "Show archived packages"
+msgstr "إظهار الباقات المؤرشفة"
+
+msgid "Archived"
+msgstr "مؤرشف"
+
+msgid "Archive"
+msgstr "أرشفة"
+
+msgid "Restore"
+msgstr "استعادة"
+
+msgid "Archive package"
+msgstr "أرشفة الباقة"
+
+msgid "Restore package"
+msgstr "استعادة الباقة"
+
+msgid "Hide from new sales; keep past sales"
+msgstr "إخفاء من المبيعات الجديدة مع الإبقاء على المبيعات السابقة"
+
+msgid "Archive this package? It will be hidden from new sales. Past sales stay unchanged."
+msgstr "أرشفة هذه الباقة؟ ستُخفى من المبيعات الجديدة. المبيعات السابقة تبقى كما هي."
+
+msgid "Has sales — archive to hide it without affecting history."
+msgstr "لها مبيعات — أرشفها لإخفائها دون التأثير على السجل."
+
+msgid "Archived — hidden from new sales."
+msgstr "مؤرشفة — مخفية من المبيعات الجديدة."
+
+msgid "Cannot delete this package because it has sales recorded. Archive it instead to hide it from new sales."
+msgstr "لا يمكن حذف هذه الباقة لأن لها مبيعات مسجّلة. أرشفها بدلاً من ذلك لإخفائها من المبيعات الجديدة."
+
+msgid "Package archived: %(label)s. It is hidden from new sales; past sales are unchanged."
+msgstr "تم أرشفة الباقة: %(label)s. أصبحت مخفية من المبيعات الجديدة؛ المبيعات السابقة دون تغيير."
+
+msgid "Package restored: %(label)s"
+msgstr "تمت استعادة الباقة: %(label)s"
+
+msgid "This package is already archived."
+msgstr "هذه الباقة مؤرشفة مسبقاً."
+
+msgid "This package is already active."
+msgstr "هذه الباقة نشطة مسبقاً."
+
