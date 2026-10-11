@@ -182,9 +182,19 @@
           </div>
 
           <div class="rd-field-group">
-            <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
-            {{ form.sell_price_actual.errors }}
-            {{ form.sell_price_actual }}
+            <div class="row g-2 align-items-end">
+              <div class="col-4 col-sm-3" id="rd-duration-days-wrap" hidden>
+                <label class="rd-field-label d-block" for="id_duration_days">{% trans "Days" %}</label>
+                {{ form.duration_days.errors }}
+                {{ form.duration_days }}
+              </div>
+              <div class="col-12" id="rd-sell-price-wrap">
+                <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
+                {{ form.sell_price_actual.errors }}
+                {{ form.sell_price_actual }}
+              </div>
+            </div>
+            <p class="form-text small mb-1" id="rd-days-hint" hidden></p>
             <div class="rd-esim-switch">
               <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
                 <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_esim }}</div>
@@ -886,6 +896,75 @@
     return isFinite(v) && v > 0 ? v : 0;
   }
 
+  function getChipBaseDays(chip) {
+    if (!chip) return 30;
+    var v = parseInt(chip.getAttribute("data-base-days") || "30", 10);
+    return isFinite(v) && v > 0 ? v : 30;
+  }
+
+  function chipAllowsPartialDays(chip) {
+    if (!chip) return false;
+    var allow = chip.getAttribute("data-allow-partial-days") === "1";
+    return allow && getChipBaseDays(chip) === 30;
+  }
+
+  function getDurationDays(chip) {
+    var baseDays = getChipBaseDays(chip || document.querySelector(".employee-package-chip.is-active"));
+    if (!chipAllowsPartialDays(chip || document.querySelector(".employee-package-chip.is-active"))) {
+      return baseDays;
+    }
+    var daysInp = document.getElementById("id_duration_days");
+    if (!daysInp || daysInp.value === "" || daysInp.value == null) return baseDays;
+    var v = parseInt(String(daysInp.value), 10);
+    return isFinite(v) && v > 0 ? v : baseDays;
+  }
+
+  function syncDurationDaysVisibility(chip) {
+    var wrap = document.getElementById("rd-duration-days-wrap");
+    var sellWrap = document.getElementById("rd-sell-price-wrap");
+    var daysInp = document.getElementById("id_duration_days");
+    var hint = document.getElementById("rd-days-hint");
+    var allow = chipAllowsPartialDays(chip);
+    var baseDays = getChipBaseDays(chip);
+    if (wrap) wrap.hidden = !allow;
+    if (sellWrap) {
+      sellWrap.classList.remove("col-4", "col-sm-3", "col-8", "col-sm-9", "col-12");
+      sellWrap.classList.add(allow ? "col-8" : "col-12");
+      if (allow) sellWrap.classList.add("col-sm-9");
+    }
+    if (daysInp) {
+      if (!allow || daysInp.value === "" || daysInp.value == null) {
+        daysInp.value = String(baseDays || 30);
+      }
+    }
+    if (hint && !allow) {
+      hint.hidden = true;
+      hint.textContent = "";
+    }
+  }
+
+  function roundMoney(n) {
+    return Math.round(n * 100) / 100;
+  }
+
+  function prorateAmount(amount, baseDays, durationDays) {
+    var base = baseDays > 0 ? baseDays : 30;
+    var days = durationDays > 0 ? durationDays : base;
+    if (days === base) return roundMoney(amount);
+    return roundMoney((amount * days) / base);
+  }
+
+  function applySuggestedSellFromChip(chip) {
+    var sellInp = document.getElementById("id_sell_price_actual");
+    if (!chip || !sellInp) return;
+    var def = parseFloat(String(chip.getAttribute("data-default-price") || "").replace(",", "."), 10);
+    if (!isFinite(def)) return;
+    var baseDays = getChipBaseDays(chip);
+    syncDurationDaysVisibility(chip);
+    var days = getDurationDays(chip);
+    sellInp.value = prorateAmount(def, baseDays, days).toFixed(2);
+  }
+
   function updateSalePreview() {
     var preview = document.getElementById("rd-sale-preview");
     var pcEl = document.getElementById("rd-preview-cost");
@@ -895,6 +974,7 @@
     var lossNote = document.getElementById("rd-preview-loss-note");
     var newSimExtraLabel = document.getElementById("rd-new-sim-extra-label");
     var sellInp = document.getElementById("id_sell_price_actual");
+    var daysHint = document.getElementById("rd-days-hint");
     var esim = document.getElementById("id_is_esim");
     var newSim = document.getElementById("id_is_new_sim");
     if (!preview || !pcEl || !ppEl || !sellInp) return;
@@ -908,6 +988,8 @@
       preview.hidden = true;
       return;
     }
+    var baseDays = getChipBaseDays(chip);
+    var days = getDurationDays(chip);
     var useEsim = esim && esim.checked;
     var useNewSim = newSim && newSim.checked;
     var simExtra = getSimUnitCost(chip);
@@ -920,7 +1002,8 @@
         newSimExtraLabel.textContent = "";
       }
     }
-    var cost = base + (useEsim ? getEsimExtra() : 0) + (useNewSim ? simExtra : 0);
+    var packageCost = prorateAmount(base, baseDays, days);
+    var cost = packageCost + (useEsim ? getEsimExtra() : 0) + (useNewSim ? simExtra : 0);
     var sell = parseFloat(String(sellInp.value).replace(",", "."), 10);
     if (!isFinite(sell)) {
       preview.hidden = true;
@@ -939,6 +1022,20 @@
     if (note) note.hidden = !useEsim;
     if (newSimNote) newSimNote.hidden = !(useNewSim && simExtra > 0);
     if (lossNote) lossNote.hidden = sell !== 0;
+    if (daysHint) {
+      if (chipAllowsPartialDays(chip) && days !== baseDays) {
+        daysHint.hidden = false;
+        daysHint.textContent =
+          "{% filter escapejs %}{% trans 'Prorated from package base:' %}{% endfilter %} " +
+          days +
+          " / " +
+          baseDays +
+          " {% filter escapejs %}{% trans 'days' %}{% endfilter %}";
+      } else {
+        daysHint.hidden = true;
+        daysHint.textContent = "";
+      }
+    }
     updateSimStockPreview();
   }
 
@@ -1039,11 +1136,12 @@
     });
     tile.classList.add("is-active");
     var id = tile.getAttribute("data-product-id");
-    var def = tile.getAttribute("data-default-price");
     var hid = document.getElementById("id_product");
-    var inp = document.getElementById("id_sell_price_actual");
+    var daysInp = document.getElementById("id_duration_days");
     if (hid) hid.value = id || "";
-    if (inp && def) inp.value = def;
+    if (daysInp) daysInp.value = String(getChipBaseDays(tile));
+    syncDurationDaysVisibility(tile);
+    applySuggestedSellFromChip(tile);
     var lineId = tile.getAttribute("data-line-id");
     if (lineId) {
       var lineBtn = document.querySelector('.employee-product-line-tile[data-line-id="' + lineId + '"]');
@@ -1082,6 +1180,7 @@
     document.querySelectorAll(".employee-package-chip").forEach(function (c) {
       c.classList.remove("is-active");
     });
+    syncDurationDaysVisibility(null);
     showPackagesForLine(lineId);
     updateSalePreview();
   }
@@ -1296,6 +1395,21 @@
       sellEl.addEventListener("input", updateSalePreview);
       sellEl.addEventListener("change", updateSalePreview);
     }
+    var daysEl = document.getElementById("id_duration_days");
+    if (daysEl) {
+      daysEl.addEventListener("input", function () {
+        var chip = document.querySelector(".employee-package-chip.is-active");
+        if (chip) applySuggestedSellFromChip(chip);
+        updateSalePreview();
+      });
+      daysEl.addEventListener("change", function () {
+        var chip = document.querySelector(".employee-package-chip.is-active");
+        if (chip) applySuggestedSellFromChip(chip);
+        updateSalePreview();
+      });
+    }
+    var activeChip = document.querySelector(".employee-package-chip.is-active");
+    syncDurationDaysVisibility(activeChip);
     updateSalePreview();
     updateSimStockPreview();
   });
@@ -1307,6 +1421,9 @@
       if (hid) hid.value = "";
       var inp = document.getElementById("id_sell_price_actual");
       if (inp) inp.value = "";
+      var daysInp = document.getElementById("id_duration_days");
+      if (daysInp) daysInp.value = "30";
+      syncDurationDaysVisibility(null);
       updateSalePreview();
       updateSimStockPreview();
     }

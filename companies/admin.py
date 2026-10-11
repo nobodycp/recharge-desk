@@ -6,7 +6,7 @@ from companies.models import Company, Product, ProductLine
 class ProductVariantInline(admin.TabularInline):
     model = Product
     extra = 0
-    fields = ("variant_label", "cost_price", "default_sell_price", "is_active")
+    fields = ("variant_label", "cost_price", "default_sell_price", "base_days", "is_active")
 
 
 @admin.register(Company)
@@ -19,8 +19,15 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(ProductLine)
 class ProductLineAdmin(admin.ModelAdmin):
-    list_display = ("name", "company", "sort_order", "is_active", "default_package")
-    list_filter = ("company", "is_active")
+    list_display = (
+        "name",
+        "company",
+        "sort_order",
+        "allow_partial_days",
+        "is_active",
+        "default_package",
+    )
+    list_filter = ("company", "is_active", "allow_partial_days")
     search_fields = ("name", "company__name")
     autocomplete_fields = ("default_package",)
     inlines = [ProductVariantInline]
@@ -37,8 +44,15 @@ class ProductLineAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "line", "cost_price", "default_sell_price", "is_active")
-    list_filter = ("line__company", "is_active")
+    list_display = (
+        "display_name",
+        "line",
+        "base_days",
+        "cost_price",
+        "default_sell_price",
+        "is_active",
+    )
+    list_filter = ("line__company", "is_active", "base_days")
     search_fields = ("variant_label", "line__name")
     autocomplete_fields = ("line",)
 

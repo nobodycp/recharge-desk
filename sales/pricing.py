@@ -1,13 +1,61 @@
-"""Centralized sale cost rules (eSIM surcharge, new-SIM unit cost, etc.)."""
+"""Centralized sale cost rules (eSIM surcharge, new-SIM unit cost, day proration)."""
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from companies.models import Product
 
 # Extra supplier cost applied when a sale is marked as eSIM.
 ESIM_EXTRA_COST = Decimal("5")
+_MONEY_QUANT = Decimal("0.01")
+
+
+def quantize_money(amount: Decimal) -> Decimal:
+    return Decimal(amount).quantize(_MONEY_QUANT, rounding=ROUND_HALF_UP)
+
+
+def package_base_days(product: Product) -> int:
+    days = int(getattr(product, "base_days", None) or 30)
+    return days if days > 0 else 30
+
+
+MONTHLY_BASE_DAYS = 30
+
+
+def line_allows_partial_days(product: Product) -> bool:
+    line = getattr(product, "line", None)
+    return bool(line and getattr(line, "allow_partial_days", False))
+
+
+def package_allows_day_edit(product: Product) -> bool:
+    """Partial days are only editable for monthly packages on opted-in lines."""
+    return line_allows_partial_days(product) and package_base_days(product) == MONTHLY_BASE_DAYS
+
+
+def resolve_duration_days(product: Product, requested_days: int | None) -> int:
+    """
+    Return the duration that will be charged.
+
+    - Default / disabled / non-monthly packages → full ``base_days``.
+    - Monthly package on a line with ``allow_partial_days`` → requested days.
+    """
+    base = package_base_days(product)
+    if not package_allows_day_edit(product):
+        return base
+    if requested_days is None:
+        return base
+    days = int(requested_days)
+    return days if days >= 1 else base
+
+
+def prorate_amount(amount: Decimal, *, base_days: int, duration_days: int) -> Decimal:
+    """Scale a package amount from ``base_days`` to ``duration_days``."""
+    base = base_days if base_days > 0 else 30
+    duration = duration_days if duration_days > 0 else base
+    if duration == base:
+        return quantize_money(amount)
+    return quantize_money(Decimal(amount) * Decimal(duration) / Decimal(base))
 
 
 def _new_sim_unit_cost(product: Product) -> Decimal:
@@ -24,20 +72,33 @@ def effective_cost_for_product(
     *,
     is_esim: bool,
     is_new_sim: bool = False,
+    duration_days: int | None = None,
 ) -> Decimal:
     """
     Cost deducted from company balance and stored on ``Sale.cost_price_snapshot``.
 
-    - When ``is_esim`` is True, ``ESIM_EXTRA_COST`` is added to the product's catalog cost.
-    - When ``is_new_sim`` is True, the product line's ``estimated_unit_cost`` (if set)
-      is also added so new-SIM sales reduce profit by the chip cost.
+    Package catalog cost is prorated by ``duration_days / base_days``.
+    eSIM and new-SIM extras are fixed add-ons (not prorated).
     """
-    cost = product.cost_price
+    base_days = package_base_days(product)
+    days = int(duration_days) if duration_days is not None else base_days
+    cost = prorate_amount(product.cost_price, base_days=base_days, duration_days=days)
     if is_esim:
         cost += ESIM_EXTRA_COST
     if is_new_sim:
         cost += _new_sim_unit_cost(product)
     return cost
+
+
+def suggested_sell_for_product(product: Product, *, duration_days: int | None = None) -> Decimal:
+    """Default selling price prorated to the requested duration."""
+    base_days = package_base_days(product)
+    days = int(duration_days) if duration_days is not None else base_days
+    return prorate_amount(
+        product.default_sell_price,
+        base_days=base_days,
+        duration_days=days,
+    )
 
 
 def loss_snapshot_for_sale(*, sell_price_actual: Decimal, cost_price_snapshot: Decimal) -> Decimal:

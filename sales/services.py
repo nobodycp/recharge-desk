@@ -44,6 +44,7 @@ def create_sale(
     is_esim: bool = False,
     is_new_sim: bool = False,
     sim_serial_or_iccid: str = "",
+    duration_days: Optional[int] = None,
     on_account: bool = False,
     customer=None,
     paid_via_employee: bool = False,
@@ -68,10 +69,14 @@ def create_sale(
     else:
         if payment_method is None:
             raise ValueError(_("Payment method is required for non on-account sales."))
+    from sales.pricing import resolve_duration_days
+
+    days = resolve_duration_days(product, duration_days)
     cost = effective_cost_for_product(
         product,
         is_esim=bool(is_esim),
         is_new_sim=bool(is_new_sim),
+        duration_days=days,
     )
     profit = sell_price_actual - cost
     loss_snap = loss_snapshot_for_sale(
@@ -90,6 +95,7 @@ def create_sale(
         payer_name=payer_name.strip(),
         payment_method=payment_method,
         sell_price_actual=sell_price_actual,
+        duration_days=days,
         cost_price_snapshot=cost,
         profit_snapshot=profit,
         loss_snapshot=loss_snap,

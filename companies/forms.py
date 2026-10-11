@@ -37,6 +37,7 @@ class ProductLineForm(forms.ModelForm):
             "icon",
             "sort_order",
             "estimated_unit_cost",
+            "allow_partial_days",
             "is_active",
             "default_package",
         ]
@@ -48,6 +49,7 @@ class ProductLineForm(forms.ModelForm):
             "estimated_unit_cost": forms.NumberInput(
                 attrs={"class": "form-control", "step": "0.01", "min": "0"}
             ),
+            "allow_partial_days": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "default_package": forms.Select(attrs={"class": "form-select"}),
         }
@@ -149,10 +151,22 @@ class SkyReportReconcileForm(forms.Form):
 
 
 class ProductVariantForm(forms.ModelForm):
+    base_days = forms.TypedChoiceField(
+        label=_("Package period"),
+        coerce=int,
+        choices=(
+            (30, _("Monthly (30 days) — default")),
+            (90, _("3 months (90 days)")),
+        ),
+        initial=30,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        help_text=_("Leave as monthly unless this package is a 3-month offer."),
+    )
+
     class Meta:
         model = Product
         # Package icons are not used — the product-line icon is shared by all packages.
-        fields = ["variant_label", "cost_price", "default_sell_price", "is_active"]
+        fields = ["variant_label", "cost_price", "default_sell_price", "base_days", "is_active"]
         widgets = {
             "variant_label": forms.TextInput(attrs={"class": "form-control", "placeholder": _("e.g. 100 GB")}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),

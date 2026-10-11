@@ -47,6 +47,27 @@ class EmployeeSaleForm(forms.Form):
             }
         ),
     )
+    duration_days = forms.IntegerField(
+        label=_("Days"),
+        min_value=1,
+        max_value=366,
+        initial=30,
+        required=False,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "step": "1",
+                "min": "1",
+                "max": "366",
+                "id": "id_duration_days",
+                "inputmode": "numeric",
+            }
+        ),
+        help_text=_(
+            "Only for monthly packages on lines that allow partial days. "
+            "3-month packages always charge the full period."
+        ),
+    )
     sell_price_actual = forms.DecimalField(
         label=_("Selling price"),
         max_digits=12,
@@ -149,6 +170,12 @@ class EmployeeSaleForm(forms.Form):
         product = cleaned.get("product")
         if company and product and product.line.company_id != company.id:
             raise forms.ValidationError(_("Selected product does not belong to the company."))
+        if product is not None:
+            from sales.pricing import resolve_duration_days
+
+            cleaned["duration_days"] = resolve_duration_days(
+                product, cleaned.get("duration_days")
+            )
         on_account = bool(cleaned.get("on_account"))
         paid_via_employee = bool(cleaned.get("paid_via_employee"))
         payment_method = cleaned.get("payment_method")

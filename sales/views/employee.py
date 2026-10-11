@@ -140,6 +140,7 @@ def employee_entry(request):
                     is_esim=bool(form.cleaned_data.get("is_esim")),
                     is_new_sim=is_new_sim,
                     sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
+                    duration_days=form.cleaned_data.get("duration_days"),
                     on_account=on_account,
                     customer=customer,
                     paid_via_employee=paid_via_employee,
