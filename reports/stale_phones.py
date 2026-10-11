@@ -1,8 +1,8 @@
-"""Helpers for the “lines for disconnect” management report."""
+"""Helpers for the phone line statement (بيان الأرقام) and dashboard KPIs."""
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from django.db.models import Max
@@ -14,6 +14,7 @@ from sales.models import Sale
 from reports.models import PhoneLineTracking
 
 MONTHLY_FALLBACK_DAYS = 30
+MANUAL_RENEW_DAYS = 1
 
 # Lifecycle status keys (shared by dashboard counts + phone lines statement).
 STATUS_ACTIVE = "active"
@@ -56,112 +57,24 @@ def sale_duration_days(sale: Sale) -> int:
     return MONTHLY_FALLBACK_DAYS
 
 
-def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
+def effective_activity_clock(
+    *,
+    sale: Sale,
+    sale_last_activity: datetime,
+    meta: PhoneLineTracking | None,
+) -> tuple[datetime, int, bool]:
     """
-    One row per phone/reference that is due for disconnect review.
+    Return ``(activity_start, duration_days, used_manual_renew)``.
 
-    A number appears when::
-
-        last_sale_date + duration_days + threshold_days  <=  now
-
-    i.e. the subscription period has ended and the activity threshold
-    (idle days after end) has also elapsed.
-
-    Rules:
-    - Uses the **latest** non-cancelled sale only (a new charge resets the clock).
-    - Latest sale marked **eSIM** is excluded (physical-SIM disconnect list).
+    A manual renew (virtual 1-day charge) wins when it is at least as new as
+    the latest real sale activity.
     """
-    # Prefilter: anything newer than ``threshold_days`` cannot be due yet
-    # (even with a 1-day duration). Longer durations are refined below.
-    cutoff = timezone.now() - timedelta(days=max(1, int(threshold_days)))
-    dismissed = set(
-        PhoneLineTracking.objects.filter(is_dismissed=True).values_list(
-            "reference_key", flat=True
-        )
-    )
-    base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
-        ref_key=Lower(Trim("reference_number"))
-    )
-    grouped = (
-        base.values("ref_key")
-        .annotate(last_activity=Max("created_at"))
-        .filter(last_activity__lt=cutoff)
-        .exclude(ref_key="")
-    )
-    raw_rows = list(grouped)
-    keys = [
-        r["ref_key"]
-        for r in raw_rows
-        if r["ref_key"] and r["ref_key"] not in dismissed
-    ]
-    if not keys:
-        return []
-
-    display_map: dict[str, str] = {}
-    for row in (
-        base.filter(ref_key__in=keys)
-        .order_by("-created_at")
-        .values("ref_key", "reference_number")
-    ):
-        k = row["ref_key"]
-        if k and k not in display_map:
-            display_map[k] = row["reference_number"] or k
-
-    metas = {
-        m.reference_key: m
-        for m in PhoneLineTracking.objects.filter(
-            reference_key__in=keys, is_dismissed=False
-        )
-    }
-
-    latest_by_key = _latest_sale_per_ref_key(keys)
-    now = timezone.now()
-    out: list[dict[str, Any]] = []
-    for row in raw_rows:
-        key = row["ref_key"] or ""
-        if not key or key in dismissed:
-            continue
-        sale = latest_by_key.get(key)
-        if not sale:
-            continue
-        # eSIM lines are not managed on the physical disconnect list.
-        if sale.is_esim:
-            continue
-        last = row["last_activity"] or sale.created_at
-        duration = sale_duration_days(sale)
-        subscription_end = last + timedelta(days=duration)
-        disconnect_at = subscription_end + timedelta(days=int(threshold_days))
-        if now < disconnect_at:
-            continue
-        days_past_end = max(0, (now - subscription_end).days)
-        meta = metas.get(key)
-        line = sale.product.line
-        line_name = line.name if line else ""
-        out.append(
-            {
-                "ref_key": key,
-                "last_activity": last,
-                "display_reference": display_map.get(key, key),
-                "sim_identifier": (meta.sim_identifier if meta else "") or "",
-                "tracking_id": meta.pk if meta else None,
-                "duration_days": duration,
-                "subscription_end": subscription_end,
-                "disconnect_at": disconnect_at,
-                "days_past_end": days_past_end,
-                # Alias used by existing sort keys / templates.
-                "idle_days": days_past_end,
-                "customer_or_payer": (
-                    sale.customer.name if sale.customer_id else sale.payer_name
-                ),
-                "company_name": sale.company.name,
-                "company_id": sale.company_id,
-                "line_name": line_name,
-                "line_name_key": normalize_reference_key(line_name),
-                "product_display": line_name,
-                "product_id": sale.product_id,
-            }
-        )
-    return out
+    last = sale_last_activity or sale.created_at
+    duration = sale_duration_days(sale)
+    reset_at = getattr(meta, "manual_reset_at", None) if meta else None
+    if reset_at is not None and reset_at >= last:
+        return reset_at, MANUAL_RENEW_DAYS, True
+    return last, duration, False
 
 
 def _lifecycle_status(
@@ -186,14 +99,8 @@ def phone_lines_aggregate(
     """
     One row per phone/reference that has any non-cancelled sale.
 
-    Unlike the disconnect list, this includes:
-    - active / grace / due-soon lines (not only overdue)
-    - eSIM lines (flagged via ``is_esim``)
-    - dismissed refs (still part of the inventory statement)
-
-    Each row carries a ``status`` key matching the dashboard lifecycle buckets
-    (eSIM rows use the same date math; they simply never appear on the
-    disconnect list).
+    Includes active / grace / due-soon / overdue and eSIM lines. Each row
+    carries a ``status`` key matching the dashboard lifecycle buckets.
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
@@ -223,9 +130,6 @@ def phone_lines_aggregate(
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
     }
-    dismissed = {
-        m.reference_key for m in metas.values() if m.is_dismissed
-    }
     latest_by_key = _latest_sale_per_ref_key(keys)
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
@@ -237,8 +141,12 @@ def phone_lines_aggregate(
         sale = latest_by_key.get(key)
         if not sale:
             continue
-        last = row["last_activity"] or sale.created_at
-        duration = sale_duration_days(sale)
+        meta = metas.get(key)
+        last, duration, used_manual = effective_activity_clock(
+            sale=sale,
+            sale_last_activity=row["last_activity"] or sale.created_at,
+            meta=meta,
+        )
         subscription_end = last + timedelta(days=duration)
         disconnect_at = subscription_end + timedelta(days=threshold_days)
         status = _lifecycle_status(
@@ -248,7 +156,6 @@ def phone_lines_aggregate(
             soon_end=soon_end,
         )
         days_past_end = max(0, (now - subscription_end).days)
-        meta = metas.get(key)
         line = sale.product.line
         line_name = line.name if line else ""
         out.append(
@@ -258,8 +165,8 @@ def phone_lines_aggregate(
                 "display_reference": display_map.get(key, key),
                 "sim_identifier": (meta.sim_identifier if meta else "") or "",
                 "tracking_id": meta.pk if meta else None,
-                "is_dismissed": key in dismissed,
                 "is_esim": bool(sale.is_esim),
+                "used_manual_renew": used_manual,
                 "status": status,
                 "duration_days": duration,
                 "subscription_end": subscription_end,
@@ -285,24 +192,15 @@ def reference_disconnect_counts(
 ) -> dict[str, int]:
     """
     Lifecycle counts for the operational dashboard (physical SIMs only, eSIM
-    excluded; dismissed refs stay out). Buckets are mutually exclusive:
+    excluded). Buckets are mutually exclusive:
 
     - ``active``: subscription period still running
-      (``now < last_sale + duration``).
-    - ``due_soon``: will hit the disconnect list within ``due_soon_hours``
-      (``now < disconnect_at <= now + due_soon_hours``).
-    - ``ended_under_threshold``: subscription ended, still inside the activity
-      grace window, and not within ``due_soon_hours`` of disconnect.
-    - ``overdue``: past activity threshold (same population as the
-      “lines for disconnect” report).
+    - ``due_soon``: past threshold within ``due_soon_hours``
+    - ``ended_under_threshold``: subscription ended, still in grace
+    - ``overdue``: past activity threshold
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
-    dismissed = set(
-        PhoneLineTracking.objects.filter(is_dismissed=True).values_list(
-            "reference_key", flat=True
-        )
-    )
     base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
         ref_key=Lower(Trim("reference_number"))
     )
@@ -311,12 +209,12 @@ def reference_disconnect_counts(
         .annotate(last_activity=Max("created_at"))
         .exclude(ref_key="")
     )
-    keys = [
-        r["ref_key"]
-        for r in grouped
-        if r["ref_key"] and r["ref_key"] not in dismissed
-    ]
+    keys = [r["ref_key"] for r in grouped if r["ref_key"]]
     latest_by_key = _latest_sale_per_ref_key(keys)
+    metas = {
+        m.reference_key: m
+        for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
+    }
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
     active = 0
@@ -325,13 +223,16 @@ def reference_disconnect_counts(
     overdue = 0
     for row in grouped:
         key = row["ref_key"] or ""
-        if not key or key in dismissed:
+        if not key:
             continue
         sale = latest_by_key.get(key)
         if not sale or sale.is_esim:
             continue
-        last = row["last_activity"] or sale.created_at
-        duration = sale_duration_days(sale)
+        last, duration, _used = effective_activity_clock(
+            sale=sale,
+            sale_last_activity=row["last_activity"] or sale.created_at,
+            meta=metas.get(key),
+        )
         subscription_end = last + timedelta(days=duration)
         disconnect_at = subscription_end + timedelta(days=threshold_days)
         if disconnect_at <= now:

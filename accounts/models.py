@@ -25,11 +25,11 @@ class UserProfile(models.Model):
     is_active_profile = models.BooleanField(_("profile active"), default=True)
     stale_phone_threshold_days = models.PositiveIntegerField(
         _("stale line threshold (days)"),
-        default=90,
+        default=85,
         help_text=_(
-            "Used by the “lines for disconnect” report: idle days after the "
-            "subscription end date (last sale + charged days). Example: 60-day "
-            "charge + 90-day threshold → appears after 150 days."
+            "Used by the line statement: idle days after the subscription end "
+            "date (last sale + charged days). Example: 60-day charge + 85-day "
+            "threshold → past threshold after 145 days."
         ),
     )
     avatar = models.ImageField(

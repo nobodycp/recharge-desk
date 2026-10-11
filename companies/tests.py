@@ -42,10 +42,12 @@ class CompanyListQueryCountTests(TestCase):
                 opening_balance=_decimal(0),
                 current_balance=_decimal(0),
             )
-            line = ProductLine.objects.create(company=company, name=f"L{i}")
+            # Distinctive names — short "L1" collides with substrings like
+            # ``USE_L10N`` on DEBUG error/settings dumps in CI.
+            line = ProductLine.objects.create(company=company, name=f"LineUnique{i}")
             Product.objects.create(
                 line=line,
-                variant_label=f"P{i}",
+                variant_label=f"PkgUnique{i}",
                 cost_price=_decimal(5),
                 default_sell_price=_decimal(50),
             )
@@ -102,27 +104,28 @@ class CompanyListQueryCountTests(TestCase):
             "/management/products/", {"company": str(company.pk)}
         )
         self.assertEqual(by_company.status_code, 200)
-        self.assertContains(by_company, "L0")
-        self.assertNotContains(by_company, "L1")
+        self.assertContains(by_company, "LineUnique0")
+        self.assertNotContains(by_company, "LineUnique1")
+        self.assertEqual(len(by_company.context["company_groups"]), 1)
         self.assertContains(by_company, 'name="company"')
         self.assertContains(by_company, 'name="q"')
 
-        by_line = self.client.get("/management/products/", {"q": "L2"})
-        self.assertContains(by_line, "L2")
-        self.assertNotContains(by_line, "L1")
+        by_line = self.client.get("/management/products/", {"q": "LineUnique2"})
+        self.assertContains(by_line, "LineUnique2")
+        self.assertNotContains(by_line, "LineUnique1")
         # Searching expands matching package panels.
         self.assertContains(by_line, 'class="rd-product-line__details" open')
 
-        by_package = self.client.get("/management/products/", {"q": "P3"})
-        self.assertContains(by_package, "L3")
-        self.assertContains(by_package, "P3")
+        by_package = self.client.get("/management/products/", {"q": "PkgUnique3"})
+        self.assertContains(by_package, "LineUnique3")
+        self.assertContains(by_package, "PkgUnique3")
 
     def test_archive_package_with_sales_hides_it_without_deleting_sales(self):
         from sales.models import PaymentMethod, Sale
 
         self.client.force_login(self.user)
         company = Company.objects.get(name="Co0")
-        product = Product.objects.get(variant_label="P0")
+        product = Product.objects.get(variant_label="PkgUnique0")
         pm = PaymentMethod.objects.create(name="CashArchive")
         sale = Sale.objects.create(
             company=company,
@@ -162,7 +165,7 @@ class CompanyListQueryCountTests(TestCase):
             for line in listing.context["lines"]
             for v in line.variants.all()
         ]
-        self.assertNotIn("P0", visible_labels)
+        self.assertNotIn("PkgUnique0", visible_labels)
 
         # Visible again when showing archived.
         with_archived = self.client.get(
@@ -173,7 +176,7 @@ class CompanyListQueryCountTests(TestCase):
             for line in with_archived.context["lines"]
             for v in line.variants.all()
         ]
-        self.assertIn("P0", archived_labels)
+        self.assertIn("PkgUnique0", archived_labels)
         self.assertContains(with_archived, "Archived")
 
         restored = self.client.post(

@@ -5,43 +5,11 @@
   <div>
     <h1 class="rd-heading-xl mb-1">{% trans "Line statement" %}</h1>
     <p class="rd-text-muted mb-0">
-      {% blocktrans with d=threshold_days %}Every number with a sale in the system, with lifecycle status from the {{ d }}-day activity threshold. A new charge resets the timer.{% endblocktrans %}
+      {% blocktrans with d=threshold_days %}Every number with a sale in the system, with lifecycle status from the {{ d }}-day activity threshold. A new charge or a 1-day renew resets the timer.{% endblocktrans %}
     </p>
   </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-secondary" href="{% url 'reports:stale_phones_report' %}">{% trans "Lines for disconnect" %}</a>
-    <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>
-  </div>
+  <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>
 </div>
-
-<details class="rd-card mb-3 position-relative rd-filter-card"{% if idle_threshold_details_open %} open{% endif %}>
-  <summary>
-    <span class="rd-filter-summary-left">
-      <svg class="rd-filter-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      <span>{% trans "Activity threshold" %}</span>
-    </span>
-  </summary>
-  <div class="rd-card-body rd-filter-bar">
-    <form method="post" class="row g-2 align-items-end">
-      {% csrf_token %}
-      <input type="hidden" name="save_stale_threshold" value="1">
-      <div class="col-12 col-md-6 col-lg-5">
-        {{ threshold_form.stale_phone_threshold_days.label_tag }}
-        {{ threshold_form.stale_phone_threshold_days }}
-        {% if threshold_form.stale_phone_threshold_days.help_text %}
-          <div class="form-text">{{ threshold_form.stale_phone_threshold_days.help_text }}</div>
-        {% endif %}
-        {{ threshold_form.stale_phone_threshold_days.errors }}
-      </div>
-      <div class="col-auto">
-        <button class="btn btn-primary" type="submit">{% trans "Save threshold" %}</button>
-      </div>
-    </form>
-    <p class="small text-secondary mb-0 mt-2">
-      {% trans "Saved on your user profile until you change it again." %}
-    </p>
-  </div>
-</details>
 
 {% active_filter_count as phone_lines_filter_active %}
 {% include "partials/filter_card_open.html" with active_count=phone_lines_filter_active indicator_id="phone-lines-htmx-indicator" %}
@@ -71,6 +39,12 @@
       </div>
       <div class="col-6 col-md-3 col-lg-2">
         {{ filter_form.sim_type.label_tag }}{{ filter_form.sim_type }}
+      </div>
+      <div class="col-6 col-md-3 col-lg-2">
+        {{ filter_form.threshold_days.label_tag }}{{ filter_form.threshold_days }}
+        {% if filter_form.threshold_days.help_text %}
+          <div class="form-text d-none d-xl-block">{{ filter_form.threshold_days.help_text }}</div>
+        {% endif %}
       </div>
       <div class="col-12 d-flex flex-wrap gap-2">
         <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>

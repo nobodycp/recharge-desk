@@ -36,6 +36,7 @@
               <th>
                 <a class="rd-datagrid-sort {% if sort == 'last_activity' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'last_activity' and order == 'desc' %}{% querystring sort='last_activity' order='asc' page=1 %}{% else %}{% querystring sort='last_activity' order='desc' page=1 %}{% endif %}">{% trans "Last sale" %}</a>
               </th>
+              <th class="text-end">{% trans "Actions" %}</th>
             </tr>
           </thead>
           <tbody>
@@ -51,10 +52,27 @@
                 <td class="small text-end tabular-nums fw-semibold">{{ row.days_past_end }}</td>
                 <td>{% include "reports/partials/stale_phone_sim_cell.html" with row=row list_query=list_query %}</td>
                 <td class="small text-secondary text-nowrap">{{ row.last_activity|date:"Y-m-d" }}</td>
+                <td class="text-end text-nowrap">
+                  {% if row.status == "overdue" %}
+                    <form
+                      method="post"
+                      action="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
+                      class="d-inline"
+                      hx-boost="false"
+                      onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period." %}{% endfilter %}');"
+                    >
+                      {% csrf_token %}
+                      <input type="hidden" name="next_query" value="{{ list_query }}">
+                      <button type="submit" class="btn btn-sm btn-outline-primary">{% trans "Renew 1 day" %}</button>
+                    </form>
+                  {% else %}
+                    <span class="text-secondary">—</span>
+                  {% endif %}
+                </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="10" class="text-center py-4 text-secondary">
+                <td colspan="11" class="text-center py-4 text-secondary">
                   {% trans "No lines match these filters." %}
                 </td>
               </tr>
@@ -87,6 +105,19 @@
           <div class="mt-2">
             {% include "reports/partials/stale_phone_sim_cell.html" with row=row list_query=list_query %}
           </div>
+          {% if row.status == "overdue" %}
+            <form
+              method="post"
+              action="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
+              class="mt-2"
+              hx-boost="false"
+              onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period." %}{% endfilter %}');"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="next_query" value="{{ list_query }}">
+              <button type="submit" class="btn btn-sm btn-outline-primary w-100">{% trans "Renew 1 day" %}</button>
+            </form>
+          {% endif %}
         </div>
       {% empty %}
         <div class="text-center text-secondary py-4">{% trans "No lines match these filters." %}</div>
