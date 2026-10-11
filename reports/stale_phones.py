@@ -60,6 +60,10 @@ def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
 
     i.e. the subscription period has ended and the activity threshold
     (idle days after end) has also elapsed.
+
+    Rules:
+    - Uses the **latest** non-cancelled sale only (a new charge resets the clock).
+    - Latest sale marked **eSIM** is excluded (physical-SIM disconnect list).
     """
     # Prefilter: anything newer than ``threshold_days`` cannot be due yet
     # (even with a 1-day duration). Longer durations are refined below.
@@ -113,6 +117,9 @@ def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
             continue
         sale = latest_by_key.get(key)
         if not sale:
+            continue
+        # eSIM lines are not managed on the physical disconnect list.
+        if sale.is_esim:
             continue
         last = row["last_activity"] or sale.created_at
         duration = sale_duration_days(sale)
