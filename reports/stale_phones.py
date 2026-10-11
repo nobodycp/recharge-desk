@@ -15,6 +15,12 @@ from reports.models import PhoneLineTracking
 
 MONTHLY_FALLBACK_DAYS = 30
 
+# Lifecycle status keys (shared by dashboard counts + phone lines statement).
+STATUS_ACTIVE = "active"
+STATUS_DUE_SOON = "due_soon"
+STATUS_ENDED_UNDER = "ended_under_threshold"
+STATUS_OVERDUE = "overdue"
+
 
 def _latest_sale_per_ref_key(keys: list[str]) -> dict[str, Sale]:
     """Most recent non-cancelled sale per normalized reference key."""
@@ -158,18 +164,140 @@ def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
     return out
 
 
-def reference_disconnect_counts(
-    *, threshold_days: int, due_soon_days: int = 3
-) -> dict[str, int]:
-    """
-    Counts for the operational dashboard (physical SIMs only, eSIM excluded).
+def _lifecycle_status(
+    *,
+    now,
+    subscription_end,
+    disconnect_at,
+    soon_end,
+) -> str:
+    if disconnect_at <= now:
+        return STATUS_OVERDUE
+    if disconnect_at <= soon_end:
+        return STATUS_DUE_SOON
+    if now < subscription_end:
+        return STATUS_ACTIVE
+    return STATUS_ENDED_UNDER
 
-    - ``due_soon``: still active, but becomes disconnect-due within ``due_soon_days``.
-    - ``overdue``: already past activity threshold (same population as the
-      “lines for disconnect” report, including dismissed? No — dismissed stay out).
+
+def phone_lines_aggregate(
+    *, threshold_days: int, due_soon_hours: int = 24
+) -> list[dict[str, Any]]:
+    """
+    One row per phone/reference that has any non-cancelled sale.
+
+    Unlike the disconnect list, this includes:
+    - active / grace / due-soon lines (not only overdue)
+    - eSIM lines (flagged via ``is_esim``)
+    - dismissed refs (still part of the inventory statement)
+
+    Each row carries a ``status`` key matching the dashboard lifecycle buckets
+    (eSIM rows use the same date math; they simply never appear on the
+    disconnect list).
     """
     threshold_days = max(1, int(threshold_days))
-    due_soon_days = max(0, int(due_soon_days))
+    due_soon_hours = max(0, int(due_soon_hours))
+    base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
+        ref_key=Lower(Trim("reference_number"))
+    )
+    grouped = list(
+        base.values("ref_key")
+        .annotate(last_activity=Max("created_at"))
+        .exclude(ref_key="")
+    )
+    keys = [r["ref_key"] for r in grouped if r["ref_key"]]
+    if not keys:
+        return []
+
+    display_map: dict[str, str] = {}
+    for row in (
+        base.filter(ref_key__in=keys)
+        .order_by("-created_at")
+        .values("ref_key", "reference_number")
+    ):
+        k = row["ref_key"]
+        if k and k not in display_map:
+            display_map[k] = row["reference_number"] or k
+
+    metas = {
+        m.reference_key: m
+        for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
+    }
+    dismissed = {
+        m.reference_key for m in metas.values() if m.is_dismissed
+    }
+    latest_by_key = _latest_sale_per_ref_key(keys)
+    now = timezone.now()
+    soon_end = now + timedelta(hours=due_soon_hours)
+    out: list[dict[str, Any]] = []
+    for row in grouped:
+        key = row["ref_key"] or ""
+        if not key:
+            continue
+        sale = latest_by_key.get(key)
+        if not sale:
+            continue
+        last = row["last_activity"] or sale.created_at
+        duration = sale_duration_days(sale)
+        subscription_end = last + timedelta(days=duration)
+        disconnect_at = subscription_end + timedelta(days=threshold_days)
+        status = _lifecycle_status(
+            now=now,
+            subscription_end=subscription_end,
+            disconnect_at=disconnect_at,
+            soon_end=soon_end,
+        )
+        days_past_end = max(0, (now - subscription_end).days)
+        meta = metas.get(key)
+        line = sale.product.line
+        line_name = line.name if line else ""
+        out.append(
+            {
+                "ref_key": key,
+                "last_activity": last,
+                "display_reference": display_map.get(key, key),
+                "sim_identifier": (meta.sim_identifier if meta else "") or "",
+                "tracking_id": meta.pk if meta else None,
+                "is_dismissed": key in dismissed,
+                "is_esim": bool(sale.is_esim),
+                "status": status,
+                "duration_days": duration,
+                "subscription_end": subscription_end,
+                "disconnect_at": disconnect_at,
+                "days_past_end": days_past_end,
+                "idle_days": days_past_end,
+                "customer_or_payer": (
+                    sale.customer.name if sale.customer_id else sale.payer_name
+                ),
+                "company_name": sale.company.name,
+                "company_id": sale.company_id,
+                "line_name": line_name,
+                "line_name_key": normalize_reference_key(line_name),
+                "product_display": line_name,
+                "product_id": sale.product_id,
+            }
+        )
+    return out
+
+
+def reference_disconnect_counts(
+    *, threshold_days: int, due_soon_hours: int = 24
+) -> dict[str, int]:
+    """
+    Lifecycle counts for the operational dashboard (physical SIMs only, eSIM
+    excluded; dismissed refs stay out). Buckets are mutually exclusive:
+
+    - ``active``: subscription period still running
+      (``now < last_sale + duration``).
+    - ``due_soon``: will hit the disconnect list within ``due_soon_hours``
+      (``now < disconnect_at <= now + due_soon_hours``).
+    - ``ended_under_threshold``: subscription ended, still inside the activity
+      grace window, and not within ``due_soon_hours`` of disconnect.
+    - ``overdue``: past activity threshold (same population as the
+      “lines for disconnect” report).
+    """
+    threshold_days = max(1, int(threshold_days))
+    due_soon_hours = max(0, int(due_soon_hours))
     dismissed = set(
         PhoneLineTracking.objects.filter(is_dismissed=True).values_list(
             "reference_key", flat=True
@@ -190,8 +318,10 @@ def reference_disconnect_counts(
     ]
     latest_by_key = _latest_sale_per_ref_key(keys)
     now = timezone.now()
-    soon_end = now + timedelta(days=due_soon_days)
+    soon_end = now + timedelta(hours=due_soon_hours)
+    active = 0
     due_soon = 0
+    ended_under_threshold = 0
     overdue = 0
     for row in grouped:
         key = row["ref_key"] or ""
@@ -202,12 +332,24 @@ def reference_disconnect_counts(
             continue
         last = row["last_activity"] or sale.created_at
         duration = sale_duration_days(sale)
-        disconnect_at = last + timedelta(days=duration + threshold_days)
+        subscription_end = last + timedelta(days=duration)
+        disconnect_at = subscription_end + timedelta(days=threshold_days)
         if disconnect_at <= now:
             overdue += 1
         elif disconnect_at <= soon_end:
             due_soon += 1
-    return {"due_soon": due_soon, "overdue": overdue}
+        elif now < subscription_end:
+            active += 1
+        else:
+            ended_under_threshold += 1
+    total = active + due_soon + ended_under_threshold + overdue
+    return {
+        "active": active,
+        "due_soon": due_soon,
+        "ended_under_threshold": ended_under_threshold,
+        "overdue": overdue,
+        "total": total,
+    }
 
 
 def filter_stale_rows(
@@ -216,7 +358,7 @@ def filter_stale_rows(
     cleaned: dict[str, Any] | None,
     q: str,
 ) -> list[dict[str, Any]]:
-    """Apply company / unified line-name filters and free-text ``q``."""
+    """Apply company / unified line-name / status filters and free-text ``q``."""
     cleaned = cleaned or {}
     out = list(rows)
     company = cleaned.get("company")
@@ -226,6 +368,14 @@ def filter_stale_rows(
     line_name = (cleaned.get("line_name") or "").strip().lower()
     if line_name:
         out = [r for r in out if (r.get("line_name_key") or "") == line_name]
+    status = (cleaned.get("status") or "").strip().lower()
+    if status:
+        out = [r for r in out if (r.get("status") or "") == status]
+    sim_type = (cleaned.get("sim_type") or "").strip().lower()
+    if sim_type == "esim":
+        out = [r for r in out if r.get("is_esim")]
+    elif sim_type == "physical":
+        out = [r for r in out if not r.get("is_esim")]
     needle = (q or "").strip().lower()
     if needle:
 
@@ -245,10 +395,18 @@ def filter_stale_rows(
     return out
 
 
+_STATUS_SORT_ORDER = {
+    STATUS_OVERDUE: 0,
+    STATUS_DUE_SOON: 1,
+    STATUS_ENDED_UNDER: 2,
+    STATUS_ACTIVE: 3,
+}
+
+
 def sort_stale_rows(
     rows: list[dict[str, Any]], *, sort: str, order: str
 ) -> list[dict[str, Any]]:
-    """Sort in-memory stale rows (``sort`` / ``order`` match other management grids)."""
+    """Sort in-memory phone-line rows (``sort`` / ``order`` match other grids)."""
     reverse = (order or "").lower() != "asc"
     sort_keys: dict[str, Any] = {
         "ref": lambda r: (r.get("display_reference") or "").lower(),
@@ -262,6 +420,7 @@ def sort_stale_rows(
         "line": lambda r: (r.get("line_name") or "").lower(),
         "sim": lambda r: (r.get("sim_identifier") or "").lower(),
         "duration": lambda r: r.get("duration_days", 0),
+        "status": lambda r: _STATUS_SORT_ORDER.get(r.get("status"), 99),
     }
     key_fn = sort_keys.get(sort) or sort_keys["days_past_end"]
     return sorted(rows, key=key_fn, reverse=reverse)

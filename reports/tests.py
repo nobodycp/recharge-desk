@@ -102,10 +102,14 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["today_profit"] or 0, 0)
         self.assertEqual(ctx["total_profit"] or 0, 0)
         self.assertEqual(ctx["esim_sales_count"], 0)
+        self.assertEqual(ctx["phones_active_count"], 0)
         self.assertEqual(ctx["phones_due_soon_count"], 0)
+        self.assertEqual(ctx["phones_ended_under_threshold_count"], 0)
         self.assertEqual(ctx["phones_overdue_count"], 0)
+        self.assertEqual(ctx["phones_lifecycle_total"], 0)
         self.assertNotContains(r, "Recent activity")
-        self.assertContains(r, "Lines for disconnect")
+        self.assertContains(r, "Line status")
+        self.assertContains(r, "rd-phone-donut")
 
     def test_dashboard_phone_disconnect_kpis(self):
         from reports.stale_phones import reference_disconnect_counts
@@ -116,14 +120,20 @@ class DashboardSmokeTests(_ReportsBase):
             created_at=timezone.now() - timedelta(days=130),
             duration_days=30,
         )
-        # Due soon (within 3 days): disconnect_at = last + 30 + 90 = last + 120.
-        # Age so disconnect_at is ~1.5 days from now → days_ago ≈ 118.5 → 118.
+        # Due within 24h: disconnect_at = last + 30 + 90 = last + 120.
+        # Age ~119.5 days → disconnect in ~12 hours.
         due_soon = self._make_sale(ref="055DASH0002", paid=True)
         Sale.objects.filter(pk=due_soon.pk).update(
-            created_at=timezone.now() - timedelta(days=118),
+            created_at=timezone.now() - timedelta(days=119, hours=12),
             duration_days=30,
         )
-        # Still far from due.
+        # Subscription ended, still deep in the grace window.
+        grace = self._make_sale(ref="055DASH0005", paid=True)
+        Sale.objects.filter(pk=grace.pk).update(
+            created_at=timezone.now() - timedelta(days=60),
+            duration_days=30,
+        )
+        # Still active (subscription running).
         fresh = self._make_sale(ref="055DASH0003", paid=True)
         Sale.objects.filter(pk=fresh.pk).update(
             created_at=timezone.now() - timedelta(days=10),
@@ -136,14 +146,24 @@ class DashboardSmokeTests(_ReportsBase):
             duration_days=30,
         )
 
-        stats = reference_disconnect_counts(threshold_days=90, due_soon_days=3)
+        stats = reference_disconnect_counts(threshold_days=90, due_soon_hours=24)
         self.assertEqual(stats["overdue"], 1)
         self.assertEqual(stats["due_soon"], 1)
+        self.assertEqual(stats["ended_under_threshold"], 1)
+        self.assertEqual(stats["active"], 1)
+        self.assertEqual(stats["total"], 4)
 
         cache.clear()
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.context["phones_overdue_count"], 1)
         self.assertEqual(r.context["phones_due_soon_count"], 1)
+        self.assertEqual(r.context["phones_ended_under_threshold_count"], 1)
+        self.assertEqual(r.context["phones_active_count"], 1)
+        self.assertEqual(r.context["phones_lifecycle_total"], 4)
+        self.assertContains(r, "Active lines")
+        self.assertContains(r, "Disconnects within 24 hours")
+        self.assertContains(r, "Ended — under inactivity threshold")
+        self.assertContains(r, "Ended — past inactivity threshold")
 
 
 class DashboardKPITests(_ReportsBase):
@@ -796,3 +816,142 @@ class StalePhonesReportTests(_ReportsBase):
         body = r.content.decode()
         self.assertIn("table", body)
         self.assertNotIn("Activity threshold", body)
+
+
+class PhoneLinesStatementTests(_ReportsBase):
+    """بيان الأرقام — full inventory with the same filters as disconnect list."""
+
+    def _age_sale(self, sale, *, days_ago: int, duration_days: int = 30):
+        Sale.objects.filter(pk=sale.pk).update(
+            created_at=timezone.now() - timedelta(days=days_ago),
+            duration_days=duration_days,
+        )
+
+    def test_statement_lists_active_and_overdue(self):
+        overdue = self._make_sale(ref="055STMT0001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMT0002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertEqual(r.status_code, 200)
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmt0001", refs)
+        self.assertIn("055stmt0002", refs)
+        by_ref = {x["ref_key"]: x for x in r.context["page_obj"].object_list}
+        self.assertEqual(by_ref["055stmt0001"]["status"], "overdue")
+        self.assertEqual(by_ref["055stmt0002"]["status"], "active")
+        self.assertContains(r, "Line statement")
+
+    def test_statement_includes_esim(self):
+        s = self._make_sale(ref="055STMTE001", paid=True, is_esim=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        row = next(
+            x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stmte001"
+        )
+        self.assertTrue(row["is_esim"])
+
+    def test_statement_includes_dismissed_from_disconnect_list(self):
+        s = self._make_sale(ref="055STMTD001", paid=True)
+        self._age_sale(s, days_ago=130, duration_days=30)
+        self.client.post(
+            reverse("reports:stale_phone_dismiss", kwargs={"ref_key": "055STMTD001"}),
+        )
+        r_stale = self.client.get(reverse("reports:stale_phones_report"))
+        self.assertFalse(
+            any(
+                x["ref_key"] == "055stmtd001"
+                for x in r_stale.context["page_obj"].object_list
+            )
+        )
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertTrue(
+            any(x["ref_key"] == "055stmtd001" for x in r.context["page_obj"].object_list)
+        )
+
+    def test_filter_status_active_only(self):
+        overdue = self._make_sale(ref="055STMTS001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMTS002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"status": "active"}
+        )
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmts002", refs)
+        self.assertNotIn("055stmts001", refs)
+
+    def test_filter_sim_type_physical(self):
+        phys = self._make_sale(ref="055STMTT001", paid=True, is_esim=False)
+        self._age_sale(phys, days_ago=5, duration_days=30)
+        esim = self._make_sale(ref="055STMTT002", paid=True, is_esim=True)
+        self._age_sale(esim, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"sim_type": "physical"}
+        )
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmtt001", refs)
+        self.assertNotIn("055stmtt002", refs)
+
+    def test_filter_company_same_as_disconnect_style(self):
+        s1 = self._make_sale(ref="055STMTC001", paid=True)
+        self._age_sale(s1, days_ago=5, duration_days=30)
+        company2 = Company.objects.create(
+            name="StmtCo",
+            opening_balance=_d(5000),
+            current_balance=_d(5000),
+        )
+        line2 = ProductLine.objects.create(company=company2, name="L2")
+        product2 = Product.objects.create(
+            line=line2,
+            variant_label="V",
+            cost_price=_d(2),
+            default_sell_price=_d(12),
+        )
+        s2 = create_sale(
+            company=company2,
+            product=product2,
+            reference_number="055STMTC002",
+            payer_name="Other",
+            payment_method=self.cash,
+            sell_price_actual=_d(12),
+            notes="",
+            user=self.user,
+            duration_days=30,
+        )
+        mark_sale_paid(sale=s2, user=self.user)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"),
+            {"company": str(company2.pk)},
+        )
+        refs = [x["ref_key"] for x in r.context["page_obj"].object_list]
+        self.assertEqual(refs, ["055stmtc002"])
+
+    def test_inline_sim_save_works_for_active_line(self):
+        s = self._make_sale(ref="055STMTI001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTI001"})
+        r = self.client.post(
+            url,
+            {"sim_identifier": "ICCID-STMT-1", "next_query": "sort=ref"},
+            HTTP_HX_REQUEST="true",
+            HTTP_REFERER="http://testserver"
+            + reverse("reports:phone_lines_report"),
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            PhoneLineTracking.objects.get(reference_key="055stmti001").sim_identifier,
+            "ICCID-STMT-1",
+        )
+
+    def test_htmx_returns_results_partial_only(self):
+        s = self._make_sale(ref="055STMTH001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.content.decode()
+        self.assertIn("table", body)
+        self.assertNotIn("<h1", body)

@@ -123,13 +123,38 @@ def dashboard(request):
     except (UserProfile.DoesNotExist, AttributeError, TypeError, ValueError):
         threshold_days = 90
     phone_stats = cached_kpi(
-        f"dashboard:phone_disconnect:{threshold_days}:{today_key}",
+        f"dashboard:phone_lifecycle_v2:{threshold_days}:{today_key}",
         lambda: reference_disconnect_counts(
-            threshold_days=threshold_days, due_soon_days=3
+            threshold_days=threshold_days, due_soon_hours=24
         ),
     )
+    phones_active_count = int(phone_stats.get("active", 0) or 0)
     phones_due_soon_count = int(phone_stats.get("due_soon", 0) or 0)
+    phones_ended_under_threshold_count = int(
+        phone_stats.get("ended_under_threshold", 0) or 0
+    )
     phones_overdue_count = int(phone_stats.get("overdue", 0) or 0)
+    phones_lifecycle_total = int(
+        phone_stats.get("total", 0)
+        or (
+            phones_active_count
+            + phones_due_soon_count
+            + phones_ended_under_threshold_count
+            + phones_overdue_count
+        )
+    )
+
+    def _phone_pct(n: int) -> float:
+        if phones_lifecycle_total <= 0:
+            return 0.0
+        return round(100.0 * n / phones_lifecycle_total, 2)
+
+    # Cumulative conic-gradient stops for the donut (clockwise from 12 o'clock).
+    phone_donut_active_end = _phone_pct(phones_active_count)
+    phone_donut_due_end = phone_donut_active_end + _phone_pct(phones_due_soon_count)
+    phone_donut_grace_end = phone_donut_due_end + _phone_pct(
+        phones_ended_under_threshold_count
+    )
 
     # Must use the same date scope as `today_count` / `today_volume` (today only).
     esim_sales_count = cached_kpi(
@@ -246,8 +271,14 @@ def dashboard(request):
             "month_expenses": month_expenses or 0,
             "net_month": net_month,
             "companies": companies,
+            "phones_active_count": phones_active_count,
             "phones_due_soon_count": phones_due_soon_count,
+            "phones_ended_under_threshold_count": phones_ended_under_threshold_count,
             "phones_overdue_count": phones_overdue_count,
+            "phones_lifecycle_total": phones_lifecycle_total,
+            "phone_donut_active_end": phone_donut_active_end,
+            "phone_donut_due_end": phone_donut_due_end,
+            "phone_donut_grace_end": phone_donut_grace_end,
             "stale_phone_threshold_days": threshold_days,
             "daily_series": daily_series,
             "top_companies": top_companies,

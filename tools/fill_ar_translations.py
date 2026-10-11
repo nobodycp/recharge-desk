@@ -306,6 +306,19 @@ AR: dict[str, str] = {
         "شغّالة لكن ستدخل نافذة الفصل خلال 3 أيام، مقابل أرقام تجاوزت عتبة عدم "
         "النشاط %(d)s يوماً (نفس عدد قائمة أرقام الفصل). eSIM مستثناة."
     ),
+    "Total lines": "إجمالي الأرقام",
+    "Active lines": "فعّال",
+    "Subscription still running": "الاشتراك ما زال سارياً",
+    "Disconnects within 24 hours": "حيفصل خلال ٢٤ ساعة",
+    "Enters the disconnect list soon": "يدخل قائمة الفصل قريباً",
+    "Ended — under inactivity threshold": "مفصول ولم يتجاوز عتبة عدم النشاط",
+    "Subscription ended; still inside the %(d)s-day grace window": (
+        "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
+    ),
+    "Ended — past inactivity threshold": "مفصول وتجاوز عتبة عدم النشاط",
+    "Same count as the disconnect list": "نفس عدد قائمة أرقام الفصل",
+    "Physical SIMs only — eSIM lines are excluded.": "شرائح فعلية فقط — أرقام eSIM مستثناة.",
+    "%(n)s physical lines by disconnect stage": "%(n)s رقماً فعلياً حسب مرحلة الفصل",
     "No sales yet.": "لا توجد مبيعات بعد.",
     "Excludes cancelled sales": "باستثناء المبيعات الملغاة",
     "By company": "حسب الشركة",
@@ -346,6 +359,16 @@ AR: dict[str, str] = {
     "Choose a company to see products.": "اختر شركة لعرض المنتجات.",
     "No active companies.": "لا توجد شركات نشطة.",
     "Lines for disconnect": "أرقام للفصل",
+    "Line status": "حالة الأرقام",
+    "Line statement": "بيان الأرقام",
+    "Open line statement": "افتح بيان الأرقام",
+    "Every number with a sale in the system, with lifecycle status from the %(d)s-day activity threshold. A new charge resets the timer.": (
+        "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
+        "%(d)s يوماً. شحن جديد يعيد المؤقت."
+    ),
+    "No lines match these filters.": "لا توجد أرقام مطابقة لهذه الفلاتر.",
+    "SIM type": "نوع الشريحة",
+    "Physical SIM": "شريحة فعلية",
     "Idle threshold": "عتبة عدم النشاط",
     "Activity threshold": "عتبة النشاط",
     "Days without a new sale entry": "أيام من دون إدخال بيع جديد",

@@ -1,0 +1,13 @@
+{% load i18n %}
+{% if row.status == "active" %}
+  <span class="rd-phone-status rd-phone-status--active">{% trans "Active lines" %}</span>
+{% elif row.status == "due_soon" %}
+  <span class="rd-phone-status rd-phone-status--due">{% trans "Disconnects within 24 hours" %}</span>
+{% elif row.status == "ended_under_threshold" %}
+  <span class="rd-phone-status rd-phone-status--grace">{% trans "Ended — under inactivity threshold" %}</span>
+{% else %}
+  <span class="rd-phone-status rd-phone-status--overdue">{% trans "Ended — past inactivity threshold" %}</span>
+{% endif %}
+{% if row.is_esim %}
+  <span class="rd-phone-status rd-phone-status--esim">{% trans "eSIM" %}</span>
+{% endif %}

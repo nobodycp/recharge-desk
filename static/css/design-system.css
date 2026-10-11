@@ -3358,6 +3358,264 @@ html[dir="rtl"] .rd-toast.is-visible {
   border-radius: inherit;
 }
 
+/* Phone disconnect lifecycle — donut + legend on the dashboard. */
+.rd-phone-lifecycle__layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 1.75rem;
+}
+
+.rd-phone-donut {
+  --donut-active: #198754;
+  --donut-due: #d97706;
+  --donut-grace: #0d6efd;
+  --donut-overdue: #dc3545;
+  --donut-empty: color-mix(in srgb, var(--bs-border-color) 55%, var(--bs-tertiary-bg));
+  --donut-active-end: 0%;
+  --donut-due-end: 0%;
+  --donut-grace-end: 0%;
+  position: relative;
+  width: 9.5rem;
+  height: 9.5rem;
+  flex: 0 0 auto;
+  margin-inline: auto;
+}
+
+.rd-phone-donut__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -90deg,
+    var(--donut-active) 0 var(--donut-active-end),
+    var(--donut-due) var(--donut-active-end) var(--donut-due-end),
+    var(--donut-grace) var(--donut-due-end) var(--donut-grace-end),
+    var(--donut-overdue) var(--donut-grace-end) 100%
+  );
+  -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
+  mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
+  animation: rd-phone-donut-in 520ms ease-out both;
+}
+
+.rd-phone-donut.is-empty .rd-phone-donut__ring {
+  background: var(--donut-empty);
+}
+
+@keyframes rd-phone-donut-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) rotate(-8deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.rd-phone-donut__center {
+  position: absolute;
+  inset: 22%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.1rem;
+  animation: rd-phone-center-in 480ms 80ms ease-out both;
+}
+
+@keyframes rd-phone-center-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rd-phone-donut__total {
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--bs-body-color);
+}
+
+.rd-phone-donut__total-lbl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  letter-spacing: 0.02em;
+}
+
+.rd-phone-lifecycle__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.rd-phone-lifecycle__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.7rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  animation: rd-phone-legend-in 420ms ease-out both;
+}
+
+.rd-phone-lifecycle__item:nth-child(1) { animation-delay: 40ms; }
+.rd-phone-lifecycle__item:nth-child(2) { animation-delay: 100ms; }
+.rd-phone-lifecycle__item:nth-child(3) { animation-delay: 160ms; }
+.rd-phone-lifecycle__item:nth-child(4) { animation-delay: 220ms; }
+
+@keyframes rd-phone-legend-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+[dir="rtl"] .rd-phone-lifecycle__item {
+  animation-name: rd-phone-legend-in-rtl;
+}
+
+@keyframes rd-phone-legend-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.rd-phone-lifecycle__item:hover {
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-body-bg));
+  border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
+}
+
+.rd-phone-lifecycle__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.rd-phone-lifecycle__item--active .rd-phone-lifecycle__swatch {
+  background: #198754;
+  color: #198754;
+}
+.rd-phone-lifecycle__item--due .rd-phone-lifecycle__swatch {
+  background: #d97706;
+  color: #d97706;
+}
+.rd-phone-lifecycle__item--grace .rd-phone-lifecycle__swatch {
+  background: #0d6efd;
+  color: #0d6efd;
+}
+.rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__swatch {
+  background: #dc3545;
+  color: #dc3545;
+}
+
+.rd-phone-lifecycle__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.rd-phone-lifecycle__lbl {
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--bs-body-color);
+}
+
+.rd-phone-lifecycle__hint {
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color);
+}
+
+.rd-phone-lifecycle__val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+  .rd-phone-donut {
+    width: 8.25rem;
+    height: 8.25rem;
+  }
+  .rd-phone-donut__total {
+    font-size: 1.35rem;
+  }
+}
+
+/* Status chips on the phone-lines statement report. */
+.rd-phone-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  vertical-align: middle;
+}
+.rd-phone-status + .rd-phone-status {
+  margin-inline-start: 0.25rem;
+}
+.rd-phone-status--active {
+  background: color-mix(in srgb, #198754 14%, transparent);
+  color: #146c43;
+  border: 1px solid color-mix(in srgb, #198754 28%, transparent);
+}
+.rd-phone-status--due {
+  background: color-mix(in srgb, #d97706 16%, transparent);
+  color: #9a3412;
+  border: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+}
+.rd-phone-status--grace {
+  background: color-mix(in srgb, #0d6efd 12%, transparent);
+  color: #0a58ca;
+  border: 1px solid color-mix(in srgb, #0d6efd 26%, transparent);
+}
+.rd-phone-status--overdue {
+  background: color-mix(in srgb, #dc3545 14%, transparent);
+  color: #b02a37;
+  border: 1px solid color-mix(in srgb, #dc3545 28%, transparent);
+}
+.rd-phone-status--esim {
+  background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);
+  color: var(--bs-secondary-color);
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+}
+
 /* ---------------- Customer invoice / statement layout ---------------
  * A unified letterhead + compact summary strip + inline signature
  * trio shared by customer_statement.html and

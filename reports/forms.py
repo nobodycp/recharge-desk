@@ -75,3 +75,34 @@ class StalePhonesFilterForm(forms.Form):
         self.fields["line_name"].choices = [("", "---------")] + [
             (r["name_key"], r["label"]) for r in rows if r["name_key"]
         ]
+
+
+class PhoneLinesFilterForm(StalePhonesFilterForm):
+    """Same filters as the disconnect list, plus status / SIM type."""
+
+    status = forms.ChoiceField(
+        label=_("Status"),
+        required=False,
+        choices=(
+            ("", "---------"),
+            ("active", _("Active lines")),
+            ("due_soon", _("Disconnects within 24 hours")),
+            ("ended_under_threshold", _("Ended — under inactivity threshold")),
+            ("overdue", _("Ended — past inactivity threshold")),
+        ),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    sim_type = forms.ChoiceField(
+        label=_("SIM type"),
+        required=False,
+        choices=(
+            ("", "---------"),
+            ("physical", _("Physical SIM")),
+            ("esim", _("eSIM")),
+        ),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["q"].widget.attrs["id"] = "phone-lines-filter-q"
