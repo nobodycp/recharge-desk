@@ -159,17 +159,23 @@ def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
 
 
 def reference_disconnect_counts(
-    *, threshold_days: int, due_soon_days: int = 3
+    *, threshold_days: int, due_soon_hours: int = 24
 ) -> dict[str, int]:
     """
-    Counts for the operational dashboard (physical SIMs only, eSIM excluded).
+    Lifecycle counts for the operational dashboard (physical SIMs only, eSIM
+    excluded; dismissed refs stay out). Buckets are mutually exclusive:
 
-    - ``due_soon``: still active, but becomes disconnect-due within ``due_soon_days``.
-    - ``overdue``: already past activity threshold (same population as the
-      “lines for disconnect” report, including dismissed? No — dismissed stay out).
+    - ``active``: subscription period still running
+      (``now < last_sale + duration``).
+    - ``due_soon``: will hit the disconnect list within ``due_soon_hours``
+      (``now < disconnect_at <= now + due_soon_hours``).
+    - ``ended_under_threshold``: subscription ended, still inside the activity
+      grace window, and not within ``due_soon_hours`` of disconnect.
+    - ``overdue``: past activity threshold (same population as the
+      “lines for disconnect” report).
     """
     threshold_days = max(1, int(threshold_days))
-    due_soon_days = max(0, int(due_soon_days))
+    due_soon_hours = max(0, int(due_soon_hours))
     dismissed = set(
         PhoneLineTracking.objects.filter(is_dismissed=True).values_list(
             "reference_key", flat=True
@@ -190,8 +196,10 @@ def reference_disconnect_counts(
     ]
     latest_by_key = _latest_sale_per_ref_key(keys)
     now = timezone.now()
-    soon_end = now + timedelta(days=due_soon_days)
+    soon_end = now + timedelta(hours=due_soon_hours)
+    active = 0
     due_soon = 0
+    ended_under_threshold = 0
     overdue = 0
     for row in grouped:
         key = row["ref_key"] or ""
@@ -202,12 +210,24 @@ def reference_disconnect_counts(
             continue
         last = row["last_activity"] or sale.created_at
         duration = sale_duration_days(sale)
-        disconnect_at = last + timedelta(days=duration + threshold_days)
+        subscription_end = last + timedelta(days=duration)
+        disconnect_at = subscription_end + timedelta(days=threshold_days)
         if disconnect_at <= now:
             overdue += 1
         elif disconnect_at <= soon_end:
             due_soon += 1
-    return {"due_soon": due_soon, "overdue": overdue}
+        elif now < subscription_end:
+            active += 1
+        else:
+            ended_under_threshold += 1
+    total = active + due_soon + ended_under_threshold + overdue
+    return {
+        "active": active,
+        "due_soon": due_soon,
+        "ended_under_threshold": ended_under_threshold,
+        "overdue": overdue,
+        "total": total,
+    }
 
 
 def filter_stale_rows(

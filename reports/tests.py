@@ -102,10 +102,14 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["today_profit"] or 0, 0)
         self.assertEqual(ctx["total_profit"] or 0, 0)
         self.assertEqual(ctx["esim_sales_count"], 0)
+        self.assertEqual(ctx["phones_active_count"], 0)
         self.assertEqual(ctx["phones_due_soon_count"], 0)
+        self.assertEqual(ctx["phones_ended_under_threshold_count"], 0)
         self.assertEqual(ctx["phones_overdue_count"], 0)
+        self.assertEqual(ctx["phones_lifecycle_total"], 0)
         self.assertNotContains(r, "Recent activity")
         self.assertContains(r, "Lines for disconnect")
+        self.assertContains(r, "rd-phone-donut")
 
     def test_dashboard_phone_disconnect_kpis(self):
         from reports.stale_phones import reference_disconnect_counts
@@ -116,14 +120,20 @@ class DashboardSmokeTests(_ReportsBase):
             created_at=timezone.now() - timedelta(days=130),
             duration_days=30,
         )
-        # Due soon (within 3 days): disconnect_at = last + 30 + 90 = last + 120.
-        # Age so disconnect_at is ~1.5 days from now → days_ago ≈ 118.5 → 118.
+        # Due within 24h: disconnect_at = last + 30 + 90 = last + 120.
+        # Age ~119.5 days → disconnect in ~12 hours.
         due_soon = self._make_sale(ref="055DASH0002", paid=True)
         Sale.objects.filter(pk=due_soon.pk).update(
-            created_at=timezone.now() - timedelta(days=118),
+            created_at=timezone.now() - timedelta(days=119, hours=12),
             duration_days=30,
         )
-        # Still far from due.
+        # Subscription ended, still deep in the grace window.
+        grace = self._make_sale(ref="055DASH0005", paid=True)
+        Sale.objects.filter(pk=grace.pk).update(
+            created_at=timezone.now() - timedelta(days=60),
+            duration_days=30,
+        )
+        # Still active (subscription running).
         fresh = self._make_sale(ref="055DASH0003", paid=True)
         Sale.objects.filter(pk=fresh.pk).update(
             created_at=timezone.now() - timedelta(days=10),
@@ -136,14 +146,24 @@ class DashboardSmokeTests(_ReportsBase):
             duration_days=30,
         )
 
-        stats = reference_disconnect_counts(threshold_days=90, due_soon_days=3)
+        stats = reference_disconnect_counts(threshold_days=90, due_soon_hours=24)
         self.assertEqual(stats["overdue"], 1)
         self.assertEqual(stats["due_soon"], 1)
+        self.assertEqual(stats["ended_under_threshold"], 1)
+        self.assertEqual(stats["active"], 1)
+        self.assertEqual(stats["total"], 4)
 
         cache.clear()
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.context["phones_overdue_count"], 1)
         self.assertEqual(r.context["phones_due_soon_count"], 1)
+        self.assertEqual(r.context["phones_ended_under_threshold_count"], 1)
+        self.assertEqual(r.context["phones_active_count"], 1)
+        self.assertEqual(r.context["phones_lifecycle_total"], 4)
+        self.assertContains(r, "Active lines")
+        self.assertContains(r, "Disconnects within 24 hours")
+        self.assertContains(r, "Ended — under inactivity threshold")
+        self.assertContains(r, "Ended — past inactivity threshold")
 
 
 class DashboardKPITests(_ReportsBase):

@@ -306,6 +306,19 @@ AR: dict[str, str] = {
         "شغّالة لكن ستدخل نافذة الفصل خلال 3 أيام، مقابل أرقام تجاوزت عتبة عدم "
         "النشاط %(d)s يوماً (نفس عدد قائمة أرقام الفصل). eSIM مستثناة."
     ),
+    "Total lines": "إجمالي الأرقام",
+    "Active lines": "فعّال",
+    "Subscription still running": "الاشتراك ما زال سارياً",
+    "Disconnects within 24 hours": "حيفصل خلال ٢٤ ساعة",
+    "Enters the disconnect list soon": "يدخل قائمة الفصل قريباً",
+    "Ended — under inactivity threshold": "مفصول ولم يتجاوز عتبة عدم النشاط",
+    "Subscription ended; still inside the %(d)s-day grace window": (
+        "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
+    ),
+    "Ended — past inactivity threshold": "مفصول وتجاوز عتبة عدم النشاط",
+    "Same count as the disconnect list": "نفس عدد قائمة أرقام الفصل",
+    "Physical SIMs only — eSIM lines are excluded.": "شرائح فعلية فقط — أرقام eSIM مستثناة.",
+    "%(n)s physical lines by disconnect stage": "%(n)s رقماً فعلياً حسب مرحلة الفصل",
     "No sales yet.": "لا توجد مبيعات بعد.",
     "Excludes cancelled sales": "باستثناء المبيعات الملغاة",
     "By company": "حسب الشركة",

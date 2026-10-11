@@ -106,29 +106,68 @@
   </div>
 </div>
 
-{# Phone lines — active (due in 3 days) vs already past activity threshold #}
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-3 rd-dashboard-kpi-row rd-dashboard-section rd-dashboard-section--phones">
-  <div class="col d-flex">
-    <div class="rd-card rd-stat flex-fill w-100 h-100">
-      <div class="rd-card-body d-flex flex-column h-100">
-        <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+{# Phone lines — lifecycle donut: active / due 24h / grace / past threshold #}
+<div class="row g-3 mb-3 rd-dashboard-section rd-dashboard-section--phones">
+  <div class="col-12 col-lg-7 col-xl-6 d-flex">
+    <div class="rd-card rd-phone-lifecycle flex-fill w-100">
+      <div class="rd-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span class="d-flex align-items-center gap-2">
+          <svg class="rd-card-header-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+          <span>{% trans "Lines for disconnect" %}</span>
+        </span>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'reports:stale_phones_report' %}">{% trans "Open the disconnect list" %}</a>
+      </div>
+      <div class="rd-card-body">
+        <div class="rd-phone-lifecycle__layout">
+          <div
+            class="rd-phone-donut{% if phones_lifecycle_total == 0 %} is-empty{% endif %}"
+            role="img"
+            aria-label="{% blocktrans with n=phones_lifecycle_total %}{{ n }} physical lines by disconnect stage{% endblocktrans %}"
+            style="--donut-active-end: {{ phone_donut_active_end }}%; --donut-due-end: {{ phone_donut_due_end }}%; --donut-grace-end: {{ phone_donut_grace_end }}%;"
+          >
+            <div class="rd-phone-donut__ring" aria-hidden="true"></div>
+            <div class="rd-phone-donut__center">
+              <span class="rd-phone-donut__total tabular-nums">{{ phones_lifecycle_total|intcomma }}</span>
+              <span class="rd-phone-donut__total-lbl">{% trans "Total lines" %}</span>
+            </div>
+          </div>
+          <ul class="rd-phone-lifecycle__legend mb-0">
+            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--active">
+              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
+              <span class="rd-phone-lifecycle__body">
+                <span class="rd-phone-lifecycle__lbl">{% trans "Active lines" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Subscription still running" %}</span>
+              </span>
+              <span class="rd-phone-lifecycle__val tabular-nums kpi-success">{{ phones_active_count|intcomma }}</span>
+            </li>
+            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--due">
+              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
+              <span class="rd-phone-lifecycle__body">
+                <span class="rd-phone-lifecycle__lbl">{% trans "Disconnects within 24 hours" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Enters the disconnect list soon" %}</span>
+              </span>
+              <span class="rd-phone-lifecycle__val tabular-nums kpi-warning">{{ phones_due_soon_count|intcomma }}</span>
+            </li>
+            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--grace">
+              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
+              <span class="rd-phone-lifecycle__body">
+                <span class="rd-phone-lifecycle__lbl">{% trans "Ended — under inactivity threshold" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% blocktrans with d=stale_phone_threshold_days %}Subscription ended; still inside the {{ d }}-day grace window{% endblocktrans %}</span>
+              </span>
+              <span class="rd-phone-lifecycle__val tabular-nums kpi-info">{{ phones_ended_under_threshold_count|intcomma }}</span>
+            </li>
+            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--overdue">
+              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
+              <span class="rd-phone-lifecycle__body">
+                <span class="rd-phone-lifecycle__lbl">{% trans "Ended — past inactivity threshold" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Same count as the disconnect list" %}</span>
+              </span>
+              <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:stale_phones_report' %}">{{ phones_overdue_count|intcomma }}</a>
+            </li>
+          </ul>
         </div>
-        <div class="rd-label mb-1">{% trans "Lines for disconnect" %}</div>
-        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
-        <div class="rd-stat-pair">
-          <a class="rd-stat-pair__item" href="{% url 'reports:stale_phones_report' %}">
-            <span class="rd-stat-pair__lbl">{% trans "Active — due in 3 days" %}</span>
-            <span class="rd-stat-pair__val kpi-warning">{{ phones_due_soon_count|intcomma }}</span>
-          </a>
-          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
-          <a class="rd-stat-pair__item" href="{% url 'reports:stale_phones_report' %}">
-            <span class="rd-stat-pair__lbl">{% trans "Already stopped" %}</span>
-            <span class="rd-stat-pair__val kpi-danger">{{ phones_overdue_count|intcomma }}</span>
-          </a>
-        </div>
-        <p class="rd-stat-footnote mb-0 mt-2">
-          {% blocktrans with d=stale_phone_threshold_days %}Still active but hit the disconnect window in 3 days, vs lines past the {{ d }}-day activity threshold (same count as the disconnect list). eSIM excluded.{% endblocktrans %}
+        <p class="rd-stat-footnote mb-0 mt-3">
+          {% trans "Physical SIMs only — eSIM lines are excluded." %}
         </p>
       </div>
     </div>
