@@ -6,19 +6,6 @@ from django.utils.translation import gettext_lazy as _
 from companies.models import Company, ProductLine
 
 
-class StalePhoneThresholdDaysForm(forms.Form):
-    stale_phone_threshold_days = forms.IntegerField(
-        label=_("Activity threshold after subscription ends (days)"),
-        min_value=1,
-        max_value=3650,
-        help_text=_(
-            "A number appears when: last sale date + charged days + this threshold "
-            "have all passed (e.g. 60-day charge + 90-day threshold → after 150 days)."
-        ),
-        widget=forms.NumberInput(attrs={"class": "form-control", "min": "1"}),
-    )
-
-
 class StalePhoneLineEditForm(forms.Form):
     sim_identifier = forms.CharField(
         label=_("ICCID / SIM"),
@@ -35,15 +22,15 @@ class StalePhoneLineEditForm(forms.Form):
     )
 
 
-class StalePhonesFilterForm(forms.Form):
-    """GET filters: search, company, and unified line name (across companies)."""
+class PhoneLinesFilterForm(forms.Form):
+    """GET filters for بيان الأرقام, including the activity threshold setting."""
 
     q = forms.CharField(
         label=_("Search"),
         required=False,
         widget=forms.TextInput(
             attrs={
-                "id": "stale-filter-q",
+                "id": "phone-lines-filter-q",
                 "class": "form-control form-control-sm",
                 "placeholder": _("Reference, payer, line, ICCID…"),
                 "autocomplete": "off",
@@ -63,23 +50,6 @@ class StalePhonesFilterForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
         help_text=_("Same line name across companies (e.g. all Silicom)."),
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        rows = (
-            ProductLine.objects.annotate(name_key=Lower("name"))
-            .values("name_key")
-            .annotate(label=Min("name"))
-            .order_by("label")
-        )
-        self.fields["line_name"].choices = [("", "---------")] + [
-            (r["name_key"], r["label"]) for r in rows if r["name_key"]
-        ]
-
-
-class PhoneLinesFilterForm(StalePhonesFilterForm):
-    """Same filters as the disconnect list, plus status / SIM type."""
-
     status = forms.ChoiceField(
         label=_("Status"),
         required=False,
@@ -102,7 +72,29 @@ class PhoneLinesFilterForm(StalePhonesFilterForm):
         ),
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
+    threshold_days = forms.IntegerField(
+        label=_("Activity threshold (days)"),
+        min_value=1,
+        max_value=3650,
+        required=False,
+        help_text=_(
+            "Idle days after subscription end. Example: 60-day charge + 85-day "
+            "threshold → past threshold after 145 days. Saved on your profile."
+        ),
+        widget=forms.NumberInput(
+            attrs={"class": "form-control form-control-sm", "min": "1"}
+        ),
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, default_threshold: int = 85, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["q"].widget.attrs["id"] = "phone-lines-filter-q"
+        rows = (
+            ProductLine.objects.annotate(name_key=Lower("name"))
+            .values("name_key")
+            .annotate(label=Min("name"))
+            .order_by("label")
+        )
+        self.fields["line_name"].choices = [("", "---------")] + [
+            (r["name_key"], r["label"]) for r in rows if r["name_key"]
+        ]
+        self.fields["threshold_days"].initial = max(1, int(default_threshold or 85))

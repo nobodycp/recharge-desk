@@ -10,14 +10,18 @@ from sales.models import Sale
 
 
 @receiver(post_save, sender=Sale)
-def clear_stale_report_dismiss_on_new_sale(sender, instance: Sale, **kwargs) -> None:
-    """New non-cancelled activity on a reference re-enables it for the idle-lines report."""
-    if instance.status == Sale.Status.CANCELLED:
+def clear_manual_renew_on_new_sale(
+    sender, instance: Sale, created: bool, **kwargs
+) -> None:
+    """A newly created real sale clears any virtual 1-day renew on that reference."""
+    if not created or instance.status == Sale.Status.CANCELLED:
         return
     key = normalize_reference_key(instance.reference_number)
     if not key:
         return
-    PhoneLineTracking.objects.filter(reference_key=key, is_dismissed=True).update(
-        is_dismissed=False,
+    PhoneLineTracking.objects.filter(
+        reference_key=key, manual_reset_at__isnull=False
+    ).update(
+        manual_reset_at=None,
         updated_at=timezone.now(),
     )

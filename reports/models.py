@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class PhoneLineTracking(models.Model):
-    """Per-line metadata for the stale-number report (SIM label, dismiss-from-list)."""
+    """Per-line metadata for the phone statement (SIM label, virtual 1-day renew)."""
 
     reference_key = models.CharField(
         _("normalized reference"),
@@ -20,6 +20,17 @@ class PhoneLineTracking(models.Model):
         help_text=_("Most recent raw reference as entered on a sale."),
     )
     is_dismissed = models.BooleanField(_("hidden from stale list"), default=False)
+    # Virtual “1-day charge” without creating a Sale. When newer than the last
+    # real sale, lifecycle math uses this timestamp + 1 day duration.
+    manual_reset_at = models.DateTimeField(
+        _("virtual 1-day renew at"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Set when an overdue line is renewed as a 1-day charge so it leaves "
+            "the inactivity threshold for another period."
+        ),
+    )
     updated_at = models.DateTimeField(_("updated at"), auto_now=True)
 
     class Meta:

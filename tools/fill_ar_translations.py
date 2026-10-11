@@ -366,9 +366,27 @@ AR: dict[str, str] = {
         "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
         "%(d)s يوماً. شحن جديد يعيد المؤقت."
     ),
+    "Every number with a sale in the system, with lifecycle status from the %(d)s-day activity threshold. A new charge or a 1-day renew resets the timer.": (
+        "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
+        "%(d)s يوماً. شحن جديد أو تجديد ليوم يعيد المؤقت."
+    ),
     "No lines match these filters.": "لا توجد أرقام مطابقة لهذه الفلاتر.",
     "SIM type": "نوع الشريحة",
     "Physical SIM": "شريحة فعلية",
+    "Activity threshold (days)": "عتبة عدم النشاط (أيام)",
+    "Idle days after subscription end. Example: 60-day charge + 85-day threshold → past threshold after 145 days. Saved on your profile.": (
+        "أيام الخمول بعد انتهاء الاشتراك. مثال: شحن 60 يوماً + عتبة 85 → "
+        "تجاوز العتبة بعد 145 يوماً. تُحفظ في ملفك."
+    ),
+    "Renew 1 day": "تجديد ليوم",
+    "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period.": (
+        "تجديد هذا الرقم المتجاوز كشحن يوم واحد (بدون إنشاء بيع)؟ "
+        "سيخرج من عتبة عدم النشاط لمدة جديدة."
+    ),
+    "Renewed as a 1-day charge — the line left the inactivity threshold.": (
+        "تم التجديد كشحن يوم — خرج الرقم من عتبة عدم النشاط."
+    ),
+    "Open overdue lines in the statement": "افتح الأرقام المتجاوزة في البيان",
     "Idle threshold": "عتبة عدم النشاط",
     "Activity threshold": "عتبة النشاط",
     "Days without a new sale entry": "أيام من دون إدخال بيع جديد",

@@ -91,7 +91,7 @@ def page_url(context, page_num, page_key="page"):
 
 # Query-string keys that never count as "the user filtered something":
 # pagination + sort cursors that the page itself manages.
-_FILTER_NOISE_KEYS = {"page", "sort", "order", "per_page"}
+_FILTER_NOISE_KEYS = {"page", "sort", "order", "per_page", "threshold_days"}
 
 
 @register.simple_tag(takes_context=True)

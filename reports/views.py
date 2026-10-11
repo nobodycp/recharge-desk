@@ -121,7 +121,7 @@ def dashboard(request):
     try:
         threshold_days = int(request.user.profile.stale_phone_threshold_days)
     except (UserProfile.DoesNotExist, AttributeError, TypeError, ValueError):
-        threshold_days = 90
+        threshold_days = 85
     phone_stats = cached_kpi(
         f"dashboard:phone_lifecycle_v2:{threshold_days}:{today_key}",
         lambda: reference_disconnect_counts(

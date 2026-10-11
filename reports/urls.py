@@ -13,24 +13,19 @@ urlpatterns = [
     path("management/reports/company/<int:pk>/", views.company_report, name="company_report"),
     path(
         # ``str`` (not ``slug``): reference can be Arabic digits/text or shipment ids.
-        "management/reports/stale-phones/edit/<str:ref_key>/",
+        "management/reports/phone-lines/edit/<str:ref_key>/",
         views_stale_phones.stale_phone_edit,
         name="stale_phone_edit",
     ),
     path(
-        "management/reports/stale-phones/sim/<str:ref_key>/",
+        "management/reports/phone-lines/sim/<str:ref_key>/",
         views_stale_phones.stale_phone_sim_save,
         name="stale_phone_sim_save",
     ),
     path(
-        "management/reports/stale-phones/dismiss/<str:ref_key>/",
-        views_stale_phones.stale_phone_dismiss,
-        name="stale_phone_dismiss",
-    ),
-    path(
-        "management/reports/stale-phones/",
-        views_stale_phones.stale_phones_report,
-        name="stale_phones_report",
+        "management/reports/phone-lines/renew/<str:ref_key>/",
+        views_stale_phones.phone_line_renew,
+        name="phone_line_renew",
     ),
     path(
         "management/reports/phone-lines/",

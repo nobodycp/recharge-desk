@@ -160,9 +160,9 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Ended — past inactivity threshold" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Same count as the disconnect list" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Open overdue lines in the statement" %}</span>
               </span>
-              <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:stale_phones_report' %}">{{ phones_overdue_count|intcomma }}</a>
+              <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
             </li>
           </ul>
         </div>
