@@ -720,6 +720,12 @@ AR: dict[str, str] = {
     "Only salary accrual rows can create expenses.": "المصروفات تُنشأ من صفوف استحقاق الراتب فقط.",
     "First day of the month for salary accrual rows.": "أول يوم في الشهر لصفوف استحقاق الراتب.",
     "Optional. Used for SIM inventory valuation reports.": "اختياري. لحساب قيمة مخزون الشرائح في التقارير.",
+    "Optional. Added to cost and deducted from profit on New SIM sales; also used for SIM inventory valuation.": (
+        "اختياري. تُضاف إلى التكلفة وتُخصم من الربح عند بيع شريحة جديدة؛ وتُستخدم أيضاً لحساب قيمة مخزون الشرائح."
+    ),
+    "New SIM: estimated chip cost is included in the estimate above.": (
+        "شريحة جديدة: تكلفة الشريحة التقديرية مضمَّنة في التقدير أعلاه."
+    ),
     "Positive credits the employee; negative debits them.": "موجب يُضاف للموظف؛ سالب يُخصم منه.",
     "Employee payment sales require an employee recipient.": "مبيعات الدفع لدى موظف تتطلب موظفاً مستلماً.",
     "A sale cannot be both on-account and paid via employee.": "لا يمكن أن تكون المبيعة آجل ودفع لدى موظف معاً.",

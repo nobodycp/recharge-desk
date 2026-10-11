@@ -202,6 +202,7 @@
                   <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_new_sim }}</div>
                   <label class="form-check-label mb-0 rd-esim-switch__label" for="id_is_new_sim">
                     {% trans "New SIM" %}
+                    <span class="text-secondary rd-esim-switch__extra" id="rd-new-sim-extra-label" hidden></span>
                   </label>
                 </div>
               </div>
@@ -227,6 +228,7 @@
               <span id="rd-preview-profit" class="tabular-nums fw-semibold">—</span>
             </div>
             <p class="mb-0 mt-2 small text-info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
+            <p class="mb-0 mt-2 small text-info" id="rd-preview-new-sim-note" hidden>{% trans "New SIM: estimated chip cost is included in the estimate above." %}</p>
             <p class="mb-0 mt-2 small text-danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
           </div>
           <details class="employee-notes-details small" {% if form.notes.errors %}open{% endif %}>
@@ -878,14 +880,23 @@
     return isFinite(v) ? v : 5;
   }
 
+  function getSimUnitCost(chip) {
+    if (!chip) return 0;
+    var v = parseFloat(String(chip.getAttribute("data-sim-unit-cost") || "0").replace(",", "."), 10);
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+
   function updateSalePreview() {
     var preview = document.getElementById("rd-sale-preview");
     var pcEl = document.getElementById("rd-preview-cost");
     var ppEl = document.getElementById("rd-preview-profit");
     var note = document.getElementById("rd-preview-esim-note");
+    var newSimNote = document.getElementById("rd-preview-new-sim-note");
     var lossNote = document.getElementById("rd-preview-loss-note");
+    var newSimExtraLabel = document.getElementById("rd-new-sim-extra-label");
     var sellInp = document.getElementById("id_sell_price_actual");
     var esim = document.getElementById("id_is_esim");
+    var newSim = document.getElementById("id_is_new_sim");
     if (!preview || !pcEl || !ppEl || !sellInp) return;
     var chip = document.querySelector(".employee-package-chip.is-active");
     if (!chip || sellInp.value === "" || sellInp.value == null) {
@@ -898,7 +909,18 @@
       return;
     }
     var useEsim = esim && esim.checked;
-    var cost = base + (useEsim ? getEsimExtra() : 0);
+    var useNewSim = newSim && newSim.checked;
+    var simExtra = getSimUnitCost(chip);
+    if (newSimExtraLabel) {
+      if (simExtra > 0) {
+        newSimExtraLabel.hidden = false;
+        newSimExtraLabel.textContent = "(+" + simExtra.toFixed(2) + ")";
+      } else {
+        newSimExtraLabel.hidden = true;
+        newSimExtraLabel.textContent = "";
+      }
+    }
+    var cost = base + (useEsim ? getEsimExtra() : 0) + (useNewSim ? simExtra : 0);
     var sell = parseFloat(String(sellInp.value).replace(",", "."), 10);
     if (!isFinite(sell)) {
       preview.hidden = true;
@@ -915,6 +937,7 @@
       ppEl.classList.add("kpi-success");
     }
     if (note) note.hidden = !useEsim;
+    if (newSimNote) newSimNote.hidden = !(useNewSim && simExtra > 0);
     if (lossNote) lossNote.hidden = sell !== 0;
     updateSimStockPreview();
   }
@@ -1258,7 +1281,10 @@
     }
     var newSimCb = document.getElementById("id_is_new_sim");
     if (newSimCb) {
-      newSimCb.addEventListener("change", updateSimStockPreview);
+      newSimCb.addEventListener("change", function () {
+        updateSalePreview();
+        updateSimStockPreview();
+      });
     }
     var payerEl = document.getElementById("id_payer_name");
     if (payerEl) {

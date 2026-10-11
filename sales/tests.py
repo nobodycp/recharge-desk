@@ -178,6 +178,21 @@ class EsimSaleTests(TestCase):
             effective_cost_for_product(self.product, is_esim=True),
             Decimal("30") + ESIM_EXTRA_COST,
         )
+        self.assertEqual(
+            effective_cost_for_product(self.product, is_esim=False, is_new_sim=True),
+            Decimal("30"),
+        )
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        self.product.line.refresh_from_db()
+        self.assertEqual(
+            effective_cost_for_product(self.product, is_esim=False, is_new_sim=True),
+            Decimal("42"),
+        )
+        self.assertEqual(
+            effective_cost_for_product(self.product, is_esim=True, is_new_sim=True),
+            Decimal("30") + ESIM_EXTRA_COST + Decimal("12"),
+        )
 
     def test_loss_snapshot_for_zero_price(self):
         self.assertEqual(
@@ -230,6 +245,43 @@ class EsimSaleTests(TestCase):
         self.assertEqual(sale.cost_price_snapshot, Decimal("30"))
         self.assertEqual(sale.profit_snapshot, Decimal("20"))
         self.assertEqual(sale.loss_snapshot, Decimal("0"))
+
+    def test_create_sale_new_sim_includes_estimated_unit_cost(self):
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000002",
+            payer_name="Test",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_esim=False,
+            is_new_sim=True,
+        )
+        self.assertTrue(sale.is_new_sim)
+        self.assertEqual(sale.cost_price_snapshot, Decimal("42"))
+        self.assertEqual(sale.profit_snapshot, Decimal("8"))
+        self.assertEqual(sale.loss_snapshot, Decimal("0"))
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("42"))
+
+    def test_create_sale_new_sim_without_estimated_cost_unchanged(self):
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000003",
+            payer_name="Test",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_new_sim=True,
+        )
+        self.assertEqual(sale.cost_price_snapshot, Decimal("30"))
+        self.assertEqual(sale.profit_snapshot, Decimal("20"))
 
     def test_create_sale_zero_sell_price_allowed(self):
         sale = create_sale(

@@ -519,8 +519,12 @@ msgstr "ترتيب العرض"
 msgid "estimated unit cost (SIM)"
 msgstr "تكلفة الوحدة التقديرية (شريحة)"
 #: companies/models.py:104
-msgid "Optional. Used for SIM inventory valuation reports."
-msgstr "اختياري. لحساب قيمة مخزون الشرائح في التقارير."
+msgid ""
+"Optional. Added to cost and deducted from profit on New SIM sales; also used "
+"for SIM inventory valuation."
+msgstr ""
+"اختياري. تُضاف إلى التكلفة وتُخصم من الربح عند بيع شريحة جديدة؛ وتُستخدم أيضاً "
+"لحساب قيمة مخزون الشرائح."
 #: companies/models.py:113
 msgid "default package for sales"
 msgstr "الباقة الافتراضية للمبيعات"
@@ -5284,6 +5288,9 @@ msgstr "تكلفة المورّد"
 #: templates/sales/employee_entry.html:229
 msgid "eSIM: extra supplier cost is included in the estimate above."
 msgstr "eSIM: تكلفة المورّد الإضافية مضمَّنة في التقدير أعلاه."
+
+msgid "New SIM: estimated chip cost is included in the estimate above."
+msgstr "شريحة جديدة: تكلفة الشريحة التقديرية مضمَّنة في التقدير أعلاه."
 
 #: templates/sales/employee_entry.html:230
 msgid ""
