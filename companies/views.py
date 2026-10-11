@@ -1,3 +1,5 @@
+from itertools import groupby
+
 from django.apps import apps
 from django.contrib import messages
 from django.db import models, transaction
@@ -269,11 +271,22 @@ def product_list(request):
         ).filter(Q(active_packages__gt=0) | Q(total_packages=0))
 
     companies = Company.objects.order_by("name")
+    lines_list = list(lines)
+    company_groups = []
+    for _company_id, group_iter in groupby(lines_list, key=lambda line: line.company_id):
+        group_lines = list(group_iter)
+        company_groups.append(
+            {
+                "company": group_lines[0].company,
+                "lines": group_lines,
+            }
+        )
     return render(
         request,
         "companies/product_list.html",
         {
-            "lines": lines,
+            "lines": lines_list,
+            "company_groups": company_groups,
             "companies": companies,
             "q": q,
             "company_id": company_id,

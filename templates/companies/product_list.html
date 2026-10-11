@@ -34,7 +34,7 @@
       >
     </div>
     <div class="col-12 col-md-3 col-lg-3">
-      <div class="form-check mt-4">
+      <div class="form-check mt-md-4">
         <input
           class="form-check-input"
           type="checkbox"
@@ -62,117 +62,122 @@
   </div>
 
   <div class="rd-product-lines">
-    {% for line in lines %}
-      {% with packages=line.variants.all %}
-      <div class="rd-product-line">
-        <div class="rd-product-line__bar">
-          <details class="rd-product-line__details"{% if expand_packages %} open{% endif %}>
-            <summary class="rd-product-line__summary">
-              <span class="rd-product-line__chevron" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </span>
-              <span class="rd-product-line__meta">
-                <span class="rd-product-line__company">{{ line.company.name }}</span>
-                <span class="rd-product-line__name">{{ line.name }}</span>
-              </span>
-              <span class="rd-badge rd-badge--neutral rd-product-line__count">
-                {% blocktrans count counter=packages|length %}{{ counter }} package{% plural %}{{ counter }} packages{% endblocktrans %}
-              </span>
-            </summary>
+    {% for group in company_groups %}
+      <details class="rd-product-company" open>
+        <summary class="rd-product-company__summary">
+          <span class="rd-product-company__chevron" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
+          <span class="rd-product-company__name">{{ group.company.name }}</span>
+          <span class="rd-badge rd-badge--neutral">
+            {% blocktrans count counter=group.lines|length %}{{ counter }} line{% plural %}{{ counter }} lines{% endblocktrans %}
+          </span>
+        </summary>
 
-            <div class="rd-product-line__packages">
-              {% if packages %}
-                <div class="d-none d-md-block">
-                  <div class="table-responsive border-0">
-                    <table class="table mb-0 align-middle rd-table-modern rd-product-line__table">
-                      <thead>
-                        <tr>
-                          <th>{% trans "Package" %}</th>
-                          <th class="text-end">{% trans "Cost" %}</th>
-                          <th class="text-end">{% trans "Default sell" %}</th>
-                          <th>{% trans "Active" %}</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
+        <div class="rd-product-company__body">
+          {% for line in group.lines %}
+            {% with packages=line.variants.all %}
+            <div class="rd-product-line">
+              <div class="rd-product-line__bar">
+                <details class="rd-product-line__details"{% if expand_packages %} open{% endif %}>
+                  <summary class="rd-product-line__summary">
+                    <span class="rd-product-line__chevron" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                    <span class="rd-product-line__name">{{ line.name }}</span>
+                    <span class="rd-badge rd-badge--neutral rd-product-line__count">
+                      {% blocktrans count counter=packages|length %}{{ counter }} package{% plural %}{{ counter }} packages{% endblocktrans %}
+                    </span>
+                  </summary>
+
+                  <div class="rd-product-line__packages">
+                    {% if packages %}
+                      <div class="d-none d-md-block">
+                        <div class="table-responsive border-0">
+                          <table class="table mb-0 align-middle rd-table-modern rd-product-line__table">
+                            <thead>
+                              <tr>
+                                <th>{% trans "Package" %}</th>
+                                <th class="text-end">{% trans "Cost" %}</th>
+                                <th class="text-end">{% trans "Default sell" %}</th>
+                                <th>{% trans "Active" %}</th>
+                                <th></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {% for v in packages %}
+                                <tr>
+                                  <td>
+                                    {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
+                                    {% if line.default_package_id == v.pk %}
+                                      <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
+                                    {% endif %}
+                                  </td>
+                                  <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
+                                  <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
+                                  <td>
+                                    {% if v.is_active %}
+                                      <span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>
+                                    {% else %}
+                                      <span class="rd-badge rd-badge--neutral">{% trans "Archived" %}</span>
+                                    {% endif %}
+                                  </td>
+                                  <td class="text-end text-nowrap">
+                                    {% include "companies/partials/product_package_actions.html" with v=v %}
+                                  </td>
+                                </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div class="d-md-none rd-mobile-stack rd-product-line__mobile-packages">
                         {% for v in packages %}
-                          <tr>
-                            <td>
-                              {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
-                              {% if line.default_package_id == v.pk %}
-                                <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
-                              {% endif %}
-                            </td>
-                            <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
-                            <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
-                            <td>
-                              {% if v.is_active %}
-                                <span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>
-                              {% else %}
-                                <span class="rd-badge rd-badge--neutral">{% trans "Archived" %}</span>
-                              {% endif %}
-                            </td>
-                            <td class="text-end text-nowrap">
+                          <div class="rd-product-pkg-row">
+                            <div class="rd-product-pkg-row__main">
+                              <div class="fw-semibold">
+                                {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
+                                {% if line.default_package_id == v.pk %}
+                                  <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
+                                {% endif %}
+                              </div>
+                              <div class="rd-product-pkg-row__prices tabular-nums">
+                                <span>{{ v.cost_price|intcomma }}</span>
+                                <span class="kpi-info">{{ v.default_sell_price|intcomma }}</span>
+                              </div>
+                            </div>
+                            <div class="rd-product-pkg-row__actions">
+                              {% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Archived" %}</span>{% endif %}
                               {% include "companies/partials/product_package_actions.html" with v=v %}
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         {% endfor %}
-                      </tbody>
-                    </table>
+                      </div>
+                    {% else %}
+                      <div class="text-secondary small px-3 py-2">{% trans "No packages yet." %}</div>
+                    {% endif %}
                   </div>
-                </div>
+                </details>
 
-                <div class="d-md-none rd-mobile-stack p-2">
-                  {% for v in packages %}
-                    <div class="rd-mobile-row-card">
-                      <div class="d-flex justify-content-between align-items-start gap-2">
-                        <div>
-                          <span class="fw-semibold">
-                            {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
-                          </span>
-                          {% if line.default_package_id == v.pk %}
-                            <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
-                          {% endif %}
-                        </div>
-                        {% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Archived" %}</span>{% endif %}
-                      </div>
-                      <div class="row g-2 small mt-2">
-                        <div class="col-6">
-                          <div class="rd-mobile-k">{% trans "Cost" %}</div>
-                          <div class="rd-mobile-v tabular-nums">{{ v.cost_price|intcomma }}</div>
-                        </div>
-                        <div class="col-6 text-end">
-                          <div class="rd-mobile-k">{% trans "Default sell" %}</div>
-                          <div class="rd-mobile-v tabular-nums kpi-info">{{ v.default_sell_price|intcomma }}</div>
-                        </div>
-                      </div>
-                      <div class="d-flex flex-wrap gap-1 mt-2">
-                        {% include "companies/partials/product_package_actions.html" with v=v %}
-                      </div>
-                    </div>
-                  {% endfor %}
+                <div class="rd-product-line__actions">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
+                  {% if line.is_deletable %}
+                    <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
+                    </form>
+                  {% else %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
+                  {% endif %}
                 </div>
-              {% else %}
-                <div class="text-secondary small px-3 py-3">{% trans "No packages yet." %}</div>
-              {% endif %}
+              </div>
             </div>
-          </details>
-
-          <div class="rd-product-line__actions">
-            <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
-            {% if line.is_deletable %}
-              <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
-              </form>
-            {% else %}
-              <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
-            {% endif %}
-          </div>
+            {% endwith %}
+          {% endfor %}
         </div>
-      </div>
-      {% endwith %}
+      </details>
     {% empty %}
       <div class="text-center text-secondary py-5">{% trans "No product lines." %}</div>
     {% endfor %}
