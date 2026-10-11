@@ -101,7 +101,10 @@ class ProductLine(models.Model):
         null=True,
         blank=True,
         validators=[MinValueValidator(Decimal("0"))],
-        help_text=_("Optional. Used for SIM inventory valuation reports."),
+        help_text=_(
+            "Optional. Added to cost and deducted from profit on New SIM sales; "
+            "also used for SIM inventory valuation."
+        ),
     )
     is_active = models.BooleanField(_("active"), default=True)
     default_package = models.ForeignKey(

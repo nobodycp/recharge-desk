@@ -68,7 +68,11 @@ def create_sale(
     else:
         if payment_method is None:
             raise ValueError(_("Payment method is required for non on-account sales."))
-    cost = effective_cost_for_product(product, is_esim=bool(is_esim))
+    cost = effective_cost_for_product(
+        product,
+        is_esim=bool(is_esim),
+        is_new_sim=bool(is_new_sim),
+    )
     profit = sell_price_actual - cost
     loss_snap = loss_snapshot_for_sale(
         sell_price_actual=sell_price_actual,
