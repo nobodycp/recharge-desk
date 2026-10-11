@@ -298,6 +298,14 @@ AR: dict[str, str] = {
     "Supplier balances": "أرصدة المورّدين",
     "No companies yet.": "لا توجد شركات بعد.",
     "Recent activity": "النشاط الأخير",
+    "Active — due in 3 days": "شغّالة — تفصل خلال 3 أيام",
+    "Already stopped": "واقفة أصلاً",
+    "Past activity threshold": "تجاوزت عتبة عدم النشاط",
+    "Open the disconnect list": "افتح قائمة أرقام الفصل",
+    "Still active but hit the disconnect window in 3 days, vs lines past the %(d)s-day activity threshold (same count as the disconnect list). eSIM excluded.": (
+        "شغّالة لكن ستدخل نافذة الفصل خلال 3 أيام، مقابل أرقام تجاوزت عتبة عدم "
+        "النشاط %(d)s يوماً (نفس عدد قائمة أرقام الفصل). eSIM مستثناة."
+    ),
     "No sales yet.": "لا توجد مبيعات بعد.",
     "Excludes cancelled sales": "باستثناء المبيعات الملغاة",
     "By company": "حسب الشركة",

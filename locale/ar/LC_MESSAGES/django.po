@@ -5040,6 +5040,26 @@ msgstr "لا توجد مبيعات مدفوعة هذا الشهر بعد."
 #: templates/reports/dashboard.html:284
 msgid "Recent activity"
 msgstr "النشاط الأخير"
+
+msgid "Active — due in 3 days"
+msgstr "شغّالة — تفصل خلال 3 أيام"
+
+msgid "Already stopped"
+msgstr "واقفة أصلاً"
+
+msgid "Past activity threshold"
+msgstr "تجاوزت عتبة عدم النشاط"
+
+msgid "Open the disconnect list"
+msgstr "افتح قائمة أرقام الفصل"
+
+msgid ""
+"Still active but hit the disconnect window in 3 days, vs lines past the "
+"%(d)s-day activity threshold (same count as the disconnect list). eSIM "
+"excluded."
+msgstr ""
+"شغّالة لكن ستدخل نافذة الفصل خلال 3 أيام، مقابل أرقام تجاوزت عتبة عدم "
+"النشاط %(d)s يوماً (نفس عدد قائمة أرقام الفصل). eSIM مستثناة."
 #: templates/reports/dashboard.html:285
 msgid "View all sales"
 msgstr "عرض كل المبيعات"
