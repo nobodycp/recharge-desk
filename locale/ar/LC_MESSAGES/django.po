@@ -5209,13 +5209,67 @@ msgid ""
 "Numbers whose last sale entry (excluding cancelled) is older than %(d)s days."
 msgstr "الأرقام التي آخر إدخال بيع لها (باستثناء الملغاة) أقدم من %(d)s يوماً."
 
-#: templates/reports/stale_phones_report.html:18
+msgid ""
+"Numbers whose subscription ended and then stayed idle for %(d)s days "
+"(charged days + threshold)."
+msgstr ""
+"أرقام انتهى اشتراكها ثم بقيت بلا نشاط لمدة %(d)s يوماً (أيام الشحن + العتبة)."
+
 msgid "Idle threshold"
 msgstr "عتبة عدم النشاط"
-#: templates/reports/stale_phones_report.html:31
+
+msgid "Activity threshold"
+msgstr "عتبة النشاط"
+
+msgid "Activity threshold after subscription ends (days)"
+msgstr "عتبة النشاط بعد انتهاء الاشتراك (أيام)"
+
+msgid ""
+"A number appears when: last sale date + charged days + this threshold "
+"have all passed (e.g. 60-day charge + 90-day threshold → after 150 days)."
+msgstr ""
+"يظهر الرقم عندما يمر: تاريخ آخر بيع + أيام الشحن + هذه العتبة "
+"(مثلاً شحن 60 يوماً + عتبة 90 → بعد 150 يوماً)."
+
+msgid "Days charged"
+msgstr "أيام الشحن"
+
+msgid "Subscription end"
+msgstr "نهاية الاشتراك"
+
+msgid "Days past end"
+msgstr "أيام بعد الانتهاء"
+
+msgid "ICCID / SIM"
+msgstr "ICCID / الشريحة"
+
+msgid "ICCID or SIM serial"
+msgstr "ICCID أو رقم الشريحة"
+
+msgid "Last sale"
+msgstr "آخر بيع"
+
+msgid "Same line name across companies (e.g. all Silicom)."
+msgstr "نفس اسم الخط عبر الشركات (مثلاً كل سليكوم)."
+
+msgid "Reference, payer, line, ICCID…"
+msgstr "المرجع، الدافع، الخط، ICCID…"
+
+msgid "Edit ICCID / SIM"
+msgstr "تعديل ICCID / الشريحة"
+
+msgid "ICCID saved."
+msgstr "تم حفظ ICCID."
+
+msgid "Could not save ICCID."
+msgstr "تعذّر حفظ ICCID."
+
+msgid "Saved."
+msgstr "تم الحفظ."
+
 msgid "Save threshold"
 msgstr "حفظ العتبة"
-#: templates/reports/stale_phones_report.html:35
+
 msgid "Saved on your user profile until you change it again."
 msgstr "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى."
 #: templates/sales/awaiting_approvals.html:7

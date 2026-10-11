@@ -339,14 +339,34 @@ AR: dict[str, str] = {
     "No active companies.": "لا توجد شركات نشطة.",
     "Lines for disconnect": "أرقام للفصل",
     "Idle threshold": "عتبة عدم النشاط",
+    "Activity threshold": "عتبة النشاط",
     "Days without a new sale entry": "أيام من دون إدخال بيع جديد",
+    "Activity threshold after subscription ends (days)": "عتبة النشاط بعد انتهاء الاشتراك (أيام)",
+    "A number appears when: last sale date + charged days + this threshold have all passed (e.g. 60-day charge + 90-day threshold → after 150 days).": (
+        "يظهر الرقم عندما يمر: تاريخ آخر بيع + أيام الشحن + هذه العتبة (مثلاً شحن 60 يوماً + عتبة 90 → بعد 150 يوماً)."
+    ),
+    "Numbers whose subscription ended and then stayed idle for %(d)s days (charged days + threshold).": (
+        "أرقام انتهى اشتراكها ثم بقيت بلا نشاط لمدة %(d)s يوماً (أيام الشحن + العتبة)."
+    ),
     "Save threshold": "حفظ العتبة",
     "Saved on your user profile until you change it again.": "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى.",
     "Number / reference": "الرقم / المرجع",
     "SIM / chip": "الشريحة / رقم الشريحة",
+    "ICCID / SIM": "ICCID / الشريحة",
+    "ICCID or SIM serial": "ICCID أو رقم الشريحة",
     "Last sale entry": "آخر إدخال بيع",
+    "Last sale": "آخر بيع",
     "Customer or payer": "الزبون أو الدافع",
     "Days since last sale": "أيام منذ آخر بيع",
+    "Days charged": "أيام الشحن",
+    "Subscription end": "نهاية الاشتراك",
+    "Days past end": "أيام بعد الانتهاء",
+    "Same line name across companies (e.g. all Silicom).": "نفس اسم الخط عبر الشركات (مثلاً كل سليكوم).",
+    "Reference, payer, line, ICCID…": "المرجع، الدافع، الخط، ICCID…",
+    "Edit ICCID / SIM": "تعديل ICCID / الشريحة",
+    "ICCID saved.": "تم حفظ ICCID.",
+    "Could not save ICCID.": "تعذّر حفظ ICCID.",
+    "Saved.": "تم الحفظ.",
     "Remove this line from the report only? Sales in the system are not deleted; the number can appear again if it becomes idle.": (
         "إزالة هذا السطر من التقرير فقط؟ لا تُحذف المبيعات من النظام؛ قد يظهر الرقم مجدداً إذا عاد راكداً."
     ),

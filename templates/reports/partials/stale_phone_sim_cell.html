@@ -1,0 +1,30 @@
+{% load i18n %}
+<div class="rd-stale-sim-cell" id="stale-sim-{{ row.ref_key }}">
+  <form
+    method="post"
+    action="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
+    class="rd-stale-sim-form d-flex flex-column flex-sm-row gap-1 align-items-stretch align-items-sm-center"
+    hx-post="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
+    hx-target="#stale-sim-{{ row.ref_key }}"
+    hx-swap="outerHTML"
+    hx-boost="false"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="next_query" value="{{ list_query }}">
+    <input
+      type="text"
+      name="sim_identifier"
+      value="{% if form %}{{ form.sim_identifier.value|default:row.sim_identifier }}{% else %}{{ row.sim_identifier }}{% endif %}"
+      class="form-control form-control-sm rd-stale-sim-input{% if form and form.errors %} is-invalid{% endif %}"
+      placeholder="{% trans 'ICCID / SIM' %}"
+      autocomplete="off"
+      inputmode="text"
+      aria-label="{% trans 'ICCID / SIM' %}"
+    >
+    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">{% trans "Save" %}</button>
+  </form>
+  {% if saved %}
+    <div class="small text-success mt-1">{% trans "Saved." %}</div>
+  {% endif %}
+  {% if form %}{{ form.sim_identifier.errors }}{% endif %}
+</div>

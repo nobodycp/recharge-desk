@@ -27,8 +27,9 @@ class UserProfile(models.Model):
         _("stale line threshold (days)"),
         default=90,
         help_text=_(
-            "Used by the “lines for disconnect” report: numbers whose last "
-            "non-cancelled sale is older than this many days appear in the list."
+            "Used by the “lines for disconnect” report: idle days after the "
+            "subscription end date (last sale + charged days). Example: 60-day "
+            "charge + 90-day threshold → appears after 150 days."
         ),
     )
     avatar = models.ImageField(

@@ -1,4 +1,4 @@
-"""Lines idle for N days — management report."""
+"""Lines for disconnect — management report."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
@@ -27,15 +28,27 @@ from reports.stale_phones import (
 from sales.views._shared import is_htmx
 
 _STALE_SORT_FIELDS = frozenset(
-    {"ref", "idle_days", "last_activity", "customer", "company", "product", "sim"}
+    {
+        "ref",
+        "idle_days",
+        "days_past_end",
+        "last_activity",
+        "subscription_end",
+        "customer",
+        "company",
+        "product",
+        "line",
+        "sim",
+        "duration",
+    }
 )
 
 
 def _stale_sort_params(request):
-    sort = request.GET.get("sort") or "idle_days"
+    sort = request.GET.get("sort") or "days_past_end"
     order = (request.GET.get("order") or "desc").lower()
     if sort not in _STALE_SORT_FIELDS:
-        sort = "idle_days"
+        sort = "days_past_end"
     if order not in ("asc", "desc"):
         order = "desc"
     return sort, order
@@ -46,6 +59,29 @@ def _management_profile(request):
         return request.user.profile
     except UserProfile.DoesNotExist as exc:  # pragma: no cover
         raise Http404 from exc
+
+
+def _list_query_from_request(request) -> str:
+    """Preserve list filters/sort/page across edit/dismiss redirects."""
+    raw = request.POST.get("next_query") or request.GET.get("next_query") or ""
+    if raw.startswith("?"):
+        raw = raw[1:]
+    return raw
+
+
+def _safe_list_redirect(request, *, query: str = "") -> str:
+    base = reverse("reports:stale_phones_report")
+    q = (query or "").lstrip("?")
+    if q:
+        return f"{base}?{q}"
+    referer = request.META.get("HTTP_REFERER") or ""
+    if referer and url_has_allowed_host_and_scheme(
+        referer,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return referer
+    return base
 
 
 @management_required
@@ -78,6 +114,7 @@ def stale_phones_report(request):
     sort, order = _stale_sort_params(request)
     rows = sort_stale_rows(rows, sort=sort, order=order)
     page_obj = paginate_request(request, rows, allow_empty_first_page=True)
+    list_query = request.GET.urlencode()
     ctx = {
         "title": _("Lines for disconnect"),
         "threshold_form": th_form,
@@ -87,6 +124,7 @@ def stale_phones_report(request):
         "page_obj": page_obj,
         "sort": sort,
         "order": order,
+        "list_query": list_query,
     }
     if is_htmx(request):
         return render(
@@ -104,6 +142,13 @@ def _ref_in_stale_list(*, ref_key: str, threshold_days: int) -> bool:
     )
 
 
+def _row_for_ref(*, ref_key: str, threshold_days: int) -> dict | None:
+    for row in stale_reference_aggregate(threshold_days=threshold_days):
+        if row["ref_key"] == ref_key:
+            return row
+    return None
+
+
 @management_required
 def stale_phone_edit(request, ref_key: str):
     profile = _management_profile(request)
@@ -111,20 +156,16 @@ def stale_phone_edit(request, ref_key: str):
     if not key:
         raise Http404
     days = profile.stale_phone_threshold_days
-    if not _ref_in_stale_list(ref_key=key, threshold_days=days):
+    row = _row_for_ref(ref_key=key, threshold_days=days)
+    if not row:
         raise Http404
 
-    display = next(
-        (
-            r["display_reference"]
-            for r in stale_reference_aggregate(threshold_days=days)
-            if r["ref_key"] == key
-        ),
-        key,
-    )
+    display = row["display_reference"]
     meta = PhoneLineTracking.objects.filter(
         reference_key=key, is_dismissed=False
     ).first()
+    next_query = _list_query_from_request(request)
+    back_url = _safe_list_redirect(request, query=next_query)
 
     if request.method == "POST":
         form = StalePhoneLineEditForm(request.POST)
@@ -138,7 +179,7 @@ def stale_phone_edit(request, ref_key: str):
                 },
             )
             messages.success(request, _("Line updated."))
-            return redirect("reports:stale_phones_report")
+            return redirect(back_url)
         messages.error(request, _("Please correct the errors below."))
     else:
         form = StalePhoneLineEditForm(
@@ -149,13 +190,61 @@ def stale_phone_edit(request, ref_key: str):
         request,
         "reports/stale_phone_edit.html",
         {
-            "title": _("Edit line"),
+            "title": _("Edit ICCID / SIM"),
             "form": form,
             "ref_key": key,
             "display_reference": display,
-            "back_url": reverse("reports:stale_phones_report"),
+            "back_url": back_url,
+            "next_query": next_query,
+            "row": row,
         },
     )
+
+
+@management_required
+@require_POST
+def stale_phone_sim_save(request, ref_key: str):
+    """Inline ICCID save from the list (HTMX or normal POST)."""
+    profile = _management_profile(request)
+    key = normalize_reference_key(ref_key)
+    if not key:
+        raise Http404
+    days = profile.stale_phone_threshold_days
+    row = _row_for_ref(ref_key=key, threshold_days=days)
+    if not row:
+        raise Http404
+
+    form = StalePhoneLineEditForm(request.POST)
+    next_query = _list_query_from_request(request)
+    if form.is_valid():
+        sim = (form.cleaned_data.get("sim_identifier") or "").strip()
+        PhoneLineTracking.objects.update_or_create(
+            reference_key=key,
+            defaults={
+                "sim_identifier": sim,
+                "is_dismissed": False,
+                "last_display_reference": (row["display_reference"] or "")[:64],
+            },
+        )
+        row["sim_identifier"] = sim
+        if is_htmx(request):
+            return render(
+                request,
+                "reports/partials/stale_phone_sim_cell.html",
+                {"row": row, "list_query": next_query, "saved": True},
+            )
+        messages.success(request, _("ICCID saved."))
+        return redirect(_safe_list_redirect(request, query=next_query))
+
+    if is_htmx(request):
+        return render(
+            request,
+            "reports/partials/stale_phone_sim_cell.html",
+            {"row": row, "list_query": next_query, "form": form, "saved": False},
+            status=400,
+        )
+    messages.error(request, _("Could not save ICCID."))
+    return redirect(_safe_list_redirect(request, query=next_query))
 
 
 @management_required
@@ -172,4 +261,5 @@ def stale_phone_dismiss(request, ref_key: str):
     obj.is_dismissed = True
     obj.save(update_fields=["is_dismissed", "updated_at"])
     messages.success(request, _("Removed from this list."))
-    return redirect("reports:stale_phones_report")
+    next_query = _list_query_from_request(request)
+    return redirect(_safe_list_redirect(request, query=next_query))
