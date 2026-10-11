@@ -3573,6 +3573,49 @@ html[dir="rtl"] .rd-toast.is-visible {
   }
 }
 
+/* Status chips on the phone-lines statement report. */
+.rd-phone-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  vertical-align: middle;
+}
+.rd-phone-status + .rd-phone-status {
+  margin-inline-start: 0.25rem;
+}
+.rd-phone-status--active {
+  background: color-mix(in srgb, #198754 14%, transparent);
+  color: #146c43;
+  border: 1px solid color-mix(in srgb, #198754 28%, transparent);
+}
+.rd-phone-status--due {
+  background: color-mix(in srgb, #d97706 16%, transparent);
+  color: #9a3412;
+  border: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+}
+.rd-phone-status--grace {
+  background: color-mix(in srgb, #0d6efd 12%, transparent);
+  color: #0a58ca;
+  border: 1px solid color-mix(in srgb, #0d6efd 26%, transparent);
+}
+.rd-phone-status--overdue {
+  background: color-mix(in srgb, #dc3545 14%, transparent);
+  color: #b02a37;
+  border: 1px solid color-mix(in srgb, #dc3545 28%, transparent);
+}
+.rd-phone-status--esim {
+  background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);
+  color: var(--bs-secondary-color);
+  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+}
+
 /* ---------------- Customer invoice / statement layout ---------------
  * A unified letterhead + compact summary strip + inline signature
  * trio shared by customer_statement.html and

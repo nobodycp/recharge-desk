@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 01:06+0300\n"
+"POT-Creation-Date: 2026-10-12 01:11+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -314,7 +314,7 @@ msgid "audit log"
 msgstr "سجل التدقيق"
 
 #: audit/views.py:67 templates/audit/audit_log_list.html:6
-#: templates/partials/management_nav.html:193
+#: templates/partials/management_nav.html:197
 msgid "Audit log"
 msgstr "سجل التدقيق"
 
@@ -668,7 +668,7 @@ msgstr "تم تسجيل الإيداع."
 msgid "Adjustment recorded."
 msgstr "تم تسجيل التسوية."
 #: companies/views.py:60 templates/companies/company_list.html:6
-#: templates/partials/management_nav.html:102
+#: templates/partials/management_nav.html:106
 msgid "Companies"
 msgstr "الشركات"
 #: companies/views.py:75
@@ -735,7 +735,7 @@ msgid "Company “%(name)s” was deleted."
 msgstr "تم حذف الشركة «%(name)s»."
 
 #: companies/views.py:295 templates/companies/product_list.html:6
-#: templates/partials/management_nav.html:106
+#: templates/partials/management_nav.html:110
 msgid "Products"
 msgstr "المنتجات"
 #: companies/views.py:305
@@ -1160,7 +1160,7 @@ msgid "Branding updated."
 msgstr "تم تحديث هوية الموقع."
 
 #: core/views.py:297 templates/core/site_branding.html:7
-#: templates/partials/management_nav.html:185
+#: templates/partials/management_nav.html:189
 msgid "Site branding"
 msgstr "هوية الموقع"
 
@@ -1175,7 +1175,7 @@ msgstr ""
 msgid "System settings updated."
 msgstr "تم تحديث إعدادات النظام."
 #: core/views.py:362 templates/core/system_settings.html:6
-#: templates/partials/management_nav.html:189
+#: templates/partials/management_nav.html:193
 msgid "System settings"
 msgstr "إعدادات النظام"
 #: customers/forms.py:15 inventory/forms.py:57 inventory/forms.py:234
@@ -1766,7 +1766,7 @@ msgid "Adjustment amount cannot be zero."
 msgstr "مبلغ التسوية لا يمكن أن يكون صفراً."
 #: employees/views.py:85 templates/employees/employee_list.html:6
 #: templates/employees/employee_list.html:54
-#: templates/partials/management_nav.html:181
+#: templates/partials/management_nav.html:185
 msgid "Employees"
 msgstr "الموظفين"
 #: employees/views.py:97
@@ -1839,7 +1839,7 @@ msgid "Expense \"%(title)s\" deleted."
 msgstr "تم حذف المصروف «%(title)s»."
 
 #: expenses/views.py:148 templates/expenses/expense_report.html:5
-#: templates/partials/management_nav.html:85
+#: templates/partials/management_nav.html:89
 msgid "Expense report"
 msgstr "تقرير المصروفات"
 #: inventory/apps.py:8 inventory/views.py:101
@@ -2231,7 +2231,9 @@ msgid ""
 msgstr ""
 "يظهر الرقم عندما يمر: تاريخ آخر بيع + أيام الشحن + هذه العتبة (مثلاً شحن"
 " 60 يوماً + عتبة 90 → بعد 150 يوماً)."
-#: reports/forms.py:24 templates/reports/partials/stale_phone_sim_cell.html:19
+#: reports/forms.py:24
+#: templates/reports/partials/phone_lines_report_results.html:34
+#: templates/reports/partials/stale_phone_sim_cell.html:19
 #: templates/reports/partials/stale_phone_sim_cell.html:22
 #: templates/reports/partials/stale_phones_report_results.html:31
 #: templates/reports/stale_phone_edit.html:10
@@ -2246,6 +2248,7 @@ msgstr "المرجع، الدافع، الخط، ICCID…"
 #: reports/forms.py:54 sales/forms.py:16 sales/forms.py:213 sales/forms.py:292
 #: templates/companies/product_list.html:16 templates/core/search.html:66
 #: templates/employees/partials/employee_payments_table.html:21
+#: templates/reports/partials/phone_lines_report_results.html:19
 #: templates/reports/partials/sales_report_results.html:37
 #: templates/reports/partials/stale_phones_report_results.html:16
 #: templates/reports/profit_report.html:39
@@ -2257,6 +2260,8 @@ msgstr "المرجع، الدافع، الخط، ICCID…"
 msgid "Company"
 msgstr "الشركة"
 #: reports/forms.py:60
+#: templates/reports/partials/phone_lines_report_results.html:22
+#: templates/reports/partials/phone_lines_report_results.html:80
 #: templates/reports/partials/stale_phones_report_results.html:19
 #: templates/reports/partials/stale_phones_report_results.html:89
 #: templates/reports/stale_phone_edit.html:14
@@ -2265,6 +2270,49 @@ msgstr "الخط"
 #: reports/forms.py:64
 msgid "Same line name across companies (e.g. all Silicom)."
 msgstr "نفس اسم الخط عبر الشركات (مثلاً كل سليكوم)."
+#: reports/forms.py:84 sales/forms.py:237 sales/forms.py:304
+#: templates/core/search.html:68 templates/customers/customer_detail.html:60
+#: templates/employees/employee_list.html:65 templates/inventory/cards.html:44
+#: templates/inventory/line_detail.html:130
+#: templates/reports/partials/company_report_sales.html:70
+#: templates/reports/partials/phone_lines_report_results.html:13
+#: templates/reports/partials/sales_report_results.html:57
+#: templates/sales/employee_sale_edit.html:60
+#: templates/sales/partials/management_sale_list_results.html:33
+#: templates/sales/sale_edit.html:62
+msgid "Status"
+msgstr "الحالة"
+#: reports/forms.py:88 templates/reports/dashboard.html:138
+#: templates/reports/partials/phone_line_status_badge.html:3
+msgid "Active lines"
+msgstr "فعّال"
+#: reports/forms.py:89 templates/reports/dashboard.html:146
+#: templates/reports/partials/phone_line_status_badge.html:5
+msgid "Disconnects within 24 hours"
+msgstr "حيفصل خلال ٢٤ ساعة"
+#: reports/forms.py:90 templates/reports/dashboard.html:154
+#: templates/reports/partials/phone_line_status_badge.html:7
+msgid "Ended — under inactivity threshold"
+msgstr "مفصول ولم يتجاوز عتبة عدم النشاط"
+#: reports/forms.py:91 templates/reports/dashboard.html:162
+#: templates/reports/partials/phone_line_status_badge.html:9
+msgid "Ended — past inactivity threshold"
+msgstr "مفصول وتجاوز عتبة عدم النشاط"
+#: reports/forms.py:96
+msgid "SIM type"
+msgstr "نوع الشريحة"
+#: reports/forms.py:100
+msgid "Physical SIM"
+msgstr "شريحة فعلية"
+#: reports/forms.py:101 sales/forms.py:253
+#: templates/companies/partials/layan_reconcile_review_table.html:59
+#: templates/companies/partials/sky_reconcile_table.html:54
+#: templates/reports/dashboard.html:49
+#: templates/reports/partials/phone_line_status_badge.html:12
+#: templates/sales/employee_entry.html:202
+msgid "eSIM"
+msgstr "eSIM"
+
 #: reports/models.py:9
 msgid "normalized reference"
 msgstr "المرجع المعياري"
@@ -2312,32 +2360,37 @@ msgstr "أداء الموظفين"
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
-#: reports/views_stale_phones.py:97
+#: reports/views_stale_phones.py:114 reports/views_stale_phones.py:166
 msgid "Threshold saved."
 msgstr "تم حفظ العتبة."
-#: reports/views_stale_phones.py:99
+#: reports/views_stale_phones.py:116 reports/views_stale_phones.py:168
 msgid "Could not save threshold."
 msgstr "تعذّر حفظ العتبة."
-#: reports/views_stale_phones.py:119 templates/partials/management_nav.html:81
+#: reports/views_stale_phones.py:136 templates/partials/management_nav.html:85
+#: templates/reports/phone_lines_report.html:12
 #: templates/reports/stale_phones_report.html:6
 msgid "Lines for disconnect"
 msgstr "أرقام للفصل"
-#: reports/views_stale_phones.py:181
+#: reports/views_stale_phones.py:188 templates/partials/management_nav.html:81
+#: templates/reports/phone_lines_report.html:6
+msgid "Line statement"
+msgstr "بيان الأرقام"
+#: reports/views_stale_phones.py:253
 msgid "Line updated."
 msgstr "تم تحديث الخط."
-#: reports/views_stale_phones.py:183 templates/accounts/login.html:60
+#: reports/views_stale_phones.py:255 templates/accounts/login.html:60
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
-#: reports/views_stale_phones.py:193 templates/reports/stale_phone_edit.html:5
+#: reports/views_stale_phones.py:265 templates/reports/stale_phone_edit.html:5
 msgid "Edit ICCID / SIM"
 msgstr "تعديل ICCID / الشريحة"
-#: reports/views_stale_phones.py:236
+#: reports/views_stale_phones.py:308
 msgid "ICCID saved."
 msgstr "تم حفظ ICCID."
-#: reports/views_stale_phones.py:246
+#: reports/views_stale_phones.py:324
 msgid "Could not save ICCID."
 msgstr "تعذّر حفظ ICCID."
-#: reports/views_stale_phones.py:263
+#: reports/views_stale_phones.py:347
 msgid "Removed from this list."
 msgstr "أُزيل من هذه القائمة."
 #: sales/_i18n_payment_methods.py:12
@@ -2406,24 +2459,6 @@ msgstr "اختر إما الآجل أو الدفع لدى موظف، وليس ا
 #: sales/forms.py:207 sales/forms.py:413
 msgid "Pick a payment method."
 msgstr "اختر طريقة الدفع."
-#: sales/forms.py:237 sales/forms.py:304 templates/core/search.html:68
-#: templates/customers/customer_detail.html:60
-#: templates/employees/employee_list.html:65 templates/inventory/cards.html:44
-#: templates/inventory/line_detail.html:130
-#: templates/reports/partials/company_report_sales.html:70
-#: templates/reports/partials/sales_report_results.html:57
-#: templates/sales/employee_sale_edit.html:60
-#: templates/sales/partials/management_sale_list_results.html:33
-#: templates/sales/sale_edit.html:62
-msgid "Status"
-msgstr "الحالة"
-#: sales/forms.py:253
-#: templates/companies/partials/layan_reconcile_review_table.html:59
-#: templates/companies/partials/sky_reconcile_table.html:54
-#: templates/reports/dashboard.html:49 templates/sales/employee_entry.html:202
-msgid "eSIM"
-msgstr "eSIM"
-
 #: sales/forms.py:256
 msgid "eSIM only"
 msgstr "eSIM فقط"
@@ -2770,7 +2805,7 @@ msgstr "تعذّر حذف البيع: %(reason)s"
 msgid "Sale was permanently removed from the system."
 msgstr "تم حذف البيع نهائياً من النظام."
 
-#: sales/views/payment_methods.py:22 templates/partials/management_nav.html:110
+#: sales/views/payment_methods.py:22 templates/partials/management_nav.html:114
 #: templates/sales/payment_method_list.html:6
 msgid "Payment methods"
 msgstr "طرق الدفع"
@@ -3199,7 +3234,7 @@ msgid "Delete user permanently"
 msgstr "حذف المستخدم نهائياً"
 
 #: templates/accounts/user_list.html:6
-#: templates/partials/management_nav.html:177
+#: templates/partials/management_nav.html:181
 msgid "Users"
 msgstr "المستخدمون"
 #: templates/accounts/user_list.html:7
@@ -3229,6 +3264,7 @@ msgstr "اسم المستخدم أو الاسم الكامل…"
 #: templates/reports/employee_report.html:17
 #: templates/reports/partials/company_report_ledger.html:27
 #: templates/reports/partials/company_report_sales.html:27
+#: templates/reports/phone_lines_report.html:76
 #: templates/reports/profit_report.html:15
 #: templates/reports/sales_report.html:34
 #: templates/reports/stale_phones_report.html:70
@@ -3253,6 +3289,7 @@ msgstr "تطبيق"
 #: templates/reports/employee_report.html:18
 #: templates/reports/partials/company_report_ledger.html:28
 #: templates/reports/partials/company_report_sales.html:28
+#: templates/reports/phone_lines_report.html:77
 #: templates/reports/profit_report.html:16
 #: templates/reports/sales_report.html:35
 #: templates/reports/stale_phones_report.html:71
@@ -4321,6 +4358,7 @@ msgstr "كشف حساب"
 #: templates/employees/employee_detail.html:11
 #: templates/employees/employee_form.html:8
 #: templates/reports/company_report.html:9
+#: templates/reports/phone_lines_report.html:13
 #: templates/reports/stale_phones_report.html:11
 #: templates/sales/employee_sale_edit.html:12 templates/sales/sale_edit.html:15
 msgid "Back"
@@ -4699,6 +4737,7 @@ msgid ""
 msgstr "حذف هذا الإدخال نهائياً؟ يُصحَّح رصيد المورّد. لا يمكن التراجع."
 
 #: templates/employees/partials/employee_payments_table.html:12
+#: templates/reports/partials/phone_lines_report_results.html:10
 #: templates/reports/partials/stale_phones_report_results.html:10
 msgid "Number / reference"
 msgstr "الرقم / المرجع"
@@ -4972,11 +5011,11 @@ msgstr "العمليات"
 msgid "Reports"
 msgstr "التقارير"
 
-#: templates/partials/management_nav.html:95
+#: templates/partials/management_nav.html:99
 msgid "Catalog"
 msgstr "الكتالوج"
 
-#: templates/partials/management_nav.html:170
+#: templates/partials/management_nav.html:174
 msgid "Administration"
 msgstr "الإدارة"
 
@@ -5101,8 +5140,8 @@ msgstr "الشهر"
 msgid "Line status"
 msgstr "حالة الأرقام"
 #: templates/reports/dashboard.html:118
-msgid "Open the disconnect list"
-msgstr "افتح قائمة أرقام الفصل"
+msgid "Open line statement"
+msgstr "افتح بيان الأرقام"
 #: templates/reports/dashboard.html:125
 #, python-format
 msgid "%(n)s physical lines by disconnect stage"
@@ -5110,28 +5149,16 @@ msgstr "%(n)s رقماً فعلياً حسب مرحلة الفصل"
 #: templates/reports/dashboard.html:131
 msgid "Total lines"
 msgstr "إجمالي الأرقام"
-#: templates/reports/dashboard.html:138
-msgid "Active lines"
-msgstr "فعّال"
 #: templates/reports/dashboard.html:139
 msgid "Subscription still running"
 msgstr "الاشتراك ما زال سارياً"
-#: templates/reports/dashboard.html:146
-msgid "Disconnects within 24 hours"
-msgstr "حيفصل خلال ٢٤ ساعة"
 #: templates/reports/dashboard.html:147
 msgid "Enters the disconnect list soon"
 msgstr "يدخل قائمة الفصل قريباً"
-#: templates/reports/dashboard.html:154
-msgid "Ended — under inactivity threshold"
-msgstr "مفصول ولم يتجاوز عتبة عدم النشاط"
 #: templates/reports/dashboard.html:155
 #, python-format
 msgid "Subscription ended; still inside the %(d)s-day grace window"
 msgstr "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
-#: templates/reports/dashboard.html:162
-msgid "Ended — past inactivity threshold"
-msgstr "مفصول وتجاوز عتبة عدم النشاط"
 #: templates/reports/dashboard.html:163
 msgid "Same count as the disconnect list"
 msgstr "نفس عدد قائمة أرقام الفصل"
@@ -5308,6 +5335,39 @@ msgstr "البيع"
 #: templates/sales/partials/management_sale_list_results.html:147
 msgid "No sales."
 msgstr "لا توجد مبيعات."
+#: templates/reports/partials/phone_lines_report_results.html:16
+#: templates/reports/partials/stale_phones_report_results.html:13
+msgid "Customer or payer"
+msgstr "الزبون أو الدافع"
+#: templates/reports/partials/phone_lines_report_results.html:25
+#: templates/reports/partials/phone_lines_report_results.html:81
+#: templates/reports/partials/stale_phones_report_results.html:22
+#: templates/reports/partials/stale_phones_report_results.html:90
+#: templates/reports/stale_phone_edit.html:16
+msgid "Days charged"
+msgstr "أيام الشحن"
+#: templates/reports/partials/phone_lines_report_results.html:28
+#: templates/reports/partials/phone_lines_report_results.html:84
+#: templates/reports/partials/stale_phones_report_results.html:25
+#: templates/reports/partials/stale_phones_report_results.html:93
+#: templates/reports/stale_phone_edit.html:18
+msgid "Subscription end"
+msgstr "نهاية الاشتراك"
+#: templates/reports/partials/phone_lines_report_results.html:31
+#: templates/reports/partials/stale_phones_report_results.html:28
+#: templates/reports/stale_phone_edit.html:20
+msgid "Days past end"
+msgstr "أيام بعد الانتهاء"
+#: templates/reports/partials/phone_lines_report_results.html:37
+#: templates/reports/partials/phone_lines_report_results.html:85
+#: templates/reports/partials/stale_phones_report_results.html:34
+#: templates/reports/partials/stale_phones_report_results.html:94
+msgid "Last sale"
+msgstr "آخر بيع"
+#: templates/reports/partials/phone_lines_report_results.html:58
+#: templates/reports/partials/phone_lines_report_results.html:92
+msgid "No lines match these filters."
+msgstr "لا توجد أرقام مطابقة لهذه الفلاتر."
 #: templates/reports/partials/sales_report_results.html:5
 msgid "Filtered profit (excl. cancelled)"
 msgstr "الربح بعد التصفية (باستثناء الملغاة)"
@@ -5331,27 +5391,6 @@ msgstr "لا توجد صفوف."
 #: templates/reports/partials/stale_phone_sim_cell.html:27
 msgid "Saved."
 msgstr "تم الحفظ."
-#: templates/reports/partials/stale_phones_report_results.html:13
-msgid "Customer or payer"
-msgstr "الزبون أو الدافع"
-#: templates/reports/partials/stale_phones_report_results.html:22
-#: templates/reports/partials/stale_phones_report_results.html:90
-#: templates/reports/stale_phone_edit.html:16
-msgid "Days charged"
-msgstr "أيام الشحن"
-#: templates/reports/partials/stale_phones_report_results.html:25
-#: templates/reports/partials/stale_phones_report_results.html:93
-#: templates/reports/stale_phone_edit.html:18
-msgid "Subscription end"
-msgstr "نهاية الاشتراك"
-#: templates/reports/partials/stale_phones_report_results.html:28
-#: templates/reports/stale_phone_edit.html:20
-msgid "Days past end"
-msgstr "أيام بعد الانتهاء"
-#: templates/reports/partials/stale_phones_report_results.html:34
-#: templates/reports/partials/stale_phones_report_results.html:94
-msgid "Last sale"
-msgstr "آخر بيع"
 #: templates/reports/partials/stale_phones_report_results.html:57
 #: templates/reports/partials/stale_phones_report_results.html:104
 msgid ""
@@ -5364,6 +5403,26 @@ msgstr ""
 #: templates/reports/partials/stale_phones_report_results.html:112
 msgid "No lines match this threshold."
 msgstr "لا توجد خطوط تطابق هذه العتبة."
+#: templates/reports/phone_lines_report.html:8
+#, python-format
+msgid ""
+"Every number with a sale in the system, with lifecycle status from the %(d)s-"
+"day activity threshold. A new charge resets the timer."
+msgstr ""
+"كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط %(d)s ي"
+"وماً. شحن جديد يعيد المؤقت."
+#: templates/reports/phone_lines_report.html:21
+#: templates/reports/stale_phones_report.html:18
+msgid "Activity threshold"
+msgstr "عتبة النشاط"
+#: templates/reports/phone_lines_report.html:37
+#: templates/reports/stale_phones_report.html:34
+msgid "Save threshold"
+msgstr "حفظ العتبة"
+#: templates/reports/phone_lines_report.html:41
+#: templates/reports/stale_phones_report.html:38
+msgid "Saved on your user profile until you change it again."
+msgstr "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى."
 #: templates/reports/profit_report.html:6
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
@@ -5406,15 +5465,6 @@ msgid ""
 msgstr ""
 "أرقام انتهى اشتراكها ثم بقيت بلا نشاط لمدة %(d)s يوماً (أيام الشحن + الع"
 "تبة). مبيعات eSIM مستثناة. أي شحن جديد يعيد ضبط المدة من البداية."
-#: templates/reports/stale_phones_report.html:18
-msgid "Activity threshold"
-msgstr "عتبة النشاط"
-#: templates/reports/stale_phones_report.html:34
-msgid "Save threshold"
-msgstr "حفظ العتبة"
-#: templates/reports/stale_phones_report.html:38
-msgid "Saved on your user profile until you change it again."
-msgstr "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى."
 #: templates/sales/awaiting_approvals.html:7
 msgid "On-account sales waiting for management approval."
 msgstr "مبيعات الآجل بانتظار موافقة الإدارة."
@@ -5780,6 +5830,9 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Open the disconnect list"
+#~ msgstr "افتح قائمة أرقام الفصل"
 
 #~ msgid ""
 #~ "Used by the “lines for disconnect” report: numbers whose last non-"

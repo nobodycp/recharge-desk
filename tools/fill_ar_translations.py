@@ -360,6 +360,15 @@ AR: dict[str, str] = {
     "No active companies.": "لا توجد شركات نشطة.",
     "Lines for disconnect": "أرقام للفصل",
     "Line status": "حالة الأرقام",
+    "Line statement": "بيان الأرقام",
+    "Open line statement": "افتح بيان الأرقام",
+    "Every number with a sale in the system, with lifecycle status from the %(d)s-day activity threshold. A new charge resets the timer.": (
+        "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
+        "%(d)s يوماً. شحن جديد يعيد المؤقت."
+    ),
+    "No lines match these filters.": "لا توجد أرقام مطابقة لهذه الفلاتر.",
+    "SIM type": "نوع الشريحة",
+    "Physical SIM": "شريحة فعلية",
     "Idle threshold": "عتبة عدم النشاط",
     "Activity threshold": "عتبة النشاط",
     "Days without a new sale entry": "أيام من دون إدخال بيع جديد",

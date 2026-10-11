@@ -32,4 +32,9 @@ urlpatterns = [
         views_stale_phones.stale_phones_report,
         name="stale_phones_report",
     ),
+    path(
+        "management/reports/phone-lines/",
+        views_stale_phones.phone_lines_report,
+        name="phone_lines_report",
+    ),
 ]
