@@ -348,6 +348,10 @@ AR: dict[str, str] = {
     "Numbers whose subscription ended and then stayed idle for %(d)s days (charged days + threshold).": (
         "أرقام انتهى اشتراكها ثم بقيت بلا نشاط لمدة %(d)s يوماً (أيام الشحن + العتبة)."
     ),
+    "Numbers whose subscription ended and then stayed idle for %(d)s days (charged days + threshold). eSIM sales are excluded. A new charge resets the timer.": (
+        "أرقام انتهى اشتراكها ثم بقيت بلا نشاط لمدة %(d)s يوماً (أيام الشحن + العتبة). "
+        "مبيعات eSIM مستثناة. أي شحن جديد يعيد ضبط المدة من البداية."
+    ),
     "Save threshold": "حفظ العتبة",
     "Saved on your user profile until you change it again.": "يُحفَظ في ملف المستخدم حتى تغيّره مرة أخرى.",
     "Number / reference": "الرقم / المرجع",

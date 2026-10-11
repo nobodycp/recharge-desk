@@ -5,7 +5,7 @@
   <div>
     <h1 class="rd-heading-xl mb-1">{% trans "Lines for disconnect" %}</h1>
     <p class="rd-text-muted mb-0">
-      {% blocktrans with d=threshold_days %}Numbers whose subscription ended and then stayed idle for {{ d }} days (charged days + threshold).{% endblocktrans %}
+      {% blocktrans with d=threshold_days %}Numbers whose subscription ended and then stayed idle for {{ d }} days (charged days + threshold). eSIM sales are excluded. A new charge resets the timer.{% endblocktrans %}
     </p>
   </div>
   <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>

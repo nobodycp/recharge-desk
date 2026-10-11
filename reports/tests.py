@@ -472,6 +472,46 @@ class StalePhonesReportTests(_ReportsBase):
         rows = list(r.context["page_obj"].object_list)
         self.assertFalse(any(x["ref_key"] == "0559990001" for x in rows))
 
+    def test_esim_latest_sale_excluded_from_disconnect_list(self):
+        s = self._make_sale(ref="055ESIM0001", paid=True, is_esim=True)
+        self._age_sale(s, days_ago=200, duration_days=30)
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertFalse(any(x["ref_key"] == "055esim0001" for x in rows))
+
+    def test_physical_sale_after_esim_can_appear(self):
+        """Older eSIM history does not block a later physical charge."""
+        old_esim = self._make_sale(ref="055ESIM0002", paid=True, is_esim=True)
+        self._age_sale(old_esim, days_ago=250, duration_days=30)
+        physical = self._make_sale(ref="055ESIM0002", paid=True, is_esim=False)
+        self._age_sale(physical, days_ago=130, duration_days=30)
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertTrue(any(x["ref_key"] == "055esim0002" for x in rows))
+
+    def test_new_charge_resets_timer_and_hides_from_list(self):
+        """A fresh recharge clears the number until the new period + threshold elapse."""
+        s1 = self._make_sale(ref="055RESET001", paid=True)
+        self._age_sale(s1, days_ago=200, duration_days=30)
+        r1 = self.client.get(reverse("reports:stale_phones_report"))
+        self.assertTrue(
+            any(x["ref_key"] == "055reset001" for x in r1.context["page_obj"].object_list)
+        )
+        s2 = self._make_sale(ref="055RESET001", paid=True)
+        self._age_sale(s2, days_ago=1, duration_days=60)
+        r2 = self.client.get(reverse("reports:stale_phones_report"))
+        self.assertFalse(
+            any(x["ref_key"] == "055reset001" for x in r2.context["page_obj"].object_list)
+        )
+        # After the new 60 + 90 window, it reappears with the new duration.
+        self._age_sale(s2, days_ago=160, duration_days=60)
+        r3 = self.client.get(reverse("reports:stale_phones_report"))
+        hit = next(
+            x for x in r3.context["page_obj"].object_list if x["ref_key"] == "055reset001"
+        )
+        self.assertEqual(hit["duration_days"], 60)
+        self.assertGreaterEqual(hit["days_past_end"], 90)
+
     def test_cancelled_sale_ignored_for_last_activity(self):
         s = self._make_sale(ref="0551112222", paid=True)
         self._age_sale(s, days_ago=5, duration_days=30)
