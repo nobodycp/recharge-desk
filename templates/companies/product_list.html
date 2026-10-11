@@ -1,5 +1,5 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize ui_tags %}
 {% block content %}
 <div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
   <div>
@@ -8,103 +8,154 @@
   </div>
   <a class="btn btn-primary" href="{% url 'companies:product_line_create' %}">{% trans "New product line" %}</a>
 </div>
+
+{% active_filter_count as product_active %}
+{% include "partials/filter_card_open.html" with active_count=product_active card_open=product_active %}
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-12 col-md-4 col-lg-3">
+      <label class="form-label" for="prod-company">{% trans "Company" %}</label>
+      <select id="prod-company" name="company" class="form-select form-select-sm">
+        <option value="">{% trans "All companies" %}</option>
+        {% for c in companies %}
+          <option value="{{ c.pk }}" {% if company_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-5 col-lg-4">
+      <label class="form-label" for="prod-q">{% trans "Search lines or packages" %}</label>
+      <input
+        id="prod-q"
+        type="search"
+        name="q"
+        value="{{ q }}"
+        class="form-control form-control-sm"
+        placeholder="{% trans 'Company, line, or package…' %}"
+        autocomplete="off"
+      >
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2">
+      <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'companies:product_list' %}">{% trans "Reset" %}</a>
+    </div>
+  </form>
+{% include "partials/filter_card_close.html" %}
+
 <div class="rd-card overflow-hidden rd-datagrid">
-  <div class="rd-table-dual rd-datagrid-body">
-    <div class="d-none d-md-block rd-data-shell">
-      <div class="table-responsive border-0">
-        <table class="table mb-0 align-middle rd-table-modern">
-          <thead>
-            <tr>
-              <th>{% trans "Company" %}</th>
-              <th>{% trans "Product line" %}</th>
-              <th>{% trans "Package" %}</th>
-              <th class="text-end">{% trans "Cost" %}</th>
-              <th class="text-end">{% trans "Default sell" %}</th>
-              <th>{% trans "Active" %}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for line in lines %}
-              {% with vc=line.variants.count %}
-              {% for v in line.variants.all %}
-                <tr>
-                  {% if forloop.first %}
-                    <td rowspan="{% if vc %}{{ vc }}{% else %}1{% endif %}" class="align-top">{{ line.company.name }}</td>
-                    <td rowspan="{% if vc %}{{ vc }}{% else %}1{% endif %}" class="align-top fw-semibold">
-                      {{ line.name }}
-                      <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
-                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
-                        {% if line.is_deletable %}
-                          <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
+  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <span>{% trans "Product lines" %}</span>
+    <span class="small text-secondary">
+      {% blocktrans count counter=lines|length %}{{ counter }} line{% plural %}{{ counter }} lines{% endblocktrans %}
+    </span>
+  </div>
+
+  <div class="rd-product-lines">
+    {% for line in lines %}
+      {% with packages=line.variants.all %}
+      <div class="rd-product-line">
+        <div class="rd-product-line__bar">
+          <details class="rd-product-line__details"{% if expand_packages %} open{% endif %}>
+            <summary class="rd-product-line__summary">
+              <span class="rd-product-line__chevron" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+              <span class="rd-product-line__meta">
+                <span class="rd-product-line__company">{{ line.company.name }}</span>
+                <span class="rd-product-line__name">{{ line.name }}</span>
+              </span>
+              <span class="rd-badge rd-badge--neutral rd-product-line__count">
+                {% blocktrans count counter=packages|length %}{{ counter }} package{% plural %}{{ counter }} packages{% endblocktrans %}
+              </span>
+            </summary>
+
+            <div class="rd-product-line__packages">
+              {% if packages %}
+                <div class="d-none d-md-block">
+                  <div class="table-responsive border-0">
+                    <table class="table mb-0 align-middle rd-table-modern rd-product-line__table">
+                      <thead>
+                        <tr>
+                          <th>{% trans "Package" %}</th>
+                          <th class="text-end">{% trans "Cost" %}</th>
+                          <th class="text-end">{% trans "Default sell" %}</th>
+                          <th>{% trans "Active" %}</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for v in packages %}
+                          <tr>
+                            <td>
+                              {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
+                              {% if line.default_package_id == v.pk %}
+                                <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
+                              {% endif %}
+                            </td>
+                            <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
+                            <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
+                            <td>{% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
+                            <td class="text-end text-nowrap">
+                              <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
+                              {% if v.is_deletable %}
+                                <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
+                                  {% csrf_token %}
+                                  <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+                                </form>
+                              {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete" %}</button>
+                              {% endif %}
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="d-md-none rd-mobile-stack p-2">
+                  {% for v in packages %}
+                    <div class="rd-mobile-row-card">
+                      <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div>
+                          <span class="fw-semibold">
+                            {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
+                          </span>
+                          {% if line.default_package_id == v.pk %}
+                            <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
+                          {% endif %}
+                        </div>
+                        {% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}
+                      </div>
+                      <div class="row g-2 small mt-2">
+                        <div class="col-6">
+                          <div class="rd-mobile-k">{% trans "Cost" %}</div>
+                          <div class="rd-mobile-v tabular-nums">{{ v.cost_price|intcomma }}</div>
+                        </div>
+                        <div class="col-6 text-end">
+                          <div class="rd-mobile-k">{% trans "Default sell" %}</div>
+                          <div class="rd-mobile-v tabular-nums kpi-info">{{ v.default_sell_price|intcomma }}</div>
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap gap-1 mt-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
+                        {% if v.is_deletable %}
+                          <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
                           </form>
                         {% else %}
-                          <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete" %}</button>
                         {% endif %}
                       </div>
-                    </td>
-                  {% endif %}
-                  <td>
-                    {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
-                    {% if line.default_package_id == v.pk %}
-                      <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
-                    {% endif %}
-                  </td>
-                  <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
-                  <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
-                  <td>{% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
-                  <td class="text-end text-nowrap">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
-                    {% if v.is_deletable %}
-                      <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-                      </form>
-                    {% else %}
-                      <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete" %}</button>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td>{{ line.company.name }}</td>
-                  <td class="fw-semibold">
-                    {{ line.name }}
-                    <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
-                      <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
-                      <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
-                      {% if line.is_deletable %}
-                        <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line? This cannot be undone." %}{% endfilter %}');">
-                          {% csrf_token %}
-                          <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete line" %}</button>
-                        </form>
-                      {% else %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
-                      {% endif %}
                     </div>
-                  </td>
-                  <td colspan="4" class="text-secondary">{% trans "No packages yet." %}</td>
-                  <td></td>
-                </tr>
-              {% endfor %}
-              {% endwith %}
-            {% empty %}
-              <tr><td colspan="7" class="text-center text-secondary py-4">{% trans "No product lines." %}</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="text-secondary small px-3 py-3">{% trans "No packages yet." %}</div>
+              {% endif %}
+            </div>
+          </details>
 
-    <div class="d-md-none rd-mobile-stack p-2">
-      {% for line in lines %}
-        <div class="rd-mobile-row-card">
-          <div class="small text-secondary">{{ line.company.name }}</div>
-          <div class="fw-semibold mt-1">{{ line.name }}</div>
-          <div class="d-flex flex-wrap gap-1 mt-2">
+          <div class="rd-product-line__actions">
             <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_line_edit' line.pk %}">{% trans "Edit line" %}</a>
             <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:product_variant_create' line_pk=line.pk %}">{% trans "Add package" %}</a>
             {% if line.is_deletable %}
@@ -116,52 +167,12 @@
               <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: this line has sales.' %}">{% trans "Delete line" %}</button>
             {% endif %}
           </div>
-
-          {% for v in line.variants.all %}
-            <div class="mt-3 pt-2 border-top" style="border-color: var(--bs-border-color) !important;">
-              <div class="d-flex justify-content-between align-items-start gap-2">
-                <div>
-                  <span class="fw-semibold">
-                    {% if v.variant_label %}{{ v.variant_label }}{% else %}<span class="text-secondary">—</span>{% endif %}
-                  </span>
-                  {% if line.default_package_id == v.pk %}
-                    <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
-                  {% endif %}
-                </div>
-                {% if v.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}
-              </div>
-              <div class="row g-2 small mt-2">
-                <div class="col-6">
-                  <div class="rd-mobile-k">{% trans "Cost" %}</div>
-                  <div class="rd-mobile-v tabular-nums">{{ v.cost_price|intcomma }}</div>
-                </div>
-                <div class="col-6 text-end">
-                  <div class="rd-mobile-k">{% trans "Default sell" %}</div>
-                  <div class="rd-mobile-v tabular-nums kpi-info">{{ v.default_sell_price|intcomma }}</div>
-                </div>
-              </div>
-              <div class="d-flex flex-wrap gap-1 mt-2">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:product_variant_edit' v.pk %}">{% trans "Edit" %}</a>
-                {% if v.is_deletable %}
-                  <form method="post" action="{% url 'companies:product_variant_delete' v.pk %}" class="d-inline" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-                  </form>
-                {% else %}
-                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete" %}</button>
-                {% endif %}
-              </div>
-            </div>
-          {% empty %}
-            <div class="mt-3 pt-2 border-top text-secondary small" style="border-color: var(--bs-border-color) !important;">
-              {% trans "No packages yet." %}
-            </div>
-          {% endfor %}
         </div>
-      {% empty %}
-        <div class="text-center text-secondary py-4">{% trans "No product lines." %}</div>
-      {% endfor %}
-    </div>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="text-center text-secondary py-5">{% trans "No product lines." %}</div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

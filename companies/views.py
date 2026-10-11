@@ -226,19 +226,39 @@ def company_delete(request, pk):
 @management_required
 def product_list(request):
     Product = apps.get_model("companies", "Product")
+    q = (request.GET.get("q") or "").strip()
+    company_id = (request.GET.get("company") or "").strip()
+
     variants_qs = Product.objects.annotate(
         has_sales_annotated=_has_sales_subquery("product_id"),
-    )
+    ).order_by("variant_label", "pk")
     lines = (
         ProductLine.objects.select_related("company", "default_package")
         .annotate(has_sales_annotated=_has_sales_subquery("product__line_id"))
         .prefetch_related(models.Prefetch("variants", queryset=variants_qs))
         .order_by("company__name", "sort_order", "name")
     )
+    if company_id.isdigit():
+        lines = lines.filter(company_id=int(company_id))
+    if q:
+        lines = lines.filter(
+            Q(name__icontains=q)
+            | Q(company__name__icontains=q)
+            | Q(variants__variant_label__icontains=q)
+        ).distinct()
+
+    companies = Company.objects.order_by("name")
     return render(
         request,
         "companies/product_list.html",
-        {"lines": lines, "title": _("Products")},
+        {
+            "lines": lines,
+            "companies": companies,
+            "q": q,
+            "company_id": company_id,
+            "expand_packages": bool(q),
+            "title": _("Products"),
+        },
     )
 
 

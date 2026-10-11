@@ -86,9 +86,32 @@ class CompanyListQueryCountTests(TestCase):
             "ProductLine.is_deletable / Product.is_deletable probably "
             "regressed to per-row EXISTS.",
         )
-        # Mobile dual-layout: page scroll, not an internal data-shell scroll.
-        self.assertContains(resp, "rd-mobile-stack")
-        self.assertContains(resp, "d-none d-md-block rd-data-shell")
+        # Collapsible product-line layout (packages hidden until expanded).
+        self.assertContains(resp, "rd-product-line")
+        self.assertContains(resp, "rd-product-line__details")
+
+    def test_product_list_filters_by_company_and_search(self):
+        self.client.force_login(self.user)
+        company = Company.objects.get(name="Co0")
+
+        by_company = self.client.get(
+            "/management/products/", {"company": str(company.pk)}
+        )
+        self.assertEqual(by_company.status_code, 200)
+        self.assertContains(by_company, "L0")
+        self.assertNotContains(by_company, "L1")
+        self.assertContains(by_company, 'name="company"')
+        self.assertContains(by_company, 'name="q"')
+
+        by_line = self.client.get("/management/products/", {"q": "L2"})
+        self.assertContains(by_line, "L2")
+        self.assertNotContains(by_line, "L1")
+        # Searching expands matching package panels.
+        self.assertContains(by_line, 'class="rd-product-line__details" open')
+
+        by_package = self.client.get("/management/products/", {"q": "P3"})
+        self.assertContains(by_package, "L3")
+        self.assertContains(by_package, "P3")
 
     def test_is_deletable_property_still_works_without_annotation(self):
         """When called outside a list view (e.g. in a detail page) the
