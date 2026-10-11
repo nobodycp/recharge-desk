@@ -24,14 +24,24 @@
         </div>
       </form>
       {% if variant %}
-        <div class="border-top pt-3 mt-3">
+        <div class="border-top pt-3 mt-3 d-flex flex-wrap gap-2">
           {% if variant.is_deletable %}
             <form method="post" action="{% url 'companies:product_variant_delete' variant.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
               {% csrf_token %}
               <button type="submit" class="btn btn-outline-danger">{% trans "Delete package" %}</button>
             </form>
+          {% elif variant.is_active %}
+            <form method="post" action="{% url 'companies:product_variant_archive' variant.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-warning">{% trans "Archive package" %}</button>
+            </form>
+            <p class="small text-secondary mb-0 align-self-center">{% trans "Has sales — archive to hide it without affecting history." %}</p>
           {% else %}
-            <p class="small text-secondary mb-0" title="{% trans 'Cannot delete: package has sales.' %}">{% trans "Delete unavailable (has sales)" %}</p>
+            <form method="post" action="{% url 'companies:product_variant_unarchive' variant.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-primary">{% trans "Restore package" %}</button>
+            </form>
+            <p class="small text-secondary mb-0 align-self-center">{% trans "Archived — hidden from new sales." %}</p>
           {% endif %}
         </div>
       {% endif %}
