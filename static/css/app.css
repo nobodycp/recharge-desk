@@ -1184,3 +1184,25 @@
   color: var(--bs-secondary-color);
   font-size: 0.875rem;
 }
+
+/* Stale phones / lines for disconnect — inline ICCID + mobile cards */
+.rd-stale-sim-input {
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .rd-stale-sim-input {
+    min-width: 8rem;
+    width: auto;
+    flex: 1 1 auto;
+  }
+}
+
+.rd-stale-phone-card .rd-stale-sim-form {
+  width: 100%;
+}
+
+.rd-stale-phone-card .rd-stale-sim-form .btn {
+  min-height: 2.25rem;
+}

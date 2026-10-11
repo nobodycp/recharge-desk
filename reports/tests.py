@@ -438,29 +438,47 @@ class CompanyReportTests(_ReportsBase):
 
 
 class StalePhonesReportTests(_ReportsBase):
-    def test_stale_list_shows_old_reference_after_threshold(self):
+    """Disconnect list uses: last sale + duration_days + threshold."""
+
+    def _age_sale(self, sale, *, days_ago: int, duration_days: int = 30):
+        Sale.objects.filter(pk=sale.pk).update(
+            created_at=timezone.now() - timedelta(days=days_ago),
+            duration_days=duration_days,
+        )
+
+    def test_stale_list_uses_duration_plus_threshold(self):
+        # 60-day charge + 90 threshold → due after 150 days.
         s = self._make_sale(ref="0555544071", paid=True)
-        old = timezone.now() - timedelta(days=120)
-        Sale.objects.filter(pk=s.pk).update(created_at=old)
+        self._age_sale(s, days_ago=150, duration_days=60)
         r = self.client.get(reverse("reports:stale_phones_report"))
         self.assertEqual(r.status_code, 200)
         rows = list(r.context["page_obj"].object_list)
-        self.assertTrue(any(x["ref_key"] == "0555544071" for x in rows))
+        hit = next(x for x in rows if x["ref_key"] == "0555544071")
+        self.assertEqual(hit["duration_days"], 60)
+        self.assertGreaterEqual(hit["days_past_end"], 90)
 
-    def test_recent_sale_not_in_stale_list(self):
+    def test_not_due_until_threshold_after_subscription_end(self):
+        # 60 + 90 = 150; at 140 days still hidden.
         s = self._make_sale(ref="0559990000", paid=True)
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=1))
+        self._age_sale(s, days_ago=140, duration_days=60)
         r = self.client.get(reverse("reports:stale_phones_report"))
         rows = list(r.context["page_obj"].object_list)
         self.assertFalse(any(x["ref_key"] == "0559990000" for x in rows))
 
+    def test_recent_sale_not_in_stale_list(self):
+        s = self._make_sale(ref="0559990001", paid=True)
+        self._age_sale(s, days_ago=1, duration_days=30)
+        r = self.client.get(reverse("reports:stale_phones_report"))
+        rows = list(r.context["page_obj"].object_list)
+        self.assertFalse(any(x["ref_key"] == "0559990001" for x in rows))
+
     def test_cancelled_sale_ignored_for_last_activity(self):
         s = self._make_sale(ref="0551112222", paid=True)
-        old = timezone.now() - timedelta(days=5)
-        Sale.objects.filter(pk=s.pk).update(created_at=old)
+        self._age_sale(s, days_ago=5, duration_days=30)
         s2 = self._make_sale(ref="0551112222", paid=True)
         Sale.objects.filter(pk=s2.pk).update(
-            created_at=timezone.now() - timedelta(days=120),
+            created_at=timezone.now() - timedelta(days=200),
+            duration_days=30,
             status=Sale.Status.CANCELLED,
         )
         r = self.client.get(reverse("reports:stale_phones_report"))
@@ -479,27 +497,25 @@ class StalePhonesReportTests(_ReportsBase):
         self.user.profile.refresh_from_db()
         self.assertEqual(self.user.profile.stale_phone_threshold_days, 30)
 
-    def test_dismiss_hides_until_reappears(self):
+    def test_dismiss_preserves_list_query(self):
         s = self._make_sale(ref="0550000001", paid=True)
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s, days_ago=130, duration_days=30)
         r = self.client.post(
             reverse("reports:stale_phone_dismiss", kwargs={"ref_key": "0550000001"}),
+            {"next_query": "q=055&sort=ref&order=asc"},
         )
         self.assertEqual(r.status_code, 302)
+        self.assertIn("q=055", r["Location"])
+        self.assertIn("sort=ref", r["Location"])
         r2 = self.client.get(reverse("reports:stale_phones_report"))
         rows = list(r2.context["page_obj"].object_list)
         self.assertFalse(any(x["ref_key"] == "0550000001" for x in rows))
 
     def test_new_sale_after_dismiss_allows_relist_when_idle_again(self):
         s1 = self._make_sale(ref="0550000003", paid=True)
-        Sale.objects.filter(pk=s1.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s1, days_ago=130, duration_days=30)
         self.client.post(
             reverse("reports:stale_phone_dismiss", kwargs={"ref_key": "0550000003"}),
-        )
-        self.assertFalse(
-            PhoneLineTracking.objects.filter(
-                reference_key="0550000003", is_dismissed=False
-            ).exists()
         )
         s2 = self._make_sale(ref="0550000003", paid=True)
         self.assertFalse(
@@ -507,75 +523,86 @@ class StalePhonesReportTests(_ReportsBase):
                 reference_key="0550000003", is_dismissed=True
             ).exists()
         )
-        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s2, days_ago=130, duration_days=30)
         r = self.client.get(reverse("reports:stale_phones_report"))
         rows = list(r.context["page_obj"].object_list)
         self.assertTrue(any(x["ref_key"] == "0550000003" for x in rows))
 
-    def test_edit_sim_persists(self):
+    def test_inline_sim_save_persists(self):
         s = self._make_sale(ref="0550000002", paid=True)
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
-        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "0550000002"})
-        r = self.client.post(url, {"sim_identifier": "SIM-ABC-99"})
-        self.assertEqual(r.status_code, 302)
+        self._age_sale(s, days_ago=130, duration_days=30)
+        url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "0550000002"})
+        r = self.client.post(
+            url,
+            {"sim_identifier": "SIM-ABC-99", "next_query": "sort=ref"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(r.status_code, 200)
         row = PhoneLineTracking.objects.get(reference_key="0550000002")
         self.assertEqual(row.sim_identifier, "SIM-ABC-99")
-        r2 = self.client.get(reverse("reports:stale_phones_report"))
-        rows = list(r2.context["page_obj"].object_list)
-        hit = next(x for x in rows if x["ref_key"] == "0550000002")
-        self.assertEqual(hit["sim_identifier"], "SIM-ABC-99")
+        self.assertIn("SIM-ABC-99", r.content.decode())
 
-    def test_default_sort_most_idle_days_first(self):
+    def test_edit_sim_returns_to_list_query(self):
+        s = self._make_sale(ref="0550000005", paid=True)
+        self._age_sale(s, days_ago=130, duration_days=30)
+        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "0550000005"})
+        r = self.client.post(
+            url,
+            {"sim_identifier": "ICCID-1", "next_query": "company=&line_name=l&page=1"},
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("line_name=l", r["Location"])
+
+    def test_default_sort_most_days_past_end_first(self):
         s_old = self._make_sale(ref="0557000001", paid=True)
-        Sale.objects.filter(pk=s_old.pk).update(created_at=timezone.now() - timedelta(days=200))
+        self._age_sale(s_old, days_ago=200, duration_days=30)
         s_new = self._make_sale(ref="0557000002", paid=True)
-        Sale.objects.filter(pk=s_new.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s_new, days_ago=130, duration_days=30)
         r = self.client.get(reverse("reports:stale_phones_report"))
         rows = list(r.context["page_obj"].object_list)
         idx_old = next(i for i, x in enumerate(rows) if x["ref_key"] == "0557000001")
         idx_new = next(i for i, x in enumerate(rows) if x["ref_key"] == "0557000002")
         self.assertLess(idx_old, idx_new)
-        self.assertGreater(rows[idx_old]["idle_days"], rows[idx_new]["idle_days"])
+        self.assertGreater(rows[idx_old]["days_past_end"], rows[idx_new]["days_past_end"])
 
-    def test_row_shows_payer_company_product(self):
+    def test_row_shows_payer_company_line(self):
         s = self._make_sale(ref="0557000003", paid=True, payer="Karim")
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s, days_ago=130, duration_days=30)
         r = self.client.get(reverse("reports:stale_phones_report"))
         row = next(x for x in r.context["page_obj"].object_list if x["ref_key"] == "0557000003")
         self.assertEqual(row["customer_or_payer"], "Karim")
         self.assertEqual(row["company_name"], "ReportCo")
-        self.assertIn(self.product.line.name, row["product_display"])
+        self.assertEqual(row["line_name"], self.line.name)
 
     def test_row_prefers_customer_name_over_payer(self):
         cust = create_customer(name="Ziad Ledger", user=self.user)
-        # Cash sales do not persist ``customer`` on the row; on-account does.
         s = self._make_sale(ref="0557000004", on_account=True, customer=cust, payer="Walk-in")
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s, days_ago=130, duration_days=30)
         r = self.client.get(reverse("reports:stale_phones_report"))
         row = next(x for x in r.context["page_obj"].object_list if x["ref_key"] == "0557000004")
         self.assertEqual(row["customer_or_payer"], "Ziad Ledger")
 
     def test_sort_querystring_ref_asc(self):
-        self._make_sale(ref="0557000009", paid=True)
-        self._make_sale(ref="0557000008", paid=True)
-        Sale.objects.filter(reference_number="0557000009").update(
-            created_at=timezone.now() - timedelta(days=100)
-        )
-        Sale.objects.filter(reference_number="0557000008").update(
-            created_at=timezone.now() - timedelta(days=100)
-        )
+        s1 = self._make_sale(ref="0557000009", paid=True)
+        s2 = self._make_sale(ref="0557000008", paid=True)
+        self._age_sale(s1, days_ago=130, duration_days=30)
+        self._age_sale(s2, days_ago=130, duration_days=30)
         r = self.client.get(
             reverse("reports:stale_phones_report"),
             {"sort": "ref", "order": "asc"},
         )
         self.assertEqual(r.context["sort"], "ref")
         self.assertEqual(r.context["order"], "asc")
-        refs = [x["ref_key"] for x in r.context["page_obj"].object_list if x["ref_key"].startswith("055700000")]
+        refs = [
+            x["ref_key"]
+            for x in r.context["page_obj"].object_list
+            if x["ref_key"].startswith("055700000")
+        ]
         self.assertEqual(refs, sorted(refs))
 
     def test_filter_company_limits_rows(self):
         s1 = self._make_sale(ref="0558000001", paid=True)
-        Sale.objects.filter(pk=s1.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s1, days_ago=130, duration_days=30)
         company2 = Company.objects.create(
             name="FilterCo",
             opening_balance=_d(5000),
@@ -597,9 +624,10 @@ class StalePhonesReportTests(_ReportsBase):
             sell_price_actual=_d(12),
             notes="",
             user=self.user,
+            duration_days=30,
         )
         mark_sale_paid(sale=s2, user=self.user)
-        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=100))
+        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=130))
         r = self.client.get(
             reverse("reports:stale_phones_report"),
             {"company": str(company2.pk)},
@@ -607,18 +635,77 @@ class StalePhonesReportTests(_ReportsBase):
         rows = list(r.context["page_obj"].object_list)
         self.assertEqual([x["ref_key"] for x in rows], ["0558000002"])
 
+    def test_filter_line_name_unifies_across_companies(self):
+        self.line.name = "Silicom"
+        self.line.save(update_fields=["name"])
+        s1 = self._make_sale(ref="0558100001", paid=True)
+        self._age_sale(s1, days_ago=130, duration_days=30)
+        company2 = Company.objects.create(
+            name="SkyCo",
+            opening_balance=_d(5000),
+            current_balance=_d(5000),
+        )
+        line2 = ProductLine.objects.create(company=company2, name="Silicom")
+        product2 = Product.objects.create(
+            line=line2,
+            variant_label="100GB",
+            cost_price=_d(2),
+            default_sell_price=_d(12),
+        )
+        s2 = create_sale(
+            company=company2,
+            product=product2,
+            reference_number="0558100002",
+            payer_name="Other",
+            payment_method=self.cash,
+            sell_price_actual=_d(12),
+            notes="",
+            user=self.user,
+            duration_days=30,
+        )
+        mark_sale_paid(sale=s2, user=self.user)
+        Sale.objects.filter(pk=s2.pk).update(created_at=timezone.now() - timedelta(days=130))
+        # Different line name should not match.
+        other = ProductLine.objects.create(company=company2, name="OtherLine")
+        p_other = Product.objects.create(
+            line=other,
+            variant_label="X",
+            cost_price=_d(2),
+            default_sell_price=_d(12),
+        )
+        s3 = create_sale(
+            company=company2,
+            product=p_other,
+            reference_number="0558100003",
+            payer_name="Z",
+            payment_method=self.cash,
+            sell_price_actual=_d(12),
+            notes="",
+            user=self.user,
+            duration_days=30,
+        )
+        mark_sale_paid(sale=s3, user=self.user)
+        Sale.objects.filter(pk=s3.pk).update(created_at=timezone.now() - timedelta(days=130))
+
+        r = self.client.get(
+            reverse("reports:stale_phones_report"),
+            {"line_name": "silicom"},
+        )
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("0558100001", refs)
+        self.assertIn("0558100002", refs)
+        self.assertNotIn("0558100003", refs)
+
     def test_filter_search_q_matches_payer(self):
         s = self._make_sale(ref="0559000111", paid=True, payer="UniquePayerXYZ")
-        Sale.objects.filter(pk=s.pk).update(created_at=timezone.now() - timedelta(days=100))
+        self._age_sale(s, days_ago=130, duration_days=30)
         r = self.client.get(reverse("reports:stale_phones_report"), {"q": "UniquePayerXYZ"})
         rows = list(r.context["page_obj"].object_list)
         self.assertTrue(any(x["ref_key"] == "0559000111" for x in rows))
 
     def test_htmx_returns_results_partial_only(self):
-        self._make_sale(ref="0559000222", paid=True)
-        Sale.objects.filter(reference_number="0559000222").update(
-            created_at=timezone.now() - timedelta(days=100)
-        )
+        s = self._make_sale(ref="0559000222", paid=True)
+        self._age_sale(s, days_ago=130, duration_days=30)
         r = self.client.get(
             reverse("reports:stale_phones_report"),
             HTTP_HX_REQUEST="true",
@@ -626,4 +713,4 @@ class StalePhonesReportTests(_ReportsBase):
         self.assertEqual(r.status_code, 200)
         body = r.content.decode()
         self.assertIn("table", body)
-        self.assertNotIn("Idle threshold", body)
+        self.assertNotIn("Activity threshold", body)

@@ -2,16 +2,30 @@
 {% load i18n %}
 {% block content %}
 <div class="rd-page-header">
-  <h1 class="rd-heading-xl mb-1">{% trans "Edit line" %}</h1>
-  <p class="rd-text-muted mb-0">{{ display_reference }}</p>
+  <h1 class="rd-heading-xl mb-1">{% trans "Edit ICCID / SIM" %}</h1>
+  <p class="rd-text-muted mb-0 font-monospace">{{ display_reference }}</p>
 </div>
 
 <div class="rd-card" style="max-width: 32rem;">
-  <div class="rd-card-header fw-semibold">{% trans "SIM / chip" %}</div>
+  <div class="rd-card-header fw-semibold">{% trans "ICCID / SIM" %}</div>
   <div class="rd-card-body">
+    {% if row %}
+      <dl class="row small mb-3">
+        <dt class="col-5 text-secondary">{% trans "Line" %}</dt>
+        <dd class="col-7">{{ row.line_name|default:"—" }}</dd>
+        <dt class="col-5 text-secondary">{% trans "Days charged" %}</dt>
+        <dd class="col-7 tabular-nums">{{ row.duration_days }}</dd>
+        <dt class="col-5 text-secondary">{% trans "Subscription end" %}</dt>
+        <dd class="col-7">{{ row.subscription_end|date:"Y-m-d" }}</dd>
+        <dt class="col-5 text-secondary">{% trans "Days past end" %}</dt>
+        <dd class="col-7 tabular-nums">{{ row.days_past_end }}</dd>
+      </dl>
+    {% endif %}
     <form method="post" class="d-grid gap-2">
       {% csrf_token %}
-      {{ form.sim_identifier.label_tag }} {{ form.sim_identifier }}
+      <input type="hidden" name="next_query" value="{{ next_query }}">
+      {{ form.sim_identifier.label_tag }}
+      {{ form.sim_identifier }}
       {{ form.sim_identifier.errors }}
       <div class="d-flex flex-wrap gap-2 mt-2">
         <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>

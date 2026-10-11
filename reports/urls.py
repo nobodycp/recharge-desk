@@ -18,6 +18,11 @@ urlpatterns = [
         name="stale_phone_edit",
     ),
     path(
+        "management/reports/stale-phones/sim/<str:ref_key>/",
+        views_stale_phones.stale_phone_sim_save,
+        name="stale_phone_sim_save",
+    ),
+    path(
         "management/reports/stale-phones/dismiss/<str:ref_key>/",
         views_stale_phones.stale_phone_dismiss,
         name="stale_phone_dismiss",
