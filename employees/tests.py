@@ -119,6 +119,38 @@ class EmployeePayrollTests(TestCase):
         self.assertEqual(self.employee.current_balance, Decimal("-25"))
         self.assertEqual(compute_balance_from_ledger(self.employee), Decimal("-25"))
 
+    def test_new_sim_chip_cost_still_applies_on_employee_payment_sale(self):
+        from inventory.models import SimStockBalance
+
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        SimStockBalance.objects.create(
+            location=SimStockBalance.Location.MAIN,
+            product_line=self.line,
+            quantity=5,
+        )
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0509999999",
+            payer_name="Chip",
+            payment_method=None,
+            sell_price_actual=Decimal("30"),
+            notes="",
+            user=self.emp_user,
+            is_new_sim=True,
+            paid_via_employee=True,
+            employee_recipient=self.employee,
+        )
+        self.assertEqual(sale.cost_price_snapshot, Decimal("17"))  # 5 package + 12 chip
+        self.assertEqual(sale.profit_snapshot, Decimal("13"))
+        mark_sale_paid(sale=sale, user=self.mgmt)
+        entry = EmployeeLedgerEntry.objects.get(reference_sale=sale)
+        # Employee still holds the full cash received; chip cost hits company/profit.
+        self.assertEqual(entry.amount, Decimal("-30"))
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("17"))
+
     def test_record_sales_payment_idempotent(self):
         sale = create_sale(
             company=self.company,

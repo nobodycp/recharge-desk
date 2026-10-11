@@ -766,6 +766,19 @@ AR: dict[str, str] = {
     "New SIM: estimated chip cost is included in the estimate above.": (
         "شريحة جديدة: تكلفة الشريحة التقديرية مضمَّنة في التقدير أعلاه."
     ),
+    "New SIM: estimated chip cost is deducted from profit (same for payment to employee).": (
+        "شريحة جديدة: تكلفة الشريحة التقديرية تُخصم من الربح (أيضاً مع الدفع لدى موظف)."
+    ),
+    "Package cost": "تكلفة الباقة",
+    "eSIM extra": "إضافة eSIM",
+    "New SIM chip": "تكلفة الشريحة الجديدة",
+    "SIM cost": "تكلفة الشريحة",
+    "Estimated SIM chip cost deducted from profit on New SIM sales.": (
+        "تكلفة الشريحة التقديرية تُخصم من الربح عند بيع شريحة جديدة."
+    ),
+    "Company, product, eSIM and New SIM flags can't be changed here. If those need fixing, delete this entry and create a new one.": (
+        "لا يمكن تغيير الشركة أو المنتج أو علامتي eSIM وشريحة جديدة هنا. إن احتجت تعديلها، احذف القيد وأنشئ واحداً جديداً."
+    ),
     "Positive credits the employee; negative debits them.": "موجب يُضاف للموظف؛ سالب يُخصم منه.",
     "Employee payment sales require an employee recipient.": "مبيعات الدفع لدى موظف تتطلب موظفاً مستلماً.",
     "A sale cannot be both on-account and paid via employee.": "لا يمكن أن تكون المبيعة آجل ودفع لدى موظف معاً.",

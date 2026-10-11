@@ -5322,6 +5322,27 @@ msgstr "eSIM: تكلفة المورّد الإضافية مضمَّنة في ا�
 msgid "New SIM: estimated chip cost is included in the estimate above."
 msgstr "شريحة جديدة: تكلفة الشريحة التقديرية مضمَّنة في التقدير أعلاه."
 
+msgid "New SIM: estimated chip cost is deducted from profit (same for payment to employee)."
+msgstr "شريحة جديدة: تكلفة الشريحة التقديرية تُخصم من الربح (أيضاً مع الدفع لدى موظف)."
+
+msgid "Package cost"
+msgstr "تكلفة الباقة"
+
+msgid "eSIM extra"
+msgstr "إضافة eSIM"
+
+msgid "New SIM chip"
+msgstr "تكلفة الشريحة الجديدة"
+
+msgid "SIM cost"
+msgstr "تكلفة الشريحة"
+
+msgid "Estimated SIM chip cost deducted from profit on New SIM sales."
+msgstr "تكلفة الشريحة التقديرية تُخصم من الربح عند بيع شريحة جديدة."
+
+msgid "Company, product, eSIM and New SIM flags can't be changed here. If those need fixing, delete this entry and create a new one."
+msgstr "لا يمكن تغيير الشركة أو المنتج أو علامتي eSIM وشريحة جديدة هنا. إن احتجت تعديلها، احذف القيد وأنشئ واحداً جديداً."
+
 #: templates/sales/employee_entry.html:230
 msgid ""
 "Selling price is 0: supplier cost will be recorded as a loss in the system."

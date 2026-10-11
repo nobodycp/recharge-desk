@@ -126,7 +126,13 @@ def employee_detail(request, pk):
     )
     active_tab = _employee_active_tab(request)
 
-    ledger_qs = employee.ledger_entries.select_related("reference_sale", "created_by")
+    ledger_qs = employee.ledger_entries.select_related(
+        "reference_sale",
+        "reference_sale__employee_recipient",
+        "reference_sale__employee_recipient__user",
+        "reference_sale__employee_recipient__user__profile",
+        "created_by",
+    )
     ledger_filter_form = EmployeeLedgerFilterForm(request.GET or None)
     ledger_filter_data = (
         ledger_filter_form.cleaned_data if ledger_filter_form.is_valid() else {}

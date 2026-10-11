@@ -32,6 +32,10 @@
                 {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
                 {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
                 {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
+                {% if row.reference_sale %}
+                  {% include "partials/sale_new_sim_badge.html" with sale=row.reference_sale %}
+                  {% include "partials/sale_employee_payment_badge.html" with sale=row.reference_sale %}
+                {% endif %}
                 {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
               </td>
               <td class="text-end">
@@ -64,11 +68,15 @@
           <span class="tabular-nums fw-bold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">{{ row.amount|intcomma }}</span>
         </div>
         <div class="mt-1"><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></div>
-        {% if row.phone or row.payer_name or row.salary_month %}
+        {% if row.phone or row.payer_name or row.salary_month or row.reference_sale %}
           <div class="small mt-2">
             {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
             {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
             {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
+            {% if row.reference_sale %}
+              {% include "partials/sale_new_sim_badge.html" with sale=row.reference_sale %}
+              {% include "partials/sale_employee_payment_badge.html" with sale=row.reference_sale %}
+            {% endif %}
           </div>
         {% endif %}
         {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
