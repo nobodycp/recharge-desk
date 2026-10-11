@@ -102,6 +102,48 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["today_profit"] or 0, 0)
         self.assertEqual(ctx["total_profit"] or 0, 0)
         self.assertEqual(ctx["esim_sales_count"], 0)
+        self.assertEqual(ctx["phones_due_soon_count"], 0)
+        self.assertEqual(ctx["phones_overdue_count"], 0)
+        self.assertNotContains(r, "Recent activity")
+        self.assertContains(r, "Lines for disconnect")
+
+    def test_dashboard_phone_disconnect_kpis(self):
+        from reports.stale_phones import reference_disconnect_counts
+
+        # Overdue: duration 30 + threshold 90 → due after 120 days.
+        overdue = self._make_sale(ref="055DASH0001", paid=True)
+        Sale.objects.filter(pk=overdue.pk).update(
+            created_at=timezone.now() - timedelta(days=130),
+            duration_days=30,
+        )
+        # Due soon (within 3 days): disconnect_at = last + 30 + 90 = last + 120.
+        # Age so disconnect_at is ~1.5 days from now → days_ago ≈ 118.5 → 118.
+        due_soon = self._make_sale(ref="055DASH0002", paid=True)
+        Sale.objects.filter(pk=due_soon.pk).update(
+            created_at=timezone.now() - timedelta(days=118),
+            duration_days=30,
+        )
+        # Still far from due.
+        fresh = self._make_sale(ref="055DASH0003", paid=True)
+        Sale.objects.filter(pk=fresh.pk).update(
+            created_at=timezone.now() - timedelta(days=10),
+            duration_days=30,
+        )
+        # eSIM overdue — excluded.
+        esim = self._make_sale(ref="055DASH0004", paid=True, is_esim=True)
+        Sale.objects.filter(pk=esim.pk).update(
+            created_at=timezone.now() - timedelta(days=200),
+            duration_days=30,
+        )
+
+        stats = reference_disconnect_counts(threshold_days=90, due_soon_days=3)
+        self.assertEqual(stats["overdue"], 1)
+        self.assertEqual(stats["due_soon"], 1)
+
+        cache.clear()
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(r.context["phones_overdue_count"], 1)
+        self.assertEqual(r.context["phones_due_soon_count"], 1)
 
 
 class DashboardKPITests(_ReportsBase):

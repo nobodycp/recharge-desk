@@ -158,6 +158,58 @@ def stale_reference_aggregate(*, threshold_days: int) -> list[dict[str, Any]]:
     return out
 
 
+def reference_disconnect_counts(
+    *, threshold_days: int, due_soon_days: int = 3
+) -> dict[str, int]:
+    """
+    Counts for the operational dashboard (physical SIMs only, eSIM excluded).
+
+    - ``due_soon``: still active, but becomes disconnect-due within ``due_soon_days``.
+    - ``overdue``: already past activity threshold (same population as the
+      “lines for disconnect” report, including dismissed? No — dismissed stay out).
+    """
+    threshold_days = max(1, int(threshold_days))
+    due_soon_days = max(0, int(due_soon_days))
+    dismissed = set(
+        PhoneLineTracking.objects.filter(is_dismissed=True).values_list(
+            "reference_key", flat=True
+        )
+    )
+    base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
+        ref_key=Lower(Trim("reference_number"))
+    )
+    grouped = list(
+        base.values("ref_key")
+        .annotate(last_activity=Max("created_at"))
+        .exclude(ref_key="")
+    )
+    keys = [
+        r["ref_key"]
+        for r in grouped
+        if r["ref_key"] and r["ref_key"] not in dismissed
+    ]
+    latest_by_key = _latest_sale_per_ref_key(keys)
+    now = timezone.now()
+    soon_end = now + timedelta(days=due_soon_days)
+    due_soon = 0
+    overdue = 0
+    for row in grouped:
+        key = row["ref_key"] or ""
+        if not key or key in dismissed:
+            continue
+        sale = latest_by_key.get(key)
+        if not sale or sale.is_esim:
+            continue
+        last = row["last_activity"] or sale.created_at
+        duration = sale_duration_days(sale)
+        disconnect_at = last + timedelta(days=duration + threshold_days)
+        if disconnect_at <= now:
+            overdue += 1
+        elif disconnect_at <= soon_end:
+            due_soon += 1
+    return {"due_soon": due_soon, "overdue": overdue}
+
+
 def filter_stale_rows(
     rows: list[dict[str, Any]],
     *,

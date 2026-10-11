@@ -106,6 +106,35 @@
   </div>
 </div>
 
+{# Phone lines — active (due in 3 days) vs already past activity threshold #}
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 mb-3 rd-dashboard-kpi-row rd-dashboard-section rd-dashboard-section--phones">
+  <div class="col d-flex">
+    <div class="rd-card rd-stat flex-fill w-100 h-100">
+      <div class="rd-card-body d-flex flex-column h-100">
+        <div class="rd-stat-icon rd-stat-icon--warning" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        </div>
+        <div class="rd-label mb-1">{% trans "Lines for disconnect" %}</div>
+        <div class="rd-kpi-spacer flex-grow-1" aria-hidden="true"></div>
+        <div class="rd-stat-pair">
+          <a class="rd-stat-pair__item" href="{% url 'reports:stale_phones_report' %}">
+            <span class="rd-stat-pair__lbl">{% trans "Active — due in 3 days" %}</span>
+            <span class="rd-stat-pair__val kpi-warning">{{ phones_due_soon_count|intcomma }}</span>
+          </a>
+          <span class="rd-stat-pair__divider" aria-hidden="true"></span>
+          <a class="rd-stat-pair__item" href="{% url 'reports:stale_phones_report' %}">
+            <span class="rd-stat-pair__lbl">{% trans "Already stopped" %}</span>
+            <span class="rd-stat-pair__val kpi-danger">{{ phones_overdue_count|intcomma }}</span>
+          </a>
+        </div>
+        <p class="rd-stat-footnote mb-0 mt-2">
+          {% blocktrans with d=stale_phone_threshold_days %}Still active but hit the disconnect window in 3 days, vs lines past the {{ d }}-day activity threshold (same count as the disconnect list). eSIM excluded.{% endblocktrans %}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 {# 2) Month (with all-time under the card) + supplier balances #}
 <div class="row g-3 mb-3 align-items-stretch rd-dashboard-financial-row rd-dashboard-section rd-dashboard-section--month">
   <div class="col-12 col-md-6 d-flex flex-column gap-2 h-100 rd-dashboard-month-col">
@@ -278,41 +307,4 @@
   </div>
 </div>
 
-{# 4) Recent activity #}
-<div class="rd-card overflow-hidden rd-dashboard-section rd-dashboard-section--activity">
-  <div class="rd-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <span>{% trans "Recent activity" %}</span>
-    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:management_sale_list' %}">{% trans "View all sales" %}</a>
-  </div>
-  <div class="rd-data-shell">
-    <div class="table-responsive rd-table-wrap border-0">
-      <table class="table table-striped table-hover mb-0 align-middle">
-        <thead>
-          <tr>
-            <th scope="col">{% trans "When" %}</th>
-            <th scope="col">{% trans "Company" %}</th>
-            <th scope="col">{% trans "Product" %}</th>
-            <th scope="col">{% trans "Employee" %}</th>
-            <th scope="col" class="text-end">{% trans "Amount" %}</th>
-            <th scope="col">{% trans "Status" %}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in recent_sales %}
-            <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
-              <td class="text-secondary small text-nowrap">{{ s.created_at }}</td>
-              <td class="fw-medium">{{ s.company.name }}</td>
-              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
-              <td class="text-secondary small">{{ s.created_by.username }}</td>
-              <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
-              <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="6" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales yet." %}</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 {% endblock %}

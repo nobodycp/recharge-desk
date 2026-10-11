@@ -111,24 +111,25 @@ def dashboard(request):
     )
     net_month = (month_profit or 0) - (month_expenses or 0)
 
-    # `companies` and `recent_sales` are short queries that drive the
-    # left/right cards and the activity table. They're not cached
-    # because they return queryset rows (not scalars) and we want fresh
-    # ordering and live-icon resolution.
+    # Supplier balances card — keep live (icons / ordering).
     companies = Company.objects.filter(is_active=True).order_by("name")
-    recent_sales = (
-        Sale.objects.select_related(
-            "company",
-            "product",
-            "product__line",
-            "created_by",
-            "payment_method",
-            "employee_recipient",
-            "employee_recipient__user",
-            "employee_recipient__user__profile",
-        )
-        .order_by("-created_at")[:12]
+
+    # Phone disconnect KPIs use the viewer's threshold (same as the report).
+    from accounts.models import UserProfile
+    from reports.stale_phones import reference_disconnect_counts
+
+    try:
+        threshold_days = int(request.user.profile.stale_phone_threshold_days)
+    except (UserProfile.DoesNotExist, AttributeError, TypeError, ValueError):
+        threshold_days = 90
+    phone_stats = cached_kpi(
+        f"dashboard:phone_disconnect:{threshold_days}:{today_key}",
+        lambda: reference_disconnect_counts(
+            threshold_days=threshold_days, due_soon_days=3
+        ),
     )
+    phones_due_soon_count = int(phone_stats.get("due_soon", 0) or 0)
+    phones_overdue_count = int(phone_stats.get("overdue", 0) or 0)
 
     # Must use the same date scope as `today_count` / `today_volume` (today only).
     esim_sales_count = cached_kpi(
@@ -245,7 +246,9 @@ def dashboard(request):
             "month_expenses": month_expenses or 0,
             "net_month": net_month,
             "companies": companies,
-            "recent_sales": recent_sales,
+            "phones_due_soon_count": phones_due_soon_count,
+            "phones_overdue_count": phones_overdue_count,
+            "stale_phone_threshold_days": threshold_days,
             "daily_series": daily_series,
             "top_companies": top_companies,
             "chart_max_volume": chart_max_volume,
