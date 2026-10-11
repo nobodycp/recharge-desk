@@ -152,10 +152,13 @@ class ProductVariantForm(forms.ModelForm):
     class Meta:
         model = Product
         # Package icons are not used — the product-line icon is shared by all packages.
-        fields = ["variant_label", "cost_price", "default_sell_price", "is_active"]
+        fields = ["variant_label", "cost_price", "default_sell_price", "base_days", "is_active"]
         widgets = {
             "variant_label": forms.TextInput(attrs={"class": "form-control", "placeholder": _("e.g. 100 GB")}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
             "default_sell_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "base_days": forms.NumberInput(
+                attrs={"class": "form-control", "step": "1", "min": "1", "placeholder": "30"}
+            ),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }

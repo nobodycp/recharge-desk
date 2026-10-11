@@ -40,8 +40,9 @@
               data-product-cost="{{ p.cost_price|unlocalize }}"
               data-sim-unit-cost="{% if g.line.estimated_unit_cost %}{{ g.line.estimated_unit_cost|unlocalize }}{% else %}0{% endif %}"
               data-default-price="{{ p.default_sell_price|unlocalize }}"
+              data-base-days="{{ p.base_days|default:30 }}"
               data-line-id="{{ g.line.pk }}"
-              title="{{ p.display_name }} — {{ p.default_sell_price|unlocalize }}"
+              title="{{ p.display_name }} — {{ p.default_sell_price|unlocalize }} / {{ p.base_days|default:30 }}d"
             >
               {% if p.variant_label %}{{ p.variant_label }}{% else %}<span class="text-secondary">{% trans "Default" %}</span>{% endif %}
             </button>

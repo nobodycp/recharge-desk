@@ -5838,3 +5838,40 @@ msgstr "غير مستخدمة. تُعرض أيقونة خط المنتج لكل 
 msgid "Optional. If empty, the full payment method name is shown on the sales screen."
 msgstr "اختياري. إذا تُركت فارغة، يظهر اسم طريقة الدفع كاملاً في شاشة المبيعات."
 
+msgid "base days"
+msgstr "أيام الأساس"
+
+msgid ""
+"How many days this package price covers (e.g. 30 monthly, 90 for 3 months). "
+"Sales can enter fewer/more days; cost and suggested sell are prorated."
+msgstr ""
+"كم يوماً يغطي سعر هذه الباقة (مثلاً 30 للشهري، 90 لثلاثة أشهر). يمكن إدخال أيام "
+"أقل أو أكثر عند البيع؛ تُحسب التكلفة وسعر البيع المقترح بالنسبة."
+
+msgid "duration days"
+msgstr "عدد الأيام"
+
+msgid ""
+"Days charged for this sale. Cost is prorated from the package base days "
+"(e.g. 15 of 30)."
+msgstr ""
+"الأيام المحتسبة لهذا البيع. تُحسب التكلفة بنسبة من أيام أساس الباقة (مثلاً 15 من 30)."
+
+msgid "Days"
+msgstr "الأيام"
+
+msgid "Package price is for its base days; cost and suggested sell scale with this."
+msgstr "سعر الباقة لأيام أساسها؛ التكلفة وسعر البيع المقترح يتناسبان مع هذا العدد."
+
+msgid "Cost and suggested sell scale by days ÷ package base days (e.g. 15 of 30)."
+msgstr "التكلفة وسعر البيع المقترح يُحسبان بنسبة الأيام ÷ أيام أساس الباقة (مثلاً 15 من 30)."
+
+msgid "Prorated from package base:"
+msgstr "محسوب من أساس الباقة:"
+
+msgid "days"
+msgstr "يوم"
+
+msgid "Duration days must be at least 1."
+msgstr "عدد الأيام يجب أن يكون 1 على الأقل."
+

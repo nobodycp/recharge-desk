@@ -189,6 +189,15 @@ class Product(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.01"))],
     )
+    base_days = models.PositiveSmallIntegerField(
+        _("base days"),
+        default=30,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "How many days this package price covers (e.g. 30 monthly, 90 for 3 months). "
+            "Sales can enter fewer/more days; cost and suggested sell are prorated."
+        ),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

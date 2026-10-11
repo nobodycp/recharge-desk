@@ -6,7 +6,7 @@ from companies.models import Company, Product, ProductLine
 class ProductVariantInline(admin.TabularInline):
     model = Product
     extra = 0
-    fields = ("variant_label", "cost_price", "default_sell_price", "is_active")
+    fields = ("variant_label", "cost_price", "default_sell_price", "base_days", "is_active")
 
 
 @admin.register(Company)

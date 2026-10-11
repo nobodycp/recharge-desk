@@ -488,6 +488,19 @@ AR: dict[str, str] = {
     "Company, line, or package…": "شركة أو خط أو باقة…",
     "Product lines": "خطوط المنتج",
     "Show archived packages": "إظهار الباقات المؤرشفة",
+    "base days": "أيام الأساس",
+    "duration days": "عدد الأيام",
+    "Days": "الأيام",
+    "Cost and suggested sell scale by days ÷ package base days (e.g. 15 of 30).": (
+        "التكلفة وسعر البيع المقترح يُحسبان بنسبة الأيام ÷ أيام أساس الباقة (مثلاً 15 من 30)."
+    ),
+    "Prorated from package base:": "محسوب من أساس الباقة:",
+    "days": "يوم",
+    "Duration days must be at least 1.": "عدد الأيام يجب أن يكون 1 على الأقل.",
+    "Package price is for its base days; cost and suggested sell scale with this.": (
+        "سعر الباقة لأيام أساسها؛ التكلفة وسعر البيع المقترح يتناسبان مع هذا العدد."
+    ),
+
     "Optional shared icon for this line on the sales screen. If empty, the full line name is shown.": (
         "أيقونة مشتركة اختيارية لهذا الخط في شاشة المبيعات. إذا تُركت فارغة، يظهر اسم الخط كاملاً."
     ),

@@ -13,7 +13,12 @@ from sales.payer_lookup import (
     latest_sale_for_reference,
     payer_name_suggestions,
 )
-from sales.pricing import ESIM_EXTRA_COST, effective_cost_for_product, loss_snapshot_for_sale
+from sales.pricing import (
+    ESIM_EXTRA_COST,
+    effective_cost_for_product,
+    loss_snapshot_for_sale,
+    suggested_sell_for_product,
+)
 from sales.models import CompanyBalanceTransaction
 from sales.services import (
     cleanup_orphan_sale_balance_transactions,
@@ -282,6 +287,45 @@ class EsimSaleTests(TestCase):
         )
         self.assertEqual(sale.cost_price_snapshot, Decimal("30"))
         self.assertEqual(sale.profit_snapshot, Decimal("20"))
+
+    def test_duration_days_prorates_cost_and_suggested_sell(self):
+        self.product.base_days = 30
+        self.product.cost_price = Decimal("30")
+        self.product.default_sell_price = Decimal("60")
+        self.product.save()
+        self.assertEqual(
+            suggested_sell_for_product(self.product, duration_days=15),
+            Decimal("30.00"),
+        )
+        self.assertEqual(
+            effective_cost_for_product(self.product, is_esim=False, duration_days=15),
+            Decimal("15.00"),
+        )
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000015",
+            payer_name="Half month",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("30"),
+            notes="",
+            user=self.user,
+            duration_days=15,
+        )
+        self.assertEqual(sale.duration_days, 15)
+        self.assertEqual(sale.cost_price_snapshot, Decimal("15.00"))
+        self.assertEqual(sale.profit_snapshot, Decimal("15.00"))
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("15"))
+
+    def test_duration_days_keeps_esim_extra_unprorated(self):
+        self.product.base_days = 30
+        self.product.cost_price = Decimal("30")
+        self.product.save(update_fields=["base_days", "cost_price"])
+        cost = effective_cost_for_product(
+            self.product, is_esim=True, duration_days=15
+        )
+        self.assertEqual(cost, Decimal("15.00") + ESIM_EXTRA_COST)
 
     def test_create_sale_zero_sell_price_allowed(self):
         sale = create_sale(

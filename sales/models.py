@@ -118,6 +118,16 @@ class Sale(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0"))],
     )
+    duration_days = models.PositiveSmallIntegerField(
+        _("duration days"),
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Days charged for this sale. Cost is prorated from the package "
+            "base days (e.g. 15 of 30)."
+        ),
+    )
     cost_price_snapshot = models.DecimalField(
         _("cost price (snapshot)"),
         max_digits=12,

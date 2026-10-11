@@ -47,6 +47,23 @@ class EmployeeSaleForm(forms.Form):
             }
         ),
     )
+    duration_days = forms.IntegerField(
+        label=_("Days"),
+        min_value=1,
+        max_value=366,
+        initial=30,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "step": "1",
+                "min": "1",
+                "max": "366",
+                "id": "id_duration_days",
+                "inputmode": "numeric",
+            }
+        ),
+        help_text=_("Package price is for its base days; cost and suggested sell scale with this."),
+    )
     sell_price_actual = forms.DecimalField(
         label=_("Selling price"),
         max_digits=12,
