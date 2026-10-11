@@ -183,18 +183,18 @@
 
           <div class="rd-field-group">
             <div class="row g-2 align-items-end">
-              <div class="col-4 col-sm-3">
+              <div class="col-4 col-sm-3" id="rd-duration-days-wrap" hidden>
                 <label class="rd-field-label d-block" for="id_duration_days">{% trans "Days" %}</label>
                 {{ form.duration_days.errors }}
                 {{ form.duration_days }}
               </div>
-              <div class="col-8 col-sm-9">
+              <div class="col-12" id="rd-sell-price-wrap">
                 <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
                 {{ form.sell_price_actual.errors }}
                 {{ form.sell_price_actual }}
               </div>
             </div>
-            <p class="form-text small mb-1" id="rd-days-hint">{% trans "Cost and suggested sell scale by days ÷ package base days (e.g. 15 of 30)." %}</p>
+            <p class="form-text small mb-1" id="rd-days-hint" hidden></p>
             <div class="rd-esim-switch">
               <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
                 <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_esim }}</div>
@@ -902,11 +902,45 @@
     return isFinite(v) && v > 0 ? v : 30;
   }
 
-  function getDurationDays() {
+  function chipAllowsPartialDays(chip) {
+    if (!chip) return false;
+    var allow = chip.getAttribute("data-allow-partial-days") === "1";
+    return allow && getChipBaseDays(chip) === 30;
+  }
+
+  function getDurationDays(chip) {
+    var baseDays = getChipBaseDays(chip || document.querySelector(".employee-package-chip.is-active"));
+    if (!chipAllowsPartialDays(chip || document.querySelector(".employee-package-chip.is-active"))) {
+      return baseDays;
+    }
     var daysInp = document.getElementById("id_duration_days");
-    if (!daysInp || daysInp.value === "" || daysInp.value == null) return null;
+    if (!daysInp || daysInp.value === "" || daysInp.value == null) return baseDays;
     var v = parseInt(String(daysInp.value), 10);
-    return isFinite(v) && v > 0 ? v : null;
+    return isFinite(v) && v > 0 ? v : baseDays;
+  }
+
+  function syncDurationDaysVisibility(chip) {
+    var wrap = document.getElementById("rd-duration-days-wrap");
+    var sellWrap = document.getElementById("rd-sell-price-wrap");
+    var daysInp = document.getElementById("id_duration_days");
+    var hint = document.getElementById("rd-days-hint");
+    var allow = chipAllowsPartialDays(chip);
+    var baseDays = getChipBaseDays(chip);
+    if (wrap) wrap.hidden = !allow;
+    if (sellWrap) {
+      sellWrap.classList.remove("col-4", "col-sm-3", "col-8", "col-sm-9", "col-12");
+      sellWrap.classList.add(allow ? "col-8" : "col-12");
+      if (allow) sellWrap.classList.add("col-sm-9");
+    }
+    if (daysInp) {
+      if (!allow || daysInp.value === "" || daysInp.value == null) {
+        daysInp.value = String(baseDays || 30);
+      }
+    }
+    if (hint && !allow) {
+      hint.hidden = true;
+      hint.textContent = "";
+    }
   }
 
   function roundMoney(n) {
@@ -926,12 +960,8 @@
     var def = parseFloat(String(chip.getAttribute("data-default-price") || "").replace(",", "."), 10);
     if (!isFinite(def)) return;
     var baseDays = getChipBaseDays(chip);
-    var days = getDurationDays();
-    if (days == null) {
-      var daysInp = document.getElementById("id_duration_days");
-      if (daysInp) daysInp.value = String(baseDays);
-      days = baseDays;
-    }
+    syncDurationDaysVisibility(chip);
+    var days = getDurationDays(chip);
     sellInp.value = prorateAmount(def, baseDays, days).toFixed(2);
   }
 
@@ -959,8 +989,7 @@
       return;
     }
     var baseDays = getChipBaseDays(chip);
-    var days = getDurationDays();
-    if (days == null) days = baseDays;
+    var days = getDurationDays(chip);
     var useEsim = esim && esim.checked;
     var useNewSim = newSim && newSim.checked;
     var simExtra = getSimUnitCost(chip);
@@ -994,12 +1023,18 @@
     if (newSimNote) newSimNote.hidden = !(useNewSim && simExtra > 0);
     if (lossNote) lossNote.hidden = sell !== 0;
     if (daysHint) {
-      daysHint.textContent =
-        "{% filter escapejs %}{% trans 'Prorated from package base:' %}{% endfilter %} " +
-        days +
-        " / " +
-        baseDays +
-        " {% filter escapejs %}{% trans 'days' %}{% endfilter %}";
+      if (chipAllowsPartialDays(chip) && days !== baseDays) {
+        daysHint.hidden = false;
+        daysHint.textContent =
+          "{% filter escapejs %}{% trans 'Prorated from package base:' %}{% endfilter %} " +
+          days +
+          " / " +
+          baseDays +
+          " {% filter escapejs %}{% trans 'days' %}{% endfilter %}";
+      } else {
+        daysHint.hidden = true;
+        daysHint.textContent = "";
+      }
     }
     updateSimStockPreview();
   }
@@ -1105,6 +1140,7 @@
     var daysInp = document.getElementById("id_duration_days");
     if (hid) hid.value = id || "";
     if (daysInp) daysInp.value = String(getChipBaseDays(tile));
+    syncDurationDaysVisibility(tile);
     applySuggestedSellFromChip(tile);
     var lineId = tile.getAttribute("data-line-id");
     if (lineId) {
@@ -1144,6 +1180,7 @@
     document.querySelectorAll(".employee-package-chip").forEach(function (c) {
       c.classList.remove("is-active");
     });
+    syncDurationDaysVisibility(null);
     showPackagesForLine(lineId);
     updateSalePreview();
   }
@@ -1371,6 +1408,8 @@
         updateSalePreview();
       });
     }
+    var activeChip = document.querySelector(".employee-package-chip.is-active");
+    syncDurationDaysVisibility(activeChip);
     updateSalePreview();
     updateSimStockPreview();
   });
@@ -1384,6 +1423,7 @@
       if (inp) inp.value = "";
       var daysInp = document.getElementById("id_duration_days");
       if (daysInp) daysInp.value = "30";
+      syncDurationDaysVisibility(null);
       updateSalePreview();
       updateSimStockPreview();
     }

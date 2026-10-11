@@ -69,12 +69,9 @@ def create_sale(
     else:
         if payment_method is None:
             raise ValueError(_("Payment method is required for non on-account sales."))
-    from sales.pricing import package_base_days
+    from sales.pricing import resolve_duration_days
 
-    base_days = package_base_days(product)
-    days = int(duration_days) if duration_days is not None else base_days
-    if days < 1:
-        raise ValueError(_("Duration days must be at least 1."))
+    days = resolve_duration_days(product, duration_days)
     cost = effective_cost_for_product(
         product,
         is_esim=bool(is_esim),

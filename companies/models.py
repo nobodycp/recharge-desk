@@ -109,6 +109,14 @@ class ProductLine(models.Model):
             "also used for SIM inventory valuation."
         ),
     )
+    allow_partial_days = models.BooleanField(
+        _("allow partial-day sales"),
+        default=False,
+        help_text=_(
+            "If enabled, employees can enter fewer days than the package period "
+            "for monthly (30-day) packages on this line. 3-month packages stay fixed."
+        ),
+    )
     is_active = models.BooleanField(_("active"), default=True)
     default_package = models.ForeignKey(
         "Product",
@@ -194,8 +202,8 @@ class Product(models.Model):
         default=30,
         validators=[MinValueValidator(1)],
         help_text=_(
-            "How many days this package price covers (e.g. 30 monthly, 90 for 3 months). "
-            "Sales can enter fewer/more days; cost and suggested sell are prorated."
+            "Defaults to monthly (30 days). Set 90 only for 3-month offers. "
+            "Partial-day sales (if enabled on the line) apply only to monthly packages."
         ),
     )
     is_active = models.BooleanField(_("active"), default=True)

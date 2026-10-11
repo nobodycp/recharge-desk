@@ -20,6 +20,35 @@ def package_base_days(product: Product) -> int:
     return days if days > 0 else 30
 
 
+MONTHLY_BASE_DAYS = 30
+
+
+def line_allows_partial_days(product: Product) -> bool:
+    line = getattr(product, "line", None)
+    return bool(line and getattr(line, "allow_partial_days", False))
+
+
+def package_allows_day_edit(product: Product) -> bool:
+    """Partial days are only editable for monthly packages on opted-in lines."""
+    return line_allows_partial_days(product) and package_base_days(product) == MONTHLY_BASE_DAYS
+
+
+def resolve_duration_days(product: Product, requested_days: int | None) -> int:
+    """
+    Return the duration that will be charged.
+
+    - Default / disabled / non-monthly packages → full ``base_days``.
+    - Monthly package on a line with ``allow_partial_days`` → requested days.
+    """
+    base = package_base_days(product)
+    if not package_allows_day_edit(product):
+        return base
+    if requested_days is None:
+        return base
+    days = int(requested_days)
+    return days if days >= 1 else base
+
+
 def prorate_amount(amount: Decimal, *, base_days: int, duration_days: int) -> Decimal:
     """Scale a package amount from ``base_days`` to ``duration_days``."""
     base = base_days if base_days > 0 else 30

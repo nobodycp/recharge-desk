@@ -88,6 +88,9 @@
                     <span class="rd-badge rd-badge--neutral rd-product-line__count">
                       {% blocktrans count counter=packages|length %}{{ counter }} package{% plural %}{{ counter }} packages{% endblocktrans %}
                     </span>
+                    {% if line.allow_partial_days %}
+                      <span class="rd-badge rd-badge--paid" title="{% trans 'Employees can charge partial days on monthly packages of this line.' %}">{% trans "Partial days" %}</span>
+                    {% endif %}
                   </summary>
 
                   <div class="rd-product-line__packages">
@@ -113,6 +116,10 @@
                                     {% if line.default_package_id == v.pk %}
                                       <span class="badge text-bg-secondary ms-1">{% trans "Sales default" %}</span>
                                     {% endif %}
+                                  </td>
+                                  <td class="tabular-nums text-end">
+                                    {% if v.base_days == 90 %}{% trans "3 months" %}{% else %}{% trans "Monthly" %}{% endif %}
+                                    <span class="text-secondary">({{ v.base_days }})</span>
                                   </td>
                                   <td class="tabular-nums text-end">{{ v.cost_price|intcomma }}</td>
                                   <td class="tabular-nums text-end kpi-info">{{ v.default_sell_price|intcomma }}</td>
@@ -144,6 +151,7 @@
                                 {% endif %}
                               </div>
                               <div class="rd-product-pkg-row__prices tabular-nums">
+                                <span class="text-secondary">{% if v.base_days == 90 %}{% trans "3 months" %}{% else %}{% trans "Monthly" %}{% endif %}</span>
                                 <span>{{ v.cost_price|intcomma }}</span>
                                 <span class="kpi-info">{{ v.default_sell_price|intcomma }}</span>
                               </div>
