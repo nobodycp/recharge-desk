@@ -91,6 +91,9 @@
                     {% if line.allow_partial_days %}
                       <span class="rd-badge rd-badge--paid" title="{% trans 'Employees can charge partial days on monthly packages of this line.' %}">{% trans "Partial days" %}</span>
                     {% endif %}
+                    {% if line.estimated_unit_cost %}
+                      <span class="rd-badge rd-badge--neutral" title="{% trans 'Estimated SIM chip cost deducted from profit on New SIM sales.' %}">{% trans "SIM cost" %}: {{ line.estimated_unit_cost|intcomma }}</span>
+                    {% endif %}
                   </summary>
 
                   <div class="rd-product-line__packages">

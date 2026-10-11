@@ -273,6 +273,32 @@ class EsimSaleTests(TestCase):
         self.company.refresh_from_db()
         self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("42"))
 
+    def test_create_sale_new_sim_cost_with_payment_to_employee(self):
+        from employees.models import EmployeeProfile
+
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        emp = EmployeeProfile.objects.create(user=self.user)
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000022",
+            payer_name="EmpPay",
+            payment_method=None,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_new_sim=True,
+            paid_via_employee=True,
+            employee_recipient=emp,
+        )
+        self.assertTrue(sale.paid_via_employee)
+        self.assertTrue(sale.is_new_sim)
+        self.assertEqual(sale.cost_price_snapshot, Decimal("42"))
+        self.assertEqual(sale.profit_snapshot, Decimal("8"))
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("42"))
+
     def test_create_sale_new_sim_without_estimated_cost_unchanged(self):
         sale = create_sale(
             company=self.company,

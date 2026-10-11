@@ -230,6 +230,18 @@
           <div class="rd-field-group rd-sale-preview border rounded-2 px-3 py-2 small" id="rd-sale-preview" hidden>
             <div class="rd-field-label mb-2">{% trans "Estimate" %}</div>
             <div class="d-flex justify-content-between gap-2">
+              <span class="text-secondary">{% trans "Package cost" %}</span>
+              <span id="rd-preview-package-cost" class="tabular-nums">—</span>
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-1" id="rd-preview-esim-row" hidden>
+              <span class="text-secondary">{% trans "eSIM extra" %}</span>
+              <span id="rd-preview-esim-cost" class="tabular-nums">—</span>
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-1" id="rd-preview-sim-row" hidden>
+              <span class="text-secondary">{% trans "New SIM chip" %}</span>
+              <span id="rd-preview-sim-cost" class="tabular-nums">—</span>
+            </div>
+            <div class="d-flex justify-content-between gap-2 mt-1">
               <span class="text-secondary">{% trans "Supplier cost" %}</span>
               <span id="rd-preview-cost" class="tabular-nums fw-semibold">—</span>
             </div>
@@ -238,7 +250,7 @@
               <span id="rd-preview-profit" class="tabular-nums fw-semibold">—</span>
             </div>
             <p class="mb-0 mt-2 small text-info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
-            <p class="mb-0 mt-2 small text-info" id="rd-preview-new-sim-note" hidden>{% trans "New SIM: estimated chip cost is included in the estimate above." %}</p>
+            <p class="mb-0 mt-2 small text-info" id="rd-preview-new-sim-note" hidden>{% trans "New SIM: estimated chip cost is deducted from profit (same for payment to employee)." %}</p>
             <p class="mb-0 mt-2 small text-danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
           </div>
           <details class="employee-notes-details small" {% if form.notes.errors %}open{% endif %}>
@@ -269,7 +281,7 @@
           <div class="list-group-item d-flex flex-column gap-2 py-3">
             <div class="d-flex justify-content-between gap-3">
             <div class="min-w-0">
-              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
+              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
               {% if s.payer_name %}
                 <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
               {% endif %}
@@ -965,20 +977,38 @@
     sellInp.value = prorateAmount(def, baseDays, days).toFixed(2);
   }
 
+  function syncNewSimExtraLabel(chip) {
+    var newSimExtraLabel = document.getElementById("rd-new-sim-extra-label");
+    if (!newSimExtraLabel) return;
+    var simExtra = getSimUnitCost(chip);
+    if (chip && simExtra > 0) {
+      newSimExtraLabel.hidden = false;
+      newSimExtraLabel.textContent = "(+" + simExtra.toFixed(2) + ")";
+    } else {
+      newSimExtraLabel.hidden = true;
+      newSimExtraLabel.textContent = "";
+    }
+  }
+
   function updateSalePreview() {
     var preview = document.getElementById("rd-sale-preview");
+    var pkgEl = document.getElementById("rd-preview-package-cost");
     var pcEl = document.getElementById("rd-preview-cost");
     var ppEl = document.getElementById("rd-preview-profit");
+    var esimRow = document.getElementById("rd-preview-esim-row");
+    var esimCostEl = document.getElementById("rd-preview-esim-cost");
+    var simRow = document.getElementById("rd-preview-sim-row");
+    var simCostEl = document.getElementById("rd-preview-sim-cost");
     var note = document.getElementById("rd-preview-esim-note");
     var newSimNote = document.getElementById("rd-preview-new-sim-note");
     var lossNote = document.getElementById("rd-preview-loss-note");
-    var newSimExtraLabel = document.getElementById("rd-new-sim-extra-label");
     var sellInp = document.getElementById("id_sell_price_actual");
     var daysHint = document.getElementById("rd-days-hint");
     var esim = document.getElementById("id_is_esim");
     var newSim = document.getElementById("id_is_new_sim");
     if (!preview || !pcEl || !ppEl || !sellInp) return;
     var chip = document.querySelector(".employee-package-chip.is-active");
+    syncNewSimExtraLabel(chip);
     if (!chip || sellInp.value === "" || sellInp.value == null) {
       preview.hidden = true;
       return;
@@ -993,23 +1023,34 @@
     var useEsim = esim && esim.checked;
     var useNewSim = newSim && newSim.checked;
     var simExtra = getSimUnitCost(chip);
-    if (newSimExtraLabel) {
-      if (simExtra > 0) {
-        newSimExtraLabel.hidden = false;
-        newSimExtraLabel.textContent = "(+" + simExtra.toFixed(2) + ")";
-      } else {
-        newSimExtraLabel.hidden = true;
-        newSimExtraLabel.textContent = "";
-      }
-    }
+    var esimExtra = useEsim ? getEsimExtra() : 0;
     var packageCost = prorateAmount(base, baseDays, days);
-    var cost = packageCost + (useEsim ? getEsimExtra() : 0) + (useNewSim ? simExtra : 0);
+    var cost = packageCost + esimExtra + (useNewSim ? simExtra : 0);
     var sell = parseFloat(String(sellInp.value).replace(",", "."), 10);
     if (!isFinite(sell)) {
       preview.hidden = true;
       return;
     }
     preview.hidden = false;
+    if (pkgEl) pkgEl.textContent = packageCost.toFixed(2);
+    if (esimRow && esimCostEl) {
+      if (useEsim && esimExtra > 0) {
+        esimRow.hidden = false;
+        esimCostEl.textContent = "+" + esimExtra.toFixed(2);
+      } else {
+        esimRow.hidden = true;
+        esimCostEl.textContent = "—";
+      }
+    }
+    if (simRow && simCostEl) {
+      if (useNewSim && simExtra > 0) {
+        simRow.hidden = false;
+        simCostEl.textContent = "+" + simExtra.toFixed(2);
+      } else {
+        simRow.hidden = true;
+        simCostEl.textContent = "—";
+      }
+    }
     pcEl.textContent = cost.toFixed(2);
     var profit = sell - cost;
     ppEl.textContent = profit.toFixed(2);
@@ -1141,6 +1182,7 @@
     if (hid) hid.value = id || "";
     if (daysInp) daysInp.value = String(getChipBaseDays(tile));
     syncDurationDaysVisibility(tile);
+    syncNewSimExtraLabel(tile);
     applySuggestedSellFromChip(tile);
     var lineId = tile.getAttribute("data-line-id");
     if (lineId) {
@@ -1219,6 +1261,8 @@
       if (paymentTiles) paymentTiles.classList.remove("opacity-50");
       if (empHint) empHint.hidden = true;
     }
+    // Payment path does not change pricing; keep New SIM chip cost visible in the estimate.
+    updateSalePreview();
   }
 
   function syncPaymentFromTile(tile) {
