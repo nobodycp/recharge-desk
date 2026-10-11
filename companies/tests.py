@@ -86,9 +86,13 @@ class CompanyListQueryCountTests(TestCase):
             "ProductLine.is_deletable / Product.is_deletable probably "
             "regressed to per-row EXISTS.",
         )
-        # Collapsible product-line layout (packages hidden until expanded).
+        # Grouped by company; packages collapsed until a line is expanded.
+        self.assertContains(resp, "rd-product-company")
         self.assertContains(resp, "rd-product-line")
         self.assertContains(resp, "rd-product-line__details")
+        groups = resp.context["company_groups"]
+        self.assertGreaterEqual(len(groups), 1)
+        self.assertTrue(all("company" in g and "lines" in g for g in groups))
 
     def test_product_list_filters_by_company_and_search(self):
         self.client.force_login(self.user)

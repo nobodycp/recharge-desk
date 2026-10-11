@@ -1969,41 +1969,94 @@ tr.rd-row-pending {
   box-shadow: var(--rd-shadow-xs);
 }
 
-/* Product lines — collapsible packages on management products page */
+/* Product lines — grouped by company, collapsible packages */
 .rd-product-lines {
   display: flex;
   flex-direction: column;
 }
 
-.rd-product-line {
+.rd-product-company {
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.rd-product-line:last-child {
+.rd-product-company:last-child {
+  border-bottom: 0;
+}
+
+.rd-product-company__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-secondary-bg));
+}
+
+.rd-product-company__summary::-webkit-details-marker {
+  display: none;
+}
+
+.rd-product-company__summary::marker {
+  content: "";
+}
+
+.rd-product-company__chevron {
+  display: inline-flex;
+  color: var(--bs-secondary-color);
+  transition: transform 160ms ease;
+  flex-shrink: 0;
+}
+
+.rd-product-company[open] > .rd-product-company__summary .rd-product-company__chevron {
+  transform: rotate(180deg);
+}
+
+.rd-product-company__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 0;
+}
+
+.rd-product-company__summary .rd-badge {
+  margin-inline-start: auto;
+}
+
+.rd-product-company__body {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.rd-product-line {
+  border-bottom: 1px solid color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+}
+
+.rd-product-company__body .rd-product-line:last-child {
   border-bottom: 0;
 }
 
 .rd-product-line__bar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.5rem 0.75rem;
-  padding: 0.65rem 0.85rem;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  padding: 0.45rem 0.75rem 0.45rem 1rem;
 }
 
 .rd-product-line__details {
-  flex: 1 1 14rem;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .rd-product-line__summary {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.45rem 0.65rem;
+  gap: 0.4rem 0.55rem;
   list-style: none;
   cursor: pointer;
   user-select: none;
+  min-width: 0;
 }
 
 .rd-product-line__summary::-webkit-details-marker {
@@ -2025,39 +2078,30 @@ tr.rd-row-pending {
   transform: rotate(180deg);
 }
 
-.rd-product-line__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.rd-product-line__company {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--bs-secondary-color);
-  letter-spacing: 0.02em;
-}
-
 .rd-product-line__name {
   font-weight: 650;
   line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rd-product-line__count {
+  flex-shrink: 0;
   margin-inline-start: auto;
 }
 
 .rd-product-line__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.3rem;
   align-items: center;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
 }
 
 .rd-product-line__packages {
-  margin-top: 0.55rem;
+  margin: 0.35rem 0.75rem 0.55rem 1rem;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--rd-radius-md);
   background: color-mix(in srgb, var(--bs-tertiary-bg) 40%, var(--bs-secondary-bg));
@@ -2069,18 +2113,72 @@ tr.rd-row-pending {
   box-shadow: none;
 }
 
+.rd-product-line__mobile-packages {
+  padding: 0.4rem;
+  gap: 0.35rem;
+}
+
+.rd-product-pkg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-sm, 0.4rem);
+  background: var(--bs-secondary-bg);
+}
+
+.rd-product-pkg-row__main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.rd-product-pkg-row__prices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.rd-product-pkg-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 @media (max-width: 767.98px) {
+  .rd-product-company__summary {
+    padding: 0.55rem 0.7rem;
+  }
+
   .rd-product-line__bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.3rem;
+    padding: 0.4rem 0.65rem 0.45rem 0.75rem;
   }
 
-  .rd-product-line__count {
-    margin-inline-start: 0;
+  .rd-product-line__details {
+    flex: 0 1 auto;
+  }
+
+  .rd-product-line__packages {
+    margin: 0.3rem 0.5rem 0.4rem 0.75rem;
   }
 
   .rd-product-line__actions {
-    padding-top: 0.15rem;
+    padding-top: 0;
+  }
+
+  .rd-product-line__actions .btn {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
   }
 }
 
