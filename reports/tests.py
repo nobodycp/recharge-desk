@@ -108,7 +108,7 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["phones_overdue_count"], 0)
         self.assertEqual(ctx["phones_lifecycle_total"], 0)
         self.assertNotContains(r, "Recent activity")
-        self.assertContains(r, "Lines for disconnect")
+        self.assertContains(r, "Line status")
         self.assertContains(r, "rd-phone-donut")
 
     def test_dashboard_phone_disconnect_kpis(self):

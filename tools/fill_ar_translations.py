@@ -359,6 +359,7 @@ AR: dict[str, str] = {
     "Choose a company to see products.": "اختر شركة لعرض المنتجات.",
     "No active companies.": "لا توجد شركات نشطة.",
     "Lines for disconnect": "أرقام للفصل",
+    "Line status": "حالة الأرقام",
     "Idle threshold": "عتبة عدم النشاط",
     "Activity threshold": "عتبة النشاط",
     "Days without a new sale entry": "أيام من دون إدخال بيع جديد",

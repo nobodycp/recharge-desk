@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 01:00+0300\n"
+"POT-Creation-Date: 2026-10-12 01:06+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2319,7 +2319,6 @@ msgstr "تم حفظ العتبة."
 msgid "Could not save threshold."
 msgstr "تعذّر حفظ العتبة."
 #: reports/views_stale_phones.py:119 templates/partials/management_nav.html:81
-#: templates/reports/dashboard.html:116
 #: templates/reports/stale_phones_report.html:6
 msgid "Lines for disconnect"
 msgstr "أرقام للفصل"
@@ -5098,6 +5097,9 @@ msgstr "المبيعات المدفوعة فقط"
 #: templates/reports/dashboard.html:95 templates/reports/profit_report.html:140
 msgid "Month"
 msgstr "الشهر"
+#: templates/reports/dashboard.html:116
+msgid "Line status"
+msgstr "حالة الأرقام"
 #: templates/reports/dashboard.html:118
 msgid "Open the disconnect list"
 msgstr "افتح قائمة أرقام الفصل"
