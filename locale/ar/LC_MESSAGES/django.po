@@ -3700,6 +3700,36 @@ msgstr "لا يمكن الحذف: للخط مبيعات."
 msgid "Lines, packages, and pricing."
 msgstr "خطوط المنتج والباقات والأسعار"
 
+msgid "All companies"
+msgstr "كل الشركات"
+
+msgid "Search lines or packages"
+msgstr "بحث في الخطوط أو الباقات"
+
+msgid "Company, line, or package…"
+msgstr "شركة أو خط أو باقة…"
+
+msgid "Product lines"
+msgstr "خطوط المنتج"
+
+msgid "%(counter)s line"
+msgid_plural "%(counter)s lines"
+msgstr[0] "لا خطوط"
+msgstr[1] "خط واحد"
+msgstr[2] "خطان"
+msgstr[3] "%(counter)s خطوط"
+msgstr[4] "%(counter)s خطاً"
+msgstr[5] "%(counter)s خط"
+
+msgid "%(counter)s package"
+msgid_plural "%(counter)s packages"
+msgstr[0] "لا باقات"
+msgstr[1] "باقة واحدة"
+msgstr[2] "باقتان"
+msgstr[3] "%(counter)s باقات"
+msgstr[4] "%(counter)s باقة"
+msgstr[5] "%(counter)s باقة"
+
 #: templates/companies/product_list.html:20
 msgid "Package"
 msgstr "الباقة"
