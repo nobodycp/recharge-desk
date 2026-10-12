@@ -820,6 +820,11 @@ class EmployeeRecentSalesTests(TestCase):
         resp = self.client.get(reverse("sales:employee_entry"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse("sales:employee_recent_sales"))
+        self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, reverse("employees:my_balance"))
+        self.assertContains(resp, reverse("sales:employee_stock_check"))
+        self.assertContains(resp, 'data-bs-target="#rdEmployeeRefreshModal"')
+        self.assertContains(resp, 'data-bs-target="#rdCustomerPaySubModal"')
 
     def test_entry_page_shows_full_names_when_icons_missing(self):
         """Without uploaded icons, payment method and product-line tiles
@@ -1023,6 +1028,66 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertNotContains(resp, "<details open")
         # No active filter badge when on the default (today) view.
         self.assertContains(resp, 'data-rd-filter-count style="display:none"')
+
+
+class EmployeeStockCheckTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+        from inventory.services import allocate_to_customer, receive_main_stock
+
+        cls.company = Company.objects.create(
+            name="StockChkCo",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="HotLine")
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        cls.emp = User.objects.create_user("emp_stock_chk", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        cls.mgmt = User.objects.create_user("mgmt_stock_chk", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.mgmt,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        from customers.models import Customer
+
+        receive_main_stock(product_line=cls.line, qty=10, notes="", user=cls.mgmt)
+        cls.customer = Customer.objects.create(name="Dealer Hazem", created_by=cls.mgmt)
+        allocate_to_customer(
+            customer=cls.customer,
+            product_line=cls.line,
+            qty=3,
+            notes="",
+            user=cls.mgmt,
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def test_stock_check_filters_by_customer_name(self):
+        url = reverse("sales:employee_stock_check")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "Dealer Hazem")
+        self.assertContains(resp, "HotLine")
+        self.assertContains(resp, "3")
+
+        resp = self.client.get(url, {"q": "Hazem"})
+        self.assertContains(resp, "Dealer Hazem")
+        resp = self.client.get(url, {"q": "NoSuchDealer"})
+        self.assertNotContains(resp, "Dealer Hazem")
+        self.assertContains(resp, "No SIM stock found")
 
 
 class SalesCsvExportTests(TestCase):

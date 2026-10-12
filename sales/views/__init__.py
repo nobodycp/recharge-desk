@@ -35,6 +35,7 @@ from sales.views.employee import (
     employee_recent_sales,
     employee_sale_delete,
     employee_sale_edit,
+    employee_stock_check,
     employee_submit_customer_payment_submission,
     employee_refresh_phone,
 )
@@ -68,6 +69,7 @@ __all__ = [
     "employee_recent_sales",
     "employee_sale_edit",
     "employee_sale_delete",
+    "employee_stock_check",
     "employee_submit_customer_payment_submission",
     "employee_refresh_phone",
     "api_payer_by_number",

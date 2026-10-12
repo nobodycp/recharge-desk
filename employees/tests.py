@@ -399,3 +399,58 @@ class EmployeePayrollTests(TestCase):
         customer.refresh_from_db()
         self.assertEqual(self.employee.current_balance, Decimal("0"))
         self.assertEqual(customer.current_balance, Decimal("0"))
+
+
+class EmployeeMyBalanceTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.emp_user = User.objects.create_user(username="bal_cashier", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp_user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "full_name": "Bal Cashier"},
+        )
+        cls.employee = EmployeeProfile.objects.create(
+            user=cls.emp_user,
+            monthly_salary=Decimal("2500"),
+            current_balance=Decimal("1200"),
+        )
+        month = timezone.localdate().replace(day=1)
+        EmployeeLedgerEntry.objects.create(
+            employee=cls.employee,
+            entry_type=EmployeeLedgerEntry.EntryType.SALARY_ACCRUAL,
+            amount=Decimal("2500"),
+            salary_month=month,
+            notes="test accrual",
+            created_by=cls.emp_user,
+        )
+
+    def test_my_balance_shows_salary_and_movements(self):
+        entry = self.employee.ledger_entries.get()
+        self.client.login(username="bal_cashier", password="x")
+        resp = self.client.get(reverse("employees:my_balance"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "My balance")
+        self.assertEqual(resp.context["employee"].monthly_salary, Decimal("2500"))
+        self.assertEqual(resp.context["employee"].current_balance, Decimal("1200"))
+        self.assertContains(resp, "Movement statement")
+        self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "test accrual")
+        self.assertNotContains(resp, "Manual adjustment")
+        self.assertNotContains(
+            resp,
+            reverse(
+                "employees:employee_ledger_delete",
+                args=[self.employee.pk, entry.pk],
+            ),
+        )
+
+    def test_my_balance_empty_without_profile(self):
+        lone = User.objects.create_user(username="no_profile_emp", password="x")
+        UserProfile.objects.update_or_create(
+            user=lone,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "full_name": "Lone"},
+        )
+        self.client.login(username="no_profile_emp", password="x")
+        resp = self.client.get(reverse("employees:my_balance"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "No employee payroll profile is linked to your account yet.")

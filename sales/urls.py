@@ -33,6 +33,11 @@ urlpatterns = [
     ),
     path("employee/sales/products/", views.employee_product_fragment, name="employee_product_fragment"),
     path("employee/sales/recent/", views.employee_recent_sales, name="employee_recent_sales"),
+    path(
+        "employee/sales/stock-check/",
+        views.employee_stock_check,
+        name="employee_stock_check",
+    ),
     path("employee/sales/<int:pk>/edit/", views.employee_sale_edit, name="employee_sale_edit"),
     path("employee/sales/<int:pk>/delete/", views.employee_sale_delete, name="employee_sale_delete"),
     path("management/sales/", views.management_sale_list, name="management_sale_list"),

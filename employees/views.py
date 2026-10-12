@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
-from accounts.permissions import management_required
+from accounts.permissions import employee_required, management_required
 from core.pagination import paginate_request
 from employees.forms import (
     EmployeeAdjustmentForm,
@@ -22,6 +22,7 @@ from employees.services import (
     create_adjustment,
     default_accrual_month,
     delete_ledger_entry,
+    get_acting_employee_profile,
 )
 
 TAB_PAYMENTS = "payments"
@@ -302,6 +303,30 @@ def employee_ledger_delete(request, pk, entry_pk):
     if isinstance(fallback, str) and fallback.startswith("/"):
         return redirect(fallback)
     return redirect("employees:employee_detail", pk=employee.pk)
+
+
+@employee_required
+def my_balance(request):
+    """Self-service salary + ledger for the logged-in cashier."""
+    employee = get_acting_employee_profile(request.user)
+    ledger_page = None
+    if employee:
+        ledger_qs = employee.ledger_entries.select_related(
+            "reference_sale", "created_by"
+        ).order_by("-created_at", "-pk")
+        ledger_page = paginate_request(request, ledger_qs, page_param="ledger_page")
+    return render(
+        request,
+        "employees/my_balance.html",
+        {
+            "employee": employee,
+            "ledger_page": ledger_page,
+            "ledger_sort": "created_at",
+            "ledger_order": "desc",
+            "ledger_read_only": True,
+            "title": _("My balance"),
+        },
+    )
 
 
 @management_required

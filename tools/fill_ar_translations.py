@@ -940,6 +940,24 @@ AR: dict[str, str] = {
     "Cash payer": "بدون أجل",
     "View all": "عرض الكل",
     "My entries": "إدخالاتي",
+    "Entries": "الإدخالات",
+    "Refresh number": "تحديث الرقم",
+    "Refresh numbers": "تحديث الأرقام",
+    "Record payment": "تسجيل دفعة",
+    "My balance": "رصيدي",
+    "Check stock": "فحص مخزون",
+    "Employee shortcuts": "اختصارات الموظف",
+    "No employee payroll profile is linked to your account yet.": (
+        "لا يوجد ملف رواتب موظف مرتبط بحسابك بعد."
+    ),
+    "Search by customer name to see SIM stock held with them.": (
+        "ابحث باسم الزبون لتشوف مخزون الشرائح عنده."
+    ),
+    "Customer name": "اسم الزبون",
+    "Open customer stock": "فتح مخزون الزبون",
+    "No SIM stock found for “%(name)s”.": "ما في مخزون شرائح لـ «%(name)s».",
+    "No customer SIM stock on hand.": "ما في مخزون شرائح عند الزبائن.",
+    "Search": "بحث",
     "Edit entry": "تعديل الإدخال",
     "Delete": "حذف",
     "Delete this entry permanently? Supplier balance will be corrected. This cannot be undone.": (
