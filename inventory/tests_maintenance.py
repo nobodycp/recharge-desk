@@ -345,3 +345,26 @@ class CustomerBalanceActionViewTests(TestCase):
         resp = self.client.get(list_url, {"q": "Filter"})
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, f"{list_url}?q=Filter")
+
+    def test_customer_list_groups_lines_under_one_customer_card(self):
+        line2 = ProductLine.objects.create(company=self.company, name="ALOHA")
+        receive_main_stock(product_line=line2, qty=10, notes="", user=self.user)
+        allocate_to_customer(
+            customer=self.customer, product_line=line2, qty=4, notes="", user=self.user
+        )
+        other = Customer.objects.create(name="Other Dealer", created_by=self.user)
+        allocate_to_customer(
+            customer=other, product_line=self.line, qty=2, notes="", user=self.user
+        )
+
+        resp = self.client.get(reverse("inventory:customers"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-customer-stock-card")
+        self.assertEqual(resp.content.decode().count("Filter Customer"), 1)
+        self.assertContains(resp, "Sleekom")
+        self.assertContains(resp, "ALOHA")
+        groups = resp.context["customer_groups"]
+        self.assertEqual(len(groups), 2)
+        filter_group = next(g for g in groups if g["customer"].pk == self.customer.pk)
+        self.assertEqual(len(filter_group["balances"]), 2)
+        self.assertEqual(filter_group["total"], 9)

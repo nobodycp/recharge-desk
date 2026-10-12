@@ -281,6 +281,23 @@ def inventory_main_delete(request, pk):
     return _redirect_next(request, "inventory:main")
 
 
+def _group_customer_stock_balances(balances):
+    """One group per customer with all line balances (no repeated name rows)."""
+    groups: list[dict] = []
+    current: dict | None = None
+    for row in balances:
+        if current is None or current["customer"].pk != row.customer_id:
+            current = {
+                "customer": row.customer,
+                "balances": [],
+                "total": 0,
+            }
+            groups.append(current)
+        current["balances"].append(row)
+        current["total"] += int(row.quantity or 0)
+    return groups
+
+
 @employee_required
 def inventory_customers(request):
     qs = (
@@ -298,7 +315,17 @@ def inventory_customers(request):
             qs = qs.filter(customer__name__icontains=d["q"])
         if d.get("product_line"):
             qs = qs.filter(product_line=canonical_product_line(d["product_line"]))
-    page_obj = paginate_request(request, qs)
+
+    # Paginate customers (not raw line rows) so one card never splits across pages.
+    customer_page = paginate_request(
+        request,
+        qs.values("customer_id", "customer__name")
+        .annotate(total=Sum("quantity"))
+        .order_by("customer__name"),
+    )
+    page_customer_ids = [row["customer_id"] for row in customer_page]
+    page_balances = list(qs.filter(customer_id__in=page_customer_ids))
+    customer_groups = _group_customer_stock_balances(page_balances)
 
     read_only = not is_management(request.user)
     allocate_form = None
@@ -341,7 +368,8 @@ def inventory_customers(request):
         "inventory/customer_list.html",
         {
             "title": _("Customer SIM stock"),
-            "page_obj": page_obj,
+            "page_obj": customer_page,
+            "customer_groups": customer_groups,
             "filter_form": form,
             "allocate_form": allocate_form,
             "filter_active": filter_active,
