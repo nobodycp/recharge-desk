@@ -1,0 +1,69 @@
+{% load i18n %}
+<nav
+  class="rd-mobile-tabbar d-print-none"
+  style="--rd-tab-n: {{ n }}; --rd-tab-active: {{ active_i }};"
+  aria-label="{% trans 'Employee shortcuts' %}"
+>
+  <div class="rd-mobile-tabbar__rail" aria-hidden="true"></div>
+  <div class="rd-mobile-tabbar__items">
+    {% if show_refresh %}
+      <a
+        class="rd-mobile-tabbar__item{% if url_name == 'employee_refresh_number' %} is-active{% endif %}"
+        href="{% url 'sales:employee_refresh_number' %}"
+      >
+        <span class="rd-mobile-tabbar__bubble" aria-hidden="true"></span>
+        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><polyline points="21 3 21 9 15 9"/></svg>
+        </span>
+        <span class="rd-mobile-tabbar__label">{% trans "Refresh" %}</span>
+      </a>
+    {% endif %}
+
+    {% if show_pay %}
+      <a
+        class="rd-mobile-tabbar__item{% if url_name == 'employee_record_payment' %} is-active{% endif %}"
+        href="{% url 'sales:employee_record_payment' %}"
+      >
+        <span class="rd-mobile-tabbar__bubble" aria-hidden="true"></span>
+        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </span>
+        <span class="rd-mobile-tabbar__label">{% trans "Payment" %}</span>
+      </a>
+    {% endif %}
+
+    <a
+      class="rd-mobile-tabbar__item rd-mobile-tabbar__fab rd-mobile-tabbar__item--sales{% if url_name == 'employee_entry' %} is-active{% endif %}"
+      href="{% url 'sales:employee_entry' %}"
+      aria-label="{% trans 'Sales' %}"
+    >
+      <span class="rd-mobile-tabbar__bubble" aria-hidden="true"></span>
+      <span class="rd-mobile-tabbar__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </span>
+      <span class="rd-mobile-tabbar__label">{% trans "Sales" %}</span>
+    </a>
+
+    <a
+      class="rd-mobile-tabbar__item{% if url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %} is-active{% endif %}"
+      href="{% url 'sales:employee_recent_sales' %}"
+    >
+      <span class="rd-mobile-tabbar__bubble" aria-hidden="true"></span>
+      <span class="rd-mobile-tabbar__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+      </span>
+      <span class="rd-mobile-tabbar__label">{% trans "Entries" %}</span>
+    </a>
+
+    <a
+      class="rd-mobile-tabbar__item{% if url_name == 'employee_stock_check' %} is-active{% endif %}"
+      href="{% url 'sales:employee_stock_check' %}"
+    >
+      <span class="rd-mobile-tabbar__bubble" aria-hidden="true"></span>
+      <span class="rd-mobile-tabbar__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+      </span>
+      <span class="rd-mobile-tabbar__label">{% trans "Stock" %}</span>
+    </a>
+  </div>
+</nav>
