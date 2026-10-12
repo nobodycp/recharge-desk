@@ -233,12 +233,16 @@ def reference_disconnect_counts(
         STATUS_ENDED_UNDER: 0,
         STATUS_OVERDUE: 0,
     }
+    esim = 0
     for row in grouped:
         key = row["ref_key"] or ""
         if not key:
             continue
         sale = latest_by_key.get(key)
-        if not sale or sale.is_esim:
+        if not sale:
+            continue
+        if sale.is_esim:
+            esim += 1
             continue
         last, duration, _used = effective_activity_clock(
             sale=sale,
@@ -260,6 +264,7 @@ def reference_disconnect_counts(
         "due_soon": counts[STATUS_DUE_SOON],
         "ended_under_threshold": counts[STATUS_ENDED_UNDER],
         "overdue": counts[STATUS_OVERDUE],
+        "esim": esim,
         "total": total,
     }
 

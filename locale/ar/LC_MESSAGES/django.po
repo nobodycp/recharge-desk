@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 04:20+0300\n"
+"POT-Creation-Date: 2026-10-12 04:29+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -322,7 +322,7 @@ msgstr "اختر باقة تنتمي لخط المنتج هذا."
 
 #: companies/forms.py:80 companies/forms.py:125 employees/forms.py:83
 #: employees/forms.py:119 expenses/forms.py:17 expenses/views.py:102
-#: inventory/forms.py:240 reports/views.py:297 sales/forms.py:243
+#: inventory/forms.py:240 reports/views.py:299 sales/forms.py:243
 #: sales/forms.py:310 templates/audit/audit_log_list.html:46
 #: templates/companies/partials/company_detail_general.html:7
 #: templates/customers/customer_detailed_invoice.html:24
@@ -332,7 +332,7 @@ msgid "Date from"
 msgstr "من تاريخ"
 #: companies/forms.py:85 companies/forms.py:130 employees/forms.py:90
 #: employees/forms.py:126 expenses/forms.py:22 expenses/views.py:107
-#: inventory/forms.py:245 reports/views.py:302 sales/forms.py:248
+#: inventory/forms.py:245 reports/views.py:304 sales/forms.py:248
 #: sales/forms.py:317 templates/audit/audit_log_list.html:50
 #: templates/companies/partials/company_detail_general.html:11
 #: templates/customers/customer_detailed_invoice.html:28
@@ -1816,7 +1816,7 @@ msgid "expenses"
 msgstr "المصروفات"
 #: expenses/views.py:38 templates/expenses/expense_list.html:6
 #: templates/partials/management_nav.html:48
-#: templates/reports/dashboard.html:198
+#: templates/reports/dashboard.html:203
 msgid "Expenses"
 msgstr "المصروفات"
 #: expenses/views.py:54
@@ -2344,23 +2344,23 @@ msgstr ""
 msgid "phone line tracking"
 msgstr "متابعة خط الهاتف"
 
-#: reports/views.py:255
+#: reports/views.py:256
 msgid "Dashboard"
 msgstr "لوحة التحكم"
-#: reports/views.py:359 templates/partials/management_nav.html:69
+#: reports/views.py:361 templates/partials/management_nav.html:69
 #: templates/reports/profit_report.html:5
 msgid "Profit report"
 msgstr "تقرير الأرباح"
-#: reports/views.py:437
+#: reports/views.py:439
 msgid "Unknown"
 msgstr "غير معروف"
 
-#: reports/views.py:451 templates/partials/management_nav.html:77
+#: reports/views.py:453 templates/partials/management_nav.html:77
 #: templates/reports/employee_report.html:5
 msgid "Employee performance"
 msgstr "أداء الموظفين"
 
-#: reports/views.py:498 templates/partials/management_nav.html:73
+#: reports/views.py:500 templates/partials/management_nav.html:73
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
@@ -2721,7 +2721,7 @@ msgstr "اسم الدافع والمنتج مطلوبان."
 msgid "Product not found."
 msgstr "المنتج غير موجود."
 #: sales/views/employee.py:411 templates/reports/dashboard.html:90
-#: templates/reports/dashboard.html:306
+#: templates/reports/dashboard.html:311
 msgid "Today"
 msgstr "اليوم"
 
@@ -5119,7 +5119,7 @@ msgstr "الحجم"
 #: templates/reports/dashboard.html:61
 msgid "Today's profit"
 msgstr "ربح اليوم"
-#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:228
+#: templates/reports/dashboard.html:64 templates/reports/dashboard.html:233
 msgid "Paid sales only"
 msgstr "المبيعات المدفوعة فقط"
 
@@ -5146,55 +5146,59 @@ msgstr "الاشتراك ما زال سارياً"
 msgid "Last charge ends today"
 msgstr "تنتهي آخر شحنة اليوم"
 #: templates/reports/dashboard.html:155
+#, python-format
 msgid "Subscription ended; still inside the %(d)s days to leave the agency"
 msgstr "انتهى الاشتراك؛ ما زال داخل %(d)s يوماً للخروج من الوكالة"
 #: templates/reports/dashboard.html:163
 msgid "Open lines that left the agency"
 msgstr "افتح الأرقام التي خرجت من الوكالة"
 #: templates/reports/dashboard.html:170
-msgid "Physical SIMs only — eSIM lines are excluded."
-msgstr "شرائح فعلية فقط — أرقام eSIM مستثناة."
-#: templates/reports/dashboard.html:187
+msgid "eSIM lines"
+msgstr "أرقام eSIM"
+#: templates/reports/dashboard.html:171
+msgid "Latest sale is eSIM"
+msgstr "آخر بيع eSIM"
+#: templates/reports/dashboard.html:192
 msgid "This month profit"
 msgstr "ربح هذا الشهر"
-#: templates/reports/dashboard.html:203
+#: templates/reports/dashboard.html:208
 msgid "Net (month)"
 msgstr "الصافي (شهري)"
-#: templates/reports/dashboard.html:209
+#: templates/reports/dashboard.html:214
 msgid "All-time totals"
 msgstr "إجماليات كلّيّة"
 
-#: templates/reports/dashboard.html:214
+#: templates/reports/dashboard.html:219
 msgid "All-time profit"
 msgstr "الربح الكلي"
-#: templates/reports/dashboard.html:219
+#: templates/reports/dashboard.html:224
 msgid "All-time expenses"
 msgstr "المصروفات الكلية"
-#: templates/reports/dashboard.html:224
+#: templates/reports/dashboard.html:229
 msgid "Net profit (all time)"
 msgstr "صافي الربح (كلّي)"
-#: templates/reports/dashboard.html:238
+#: templates/reports/dashboard.html:243
 msgid "Supplier balances"
 msgstr "أرصدة المورّدين"
-#: templates/reports/dashboard.html:240 templates/sales/employee_entry.html:263
+#: templates/reports/dashboard.html:245 templates/sales/employee_entry.html:263
 msgid "View all"
 msgstr "عرض الكل"
-#: templates/reports/dashboard.html:251
+#: templates/reports/dashboard.html:256
 msgid "Overdrawn"
 msgstr "مكشوف"
 
-#: templates/reports/dashboard.html:251
+#: templates/reports/dashboard.html:256
 msgid "Empty"
 msgstr "مستنفد"
 
-#: templates/reports/dashboard.html:251
+#: templates/reports/dashboard.html:256
 msgid "Available"
 msgstr "متاح"
 
-#: templates/reports/dashboard.html:259
+#: templates/reports/dashboard.html:264
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."
-#: templates/reports/dashboard.html:272
+#: templates/reports/dashboard.html:277
 #, python-format
 msgid "Sales last %(n)s day"
 msgid_plural "Sales last %(n)s days"
@@ -5205,32 +5209,32 @@ msgstr[3] "المبيعات في آخر %(n)s أيام"
 msgstr[4] "المبيعات في آخر %(n)s يوماً"
 msgstr[5] "المبيعات في آخر %(n)s يوم"
 
-#: templates/reports/dashboard.html:274
+#: templates/reports/dashboard.html:279
 msgid "Total volume"
 msgstr "إجمالي الحجم"
 
-#: templates/reports/dashboard.html:276
+#: templates/reports/dashboard.html:281
 msgid "Avg per day"
 msgstr "متوسط يومي"
 
-#: templates/reports/dashboard.html:279
+#: templates/reports/dashboard.html:284
 msgid "Open profit report"
 msgstr "فتح تقرير الأرباح"
 
-#: templates/reports/dashboard.html:283
+#: templates/reports/dashboard.html:288
 msgid "Daily sales volume"
 msgstr "حجم المبيعات اليومي"
 
-#: templates/reports/dashboard.html:310
+#: templates/reports/dashboard.html:315
 #: templates/reports/employee_report.html:88
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
-#: templates/reports/dashboard.html:319
+#: templates/reports/dashboard.html:324
 msgid "Top companies (this month, by profit)"
 msgstr "أفضل الشركات (هذا الشهر، حسب الربح)"
 
-#: templates/reports/dashboard.html:342
+#: templates/reports/dashboard.html:347
 msgid "No paid sales this month yet."
 msgstr "لا توجد مبيعات مدفوعة هذا الشهر بعد."
 
@@ -5385,6 +5389,7 @@ msgstr "لا توجد صفوف."
 msgid "Saved."
 msgstr "تم الحفظ."
 #: templates/reports/phone_lines_report.html:8
+#, python-format
 msgid ""
 "Every number with a sale in the system, with lifecycle status from the %(d)s "
 "days to leave the agency. A new charge or a 1-day renew resets the timer."
@@ -5790,6 +5795,9 @@ msgstr ""
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
+#~ msgid "Physical SIMs only — eSIM lines are excluded."
+#~ msgstr "شرائح فعلية فقط — أرقام eSIM مستثناة."
+
 #~ msgid "Ended — under inactivity threshold"
 #~ msgstr "مفصول ولم يتجاوز عتبة عدم النشاط"
 
@@ -5911,9 +5919,6 @@ msgstr "لقطة التكلفة:"
 
 #~ msgid "Days since last sale"
 #~ msgstr "أيام منذ آخر بيع"
-
-#~ msgid "Last sale entry"
-#~ msgstr "آخر إدخال بيع"
 
 #, python-format
 #~ msgid ""

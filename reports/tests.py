@@ -106,10 +106,12 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["phones_due_soon_count"], 0)
         self.assertEqual(ctx["phones_ended_under_threshold_count"], 0)
         self.assertEqual(ctx["phones_overdue_count"], 0)
+        self.assertEqual(ctx["phones_esim_count"], 0)
         self.assertEqual(ctx["phones_lifecycle_total"], 0)
         self.assertNotContains(r, "Recent activity")
         self.assertContains(r, "Line status")
         self.assertContains(r, "rd-phone-donut")
+        self.assertContains(r, "eSIM lines")
 
     def test_dashboard_phone_disconnect_kpis(self):
         from reports.stale_phones import reference_disconnect_counts
@@ -142,7 +144,7 @@ class DashboardSmokeTests(_ReportsBase):
             created_at=timezone.now() - timedelta(days=10),
             duration_days=30,
         )
-        # eSIM overdue — excluded.
+        # eSIM — counted separately, not in lifecycle total.
         esim = self._make_sale(ref="055DASH0004", paid=True, is_esim=True)
         Sale.objects.filter(pk=esim.pk).update(
             created_at=timezone.now() - timedelta(days=200),
@@ -154,6 +156,7 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(stats["due_soon"], 1)
         self.assertEqual(stats["ended_under_threshold"], 1)
         self.assertEqual(stats["active"], 1)
+        self.assertEqual(stats["esim"], 1)
         self.assertEqual(stats["total"], 4)
 
         cache.clear()
@@ -162,11 +165,13 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(r.context["phones_due_soon_count"], 1)
         self.assertEqual(r.context["phones_ended_under_threshold_count"], 1)
         self.assertEqual(r.context["phones_active_count"], 1)
+        self.assertEqual(r.context["phones_esim_count"], 1)
         self.assertEqual(r.context["phones_lifecycle_total"], 4)
         self.assertContains(r, "Active lines")
         self.assertContains(r, "Ends today")
         self.assertContains(r, "Disconnected only")
         self.assertContains(r, "Left the agency")
+        self.assertContains(r, "eSIM lines")
 
 
 class DashboardKPITests(_ReportsBase):

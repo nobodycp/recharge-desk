@@ -308,6 +308,8 @@ AR: dict[str, str] = {
     ),
     "Total lines": "إجمالي الأرقام",
     "Active lines": "فعّال",
+    "eSIM lines": "أرقام eSIM",
+    "Latest sale is eSIM": "آخر بيع eSIM",
     "Subscription still running": "الاشتراك ما زال سارياً",
     "Disconnects within 24 hours": "حيفصل خلال ٢٤ ساعة",
     "Ends today": "ينتهي اليوم",

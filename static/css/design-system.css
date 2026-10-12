@@ -3479,6 +3479,7 @@ html[dir="rtl"] .rd-toast.is-visible {
 .rd-phone-lifecycle__item:nth-child(2) { animation-delay: 100ms; }
 .rd-phone-lifecycle__item:nth-child(3) { animation-delay: 160ms; }
 .rd-phone-lifecycle__item:nth-child(4) { animation-delay: 220ms; }
+.rd-phone-lifecycle__item:nth-child(5) { animation-delay: 280ms; }
 
 @keyframes rd-phone-legend-in {
   from {
@@ -3534,6 +3535,13 @@ html[dir="rtl"] .rd-toast.is-visible {
 .rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__swatch {
   background: #dc3545;
   color: #dc3545;
+}
+.rd-phone-lifecycle__item--esim .rd-phone-lifecycle__swatch {
+  background: #6b7280;
+  color: #6b7280;
+}
+.rd-phone-lifecycle__item--esim .rd-phone-lifecycle__val {
+  color: var(--bs-secondary-color);
 }
 
 .rd-phone-lifecycle__body {

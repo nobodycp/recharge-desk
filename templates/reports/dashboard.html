@@ -164,6 +164,14 @@
               </span>
               <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
             </li>
+            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--esim">
+              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
+              <span class="rd-phone-lifecycle__body">
+                <span class="rd-phone-lifecycle__lbl">{% trans "eSIM lines" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Latest sale is eSIM" %}</span>
+              </span>
+              <a class="rd-phone-lifecycle__val tabular-nums text-decoration-none" href="{% url 'reports:phone_lines_report' %}?sim_type=esim">{{ phones_esim_count|intcomma }}</a>
+            </li>
           </ul>
         </div>
       </div>
