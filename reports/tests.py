@@ -164,7 +164,7 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(r.context["phones_active_count"], 1)
         self.assertEqual(r.context["phones_lifecycle_total"], 4)
         self.assertContains(r, "Active lines")
-        self.assertContains(r, "Disconnects within 24 hours")
+        self.assertContains(r, "Ends today")
         self.assertContains(r, "Ended — under inactivity threshold")
         self.assertContains(r, "Ended — past inactivity threshold")
 

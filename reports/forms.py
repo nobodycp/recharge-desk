@@ -56,7 +56,7 @@ class PhoneLinesFilterForm(forms.Form):
         choices=(
             ("", "---------"),
             ("active", _("Active lines")),
-            ("due_soon", _("Disconnects within 24 hours")),
+            ("due_soon", _("Ends today")),
             ("ended_under_threshold", _("Ended — under inactivity threshold")),
             ("overdue", _("Ended — past inactivity threshold")),
         ),

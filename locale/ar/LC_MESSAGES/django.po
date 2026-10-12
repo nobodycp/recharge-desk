@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 04:13+0300\n"
+"POT-Creation-Date: 2026-10-12 04:15+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2272,8 +2272,8 @@ msgid "Active lines"
 msgstr "فعّال"
 #: reports/forms.py:59 templates/reports/dashboard.html:146
 #: templates/reports/partials/phone_line_status_badge.html:5
-msgid "Disconnects within 24 hours"
-msgstr "حيفصل خلال ٢٤ ساعة"
+msgid "Ends today"
+msgstr "ينتهي اليوم"
 #: reports/forms.py:60 templates/reports/dashboard.html:154
 #: templates/reports/partials/phone_line_status_badge.html:7
 msgid "Ended — under inactivity threshold"
@@ -5142,8 +5142,8 @@ msgstr "إجمالي الأرقام"
 msgid "Subscription still running"
 msgstr "الاشتراك ما زال سارياً"
 #: templates/reports/dashboard.html:147
-msgid "Last charge ends within 24 hours"
-msgstr "تنتهي آخر شحنة خلال ٢٤ ساعة"
+msgid "Last charge ends today"
+msgstr "تنتهي آخر شحنة اليوم"
 #: templates/reports/dashboard.html:155
 #, python-format
 msgid "Subscription ended; still inside the %(d)s-day grace window"
@@ -5790,6 +5790,9 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Disconnects within 24 hours"
+#~ msgstr "حيفصل خلال ٢٤ ساعة"
 
 #~ msgid "Enters the disconnect list soon"
 #~ msgstr "يدخل قائمة الفصل قريباً"

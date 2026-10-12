@@ -310,6 +310,8 @@ AR: dict[str, str] = {
     "Active lines": "فعّال",
     "Subscription still running": "الاشتراك ما زال سارياً",
     "Disconnects within 24 hours": "حيفصل خلال ٢٤ ساعة",
+    "Ends today": "ينتهي اليوم",
+    "Last charge ends today": "تنتهي آخر شحنة اليوم",
     "Enters the disconnect list soon": "يدخل قائمة الفصل قريباً",
     "Last charge ends within 24 hours": "تنتهي آخر شحنة خلال ٢٤ ساعة",
     "Ended — under inactivity threshold": "مفصول ولم يتجاوز عتبة عدم النشاط",
