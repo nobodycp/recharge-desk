@@ -14,7 +14,11 @@
           </li>
         {% endfor %}
       </ul>
-      <a class="btn btn-sm btn-outline-primary" href="{% url 'inventory:employee_customer_detail' group.customer.pk %}">
+      <a
+        class="btn btn-sm btn-outline-primary"
+        href="{% url 'inventory:employee_customer_detail' group.customer.pk %}"
+        hx-boost="false"
+      >
         {% trans "Open customer stock" %}
       </a>
     </div>

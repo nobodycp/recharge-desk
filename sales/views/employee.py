@@ -436,7 +436,12 @@ def employee_stock_check(request):
         "customer_groups": customer_groups,
         "q": q,
     }
-    if request.headers.get("HX-Request") == "true":
+    # Live filter targets the results fragment. Tabbar/wallet hx-boost also
+    # sends HX-Request, but with HX-Target=body — that must get the full page.
+    if (
+        request.headers.get("HX-Request") == "true"
+        and request.headers.get("HX-Target") == "rd-stock-check-results"
+    ):
         return render(
             request,
             "sales/partials/employee_stock_check_results.html",

@@ -1157,7 +1157,12 @@ class EmployeeStockCheckTests(TestCase):
 
     def test_stock_check_live_filter_by_customer_name(self):
         url = reverse("sales:employee_stock_check")
-        resp = self.client.get(url, {"q": "Hazem"}, HTTP_HX_REQUEST="true")
+        resp = self.client.get(
+            url,
+            {"q": "Hazem"},
+            HTTP_HX_REQUEST="true",
+            HTTP_HX_TARGET="rd-stock-check-results",
+        )
         self.assertEqual(resp.status_code, 200)
         self.assertTemplateUsed(resp, "sales/partials/employee_stock_check_results.html")
         self.assertContains(resp, "Dealer Hazem")
@@ -1168,6 +1173,20 @@ class EmployeeStockCheckTests(TestCase):
         resp = self.client.get(url, {"q": "NoSuchDealer"})
         self.assertNotContains(resp, "Dealer Hazem")
         self.assertContains(resp, "No SIM stock found")
+
+    def test_stock_check_htmx_body_nav_returns_full_page(self):
+        """Tabbar hx-boost targets body; must not get the results-only partial."""
+        url = reverse("sales:employee_stock_check")
+        resp = self.client.get(
+            url,
+            HTTP_HX_REQUEST="true",
+            HTTP_HX_TARGET="body",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "sales/employee_stock_check.html")
+        self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "rd-stock-check-results")
+        self.assertContains(resp, "Dealer Hazem")
 
 
 class SalesCsvExportTests(TestCase):
