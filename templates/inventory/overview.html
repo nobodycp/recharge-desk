@@ -11,7 +11,7 @@
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-table-dual rd-datagrid-body">
-    <div class="rd-data-shell rd-data-shell--inventory-actions">
+    <div class="d-none d-md-block rd-data-shell rd-data-shell--inventory-actions">
       <div class="table-responsive border-0">
         <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
           <colgroup>
@@ -76,6 +76,57 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for row in rows %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <a
+              href="{% if read_only %}{% url 'inventory:employee_line_detail' row.line.pk %}{% else %}{% url 'inventory:line_detail' row.line.pk %}{% endif %}"
+              class="fw-semibold text-decoration-none min-w-0 text-truncate"
+            >{{ row.line.name }}</a>
+            <span class="tabular-nums fw-bold flex-shrink-0">{{ row.total_qty }}</span>
+          </div>
+          <div class="rd-mobile-kv">
+            <div class="rd-mobile-kv__row">
+              <span class="rd-mobile-k">{% trans "Main" %}</span>
+              <span class="rd-mobile-v tabular-nums">{{ row.main_qty }}</span>
+            </div>
+            <div class="rd-mobile-kv__row">
+              <span class="rd-mobile-k">{% trans "With customers" %}</span>
+              <span class="rd-mobile-v tabular-nums">{{ row.customer_qty }}</span>
+            </div>
+            {% if show_valuation %}
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Est. value" %}</span>
+                <span class="rd-mobile-v tabular-nums">
+                  {% if row.unit_cost %}{{ row.total_value|intcomma }}{% else %}—{% endif %}
+                </span>
+              </div>
+            {% endif %}
+          </div>
+          {% if not read_only %}
+            <div class="mt-2">
+              {% if row.main_balance %}
+                {% include "inventory/_balance_actions.html" with balance=row.main_balance scope="main" read_only=read_only next_url=request.path %}
+              {% else %}
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary rd-inv-action-btn"
+                  data-inv-action="set"
+                  data-inv-url="{% url 'inventory:overview_init_main' row.line.pk %}"
+                  data-inv-title="{% trans 'Set main stock' %}"
+                  data-inv-qty="0"
+                  data-inv-next="{{ request.path }}"
+                >{% trans "Set main stock" %}</button>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No product lines yet." %}</div>
+      {% endfor %}
     </div>
   </div>
 </div>

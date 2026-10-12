@@ -2345,15 +2345,74 @@ tr.rd-row-pending {
 }
 
 .rd-customer-stock-card__line {
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
 }
 
-.rd-customer-stock-card__line .rd-stock-check-lines__name {
+.rd-customer-stock-card__line-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.rd-customer-stock-card__line-main .rd-stock-check-lines__name {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-customer-stock-card__actions {
   flex-shrink: 0;
+  margin-inline-start: auto;
+}
+
+.rd-mobile-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rd-mobile-kv__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.rd-mobile-kv__row .rd-mobile-k {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--bs-secondary-color);
+}
+
+.rd-mobile-kv__row .rd-mobile-v {
+  min-width: 0;
+  text-align: end;
+  font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+  .rd-inventory-receive-form__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rd-inv-field--line,
+  .rd-inv-field--customer,
+  .rd-inv-field--qty,
+  .rd-inv-field--notes,
+  .rd-inv-field--serials,
+  .rd-inv-field--submit {
+    width: 100%;
+    max-width: none;
+  }
+
+  .rd-page-header .rd-heading-xl {
+    font-size: 1.25rem;
+  }
 }
 
 #rd-stock-check-indicator .htmx-indicator {
