@@ -638,7 +638,7 @@
     }
   }
 
-  document.addEventListener("click", function (e) {
+  window.__rdEmployeeSaleOnClick = function (e) {
     var form = document.getElementById("employee-sale-form");
     if (!form) return;
     var lineBtn = e.target.closest(".employee-product-line-tile");
@@ -657,11 +657,10 @@
     if (pay && form.contains(pay)) {
       e.preventDefault();
       syncPaymentFromTile(pay);
-      return;
     }
-  });
+  };
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initSaleFormUi() {
     var toggleBtn = document.getElementById("rd-on-account-toggle");
     if (toggleBtn) {
       toggleBtn.addEventListener("click", function () {
@@ -788,22 +787,38 @@
     syncDurationDaysVisibility(activeChip);
     updateSalePreview();
     updateSimStockPreview();
-  });
+  }
 
-  document.body.addEventListener("htmx:afterSwap", function (evt) {
-    if (evt.detail.target && evt.detail.target.id === "product-tiles-container") {
-      resetLineAndPackages();
-      var hid = document.getElementById("id_product");
-      if (hid) hid.value = "";
-      var inp = document.getElementById("id_sell_price_actual");
-      if (inp) inp.value = "";
-      var daysInp = document.getElementById("id_duration_days");
-      if (daysInp) daysInp.value = "30";
-      syncDurationDaysVisibility(null);
-      updateSalePreview();
-      updateSimStockPreview();
-    }
-  });
+  window.__rdEmployeeSaleOnSwap = function (evt) {
+    if (!(evt.detail.target && evt.detail.target.id === "product-tiles-container")) return;
+    resetLineAndPackages();
+    var hid = document.getElementById("id_product");
+    if (hid) hid.value = "";
+    var inp = document.getElementById("id_sell_price_actual");
+    if (inp) inp.value = "";
+    var daysInp = document.getElementById("id_duration_days");
+    if (daysInp) daysInp.value = "30";
+    syncDurationDaysVisibility(null);
+    updateSalePreview();
+    updateSimStockPreview();
+  };
+
+  /* Document listeners once — HTMX body swaps re-run this script without replacing document. */
+  if (!window.__rdEmployeeSaleDocBound) {
+    window.__rdEmployeeSaleDocBound = true;
+    document.addEventListener("click", function (e) {
+      if (typeof window.__rdEmployeeSaleOnClick === "function") window.__rdEmployeeSaleOnClick(e);
+    });
+    document.addEventListener("htmx:afterSwap", function (evt) {
+      if (typeof window.__rdEmployeeSaleOnSwap === "function") window.__rdEmployeeSaleOnSwap(evt);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSaleFormUi);
+  } else {
+    initSaleFormUi();
+  }
 })();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>
