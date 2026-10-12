@@ -869,6 +869,19 @@
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
 }
 
+.rd-dash-swap > :not(.rd-dash-head) {
+  transition: opacity var(--rd-transition);
+}
+
+.rd-dash-swap.htmx-request > :not(.rd-dash-head) {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.rd-dash-swap.htmx-request .rd-period-switch {
+  cursor: progress;
+}
+
 @media (max-width: 575.98px) {
   .rd-period-switch {
     width: 100%;
