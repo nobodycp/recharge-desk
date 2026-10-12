@@ -1,9 +1,8 @@
 {% extends "base_management.html" %}
 {% load i18n humanize ui_tags %}
 {% block content %}
-<div class="rd-page-header">
-  <h1 class="rd-heading-xl mb-1">{% trans "Sales report" %}</h1>
-  <p class="rd-text-muted mb-0">{% trans "Filter, review, and export-friendly table layout" %}</p>
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">{% trans "Sales report" %}</h1>
 </div>
 
 {% active_filter_count as report_active %}

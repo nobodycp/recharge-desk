@@ -1,44 +1,31 @@
 {% extends "base_management.html" %}
 {% load i18n humanize %}
 {% block content %}
-<div class="rd-page-header mb-3">
-  <h1 class="rd-heading-xl mb-1">{% trans "Profit report" %}</h1>
-  <p class="rd-text-muted mb-0">
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">{% trans "Profit report" %}</h1>
+  <form method="get" class="rd-report-filter" role="search">
+    <label class="rd-report-filter__field">
+      <span class="rd-report-filter__lbl">{{ form.date_from.label }}</span>
+      {{ form.date_from }}
+    </label>
+    <label class="rd-report-filter__field">
+      <span class="rd-report-filter__lbl">{{ form.date_to.label }}</span>
+      {{ form.date_to }}
+    </label>
+    <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
     {% if date_from or date_to %}
-      {% if date_from and date_to %}
-        {% blocktrans with start=date_from end=date_to %}From {{ start }} to {{ end }}. Excludes cancelled sales.{% endblocktrans %}
-      {% elif date_from %}
-        {% blocktrans with start=date_from %}From {{ start }}. Excludes cancelled sales.{% endblocktrans %}
-      {% else %}
-        {% blocktrans with end=date_to %}Until {{ end }}. Excludes cancelled sales.{% endblocktrans %}
-      {% endif %}
-    {% else %}
-      {% trans "All time · paid sales only · excludes cancelled" %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:profit_report' %}">{% trans "Reset" %}</a>
     {% endif %}
-  </p>
-</div>
-
-<div class="rd-card mb-3">
-  <div class="rd-card-body rd-filter-bar">
-    <form method="get" class="row g-2 g-md-3 align-items-end">
-      <div class="col-6 col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
-      <div class="col-6 col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
-      <div class="col-12 col-md-4 d-flex gap-2">
-        <button class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:profit_report' %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
-  </div>
+  </form>
 </div>
 
 <section class="rd-profit-hero rd-card mb-3" aria-label="{% trans 'Total profit' %}">
   <div class="rd-card-body">
     <div class="rd-profit-hero__main">
-      <div class="rd-label mb-1">{% trans "Total profit" %}</div>
+      <div class="rd-label mb-1">{% trans "Total profit" %} <span class="rd-text-muted fw-normal">· {% trans "Paid sales only" %}</span></div>
       <div class="rd-profit-hero__value tabular-nums {% if total_profit < 0 %}kpi-danger{% elif total_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">
         {{ total_profit|intcomma }}
       </div>
-      <p class="rd-text-muted small mb-0 mt-1">{% trans "Paid sales only" %}</p>
     </div>
     <div class="rd-profit-hero__split" role="group">
       <div class="rd-profit-hero__cell">
@@ -55,12 +42,93 @@
 </section>
 
 <div class="row g-3 mb-3">
-  <div class="col-12 col-lg-7">
+  <div class="col-12 col-lg-8">
     <section class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "Daily profit trend" %}</div>
+      <div class="rd-card-body">
+        {% if daily %}
+          <div class="rd-mini-chart rd-mini-chart--profit{% if daily|length > 16 %} rd-mini-chart--dense{% endif %}" role="img" aria-label="{% trans 'Daily profit trend' %}">
+            <div class="rd-mini-chart-grid" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="rd-mini-chart-bars">
+              {% for r in daily %}
+                {% widthratio r.profit max_daily_profit 100 as bar %}
+                <div class="rd-mini-chart-bar-cell{% if r.profit <= 0 %} is-empty{% endif %}">
+                  <span class="rd-mini-chart-tip" role="tooltip">
+                    <span class="rd-mini-chart-tip__date">{{ r.d }}</span>
+                    <span class="rd-mini-chart-tip__val tabular-nums">{{ r.profit|intcomma }}</span>
+                  </span>
+                  <div class="rd-mini-chart-bar" style="height: {% if r.profit > 0 %}{{ bar }}%{% else %}3px{% endif %};"></div>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="rd-mini-chart-weekdays" aria-hidden="true">
+              {% for r in daily %}
+                <span class="rd-mini-chart-wd">{{ r.d|date:"j" }}</span>
+              {% endfor %}
+            </div>
+            <div class="rd-mini-chart-axis">
+              {% with last=daily|last %}
+                <span>{{ daily.0.d }}</span>
+                <span>{{ last.d }}</span>
+              {% endwith %}
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+  <div class="col-12 col-lg-4">
+    <section class="rd-card h-100">
+      <div class="rd-card-header fw-semibold">{% trans "Monthly profit trend" %}</div>
+      <div class="rd-card-body">
+        {% if monthly %}
+          <div class="rd-mini-chart rd-mini-chart--profit" role="img" aria-label="{% trans 'Monthly profit trend' %}">
+            <div class="rd-mini-chart-grid" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="rd-mini-chart-bars">
+              {% for r in monthly %}
+                {% widthratio r.profit max_monthly_profit 100 as bar %}
+                <div class="rd-mini-chart-bar-cell{% if r.profit <= 0 %} is-empty{% endif %}">
+                  <span class="rd-mini-chart-tip" role="tooltip">
+                    <span class="rd-mini-chart-tip__date">{{ r.m|date:"F Y" }}</span>
+                    <span class="rd-mini-chart-tip__val tabular-nums">{{ r.profit|intcomma }}</span>
+                  </span>
+                  <div class="rd-mini-chart-bar" style="height: {% if r.profit > 0 %}{{ bar }}%{% else %}3px{% endif %};"></div>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="rd-mini-chart-weekdays" aria-hidden="true">
+              {% for r in monthly %}
+                <span class="rd-mini-chart-wd">{{ r.m|date:"n" }}</span>
+              {% endfor %}
+            </div>
+            <div class="rd-mini-chart-axis">
+              {% with last=monthly|last %}
+                <span>{{ monthly.0.m|date:"Y-m" }}</span>
+                <span>{{ last.m|date:"Y-m" }}</span>
+              {% endwith %}
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-5 d-flex flex-column gap-3">
+    <section class="rd-card">
       <div class="rd-card-header fw-semibold">{% trans "By company" %}</div>
       <div class="rd-card-body">
         {% if by_company %}
-          <ul class="rd-profit-rank mb-0">
+          <ul class="rd-profit-rank rd-profit-rank--inline mb-0">
             {% for r in by_company %}
               {% widthratio r.profit max_company_profit 100 as bar %}
               <li class="rd-profit-rank__item">
@@ -71,9 +139,8 @@
                 <div class="rd-profit-rank__track" aria-hidden="true">
                   <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
                 </div>
-                <div class="rd-profit-rank__meta">
+                <div class="rd-profit-rank__meta" title="{% trans 'Volume' %}: {{ r.volume|intcomma }}">
                   <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
-                  <span class="tabular-nums">{% trans "Volume" %}: {{ r.volume|intcomma }}</span>
                 </div>
               </li>
             {% endfor %}
@@ -83,13 +150,12 @@
         {% endif %}
       </div>
     </section>
-  </div>
-  <div class="col-12 col-lg-5">
-    <section class="rd-card h-100 mb-3 mb-lg-0">
+
+    <section class="rd-card">
       <div class="rd-card-header fw-semibold">{% trans "By payment method" %}</div>
       <div class="rd-card-body">
         {% if by_method %}
-          <ul class="rd-profit-rank mb-0">
+          <ul class="rd-profit-rank rd-profit-rank--inline mb-0">
             {% for r in by_method %}
               {% widthratio r.profit max_method_profit 100 as bar %}
               <li class="rd-profit-rank__item">
@@ -111,16 +177,12 @@
         {% endif %}
       </div>
     </section>
-  </div>
-</div>
 
-<div class="row g-3 mb-3">
-  <div class="col-12 col-lg-5">
-    <section class="rd-card h-100">
+    <section class="rd-card">
       <div class="rd-card-header fw-semibold">{% trans "By employee" %}</div>
       <div class="rd-card-body">
         {% if by_employee %}
-          <ul class="rd-profit-rank mb-0">
+          <ul class="rd-profit-rank rd-profit-rank--inline mb-0">
             {% for r in by_employee %}
               {% widthratio r.profit max_employee_profit 100 as bar %}
               <li class="rd-profit-rank__item">
@@ -143,12 +205,13 @@
       </div>
     </section>
   </div>
+
   <div class="col-12 col-lg-7">
-    <section class="rd-card h-100">
+    <section class="rd-card">
       <div class="rd-card-header fw-semibold">{% trans "By product" %}</div>
       <div class="rd-card-body">
         {% if by_product %}
-          <ul class="rd-profit-rank mb-0">
+          <ul class="rd-profit-rank rd-profit-rank--inline rd-profit-rank--wide-name mb-0">
             {% for r in by_product %}
               {% widthratio r.profit max_product_profit 100 as bar %}
               <li class="rd-profit-rank__item">
@@ -167,61 +230,6 @@
                 </div>
                 <div class="rd-profit-rank__meta">
                   <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
-                </div>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
-        {% endif %}
-      </div>
-    </section>
-  </div>
-</div>
-
-<div class="row g-3">
-  <div class="col-12 col-lg-6">
-    <section class="rd-card h-100">
-      <div class="rd-card-header fw-semibold">{% trans "Daily profit trend" %}</div>
-      <div class="rd-card-body">
-        <p class="rd-text-muted small mb-2">{% trans "Last 31 days with sales (newest first)." %}</p>
-        {% if daily %}
-          <ul class="rd-profit-rank rd-profit-rank--compact mb-0">
-            {% for r in daily %}
-              {% widthratio r.profit max_daily_profit 100 as bar %}
-              <li class="rd-profit-rank__item">
-                <div class="rd-profit-rank__row">
-                  <span class="rd-profit-rank__name tabular-nums">{{ r.d }}</span>
-                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
-                </div>
-                <div class="rd-profit-rank__track" aria-hidden="true">
-                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
-                </div>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
-        {% endif %}
-      </div>
-    </section>
-  </div>
-  <div class="col-12 col-lg-6">
-    <section class="rd-card h-100">
-      <div class="rd-card-header fw-semibold">{% trans "Monthly profit trend" %}</div>
-      <div class="rd-card-body">
-        <p class="rd-text-muted small mb-2">{% trans "Last 12 months with sales (newest first)." %}</p>
-        {% if monthly %}
-          <ul class="rd-profit-rank rd-profit-rank--compact mb-0">
-            {% for r in monthly %}
-              {% widthratio r.profit max_monthly_profit 100 as bar %}
-              <li class="rd-profit-rank__item">
-                <div class="rd-profit-rank__row">
-                  <span class="rd-profit-rank__name tabular-nums">{{ r.m|date:"Y-m" }}</span>
-                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
-                </div>
-                <div class="rd-profit-rank__track" aria-hidden="true">
-                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
                 </div>
               </li>
             {% endfor %}

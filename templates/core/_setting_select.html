@@ -1,0 +1,7 @@
+<div class="rd-set-row">
+  <label class="rd-set-row__text" for="{{ field.id_for_label }}">
+    <span class="rd-set-row__title">{{ field.label }}</span>
+    {% if field.errors %}<span class="rd-set-row__error">{{ field.errors|join:" " }}</span>{% endif %}
+  </label>
+  <span class="rd-set-row__control rd-set-row__control--select">{{ field }}</span>
+</div>

@@ -1,13 +1,13 @@
 """Tests for the reports app: dashboard KPIs and report views."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
@@ -97,11 +97,11 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["pending_count"], 0)
         self.assertEqual(ctx["awaiting_count"], 0)
         self.assertEqual(ctx["customer_debt_total"], 0)
-        self.assertEqual(ctx["today_count"], 0)
-        self.assertEqual(ctx["today_volume"] or 0, 0)
-        self.assertEqual(ctx["today_profit"] or 0, 0)
-        self.assertEqual(ctx["total_profit"] or 0, 0)
-        self.assertEqual(ctx["esim_sales_count"], 0)
+        self.assertEqual(ctx["period_count"], 0)
+        self.assertEqual(ctx["period_volume"] or 0, 0)
+        self.assertEqual(ctx["period_profit"] or 0, 0)
+        self.assertEqual(ctx["period"], "day")
+        self.assertEqual(ctx["period_esim_count"], 0)
         self.assertEqual(ctx["phones_active_count"], 0)
         self.assertEqual(ctx["phones_due_soon_count"], 0)
         self.assertEqual(ctx["phones_ended_under_threshold_count"], 0)
@@ -109,6 +109,7 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(ctx["phones_esim_active_count"], 0)
         self.assertEqual(ctx["phones_lifecycle_total"], 0)
         self.assertNotContains(r, "Recent activity")
+        self.assertNotContains(r, "rd-stat-icon--warning")
         self.assertContains(r, "Line status")
         self.assertContains(r, "rd-phone-donut")
         self.assertContains(r, "eSIM:")
@@ -183,6 +184,28 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertNotContains(r, "Last charge ends today")
         self.assertNotContains(r, "Open lines that left the agency")
 
+    def test_donut_stops_are_valid_css_in_arabic(self):
+        """Arabic formats 33.33 as "33,33", which breaks the conic-gradient."""
+        from django.test import RequestFactory
+
+        from reports.views import dashboard
+
+        for i in range(3):
+            s = self._make_sale(ref=f"055DONUT00{i}", paid=True)
+            Sale.objects.filter(pk=s.pk).update(
+                created_at=timezone.now() - timedelta(days=10 + 50 * i),
+                duration_days=30,
+            )
+        request = RequestFactory().get("/management/")
+        request.user = User.objects.get(pk=self.user.pk)
+        request.session = self.client.session
+        with translation.override("ar"):
+            r = dashboard(request)
+        self.assertEqual(r.status_code, 200)
+        style = r.content.decode().split('style="--donut-active-end:', 1)[1].split('"', 1)[0]
+        self.assertIn(".", style)
+        self.assertNotIn(",", style)
+
 
 class DashboardKPITests(_ReportsBase):
     """KPI numbers must match underlying aggregates after creating fixtures."""
@@ -233,20 +256,20 @@ class DashboardKPITests(_ReportsBase):
         # Today volume includes paid + pending (confirmed_sales: excludes cancelled,
         # awaiting, written-off). The zero-priced loss sale also counts in volume.
         # paid1+paid2+pending+loss = 20+20+20+0 = 60
-        self.assertEqual(ctx["today_volume"], _d(60))
+        self.assertEqual(ctx["period_volume"], _d(60))
 
         # Today profit = paid sales only (paid1+paid2 = 30; loss sale paid w/ sell=0 -> profit -5 each)
         # paid1=15, paid2=15, loss sale =0-5=-5 -> total 25.
-        self.assertEqual(ctx["today_profit"], _d(25))
+        self.assertEqual(ctx["period_profit"], _d(25))
 
         # Today loss from zero (loss_snapshot for sell=0 is cost=5)
-        self.assertEqual(ctx["today_loss_from_zero"], _d(5))
+        self.assertEqual(ctx["period_loss"], _d(5))
 
-        # Total expenses
-        self.assertEqual(ctx["total_expenses"], _d(100))
+        # Today's expenses
+        self.assertEqual(ctx["period_expenses"], _d(100))
 
-        # Net all time = profit - expenses = 25 - 100 = -75
-        self.assertEqual(ctx["net_all_time"], _d(-75))
+        # Net = profit - expenses = 25 - 100 = -75
+        self.assertEqual(ctx["period_net"], _d(-75))
 
     def test_esim_sales_count_matches_today_only(self):
         """eSIM KPI must not include historical eSIM sales (same scope as today volume)."""
@@ -257,7 +280,75 @@ class DashboardKPITests(_ReportsBase):
         self._make_sale(sell=20, paid=True, is_esim=False, ref="NORM")
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context["esim_sales_count"], 1)
+        self.assertEqual(r.context["period_esim_count"], 1)
+
+
+class DashboardPeriodTests(_ReportsBase):
+    """The header switch scopes sales KPIs to today, the calendar month, or all time."""
+
+    def setUp(self):
+        super().setUp()
+        today = timezone.localdate()
+        self.month_start = today.replace(day=1)
+        self._make_sale(sell=20, paid=True, ref="P-TODAY")
+        # Earlier in the current calendar month (falls back to today on the 1st).
+        earlier = self._make_sale(sell=20, paid=True, ref="P-MONTH")
+        Sale.objects.filter(pk=earlier.pk).update(
+            created_at=timezone.make_aware(datetime.combine(self.month_start, time(12)))
+        )
+        # Before this month but within 30 days when today is early in the month:
+        # must be excluded from "month" (calendar month, not a rolling window).
+        old = self._make_sale(sell=20, paid=True, ref="P-OLD")
+        Sale.objects.filter(pk=old.pk).update(
+            created_at=timezone.make_aware(
+                datetime.combine(self.month_start - timedelta(days=1), time(12))
+            )
+        )
+        Expense.objects.create(
+            title="old", category="ops", amount=_d(7),
+            date=self.month_start - timedelta(days=1), created_by=self.user,
+        )
+
+    def _get(self, period=None):
+        params = {"period": period} if period else {}
+        r = self.client.get(reverse("reports:dashboard"), params)
+        self.assertEqual(r.status_code, 200)
+        return r.context
+
+    def test_day_is_default(self):
+        ctx = self._get()
+        self.assertEqual(ctx["period"], "day")
+        today_only = 2 if self.month_start == timezone.localdate() else 1
+        self.assertEqual(ctx["period_count"], today_only)
+        self.assertEqual(len(ctx["chart_series"]), 14)
+
+    def test_month_is_calendar_month(self):
+        ctx = self._get("month")
+        self.assertEqual(ctx["period_count"], 2)
+        self.assertEqual(ctx["period_profit"], _d(30))
+        self.assertEqual(ctx["period_expenses"], 0)
+        self.assertEqual(ctx["chart_series"][0]["date"], self.month_start.isoformat())
+        self.assertEqual(len(ctx["chart_series"]), timezone.localdate().day)
+
+    def test_all_includes_everything(self):
+        ctx = self._get("all")
+        self.assertEqual(ctx["period_count"], 3)
+        self.assertEqual(ctx["period_volume"], _d(60))
+        self.assertEqual(ctx["period_expenses"], _d(7))
+        self.assertEqual(ctx["period_net"], _d(45 - 7))
+        self.assertEqual(ctx["chart_series"][-1]["count"], 2)
+        self.assertEqual(sum(d["count"] for d in ctx["chart_series"]), 3)
+
+    def test_choice_is_remembered_and_invalid_values_ignored(self):
+        self._get("all")
+        self.assertEqual(self._get()["period"], "all")
+        self.assertEqual(self._get("week")["period"], "all")
+        self.assertEqual(self._get("day")["period"], "day")
+
+    def test_switch_renders_with_active_option(self):
+        r = self.client.get(reverse("reports:dashboard"), {"period": "month"})
+        self.assertContains(r, 'class="rd-period-switch__opt is-active" href="?period=month"')
+        self.assertContains(r, 'href="?period=all"')
 
 
 # ============================================================ Profit report
@@ -393,15 +484,12 @@ class DashboardChartsTests(_ReportsBase):
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.status_code, 200)
         ctx = r.context
-        self.assertEqual(len(ctx["daily_series"]), ctx["chart_window_days"])
-        self.assertEqual(ctx["daily_series"][-1]["count"], 1)
-        self.assertEqual(ctx["daily_series"][-1]["volume"], 20.0)
-        self.assertIn("day_letter", ctx["daily_series"][0])
-        self.assertEqual(len(ctx["daily_series"][0]["day_letter"]), 1)
+        self.assertEqual(len(ctx["chart_series"]), 14)
+        self.assertEqual(ctx["chart_series"][-1]["count"], 1)
+        self.assertEqual(ctx["chart_series"][-1]["volume"], 20.0)
+        self.assertEqual(len(ctx["chart_series"][0]["tick"]), 1)
         self.assertEqual(ctx["chart_total_volume"], 20.0)
-        self.assertAlmostEqual(
-            ctx["chart_avg_volume"], 20.0 / ctx["chart_window_days"], places=6
-        )
+        self.assertAlmostEqual(ctx["chart_avg_volume"], 20.0 / 14, places=6)
         self.assertGreaterEqual(len(ctx["top_companies"]), 1)
         self.assertEqual(ctx["top_companies"][0]["name"], "ReportCo")
 

@@ -1,4 +1,5 @@
 from django import template
+from django.apps import apps
 from django.core.files.storage import default_storage
 from django.utils.translation import gettext
 
@@ -114,3 +115,43 @@ def active_filter_count(context):
                 count += 1
                 break
     return count
+
+
+@register.filter(name="model_verbose")
+def model_verbose(label: str) -> str:
+    """``"sales.sale"`` → the model's translated verbose name, else the label."""
+    try:
+        return str(apps.get_model(label)._meta.verbose_name)
+    except (LookupError, ValueError, TypeError):
+        return label or ""
+
+
+@register.filter(name="audit_changes")
+def audit_changes(changes):
+    """Flatten an audit ``changes`` payload into ``{field, old, new}`` rows.
+
+    Field diffs are stored as ``{field: {"old": ..., "new": ...}}``; deletes
+    keep a ``_snapshot`` dict of the final values, shown as old-only rows.
+    """
+    if not isinstance(changes, dict):
+        return []
+    rows = []
+    for field, value in changes.items():
+        if field == "_snapshot" and isinstance(value, dict):
+            for snap_field, snap_value in value.items():
+                rows.append({"field": snap_field, "old": snap_value, "new": None})
+        elif isinstance(value, dict) and ("old" in value or "new" in value):
+            rows.append({"field": field, "old": value.get("old"), "new": value.get("new")})
+        else:
+            rows.append({"field": field, "old": None, "new": value})
+    return rows
+
+
+@register.filter(name="audit_has_old")
+def audit_has_old(rows):
+    return any(r.get("old") not in (None, "") for r in rows or [])
+
+
+@register.filter(name="audit_has_new")
+def audit_has_new(rows):
+    return any(r.get("new") not in (None, "") for r in rows or [])

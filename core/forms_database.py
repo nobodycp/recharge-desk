@@ -11,13 +11,20 @@ class DatabaseImportForm(forms.Form):
     )
     confirm = forms.CharField(
         label=_("Confirmation"),
-        help_text=_('Type %(word)s to confirm you want to replace all current data.') % {"word": IMPORT_CONFIRM_WORD},
         max_length=32,
     )
     acknowledge = forms.BooleanField(
         label=_("I understand this will erase existing data and replace it with the backup."),
         required=True,
     )
+
+    confirm_word = IMPORT_CONFIRM_WORD
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["confirm"].help_text = _(
+            "Type %(word)s to confirm you want to replace all current data."
+        ) % {"word": IMPORT_CONFIRM_WORD}
 
     def clean_confirm(self):
         value = (self.cleaned_data.get("confirm") or "").strip().upper()

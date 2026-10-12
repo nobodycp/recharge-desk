@@ -299,8 +299,12 @@ class NavNotificationsContextProcessorTests(TestCase):
         self.assertEqual(n["awaiting"], 2)
         self.assertEqual(n["pending"], 1)
         self.assertEqual(n["total"], 3)
-        # And the badge HTML must render in the topbar.
+        # And the badge HTML must render in the topbar and on the matching sidebar links.
         self.assertContains(r, "rd-notif-badge")
+        self.assertContains(r, 'data-rd-nav-count="awaiting"')
+        self.assertContains(r, 'data-rd-nav-count="pending"')
+        self.assertContains(r, 'data-rd-nav-count="submissions"')
+        self.assertNotContains(r, "rd-stat-icon--warning")
 
     def test_poll_endpoint_returns_same_counts_as_context_processor(self):
         """The live-polling JSON endpoint and the initial-render context
