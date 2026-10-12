@@ -2394,6 +2394,43 @@ tr.rd-row-pending {
   font-weight: 600;
 }
 
+.rd-allocate-panel > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.rd-allocate-panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+.rd-allocate-panel__summary-text {
+  min-width: 0;
+}
+
+.rd-allocate-panel__chevron {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  color: var(--bs-secondary-color);
+  transition: transform 0.15s ease;
+}
+
+.rd-allocate-panel[open] > summary .rd-allocate-panel__chevron {
+  transform: rotate(180deg);
+}
+
+#rd-customer-stock-indicator .htmx-indicator {
+  display: none;
+}
+.htmx-request #rd-customer-stock-indicator .htmx-indicator,
+#rd-customer-stock-indicator.htmx-request .htmx-indicator {
+  display: inline;
+}
+
 @media (max-width: 767.98px) {
   .rd-inventory-receive-form__row {
     flex-direction: column;

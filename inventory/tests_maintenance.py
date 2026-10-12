@@ -360,6 +360,9 @@ class CustomerBalanceActionViewTests(TestCase):
         resp = self.client.get(reverse("inventory:customers"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "rd-customer-stock-card")
+        self.assertContains(resp, "rd-customer-stock-filter")
+        self.assertContains(resp, "rd-allocate-panel")
+        self.assertNotContains(resp, 'rd-allocate-panel" open')
         self.assertEqual(resp.content.decode().count("Filter Customer"), 1)
         self.assertContains(resp, "Sleekom")
         self.assertContains(resp, "ALOHA")
@@ -368,6 +371,26 @@ class CustomerBalanceActionViewTests(TestCase):
         filter_group = next(g for g in groups if g["customer"].pk == self.customer.pk)
         self.assertEqual(len(filter_group["balances"]), 2)
         self.assertEqual(filter_group["total"], 9)
+
+    def test_customer_list_live_filter_returns_results_partial(self):
+        url = reverse("inventory:customers")
+        resp = self.client.get(
+            url,
+            {"q": "Filter"},
+            HTTP_HX_REQUEST="true",
+            HTTP_HX_TARGET="rd-customer-stock-results",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "inventory/partials/customer_stock_results.html")
+        self.assertContains(resp, "Filter Customer")
+        self.assertContains(resp, "rd-customer-stock-results")
+
+        resp = self.client.get(
+            url,
+            HTTP_HX_REQUEST="true",
+            HTTP_HX_TARGET="body",
+        )
+        self.assertTemplateUsed(resp, "inventory/customer_list.html")
 
 
 class InventoryMobileLayoutTests(TestCase):
