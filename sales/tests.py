@@ -1042,8 +1042,15 @@ class EmployeeStockCheckTests(TestCase):
             current_balance=Decimal("1000"),
         )
         cls.line = ProductLine.objects.create(company=cls.company, name="HotLine")
+        cls.line2 = ProductLine.objects.create(company=cls.company, name="ALOHA")
         cls.product = Product.objects.create(
             line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        Product.objects.create(
+            line=cls.line2,
             variant_label="Pkg",
             cost_price=Decimal("5"),
             default_sell_price=Decimal("10"),
@@ -1061,11 +1068,27 @@ class EmployeeStockCheckTests(TestCase):
         from customers.models import Customer
 
         receive_main_stock(product_line=cls.line, qty=10, notes="", user=cls.mgmt)
+        receive_main_stock(product_line=cls.line2, qty=10, notes="", user=cls.mgmt)
         cls.customer = Customer.objects.create(name="Dealer Hazem", created_by=cls.mgmt)
+        cls.other = Customer.objects.create(name="Other Dealer", created_by=cls.mgmt)
         allocate_to_customer(
             customer=cls.customer,
             product_line=cls.line,
             qty=3,
+            notes="",
+            user=cls.mgmt,
+        )
+        allocate_to_customer(
+            customer=cls.customer,
+            product_line=cls.line2,
+            qty=5,
+            notes="",
+            user=cls.mgmt,
+        )
+        allocate_to_customer(
+            customer=cls.other,
+            product_line=cls.line,
+            qty=2,
             notes="",
             user=cls.mgmt,
         )
@@ -1074,17 +1097,32 @@ class EmployeeStockCheckTests(TestCase):
         self.client = Client()
         self.client.force_login(self.emp)
 
-    def test_stock_check_filters_by_customer_name(self):
+    def test_stock_check_groups_lines_under_one_customer_card(self):
         url = reverse("sales:employee_stock_check")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "rd-mobile-tabbar")
         self.assertContains(resp, "Dealer Hazem")
         self.assertContains(resp, "HotLine")
-        self.assertContains(resp, "3")
+        self.assertContains(resp, "ALOHA")
+        self.assertEqual(resp.content.decode().count("Dealer Hazem"), 1)
+        self.assertEqual(len(resp.context["customer_groups"]), 2)
+        hazem = next(
+            g for g in resp.context["customer_groups"] if g["customer"].pk == self.customer.pk
+        )
+        self.assertEqual(len(hazem["lines"]), 2)
+        self.assertEqual(hazem["total"], 8)
 
-        resp = self.client.get(url, {"q": "Hazem"})
+    def test_stock_check_live_filter_by_customer_name(self):
+        url = reverse("sales:employee_stock_check")
+        resp = self.client.get(url, {"q": "Hazem"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "sales/partials/employee_stock_check_results.html")
         self.assertContains(resp, "Dealer Hazem")
+        self.assertNotContains(resp, "Other Dealer")
+        self.assertContains(resp, "HotLine")
+        self.assertContains(resp, "ALOHA")
+
         resp = self.client.get(url, {"q": "NoSuchDealer"})
         self.assertNotContains(resp, "Dealer Hazem")
         self.assertContains(resp, "No SIM stock found")

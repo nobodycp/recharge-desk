@@ -2058,6 +2058,41 @@ tr.rd-row-pending {
   box-shadow: var(--rd-shadow-xs);
 }
 
+.rd-stock-check-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rd-stock-check-lines__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: var(--rd-radius-sm);
+  background: color-mix(in srgb, var(--bs-body-bg) 70%, transparent);
+}
+
+.rd-stock-check-lines__name {
+  min-width: 0;
+  font-size: 0.86rem;
+  color: var(--bs-body-color);
+}
+
+.rd-stock-check-lines__qty {
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+#rd-stock-check-indicator .htmx-indicator {
+  display: none;
+}
+.htmx-request #rd-stock-check-indicator .htmx-indicator,
+#rd-stock-check-indicator.htmx-request .htmx-indicator {
+  display: inline;
+}
+
 /* Product lines — grouped by company, collapsible packages */
 .rd-product-lines {
   display: flex;

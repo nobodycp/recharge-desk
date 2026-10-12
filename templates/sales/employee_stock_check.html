@@ -8,122 +8,43 @@
   {% trans "Search by customer name to see SIM stock held with them." %}
 </p>
 
-<form method="get" class="rd-card p-3 mb-3">
-  <div
-    class="rd-field-group rd-payer-field-wrap mb-2"
-    id="rd-stock-check-ac-root"
-    data-api-customer-lookup="{% url 'customers:api_customer_lookup' %}"
-  >
+<div class="rd-card p-3 mb-3">
+  <div class="rd-field-group mb-0">
     <label class="rd-field-label d-block" for="{{ filter_form.q.id_for_label }}">{% trans "Customer name" %}</label>
-    <div class="rd-payer-ac-anchor">
-      {{ filter_form.q }}
-      <div
-        class="rd-payer-ac-list"
-        id="rd-stock-check-ac-list"
-        role="listbox"
-        aria-label="{% trans 'Customer name suggestions' %}"
-        hidden
-      ></div>
+    <div class="d-flex gap-2 align-items-start">
+      <input
+        type="search"
+        name="q"
+        id="{{ filter_form.q.id_for_label }}"
+        class="form-control form-control-sm"
+        value="{{ q }}"
+        placeholder="{% trans 'Customer name…' %}"
+        autocomplete="off"
+        autofocus
+        hx-get="{% url 'sales:employee_stock_check' %}"
+        hx-trigger="keyup changed delay:180ms, search, clear"
+        hx-target="#rd-stock-check-results"
+        hx-select="#rd-stock-check-results"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-indicator="#rd-stock-check-indicator"
+      >
+      <a
+        class="btn btn-outline-secondary btn-sm flex-shrink-0"
+        href="{% url 'sales:employee_stock_check' %}"
+        hx-get="{% url 'sales:employee_stock_check' %}"
+        hx-target="#rd-stock-check-results"
+        hx-select="#rd-stock-check-results"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        onclick="var i=document.getElementById('{{ filter_form.q.id_for_label }}'); if(i) i.value='';"
+      >{% trans "Reset" %}</a>
+    </div>
+    <div class="small text-secondary mt-1" id="rd-stock-check-indicator" aria-live="polite">
+      <span class="htmx-indicator">{% trans "Searching…" %}</span>
     </div>
   </div>
-  <div class="d-flex flex-wrap gap-2">
-    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">{% trans "Search" %}</button>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_stock_check' %}">{% trans "Reset" %}</a>
-  </div>
-</form>
-
-<div class="rd-mobile-stack">
-  {% for b in page_obj %}
-    <div class="rd-mobile-row-card">
-      <div class="d-flex justify-content-between align-items-start gap-2">
-        <div class="min-w-0">
-          <div class="fw-semibold text-truncate">{{ b.customer.name }}</div>
-          <div class="small text-secondary text-truncate">{{ b.product_line.name }}</div>
-        </div>
-        <div class="tabular-nums fw-bold flex-shrink-0">{{ b.quantity }}</div>
-      </div>
-      <div class="mt-2">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'inventory:employee_customer_detail' b.customer_id %}">
-          {% trans "Open customer stock" %}
-        </a>
-      </div>
-    </div>
-  {% empty %}
-    <div class="empty-state">
-      {% if q %}
-        {% blocktrans with name=q %}No SIM stock found for “{{ name }}”.{% endblocktrans %}
-      {% else %}
-        {% trans "No customer SIM stock on hand." %}
-      {% endif %}
-    </div>
-  {% endfor %}
 </div>
-{% include "partials/pagination.html" with page_obj=page_obj %}
 
-<script>
-(function () {
-  var root = document.getElementById("rd-stock-check-ac-root");
-  if (!root) return;
-  var input = root.querySelector("input");
-  var list = document.getElementById("rd-stock-check-ac-list");
-  var api = root.getAttribute("data-api-customer-lookup") || "";
-  if (!input || !list || !api || !window.fetch) return;
-  var timer = null;
-  var controller = null;
-
-  function hide() {
-    list.hidden = true;
-    list.innerHTML = "";
-  }
-
-  function pick(name) {
-    input.value = name || "";
-    hide();
-    input.form && input.form.requestSubmit ? input.form.requestSubmit() : input.form && input.form.submit();
-  }
-
-  function render(items) {
-    list.innerHTML = "";
-    if (!items || !items.length) {
-      hide();
-      return;
-    }
-    items.slice(0, 8).forEach(function (item) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action py-2 px-3 small";
-      btn.textContent = item.name || "";
-      btn.addEventListener("click", function () { pick(item.name || ""); });
-      list.appendChild(btn);
-    });
-    list.classList.add("list-group");
-    list.hidden = false;
-  }
-
-  input.addEventListener("input", function () {
-    var q = String(input.value || "").trim();
-    if (timer) window.clearTimeout(timer);
-    if (q.length < 2) {
-      hide();
-      return;
-    }
-    timer = window.setTimeout(function () {
-      if (controller) controller.abort();
-      controller = new AbortController();
-      var url = api + (api.indexOf("?") >= 0 ? "&" : "?") + "q=" + encodeURIComponent(q);
-      fetch(url, { credentials: "same-origin", signal: controller.signal, headers: { Accept: "application/json" } })
-        .then(function (r) { return r.ok ? r.json() : []; })
-        .then(function (data) {
-          var items = Array.isArray(data) ? data : (data && data.results) || [];
-          render(items);
-        })
-        .catch(function () { hide(); });
-    }, 180);
-  });
-
-  document.addEventListener("click", function (e) {
-    if (!root.contains(e.target)) hide();
-  });
-})();
-</script>
+{% include "sales/partials/employee_stock_check_results.html" %}
 {% endblock %}

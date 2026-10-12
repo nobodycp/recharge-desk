@@ -1,0 +1,32 @@
+{% load i18n %}
+<div class="rd-mobile-stack" id="rd-stock-check-results">
+  {% for group in customer_groups %}
+    <div class="rd-mobile-row-card rd-stock-check-card">
+      <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+        <div class="fw-semibold text-truncate min-w-0">{{ group.customer.name }}</div>
+        <div class="tabular-nums fw-bold flex-shrink-0 small text-secondary">
+          {% blocktrans count n=group.total %}{{ n }} SIM{% plural %}{{ n }} SIMs{% endblocktrans %}
+        </div>
+      </div>
+      <ul class="rd-stock-check-lines list-unstyled mb-2">
+        {% for line in group.lines %}
+          <li class="rd-stock-check-lines__row">
+            <span class="rd-stock-check-lines__name text-truncate">{{ line.name }}</span>
+            <span class="rd-stock-check-lines__qty tabular-nums fw-semibold">{{ line.quantity }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <a class="btn btn-sm btn-outline-primary" href="{% url 'inventory:employee_customer_detail' group.customer.pk %}">
+        {% trans "Open customer stock" %}
+      </a>
+    </div>
+  {% empty %}
+    <div class="empty-state">
+      {% if q %}
+        {% blocktrans with name=q %}No SIM stock found for “{{ name }}”.{% endblocktrans %}
+      {% else %}
+        {% trans "No customer SIM stock on hand." %}
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>

@@ -28,7 +28,6 @@ from sales.employee_editing import (
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
-from core.pagination import paginate_request
 from inventory.forms import CustomerStockFilterForm
 from inventory.models import SimStockBalance
 from inventory.services import preview_sim_stock_deduction
@@ -375,6 +374,25 @@ def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
     return qs.order_by("-created_at"), date_from, date_to
 
 
+def _stock_check_customer_groups(balances):
+    """One card per customer with all product-line quantities."""
+    groups: list[dict] = []
+    current: dict | None = None
+    for row in balances:
+        if current is None or current["customer"].pk != row.customer_id:
+            current = {
+                "customer": row.customer,
+                "lines": [],
+                "total": 0,
+            }
+            groups.append(current)
+        current["lines"].append(
+            {"name": row.product_line.name, "quantity": row.quantity}
+        )
+        current["total"] += int(row.quantity or 0)
+    return groups
+
+
 @employee_required
 def employee_stock_check(request):
     """Cashier-facing SIM stock lookup by customer name."""
@@ -394,17 +412,22 @@ def employee_stock_check(request):
             qs = qs.filter(customer__name__icontains=q)
         if form.cleaned_data.get("product_line"):
             qs = qs.filter(product_line=form.cleaned_data["product_line"])
-    page_obj = paginate_request(request, qs)
-    return render(
-        request,
-        "sales/employee_stock_check.html",
-        {
-            "title": _("Check stock"),
-            "filter_form": form,
-            "page_obj": page_obj,
-            "q": q,
-        },
-    )
+    # Cap rows so live typing stays snappy; filter narrows further via ``q``.
+    balances = list(qs[:400])
+    customer_groups = _stock_check_customer_groups(balances)
+    ctx = {
+        "title": _("Check stock"),
+        "filter_form": form,
+        "customer_groups": customer_groups,
+        "q": q,
+    }
+    if request.headers.get("HX-Request") == "true":
+        return render(
+            request,
+            "sales/partials/employee_stock_check_results.html",
+            ctx,
+        )
+    return render(request, "sales/employee_stock_check.html", ctx)
 
 
 @employee_required

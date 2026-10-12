@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 04:51+0300\n"
+"POT-Creation-Date: 2026-10-12 05:01+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1094,7 +1094,6 @@ msgstr "الوصول مرفوض"
 #: templates/reports/partials/company_report_sales.html:24
 #: templates/reports/sales_report.html:22
 #: templates/sales/awaiting_approvals.html:28
-#: templates/sales/employee_stock_check.html:30
 #: templates/sales/management_sale_list.html:32
 #: templates/sales/pending_payments.html:32
 msgid "Search"
@@ -1899,7 +1898,7 @@ msgstr "تسوية موقعة (+/-)"
 #: inventory/forms.py:222
 msgid "Movement type"
 msgstr "نوع الحركة"
-#: inventory/forms.py:270
+#: inventory/forms.py:270 templates/sales/employee_stock_check.html:21
 msgid "Customer name…"
 msgstr "اسم الزبون…"
 #: inventory/models.py:9 sales/models.py:163 templates/inventory/_nav.html:10
@@ -2677,105 +2676,105 @@ msgstr "تعذّر تحديث %(n)s من المبيعات (إما مسدّدة �
 msgid "No pending sales were updated."
 msgstr "لم يُحدَّث أي بيع معلّق."
 
-#: sales/views/employee.py:159
+#: sales/views/employee.py:158
 msgid "Recorded on account and posted to the customer."
 msgstr "تم التسجيل على الحساب وإضافته للزبون مباشرة."
-#: sales/views/employee.py:164
+#: sales/views/employee.py:163
 msgid "Sale recorded; payment credited to employee ledger."
 msgstr "تم تسجيل البيع؛ أُضيفت الدفعة إلى كشف الموظف."
-#: sales/views/employee.py:167
+#: sales/views/employee.py:166
 msgid "Sale recorded and marked paid."
 msgstr "تم تسجيل البيع واعتباره مدفوعاً."
-#: sales/views/employee.py:169
+#: sales/views/employee.py:168
 msgid "Recorded as on-account; awaiting management approval."
 msgstr "تم تسجيلها كبيع آجل؛ بانتظار موافقة الإدارة."
 
-#: sales/views/employee.py:171
+#: sales/views/employee.py:170
 msgid "Sale recorded successfully."
 msgstr "تم تسجيل البيع بنجاح."
-#: sales/views/employee.py:193
+#: sales/views/employee.py:192
 msgid "New sale"
 msgstr "بيع جديد"
-#: sales/views/employee.py:215
+#: sales/views/employee.py:214
 msgid "Recording payments from the sales screen is disabled."
 msgstr "تسجيل الدفعات من شاشة المبيعات معطّل."
-#: sales/views/employee.py:244
+#: sales/views/employee.py:243
 msgid ""
 "Payment recorded on the customer account and credited to employee ledger."
 msgstr "تم تسجيل الدفعة على حساب الزبون وإضافتها لدفتر الموظف."
 
-#: sales/views/employee.py:247
+#: sales/views/employee.py:246
 msgid "Payment recorded on the customer account."
 msgstr "تم تسجيل الدفعة على حساب الزبون."
-#: sales/views/employee.py:249
+#: sales/views/employee.py:248
 msgid "Payment submitted for management approval."
 msgstr "تم إرسال الدفعة لموافقة الإدارة."
 
-#: sales/views/employee.py:262 sms_gateway/models.py:254
+#: sales/views/employee.py:261 sms_gateway/models.py:254
 msgid "Error"
 msgstr "خطأ"
-#: sales/views/employee.py:263
+#: sales/views/employee.py:262
 msgid "Number refresh is disabled on the sales screen."
 msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
 
-#: sales/views/employee.py:302
+#: sales/views/employee.py:301
 msgid "Inventory is disabled on the sales screen."
 msgstr "المخزون معطّل في شاشة المبيعات."
-#: sales/views/employee.py:306
+#: sales/views/employee.py:305
 msgid "Payer name and product are required."
 msgstr "اسم الدافع والمنتج مطلوبان."
-#: sales/views/employee.py:312
+#: sales/views/employee.py:311
 msgid "Product not found."
 msgstr "المنتج غير موجود."
-#: sales/views/employee.py:402 templates/partials/employee_bottom_nav.html:77
+#: sales/views/employee.py:419 templates/partials/employee_bottom_nav.html:77
 #: templates/sales/employee_stock_check.html:4
 msgid "Check stock"
 msgstr "فحص مخزون"
-#: sales/views/employee.py:446 templates/reports/dashboard.html:90
+#: sales/views/employee.py:469 templates/reports/dashboard.html:90
 #: templates/reports/dashboard.html:302
 msgid "Today"
 msgstr "اليوم"
 
-#: sales/views/employee.py:449
+#: sales/views/employee.py:472
 #, python-format
 msgid "%(start)s → %(end)s"
 msgstr "%(start)s → %(end)s"
 
-#: sales/views/employee.py:454
+#: sales/views/employee.py:477
 #, python-format
 msgid "From %(start)s"
 msgstr "من %(start)s"
 
-#: sales/views/employee.py:456
+#: sales/views/employee.py:479
 #, python-format
 msgid "Up to %(end)s"
 msgstr "حتى %(end)s"
 
-#: sales/views/employee.py:458
+#: sales/views/employee.py:481
 msgid "All entries"
 msgstr "كل الإدخالات"
 
-#: sales/views/employee.py:468 templates/sales/employee_recent.html:3
+#: sales/views/employee.py:491 templates/sales/employee_recent.html:3
 #: templates/sales/employee_recent.html:7
 msgid "My entries"
 msgstr "إدخالاتي"
-#: sales/views/employee.py:492 sales/views/employee.py:541
+#: sales/views/employee.py:515 sales/views/employee.py:564
 #, python-format
 msgid "You can only edit or delete your last %(count)s entries."
 msgstr "يمكنك تعديل أو حذف آخر %(count)s إدخالات فقط."
-#: sales/views/employee.py:518 sales/views/management.py:248
+#: sales/views/employee.py:541 sales/views/management.py:248
 msgid "Sale updated."
 msgstr "تم تحديث البيع."
-#: sales/views/employee.py:529 templates/sales/employee_sale_edit.html:3
+#: sales/views/employee.py:552 templates/sales/employee_sale_edit.html:3
 #: templates/sales/employee_sale_edit.html:7
 msgid "Edit entry"
 msgstr "تعديل الإدخال"
-#: sales/views/employee.py:551
+#: sales/views/employee.py:574
 #, python-format
 msgid "Could not delete this entry: %(reason)s"
 msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
 
-#: sales/views/employee.py:558
+#: sales/views/employee.py:581
 msgid "Entry was permanently removed."
 msgstr "أُزيل الإدخال نهائياً."
 #: sales/views/management.py:106 templates/partials/management_nav.html:25
@@ -3298,7 +3297,7 @@ msgstr "تطبيق"
 #: templates/reports/sales_report.html:35
 #: templates/sales/awaiting_approvals.html:32
 #: templates/sales/employee_recent.html:50
-#: templates/sales/employee_stock_check.html:31
+#: templates/sales/employee_stock_check.html:41
 #: templates/sales/management_sale_list.html:45
 #: templates/sales/pending_payments.html:44
 msgid "Reset"
@@ -4832,7 +4831,6 @@ msgstr "اسم الزبون…"
 
 #: templates/inventory/_allocate_from_main.html:33
 #: templates/inventory/customer_list.html:27
-#: templates/sales/employee_stock_check.html:24
 msgid "Customer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 
@@ -5694,19 +5692,12 @@ msgstr ""
 #: templates/sales/employee_stock_check.html:8
 msgid "Search by customer name to see SIM stock held with them."
 msgstr "ابحث باسم الزبون لتشوف مخزون الشرائح عنده."
-#: templates/sales/employee_stock_check.html:17
+#: templates/sales/employee_stock_check.html:13
 msgid "Customer name"
 msgstr "اسم الزبون"
-#: templates/sales/employee_stock_check.html:47
-msgid "Open customer stock"
-msgstr "فتح مخزون الزبون"
-#: templates/sales/employee_stock_check.html:54
-#, python-format
-msgid "No SIM stock found for “%(name)s”."
-msgstr "ما في مخزون شرائح لـ «%(name)s»."
-#: templates/sales/employee_stock_check.html:56
-msgid "No customer SIM stock on hand."
-msgstr "ما في مخزون شرائح عند الزبائن."
+#: templates/sales/employee_stock_check.html:44
+msgid "Searching…"
+msgstr "جاري البحث…"
 #: templates/sales/management_sale_list.html:7
 msgid "Review and manage recorded sales."
 msgstr "مراجعة وإدارة المبيعات المسجّلة."
@@ -5736,6 +5727,27 @@ msgid ""
 "Delete this entry permanently? Supplier balance will be corrected. This "
 "cannot be undone."
 msgstr "حذف هذا الإدخال نهائياً؟ يُصحَّح رصيد المورّد. لا يمكن التراجع."
+#: templates/sales/partials/employee_stock_check_results.html:8
+#, python-format
+msgid "%(n)s SIM"
+msgid_plural "%(n)s SIMs"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
+msgstr[4] ""
+msgstr[5] ""
+
+#: templates/sales/partials/employee_stock_check_results.html:20
+msgid "Open customer stock"
+msgstr "فتح مخزون الزبون"
+#: templates/sales/partials/employee_stock_check_results.html:26
+#, python-format
+msgid "No SIM stock found for “%(name)s”."
+msgstr "ما في مخزون شرائح لـ «%(name)s»."
+#: templates/sales/partials/employee_stock_check_results.html:28
+msgid "No customer SIM stock on hand."
+msgstr "ما في مخزون شرائح عند الزبائن."
 #: templates/sales/partials/management_sale_list_results.html:46
 #: templates/sales/partials/pending_payments_results.html:51
 msgid "Copy reference"

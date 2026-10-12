@@ -958,6 +958,9 @@ AR: dict[str, str] = {
     "No SIM stock found for “%(name)s”.": "ما في مخزون شرائح لـ «%(name)s».",
     "No customer SIM stock on hand.": "ما في مخزون شرائح عند الزبائن.",
     "Search": "بحث",
+    "Searching…": "جاري البحث…",
+    "%(n)s SIM": "%(n)s شريحة",
+    "%(n)s SIMs": "%(n)s شريحة",
     "Edit entry": "تعديل الإدخال",
     "Delete": "حذف",
     "Delete this entry permanently? Supplier balance will be corrected. This cannot be undone.": (
