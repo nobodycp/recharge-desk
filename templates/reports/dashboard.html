@@ -122,7 +122,7 @@
           <div
             class="rd-phone-donut{% if phones_lifecycle_total == 0 %} is-empty{% endif %}"
             role="img"
-            aria-label="{% blocktrans with n=phones_lifecycle_total %}{{ n }} physical lines by disconnect stage{% endblocktrans %}"
+            aria-label="{% blocktrans with n=phones_lifecycle_total %}{{ n }} lines by status{% endblocktrans %}"
             style="--donut-active-end: {{ phone_donut_active_end }}%; --donut-due-end: {{ phone_donut_due_end }}%; --donut-grace-end: {{ phone_donut_grace_end }}%;"
           >
             <div class="rd-phone-donut__ring" aria-hidden="true"></div>
@@ -136,7 +136,9 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Active lines" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Subscription still running" %}</span>
+                <a class="rd-phone-lifecycle__hint rd-phone-lifecycle__hint--link" href="{% url 'reports:phone_lines_report' %}?status=active&amp;sim_type=esim">
+                  {% blocktrans with n=phones_esim_active_count %}eSIM: {{ n }}{% endblocktrans %}
+                </a>
               </span>
               <span class="rd-phone-lifecycle__val tabular-nums kpi-success">{{ phones_active_count|intcomma }}</span>
             </li>
@@ -144,7 +146,6 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Ends today" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Last charge ends today" %}</span>
               </span>
               <span class="rd-phone-lifecycle__val tabular-nums kpi-warning">{{ phones_due_soon_count|intcomma }}</span>
             </li>
@@ -152,7 +153,6 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Disconnected only" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% blocktrans with d=stale_phone_threshold_days %}Subscription ended; still inside the {{ d }} days to leave the agency{% endblocktrans %}</span>
               </span>
               <span class="rd-phone-lifecycle__val tabular-nums kpi-info">{{ phones_ended_under_threshold_count|intcomma }}</span>
             </li>
@@ -160,17 +160,8 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Left the agency" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Open lines that left the agency" %}</span>
               </span>
               <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
-            </li>
-            <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--esim">
-              <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
-              <span class="rd-phone-lifecycle__body">
-                <span class="rd-phone-lifecycle__lbl">{% trans "eSIM lines" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Latest sale is eSIM" %}</span>
-              </span>
-              <a class="rd-phone-lifecycle__val tabular-nums text-decoration-none" href="{% url 'reports:phone_lines_report' %}?sim_type=esim">{{ phones_esim_count|intcomma }}</a>
             </li>
           </ul>
         </div>

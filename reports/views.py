@@ -123,7 +123,7 @@ def dashboard(request):
     except (UserProfile.DoesNotExist, AttributeError, TypeError, ValueError):
         threshold_days = 85
     phone_stats = cached_kpi(
-        f"dashboard:phone_lifecycle_v3:{threshold_days}:{today_key}",
+        f"dashboard:phone_lifecycle_v5:{threshold_days}:{today_key}",
         lambda: reference_disconnect_counts(
             threshold_days=threshold_days, due_soon_hours=24
         ),
@@ -134,7 +134,7 @@ def dashboard(request):
         phone_stats.get("ended_under_threshold", 0) or 0
     )
     phones_overdue_count = int(phone_stats.get("overdue", 0) or 0)
-    phones_esim_count = int(phone_stats.get("esim", 0) or 0)
+    phones_esim_active_count = int(phone_stats.get("esim_active", 0) or 0)
     phones_lifecycle_total = int(
         phone_stats.get("total", 0)
         or (
@@ -276,7 +276,7 @@ def dashboard(request):
             "phones_due_soon_count": phones_due_soon_count,
             "phones_ended_under_threshold_count": phones_ended_under_threshold_count,
             "phones_overdue_count": phones_overdue_count,
-            "phones_esim_count": phones_esim_count,
+            "phones_esim_active_count": phones_esim_active_count,
             "phones_lifecycle_total": phones_lifecycle_total,
             "phone_donut_active_end": phone_donut_active_end,
             "phone_donut_due_end": phone_donut_due_end,

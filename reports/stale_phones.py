@@ -200,14 +200,17 @@ def reference_disconnect_counts(
     *, threshold_days: int, due_soon_hours: int = 24
 ) -> dict[str, int]:
     """
-    Lifecycle counts for the operational dashboard (physical SIMs only, eSIM
-    excluded). Buckets are mutually exclusive:
+    Lifecycle counts for the operational dashboard (physical SIMs only).
+    Buckets are mutually exclusive:
 
     - ``active``: charge still running with more than ``due_soon_hours`` left
     - ``due_soon``: last charge ends within ``due_soon_hours``
       (the day before subscription end)
     - ``ended_under_threshold``: subscription ended, still in grace
     - ``overdue``: past activity threshold
+
+    ``esim_active`` is the eSIM share of ``active`` (Active total =
+    physical active + eSIM active). Non-active eSIMs stay excluded.
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
@@ -233,16 +236,13 @@ def reference_disconnect_counts(
         STATUS_ENDED_UNDER: 0,
         STATUS_OVERDUE: 0,
     }
-    esim = 0
+    esim_active = 0
     for row in grouped:
         key = row["ref_key"] or ""
         if not key:
             continue
         sale = latest_by_key.get(key)
         if not sale:
-            continue
-        if sale.is_esim:
-            esim += 1
             continue
         last, duration, _used = effective_activity_clock(
             sale=sale,
@@ -257,6 +257,13 @@ def reference_disconnect_counts(
             disconnect_at=disconnect_at,
             soon_end=soon_end,
         )
+        if sale.is_esim:
+            # Only Active eSIMs join the Active bucket (and total / donut).
+            # Other eSIM lifecycle stages stay out of the physical counts.
+            if status == STATUS_ACTIVE:
+                esim_active += 1
+                counts[STATUS_ACTIVE] += 1
+            continue
         counts[status] += 1
     total = sum(counts.values())
     return {
@@ -264,7 +271,7 @@ def reference_disconnect_counts(
         "due_soon": counts[STATUS_DUE_SOON],
         "ended_under_threshold": counts[STATUS_ENDED_UNDER],
         "overdue": counts[STATUS_OVERDUE],
-        "esim": esim,
+        "esim_active": esim_active,
         "total": total,
     }
 
