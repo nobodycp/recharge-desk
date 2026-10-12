@@ -350,12 +350,9 @@ def inventory_customers(request):
     if allocate_form is None and not read_only:
         allocate_form = AllocateToCustomerForm(hide_customer=True)
 
-    filter_active = 0
+    q = ""
     if form.is_valid():
-        if form.cleaned_data.get("q"):
-            filter_active += 1
-        if form.cleaned_data.get("product_line"):
-            filter_active += 1
+        q = (form.cleaned_data.get("q") or "").strip()
 
     allocate_panel_open = (
         not read_only
@@ -363,21 +360,29 @@ def inventory_customers(request):
         and request.POST.get("action") == "allocate"
     )
 
-    return render(
-        request,
-        "inventory/customer_list.html",
-        {
-            "title": _("Customer SIM stock"),
-            "page_obj": customer_page,
-            "customer_groups": customer_groups,
-            "filter_form": form,
-            "allocate_form": allocate_form,
-            "filter_active": filter_active,
-            "allocate_panel_open": allocate_panel_open,
-            "read_only": read_only,
-            "base_template": _inventory_base_template(request),
-        },
-    )
+    ctx = {
+        "title": _("Customer SIM stock"),
+        "page_obj": customer_page,
+        "customer_groups": customer_groups,
+        "filter_form": form,
+        "allocate_form": allocate_form,
+        "allocate_panel_open": allocate_panel_open,
+        "read_only": read_only,
+        "base_template": _inventory_base_template(request),
+        "q": q,
+    }
+    # Live search targets the results fragment. Do not return a partial for
+    # unrelated HTMX navigations (e.g. boosted shell links).
+    if (
+        request.headers.get("HX-Request") == "true"
+        and request.headers.get("HX-Target") == "rd-customer-stock-results"
+    ):
+        return render(
+            request,
+            "inventory/partials/customer_stock_results.html",
+            ctx,
+        )
+    return render(request, "inventory/customer_list.html", ctx)
 
 
 @employee_required

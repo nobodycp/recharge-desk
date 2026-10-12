@@ -9,101 +9,84 @@
 </div>
 {% include "inventory/_nav.html" %}
 
-{% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
-    <form method="get" class="row g-3 align-items-end">
-      <div class="col-md-5">
-        <div
-          class="rd-field-group rd-payer-field-wrap"
-          id="rd-inventory-customer-ac-root"
-          data-api-customer-lookup="{% url 'customers:api_customer_lookup' %}"
+{% if read_only %}
+  {% url 'inventory:employee_customers' as customers_list_url %}
+{% else %}
+  {% url 'inventory:customers' as customers_list_url %}
+{% endif %}
+
+<div class="rd-card p-3 mb-3">
+  <form
+    id="rd-customer-stock-filter"
+    method="get"
+    action="{{ customers_list_url }}"
+    class="rd-customer-stock-filter"
+  >
+    <div class="rd-field-group mb-0">
+      <label class="rd-field-label d-block" for="{{ filter_form.q.id_for_label }}">{% trans "Customer name" %}</label>
+      <div class="d-flex gap-2 align-items-start">
+        <input
+          type="search"
+          name="q"
+          id="{{ filter_form.q.id_for_label }}"
+          class="form-control form-control-sm"
+          value="{{ q }}"
+          placeholder="{% trans 'Customer name…' %}"
+          autocomplete="off"
+          autofocus
+          hx-get="{{ customers_list_url }}"
+          hx-trigger="keyup changed delay:180ms, search, clear"
+          hx-target="#rd-customer-stock-results"
+          hx-select="#rd-customer-stock-results"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-include="#rd-customer-stock-filter"
+          hx-indicator="#rd-customer-stock-indicator"
         >
-          <label class="form-label" for="{{ filter_form.q.id_for_label }}">{{ filter_form.q.label }}</label>
-          <div class="rd-payer-ac-anchor">
-            {{ filter_form.q }}
-            <div
-              class="rd-payer-ac-list"
-              id="rd-inv-customer-ac-list"
-              role="listbox"
-              aria-label="{% trans 'Customer name suggestions' %}"
-              hidden
-            ></div>
-          </div>
-        </div>
+        <a
+          class="btn btn-outline-secondary btn-sm flex-shrink-0"
+          href="{{ customers_list_url }}"
+          hx-get="{{ customers_list_url }}"
+          hx-target="#rd-customer-stock-results"
+          hx-select="#rd-customer-stock-results"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          onclick="var f=document.getElementById('rd-customer-stock-filter'); if(f){ var q=f.querySelector('[name=q]'); if(q) q.value=''; var pl=f.querySelector('[name=product_line]'); if(pl) pl.value=''; }"
+        >{% trans "Reset" %}</a>
       </div>
-      <div class="col-md-4">
-        <label class="form-label" for="{{ filter_form.product_line.id_for_label }}">{{ filter_form.product_line.label }}</label>
-        {{ filter_form.product_line }}
-      </div>
-      <div class="col-12 d-flex flex-wrap gap-2">
-        <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_customers' %}{% else %}{% url 'inventory:customers' %}{% endif %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
-{% include "partials/filter_card_close.html" %}
+    </div>
+    <div class="rd-field-group mb-0 mt-2">
+      <label class="rd-field-label d-block" for="{{ filter_form.product_line.id_for_label }}">{{ filter_form.product_line.label }}</label>
+      <select
+        name="product_line"
+        id="{{ filter_form.product_line.id_for_label }}"
+        class="form-select form-select-sm"
+        hx-get="{{ customers_list_url }}"
+        hx-trigger="change"
+        hx-target="#rd-customer-stock-results"
+        hx-select="#rd-customer-stock-results"
+        hx-swap="outerHTML"
+        hx-push-url="true"
+        hx-include="#rd-customer-stock-filter"
+        hx-indicator="#rd-customer-stock-indicator"
+      >
+        {% for value, label in filter_form.fields.product_line.choices %}
+          <option value="{{ value }}"{% if filter_form.product_line.value|default_if_none:''|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="small text-secondary mt-1" id="rd-customer-stock-indicator" aria-live="polite">
+      <span class="htmx-indicator">{% trans "Searching…" %}</span>
+    </div>
+  </form>
+</div>
 
 {% if not read_only and allocate_form %}
-  {% include "inventory/_allocate_from_main.html" with show_customer_picker=True allocate_panel_open=True %}
+  {% include "inventory/_allocate_from_main.html" with show_customer_picker=True allocate_panel_open=allocate_panel_open %}
   <script src="{% static 'js/inventory-serials-paste.js' %}{{ static_cache_query }}" defer></script>
 {% endif %}
 
-<div class="rd-card overflow-hidden rd-datagrid">
-  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <span>{% trans "Customer stock" %}</span>
-  </div>
-  <div class="rd-mobile-stack rd-customer-stock-list p-2 p-md-3" id="rd-customer-stock-list">
-    {% for group in customer_groups %}
-      <section class="rd-mobile-row-card rd-customer-stock-card">
-        <header class="rd-customer-stock-card__head">
-          <div class="rd-customer-stock-card__title min-w-0">
-            {% if read_only %}
-              <a href="{% url 'inventory:employee_customer_detail' group.customer.pk %}" class="fw-semibold text-decoration-none text-truncate d-block">
-                {{ group.customer.name }}
-              </a>
-            {% else %}
-              <a href="{% url 'inventory:customer_detail' group.customer.pk %}" class="fw-semibold text-decoration-none text-truncate d-block">
-                {{ group.customer.name }}
-              </a>
-            {% endif %}
-          </div>
-          <div class="rd-customer-stock-card__total tabular-nums fw-bold flex-shrink-0">
-            {{ group.total }}
-          </div>
-        </header>
-
-        <ul class="rd-stock-check-lines list-unstyled mb-0">
-          {% for b in group.balances %}
-            <li class="rd-stock-check-lines__row rd-customer-stock-card__line">
-              <div class="rd-customer-stock-card__line-main">
-                <a
-                  href="{% if read_only %}{% url 'inventory:employee_line_detail' b.product_line_id %}{% else %}{% url 'inventory:line_detail' b.product_line_id %}{% endif %}"
-                  class="rd-stock-check-lines__name text-truncate text-decoration-none"
-                >{{ b.product_line.name }}</a>
-                <span class="rd-stock-check-lines__qty tabular-nums fw-semibold">{{ b.quantity }}</span>
-              </div>
-              {% if not read_only %}
-                <div class="rd-customer-stock-card__actions">
-                  {% include "inventory/_balance_actions.html" with balance=b customer=group.customer scope="customer" read_only=read_only next_url=request.get_full_path %}
-                </div>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
-
-        {% if read_only %}
-          <div class="mt-2">
-            <a
-              class="btn btn-sm btn-outline-primary"
-              href="{% url 'inventory:employee_customer_detail' group.customer.pk %}"
-            >{% trans "Open customer stock" %}</a>
-          </div>
-        {% endif %}
-      </section>
-    {% empty %}
-      <div class="text-center text-secondary py-4">{% trans "No customer stock." %}</div>
-    {% endfor %}
-  </div>
-</div>
-{% include "partials/pagination.html" with page_obj=page_obj %}
+{% include "inventory/partials/customer_stock_results.html" %}
 
 {% if not read_only %}
   {% include "inventory/_action_dialog.html" %}
@@ -274,12 +257,6 @@
       closeList();
     });
   }
-
-  initCustomerAc({
-    rootId: "rd-inventory-customer-ac-root",
-    inputId: "id_inv_customer_q",
-    listId: "rd-inv-customer-ac-list",
-  });
 
   initCustomerAc({
     rootId: "rd-allocate-customer-ac-root",

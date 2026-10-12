@@ -1,10 +1,13 @@
 {% load i18n %}
-<div class="rd-card mb-3 overflow-hidden">
-  <div class="rd-card-header py-2">
-    <div class="fw-semibold">{% trans "Allocate from main" %}</div>
-    <div class="rd-text-muted small fw-normal">{% trans "Move SIMs from main stock to a customer." %}</div>
-  </div>
-  <div class="rd-card-body">
+<details class="rd-card mb-3 overflow-hidden rd-allocate-panel"{% if allocate_panel_open %} open{% endif %}>
+  <summary class="rd-allocate-panel__summary">
+    <span class="rd-allocate-panel__summary-text">
+      <span class="fw-semibold">{% trans "Allocate from main" %}</span>
+      <span class="rd-text-muted small fw-normal d-block">{% trans "Move SIMs from main stock to a customer." %}</span>
+    </span>
+    <svg class="rd-allocate-panel__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+  </summary>
+  <div class="rd-card-body border-top">
     <form method="post" class="rd-inventory-receive-form">
       {% csrf_token %}
       <input type="hidden" name="action" value="allocate">
@@ -59,4 +62,4 @@
       {% if allocate_form.serials.help_text %}<div class="form-text mt-1">{{ allocate_form.serials.help_text }}</div>{% endif %}
     </form>
   </div>
-</div>
+</details>
