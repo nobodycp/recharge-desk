@@ -1,11 +1,13 @@
 {% extends "base_management.html" %}
 {% load i18n humanize l10n %}
 {% block content %}
+<div id="rd-dashboard" class="rd-dash-swap">
 <div class="rd-page-header rd-page-header--dashboard rd-dash-head">
   <h1 class="rd-heading-xl mb-0">{% trans "Operational snapshot" %}</h1>
-  <nav class="rd-period-switch" aria-label="{% trans 'Statistics period' %}">
+  <nav class="rd-period-switch" aria-label="{% trans 'Statistics period' %}"
+       hx-target="#rd-dashboard" hx-select="#rd-dashboard" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#rd-dashboard">
     {% for key, label in period_options %}
-      <a class="rd-period-switch__opt{% if key == period %} is-active{% endif %}" href="?period={{ key }}"{% if key == period %} aria-current="true"{% endif %}>{{ label }}</a>
+      <a class="rd-period-switch__opt{% if key == period %} is-active{% endif %}" href="?period={{ key }}" hx-get="?period={{ key }}"{% if key == period %} aria-current="true"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>
 </div>
@@ -252,6 +254,7 @@
       </div>
     </div>
   </div>
+</div>
 </div>
 
 {% endblock %}

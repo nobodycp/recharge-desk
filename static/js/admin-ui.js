@@ -1,7 +1,7 @@
 /**
  * Admin screens: unsaved-changes bar, image drop zones with live preview,
  * file pickers, confirm-gated forms, text bindings for the branding preview,
- * and clickable table rows.
+ * clickable table rows, and instant feedback on the dashboard period switch.
  */
 (function () {
   function snapshot(form) {
@@ -216,6 +216,14 @@
     } else {
       window.location.href = href;
     }
+  });
+
+  document.addEventListener("htmx:beforeRequest", function (e) {
+    var opt = e.target.closest && e.target.closest(".rd-period-switch__opt");
+    if (!opt) return;
+    opt.parentElement.querySelectorAll(".rd-period-switch__opt").forEach(function (o) {
+      o.classList.toggle("is-active", o === opt);
+    });
   });
 
   function init(root) {
