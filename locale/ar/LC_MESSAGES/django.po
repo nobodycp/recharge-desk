@@ -2299,21 +2299,14 @@ msgstr "eSIM"
 
 #: reports/forms.py:76
 msgid "Days to leave the agency"
-msgstr "أيام من دون إدخال بيع جديد"
-
-
+msgstr "الأيام للخروج من الوكالة"
 #: reports/forms.py:81
-#, fuzzy
-#| msgid ""
-#| "Idle days after subscription end. Example: 60-day charge + 85-day "
-#| "threshold → past threshold after 145 days. Saved on your profile."
 msgid ""
 "Days after subscription end before the line left the agency. Example: 60-day "
 "charge + 85 days → left after 145 days. Saved on your profile."
 msgstr ""
-"أيام الخمول بعد انتهاء الاشتراك. مثال: شحن 60 يوماً + عتبة 85 → تجاوز العتبة "
-"بعد 145 يوماً. تُحفظ في ملفك."
-
+"الأيام بعد انتهاء الاشتراك قبل أن يخرج الرقم من الوكالة. مثال: شحن 60 يو"
+"ماً + 85 يوماً → يخرج بعد 145 يوماً. تُحفظ في ملفك."
 #: reports/models.py:9
 msgid "normalized reference"
 msgstr "المرجع المعياري"
@@ -2393,9 +2386,7 @@ msgstr "تعذّر حفظ ICCID."
 #: reports/views_stale_phones.py:271
 msgid ""
 "Renewed as a 1-day charge — the line is no longer marked as left the agency."
-msgstr "تم التجديد كشحن يوم — خرج الرقم من عتبة عدم النشاط."
-
-
+msgstr "تم التجديد كشحن يوم — الرقم لم يعد معلماً كخارج من الوكالة."
 #: sales/_i18n_payment_methods.py:12
 msgid "Jawwal Pay"
 msgstr "جوال باي"
@@ -5356,17 +5347,12 @@ msgid "Last sale"
 msgstr "آخر بيع"
 #: templates/reports/partials/phone_lines_report_results.html:62
 #: templates/reports/partials/phone_lines_report_results.html:114
-#, fuzzy
-#| msgid ""
-#| "Renew this overdue line as a 1-day charge (no sale created)? It will "
-#| "leave the inactivity threshold for another period."
 msgid ""
 "Renew this overdue line as a 1-day charge (no sale created)? It will leave "
 "“left the agency” status for another period."
 msgstr ""
-"تجديد هذا الرقم المتجاوز كشحن يوم واحد (بدون إنشاء بيع)؟ سيخرج من عتبة عدم "
-"النشاط لمدة جديدة."
-
+"تجديد هذا الرقم الذي خرج من الوكالة كشحن يوم واحد (بدون إنشاء بيع)؟ سيخر"
+"ج من حالة «خرج من الوكالة» لمدة جديدة."
 #: templates/reports/partials/phone_lines_report_results.html:66
 #: templates/reports/partials/phone_lines_report_results.html:118
 msgid "Renew 1 day"
@@ -5399,18 +5385,12 @@ msgstr "لا توجد صفوف."
 msgid "Saved."
 msgstr "تم الحفظ."
 #: templates/reports/phone_lines_report.html:8
-#, fuzzy, python-format
-#| msgid ""
-#| "Every number with a sale in the system, with lifecycle status from the "
-#| "%(d)s-day activity threshold. A new charge or a 1-day renew resets the "
-#| "timer."
 msgid ""
 "Every number with a sale in the system, with lifecycle status from the %(d)s "
 "days to leave the agency. A new charge or a 1-day renew resets the timer."
 msgstr ""
-"كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط %(d)s يوماً. "
-"شحن جديد أو تجديد ليوم يعيد المؤقت."
-
+"كل رقم له بيع في النظام، مع حالة دورة الحياة حسب %(d)s يوماً للخروج من ا"
+"لوكالة. شحن جديد أو تجديد ليوم يعيد المؤقت."
 #: templates/reports/profit_report.html:6
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
