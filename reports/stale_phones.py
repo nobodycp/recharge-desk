@@ -84,13 +84,22 @@ def _lifecycle_status(
     disconnect_at,
     soon_end,
 ) -> str:
+    """
+    Mutually exclusive stages:
+
+    - overdue: past inactivity threshold
+    - ended_under: subscription already ended, still inside grace
+    - due_soon: charge still running but ends within ``soon_end``
+      (typically 24h before subscription end)
+    - active: charge running with more than that window left
+    """
     if disconnect_at <= now:
         return STATUS_OVERDUE
-    if disconnect_at <= soon_end:
+    if subscription_end <= now:
+        return STATUS_ENDED_UNDER
+    if subscription_end <= soon_end:
         return STATUS_DUE_SOON
-    if now < subscription_end:
-        return STATUS_ACTIVE
-    return STATUS_ENDED_UNDER
+    return STATUS_ACTIVE
 
 
 def phone_lines_aggregate(
@@ -194,8 +203,9 @@ def reference_disconnect_counts(
     Lifecycle counts for the operational dashboard (physical SIMs only, eSIM
     excluded). Buckets are mutually exclusive:
 
-    - ``active``: subscription period still running
-    - ``due_soon``: past threshold within ``due_soon_hours``
+    - ``active``: charge still running with more than ``due_soon_hours`` left
+    - ``due_soon``: last charge ends within ``due_soon_hours``
+      (the day before subscription end)
     - ``ended_under_threshold``: subscription ended, still in grace
     - ``overdue``: past activity threshold
     """
@@ -217,10 +227,12 @@ def reference_disconnect_counts(
     }
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
-    active = 0
-    due_soon = 0
-    ended_under_threshold = 0
-    overdue = 0
+    counts = {
+        STATUS_ACTIVE: 0,
+        STATUS_DUE_SOON: 0,
+        STATUS_ENDED_UNDER: 0,
+        STATUS_OVERDUE: 0,
+    }
     for row in grouped:
         key = row["ref_key"] or ""
         if not key:
@@ -235,20 +247,19 @@ def reference_disconnect_counts(
         )
         subscription_end = last + timedelta(days=duration)
         disconnect_at = subscription_end + timedelta(days=threshold_days)
-        if disconnect_at <= now:
-            overdue += 1
-        elif disconnect_at <= soon_end:
-            due_soon += 1
-        elif now < subscription_end:
-            active += 1
-        else:
-            ended_under_threshold += 1
-    total = active + due_soon + ended_under_threshold + overdue
+        status = _lifecycle_status(
+            now=now,
+            subscription_end=subscription_end,
+            disconnect_at=disconnect_at,
+            soon_end=soon_end,
+        )
+        counts[status] += 1
+    total = sum(counts.values())
     return {
-        "active": active,
-        "due_soon": due_soon,
-        "ended_under_threshold": ended_under_threshold,
-        "overdue": overdue,
+        "active": counts[STATUS_ACTIVE],
+        "due_soon": counts[STATUS_DUE_SOON],
+        "ended_under_threshold": counts[STATUS_ENDED_UNDER],
+        "overdue": counts[STATUS_OVERDUE],
         "total": total,
     }
 

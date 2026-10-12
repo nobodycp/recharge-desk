@@ -123,11 +123,11 @@ class DashboardSmokeTests(_ReportsBase):
             created_at=timezone.now() - timedelta(days=130),
             duration_days=30,
         )
-        # Due within 24h: disconnect_at = last + 30 + 85 = last + 115.
-        # Age ~114.5 days → disconnect in ~12 hours.
+        # Due within 24h of subscription end: duration 30, age ~29.5 days
+        # → charge ends in ~12 hours.
         due_soon = self._make_sale(ref="055DASH0002", paid=True)
         Sale.objects.filter(pk=due_soon.pk).update(
-            created_at=timezone.now() - timedelta(days=114, hours=12),
+            created_at=timezone.now() - timedelta(days=29, hours=12),
             duration_days=30,
         )
         # Subscription ended, still deep in the grace window.
@@ -609,9 +609,11 @@ class PhoneLinesStatementTests(_ReportsBase):
         row = next(
             x for x in r2.context["page_obj"].object_list if x["ref_key"] == "055stmtr003"
         )
-        self.assertEqual(row["status"], "active")
+        # 1-day renew ends within 24h → due_soon (day before charge end).
+        self.assertEqual(row["status"], "due_soon")
         self.assertEqual(row["duration_days"], 1)
         self.assertTrue(row["used_manual_renew"])
+        self.assertNotEqual(row["status"], "overdue")
 
     def test_renew_rejected_for_active_line(self):
         active = self._make_sale(ref="055STMTR004", paid=True)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 01:46+0300\n"
+"POT-Creation-Date: 2026-10-12 04:13+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5142,8 +5142,8 @@ msgstr "إجمالي الأرقام"
 msgid "Subscription still running"
 msgstr "الاشتراك ما زال سارياً"
 #: templates/reports/dashboard.html:147
-msgid "Enters the disconnect list soon"
-msgstr "يدخل قائمة الفصل قريباً"
+msgid "Last charge ends within 24 hours"
+msgstr "تنتهي آخر شحنة خلال ٢٤ ساعة"
 #: templates/reports/dashboard.html:155
 #, python-format
 msgid "Subscription ended; still inside the %(d)s-day grace window"
@@ -5385,6 +5385,7 @@ msgstr "لا توجد صفوف."
 msgid "Saved."
 msgstr "تم الحفظ."
 #: templates/reports/phone_lines_report.html:8
+#, python-format
 msgid ""
 "Every number with a sale in the system, with lifecycle status from the %(d)s-"
 "day activity threshold. A new charge or a 1-day renew resets the timer."
@@ -5789,6 +5790,9 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Enters the disconnect list soon"
+#~ msgstr "يدخل قائمة الفصل قريباً"
 
 #~ msgid "Activity threshold after subscription ends (days)"
 #~ msgstr "عتبة النشاط بعد انتهاء الاشتراك (أيام)"

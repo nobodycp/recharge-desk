@@ -311,6 +311,7 @@ AR: dict[str, str] = {
     "Subscription still running": "الاشتراك ما زال سارياً",
     "Disconnects within 24 hours": "حيفصل خلال ٢٤ ساعة",
     "Enters the disconnect list soon": "يدخل قائمة الفصل قريباً",
+    "Last charge ends within 24 hours": "تنتهي آخر شحنة خلال ٢٤ ساعة",
     "Ended — under inactivity threshold": "مفصول ولم يتجاوز عتبة عدم النشاط",
     "Subscription ended; still inside the %(d)s-day grace window": (
         "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
