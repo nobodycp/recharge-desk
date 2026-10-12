@@ -965,6 +965,10 @@ AR: dict[str, str] = {
     "Search by customer name to see SIM stock held with them.": (
         "ابحث باسم الزبون لتشوف مخزون الشرائح عنده."
     ),
+    "Type customer name…": "اكتب اسم الزبون…",
+    "Type part of the name — finds any matching customer.": (
+        "اكتب جزءاً من الاسم — يلاقي أي زبون مطابق."
+    ),
     "Customer name": "اسم الزبون",
     "Open customer stock": "فتح مخزون الزبون",
     "No SIM stock found for “%(name)s”.": "ما في مخزون شرائح لـ «%(name)s».",

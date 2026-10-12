@@ -392,6 +392,25 @@ class CustomerBalanceActionViewTests(TestCase):
         )
         self.assertTemplateUsed(resp, "inventory/customer_list.html")
 
+    def test_movements_customer_filter_is_text_search(self):
+        url = reverse("inventory:movements")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'name="customer"')
+        self.assertContains(resp, 'type="text"')
+        self.assertNotContains(resp, '<select name="customer"')
+
+        resp = self.client.get(url, {"customer": "Filter"})
+        self.assertEqual(resp.status_code, 200)
+        page = list(resp.context["page_obj"])
+        self.assertTrue(page)
+        self.assertTrue(all(m.customer_id == self.customer.pk for m in page))
+        self.assertEqual(resp.context["filter_active"], 1)
+
+        resp = self.client.get(url, {"customer": "zzz-no-match"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(list(resp.context["page_obj"]), [])
+
 
 class InventoryMobileLayoutTests(TestCase):
     @classmethod

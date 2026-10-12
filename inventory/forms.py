@@ -230,11 +230,16 @@ class MovementFilterForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
-    customer = forms.ModelChoiceField(
+    customer = forms.CharField(
         label=_("Customer"),
-        queryset=Customer.objects.all().order_by("name"),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "autocomplete": "off",
+                "placeholder": _("Type customer name…"),
+            }
+        ),
     )
     date_from = forms.DateField(
         label=_("Date from"),
