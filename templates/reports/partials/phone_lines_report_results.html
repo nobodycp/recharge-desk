@@ -59,7 +59,7 @@
                       action="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
                       class="d-inline"
                       hx-boost="false"
-                      onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period." %}{% endfilter %}');"
+                      onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}');"
                     >
                       {% csrf_token %}
                       <input type="hidden" name="next_query" value="{{ list_query }}">
@@ -111,7 +111,7 @@
               action="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
               class="mt-2"
               hx-boost="false"
-              onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period." %}{% endfilter %}');"
+              onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}');"
             >
               {% csrf_token %}
               <input type="hidden" name="next_query" value="{{ list_query }}">

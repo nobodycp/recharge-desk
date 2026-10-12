@@ -268,7 +268,7 @@ def phone_line_renew(request, ref_key: str):
     )
     messages.success(
         request,
-        _("Renewed as a 1-day charge — the line left the inactivity threshold."),
+        _("Renewed as a 1-day charge — the line is no longer marked as left the agency."),
     )
     next_query = _list_query_from_request(request)
     return redirect(_safe_list_redirect(request, query=next_query))

@@ -57,8 +57,8 @@ class PhoneLinesFilterForm(forms.Form):
             ("", "---------"),
             ("active", _("Active lines")),
             ("due_soon", _("Ends today")),
-            ("ended_under_threshold", _("Ended — under inactivity threshold")),
-            ("overdue", _("Ended — past inactivity threshold")),
+            ("ended_under_threshold", _("Disconnected only")),
+            ("overdue", _("Left the agency")),
         ),
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
@@ -73,13 +73,13 @@ class PhoneLinesFilterForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
     threshold_days = forms.IntegerField(
-        label=_("Activity threshold (days)"),
+        label=_("Days to leave the agency"),
         min_value=1,
         max_value=3650,
         required=False,
         help_text=_(
-            "Idle days after subscription end. Example: 60-day charge + 85-day "
-            "threshold → past threshold after 145 days. Saved on your profile."
+            "Days after subscription end before the line left the agency. "
+            "Example: 60-day charge + 85 days → left after 145 days. Saved on your profile."
         ),
         widget=forms.NumberInput(
             attrs={"class": "form-control form-control-sm", "min": "1"}

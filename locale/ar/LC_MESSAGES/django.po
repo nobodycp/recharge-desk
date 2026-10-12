@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 04:15+0300\n"
+"POT-Creation-Date: 2026-10-12 04:20+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2276,12 +2276,12 @@ msgid "Ends today"
 msgstr "ينتهي اليوم"
 #: reports/forms.py:60 templates/reports/dashboard.html:154
 #: templates/reports/partials/phone_line_status_badge.html:7
-msgid "Ended — under inactivity threshold"
-msgstr "مفصول ولم يتجاوز عتبة عدم النشاط"
+msgid "Disconnected only"
+msgstr "مفصول فقط"
 #: reports/forms.py:61 templates/reports/dashboard.html:162
 #: templates/reports/partials/phone_line_status_badge.html:9
-msgid "Ended — past inactivity threshold"
-msgstr "مفصول وتجاوز عتبة عدم النشاط"
+msgid "Left the agency"
+msgstr "خرج من الوكالة"
 #: reports/forms.py:66
 msgid "SIM type"
 msgstr "نوع الشريحة"
@@ -2298,15 +2298,15 @@ msgid "eSIM"
 msgstr "eSIM"
 
 #: reports/forms.py:76
-msgid "Activity threshold (days)"
-msgstr "عتبة عدم النشاط (أيام)"
+msgid "Days to leave the agency"
+msgstr "الأيام للخروج من الوكالة"
 #: reports/forms.py:81
 msgid ""
-"Idle days after subscription end. Example: 60-day charge + 85-day threshold "
-"→ past threshold after 145 days. Saved on your profile."
+"Days after subscription end before the line left the agency. Example: 60-day "
+"charge + 85 days → left after 145 days. Saved on your profile."
 msgstr ""
-"أيام الخمول بعد انتهاء الاشتراك. مثال: شحن 60 يوماً + عتبة 85 → تجاوز ال"
-"عتبة بعد 145 يوماً. تُحفظ في ملفك."
+"الأيام بعد انتهاء الاشتراك قبل أن يخرج الرقم من الوكالة. مثال: شحن 60 يو"
+"ماً + 85 يوماً → يخرج بعد 145 يوماً. تُحفظ في ملفك."
 #: reports/models.py:9
 msgid "normalized reference"
 msgstr "المرجع المعياري"
@@ -2384,8 +2384,9 @@ msgstr "تم حفظ ICCID."
 msgid "Could not save ICCID."
 msgstr "تعذّر حفظ ICCID."
 #: reports/views_stale_phones.py:271
-msgid "Renewed as a 1-day charge — the line left the inactivity threshold."
-msgstr "تم التجديد كشحن يوم — خرج الرقم من عتبة عدم النشاط."
+msgid ""
+"Renewed as a 1-day charge — the line is no longer marked as left the agency."
+msgstr "تم التجديد كشحن يوم — الرقم لم يعد معلماً كخارج من الوكالة."
 #: sales/_i18n_payment_methods.py:12
 msgid "Jawwal Pay"
 msgstr "جوال باي"
@@ -5145,12 +5146,11 @@ msgstr "الاشتراك ما زال سارياً"
 msgid "Last charge ends today"
 msgstr "تنتهي آخر شحنة اليوم"
 #: templates/reports/dashboard.html:155
-#, python-format
-msgid "Subscription ended; still inside the %(d)s-day grace window"
-msgstr "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
+msgid "Subscription ended; still inside the %(d)s days to leave the agency"
+msgstr "انتهى الاشتراك؛ ما زال داخل %(d)s يوماً للخروج من الوكالة"
 #: templates/reports/dashboard.html:163
-msgid "Open overdue lines in the statement"
-msgstr "افتح الأرقام المتجاوزة في البيان"
+msgid "Open lines that left the agency"
+msgstr "افتح الأرقام التي خرجت من الوكالة"
 #: templates/reports/dashboard.html:170
 msgid "Physical SIMs only — eSIM lines are excluded."
 msgstr "شرائح فعلية فقط — أرقام eSIM مستثناة."
@@ -5349,10 +5349,10 @@ msgstr "آخر بيع"
 #: templates/reports/partials/phone_lines_report_results.html:114
 msgid ""
 "Renew this overdue line as a 1-day charge (no sale created)? It will leave "
-"the inactivity threshold for another period."
+"“left the agency” status for another period."
 msgstr ""
-"تجديد هذا الرقم المتجاوز كشحن يوم واحد (بدون إنشاء بيع)؟ سيخرج من عتبة ع"
-"دم النشاط لمدة جديدة."
+"تجديد هذا الرقم الذي خرج من الوكالة كشحن يوم واحد (بدون إنشاء بيع)؟ سيخر"
+"ج من حالة «خرج من الوكالة» لمدة جديدة."
 #: templates/reports/partials/phone_lines_report_results.html:66
 #: templates/reports/partials/phone_lines_report_results.html:118
 msgid "Renew 1 day"
@@ -5385,13 +5385,12 @@ msgstr "لا توجد صفوف."
 msgid "Saved."
 msgstr "تم الحفظ."
 #: templates/reports/phone_lines_report.html:8
-#, python-format
 msgid ""
-"Every number with a sale in the system, with lifecycle status from the %(d)s-"
-"day activity threshold. A new charge or a 1-day renew resets the timer."
+"Every number with a sale in the system, with lifecycle status from the %(d)s "
+"days to leave the agency. A new charge or a 1-day renew resets the timer."
 msgstr ""
-"كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط %(d)s ي"
-"وماً. شحن جديد أو تجديد ليوم يعيد المؤقت."
+"كل رقم له بيع في النظام، مع حالة دورة الحياة حسب %(d)s يوماً للخروج من ا"
+"لوكالة. شحن جديد أو تجديد ليوم يعيد المؤقت."
 #: templates/reports/profit_report.html:6
 msgid "Excludes cancelled sales"
 msgstr "باستثناء المبيعات الملغاة"
@@ -5791,6 +5790,18 @@ msgstr ""
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
+#~ msgid "Ended — under inactivity threshold"
+#~ msgstr "مفصول ولم يتجاوز عتبة عدم النشاط"
+
+#~ msgid "Ended — past inactivity threshold"
+#~ msgstr "مفصول وتجاوز عتبة عدم النشاط"
+
+#~ msgid "Activity threshold (days)"
+#~ msgstr "عتبة عدم النشاط (أيام)"
+
+#~ msgid "Open overdue lines in the statement"
+#~ msgstr "افتح الأرقام المتجاوزة في البيان"
+
 #~ msgid "Disconnects within 24 hours"
 #~ msgstr "حيفصل خلال ٢٤ ساعة"
 
@@ -5865,9 +5876,6 @@ msgstr "لقطة التكلفة:"
 
 #~ msgid "Cannot delete this package because it has sales recorded."
 #~ msgstr "لا يمكن حذف هذه الباقة لوجود مبيعات مسجّلة عليها."
-
-#~ msgid "Days without a new sale entry"
-#~ msgstr "أيام من دون إدخال بيع جديد"
 
 #~ msgid "Shown on the employee sales screen instead of the method name."
 #~ msgstr "تظهر في شاشة مبيعات الموظف بدلاً من اسم الطريقة."
@@ -6044,9 +6052,6 @@ msgstr "لقطة التكلفة:"
 #~ msgstr ""
 #~ "ارفع نفس كشف الخصومات الذي تستلمه من ليان (Excel). نطابق كل رقم مع "
 #~ "المبيعات في النظام ونبرز الفجوات المالية لهذا المورد فقط."
-
-#~ msgid "Disconnected settlements"
-#~ msgstr "تسويات أرقام مفصولة"
 
 #~ msgid "Numbers not recorded in system"
 #~ msgstr "أرقام لم تُسجّل بالنظام"

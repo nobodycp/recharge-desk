@@ -4,9 +4,9 @@
 {% elif row.status == "due_soon" %}
   <span class="rd-phone-status rd-phone-status--due">{% trans "Ends today" %}</span>
 {% elif row.status == "ended_under_threshold" %}
-  <span class="rd-phone-status rd-phone-status--grace">{% trans "Ended — under inactivity threshold" %}</span>
+  <span class="rd-phone-status rd-phone-status--grace">{% trans "Disconnected only" %}</span>
 {% else %}
-  <span class="rd-phone-status rd-phone-status--overdue">{% trans "Ended — past inactivity threshold" %}</span>
+  <span class="rd-phone-status rd-phone-status--overdue">{% trans "Left the agency" %}</span>
 {% endif %}
 {% if row.is_esim %}
   <span class="rd-phone-status rd-phone-status--esim">{% trans "eSIM" %}</span>

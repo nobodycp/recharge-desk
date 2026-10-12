@@ -165,8 +165,8 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertEqual(r.context["phones_lifecycle_total"], 4)
         self.assertContains(r, "Active lines")
         self.assertContains(r, "Ends today")
-        self.assertContains(r, "Ended — under inactivity threshold")
-        self.assertContains(r, "Ended — past inactivity threshold")
+        self.assertContains(r, "Disconnected only")
+        self.assertContains(r, "Left the agency")
 
 
 class DashboardKPITests(_ReportsBase):
@@ -530,7 +530,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertEqual(by_ref["055stmt0001"]["status"], "overdue")
         self.assertEqual(by_ref["055stmt0002"]["status"], "active")
         self.assertContains(r, "Line statement")
-        self.assertContains(r, "Activity threshold (days)")
+        self.assertContains(r, "Days to leave the agency")
         self.assertNotContains(r, "Lines for disconnect")
 
     def test_statement_includes_esim(self):
