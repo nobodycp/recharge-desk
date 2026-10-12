@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST
 
-from accounts.permissions import employee_required, is_employee
+from accounts.permissions import employee_required
 from companies.models import Company, Product, ProductLine
 from core.http_utils import get_client_ip
 from core.models import AppSettings
@@ -94,20 +94,6 @@ def employee_entry(request):
     acting_employee = get_acting_employee_profile(request.user)
     product_groups = _build_product_groups(company_id) if company_id else []
 
-    recent_qs = Sale.objects.select_related(
-        "company",
-        "product",
-        "product__line",
-        "payment_method",
-        "employee_recipient",
-        "employee_recipient__user",
-        "employee_recipient__user__profile",
-    )
-    if is_employee(request.user):
-        recent_qs = recent_qs.filter(created_by=request.user)
-    editable_sale_ids = employee_editable_sale_ids(request.user)
-    recent = recent_qs.order_by("-created_at")[:EMPLOYEE_RECENT_EDIT_LIMIT]
-
     if request.method == "POST" and form.is_valid():
         try:
             on_account = bool(form.cleaned_data.get("on_account"))
@@ -190,8 +176,6 @@ def employee_entry(request):
         {
             "form": form,
             "title": _("New sale"),
-            "recent_sales": recent,
-            "editable_sale_ids": editable_sale_ids,
             "product_groups": product_groups,
             "companies": companies,
             "payment_methods": payment_methods,
@@ -201,7 +185,38 @@ def employee_entry(request):
             "selected_product_id": selected_product_id,
             "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
             "esim_extra": ESIM_EXTRA_COST,
+        },
+    )
+
+
+@employee_required
+def employee_refresh_number(request):
+    """Full-page phone refresh for cashiers."""
+    if not AppSettings.load().sales_show_refresh_phone:
+        messages.error(request, _("Number refresh is disabled on the sales screen."))
+        return redirect("sales:employee_entry")
+    return render(
+        request,
+        "sales/employee_refresh_number.html",
+        {"title": _("Refresh number")},
+    )
+
+
+@employee_required
+def employee_record_payment(request):
+    """Full-page customer payment entry for cashiers."""
+    if not AppSettings.load().sales_show_record_payment:
+        messages.error(request, _("Recording payments from the sales screen is disabled."))
+        return redirect("sales:employee_entry")
+    payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    return render(
+        request,
+        "sales/employee_record_payment.html",
+        {
+            "title": _("Record payment"),
             "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(user=request.user),
+            "payment_methods": payment_methods,
+            "acting_employee": get_acting_employee_profile(request.user),
         },
     )
 
@@ -216,7 +231,7 @@ def employee_submit_customer_payment_submission(request):
     form = EmployeeCustomerPaymentSubmissionForm(request.POST, user=request.user)
     if not form.is_valid():
         flash_form_errors(request, form)
-        return redirect("sales:employee_entry")
+        return redirect("sales:employee_record_payment")
     paid_via_employee = (
         bool(form.cleaned_data.get("paid_via_employee"))
         and app_settings.sales_show_employee_payment
@@ -246,7 +261,7 @@ def employee_submit_customer_payment_submission(request):
                 messages.success(request, _("Payment recorded on the customer account."))
         else:
             messages.success(request, _("Payment submitted for management approval."))
-    return redirect("sales:employee_entry")
+    return redirect("sales:employee_record_payment")
 
 
 @employee_required

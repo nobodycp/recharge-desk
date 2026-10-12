@@ -1,0 +1,55 @@
+{% extends "base_employee.html" %}
+{% load i18n static %}
+{% block employee_header %}
+<span>{% trans "Refresh number" %}</span>
+{% endblock %}
+{% block content %}
+<div
+  class="rd-card p-3"
+  id="rd-refresh-page"
+  data-refresh-url="{% url 'sales:employee_refresh_phone' %}"
+  data-msg-phone="{{ _('Enter a phone number.')|escapejs }}"
+  data-msg-invalid-phone="{{ _('Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058.')|escapejs }}"
+  data-msg-working="{{ _('Refreshing…')|escapejs }}"
+  data-msg-wait-with-time="{{ _('{body} (last refresh {time} ago)')|escapejs }}"
+  data-msg-less-than-minute="{{ _('less than a minute')|escapejs }}"
+  data-msg-hour="{{ _('hour')|escapejs }}"
+  data-msg-hours="{{ _('hours')|escapejs }}"
+  data-msg-minute="{{ _('minute')|escapejs }}"
+  data-msg-minutes="{{ _('minutes')|escapejs }}"
+  data-msg-time-and="{{ _('and')|escapejs }}"
+>
+  {% csrf_token %}
+  <p class="small text-secondary mb-3">{% trans "Same routing and messages as the public refresh page, without rate limits." %}</p>
+  <div class="mb-3">
+    <label class="rd-field-label d-block" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
+    <div class="input-group input-group-sm">
+      <input
+        type="text"
+        class="form-control"
+        id="rd-refresh-phone-input"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="10"
+        pattern="05[0123458][0-9]{7}"
+        placeholder="0501234567"
+        autofocus
+      >
+      <button
+        type="button"
+        class="btn btn-outline-secondary employee-clipboard-paste-btn"
+        data-paste-target="rd-refresh-phone-input"
+        aria-label="{% trans 'Paste from clipboard' %}"
+        data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+      >{% trans "Paste" %}</button>
+    </div>
+  </div>
+  <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none mb-3" id="rd-refresh-result" role="status" aria-live="polite">
+    <div class="fw-semibold mb-1" id="rd-refresh-result-title"></div>
+    <div class="mb-0 text-secondary" id="rd-refresh-result-body"></div>
+  </div>
+  <button type="button" class="btn btn-primary w-100" id="rd-refresh-submit">{% trans "Refresh" %}</button>
+</div>
+<script src="{% static 'js/employee-clipboard-paste.js' %}{{ static_cache_query }}"></script>
+<script src="{% static 'js/employee-refresh-number.js' %}{{ static_cache_query }}"></script>
+{% endblock %}

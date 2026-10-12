@@ -202,3 +202,16 @@ def app_settings(request):
         return {"app_settings": AppSettings.load()}
     except Exception:
         return {"app_settings": AppSettings()}
+
+
+def acting_employee(request):
+    """Payroll profile for the logged-in cashier (wallet chip, etc.)."""
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return {"acting_employee": None}
+    try:
+        from employees.services import get_acting_employee_profile
+
+        return {"acting_employee": get_acting_employee_profile(user)}
+    except Exception:
+        return {"acting_employee": None}

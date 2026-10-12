@@ -94,6 +94,7 @@ TEMPLATES = [
                 "core.context_processors.site_branding",
                 "core.context_processors.nav_notifications",
                 "core.context_processors.app_settings",
+                "core.context_processors.acting_employee",
             ],
         },
     },

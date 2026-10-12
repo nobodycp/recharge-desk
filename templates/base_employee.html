@@ -1,4 +1,4 @@
-{% load i18n static %}
+{% load i18n static humanize %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}" dir="{{ html_dir }}">
 <head>
@@ -19,10 +19,24 @@
 </head>
 <body class="rd-body rd-employee-app app-shell has-employee-tabbar">
   <header class="rd-employee-topbar">
-    <div class="rd-employee-title">
-      {% block employee_header %}
-        <a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
-      {% endblock %}
+    <div class="rd-employee-topbar__start">
+      {% if acting_employee %}
+        <a
+          class="rd-employee-wallet{% if acting_employee.current_balance < 0 %} is-neg{% elif acting_employee.current_balance > 0 %} is-pos{% endif %}"
+          href="{% url 'employees:my_balance' %}"
+          title="{% trans 'My balance' %}"
+        >
+          <span class="rd-employee-wallet__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M16 14h2"/></svg>
+          </span>
+          <span class="rd-employee-wallet__amt tabular-nums">{{ acting_employee.current_balance|intcomma }}</span>
+        </a>
+      {% endif %}
+      <div class="rd-employee-title">
+        {% block employee_header %}
+          <a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+        {% endblock %}
+      </div>
     </div>
     <div class="d-flex align-items-center gap-2">
       <form action="{% url 'set_language' %}" method="post" class="d-flex mb-0">

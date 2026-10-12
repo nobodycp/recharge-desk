@@ -429,11 +429,12 @@ class EmployeeMyBalanceTests(TestCase):
         self.client.login(username="bal_cashier", password="x")
         resp = self.client.get(reverse("employees:my_balance"))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "My balance")
+        self.assertContains(resp, "Wallet details")
         self.assertEqual(resp.context["employee"].monthly_salary, Decimal("2500"))
         self.assertEqual(resp.context["employee"].current_balance, Decimal("1200"))
         self.assertContains(resp, "Movement statement")
         self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "rd-employee-wallet")
         self.assertContains(resp, "test accrual")
         self.assertNotContains(resp, "Manual adjustment")
         self.assertNotContains(

@@ -817,14 +817,22 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertTrue(Sale.objects.filter(pk=oldest.pk).exists())
 
     def test_view_all_link_appears_on_entry_page(self):
+        from employees.models import EmployeeProfile
+
+        EmployeeProfile.objects.create(user=self.emp, monthly_salary=Decimal("1000"))
         resp = self.client.get(reverse("sales:employee_entry"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse("sales:employee_recent_sales"))
         self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "rd-mobile-tabbar__fab")
+        self.assertContains(resp, "rd-employee-wallet")
         self.assertContains(resp, reverse("employees:my_balance"))
         self.assertContains(resp, reverse("sales:employee_stock_check"))
-        self.assertContains(resp, 'data-bs-target="#rdEmployeeRefreshModal"')
-        self.assertContains(resp, 'data-bs-target="#rdCustomerPaySubModal"')
+        self.assertContains(resp, reverse("sales:employee_refresh_number"))
+        self.assertContains(resp, reverse("sales:employee_record_payment"))
+        self.assertNotContains(resp, "Recent entries")
+        self.assertNotContains(resp, "rdEmployeeRefreshModal")
+        self.assertNotContains(resp, "rdCustomerPaySubModal")
 
     def test_entry_page_shows_full_names_when_icons_missing(self):
         """Without uploaded icons, payment method and product-line tiles
@@ -1028,6 +1036,30 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertNotContains(resp, "<details open")
         # No active filter badge when on the default (today) view.
         self.assertContains(resp, 'data-rd-filter-count style="display:none"')
+
+
+class EmployeeRecordPaymentPageTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.emp = User.objects.create_user("emp_pay_page", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        PaymentMethod.objects.create(name="Cash PayPage")
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def test_record_payment_page_renders(self):
+        resp = self.client.get(reverse("sales:employee_record_payment"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-pay-sub-page")
+        self.assertContains(resp, reverse("sales:employee_submit_customer_payment_submission"))
+        self.assertContains(resp, "rd-mobile-tabbar")
 
 
 class EmployeeStockCheckTests(TestCase):
@@ -1297,11 +1329,12 @@ class EmployeeRefreshPhoneTests(TestCase):
             HTTP_ACCEPT="application/json",
         )
 
-    def test_entry_page_shows_refresh_button_and_modal(self):
-        resp = self.client.get(reverse("sales:employee_entry"))
+    def test_refresh_page_loads_and_links_api(self):
+        resp = self.client.get(reverse("sales:employee_refresh_number"))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "rdEmployeeRefreshModal")
+        self.assertContains(resp, "rd-refresh-page")
         self.assertContains(resp, reverse("sales:employee_refresh_phone"))
+        self.assertContains(resp, "rd-mobile-tabbar")
 
     def test_unregistered_phone_uses_public_refresh_flow(self):
         from phone_refresh.models import RefreshStatus
