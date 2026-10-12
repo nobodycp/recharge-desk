@@ -605,8 +605,9 @@ def inventory_movements(request):
         if d.get("product_line"):
             qs = qs.filter(product_line=canonical_product_line(d["product_line"]))
             filter_active += 1
-        if d.get("customer"):
-            qs = qs.filter(customer=d["customer"])
+        customer_q = (d.get("customer") or "").strip()
+        if customer_q:
+            qs = qs.filter(customer__name__icontains=customer_q)
             filter_active += 1
         if d.get("date_from"):
             qs = qs.filter(created_at__date__gte=d["date_from"])
