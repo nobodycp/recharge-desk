@@ -276,11 +276,16 @@ class ProfitReportTests(_ReportsBase):
         r = self.client.get(reverse("reports:profit_report"))
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context["total_profit"], _d(30))  # 2 * (20-5)
+        self.assertEqual(r.context["total_count"], 2)
+        self.assertEqual(r.context["total_volume"], _d(40))
+        self.assertEqual(r.context["max_company_profit"], _d(30))
         rows = list(r.context["by_company"])
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["company__name"], "ReportCo")
         self.assertEqual(rows[0]["profit"], _d(30))
         self.assertEqual(rows[0]["cnt"], 2)
+        self.assertContains(r, "rd-profit-hero")
+        self.assertContains(r, "rd-profit-rank")
 
     def test_profit_report_date_filter_excludes_out_of_range(self):
         s = self._make_sale(sell=20, paid=True)

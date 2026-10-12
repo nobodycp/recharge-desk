@@ -306,52 +306,71 @@ class DateRangeForm(forms.Form):
     )
 
 
+def _profit_bar_max(rows, key="profit"):
+    vals = [abs(r.get(key) or 0) for r in rows]
+    return max(vals) if vals else 1
+
+
 @management_required
 def profit_report(request):
     form = DateRangeForm(request.GET or None)
     qs = confirmed_sales(Sale.objects.all())
+    date_from = date_to = None
     if form.is_valid():
-        if form.cleaned_data.get("date_from"):
-            qs = qs.filter(created_at__date__gte=form.cleaned_data["date_from"])
-        if form.cleaned_data.get("date_to"):
-            qs = qs.filter(created_at__date__lte=form.cleaned_data["date_to"])
+        date_from = form.cleaned_data.get("date_from")
+        date_to = form.cleaned_data.get("date_to")
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
     qs_paid = paid_sales_only(qs)
-    total_profit = qs_paid.aggregate(s=Sum("profit_snapshot"))["s"] or 0
-    by_company = (
+    totals = qs_paid.aggregate(
+        profit=Sum("profit_snapshot"),
+        volume=Sum("sell_price_actual"),
+        cnt=Count("id"),
+    )
+    total_profit = totals["profit"] or 0
+    total_volume = totals["volume"] or 0
+    total_count = totals["cnt"] or 0
+    by_company = list(
         qs_paid.values("company__name")
-        .annotate(profit=Sum("profit_snapshot"), volume=Sum("sell_price_actual"), cnt=Count("id"))
+        .annotate(
+            profit=Sum("profit_snapshot"),
+            volume=Sum("sell_price_actual"),
+            cnt=Count("id"),
+        )
         .order_by("-profit")
     )
-    by_product = (
+    by_product = list(
         qs_paid.values(
             "company__name",
             "product__line__name",
             "product__variant_label",
         )
         .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
-        .order_by("-profit")[:40]
+        .order_by("-profit")[:20]
     )
-    by_employee = (
+    by_employee = list(
         qs_paid.values("created_by__username")
         .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
         .order_by("-profit")
     )
-    by_method = (
+    by_method = list(
         qs_paid.values("payment_method__name")
         .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
         .order_by("-profit")
     )
-    daily = (
+    daily = list(
         qs_paid.annotate(d=TruncDate("created_at"))
         .values("d")
-        .annotate(profit=Sum("profit_snapshot"))
-        .order_by("d")
+        .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
+        .order_by("-d")[:31]
     )
-    monthly = (
+    monthly = list(
         qs_paid.annotate(m=TruncMonth("created_at"))
         .values("m")
-        .annotate(profit=Sum("profit_snapshot"))
-        .order_by("m")
+        .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
+        .order_by("-m")[:12]
     )
     return render(
         request,
@@ -359,13 +378,23 @@ def profit_report(request):
         {
             "form": form,
             "title": _("Profit report"),
+            "date_from": date_from,
+            "date_to": date_to,
             "total_profit": total_profit,
+            "total_volume": total_volume,
+            "total_count": total_count,
             "by_company": by_company,
             "by_product": by_product,
             "by_employee": by_employee,
             "by_method": by_method,
             "daily": daily,
             "monthly": monthly,
+            "max_company_profit": _profit_bar_max(by_company),
+            "max_method_profit": _profit_bar_max(by_method),
+            "max_employee_profit": _profit_bar_max(by_employee),
+            "max_product_profit": _profit_bar_max(by_product),
+            "max_daily_profit": _profit_bar_max(daily),
+            "max_monthly_profit": _profit_bar_max(monthly),
         },
     )
 
