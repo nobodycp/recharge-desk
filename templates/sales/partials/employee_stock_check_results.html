@@ -4,9 +4,7 @@
     <div class="rd-mobile-row-card rd-stock-check-card">
       <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
         <div class="fw-semibold text-truncate min-w-0">{{ group.customer.name }}</div>
-        <div class="tabular-nums fw-bold flex-shrink-0 small text-secondary">
-          {% blocktrans count n=group.total %}{{ n }} SIM{% plural %}{{ n }} SIMs{% endblocktrans %}
-        </div>
+        <div class="tabular-nums fw-bold flex-shrink-0 small text-secondary">{{ group.total }}</div>
       </div>
       <ul class="rd-stock-check-lines list-unstyled mb-2">
         {% for line in group.lines %}

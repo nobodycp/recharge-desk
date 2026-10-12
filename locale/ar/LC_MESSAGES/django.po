@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 05:01+0300\n"
+"POT-Creation-Date: 2026-10-12 05:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -5727,25 +5727,14 @@ msgid ""
 "Delete this entry permanently? Supplier balance will be corrected. This "
 "cannot be undone."
 msgstr "حذف هذا الإدخال نهائياً؟ يُصحَّح رصيد المورّد. لا يمكن التراجع."
-#: templates/sales/partials/employee_stock_check_results.html:8
-#, python-format
-msgid "%(n)s SIM"
-msgid_plural "%(n)s SIMs"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
-msgstr[4] ""
-msgstr[5] ""
-
-#: templates/sales/partials/employee_stock_check_results.html:20
+#: templates/sales/partials/employee_stock_check_results.html:18
 msgid "Open customer stock"
 msgstr "فتح مخزون الزبون"
-#: templates/sales/partials/employee_stock_check_results.html:26
+#: templates/sales/partials/employee_stock_check_results.html:24
 #, python-format
 msgid "No SIM stock found for “%(name)s”."
 msgstr "ما في مخزون شرائح لـ «%(name)s»."
-#: templates/sales/partials/employee_stock_check_results.html:28
+#: templates/sales/partials/employee_stock_check_results.html:26
 msgid "No customer SIM stock on hand."
 msgstr "ما في مخزون شرائح عند الزبائن."
 #: templates/sales/partials/management_sale_list_results.html:46
