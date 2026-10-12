@@ -1866,7 +1866,9 @@ body.app-shell {
   --rd-tab-n: 5;
   --rd-tab-active: 2;
   --rd-tab-bubble: 3.35rem;
-  --rd-tab-curve: 1.15rem;
+  --rd-tab-notch-r: calc(var(--rd-tab-bubble) / 2 + 0.42rem);
+  /* LTR: slot centers left→right. RTL overridden below. */
+  --rd-tab-cx: calc((var(--rd-tab-active) + 0.5) / var(--rd-tab-n) * 100%);
   --rd-tab-rail-h: 4.05rem;
   --rd-tab-rail-bg: var(--bs-secondary-bg);
   --rd-tab-pad-inline: 0.7rem;
@@ -1884,6 +1886,10 @@ body.app-shell {
   pointer-events: none;
 }
 
+[dir="rtl"] .rd-mobile-tabbar {
+  --rd-tab-cx: calc((var(--rd-tab-n) - var(--rd-tab-active) - 0.5) / var(--rd-tab-n) * 100%);
+}
+
 .rd-mobile-tabbar__rail {
   position: absolute;
   inset-inline: var(--rd-tab-pad-inline);
@@ -1895,6 +1901,31 @@ body.app-shell {
     0 10px 28px color-mix(in srgb, #000 12%, transparent),
     0 1px 0 color-mix(in srgb, #fff 55%, transparent) inset;
   pointer-events: none;
+  /* Smooth circular notch from the top edge — no box-shadow “wings”. */
+  -webkit-mask-image:
+    linear-gradient(#000 0 0),
+    radial-gradient(
+      circle at var(--rd-tab-cx) 0,
+      #000 0,
+      #000 var(--rd-tab-notch-r),
+      transparent calc(var(--rd-tab-notch-r) + 0.5px)
+    );
+  -webkit-mask-size: 100% 100%, 100% 100%;
+  -webkit-mask-position: 0 0, 0 0;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: destination-out;
+  mask-image:
+    linear-gradient(#000 0 0),
+    radial-gradient(
+      circle at var(--rd-tab-cx) 0,
+      #000 0,
+      #000 var(--rd-tab-notch-r),
+      transparent calc(var(--rd-tab-notch-r) + 0.5px)
+    );
+  mask-size: 100% 100%, 100% 100%;
+  mask-position: 0 0, 0 0;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
 }
 
 .rd-mobile-tabbar__items {
@@ -1939,7 +1970,7 @@ body.app-shell {
 
 .rd-mobile-tabbar__bubble {
   position: absolute;
-  top: calc(var(--rd-tab-bubble) / -2 + 0.15rem);
+  top: calc(var(--rd-tab-bubble) / -2);
   left: 50%;
   width: var(--rd-tab-bubble);
   height: var(--rd-tab-bubble);
@@ -1948,37 +1979,12 @@ body.app-shell {
   transform: translateX(-50%) scale(0.55);
   opacity: 0;
   pointer-events: none;
-  box-shadow: 0 6px 16px color-mix(in srgb, #000 10%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, #000 14%, transparent);
   transition:
     transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1),
     opacity 0.2s ease,
     background 0.2s ease,
     box-shadow 0.2s ease;
-}
-
-/* Concave side curves where the bubble meets the rail */
-.rd-mobile-tabbar__bubble::before,
-.rd-mobile-tabbar__bubble::after {
-  content: "";
-  position: absolute;
-  top: calc(50% + 0.05rem);
-  width: var(--rd-tab-curve);
-  height: var(--rd-tab-curve);
-  background: transparent;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.rd-mobile-tabbar__bubble::before {
-  right: 100%;
-  border-top-right-radius: var(--rd-tab-curve);
-  box-shadow: 0.35rem -0.35rem 0 0.35rem var(--rd-tab-rail-bg);
-}
-
-.rd-mobile-tabbar__bubble::after {
-  left: 100%;
-  border-top-left-radius: var(--rd-tab-curve);
-  box-shadow: -0.35rem -0.35rem 0 0.35rem var(--rd-tab-rail-bg);
 }
 
 .rd-mobile-tabbar__icon {
@@ -2019,13 +2025,8 @@ body.app-shell {
   transform: translateX(-50%) scale(1);
 }
 
-.rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__bubble::before,
-.rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__bubble::after {
-  opacity: 1;
-}
-
 .rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__icon {
-  transform: translateY(calc(var(--rd-tab-bubble) / -2 + 0.05rem));
+  transform: translateY(calc(var(--rd-tab-bubble) / -2));
   color: var(--bs-body-color);
 }
 
@@ -2036,15 +2037,7 @@ body.app-shell {
 
 .rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__bubble {
   background: var(--rd-accent-2);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--rd-accent-2) 40%, transparent);
-}
-
-.rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__bubble::before {
-  box-shadow: 0.35rem -0.35rem 0 0.35rem var(--rd-tab-rail-bg);
-}
-
-.rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__bubble::after {
-  box-shadow: -0.35rem -0.35rem 0 0.35rem var(--rd-tab-rail-bg);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--rd-accent-2) 38%, transparent);
 }
 
 .rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__icon {
@@ -2053,6 +2046,14 @@ body.app-shell {
 
 .rd-mobile-tabbar__item--sales:not(.is-active) .rd-mobile-tabbar__icon {
   color: var(--rd-accent-2);
+}
+
+/* Soft dim while tabbar HTMX navigation is in flight */
+body:has(.rd-mobile-tabbar.htmx-request) .rd-employee-main,
+body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
 .sticky-save .employee-save-sale-btn {

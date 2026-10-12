@@ -825,6 +825,7 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertContains(resp, reverse("sales:employee_recent_sales"))
         self.assertContains(resp, "rd-mobile-tabbar")
         self.assertContains(resp, "rd-mobile-tabbar__fab")
+        self.assertContains(resp, 'hx-boost="true"')
         self.assertContains(resp, "rd-employee-wallet")
         self.assertContains(resp, reverse("employees:my_balance"))
         self.assertContains(resp, reverse("sales:employee_stock_check"))

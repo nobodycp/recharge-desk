@@ -145,16 +145,9 @@
   display: block;
 }
 
-/* Company: selected بدون إطار (اللوجو فقط) */
+/* Company + product line: same clear selected frame */
 .employee-company-tile.is-active,
-.employee-company-tile:active {
-  outline: none !important;
-  box-shadow: none !important;
-  background-color: transparent !important;
-  border: none !important;
-}
-
-/* خط المنتج (صورة/أيقونة الخط): نفس منطق التحديد الواضح كالباقات */
+.employee-company-tile:active,
 .employee-product-line-tile.is-active {
   outline: none !important;
   border: 2px solid var(--bs-primary) !important;
@@ -165,11 +158,13 @@
     0 0 0 2px rgba(var(--bs-primary-rgb), 0.18);
 }
 
+.employee-company-tile.is-active:active,
 .employee-product-line-tile.is-active:active {
   border-color: var(--bs-primary) !important;
   background-color: rgba(var(--bs-primary-rgb), 0.16) !important;
 }
 
+.employee-company-tile:focus-visible,
 .employee-product-line-tile:focus-visible {
   outline: 2px solid var(--bs-primary);
   outline-offset: 2px;
