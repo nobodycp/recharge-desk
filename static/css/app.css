@@ -869,6 +869,19 @@
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
 }
 
+[data-rd-live] > * {
+  transition: opacity var(--rd-transition);
+}
+
+[data-rd-live].is-live-loading {
+  cursor: progress;
+}
+
+[data-rd-live].is-live-loading > :not(.rd-dash-head):not(.rd-page-header):not(.rd-filter-card) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .rd-dash-swap > :not(.rd-dash-head) {
   transition: opacity var(--rd-transition);
 }

@@ -234,6 +234,10 @@
     root.querySelectorAll("form[data-rd-confirm-gate]").forEach(initConfirmGate);
   }
 
+  document.addEventListener("rd:content-swapped", function (e) {
+    init(e.detail.root);
+  });
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       init(document);

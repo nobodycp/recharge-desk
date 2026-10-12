@@ -19,6 +19,7 @@
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/data-ui.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/admin-ui.js' %}{{ static_cache_query }}" defer></script>
+  <script src="{% static 'js/live-nav.js' %}{{ static_cache_query }}" defer></script>
 </head>
 <body class="rd-body app-shell" data-rd-nav>
   <div class="rd-app">
@@ -128,7 +129,7 @@
         </div>
       </header>
 
-      <main class="rd-content">
+      <main class="rd-content" data-rd-live>
         {% include "partials/messages.html" %}
         {% block content %}{% endblock %}
       </main>
