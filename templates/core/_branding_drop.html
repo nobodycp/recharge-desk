@@ -1,0 +1,23 @@
+{% load i18n %}
+<div class="rd-drop-field">
+  <span class="form-label d-block" id="{{ field.auto_id }}_label">{{ title }}</span>
+  <label class="rd-drop{% if square %} rd-drop--square{% endif %}{% if current %} has-image{% endif %}"
+         data-rd-drop="{{ key }}" data-rd-current="{% if current %}{{ current.url }}{% endif %}">
+    <span class="rd-drop__thumb">
+      <img data-rd-drop-thumb src="{% if current %}{{ current.url }}{% endif %}" alt=""{% if not current %} hidden{% endif %}>
+      <svg class="rd-drop__placeholder" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+    </span>
+    <span class="rd-drop__text">
+      <span class="rd-drop__title">{% if current %}{% trans "Replace image" %}{% else %}{% trans "Choose an image" %}{% endif %}</span>
+      <span class="rd-drop__hint">{% trans "or drag it here" %}</span>
+    </span>
+    <input type="file" name="{{ field.html_name }}" id="{{ field.auto_id }}" accept="image/*" class="visually-hidden" aria-labelledby="{{ field.auto_id }}_label">
+  </label>
+  {% if current %}
+    <label class="rd-drop-clear">
+      <input type="checkbox" class="form-check-input" name="{{ field.html_name }}-clear" id="{{ field.html_name }}-clear_id" data-rd-drop-clear>
+      {% trans "Remove current image" %}
+    </label>
+  {% endif %}
+  {% if field.errors %}<div class="rd-set-row__error">{{ field.errors|join:" " }}</div>{% endif %}
+</div>

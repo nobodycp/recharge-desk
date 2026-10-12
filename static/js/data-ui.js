@@ -255,6 +255,14 @@
       else el.classList.remove("is-active");
     }
 
+    function setNavCount(key, n) {
+      var el = document.querySelector('[data-rd-nav-count="' + key + '"]');
+      if (!el) return;
+      el.textContent = String(n);
+      if (n > 0) el.removeAttribute("hidden");
+      else el.setAttribute("hidden", "hidden");
+    }
+
     function applyPayload(p) {
       var total = Number(p.total || 0);
       var awaiting = Number(p.awaiting || 0);
@@ -264,6 +272,9 @@
       setCount(awaitingEl, awaiting);
       setCount(pendingEl, pending);
       setCount(submissionsEl, submissions);
+      setNavCount("awaiting", awaiting);
+      setNavCount("pending", pending);
+      setNavCount("submissions", submissions);
 
       if (badge) {
         badge.textContent = String(total);

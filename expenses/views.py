@@ -119,7 +119,8 @@ def expense_report(request):
     by_cat = {}
     for row in qs.values("category").annotate(s=Sum("amount")).order_by():
         by_cat[row["category"]] = row["s"]
-    by_category_rows = sorted(by_cat.items(), key=lambda x: x[0])
+    by_category_rows = sorted(by_cat.items(), key=lambda x: (-x[1], x[0]))
+    max_category_amount = max(by_cat.values(), default=0) or 1
 
     profit_qs = paid_sales_only(Sale.objects.all())
     if form.is_valid():
@@ -143,6 +144,7 @@ def expense_report(request):
             "page_obj": page_obj,
             "total": total,
             "by_category_rows": by_category_rows,
+            "max_category_amount": max_category_amount,
             "profit_total": profit_total,
             "net_profit": net_profit,
             "title": _("Expense report"),

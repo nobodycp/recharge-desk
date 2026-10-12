@@ -686,6 +686,35 @@ body.app-shell {
   height: 1.15rem;
 }
 
+.rd-sidebar-nav--accordion .rd-nav-link-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Same red count chip as the topbar bell, sitting at the end of the row. */
+.rd-nav-count {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--rd-danger, #dc3545);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.15rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rd-nav-count[hidden] {
+  display: none !important;
+}
+
 /* Flat sidebar panel — flush against the top + screen edge, no rounding,
    no floating drop-shadow. Just a hairline separator between the sidebar
    and the main content. Surface follows the active theme via the B&W
@@ -3899,10 +3928,10 @@ html[dir="rtl"] .rd-toast.is-visible {
 .rd-profit-hero > .rd-card-body {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
-  gap: 1.25rem 1.75rem;
-  padding: 1.25rem 1.35rem;
+  gap: 1rem 1.75rem;
+  padding: 0.9rem 1.25rem;
   background:
     radial-gradient(
       120% 140% at 0% 0%,
@@ -3918,7 +3947,7 @@ html[dir="rtl"] .rd-toast.is-visible {
 }
 
 .rd-profit-hero__value {
-  font-size: clamp(1.85rem, 2.6vw, 2.45rem);
+  font-size: clamp(1.65rem, 2.2vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -3941,7 +3970,7 @@ html[dir="rtl"] .rd-toast.is-visible {
   flex-direction: column;
   justify-content: center;
   gap: 0.2rem;
-  padding: 0.85rem 1.15rem;
+  padding: 0.6rem 1.15rem;
   min-width: 7rem;
   flex: 1 1 0;
 }
@@ -4131,6 +4160,169 @@ html[dir="rtl"] .rd-toast.is-visible {
   height: 4px;
 }
 
+/* One line per row: name · bar · count · profit (RTL-aware via grid). */
+.rd-profit-rank--inline {
+  gap: 0.6rem;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__item {
+  display: grid;
+  grid-template-columns:
+    minmax(0, var(--rd-rank-name-w, 9.5rem))
+    minmax(2.5rem, 1fr)
+    auto
+    minmax(4.25rem, auto);
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.rd-profit-rank--wide-name {
+  --rd-rank-name-w: 15rem;
+}
+
+.rd-profit-rank--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: 0.6rem 2.5rem;
+}
+
+.rd-profit-rank--expense .rd-profit-rank__fill {
+  background: linear-gradient(
+    90deg,
+    var(--rd-danger, #dc2626) 0%,
+    color-mix(in srgb, var(--rd-danger, #dc2626) 45%, transparent) 100%
+  );
+}
+
+.rd-profit-rank--inline .rd-profit-rank__row {
+  display: contents;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__name {
+  grid-column: 1;
+  grid-row: 1;
+  align-items: center;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__track {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__meta {
+  grid-column: 3;
+  grid-row: 1;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__profit {
+  grid-column: 4;
+  grid-row: 1;
+  text-align: end;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__name--stack {
+  align-items: center;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__name-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__name-text .d-block {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.rd-profit-rank--inline .rd-profit-rank__sub {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+
+/* Inline date filter in the page header. */
+.rd-report-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rd-report-filter__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rd-report-filter__lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+.rd-report-filter .form-control {
+  width: auto;
+  min-width: 9.5rem;
+  padding-block: 0.3rem;
+  font-size: 0.85rem;
+}
+
+/* Report totals: one slim card split into labelled cells. */
+.rd-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  overflow: hidden;
+}
+
+.rd-stat-strip__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.75rem 1.15rem;
+  border-inline-start: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+}
+
+.rd-stat-strip__cell:first-child {
+  border-inline-start: 0;
+}
+
+.rd-stat-strip__lbl {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rd-stat-strip__val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.rd-mini-chart--profit .rd-mini-chart-bar {
+  background: linear-gradient(
+    180deg,
+    var(--rd-success, #16a34a) 0%,
+    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+  );
+}
+
+.rd-mini-chart--profit .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success, #16a34a) 32%, transparent);
+}
+
+.rd-mini-chart--profit .rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
+  background: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+}
+
 @media (max-width: 575.98px) {
   .rd-profit-hero > .rd-card-body {
     padding: 1.1rem 1rem;
@@ -4144,6 +4336,60 @@ html[dir="rtl"] .rd-toast.is-visible {
   .rd-profit-hero__cell {
     padding: 0.75rem 0.9rem;
     min-width: 0;
+  }
+
+  .rd-profit-rank--inline .rd-profit-rank__item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0.3rem;
+  }
+
+  .rd-profit-rank--inline .rd-profit-rank__profit {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .rd-profit-rank--inline .rd-profit-rank__track {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .rd-profit-rank--inline .rd-profit-rank__meta {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .rd-report-filter {
+    width: 100%;
+  }
+
+  .rd-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rd-stat-strip__cell {
+    padding: 0.65rem 0.9rem;
+  }
+
+  .rd-stat-strip__cell:nth-child(odd) {
+    border-inline-start: 0;
+  }
+
+  .rd-stat-strip__cell:nth-child(n + 3) {
+    border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  }
+
+  .rd-stat-strip__val {
+    font-size: 1.2rem;
+  }
+
+  .rd-report-filter__field {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .rd-report-filter .form-control {
+    min-width: 0;
+    width: 100%;
   }
 }
 

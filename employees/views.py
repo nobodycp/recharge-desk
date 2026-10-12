@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -78,6 +78,11 @@ def employee_list(request):
         )
     qs = qs.order_by("-is_active", "user__username")
     page_obj = paginate_request(request, qs)
+    totals = EmployeeProfile.objects.filter(is_active=True).aggregate(
+        active=Count("id"),
+        payroll=Sum("monthly_salary"),
+        balance=Sum("current_balance"),
+    )
     return render(
         request,
         "employees/employee_list.html",
@@ -86,6 +91,7 @@ def employee_list(request):
             "title": _("Employees"),
             "q": q,
             "accrual_month": default_accrual_month(),
+            "totals": totals,
         },
     )
 

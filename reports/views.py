@@ -27,6 +27,50 @@ def _local_today():
     return timezone.localdate()
 
 
+DASHBOARD_PERIODS = ("day", "month", "all")
+DASHBOARD_PERIOD_SESSION_KEY = "dashboard_period"
+
+DASHBOARD_PERIOD_COPY = {
+    "day": {
+        "sales": _("Today's sales"),
+        "profit": _("Today's profit"),
+        "loss": _("Today's loss"),
+        "chart": _("Sales last 14 days"),
+        "chart_avg": _("Avg per day"),
+        "chart_end": _("Today"),
+        "top": _("Top companies today (by profit)"),
+    },
+    "month": {
+        "sales": _("This month's sales"),
+        "profit": _("This month profit"),
+        "loss": _("This month's loss"),
+        "chart": _("Daily sales this month"),
+        "chart_avg": _("Avg per day"),
+        "chart_end": _("Today"),
+        "top": _("Top companies (this month, by profit)"),
+    },
+    "all": {
+        "sales": _("All-time sales"),
+        "profit": _("All-time profit"),
+        "loss": _("All-time loss"),
+        "chart": _("Monthly sales"),
+        "chart_avg": _("Avg per month"),
+        "chart_end": _("This month"),
+        "top": _("Top companies (all time, by profit)"),
+    },
+}
+
+
+def _dashboard_period(request) -> str:
+    """Selected dashboard period: ``?period=`` wins and is remembered in the session."""
+    requested = request.GET.get("period")
+    if requested in DASHBOARD_PERIODS:
+        request.session[DASHBOARD_PERIOD_SESSION_KEY] = requested
+        return requested
+    stored = request.session.get(DASHBOARD_PERIOD_SESSION_KEY)
+    return stored if stored in DASHBOARD_PERIODS else "day"
+
+
 @management_required
 def dashboard(request):
     today = _local_today()
@@ -40,7 +84,11 @@ def dashboard(request):
     # so a midnight rollover doesn't serve yesterday's number.
     today_key = today.isoformat()
     month_start = today.replace(day=1)
-    month_key = month_start.isoformat()
+
+    period = _dashboard_period(request)
+    # "month" is the calendar month to date, not a rolling 30-day window.
+    period_start = {"day": today, "month": month_start, "all": None}[period]
+    period_key = f"{period}:{period_start.isoformat() if period_start else 'all'}"
 
     pending_count = cached_kpi(
         "dashboard:pending_count",
@@ -66,50 +114,33 @@ def dashboard(request):
         or 0,
     )
 
-    def _today_sales():
-        return confirmed_sales(Sale.objects.all()).filter(created_at__date=today)
+    def _in_period(qs, date_field="created_at__date"):
+        if period_start is None:
+            return qs
+        return qs.filter(**{f"{date_field}__gte": period_start})
 
-    today_count = cached_kpi(
-        f"dashboard:today_count:{today_key}",
-        lambda: _today_sales().count(),
+    def _period_sales():
+        return _in_period(confirmed_sales(Sale.objects.all()))
+
+    period_count = cached_kpi(
+        f"dashboard:period_count:{period_key}",
+        lambda: _period_sales().count(),
     )
-    today_volume = cached_kpi(
-        f"dashboard:today_volume:{today_key}",
-        lambda: _today_sales().aggregate(s=Sum("sell_price_actual"))["s"] or 0,
+    period_volume = cached_kpi(
+        f"dashboard:period_volume:{period_key}",
+        lambda: _period_sales().aggregate(s=Sum("sell_price_actual"))["s"] or 0,
     )
-    today_profit = cached_kpi(
-        f"dashboard:today_profit:{today_key}",
-        lambda: paid_sales_only(_today_sales()).aggregate(s=Sum("profit_snapshot"))["s"]
+    period_profit = cached_kpi(
+        f"dashboard:period_profit:{period_key}",
+        lambda: paid_sales_only(_period_sales()).aggregate(s=Sum("profit_snapshot"))["s"]
         or 0,
     )
-
-    total_profit = cached_kpi(
-        "dashboard:total_profit",
-        lambda: paid_sales_only(Sale.objects.all()).aggregate(
-            s=Sum("profit_snapshot")
-        )["s"]
+    period_expenses = cached_kpi(
+        f"dashboard:period_expenses:{period_key}",
+        lambda: _in_period(Expense.objects.all(), "date").aggregate(s=Sum("amount"))["s"]
         or 0,
     )
-    total_expenses = cached_kpi(
-        "dashboard:total_expenses",
-        lambda: Expense.objects.aggregate(s=Sum("amount"))["s"] or 0,
-    )
-    net_all_time = (total_profit or 0) - (total_expenses or 0)
-
-    def _month_sales():
-        return confirmed_sales(Sale.objects.all()).filter(created_at__date__gte=month_start)
-
-    month_profit = cached_kpi(
-        f"dashboard:month_profit:{month_key}",
-        lambda: paid_sales_only(_month_sales()).aggregate(s=Sum("profit_snapshot"))["s"]
-        or 0,
-    )
-    month_expenses = cached_kpi(
-        f"dashboard:month_expenses:{month_key}",
-        lambda: Expense.objects.filter(date__gte=month_start).aggregate(s=Sum("amount"))["s"]
-        or 0,
-    )
-    net_month = (month_profit or 0) - (month_expenses or 0)
+    period_net = (period_profit or 0) - (period_expenses or 0)
 
     # Supplier balances card — keep live (icons / ordering).
     companies = Company.objects.filter(is_active=True).order_by("name")
@@ -157,41 +188,26 @@ def dashboard(request):
         phones_ended_under_threshold_count
     )
 
-    # Must use the same date scope as `today_count` / `today_volume` (today only).
-    esim_sales_count = cached_kpi(
-        f"dashboard:esim_sales_count:{today_key}",
-        lambda: _today_sales().filter(is_esim=True).count(),
+    period_esim_count = cached_kpi(
+        f"dashboard:period_esim_count:{period_key}",
+        lambda: _period_sales().filter(is_esim=True).count(),
     )
-    all_sales = Sale.objects.all()
-    today_loss_from_zero = cached_kpi(
-        f"dashboard:today_loss:{today_key}",
-        lambda: loss_eligible_sales(all_sales.filter(created_at__date=today)).aggregate(
+    period_loss = cached_kpi(
+        f"dashboard:period_loss:{period_key}",
+        lambda: loss_eligible_sales(_in_period(Sale.objects.all())).aggregate(
             s=Sum("loss_snapshot")
         )["s"]
         or 0,
     )
-    month_loss_from_zero = cached_kpi(
-        f"dashboard:month_loss:{month_key}",
-        lambda: loss_eligible_sales(
-            all_sales.filter(created_at__date__gte=month_start)
-        ).aggregate(s=Sum("loss_snapshot"))["s"]
-        or 0,
-    )
-    total_loss_from_zero = cached_kpi(
-        "dashboard:total_loss",
-        lambda: loss_eligible_sales(all_sales).aggregate(s=Sum("loss_snapshot"))["s"]
-        or 0,
-    )
-    # 14-day sales sparkline + top-5 companies bar chart for the new
-    # mini-charts row on the dashboard. Both queries are cheap (a single
-    # GROUP BY on the indexed created_at) and cached for the day so a
-    # busy dashboard doesn't hit them on every refresh.
-    chart_window_days = 14
 
-    def _daily_series():
+    # Sales chart follows the period: "day" keeps two weeks of context with
+    # today highlighted, "month" shows each day of the calendar month, and
+    # "all" buckets by month. Single GROUP BY on the indexed created_at.
+    chart_monthly_cap = 24
+
+    def _daily_series(start):
         from datetime import timedelta
 
-        start = today - timedelta(days=chart_window_days - 1)
         rows = (
             confirmed_sales(Sale.objects.all())
             .filter(created_at__date__gte=start)
@@ -205,23 +221,59 @@ def dashboard(request):
 
         bucket = {r["d"]: (float(r["volume"] or 0), int(r["cnt"] or 0)) for r in rows}
         out = []
-        for i in range(chart_window_days):
+        for i in range((today - start).days + 1):
             day = start + timedelta(days=i)
             v, c = bucket.get(day, (0.0, 0))
             out.append(
                 {
                     "date": day.isoformat(),
-                    "weekday": day,
-                    "day_letter": _ar_day_letter[day.weekday()],
+                    "tick": str(day.day) if period == "month" else _ar_day_letter[day.weekday()],
                     "volume": v,
                     "count": c,
                 }
             )
         return out
 
+    def _monthly_series():
+        rows = (
+            confirmed_sales(Sale.objects.all())
+            .annotate(m=TruncMonth("created_at"))
+            .values("m")
+            .annotate(volume=Sum("sell_price_actual"), cnt=Count("id"))
+            .order_by("m")
+        )
+        bucket = {
+            (r["m"].year, r["m"].month): (float(r["volume"] or 0), int(r["cnt"] or 0))
+            for r in rows
+            if r["m"] is not None
+        }
+        if not bucket:
+            return []
+        first_year, first_month = min(bucket)
+        months = []
+        y, m = today.year, today.month
+        while (y, m) >= (first_year, first_month) and len(months) < chart_monthly_cap:
+            months.append((y, m))
+            y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+        out = []
+        for y, m in reversed(months):
+            v, c = bucket.get((y, m), (0.0, 0))
+            out.append(
+                {"date": f"{y}-{m:02d}", "tick": str(m), "volume": v, "count": c}
+            )
+        return out
+
+    def _chart_series():
+        from datetime import timedelta
+
+        if period == "all":
+            return _monthly_series()
+        start = month_start if period == "month" else today - timedelta(days=13)
+        return _daily_series(start)
+
     def _top_companies():
         rows = (
-            paid_sales_only(_month_sales())
+            paid_sales_only(_period_sales())
             .values("company__name")
             .annotate(profit=Sum("profit_snapshot"), volume=Sum("sell_price_actual"))
             .order_by("-profit")[:5]
@@ -235,42 +287,42 @@ def dashboard(request):
             for r in rows
         ]
 
-    daily_series = cached_kpi(
-        f"dashboard:daily_series_v3:{today_key}", _daily_series
+    chart_series = cached_kpi(
+        f"dashboard:chart_series_v4:{period}:{today_key}", _chart_series
     )
     top_companies = cached_kpi(
-        f"dashboard:top_companies:{month_key}", _top_companies
+        f"dashboard:top_companies:{period_key}", _top_companies
     )
 
-    chart_max_volume = max((d["volume"] for d in daily_series), default=0) or 1
+    chart_buckets = len(chart_series)
+    chart_max_volume = max((d["volume"] for d in chart_series), default=0) or 1
     chart_max_company_profit = max((c["profit"] for c in top_companies), default=0) or 1
-    chart_total_volume = sum(d["volume"] for d in daily_series)
-    chart_avg_volume = (
-        chart_total_volume / chart_window_days if chart_window_days else 0
-    )
+    chart_total_volume = sum(d["volume"] for d in chart_series)
+    chart_avg_volume = chart_total_volume / chart_buckets if chart_buckets else 0
 
     return render(
         request,
         "reports/dashboard.html",
         {
             "title": _("Dashboard"),
+            "period": period,
+            "period_options": [
+                ("day", _("Day")),
+                ("month", _("Month")),
+                ("all", _("All")),
+            ],
+            "period_copy": DASHBOARD_PERIOD_COPY[period],
             "pending_count": pending_count,
             "awaiting_count": awaiting_count,
             "payment_submissions_awaiting_count": payment_submissions_awaiting_count,
             "customer_debt_total": customer_debt_total,
-            "esim_sales_count": esim_sales_count,
-            "today_loss_from_zero": today_loss_from_zero,
-            "month_loss_from_zero": month_loss_from_zero,
-            "total_loss_from_zero": total_loss_from_zero,
-            "today_count": today_count,
-            "today_volume": today_volume,
-            "today_profit": today_profit,
-            "total_profit": total_profit,
-            "total_expenses": total_expenses,
-            "net_all_time": net_all_time,
-            "month_profit": month_profit,
-            "month_expenses": month_expenses or 0,
-            "net_month": net_month,
+            "period_count": period_count,
+            "period_volume": period_volume,
+            "period_profit": period_profit,
+            "period_esim_count": period_esim_count,
+            "period_loss": period_loss,
+            "period_expenses": period_expenses,
+            "period_net": period_net,
             "companies": companies,
             "phones_active_count": phones_active_count,
             "phones_due_soon_count": phones_due_soon_count,
@@ -282,11 +334,10 @@ def dashboard(request):
             "phone_donut_due_end": phone_donut_due_end,
             "phone_donut_grace_end": phone_donut_grace_end,
             "stale_phone_threshold_days": threshold_days,
-            "daily_series": daily_series,
+            "chart_series": chart_series,
             "top_companies": top_companies,
             "chart_max_volume": chart_max_volume,
             "chart_max_company_profit": chart_max_company_profit,
-            "chart_window_days": chart_window_days,
             "chart_total_volume": chart_total_volume,
             "chart_avg_volume": chart_avg_volume,
         },
@@ -365,13 +416,13 @@ def profit_report(request):
         .values("d")
         .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
         .order_by("-d")[:31]
-    )
+    )[::-1]
     monthly = list(
         qs_paid.annotate(m=TruncMonth("created_at"))
         .values("m")
         .annotate(profit=Sum("profit_snapshot"), cnt=Count("id"))
         .order_by("-m")[:12]
-    )
+    )[::-1]
     return render(
         request,
         "reports/profit_report.html",

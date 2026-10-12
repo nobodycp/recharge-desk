@@ -1,0 +1,8 @@
+<label class="rd-set-row rd-set-row--switch" for="{{ field.id_for_label }}">
+  <span class="rd-set-row__text">
+    <span class="rd-set-row__title">{{ field.label }}</span>
+    {% if help %}<span class="rd-set-row__help">{{ help }}</span>{% endif %}
+    {% if field.errors %}<span class="rd-set-row__error">{{ field.errors|join:" " }}</span>{% endif %}
+  </span>
+  <span class="form-check form-switch rd-set-row__control">{{ field }}</span>
+</label>

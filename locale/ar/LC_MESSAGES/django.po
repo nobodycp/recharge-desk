@@ -908,22 +908,22 @@ msgstr "أيقونة تبويب المتصفح"
 
 #: core/forms_database.py:9
 msgid "Backup file"
-msgstr ""
+msgstr "ملف النسخة الاحتياطية"
 
 #: core/forms_database.py:10
 msgid ""
 "JSON (.json / .json.gz), PostgreSQL custom dump (.dump), or SQLite (."
 "sqlite3)."
-msgstr ""
+msgstr "JSON (.json / .json.gz) أو PostgreSQL (.dump) أو SQLite (.sqlite3)."
 
 #: core/forms_database.py:13
 msgid "Confirmation"
-msgstr "الإشعارات"
+msgstr "التأكيد"
 
 #: core/forms_database.py:14
 #, python-format
 msgid "Type %(word)s to confirm you want to replace all current data."
-msgstr ""
+msgstr "اكتب %(word)s لتأكيد استبدال جميع البيانات الحالية."
 
 #: core/forms_database.py:18
 msgid ""
@@ -932,7 +932,7 @@ msgstr "أفهم أن هذا سيحذف البيانات الحالية ويست
 #: core/forms_database.py:26
 #, python-format
 msgid "Type \"%(word)s\" exactly to confirm."
-msgstr ""
+msgstr "اكتب «%(word)s» كما هي للتأكيد."
 
 #: core/models.py:45
 msgid "site name"
@@ -4077,17 +4077,17 @@ msgid "Download backup"
 msgstr "تنزيل النسخة الاحتياطية"
 #: templates/core/_system_settings_database.html:20
 msgid "Downloads the SQLite database file."
-msgstr ""
+msgstr "ينزّل ملف قاعدة بيانات SQLite كاملاً."
 
 #: templates/core/_system_settings_database.html:22
 msgid "Downloads a PostgreSQL custom dump (.dump) suitable for pg_restore."
-msgstr ""
+msgstr "ينزّل نسخة PostgreSQL بصيغة (.dump) قابلة للاستعادة عبر pg_restore."
 
 #: templates/core/_system_settings_database.html:24
 msgid ""
 "Downloads a compressed JSON export (.json.gz) compatible with Django "
 "loaddata."
-msgstr ""
+msgstr "ينزّل تصديراً مضغوطاً بصيغة JSON (.json.gz) متوافقاً مع loaddata."
 
 #: templates/core/_system_settings_database.html:28
 msgid "Download database"
@@ -4099,7 +4099,7 @@ msgstr "استيراد من نسخة احتياطية"
 msgid ""
 "This replaces all current data in the database. Take a fresh download first. "
 "Active users may need to sign in again after a restore."
-msgstr ""
+msgstr "سيستبدل هذا جميع البيانات الحالية. نزّل نسخة حديثة أولاً. قد يحتاج المستخدمون إلى تسجيل الدخول مجدداً بعد الاستيراد."
 
 #: templates/core/_system_settings_database.html:77
 msgid "Import database"
@@ -5833,11 +5833,143 @@ msgstr ""
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
+#: reports/views.py
+msgid "Day"
+msgstr "يوم"
+
+#: reports/views.py
+msgid "Statistics period"
+msgstr "فترة الإحصائيات"
+
+#: reports/views.py
+msgid "This month's sales"
+msgstr "مبيعات هذا الشهر"
+
+#: reports/views.py
+msgid "All-time sales"
+msgstr "إجمالي المبيعات"
+
+#: reports/views.py
+msgid "Today's loss"
+msgstr "خسائر اليوم"
+
+#: reports/views.py
+msgid "This month's loss"
+msgstr "خسائر هذا الشهر"
+
+#: reports/views.py
+msgid "All-time loss"
+msgstr "إجمالي الخسائر"
+
+#: reports/views.py
+msgid "Sales last 14 days"
+msgstr "المبيعات آخر 14 يومًا"
+
+#: reports/views.py
+msgid "Daily sales this month"
+msgstr "المبيعات اليومية هذا الشهر"
+
+#: reports/views.py
+msgid "Monthly sales"
+msgstr "المبيعات الشهرية"
+
+#: reports/views.py
+msgid "Avg per month"
+msgstr "متوسط شهري"
+
+#: reports/views.py
+msgid "Top companies today (by profit)"
+msgstr "أفضل الشركات اليوم (حسب الربح)"
+
+#: reports/views.py
+msgid "Top companies (all time, by profit)"
+msgstr "أفضل الشركات (كل الوقت، حسب الربح)"
+
+#: reports/views.py
+msgid "No paid sales in this period yet."
+msgstr "لا توجد مبيعات مدفوعة في هذه الفترة بعد."
+
+#: templates/reports/dashboard.html
+msgid "Net"
+msgstr "الصافي"
+
+#: templates/reports/dashboard.html
+msgid "Cost of sales at zero price"
+msgstr "تكلفة المبيعات بسعر صفر"
+
+msgid "You have unsaved changes"
+msgstr "لديك تغييرات غير محفوظة"
+
+msgid "Discard"
+msgstr "تجاهل"
+
+msgid "Images"
+msgstr "الصور"
+
+msgid "Transparent PNG or WebP works best. Files are resized automatically so pages stay fast."
+msgstr "يفضّل صورة PNG أو WebP بخلفية شفافة. يتم تصغير الملفات تلقائياً لتبقى الصفحات سريعة."
+
+msgid "Live preview"
+msgstr "معاينة مباشرة"
+
+msgid "Replace image"
+msgstr "استبدال الصورة"
+
+msgid "Choose an image"
+msgstr "اختر صورة"
+
+msgid "or drag it here"
+msgstr "أو اسحبها إلى هنا"
+
+msgid "Remove current image"
+msgstr "إزالة الصورة الحالية"
+
+msgid "Active employees"
+msgstr "الموظفون النشطون"
+
+msgid "Monthly payroll"
+msgstr "الرواتب الشهرية"
+
+msgid "Total balances"
+msgstr "إجمالي الأرصدة"
+
+msgid "No employees match your search."
+msgstr "لا يوجد موظفون مطابقون للبحث."
+
+msgid "Last sign-in"
+msgstr "آخر دخول"
+
+msgid "You"
+msgstr "أنت"
+
+msgid "Never"
+msgstr "لم يدخل بعد"
+
+#, python-format
+msgid "%(n)s event"
+msgid_plural "%(n)s events"
+msgstr[0] "%(n)s حدث"
+msgstr[1] "%(n)s حدث"
+msgstr[2] "%(n)s حدث"
+msgstr[3] "%(n)s أحداث"
+msgstr[4] "%(n)s حدثاً"
+msgstr[5] "%(n)s حدث"
+
+#, python-format
+msgid "%(n)s field"
+msgid_plural "%(n)s fields"
+msgstr[0] "%(n)s حقل"
+msgstr[1] "%(n)s حقل"
+msgstr[2] "%(n)s حقل"
+msgstr[3] "%(n)s حقول"
+msgstr[4] "%(n)s حقلاً"
+msgstr[5] "%(n)s حقل"
+
+msgid "Choose a backup file"
+msgstr "اختر ملف النسخة الاحتياطية"
+
 #~ msgid "Excludes cancelled sales"
 #~ msgstr "باستثناء المبيعات الملغاة"
-
-#~ msgid "Day"
-#~ msgstr "اليوم"
 
 #~ msgid "Back to sales entry"
 #~ msgstr "العودة إلى إدخال المبيعات"

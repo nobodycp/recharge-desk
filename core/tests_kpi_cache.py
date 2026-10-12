@@ -124,10 +124,10 @@ class KpiCacheSignalsTests(TestCase):
         # Warm the cache.
         first = self.client.get("/management/")
         self.assertEqual(first.status_code, 200)
-        baseline = first.context["today_count"]
+        baseline = first.context["period_count"]
 
         # New sale → signal bumps version → next read recomputes.
         self._make_sale("kpi-3")
 
         second = self.client.get("/management/")
-        self.assertEqual(second.context["today_count"], baseline + 1)
+        self.assertEqual(second.context["period_count"], baseline + 1)

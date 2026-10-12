@@ -1,127 +1,69 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Employees" %}</h1>
-    <p class="rd-text-muted mb-0">{% trans "Payroll accounts, balances, and salary accrual." %}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-primary" href="{% url 'employees:employee_create' %}">{% trans "Add employee" %}</a>
-  </div>
+<div class="rd-admin-page rd-admin-page--wide">
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">{% trans "Employees" %}</h1>
+  <a class="btn btn-primary" href="{% url 'employees:employee_create' %}">{% trans "Add employee" %}</a>
 </div>
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <form method="post" action="{% url 'employees:employee_run_salary_accrual' %}" class="row g-3 align-items-end">
-      {% csrf_token %}
-      <div class="col-12 col-md-4">
-        <label class="form-label" for="salary-month">{% trans "Accrue salaries for month" %}</label>
-        <input
-          type="month"
-          class="form-control form-control-sm"
-          id="salary-month"
-          name="salary_month"
-          value="{{ accrual_month|date:'Y-m' }}"
-        >
-      </div>
-      <div class="col-12 col-md-auto">
-        <button type="submit" class="btn btn-outline-primary btn-sm">{% trans "Run salary accrual" %}</button>
-      </div>
-      <div class="col-12">
-        <p class="small text-secondary mb-0">{% trans "Also runnable via: python manage.py accrue_employee_salaries" %}</p>
-      </div>
-    </form>
+<section class="rd-card rd-stat-strip mb-3">
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Active employees" %}</span>
+    <span class="rd-stat-strip__val tabular-nums">{{ totals.active|default:0|intcomma }}</span>
   </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Monthly payroll" %}</span>
+    <span class="rd-stat-strip__val tabular-nums">{{ totals.payroll|default:0|floatformat:"-2g" }}</span>
+  </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Total balances" %}</span>
+    <span class="rd-stat-strip__val tabular-nums {% if totals.balance < 0 %}kpi-expense{% elif totals.balance > 0 %}kpi-success{% endif %}">{{ totals.balance|default:0|floatformat:"-2g" }}</span>
+  </div>
+</section>
+
+<div class="rd-card rd-toolbar mb-3">
+  <form method="get" class="rd-filter-search" role="search">
+    <svg class="rd-filter-search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="{% trans 'Username or name…' %}" aria-label="{% trans 'Search' %}">
+    {% if q %}<a class="rd-filter-search__clear" href="{% url 'employees:employee_list' %}" aria-label="{% trans 'Reset' %}">×</a>{% endif %}
+  </form>
+  <form method="post" action="{% url 'employees:employee_run_salary_accrual' %}" class="rd-toolbar__action">
+    {% csrf_token %}
+    <label class="rd-toolbar__lbl" for="salary-month">{% trans "Accrue salaries for month" %}</label>
+    <input type="month" class="form-control form-control-sm" id="salary-month" name="salary_month" value="{{ accrual_month|date:'Y-m' }}">
+    <button type="submit" class="btn btn-outline-primary btn-sm">{% trans "Run salary accrual" %}</button>
+  </form>
 </div>
 
-{% active_filter_count as employee_active %}
-{% include "partials/filter_card_open.html" with active_count=employee_active %}
-    <form method="get" class="row g-3 align-items-end">
-      <div class="col-12 col-md-6 col-lg-4">
-        <label class="form-label" for="emp-q">{% trans "Search" %}</label>
-        <input type="search" class="form-control form-control-sm" id="emp-q" name="q" value="{{ q }}" placeholder="{% trans 'Username or name…' %}">
-      </div>
-      <div class="col-12 d-flex gap-2">
-        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_list' %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
-{% include "partials/filter_card_close.html" %}
-
-<div class="rd-card overflow-hidden rd-datagrid">
-  <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <span>{% trans "Employees" %}</span>
-  </div>
-  <div class="rd-table-dual rd-datagrid-body">
-    <div class="d-none d-md-block rd-data-shell">
-      <div class="table-responsive border-0">
-        <table class="table mb-0 align-middle rd-table-modern">
-          <thead>
-            <tr>
-              <th>{% trans "Employee" %}</th>
-              <th class="text-end">{% trans "Monthly salary" %}</th>
-              <th class="text-end">{% trans "Balance" %}</th>
-              <th>{% trans "Status" %}</th>
-              <th class="text-end">{% trans "Actions" %}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for emp in page_obj %}
-              <tr>
-                <td>
-                  <a href="{% url 'employees:employee_detail' emp.pk %}" class="fw-semibold text-decoration-none">{{ emp.display_name }}</a>
-                  <div class="small text-secondary">{{ emp.user.username }}</div>
-                </td>
-                <td class="text-end tabular-nums">{{ emp.monthly_salary|intcomma }}</td>
-                <td class="text-end tabular-nums fw-semibold {% if emp.current_balance < 0 %}kpi-expense{% elif emp.current_balance > 0 %}text-success{% endif %}">
-                  {{ emp.current_balance|intcomma }}
-                </td>
-                <td>
-                  {% if emp.is_active %}
-                    <span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>
-                  {% else %}
-                    <span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>
-                  {% endif %}
-                </td>
-                <td class="text-end">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:employee_detail' emp.pk %}">{% trans "Ledger" %}</a>
-                </td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No employees yet." %}</div></td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="d-md-none rd-mobile-stack p-2">
+<div class="rd-card overflow-hidden">
+  {% if page_obj %}
+    <ul class="rd-people">
       {% for emp in page_obj %}
-        <div class="rd-mobile-row-card">
-          <div class="d-flex justify-content-between align-items-start gap-2">
-            <div>
-              <a href="{% url 'employees:employee_detail' emp.pk %}" class="fw-semibold text-decoration-none">{{ emp.display_name }}</a>
-              <div class="small text-secondary">{{ emp.user.username }}</div>
-            </div>
-            {% if emp.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}
-          </div>
-          <div class="d-flex justify-content-between mt-2 small">
-            <span class="text-secondary">{% trans "Monthly salary" %}</span>
-            <span class="tabular-nums fw-semibold">{{ emp.monthly_salary|intcomma }}</span>
-          </div>
-          <div class="d-flex justify-content-between mt-1 small">
-            <span class="text-secondary">{% trans "Balance" %}</span>
-            <span class="tabular-nums fw-bold {% if emp.current_balance < 0 %}kpi-expense{% elif emp.current_balance > 0 %}text-success{% endif %}">{{ emp.current_balance|intcomma }}</span>
-          </div>
-          <div class="mt-2">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'employees:employee_detail' emp.pk %}">{% trans "Ledger" %}</a>
-          </div>
-        </div>
-      {% empty %}
-        <div class="text-center text-secondary py-4">{% trans "No employees yet." %}</div>
+        {% url 'employees:employee_detail' emp.pk as detail_url %}
+        <li class="rd-person{% if not emp.is_active %} is-muted{% endif %}" data-rd-href="{{ detail_url }}">
+          <span class="rd-avatar rd-avatar-md" aria-hidden="true">{{ emp.user.profile.initials|default:emp.user.username|slice:":2"|upper }}</span>
+          <span class="rd-person__id">
+            <a class="rd-person__name" href="{{ detail_url }}">{{ emp.display_name }}</a>
+            <span class="rd-person__sub">@{{ emp.user.username }}</span>
+          </span>
+          <span class="rd-person__stat">
+            <span class="rd-person__lbl">{% trans "Monthly salary" %}</span>
+            <span class="tabular-nums">{{ emp.monthly_salary|floatformat:"-2g" }}</span>
+          </span>
+          <span class="rd-person__stat">
+            <span class="rd-person__lbl">{% trans "Balance" %}</span>
+            <span class="tabular-nums fw-bold {% if emp.current_balance < 0 %}kpi-expense{% elif emp.current_balance > 0 %}kpi-success{% endif %}">{{ emp.current_balance|floatformat:"-2g" }}</span>
+          </span>
+          <span class="rd-status{% if emp.is_active %} is-on{% endif %}">{% if emp.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</span>
+          <svg class="rd-person__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </li>
       {% endfor %}
-    </div>
-  </div>
+    </ul>
+  {% else %}
+    <div class="empty-state border-0 m-3">{% if q %}{% trans "No employees match your search." %}{% else %}{% trans "No employees yet." %}{% endif %}</div>
+  {% endif %}
   {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 </div>
 {% endblock %}

@@ -1,14 +1,8 @@
 {% extends "base_management.html" %}
 {% load i18n humanize ui_tags %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Line statement" %}</h1>
-    <p class="rd-text-muted mb-0">
-      {% blocktrans with d=threshold_days %}Every number with a sale in the system, with lifecycle status from the {{ d }} days to leave the agency. A new charge or a 1-day renew resets the timer.{% endblocktrans %}
-    </p>
-  </div>
-  <a class="btn btn-outline-secondary" href="{% url 'reports:dashboard' %}">{% trans "Back" %}</a>
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">{% trans "Line statement" %}</h1>
 </div>
 
 {% active_filter_count as phone_lines_filter_active %}

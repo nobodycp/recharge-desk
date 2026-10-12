@@ -1,81 +1,84 @@
 {% load i18n %}
-<div class="app-card card mb-4">
-  <div class="card-body p-4">
-    <h2 class="rd-heading-lg mb-2">{% trans "Database backup" %}</h2>
-    <p class="rd-text-muted mb-3">
-      {% trans "Download a full copy of the application database or restore from a file you saved earlier. Only management users can use this screen." %}
-    </p>
+<div class="rd-db-meta mb-3">
+  <span class="rd-db-chip"><span class="rd-db-chip__lbl">{% trans "Engine" %}</span>{{ db_info.label }}</span>
+  <span class="rd-db-chip"><span class="rd-db-chip__lbl">{% trans "Database name" %}</span><code class="user-select-all">{{ db_info.name }}</code></span>
+</div>
 
-    <dl class="row small mb-4">
-      <dt class="col-sm-4">{% trans "Engine" %}</dt>
-      <dd class="col-sm-8">{{ db_info.label }}</dd>
-      <dt class="col-sm-4">{% trans "Database name" %}</dt>
-      <dd class="col-sm-8"><code class="user-select-all">{{ db_info.name }}</code></dd>
-    </dl>
-
-    <div class="mb-4">
-      <h3 class="h6 fw-semibold">{% trans "Download backup" %}</h3>
-      <p class="small text-secondary mb-2">
-        {% if db_info.is_sqlite %}
-          {% trans "Downloads the SQLite database file." %}
-        {% elif pg_tools_available %}
-          {% trans "Downloads a PostgreSQL custom dump (.dump) suitable for pg_restore." %}
-        {% else %}
-          {% trans "Downloads a compressed JSON export (.json.gz) compatible with Django loaddata." %}
-        {% endif %}
-      </p>
-      <a class="btn btn-outline-primary" href="{% url 'core:database_export' %}">
+<div class="rd-set-pair rd-set-pair--db">
+  <section class="rd-card rd-set-section">
+    <header class="rd-set-section__head">
+      <span class="rd-set-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg></span>
+      <div>
+        <h2 class="rd-set-section__title">{% trans "Database backup" %}</h2>
+        <p class="rd-set-section__desc">
+          {% if db_info.is_sqlite %}
+            {% trans "Downloads the SQLite database file." %}
+          {% elif pg_tools_available %}
+            {% trans "Downloads a PostgreSQL custom dump (.dump) suitable for pg_restore." %}
+          {% else %}
+            {% trans "Downloads a compressed JSON export (.json.gz) compatible with Django loaddata." %}
+          {% endif %}
+        </p>
+      </div>
+    </header>
+    <div class="rd-set-section__body">
+      <a class="btn btn-primary" href="{% url 'core:database_export' %}">
         {% trans "Download database" %}
       </a>
     </div>
+  </section>
 
-    <hr class="my-3">
-
-    <h3 class="h6 fw-semibold text-danger">{% trans "Restore from backup" %}</h3>
-    <p class="small text-secondary mb-3">
-      {% trans "This replaces all current data in the database. Take a fresh download first. Active users may need to sign in again after a restore." %}
-    </p>
-
-    <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+  <section class="rd-card rd-set-section rd-set-section--danger">
+    <header class="rd-set-section__head">
+      <span class="rd-set-icon rd-set-icon--danger" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+      <div>
+        <h2 class="rd-set-section__title">{% trans "Restore from backup" %}</h2>
+        <p class="rd-set-section__desc">{% trans "This replaces all current data in the database. Take a fresh download first. Active users may need to sign in again after a restore." %}</p>
+      </div>
+    </header>
+    <form method="post" enctype="multipart/form-data" class="rd-set-section__body rd-restore" data-rd-confirm-gate="{{ import_form.confirm_word }}">
       {% csrf_token %}
       <input type="hidden" name="form" value="import">
       <input type="hidden" name="tab" value="{{ database_tab_id }}">
 
       {% if import_form.non_field_errors %}
-        <div class="alert alert-danger mb-0">
-          {{ import_form.non_field_errors }}
-        </div>
+        <div class="alert alert-danger mb-0">{{ import_form.non_field_errors }}</div>
       {% endif %}
 
-      <div>
-        {{ import_form.backup_file.label_tag }}
-        {{ import_form.backup_file }}
-        {% if import_form.backup_file.help_text %}
-          <div class="form-text">{{ import_form.backup_file.help_text }}</div>
-        {% endif %}
-        {{ import_form.backup_file.errors }}
-      </div>
+      {% with f=import_form.backup_file %}
+        <div>
+          <label class="rd-file-pick" data-rd-file-pick>
+            <span class="rd-file-pick__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+            <span class="rd-file-pick__text">
+              <span class="rd-file-pick__name" data-rd-file-name>{% trans "Choose a backup file" %}</span>
+              <span class="rd-file-pick__hint">{% trans "or drag it here" %} · {{ f.help_text }}</span>
+            </span>
+            <input type="file" class="visually-hidden" name="{{ f.html_name }}" id="{{ f.auto_id }}" required>
+          </label>
+          {{ f.errors }}
+        </div>
+      {% endwith %}
 
-      <div>
-        {{ import_form.confirm.label_tag }}
-        {{ import_form.confirm }}
-        {% if import_form.confirm.help_text %}
-          <div class="form-text">{{ import_form.confirm.help_text }}</div>
-        {% endif %}
-        {{ import_form.confirm.errors }}
-      </div>
+      {% with f=import_form.confirm %}
+        <div class="rd-restore__confirm">
+          <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}</label>
+          <input type="text" class="form-control rd-restore__word" name="{{ f.html_name }}" id="{{ f.auto_id }}" value="{{ f.value|default:'' }}" maxlength="32" autocomplete="off" spellcheck="false" dir="ltr" placeholder="{{ import_form.confirm_word }}" data-rd-confirm-input required>
+          <div class="form-text">{{ f.help_text }}</div>
+          {{ f.errors }}
+        </div>
+      {% endwith %}
 
-      <div class="form-check">
-        {{ import_form.acknowledge }}
-        <label class="form-check-label" for="{{ import_form.acknowledge.id_for_label }}">
-          {{ import_form.acknowledge.label }}
-        </label>
-        {{ import_form.acknowledge.errors }}
-      </div>
+      {% with f=import_form.acknowledge %}
+        <div class="form-check rd-restore__ack">
+          <input type="checkbox" class="form-check-input" name="{{ f.html_name }}" id="{{ f.auto_id }}"{% if f.value %} checked{% endif %} required>
+          <label class="form-check-label" for="{{ f.auto_id }}">{{ f.label }}</label>
+          {{ f.errors }}
+        </div>
+      {% endwith %}
 
       <div>
         <button class="btn btn-danger" type="submit">{% trans "Import database" %}</button>
       </div>
     </form>
-  </div>
+  </section>
 </div>

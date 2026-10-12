@@ -1,145 +1,84 @@
 {% load i18n %}
-<div class="app-card card mb-4">
-  <div class="card-body p-4">
-    <form method="post" class="d-grid gap-3">
-      {% csrf_token %}
-      <input type="hidden" name="tab" value="{{ general_tab_id }}">
+<form method="post" class="rd-set-form" data-rd-dirty-form>
+  {% csrf_token %}
+  <input type="hidden" name="tab" value="{{ general_tab_id }}">
 
-      <h2 class="rd-heading-lg mb-2">{% trans "Approval workflows" %}</h2>
-      <p class="rd-text-muted mb-3">
-        {% trans "Turn a switch off to skip management approval for that queue. Sales and balances apply immediately." %}
-      </p>
-
-      <div class="form-check form-switch">
-        {{ form.require_debt_request_approval }}
-        <label class="form-check-label fw-semibold" for="{{ form.require_debt_request_approval.id_for_label }}">
-          {{ form.require_debt_request_approval.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "On-account sales posted to customers or distributors. When off, they are recorded on the customer account immediately." %}
-      </p>
-      {{ form.require_debt_request_approval.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.require_settlement_request_approval }}
-        <label class="form-check-label fw-semibold" for="{{ form.require_settlement_request_approval.id_for_label }}">
-          {{ form.require_settlement_request_approval.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "Customer settlement submissions from the sales screen. When off, the payment applies to the balance immediately." %}
-      </p>
-      {{ form.require_settlement_request_approval.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.require_payment_request_approval }}
-        <label class="form-check-label fw-semibold" for="{{ form.require_payment_request_approval.id_for_label }}">
-          {{ form.require_payment_request_approval.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as soon as they are saved." %}
-      </p>
-      {{ form.require_payment_request_approval.errors }}
-
-      <hr class="my-2">
-
-      <h2 class="rd-heading-lg mb-2">{% trans "Sales entry screen" %}</h2>
-      <p class="rd-text-muted mb-3">
-        {% trans "Controls what employees see and how sales are recorded on the entry form." %}
-      </p>
-
-      <div class="form-check form-switch">
-        {{ form.allow_sales_auto_create_customer }}
-        <label class="form-check-label fw-semibold" for="{{ form.allow_sales_auto_create_customer.id_for_label }}">
-          {{ form.allow_sales_auto_create_customer.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "When off, on-account sales require an existing customer — create customers from the Customers screen." %}
-      </p>
-      {{ form.allow_sales_auto_create_customer.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.sales_inventory_enabled }}
-        <label class="form-check-label fw-semibold" for="{{ form.sales_inventory_enabled.id_for_label }}">
-          {{ form.sales_inventory_enabled.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere is unchanged." %}
-      </p>
-      {{ form.sales_inventory_enabled.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.sales_show_refresh_phone }}
-        <label class="form-check-label fw-semibold" for="{{ form.sales_show_refresh_phone.id_for_label }}">
-          {{ form.sales_show_refresh_phone.label }}
-        </label>
-      </div>
-      {{ form.sales_show_refresh_phone.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.sales_show_record_payment }}
-        <label class="form-check-label fw-semibold" for="{{ form.sales_show_record_payment.id_for_label }}">
-          {{ form.sales_show_record_payment.label }}
-        </label>
-      </div>
-      {{ form.sales_show_record_payment.errors }}
-
-      <div class="form-check form-switch mt-2">
-        {{ form.sales_show_employee_payment }}
-        <label class="form-check-label fw-semibold" for="{{ form.sales_show_employee_payment.id_for_label }}">
-          {{ form.sales_show_employee_payment.label }}
-        </label>
-      </div>
-      <p class="small text-secondary mb-0">
-        {% trans "When off, the payment-to-employee option is hidden on the sales entry screen." %}
-      </p>
-      {{ form.sales_show_employee_payment.errors }}
-
-      <hr class="my-2">
-
-      <h2 class="rd-heading-lg mb-2">{% trans "Management panel defaults" %}</h2>
-      <p class="rd-text-muted mb-3">
-        {% trans "Used on first visit before the user picks a language or theme. Personal choices in the header still override these defaults." %}
-      </p>
-
+  <section class="rd-card rd-set-section">
+    <header class="rd-set-section__head">
+      <span class="rd-set-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
       <div>
-        {{ form.default_language.label_tag }}
-        {{ form.default_language }}
-        {{ form.default_language.errors }}
+        <h2 class="rd-set-section__title">{% trans "Approval workflows" %}</h2>
+        <p class="rd-set-section__desc">{% trans "Turn a switch off to skip management approval for that queue. Sales and balances apply immediately." %}</p>
       </div>
+    </header>
+    <div class="rd-set-list">
+      {% trans "On-account sales posted to customers or distributors. When off, they are recorded on the customer account immediately." as h %}
+      {% include "core/_setting_switch.html" with field=form.require_debt_request_approval help=h %}
+      {% trans "Customer settlement submissions from the sales screen. When off, the payment applies to the balance immediately." as h %}
+      {% include "core/_setting_switch.html" with field=form.require_settlement_request_approval help=h %}
+      {% trans "Cash sales awaiting “mark paid”. When off, new cash sales are marked paid as soon as they are saved." as h %}
+      {% include "core/_setting_switch.html" with field=form.require_payment_request_approval help=h %}
+    </div>
+  </section>
 
+  <section class="rd-card rd-set-section">
+    <header class="rd-set-section__head">
+      <span class="rd-set-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span>
       <div>
-        {{ form.default_theme.label_tag }}
-        {{ form.default_theme }}
-        {{ form.default_theme.errors }}
+        <h2 class="rd-set-section__title">{% trans "Sales entry screen" %}</h2>
+        <p class="rd-set-section__desc">{% trans "Controls what employees see and how sales are recorded on the entry form." %}</p>
       </div>
+    </header>
+    <div class="rd-set-list">
+      {% trans "When off, on-account sales require an existing customer — create customers from the Customers screen." as h %}
+      {% include "core/_setting_switch.html" with field=form.allow_sales_auto_create_customer help=h %}
+      {% trans "When off, the New SIM toggle is hidden on sales entry. Inventory elsewhere is unchanged." as h %}
+      {% include "core/_setting_switch.html" with field=form.sales_inventory_enabled help=h %}
+      {% include "core/_setting_switch.html" with field=form.sales_show_refresh_phone help="" %}
+      {% include "core/_setting_switch.html" with field=form.sales_show_record_payment help="" %}
+      {% trans "When off, the payment-to-employee option is hidden on the sales entry screen." as h %}
+      {% include "core/_setting_switch.html" with field=form.sales_show_employee_payment help=h %}
+    </div>
+  </section>
 
-      <hr class="my-2">
-
-      <h2 class="rd-heading-lg mb-2">{% trans "Refresh link defaults" %}</h2>
-      <p class="rd-text-muted mb-3">
-        {% trans "Initial language and theme for the public phone-refresh page before the visitor changes them." %}
-      </p>
-
-      <div>
-        {{ form.public_default_language.label_tag }}
-        {{ form.public_default_language }}
-        {{ form.public_default_language.errors }}
+  <div class="rd-set-pair">
+    <section class="rd-card rd-set-section">
+      <header class="rd-set-section__head">
+        <span class="rd-set-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg></span>
+        <div>
+          <h2 class="rd-set-section__title">{% trans "Management panel defaults" %}</h2>
+          <p class="rd-set-section__desc">{% trans "Used on first visit before the user picks a language or theme. Personal choices in the header still override these defaults." %}</p>
+        </div>
+      </header>
+      <div class="rd-set-list">
+        {% include "core/_setting_select.html" with field=form.default_language %}
+        {% include "core/_setting_select.html" with field=form.default_theme %}
       </div>
+    </section>
 
-      <div>
-        {{ form.public_default_theme.label_tag }}
-        {{ form.public_default_theme }}
-        {{ form.public_default_theme.errors }}
+    <section class="rd-card rd-set-section">
+      <header class="rd-set-section__head">
+        <span class="rd-set-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+        <div>
+          <h2 class="rd-set-section__title">{% trans "Refresh link defaults" %}</h2>
+          <p class="rd-set-section__desc">{% trans "Initial language and theme for the public phone-refresh page before the visitor changes them." %}</p>
+        </div>
+      </header>
+      <div class="rd-set-list">
+        {% include "core/_setting_select.html" with field=form.public_default_language %}
+        {% include "core/_setting_select.html" with field=form.public_default_theme %}
       </div>
-
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
-      </div>
-    </form>
+    </section>
   </div>
-</div>
+
+  <div class="rd-savebar{% if form.errors %} is-visible{% endif %}" data-rd-savebar{% if form.errors %} data-rd-savebar-force{% endif %}>
+    <span class="rd-savebar__msg">
+      <span class="rd-savebar__dot" aria-hidden="true"></span>
+      {% trans "You have unsaved changes" %}
+    </span>
+    <span class="rd-savebar__actions">
+      <button type="reset" class="btn btn-sm btn-outline-secondary">{% trans "Discard" %}</button>
+      <button type="submit" class="btn btn-sm btn-primary">{% trans "Save changes" %}</button>
+    </span>
+  </div>
+</form>

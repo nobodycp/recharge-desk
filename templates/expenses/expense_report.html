@@ -1,83 +1,79 @@
 {% extends "base_management.html" %}
 {% load i18n humanize %}
 {% block content %}
-<div class="rd-page-header mb-3">
-  <h1 class="rd-heading-xl mb-1">{% trans "Expense report" %}</h1>
-  <p class="rd-text-muted mb-0">{% trans "Category breakdown and totals" %}</p>
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">{% trans "Expense report" %}</h1>
+  <form method="get" class="rd-report-filter" role="search">
+    <label class="rd-report-filter__field">
+      <span class="rd-report-filter__lbl">{{ form.date_from.label }}</span>
+      {{ form.date_from }}
+    </label>
+    <label class="rd-report-filter__field">
+      <span class="rd-report-filter__lbl">{{ form.date_to.label }}</span>
+      {{ form.date_to }}
+    </label>
+    <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+    {% if request.GET.date_from or request.GET.date_to %}
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'expenses:expense_report' %}">{% trans "Reset" %}</a>
+    {% endif %}
+  </form>
 </div>
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body rd-filter-bar">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
-      <div class="col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
-      <div class="col-md-4 d-flex gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'expenses:expense_report' %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
+<section class="rd-card rd-stat-strip mb-3">
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Total profit (same date filter)" %}</span>
+    <span class="rd-stat-strip__val tabular-nums {% if profit_total < 0 %}kpi-danger{% elif profit_total > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ profit_total|floatformat:"-2g" }}</span>
   </div>
-</div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Total expenses (filtered)" %}</span>
+    <span class="rd-stat-strip__val tabular-nums {% if total %}kpi-expense{% else %}kpi-muted{% endif %}">{{ total|floatformat:"-2g" }}</span>
+  </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl" title="{% trans 'Profit minus expenses' %}">{% trans "Net profit" %}</span>
+    <span class="rd-stat-strip__val tabular-nums {% if net_profit < 0 %}kpi-danger{% elif net_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ net_profit|floatformat:"-2g" }}</span>
+  </div>
+</section>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-4">
-    <div class="rd-card h-100">
-      <div class="rd-card-body">
-        <div class="rd-label mb-1">{% trans "Total profit (same date filter)" %}</div>
-        <div class="h4 mb-0 fw-bold tabular-nums {% if profit_total < 0 %}kpi-danger{% elif profit_total > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ profit_total|intcomma }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="rd-card h-100">
-      <div class="rd-card-body">
-        <div class="rd-label mb-1">{% trans "Total expenses (filtered)" %}</div>
-        <div class="h4 mb-0 fw-bold tabular-nums {% if total %}kpi-expense{% else %}kpi-muted{% endif %}">{{ total|intcomma }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="rd-card h-100">
-      <div class="rd-card-body">
-        <div class="rd-label mb-1">{% trans "Net profit" %}</div>
-        <div class="h4 mb-0 fw-bold tabular-nums {% if net_profit < 0 %}kpi-danger{% elif net_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ net_profit|intcomma }}</div>
-        <div class="small text-secondary mt-1">{% trans "Profit minus expenses" %}</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row g-3 mb-3">
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
-      <div class="rd-card-header fw-semibold">{% trans "By category" %}</div>
-      <ul class="list-group list-group-flush">
+<section class="rd-card mb-3">
+  <div class="rd-card-header fw-semibold">{% trans "By category" %}</div>
+  <div class="rd-card-body">
+    {% if by_category_rows %}
+      <ul class="rd-profit-rank rd-profit-rank--inline rd-profit-rank--grid rd-profit-rank--expense mb-0">
         {% for cat, amt in by_category_rows %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ cat }}</span><span class="fw-semibold tabular-nums">{{ amt|intcomma }}</span>
+          {% widthratio amt max_category_amount 100 as bar %}
+          <li class="rd-profit-rank__item">
+            <div class="rd-profit-rank__row">
+              <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{{ cat }}</span>
+              <span class="rd-profit-rank__profit tabular-nums kpi-expense">{{ amt|floatformat:"-2g" }}</span>
+            </div>
+            <div class="rd-profit-rank__track" aria-hidden="true">
+              <div class="rd-profit-rank__fill" style="width: {{ bar }}%;"></div>
+            </div>
+            <div class="rd-profit-rank__meta">
+              <span class="tabular-nums">{% widthratio amt total 100 %}%</span>
+            </div>
           </li>
-        {% empty %}
-          <li class="list-group-item text-secondary">{% trans "No data." %}</li>
         {% endfor %}
       </ul>
-    </div>
+    {% else %}
+      <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+    {% endif %}
   </div>
-</div>
+</section>
 
-<div class="rd-card">
-  <div class="rd-card-header fw-semibold">{% trans "Rows" %}</div>
-  <div class="table-responsive rd-table-wrap">
-    <table class="table mb-0">
-      <thead class="table-light">
-        <tr><th>{% trans "Date" %}</th><th>{% trans "Title" %}</th><th>{% trans "Category" %}</th><th>{% trans "Amount" %}</th><th class="text-end">{% trans "Actions" %}</th></tr>
+<div class="rd-card overflow-hidden">
+  <div class="table-responsive rd-table-wrap border-0">
+    <table class="table mb-0 align-middle rd-table-modern">
+      <thead>
+        <tr><th>{% trans "Date" %}</th><th>{% trans "Title" %}</th><th>{% trans "Category" %}</th><th class="text-end">{% trans "Amount" %}</th><th class="text-end">{% trans "Actions" %}</th></tr>
       </thead>
       <tbody>
         {% for e in expenses %}
           <tr>
-            <td class="text-nowrap">{{ e.date }}</td>
+            <td class="text-nowrap small text-secondary">{{ e.date }}</td>
             <td>{{ e.title }}</td>
-            <td>{{ e.category }}</td>
-            <td class="fw-semibold tabular-nums">{{ e.amount|intcomma }}</td>
+            <td class="small">{{ e.category }}</td>
+            <td class="fw-semibold tabular-nums text-end">{{ e.amount|floatformat:"-2g" }}</td>
             <td class="text-end">
               <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
                 <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}">{% trans "Edit" %}</a>
