@@ -1,13 +1,13 @@
 {% extends "base_employee.html" %}
 {% load i18n static l10n ui_tags humanize %}
 {% block employee_header %}
-<a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+<span>{% trans "Sales entry" %}</span>
 {% endblock %}
 {% block content %}
 <div class="rd-sale-form">
   <form
     method="post"
-    class="d-flex flex-column gap-3"
+    class="d-flex flex-column rd-sale-form__stack"
     novalidate
     id="employee-sale-form"
     data-esim-extra="{{ esim_extra|unlocalize }}"
@@ -15,13 +15,17 @@
     data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
   >
           {% csrf_token %}
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% if form.errors %}
+            <div class="rd-form-error-banner" role="alert">
+              <div class="rd-form-error-banner__title">{% trans "Please fix the highlighted fields." %}</div>
+              {% if form.non_field_errors %}
+                <div class="rd-form-error-banner__list">{{ form.non_field_errors }}</div>
+              {% endif %}
+            </div>
           {% endif %}
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
             <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
-            {{ form.reference_number.errors }}
             <div class="input-group input-group-sm">
               {{ form.reference_number }}
               <button
@@ -32,10 +36,15 @@
                 data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
               >{% trans "Paste" %}</button>
             </div>
+            {% if form.reference_number.errors %}
+              <div class="rd-field-error" id="rd-ref-error">{{ form.reference_number.errors }}</div>
+            {% else %}
+              <div class="rd-field-error d-none" id="rd-ref-error" aria-live="polite"></div>
+            {% endif %}
           </div>
 
           <div
-            class="rd-field-group rd-payer-field-wrap"
+            class="rd-field-group rd-payer-field-wrap{% if form.payer_name.errors %} has-error{% endif %}"
             id="rd-payer-assist-root"
             data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
             data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
@@ -45,7 +54,6 @@
             data-label-cash-payer="{{ _('Cash payer')|escapejs }}"
           >
             <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
-            {{ form.payer_name.errors }}
             <div class="rd-payer-ac-anchor">
               <div class="input-group input-group-sm">
                 {{ form.payer_name }}
@@ -66,9 +74,10 @@
                 hidden
               ></div>
             </div>
+            {% if form.payer_name.errors %}<div class="rd-field-error">{{ form.payer_name.errors }}</div>{% endif %}
           </div>
 
-          <div class="rd-field-group" id="rd-payment-section">
+          <div class="rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
               <div class="rd-field-label mb-0">{% trans "Where did you receive the money?" %}</div>
               <div class="d-flex flex-wrap gap-1">
@@ -92,10 +101,10 @@
                 >{% trans "Mark as on account" %}</button>
               </div>
             </div>
-            {{ form.payment_method.errors }}
             {{ form.payment_method }}
             {{ form.on_account }}
             {{ form.paid_via_employee }}
+            {% if form.payment_method.errors %}<div class="rd-field-error">{{ form.payment_method.errors }}</div>{% endif %}
             {% if acting_employee and app_settings.sales_show_employee_payment %}
             <div id="rd-employee-payment-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
               <span>
@@ -122,13 +131,13 @@
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.company.errors %} has-error{% endif %}">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div class="rd-field-label mb-0">{% trans "Company" %}</div>
               <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
             </div>
-            {{ form.company.errors }}
             {{ form.company }}
+            {% if form.company.errors %}<div class="rd-field-error">{{ form.company.errors }}</div>{% endif %}
             <div class="row row-cols-4 g-1 mt-1 justify-content-center" id="company-tiles">
               {% for c in companies %}
                 <div class="col">
@@ -150,30 +159,30 @@
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.product.errors %} has-error{% endif %}">
             <div class="rd-field-label">{% trans "Product" %}</div>
-            {{ form.product.errors }}
             {{ form.product }}
+            {% if form.product.errors %}<div class="rd-field-error">{{ form.product.errors }}</div>{% endif %}
             <div id="product-tiles-container" class="mt-1">
               {% if product_groups %}
-                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id product_errors=form.product.errors %}
+                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id %}
               {% else %}
                 <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
               {% endif %}
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
             <div class="row g-2 align-items-end">
               <div class="col-4 col-sm-3" id="rd-duration-days-wrap" hidden>
                 <label class="rd-field-label d-block" for="id_duration_days">{% trans "Days" %}</label>
-                {{ form.duration_days.errors }}
                 {{ form.duration_days }}
+                {% if form.duration_days.errors %}<div class="rd-field-error">{{ form.duration_days.errors }}</div>{% endif %}
               </div>
               <div class="col-12" id="rd-sell-price-wrap">
                 <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
-                {{ form.sell_price_actual.errors }}
                 {{ form.sell_price_actual }}
+                {% if form.sell_price_actual.errors %}<div class="rd-field-error">{{ form.sell_price_actual.errors }}</div>{% endif %}
               </div>
             </div>
             <p class="form-text small mb-1" id="rd-days-hint" hidden></p>
@@ -239,635 +248,7 @@
         </form>
 </div>
 
-<div class="mt-4">
-  <div class="d-flex align-items-center justify-content-between mb-2 px-1 gap-2">
-    <h2 class="rd-heading-lg mb-0">{% trans "Recent entries" %}</h2>
-    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_recent_sales' %}">{% trans "View all" %}</a>
-  </div>
-  {% if recent_sales %}
-    <div class="rd-card overflow-hidden">
-      <div class="list-group list-group-flush rd-list-flush">
-        {% for s in recent_sales %}
-          <div class="list-group-item d-flex flex-column gap-2 py-3">
-            <div class="d-flex justify-content-between gap-3">
-            <div class="min-w-0">
-              <div class="fw-semibold text-truncate">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
-              {% if s.payer_name %}
-                <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
-              {% endif %}
-              <div class="small text-secondary text-truncate">
-                {{ s.reference_number }}
-                {% if s.paid_via_employee and s.employee_recipient %}
-                  · {% trans "Employee" %}: {{ s.employee_recipient.display_name }}
-                {% elif s.payment_method %}
-                  · {{ s.payment_method.name|tdb }}
-                {% elif s.on_account %}
-                  · {% trans "On account" %}
-                {% endif %}
-              </div>
-            </div>
-            <div class="text-end flex-shrink-0 small">
-              <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
-              <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
-            </div>
-            </div>
-            {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids %}
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% else %}
-    <div class="empty-state">{% trans "No recent entries yet." %}</div>
-  {% endif %}
-</div>
-
-{% if app_settings.sales_show_refresh_phone %}
-<div
-  class="modal fade"
-  id="rdEmployeeRefreshModal"
-  tabindex="-1"
-  aria-labelledby="rdEmployeeRefreshModalLabel"
-  aria-hidden="true"
-  data-refresh-url="{% url 'sales:employee_refresh_phone' %}"
-  data-msg-phone="{{ _('Enter a phone number.')|escapejs }}"
-  data-msg-invalid-phone="{{ _('Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058.')|escapejs }}"
-  data-msg-working="{{ _('Refreshing…')|escapejs }}"
-  data-msg-wait-with-time="{{ _('{body} (last refresh {time} ago)')|escapejs }}"
-  data-msg-less-than-minute="{{ _('less than a minute')|escapejs }}"
-  data-msg-hour="{{ _('hour')|escapejs }}"
-  data-msg-hours="{{ _('hours')|escapejs }}"
-  data-msg-minute="{{ _('minute')|escapejs }}"
-  data-msg-minutes="{{ _('minutes')|escapejs }}"
-  data-msg-time-and="{{ _('and')|escapejs }}"
->
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h2 class="modal-title h6 mb-0" id="rdEmployeeRefreshModalLabel">{% trans "Refresh numbers" %}</h2>
-        <button type="button" class="btn-close rd-refresh-close-x" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
-      </div>
-      <div class="modal-body">
-        <p class="small text-secondary mb-3 rd-pay-sub-note">{% trans "Same routing and messages as the public refresh page, without rate limits." %}</p>
-        <div class="mb-3 rd-pay-sub-block">
-          <label class="form-label small fw-semibold" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
-          <div class="input-group input-group-sm">
-            <input
-              type="text"
-              class="form-control"
-              id="rd-refresh-phone-input"
-              inputmode="numeric"
-              autocomplete="off"
-              maxlength="10"
-              pattern="05[0123458][0-9]{7}"
-              placeholder="0501234567"
-            >
-            <button
-              type="button"
-              class="btn btn-outline-secondary employee-clipboard-paste-btn"
-              data-paste-target="rd-refresh-phone-input"
-              aria-label="{% trans 'Paste from clipboard' %}"
-              data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
-            >{% trans "Paste" %}</button>
-          </div>
-        </div>
-        <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none" id="rd-refresh-result" role="status" aria-live="polite">
-          <div class="fw-semibold mb-1" id="rd-refresh-result-title"></div>
-          <div class="mb-0 text-secondary" id="rd-refresh-result-body"></div>
-        </div>
-      </div>
-      <div class="modal-footer py-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm rd-refresh-cancel" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
-        <button type="button" class="btn btn-primary btn-sm" id="rd-refresh-submit">{% trans "Refresh" %}</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-
-{% if app_settings.sales_show_record_payment %}
-<div
-  class="modal fade"
-  id="rdCustomerPaySubModal"
-  tabindex="-1"
-  aria-labelledby="rdCustomerPaySubModalLabel"
-  aria-hidden="true"
-  data-lookup-url="{% url 'customers:api_customer_lookup' %}"
-  data-msg-customer="{{ _('Choose a customer from the suggestions list.')|escapejs }}"
-  data-msg-payment="{{ _('Choose a payment method tile.')|escapejs }}"
->
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header py-2">
-        <h2 class="modal-title h6 mb-0" id="rdCustomerPaySubModalLabel">{% trans "Record customer payment" %}</h2>
-        <button type="button" class="btn-close" id="rd-pay-sub-close-x" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
-      </div>
-      <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
-        {% csrf_token %}
-        <div class="modal-body">
-          <p class="small text-secondary mb-2 rd-pay-sub-note" id="rd-pay-sub-note-method">
-            {% if app_settings.require_settlement_request_approval %}
-              {% trans "Submitted for management approval before it affects the customer balance." %}
-            {% else %}
-              {% trans "Applied immediately to the customer account." %}
-            {% endif %}
-          </p>
-          <p class="small text-secondary mb-2 rd-pay-sub-note" id="rd-pay-sub-note-employee" hidden>
-            {% trans "Applied immediately to the customer and your employee ledger." %}
-          </p>
-          <div class="mb-3 rd-pay-sub-block">
-            <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
-            <input
-              type="search"
-              class="form-control form-control-sm"
-              id="rd-pay-sub-search"
-              autocomplete="off"
-              placeholder="{% trans 'Type name or phone…' %}"
-            >
-            <div class="list-group list-group-flush small mt-1 rd-pay-sub-ac" id="rd-pay-sub-ac" hidden role="listbox"></div>
-            {{ pay_sub_form.customer }}
-            <div class="mt-2 small rd-pay-sub-balance" id="rd-pay-sub-balance-line" hidden>
-              <span class="text-secondary">{% trans "Current balance (owed to shop)" %}:</span>
-              <span class="fw-semibold tabular-nums" id="rd-pay-sub-balance-val">—</span>
-            </div>
-          </div>
-          <div class="mb-3 rd-pay-sub-block">
-            <label class="form-label small fw-semibold" for="id_pay_sub_amount">{{ pay_sub_form.amount.label }}</label>
-            {{ pay_sub_form.amount }}
-            {{ pay_sub_form.amount.errors }}
-          </div>
-          <div class="mb-3 rd-pay-sub-block">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-              <div class="form-label small fw-semibold mb-0">{% trans "Payment method" %}</div>
-              {% if acting_employee and app_settings.sales_show_employee_payment %}
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-info rd-pay-sub-employee-toggle"
-                id="rd-pay-sub-employee-toggle"
-                aria-pressed="false"
-                data-on-label="{% trans 'Payment to employee: ON' %}"
-                data-off-label="{% trans 'Payment to employee' %}"
-              >{% trans "Payment to employee" %}</button>
-              {% endif %}
-            </div>
-            {{ pay_sub_form.payment_method }}
-            {{ pay_sub_form.paid_via_employee }}
-            {{ pay_sub_form.payment_method.errors }}
-            {% if acting_employee and app_settings.sales_show_employee_payment %}
-            <div id="rd-pay-sub-employee-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
-              <span>
-                {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
-              </span>
-              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
-                {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
-              </span>
-            </div>
-            {% endif %}
-            <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="rd-pay-sub-payment-tiles">
-              {% for pm in payment_methods %}
-                <div class="col">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip rd-pay-sub-pm-tile d-flex flex-column align-items-center justify-content-center"
-                    data-payment-id="{{ pm.pk }}"
-                    title="{{ pm.name|tdb }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb %}</button>
-                </div>
-              {% empty %}
-                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
-              {% endfor %}
-            </div>
-          </div>
-          <div class="mb-0 rd-pay-sub-block rd-pay-sub-notes-wrap">
-            <details
-              class="employee-notes-details small"
-              id="rd-pay-sub-notes-details"
-              {% if pay_sub_form.notes.errors %}open{% endif %}
-            >
-              <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
-              <div class="mt-2">
-                <label class="form-label fw-semibold small visually-hidden" for="id_pay_sub_notes">{% trans "Notes" %}</label>
-                {{ pay_sub_form.notes.errors }}
-                {{ pay_sub_form.notes }}
-              </div>
-            </details>
-          </div>
-        </div>
-        <div class="modal-footer py-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" id="rd-pay-sub-cancel" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
-          <button type="submit" class="btn btn-primary btn-sm" id="rd-pay-sub-submit">{% trans "Submit" %}</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-{% endif %}
-
 <script>
-(function () {
-  var modal = document.getElementById("rdCustomerPaySubModal");
-  if (modal) {
-    var lookupUrl = modal.getAttribute("data-lookup-url") || "";
-    var searchInp = document.getElementById("rd-pay-sub-search");
-    var acBox = document.getElementById("rd-pay-sub-ac");
-    var custHid = document.getElementById("id_pay_sub_customer");
-    var balLine = document.getElementById("rd-pay-sub-balance-line");
-    var balVal = document.getElementById("rd-pay-sub-balance-val");
-    var pmHid = document.getElementById("id_pay_sub_payment_method");
-    var empPayHid = document.getElementById("id_pay_sub_paid_via_employee");
-    var empPayBtn = document.getElementById("rd-pay-sub-employee-toggle");
-    var empPayHint = document.getElementById("rd-pay-sub-employee-hint");
-    var payTiles = document.getElementById("rd-pay-sub-payment-tiles");
-    var payNoteMethod = document.getElementById("rd-pay-sub-note-method");
-    var payNoteEmployee = document.getElementById("rd-pay-sub-note-employee");
-    var tmr;
-    function isPaySubViaEmployee() {
-      return !!(empPayHid && empPayHid.value);
-    }
-    function syncPaySubNote(viaEmployee) {
-      if (payNoteMethod) payNoteMethod.hidden = !!viaEmployee;
-      if (payNoteEmployee) payNoteEmployee.hidden = !viaEmployee;
-    }
-    function setPaySubViaEmployee(enabled) {
-      if (!empPayHid || !empPayBtn) return;
-      if (enabled) {
-        empPayHid.value = "1";
-        empPayBtn.classList.remove("btn-outline-info");
-        empPayBtn.classList.add("btn-info");
-        empPayBtn.setAttribute("aria-pressed", "true");
-        empPayBtn.textContent = empPayBtn.getAttribute("data-on-label") || "ON";
-        if (payTiles) payTiles.classList.add("opacity-50");
-        if (pmHid) pmHid.value = "";
-        document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
-          t.classList.remove("is-active");
-        });
-        if (empPayHint) empPayHint.hidden = false;
-        syncPaySubNote(true);
-      } else {
-        empPayHid.value = "";
-        empPayBtn.classList.remove("btn-info");
-        empPayBtn.classList.add("btn-outline-info");
-        empPayBtn.setAttribute("aria-pressed", "false");
-        empPayBtn.textContent = empPayBtn.getAttribute("data-off-label") || "Employee";
-        if (payTiles) payTiles.classList.remove("opacity-50");
-        if (empPayHint) empPayHint.hidden = true;
-        syncPaySubNote(false);
-      }
-    }
-    function clearCustomer() {
-      if (custHid) custHid.value = "";
-      if (balLine) balLine.hidden = true;
-      if (searchInp) searchInp.value = "";
-    }
-    function pickCustomer(id, name, balance) {
-      if (custHid) custHid.value = String(id);
-      if (searchInp) searchInp.value = name;
-      if (acBox) acBox.hidden = true;
-      if (balLine) balLine.hidden = false;
-      if (balVal) balVal.textContent = balance;
-    }
-    function renderResults(items) {
-      if (!acBox) return;
-      acBox.innerHTML = "";
-      items.forEach(function (it) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "list-group-item list-group-item-action py-2";
-        btn.setAttribute("role", "option");
-        btn.textContent = it.name + " · " + it.balance;
-        btn.addEventListener("click", function () {
-          pickCustomer(it.id, it.name, it.balance);
-        });
-        acBox.appendChild(btn);
-      });
-      acBox.hidden = items.length === 0;
-    }
-    function runLookup(q) {
-      if (!lookupUrl || q.length < 2) {
-        if (acBox) acBox.hidden = true;
-        return;
-      }
-      fetch(lookupUrl + "?q=" + encodeURIComponent(q), { headers: { Accept: "application/json" } })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var rows = (data && data.results) ? data.results : [];
-          renderResults(rows);
-        })
-        .catch(function () {
-          if (acBox) acBox.hidden = true;
-        });
-    }
-    if (searchInp) {
-      searchInp.addEventListener("input", function () {
-        if (custHid && searchInp.value.trim() === "") clearCustomer();
-        window.clearTimeout(tmr);
-        tmr = window.setTimeout(function () {
-          runLookup(searchInp.value.trim());
-        }, 250);
-      });
-      searchInp.addEventListener("focus", function () {
-        runLookup(searchInp.value.trim());
-      });
-    }
-    document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (tile) {
-      tile.addEventListener("click", function () {
-        if (isPaySubViaEmployee()) {
-          setPaySubViaEmployee(false);
-        }
-        document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
-          t.classList.remove("is-active");
-        });
-        tile.classList.add("is-active");
-        if (pmHid) pmHid.value = tile.getAttribute("data-payment-id") || "";
-      });
-    });
-    if (empPayBtn) {
-      empPayBtn.addEventListener("click", function () {
-        setPaySubViaEmployee(!isPaySubViaEmployee());
-      });
-    }
-    function resetPaySubModal() {
-      clearCustomer();
-      if (acBox) {
-        acBox.innerHTML = "";
-        acBox.hidden = true;
-      }
-      document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
-        t.classList.remove("is-active");
-      });
-      if (pmHid) pmHid.value = "";
-      var f = document.getElementById("rd-pay-sub-form");
-      if (f) f.reset();
-      if (custHid) custHid.value = "";
-      if (balLine) balLine.hidden = true;
-      setPaySubViaEmployee(false);
-      var notesDetails = document.getElementById("rd-pay-sub-notes-details");
-      if (notesDetails) notesDetails.removeAttribute("open");
-    }
-
-    var hasBootstrapModal = !!(window.bootstrap && window.bootstrap.Modal);
-    if (hasBootstrapModal) {
-      modal.addEventListener("hidden.bs.modal", resetPaySubModal);
-    } else {
-      var closeX = document.getElementById("rd-pay-sub-close-x");
-      var closeCancel = document.getElementById("rd-pay-sub-cancel");
-      var backdrop = null;
-      function closeFallbackModal() {
-        modal.classList.remove("show");
-        modal.style.display = "none";
-        modal.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("modal-open");
-        if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
-        backdrop = null;
-        resetPaySubModal();
-      }
-      function openFallbackModal() {
-        modal.style.display = "block";
-        modal.classList.add("show");
-        modal.setAttribute("aria-hidden", "false");
-        document.body.classList.add("modal-open");
-        backdrop = document.createElement("div");
-        backdrop.className = "modal-backdrop fade show";
-        document.body.appendChild(backdrop);
-      }
-      document.querySelectorAll('[data-bs-target="#rdCustomerPaySubModal"]').forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          openFallbackModal();
-        });
-      });
-      if (closeX) closeX.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
-      if (closeCancel) closeCancel.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
-      modal.addEventListener("click", function (e) {
-        if (e.target === modal) closeFallbackModal();
-      });
-      document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && modal.classList.contains("show")) closeFallbackModal();
-      });
-    }
-
-    var subForm = document.getElementById("rd-pay-sub-form");
-    if (subForm) {
-      subForm.addEventListener("submit", function (e) {
-        if (!custHid || !String(custHid.value || "").trim()) {
-          e.preventDefault();
-          window.alert(modal.getAttribute("data-msg-customer") || "");
-          return;
-        }
-        if (!isPaySubViaEmployee() && (!pmHid || !String(pmHid.value || "").trim())) {
-          e.preventDefault();
-          window.alert(modal.getAttribute("data-msg-payment") || "");
-        }
-      });
-    }
-  }
-})();
-
-(function () {
-  var modal = document.getElementById("rdEmployeeRefreshModal");
-  if (!modal) return;
-
-  var refreshUrl = modal.getAttribute("data-refresh-url") || "";
-  var phoneInp = document.getElementById("rd-refresh-phone-input");
-  var submitBtn = document.getElementById("rd-refresh-submit");
-  var resultBox = document.getElementById("rd-refresh-result");
-  var resultTitle = document.getElementById("rd-refresh-result-title");
-  var resultBody = document.getElementById("rd-refresh-result-body");
-  var saleRef = document.getElementById("id_reference_number");
-
-  function getCsrfToken() {
-    var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    return el && el.value ? el.value : "";
-  }
-
-  function formatElapsedSeconds(seconds) {
-    if (!Number.isFinite(seconds) || seconds < 60) {
-      return modal.getAttribute("data-msg-less-than-minute") || "";
-    }
-    var totalMinutes = Math.floor(seconds / 60);
-    var hours = Math.floor(totalMinutes / 60);
-    var minutes = totalMinutes % 60;
-    var hourWord = hours === 1
-      ? (modal.getAttribute("data-msg-hour") || "hour")
-      : (modal.getAttribute("data-msg-hours") || "hours");
-    var minuteWord = minutes === 1
-      ? (modal.getAttribute("data-msg-minute") || "minute")
-      : (modal.getAttribute("data-msg-minutes") || "minutes");
-    var andWord = modal.getAttribute("data-msg-time-and") || "and";
-    if (hours > 0 && minutes > 0) {
-      return hours + " " + hourWord + " " + andWord + " " + minutes + " " + minuteWord;
-    }
-    if (hours > 0) {
-      return hours + " " + hourWord;
-    }
-    return minutes + " " + minuteWord;
-  }
-
-  function buildRefreshBody(data) {
-    var msg = (data && data.message) ? data.message : {};
-    var body = msg.body || "";
-    var status = (data && data.status) || "";
-    var secs = data && data.seconds_since_last_refresh;
-    if (status === "wait" && typeof secs === "number" && secs > 0 && body) {
-      var tpl = modal.getAttribute("data-msg-wait-with-time") || "{body} (last refresh {time} ago)";
-      return tpl.replace("{body}", body).replace("{time}", formatElapsedSeconds(secs));
-    }
-    return body;
-  }
-
-  function hideResult() {
-    if (resultBox) resultBox.classList.add("d-none");
-    if (resultTitle) resultTitle.textContent = "";
-    if (resultBody) resultBody.textContent = "";
-  }
-
-  function showResult(title, body) {
-    if (!resultBox) return;
-    resultBox.classList.remove("d-none");
-    if (resultTitle) resultTitle.textContent = title || "";
-    if (resultBody) resultBody.textContent = body || "";
-  }
-
-  function resetRefreshModal() {
-    hideResult();
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = submitBtn.getAttribute("data-default-label") || submitBtn.textContent;
-    }
-  }
-
-  function prefillPhone() {
-    if (!phoneInp || !saleRef) return;
-    var v = (saleRef.value || "").trim();
-    if (v) phoneInp.value = v;
-  }
-
-  if (submitBtn) {
-    submitBtn.setAttribute("data-default-label", submitBtn.textContent);
-  }
-
-  function isValidRefreshPhone(value) {
-    return /^05[0123458]\d{7}$/.test(value);
-  }
-
-  if (phoneInp) {
-    phoneInp.addEventListener("input", function () {
-      phoneInp.value = phoneInp.value.replace(/\D/g, "").slice(0, 10);
-    });
-  }
-
-  function runRefresh() {
-    if (!phoneInp) return;
-    var phone = phoneInp.value.trim();
-    if (!phone) {
-      window.alert(modal.getAttribute("data-msg-phone") || "");
-      return;
-    }
-    if (!isValidRefreshPhone(phone)) {
-      window.alert(modal.getAttribute("data-msg-invalid-phone") || "");
-      phoneInp.focus();
-      return;
-    }
-    if (!refreshUrl) return;
-    hideResult();
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = modal.getAttribute("data-msg-working") || "...";
-    }
-    var formData = new FormData();
-    formData.append("phone", phone);
-    var csrf = getCsrfToken();
-    if (csrf) formData.append("csrfmiddlewaretoken", csrf);
-    fetch(refreshUrl, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "X-CSRFToken": csrf,
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept": "application/json"
-      },
-      body: formData
-    })
-      .then(function (resp) {
-        return resp.json().then(function (data) {
-          if (!resp.ok && !data) {
-            throw new Error("HTTP " + resp.status);
-          }
-          return data;
-        });
-      })
-      .then(function (data) {
-        var msg = (data && data.message) ? data.message : {};
-        showResult(msg.title || "", buildRefreshBody(data));
-      })
-      .catch(function () {
-        showResult("", modal.getAttribute("data-msg-phone") || "");
-      })
-      .finally(function () {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = submitBtn.getAttribute("data-default-label") || "";
-        }
-      });
-  }
-
-  if (submitBtn) {
-    submitBtn.addEventListener("click", runRefresh);
-  }
-  if (phoneInp) {
-    phoneInp.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        runRefresh();
-      }
-    });
-  }
-
-  var hasBootstrapModal = !!(window.bootstrap && window.bootstrap.Modal);
-  if (hasBootstrapModal) {
-    modal.addEventListener("show.bs.modal", prefillPhone);
-    modal.addEventListener("hidden.bs.modal", resetRefreshModal);
-  } else {
-    var backdrop = null;
-    function closeFallbackModal() {
-      modal.classList.remove("show");
-      modal.style.display = "none";
-      modal.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("modal-open");
-      if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
-      backdrop = null;
-      resetRefreshModal();
-    }
-    function openFallbackModal() {
-      prefillPhone();
-      modal.style.display = "block";
-      modal.classList.add("show");
-      modal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("modal-open");
-      backdrop = document.createElement("div");
-      backdrop.className = "modal-backdrop fade show";
-      document.body.appendChild(backdrop);
-    }
-    document.querySelectorAll('[data-bs-target="#rdEmployeeRefreshModal"]').forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        openFallbackModal();
-      });
-    });
-    modal.querySelectorAll(".rd-refresh-close-x, .rd-refresh-cancel").forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        closeFallbackModal();
-      });
-    });
-    modal.addEventListener("click", function (e) {
-      if (e.target === modal) closeFallbackModal();
-    });
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && modal.classList.contains("show")) closeFallbackModal();
-    });
-  }
-})();
-
 (function () {
   function getEsimExtra() {
     var f = document.getElementById("employee-sale-form");
@@ -1333,8 +714,17 @@
         if (digits.length === 9 && digits.charAt(0) === "5") digits = "0" + digits;
         if (!/^05[0-5]\d{7}$/.test(digits)) {
           e.preventDefault();
-          window.alert(saleForm.getAttribute("data-msg-phone-prefix") || "");
-          saleRefInput.focus();
+          var msg = saleForm.getAttribute("data-msg-phone-prefix") || "";
+          var group = saleRefInput.closest(".rd-field-group");
+          var err = document.getElementById("rd-ref-error");
+          if (group) group.classList.add("has-error");
+          saleRefInput.classList.add("is-invalid");
+          if (err) {
+            err.classList.remove("d-none");
+            err.textContent = msg;
+          }
+          saleRefInput.focus({ preventScroll: false });
+          try { saleRefInput.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (errScroll) {}
         }
       });
     }
@@ -1415,35 +805,18 @@
     }
   });
 })();
-
-(function () {
-  var params = new URLSearchParams(window.location.search || "");
-  var open = (params.get("open") || "").toLowerCase();
-  var targetId = "";
-  if (open === "refresh") targetId = "rdEmployeeRefreshModal";
-  else if (open === "payment" || open === "pay") targetId = "rdCustomerPaySubModal";
-  if (!targetId) return;
-  var modal = document.getElementById(targetId);
-  if (!modal) return;
-  function clearOpenParam() {
-    params.delete("open");
-    var next = params.toString();
-    var url = window.location.pathname + (next ? "?" + next : "") + window.location.hash;
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState({}, "", url);
-    }
-  }
-  window.setTimeout(function () {
-    var trigger = document.querySelector('[data-bs-target="#' + targetId + '"]');
-    if (window.bootstrap && window.bootstrap.Modal) {
-      window.bootstrap.Modal.getOrCreateInstance(modal).show();
-      clearOpenParam();
-      return;
-    }
-    if (trigger) trigger.click();
-    clearOpenParam();
-  }, 0);
-})();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>
+{% if form.errors %}
+<script>
+(function () {
+  var first = document.querySelector(".rd-sale-form .has-error, .rd-sale-form .is-invalid, .rd-form-error-banner");
+  if (first && first.scrollIntoView) {
+    window.setTimeout(function () {
+      first.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 40);
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

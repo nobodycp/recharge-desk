@@ -587,6 +587,14 @@
   background: var(--bs-secondary-bg);
   box-shadow: var(--rd-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.08));
 }
+.rd-payer-ac-list[hidden] {
+  display: none !important;
+}
+.rd-payer-prefill-hint[hidden] {
+  display: none !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
 
 .rd-payer-ac-item {
   display: flex;

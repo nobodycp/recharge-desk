@@ -1,0 +1,108 @@
+{% extends "base_employee.html" %}
+{% load i18n static humanize ui_tags %}
+{% block employee_header %}
+<span>{% trans "Record payment" %}</span>
+{% endblock %}
+{% block content %}
+<div
+  class="rd-card p-3"
+  id="rd-pay-sub-page"
+  data-lookup-url="{% url 'customers:api_customer_lookup' %}"
+  data-msg-customer="{{ _('Choose a customer from the suggestions list.')|escapejs }}"
+  data-msg-payment="{{ _('Choose a payment method tile.')|escapejs }}"
+>
+  <form method="post" action="{% url 'sales:employee_submit_customer_payment_submission' %}" id="rd-pay-sub-form" novalidate>
+    {% csrf_token %}
+    <p class="small text-secondary mb-2 rd-pay-sub-note" id="rd-pay-sub-note-method">
+      {% if app_settings.require_settlement_request_approval %}
+        {% trans "Submitted for management approval before it affects the customer balance." %}
+      {% else %}
+        {% trans "Applied immediately to the customer account." %}
+      {% endif %}
+    </p>
+    <p class="small text-secondary mb-2 rd-pay-sub-note" id="rd-pay-sub-note-employee" hidden>
+      {% trans "Applied immediately to the customer and your employee ledger." %}
+    </p>
+    <div class="mb-3 rd-pay-sub-block">
+      <label class="form-label small fw-semibold" for="rd-pay-sub-search">{% trans "Customer" %}</label>
+      <input
+        type="search"
+        class="form-control form-control-sm"
+        id="rd-pay-sub-search"
+        autocomplete="off"
+        placeholder="{% trans 'Type name or phone…' %}"
+        autofocus
+      >
+      <div class="list-group list-group-flush small mt-1 rd-pay-sub-ac" id="rd-pay-sub-ac" hidden role="listbox"></div>
+      {{ pay_sub_form.customer }}
+      <div class="mt-2 small rd-pay-sub-balance" id="rd-pay-sub-balance-line" hidden>
+        <span class="text-secondary">{% trans "Current balance (owed to shop)" %}:</span>
+        <span class="fw-semibold tabular-nums" id="rd-pay-sub-balance-val">—</span>
+      </div>
+    </div>
+    <div class="mb-3 rd-pay-sub-block">
+      <label class="form-label small fw-semibold" for="id_pay_sub_amount">{{ pay_sub_form.amount.label }}</label>
+      {{ pay_sub_form.amount }}
+      {{ pay_sub_form.amount.errors }}
+    </div>
+    <div class="mb-3 rd-pay-sub-block">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+        <div class="form-label small fw-semibold mb-0">{% trans "Payment method" %}</div>
+        {% if acting_employee and app_settings.sales_show_employee_payment %}
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-info rd-pay-sub-employee-toggle"
+          id="rd-pay-sub-employee-toggle"
+          aria-pressed="false"
+          data-on-label="{% trans 'Payment to employee: ON' %}"
+          data-off-label="{% trans 'Payment to employee' %}"
+        >{% trans "Payment to employee" %}</button>
+        {% endif %}
+      </div>
+      {{ pay_sub_form.payment_method }}
+      {{ pay_sub_form.paid_via_employee }}
+      {{ pay_sub_form.payment_method.errors }}
+      {% if acting_employee and app_settings.sales_show_employee_payment %}
+      <div id="rd-pay-sub-employee-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
+        <span>
+          {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
+        </span>
+        <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
+          {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
+        </span>
+      </div>
+      {% endif %}
+      <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="rd-pay-sub-payment-tiles">
+        {% for pm in payment_methods %}
+          <div class="col">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip rd-pay-sub-pm-tile d-flex flex-column align-items-center justify-content-center"
+              data-payment-id="{{ pm.pk }}"
+              title="{{ pm.name|tdb }}"
+            >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb %}</button>
+          </div>
+        {% empty %}
+          <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="mb-3 rd-pay-sub-block">
+      <details
+        class="employee-notes-details small"
+        id="rd-pay-sub-notes-details"
+        {% if pay_sub_form.notes.errors %}open{% endif %}
+      >
+        <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
+        <div class="mt-2">
+          <label class="form-label fw-semibold small visually-hidden" for="id_pay_sub_notes">{% trans "Notes" %}</label>
+          {{ pay_sub_form.notes.errors }}
+          {{ pay_sub_form.notes }}
+        </div>
+      </details>
+    </div>
+    <button type="submit" class="btn btn-primary w-100" id="rd-pay-sub-submit">{% trans "Submit" %}</button>
+  </form>
+</div>
+<script src="{% static 'js/employee-record-payment.js' %}{{ static_cache_query }}"></script>
+{% endblock %}

@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_GET, require_POST
 
-from accounts.permissions import employee_required, is_employee
+from accounts.permissions import employee_required
 from companies.models import Company, Product, ProductLine
 from core.http_utils import get_client_ip
 from core.models import AppSettings
@@ -28,7 +28,6 @@ from sales.employee_editing import (
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
-from core.pagination import paginate_request
 from inventory.forms import CustomerStockFilterForm
 from inventory.models import SimStockBalance
 from inventory.services import preview_sim_stock_deduction
@@ -85,7 +84,7 @@ def employee_entry(request):
     if request.method == "GET" and company_id:
         initial["company"] = company_id
     form = EmployeeSaleForm(
-        request.POST or None,
+        request.POST if request.method == "POST" else None,
         company_id=company_id,
         initial=initial,
         user=request.user,
@@ -94,20 +93,6 @@ def employee_entry(request):
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
     acting_employee = get_acting_employee_profile(request.user)
     product_groups = _build_product_groups(company_id) if company_id else []
-
-    recent_qs = Sale.objects.select_related(
-        "company",
-        "product",
-        "product__line",
-        "payment_method",
-        "employee_recipient",
-        "employee_recipient__user",
-        "employee_recipient__user__profile",
-    )
-    if is_employee(request.user):
-        recent_qs = recent_qs.filter(created_by=request.user)
-    editable_sale_ids = employee_editable_sale_ids(request.user)
-    recent = recent_qs.order_by("-created_at")[:EMPLOYEE_RECENT_EDIT_LIMIT]
 
     if request.method == "POST" and form.is_valid():
         try:
@@ -191,8 +176,6 @@ def employee_entry(request):
         {
             "form": form,
             "title": _("New sale"),
-            "recent_sales": recent,
-            "editable_sale_ids": editable_sale_ids,
             "product_groups": product_groups,
             "companies": companies,
             "payment_methods": payment_methods,
@@ -202,7 +185,38 @@ def employee_entry(request):
             "selected_product_id": selected_product_id,
             "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
             "esim_extra": ESIM_EXTRA_COST,
+        },
+    )
+
+
+@employee_required
+def employee_refresh_number(request):
+    """Full-page phone refresh for cashiers."""
+    if not AppSettings.load().sales_show_refresh_phone:
+        messages.error(request, _("Number refresh is disabled on the sales screen."))
+        return redirect("sales:employee_entry")
+    return render(
+        request,
+        "sales/employee_refresh_number.html",
+        {"title": _("Refresh number")},
+    )
+
+
+@employee_required
+def employee_record_payment(request):
+    """Full-page customer payment entry for cashiers."""
+    if not AppSettings.load().sales_show_record_payment:
+        messages.error(request, _("Recording payments from the sales screen is disabled."))
+        return redirect("sales:employee_entry")
+    payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    return render(
+        request,
+        "sales/employee_record_payment.html",
+        {
+            "title": _("Record payment"),
             "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(user=request.user),
+            "payment_methods": payment_methods,
+            "acting_employee": get_acting_employee_profile(request.user),
         },
     )
 
@@ -217,7 +231,7 @@ def employee_submit_customer_payment_submission(request):
     form = EmployeeCustomerPaymentSubmissionForm(request.POST, user=request.user)
     if not form.is_valid():
         flash_form_errors(request, form)
-        return redirect("sales:employee_entry")
+        return redirect("sales:employee_record_payment")
     paid_via_employee = (
         bool(form.cleaned_data.get("paid_via_employee"))
         and app_settings.sales_show_employee_payment
@@ -247,7 +261,7 @@ def employee_submit_customer_payment_submission(request):
                 messages.success(request, _("Payment recorded on the customer account."))
         else:
             messages.success(request, _("Payment submitted for management approval."))
-    return redirect("sales:employee_entry")
+    return redirect("sales:employee_record_payment")
 
 
 @employee_required
@@ -375,6 +389,25 @@ def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
     return qs.order_by("-created_at"), date_from, date_to
 
 
+def _stock_check_customer_groups(balances):
+    """One card per customer with all product-line quantities."""
+    groups: list[dict] = []
+    current: dict | None = None
+    for row in balances:
+        if current is None or current["customer"].pk != row.customer_id:
+            current = {
+                "customer": row.customer,
+                "lines": [],
+                "total": 0,
+            }
+            groups.append(current)
+        current["lines"].append(
+            {"name": row.product_line.name, "quantity": row.quantity}
+        )
+        current["total"] += int(row.quantity or 0)
+    return groups
+
+
 @employee_required
 def employee_stock_check(request):
     """Cashier-facing SIM stock lookup by customer name."""
@@ -394,17 +427,22 @@ def employee_stock_check(request):
             qs = qs.filter(customer__name__icontains=q)
         if form.cleaned_data.get("product_line"):
             qs = qs.filter(product_line=form.cleaned_data["product_line"])
-    page_obj = paginate_request(request, qs)
-    return render(
-        request,
-        "sales/employee_stock_check.html",
-        {
-            "title": _("Check stock"),
-            "filter_form": form,
-            "page_obj": page_obj,
-            "q": q,
-        },
-    )
+    # Cap rows so live typing stays snappy; filter narrows further via ``q``.
+    balances = list(qs[:400])
+    customer_groups = _stock_check_customer_groups(balances)
+    ctx = {
+        "title": _("Check stock"),
+        "filter_form": form,
+        "customer_groups": customer_groups,
+        "q": q,
+    }
+    if request.headers.get("HX-Request") == "true":
+        return render(
+            request,
+            "sales/partials/employee_stock_check_results.html",
+            ctx,
+        )
+    return render(request, "sales/employee_stock_check.html", ctx)
 
 
 @employee_required

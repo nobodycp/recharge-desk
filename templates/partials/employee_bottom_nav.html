@@ -1,80 +1,32 @@
 {% load i18n %}
-{% with url_name=request.resolver_match.url_name|default:'' %}
-<nav class="rd-mobile-tabbar d-print-none" aria-label="{% trans 'Employee shortcuts' %}">
-  {% if app_settings.sales_show_refresh_phone %}
-    {% if url_name == 'employee_entry' %}
-      <button
-        type="button"
-        class="rd-mobile-tabbar__item rd-open-employee-modal"
-        data-bs-toggle="modal"
-        data-bs-target="#rdEmployeeRefreshModal"
-      >
-        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><polyline points="21 3 21 9 15 9"/></svg>
-        </span>
-        <span class="rd-mobile-tabbar__label">{% trans "Refresh number" %}</span>
-      </button>
-    {% else %}
-      <a class="rd-mobile-tabbar__item" href="{% url 'sales:employee_entry' %}?open=refresh">
-        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><polyline points="21 3 21 9 15 9"/></svg>
-        </span>
-        <span class="rd-mobile-tabbar__label">{% trans "Refresh number" %}</span>
-      </a>
-    {% endif %}
+{% with url_name=request.resolver_match.url_name|default:'' show_refresh=app_settings.sales_show_refresh_phone show_pay=app_settings.sales_show_record_payment %}
+{% if show_refresh and show_pay %}
+  {% if url_name == 'employee_refresh_number' %}{% with n=5 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_record_payment' %}{% with n=5 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_entry' %}{% with n=5 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=5 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_stock_check' %}{% with n=5 active_i=4 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% else %}{% with n=5 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}
-
-  {% if app_settings.sales_show_record_payment %}
-    {% if url_name == 'employee_entry' %}
-      <button
-        type="button"
-        class="rd-mobile-tabbar__item rd-open-employee-modal"
-        data-bs-toggle="modal"
-        data-bs-target="#rdCustomerPaySubModal"
-      >
-        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        </span>
-        <span class="rd-mobile-tabbar__label">{% trans "Record payment" %}</span>
-      </button>
-    {% else %}
-      <a class="rd-mobile-tabbar__item" href="{% url 'sales:employee_entry' %}?open=payment">
-        <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        </span>
-        <span class="rd-mobile-tabbar__label">{% trans "Record payment" %}</span>
-      </a>
-    {% endif %}
+{% elif show_refresh and not show_pay %}
+  {% if url_name == 'employee_refresh_number' %}{% with n=4 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_entry' %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_stock_check' %}{% with n=4 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% else %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}
-
-  <a
-    class="rd-mobile-tabbar__item{% if url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %} is-active{% endif %}"
-    href="{% url 'sales:employee_recent_sales' %}"
-  >
-    <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-    </span>
-    <span class="rd-mobile-tabbar__label">{% trans "Entries" %}</span>
-  </a>
-
-  <a
-    class="rd-mobile-tabbar__item{% if url_name == 'my_balance' %} is-active{% endif %}"
-    href="{% url 'employees:my_balance' %}"
-  >
-    <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15.5 9.5c-.7-1-1.9-1.5-3.5-1.5s-2.8.6-3.5 1.5"/><path d="M8.5 14.5c.7 1 1.9 1.5 3.5 1.5s2.8-.6 3.5-1.5"/></svg>
-    </span>
-    <span class="rd-mobile-tabbar__label">{% trans "My balance" %}</span>
-  </a>
-
-  <a
-    class="rd-mobile-tabbar__item{% if url_name == 'employee_stock_check' %} is-active{% endif %}"
-    href="{% url 'sales:employee_stock_check' %}"
-  >
-    <span class="rd-mobile-tabbar__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
-    </span>
-    <span class="rd-mobile-tabbar__label">{% trans "Check stock" %}</span>
-  </a>
-</nav>
+{% elif show_pay and not show_refresh %}
+  {% if url_name == 'employee_record_payment' %}{% with n=4 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_entry' %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_stock_check' %}{% with n=4 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% else %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% endif %}
+{% else %}
+  {% if url_name == 'employee_entry' %}{% with n=3 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=3 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_stock_check' %}{% with n=3 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% else %}{% with n=3 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% endif %}
+{% endif %}
 {% endwith %}

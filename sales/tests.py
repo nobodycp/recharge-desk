@@ -817,14 +817,31 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertTrue(Sale.objects.filter(pk=oldest.pk).exists())
 
     def test_view_all_link_appears_on_entry_page(self):
+        from employees.models import EmployeeProfile
+
+        EmployeeProfile.objects.create(user=self.emp, monthly_salary=Decimal("1000"))
         resp = self.client.get(reverse("sales:employee_entry"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, reverse("sales:employee_recent_sales"))
         self.assertContains(resp, "rd-mobile-tabbar")
+        self.assertContains(resp, "rd-mobile-tabbar__fab")
+        self.assertContains(resp, "rd-employee-wallet")
         self.assertContains(resp, reverse("employees:my_balance"))
         self.assertContains(resp, reverse("sales:employee_stock_check"))
-        self.assertContains(resp, 'data-bs-target="#rdEmployeeRefreshModal"')
-        self.assertContains(resp, 'data-bs-target="#rdCustomerPaySubModal"')
+        self.assertContains(resp, reverse("sales:employee_refresh_number"))
+        self.assertContains(resp, reverse("sales:employee_record_payment"))
+        self.assertNotContains(resp, "Recent entries")
+        self.assertNotContains(resp, "rdEmployeeRefreshModal")
+        self.assertNotContains(resp, "rdCustomerPaySubModal")
+        self.assertNotContains(resp, "Back to sales entry")
+
+    def test_entry_validation_errors_are_highlighted(self):
+        resp = self.client.post(reverse("sales:employee_entry"), {})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-form-error-banner")
+        self.assertContains(resp, "Please fix the highlighted fields.")
+        self.assertContains(resp, "has-error")
+        self.assertContains(resp, "is-invalid")
 
     def test_entry_page_shows_full_names_when_icons_missing(self):
         """Without uploaded icons, payment method and product-line tiles
@@ -1030,6 +1047,30 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertContains(resp, 'data-rd-filter-count style="display:none"')
 
 
+class EmployeeRecordPaymentPageTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+
+        cls.emp = User.objects.create_user("emp_pay_page", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        PaymentMethod.objects.create(name="Cash PayPage")
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def test_record_payment_page_renders(self):
+        resp = self.client.get(reverse("sales:employee_record_payment"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-pay-sub-page")
+        self.assertContains(resp, reverse("sales:employee_submit_customer_payment_submission"))
+        self.assertContains(resp, "rd-mobile-tabbar")
+
+
 class EmployeeStockCheckTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -1042,8 +1083,15 @@ class EmployeeStockCheckTests(TestCase):
             current_balance=Decimal("1000"),
         )
         cls.line = ProductLine.objects.create(company=cls.company, name="HotLine")
+        cls.line2 = ProductLine.objects.create(company=cls.company, name="ALOHA")
         cls.product = Product.objects.create(
             line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("5"),
+            default_sell_price=Decimal("10"),
+        )
+        Product.objects.create(
+            line=cls.line2,
             variant_label="Pkg",
             cost_price=Decimal("5"),
             default_sell_price=Decimal("10"),
@@ -1061,11 +1109,27 @@ class EmployeeStockCheckTests(TestCase):
         from customers.models import Customer
 
         receive_main_stock(product_line=cls.line, qty=10, notes="", user=cls.mgmt)
+        receive_main_stock(product_line=cls.line2, qty=10, notes="", user=cls.mgmt)
         cls.customer = Customer.objects.create(name="Dealer Hazem", created_by=cls.mgmt)
+        cls.other = Customer.objects.create(name="Other Dealer", created_by=cls.mgmt)
         allocate_to_customer(
             customer=cls.customer,
             product_line=cls.line,
             qty=3,
+            notes="",
+            user=cls.mgmt,
+        )
+        allocate_to_customer(
+            customer=cls.customer,
+            product_line=cls.line2,
+            qty=5,
+            notes="",
+            user=cls.mgmt,
+        )
+        allocate_to_customer(
+            customer=cls.other,
+            product_line=cls.line,
+            qty=2,
             notes="",
             user=cls.mgmt,
         )
@@ -1074,17 +1138,32 @@ class EmployeeStockCheckTests(TestCase):
         self.client = Client()
         self.client.force_login(self.emp)
 
-    def test_stock_check_filters_by_customer_name(self):
+    def test_stock_check_groups_lines_under_one_customer_card(self):
         url = reverse("sales:employee_stock_check")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "rd-mobile-tabbar")
         self.assertContains(resp, "Dealer Hazem")
         self.assertContains(resp, "HotLine")
-        self.assertContains(resp, "3")
+        self.assertContains(resp, "ALOHA")
+        self.assertEqual(resp.content.decode().count("Dealer Hazem"), 1)
+        self.assertEqual(len(resp.context["customer_groups"]), 2)
+        hazem = next(
+            g for g in resp.context["customer_groups"] if g["customer"].pk == self.customer.pk
+        )
+        self.assertEqual(len(hazem["lines"]), 2)
+        self.assertEqual(hazem["total"], 8)
 
-        resp = self.client.get(url, {"q": "Hazem"})
+    def test_stock_check_live_filter_by_customer_name(self):
+        url = reverse("sales:employee_stock_check")
+        resp = self.client.get(url, {"q": "Hazem"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "sales/partials/employee_stock_check_results.html")
         self.assertContains(resp, "Dealer Hazem")
+        self.assertNotContains(resp, "Other Dealer")
+        self.assertContains(resp, "HotLine")
+        self.assertContains(resp, "ALOHA")
+
         resp = self.client.get(url, {"q": "NoSuchDealer"})
         self.assertNotContains(resp, "Dealer Hazem")
         self.assertContains(resp, "No SIM stock found")
@@ -1259,11 +1338,12 @@ class EmployeeRefreshPhoneTests(TestCase):
             HTTP_ACCEPT="application/json",
         )
 
-    def test_entry_page_shows_refresh_button_and_modal(self):
-        resp = self.client.get(reverse("sales:employee_entry"))
+    def test_refresh_page_loads_and_links_api(self):
+        resp = self.client.get(reverse("sales:employee_refresh_number"))
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "rdEmployeeRefreshModal")
+        self.assertContains(resp, "rd-refresh-page")
         self.assertContains(resp, reverse("sales:employee_refresh_phone"))
+        self.assertContains(resp, "rd-mobile-tabbar")
 
     def test_unregistered_phone_uses_public_refresh_flow(self):
         from phone_refresh.models import RefreshStatus
