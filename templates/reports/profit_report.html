@@ -3,149 +3,234 @@
 {% block content %}
 <div class="rd-page-header mb-3">
   <h1 class="rd-heading-xl mb-1">{% trans "Profit report" %}</h1>
-  <p class="rd-text-muted mb-0">{% trans "Excludes cancelled sales" %}</p>
+  <p class="rd-text-muted mb-0">
+    {% if date_from or date_to %}
+      {% if date_from and date_to %}
+        {% blocktrans with start=date_from end=date_to %}From {{ start }} to {{ end }}. Excludes cancelled sales.{% endblocktrans %}
+      {% elif date_from %}
+        {% blocktrans with start=date_from %}From {{ start }}. Excludes cancelled sales.{% endblocktrans %}
+      {% else %}
+        {% blocktrans with end=date_to %}Until {{ end }}. Excludes cancelled sales.{% endblocktrans %}
+      {% endif %}
+    {% else %}
+      {% trans "All time · paid sales only · excludes cancelled" %}
+    {% endif %}
+  </p>
 </div>
 
-<div class="rd-card mb-4">
+<div class="rd-card mb-3">
   <div class="rd-card-body rd-filter-bar">
-    <form method="get" class="row g-3 align-items-end">
-      <div class="col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
-      <div class="col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
-      <div class="col-md-4 d-flex gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'reports:profit_report' %}">{% trans "Reset" %}</a>
+    <form method="get" class="row g-2 g-md-3 align-items-end">
+      <div class="col-6 col-md-4">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
+      <div class="col-6 col-md-4">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
+      <div class="col-12 col-md-4 d-flex gap-2">
+        <button class="btn btn-primary btn-sm flex-grow-1 flex-md-grow-0" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:profit_report' %}">{% trans "Reset" %}</a>
       </div>
     </form>
   </div>
 </div>
 
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
-    <div class="rd-card h-100">
-      <div class="rd-card-body">
-        <div class="rd-label mb-1">{% trans "Total profit" %}</div>
-        <div class="h4 mb-0 fw-bold tabular-nums {% if total_profit < 0 %}kpi-danger{% elif total_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">{{ total_profit|intcomma }}</div>
+<section class="rd-profit-hero rd-card mb-3" aria-label="{% trans 'Total profit' %}">
+  <div class="rd-card-body">
+    <div class="rd-profit-hero__main">
+      <div class="rd-label mb-1">{% trans "Total profit" %}</div>
+      <div class="rd-profit-hero__value tabular-nums {% if total_profit < 0 %}kpi-danger{% elif total_profit > 0 %}kpi-success{% else %}kpi-muted{% endif %}">
+        {{ total_profit|intcomma }}
+      </div>
+      <p class="rd-text-muted small mb-0 mt-1">{% trans "Paid sales only" %}</p>
+    </div>
+    <div class="rd-profit-hero__split" role="group">
+      <div class="rd-profit-hero__cell">
+        <span class="rd-profit-hero__lbl">{% trans "Sales count" %}</span>
+        <span class="rd-profit-hero__val tabular-nums">{{ total_count|intcomma }}</span>
+      </div>
+      <span class="rd-profit-hero__divider" aria-hidden="true"></span>
+      <div class="rd-profit-hero__cell">
+        <span class="rd-profit-hero__lbl">{% trans "Volume" %}</span>
+        <span class="rd-profit-hero__val tabular-nums">{{ total_volume|intcomma }}</span>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<div class="row g-3 mb-4">
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-7">
+    <section class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "By company" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table mb-0">
-          <thead class="table-light"><tr><th>{% trans "Company" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Volume" %}</th><th>{% trans "Count" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        {% if by_company %}
+          <ul class="rd-profit-rank mb-0">
             {% for r in by_company %}
-              <tr>
-                <td>{{ r.company__name }}</td>
-                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
-                <td>{{ r.volume|intcomma }}</td>
-                <td>{{ r.cnt|intcomma }}</td>
-              </tr>
-            {% empty %}<tr><td colspan="4" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_company_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{{ r.company__name }}</span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+                <div class="rd-profit-rank__meta">
+                  <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
+                  <span class="tabular-nums">{% trans "Volume" %}: {{ r.volume|intcomma }}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+  <div class="col-12 col-lg-5">
+    <section class="rd-card h-100 mb-3 mb-lg-0">
       <div class="rd-card-header fw-semibold">{% trans "By payment method" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table mb-0">
-          <thead class="table-light"><tr><th>{% trans "Method" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        {% if by_method %}
+          <ul class="rd-profit-rank mb-0">
             {% for r in by_method %}
-              <tr>
-                <td>{{ r.payment_method__name }}</td>
-                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
-                <td>{{ r.cnt|intcomma }}</td>
-              </tr>
-            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_method_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{% if r.payment_method__name %}{{ r.payment_method__name }}{% else %}{% trans "On account" %}{% endif %}</span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+                <div class="rd-profit-rank__meta">
+                  <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
 </div>
 
-<div class="row g-3 mb-4">
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-5">
+    <section class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "By employee" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table mb-0">
-          <thead class="table-light"><tr><th>{% trans "Employee" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        {% if by_employee %}
+          <ul class="rd-profit-rank mb-0">
             {% for r in by_employee %}
-              <tr>
-                <td>{{ r.created_by__username }}</td>
-                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
-                <td>{{ r.cnt|intcomma }}</td>
-              </tr>
-            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_employee_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{{ r.created_by__username }}</span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+                <div class="rd-profit-rank__meta">
+                  <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+  <div class="col-12 col-lg-7">
+    <section class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "By product" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table mb-0">
-          <thead class="table-light"><tr><th>{% trans "Product" %}</th><th>{% trans "Profit" %}</th><th>{% trans "Count" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        {% if by_product %}
+          <ul class="rd-profit-rank mb-0">
             {% for r in by_product %}
-              <tr>
-                <td>
-                  {{ r.company__name }} — {{ r.product__line__name }}
-                  {% if r.product__variant_label %} — {{ r.product__variant_label }}{% endif %}
-                </td>
-                <td class="fw-semibold">{{ r.profit|intcomma }}</td>
-                <td>{{ r.cnt|intcomma }}</td>
-              </tr>
-            {% empty %}<tr><td colspan="3" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_product_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name rd-profit-rank__name--stack">
+                    <span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>
+                    <span class="rd-profit-rank__name-text">
+                      <span class="d-block text-truncate">{{ r.product__line__name }}{% if r.product__variant_label %} · {{ r.product__variant_label }}{% endif %}</span>
+                      <span class="rd-profit-rank__sub">{{ r.company__name }}</span>
+                    </span>
+                  </span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+                <div class="rd-profit-rank__meta">
+                  <span>{% blocktrans count n=r.cnt %}{{ n }} sale{% plural %}{{ n }} sales{% endblocktrans %}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
 </div>
 
 <div class="row g-3">
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+  <div class="col-12 col-lg-6">
+    <section class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "Daily profit trend" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table table-sm mb-0">
-          <thead class="table-light"><tr><th>{% trans "Day" %}</th><th>{% trans "Profit" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        <p class="rd-text-muted small mb-2">{% trans "Last 31 days with sales (newest first)." %}</p>
+        {% if daily %}
+          <ul class="rd-profit-rank rd-profit-rank--compact mb-0">
             {% for r in daily %}
-              <tr><td>{{ r.d }}</td><td class="fw-semibold">{{ r.profit|intcomma }}</td></tr>
-            {% empty %}<tr><td colspan="2" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_daily_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name tabular-nums">{{ r.d }}</span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
-  <div class="col-lg-6">
-    <div class="rd-card h-100">
+  <div class="col-12 col-lg-6">
+    <section class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "Monthly profit trend" %}</div>
-      <div class="table-responsive rd-table-wrap">
-        <table class="table table-sm mb-0">
-          <thead class="table-light"><tr><th>{% trans "Month" %}</th><th>{% trans "Profit" %}</th></tr></thead>
-          <tbody>
+      <div class="rd-card-body">
+        <p class="rd-text-muted small mb-2">{% trans "Last 12 months with sales (newest first)." %}</p>
+        {% if monthly %}
+          <ul class="rd-profit-rank rd-profit-rank--compact mb-0">
             {% for r in monthly %}
-              <tr><td>{{ r.m }}</td><td class="fw-semibold">{{ r.profit|intcomma }}</td></tr>
-            {% empty %}<tr><td colspan="2" class="text-secondary text-center py-3">{% trans "No data." %}</td></tr>{% endfor %}
-          </tbody>
-        </table>
+              {% widthratio r.profit max_monthly_profit 100 as bar %}
+              <li class="rd-profit-rank__item">
+                <div class="rd-profit-rank__row">
+                  <span class="rd-profit-rank__name tabular-nums">{{ r.m|date:"Y-m" }}</span>
+                  <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
+                </div>
+                <div class="rd-profit-rank__track" aria-hidden="true">
+                  <div class="rd-profit-rank__fill{% if r.profit < 0 %} is-neg{% endif %}" style="width: {% if bar < 0 %}0{% else %}{{ bar }}{% endif %}%;"></div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+        {% endif %}
       </div>
-    </div>
+    </section>
   </div>
 </div>
 {% endblock %}
