@@ -43,29 +43,44 @@
   <div class="rd-card-body border-bottom py-2">
     <div class="fw-semibold">{% trans "Stock by customer" %}</div>
   </div>
-  <div class="table-responsive">
-    <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
-      <colgroup>
-        <col class="rd-col-customer">
-        <col class="rd-col-qty">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>{% trans "Customer" %}</th>
-          <th class="text-end">{% trans "Quantity" %}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for b in customer_balances %}
+  <div class="rd-table-dual">
+    <div class="d-none d-md-block table-responsive">
+      <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
+        <colgroup>
+          <col class="rd-col-customer">
+          <col class="rd-col-qty">
+        </colgroup>
+        <thead>
           <tr>
-            <td class="rd-inventory-stock-table__customer">
-              <a href="{% if read_only %}{% url 'inventory:employee_customer_detail' b.customer_id %}{% else %}{% url 'inventory:customer_detail' b.customer_id %}{% endif %}" class="fw-semibold text-decoration-none">{{ b.customer.name }}</a>
-            </td>
-            <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
+            <th>{% trans "Customer" %}</th>
+            <th class="text-end">{% trans "Quantity" %}</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for b in customer_balances %}
+            <tr>
+              <td class="rd-inventory-stock-table__customer">
+                <a href="{% if read_only %}{% url 'inventory:employee_customer_detail' b.customer_id %}{% else %}{% url 'inventory:customer_detail' b.customer_id %}{% endif %}" class="fw-semibold text-decoration-none">{{ b.customer.name }}</a>
+              </td>
+              <td class="text-end tabular-nums fw-semibold rd-inventory-stock-table__qty">{{ b.quantity }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for b in customer_balances %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <a
+              href="{% if read_only %}{% url 'inventory:employee_customer_detail' b.customer_id %}{% else %}{% url 'inventory:customer_detail' b.customer_id %}{% endif %}"
+              class="fw-semibold text-decoration-none min-w-0 text-truncate"
+            >{{ b.customer.name }}</a>
+            <span class="tabular-nums fw-bold flex-shrink-0">{{ b.quantity }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
   </div>
 </div>
 {% endif %}

@@ -368,3 +368,28 @@ class CustomerBalanceActionViewTests(TestCase):
         filter_group = next(g for g in groups if g["customer"].pk == self.customer.pk)
         self.assertEqual(len(filter_group["balances"]), 2)
         self.assertEqual(filter_group["total"], 9)
+
+
+class InventoryMobileLayoutTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name="Co", current_balance=Decimal("0"))
+        cls.line = ProductLine.objects.create(company=cls.company, name="Sleekom")
+        cls.user = User.objects.create_user("mgr_mobile_inv", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        receive_main_stock(product_line=cls.line, qty=5, notes="", user=cls.user)
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_overview_and_main_include_mobile_card_stack(self):
+        for name in ("inventory:overview", "inventory:main"):
+            resp = self.client.get(reverse(name))
+            self.assertEqual(resp.status_code, 200, name)
+            self.assertContains(resp, "rd-mobile-stack")
+            self.assertContains(resp, "rd-mobile-row-card")
+            self.assertContains(resp, "d-md-none")
+            self.assertContains(resp, "Sleekom")

@@ -17,7 +17,7 @@
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-table-dual rd-datagrid-body">
-    <div class="rd-data-shell rd-data-shell--inventory-actions">
+    <div class="d-none d-md-block rd-data-shell rd-data-shell--inventory-actions">
       <div class="table-responsive border-0">
         <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
           <colgroup>
@@ -55,6 +55,27 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for b in balances %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <a
+              href="{% if read_only %}{% url 'inventory:employee_line_detail' b.product_line_id %}{% else %}{% url 'inventory:line_detail' b.product_line_id %}{% endif %}"
+              class="fw-semibold text-decoration-none min-w-0 text-truncate"
+            >{{ b.product_line.name }}</a>
+            <span class="tabular-nums fw-bold flex-shrink-0">{{ b.quantity }}</span>
+          </div>
+          {% if not read_only %}
+            <div class="mt-2">
+              {% include "inventory/_balance_actions.html" with balance=b customer=customer scope="customer" read_only=read_only next_url=request.get_full_path %}
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No stock for this customer." %}</div>
+      {% endfor %}
     </div>
   </div>
 </div>

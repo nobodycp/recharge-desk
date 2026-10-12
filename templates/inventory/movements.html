@@ -43,7 +43,7 @@
     <span>{% trans "Movements" %}</span>
   </div>
   <div class="rd-table-dual rd-datagrid-body">
-    <div class="rd-data-shell rd-data-shell--inventory-actions">
+    <div class="d-none d-md-block rd-data-shell rd-data-shell--inventory-actions">
       <div class="table-responsive border-0">
         <table class="table mb-0 align-middle rd-table-modern rd-inventory-stock-table">
           <colgroup>
@@ -95,6 +95,48 @@
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for m in page_obj %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate">{{ m.product_line.name }}</div>
+              <div class="small text-secondary">{{ m.get_movement_type_display }}</div>
+            </div>
+            <span class="tabular-nums fw-bold flex-shrink-0">{{ m.quantity }}</span>
+          </div>
+          <div class="rd-mobile-kv">
+            <div class="rd-mobile-kv__row">
+              <span class="rd-mobile-k">{% trans "When" %}</span>
+              <span class="rd-mobile-v small">{{ m.created_at|date:"Y-m-d H:i" }}</span>
+            </div>
+            <div class="rd-mobile-kv__row">
+              <span class="rd-mobile-k">{% trans "Customer" %}</span>
+              <span class="rd-mobile-v text-truncate">{% if m.customer %}{{ m.customer.name }}{% else %}—{% endif %}</span>
+            </div>
+            {% if m.notes %}
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Notes" %}</span>
+                <span class="rd-mobile-v small text-secondary">{{ m.notes }}</span>
+              </div>
+            {% endif %}
+          </div>
+          {% if not read_only %}
+            <div class="mt-2">
+              <form method="post" action="{% url 'inventory:movement_delete' m.pk %}"
+                    onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this movement? This will reverse its effect on stock." %}{% endfilter %}');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <div class="text-center text-secondary py-4">{% trans "No movements." %}</div>
+      {% endfor %}
     </div>
   </div>
 </div>
