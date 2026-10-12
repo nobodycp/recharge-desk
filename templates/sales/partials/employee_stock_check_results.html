@@ -6,7 +6,7 @@
         <div class="fw-semibold text-truncate min-w-0">{{ group.customer.name }}</div>
         <div class="tabular-nums fw-bold flex-shrink-0 small text-secondary">{{ group.total }}</div>
       </div>
-      <ul class="rd-stock-check-lines list-unstyled mb-2">
+      <ul class="rd-stock-check-lines list-unstyled mb-0">
         {% for line in group.lines %}
           <li class="rd-stock-check-lines__row">
             <span class="rd-stock-check-lines__name text-truncate">{{ line.name }}</span>
@@ -14,13 +14,6 @@
           </li>
         {% endfor %}
       </ul>
-      <a
-        class="btn btn-sm btn-outline-primary"
-        href="{% url 'inventory:employee_customer_detail' group.customer.pk %}"
-        hx-boost="false"
-      >
-        {% trans "Open customer stock" %}
-      </a>
     </div>
   {% empty %}
     <div class="empty-state">
