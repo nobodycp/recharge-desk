@@ -1154,6 +1154,11 @@ class EmployeeStockCheckTests(TestCase):
         )
         self.assertEqual(len(hazem["lines"]), 2)
         self.assertEqual(hazem["total"], 8)
+        # View-only lookup — no deep-link into inventory customer stock.
+        self.assertNotContains(resp, "Open customer stock")
+        self.assertNotContains(
+            resp, reverse("inventory:employee_customer_detail", args=[self.customer.pk])
+        )
 
     def test_stock_check_live_filter_by_customer_name(self):
         url = reverse("sales:employee_stock_check")
