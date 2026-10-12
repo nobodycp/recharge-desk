@@ -5,6 +5,7 @@ from employees import views
 app_name = "employees"
 
 urlpatterns = [
+    path("employee/balance/", views.my_balance, name="my_balance"),
     path("employees/", views.employee_list, name="employee_list"),
     path("employees/new/", views.employee_create, name="employee_create"),
     path("employees/<int:pk>/", views.employee_detail, name="employee_detail"),

@@ -1,25 +1,7 @@
 {% extends "base_employee.html" %}
 {% load i18n static l10n ui_tags humanize %}
 {% block employee_header %}
-<div class="d-flex align-items-center justify-content-end gap-2 flex-wrap w-100">
-  {% if app_settings.sales_show_refresh_phone %}
-    <button
-      type="button"
-      class="btn btn-sm btn-outline-primary rd-open-employee-modal"
-      data-bs-toggle="modal"
-      data-bs-target="#rdEmployeeRefreshModal"
-    >{% trans "Refresh numbers" %}</button>
-  {% endif %}
-  {% if app_settings.sales_show_record_payment %}
-    <button
-      type="button"
-      id="rd-open-pay-sub-modal"
-      class="btn btn-sm btn-outline-primary rd-open-employee-modal"
-      data-bs-toggle="modal"
-      data-bs-target="#rdCustomerPaySubModal"
-    >{% trans "Record payment" %}</button>
-  {% endif %}
-</div>
+<a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
 {% endblock %}
 {% block content %}
 <div class="rd-sale-form">
@@ -626,7 +608,6 @@
     if (hasBootstrapModal) {
       modal.addEventListener("hidden.bs.modal", resetPaySubModal);
     } else {
-      var openBtn = document.getElementById("rd-open-pay-sub-modal");
       var closeX = document.getElementById("rd-pay-sub-close-x");
       var closeCancel = document.getElementById("rd-pay-sub-cancel");
       var backdrop = null;
@@ -648,7 +629,12 @@
         backdrop.className = "modal-backdrop fade show";
         document.body.appendChild(backdrop);
       }
-      if (openBtn) openBtn.addEventListener("click", function (e) { e.preventDefault(); openFallbackModal(); });
+      document.querySelectorAll('[data-bs-target="#rdCustomerPaySubModal"]').forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          openFallbackModal();
+        });
+      });
       if (closeX) closeX.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
       if (closeCancel) closeCancel.addEventListener("click", function (e) { e.preventDefault(); closeFallbackModal(); });
       modal.addEventListener("click", function (e) {
@@ -1428,6 +1414,35 @@
       updateSimStockPreview();
     }
   });
+})();
+
+(function () {
+  var params = new URLSearchParams(window.location.search || "");
+  var open = (params.get("open") || "").toLowerCase();
+  var targetId = "";
+  if (open === "refresh") targetId = "rdEmployeeRefreshModal";
+  else if (open === "payment" || open === "pay") targetId = "rdCustomerPaySubModal";
+  if (!targetId) return;
+  var modal = document.getElementById(targetId);
+  if (!modal) return;
+  function clearOpenParam() {
+    params.delete("open");
+    var next = params.toString();
+    var url = window.location.pathname + (next ? "?" + next : "") + window.location.hash;
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, "", url);
+    }
+  }
+  window.setTimeout(function () {
+    var trigger = document.querySelector('[data-bs-target="#' + targetId + '"]');
+    if (window.bootstrap && window.bootstrap.Modal) {
+      window.bootstrap.Modal.getOrCreateInstance(modal).show();
+      clearOpenParam();
+      return;
+    }
+    if (trigger) trigger.click();
+    clearOpenParam();
+  }, 0);
 })();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>

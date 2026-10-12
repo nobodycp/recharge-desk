@@ -28,6 +28,9 @@ from sales.employee_editing import (
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
+from core.pagination import paginate_request
+from inventory.forms import CustomerStockFilterForm
+from inventory.models import SimStockBalance
 from inventory.services import preview_sim_stock_deduction
 from employees.services import get_acting_employee_profile
 from sales.services import create_sale, delete_sale_permanently, update_sale_fields
@@ -370,6 +373,38 @@ def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
         qs = qs.filter(created_at__date__lte=date_to)
 
     return qs.order_by("-created_at"), date_from, date_to
+
+
+@employee_required
+def employee_stock_check(request):
+    """Cashier-facing SIM stock lookup by customer name."""
+    qs = (
+        SimStockBalance.objects.filter(
+            location=SimStockBalance.Location.CUSTOMER,
+            quantity__gt=0,
+        )
+        .select_related("customer", "product_line")
+        .order_by("customer__name", "product_line__name")
+    )
+    form = CustomerStockFilterForm(request.GET or None)
+    q = ""
+    if form.is_valid():
+        q = (form.cleaned_data.get("q") or "").strip()
+        if q:
+            qs = qs.filter(customer__name__icontains=q)
+        if form.cleaned_data.get("product_line"):
+            qs = qs.filter(product_line=form.cleaned_data["product_line"])
+    page_obj = paginate_request(request, qs)
+    return render(
+        request,
+        "sales/employee_stock_check.html",
+        {
+            "title": _("Check stock"),
+            "filter_form": form,
+            "page_obj": page_obj,
+            "q": q,
+        },
+    )
 
 
 @employee_required

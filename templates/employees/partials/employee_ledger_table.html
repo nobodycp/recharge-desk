@@ -5,6 +5,12 @@
       <table class="table mb-0 align-middle rd-table-modern">
         <thead>
           <tr>
+            {% if ledger_read_only %}
+            <th>{% trans "Date" %}</th>
+            <th>{% trans "Type" %}</th>
+            <th class="text-end">{% trans "Amount" %}</th>
+            <th>{% trans "Details" %}</th>
+            {% else %}
             <th>
               <a class="rd-datagrid-sort {% if ledger_sort == 'created_at' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'created_at' and ledger_order == 'desc' %}{% querystring ledger_sort='created_at' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='created_at' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Date" %}</a>
             </th>
@@ -18,6 +24,7 @@
               <a class="rd-datagrid-sort {% if ledger_sort == 'details' %}is-active is-{{ ledger_order }}{% endif %}" href="{% if ledger_sort == 'details' and ledger_order == 'desc' %}{% querystring ledger_sort='details' ledger_order='asc' ledger_page=1 %}{% else %}{% querystring ledger_sort='details' ledger_order='desc' ledger_page=1 %}{% endif %}">{% trans "Details" %}</a>
             </th>
             <th class="text-end">{% trans "Actions" %}</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -34,6 +41,7 @@
                 {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
                 {% if row.notes %}<div class="text-secondary">{{ row.notes }}</div>{% endif %}
               </td>
+              {% if not ledger_read_only %}
               <td class="text-end">
                 <form
                   method="post"
@@ -48,9 +56,10 @@
                   <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete' %}" title="{% trans 'Delete' %}">{% trans "Delete" %}</button>
                 </form>
               </td>
+              {% endif %}
             </tr>
           {% empty %}
-            <tr><td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No ledger entries." %}</div></td></tr>
+            <tr><td colspan="{% if ledger_read_only %}4{% else %}5{% endif %}" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No ledger entries." %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -72,6 +81,7 @@
           </div>
         {% endif %}
         {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
+        {% if not ledger_read_only %}
         <form
           method="post"
           action="{% url 'employees:employee_ledger_delete' employee.pk row.pk %}"
@@ -84,6 +94,7 @@
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
         </form>
+        {% endif %}
       </div>
     {% empty %}
       <div class="text-center text-secondary py-4">{% trans "No ledger entries." %}</div>

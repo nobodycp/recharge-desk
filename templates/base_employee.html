@@ -17,9 +17,13 @@
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/data-ui.js' %}{{ static_cache_query }}" defer></script>
 </head>
-<body class="rd-body rd-employee-app app-shell">
+<body class="rd-body rd-employee-app app-shell has-employee-tabbar">
   <header class="rd-employee-topbar">
-    <div class="rd-employee-title">{% block employee_header %}{% trans "Sales entry" %}{% endblock %}</div>
+    <div class="rd-employee-title">
+      {% block employee_header %}
+        <a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+      {% endblock %}
+    </div>
     <div class="d-flex align-items-center gap-2">
       <form action="{% url 'set_language' %}" method="post" class="d-flex mb-0">
         {% csrf_token %}
@@ -40,5 +44,6 @@
     {% include "partials/messages.html" %}
     {% block content %}{% endblock %}
   </div>
+  {% include "partials/employee_bottom_nav.html" %}
 </body>
 </html>
