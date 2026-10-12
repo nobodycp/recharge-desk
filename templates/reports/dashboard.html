@@ -151,16 +151,16 @@
             <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--grace">
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
-                <span class="rd-phone-lifecycle__lbl">{% trans "Ended — under inactivity threshold" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% blocktrans with d=stale_phone_threshold_days %}Subscription ended; still inside the {{ d }}-day grace window{% endblocktrans %}</span>
+                <span class="rd-phone-lifecycle__lbl">{% trans "Disconnected only" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% blocktrans with d=stale_phone_threshold_days %}Subscription ended; still inside the {{ d }} days to leave the agency{% endblocktrans %}</span>
               </span>
               <span class="rd-phone-lifecycle__val tabular-nums kpi-info">{{ phones_ended_under_threshold_count|intcomma }}</span>
             </li>
             <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--overdue">
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
-                <span class="rd-phone-lifecycle__lbl">{% trans "Ended — past inactivity threshold" %}</span>
-                <span class="rd-phone-lifecycle__hint">{% trans "Open overdue lines in the statement" %}</span>
+                <span class="rd-phone-lifecycle__lbl">{% trans "Left the agency" %}</span>
+                <span class="rd-phone-lifecycle__hint">{% trans "Open lines that left the agency" %}</span>
               </span>
               <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
             </li>

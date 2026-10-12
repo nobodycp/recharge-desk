@@ -315,11 +315,17 @@ AR: dict[str, str] = {
     "Enters the disconnect list soon": "يدخل قائمة الفصل قريباً",
     "Last charge ends within 24 hours": "تنتهي آخر شحنة خلال ٢٤ ساعة",
     "Ended — under inactivity threshold": "مفصول ولم يتجاوز عتبة عدم النشاط",
+    "Disconnected only": "مفصول فقط",
     "Subscription ended; still inside the %(d)s-day grace window": (
         "انتهى الاشتراك؛ ما زال داخل مهلة %(d)s يوماً"
     ),
+    "Subscription ended; still inside the %(d)s days to leave the agency": (
+        "انتهى الاشتراك؛ ما زال داخل %(d)s يوماً للخروج من الوكالة"
+    ),
     "Ended — past inactivity threshold": "مفصول وتجاوز عتبة عدم النشاط",
+    "Left the agency": "خرج من الوكالة",
     "Same count as the disconnect list": "نفس عدد قائمة أرقام الفصل",
+    "Open lines that left the agency": "افتح الأرقام التي خرجت من الوكالة",
     "Physical SIMs only — eSIM lines are excluded.": "شرائح فعلية فقط — أرقام eSIM مستثناة.",
     "%(n)s physical lines by disconnect stage": "%(n)s رقماً فعلياً حسب مرحلة الفصل",
     "No sales yet.": "لا توجد مبيعات بعد.",
@@ -373,21 +379,37 @@ AR: dict[str, str] = {
         "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
         "%(d)s يوماً. شحن جديد أو تجديد ليوم يعيد المؤقت."
     ),
+    "Every number with a sale in the system, with lifecycle status from the %(d)s days to leave the agency. A new charge or a 1-day renew resets the timer.": (
+        "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب %(d)s يوماً "
+        "للخروج من الوكالة. شحن جديد أو تجديد ليوم يعيد المؤقت."
+    ),
     "No lines match these filters.": "لا توجد أرقام مطابقة لهذه الفلاتر.",
     "SIM type": "نوع الشريحة",
     "Physical SIM": "شريحة فعلية",
     "Activity threshold (days)": "عتبة عدم النشاط (أيام)",
+    "Days to leave the agency": "الأيام للخروج من الوكالة",
     "Idle days after subscription end. Example: 60-day charge + 85-day threshold → past threshold after 145 days. Saved on your profile.": (
         "أيام الخمول بعد انتهاء الاشتراك. مثال: شحن 60 يوماً + عتبة 85 → "
         "تجاوز العتبة بعد 145 يوماً. تُحفظ في ملفك."
+    ),
+    "Days after subscription end before the line left the agency. Example: 60-day charge + 85 days → left after 145 days. Saved on your profile.": (
+        "الأيام بعد انتهاء الاشتراك قبل أن يخرج الرقم من الوكالة. مثال: شحن 60 يوماً "
+        "+ 85 يوماً → يخرج بعد 145 يوماً. تُحفظ في ملفك."
     ),
     "Renew 1 day": "تجديد ليوم",
     "Renew this overdue line as a 1-day charge (no sale created)? It will leave the inactivity threshold for another period.": (
         "تجديد هذا الرقم المتجاوز كشحن يوم واحد (بدون إنشاء بيع)؟ "
         "سيخرج من عتبة عدم النشاط لمدة جديدة."
     ),
+    "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period.": (
+        "تجديد هذا الرقم الذي خرج من الوكالة كشحن يوم واحد (بدون إنشاء بيع)؟ "
+        "سيخرج من حالة «خرج من الوكالة» لمدة جديدة."
+    ),
     "Renewed as a 1-day charge — the line left the inactivity threshold.": (
         "تم التجديد كشحن يوم — خرج الرقم من عتبة عدم النشاط."
+    ),
+    "Renewed as a 1-day charge — the line is no longer marked as left the agency.": (
+        "تم التجديد كشحن يوم — الرقم لم يعد معلماً كخارج من الوكالة."
     ),
     "Open overdue lines in the statement": "افتح الأرقام المتجاوزة في البيان",
     "Idle threshold": "عتبة عدم النشاط",
