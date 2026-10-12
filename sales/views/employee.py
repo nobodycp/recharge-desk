@@ -84,7 +84,7 @@ def employee_entry(request):
     if request.method == "GET" and company_id:
         initial["company"] = company_id
     form = EmployeeSaleForm(
-        request.POST or None,
+        request.POST if request.method == "POST" else None,
         company_id=company_id,
         initial=initial,
         user=request.user,

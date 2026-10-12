@@ -2,17 +2,14 @@
 {% load i18n ui_tags %}
 {% block employee_header %}{% trans "My entries" %}{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
-    <p class="rd-text-muted small mb-0">
-      {% trans "Sales you entered. You can edit or delete only your last 10 entries." %}
-      <span class="d-block mt-1">
-        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
-      </span>
-    </p>
-  </div>
-  <a class="btn btn-outline-secondary" href="{% url 'sales:employee_entry' %}">{% trans "Back to sales entry" %}</a>
+<div class="mb-3">
+  <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
+  <p class="rd-text-muted small mb-0">
+    {% trans "Sales you entered. You can edit or delete only your last 10 entries." %}
+    <span class="d-block mt-1">
+      <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
+    </span>
+  </p>
 </div>
 
 {% active_filter_count as recent_active %}

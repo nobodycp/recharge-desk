@@ -950,6 +950,7 @@ AR: dict[str, str] = {
     "Record payment": "تسجيل دفعة",
     "My balance": "رصيدي",
     "Wallet details": "تفاصيل الرصيد",
+    "Please fix the highlighted fields.": "صلّح الحقول المظلّلة بالأحمر.",
     "Check stock": "فحص مخزون",
     "Employee shortcuts": "اختصارات الموظف",
     "No employee payroll profile is linked to your account yet.": (

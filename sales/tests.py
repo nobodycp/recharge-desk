@@ -833,6 +833,15 @@ class EmployeeRecentSalesTests(TestCase):
         self.assertNotContains(resp, "Recent entries")
         self.assertNotContains(resp, "rdEmployeeRefreshModal")
         self.assertNotContains(resp, "rdCustomerPaySubModal")
+        self.assertNotContains(resp, "Back to sales entry")
+
+    def test_entry_validation_errors_are_highlighted(self):
+        resp = self.client.post(reverse("sales:employee_entry"), {})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "rd-form-error-banner")
+        self.assertContains(resp, "Please fix the highlighted fields.")
+        self.assertContains(resp, "has-error")
+        self.assertContains(resp, "is-invalid")
 
     def test_entry_page_shows_full_names_when_icons_missing(self):
         """Without uploaded icons, payment method and product-line tiles

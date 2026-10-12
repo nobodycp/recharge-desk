@@ -161,6 +161,22 @@ class EmployeeSaleForm(forms.Form):
             is_active=True
         ).select_related("user", "user__profile")
 
+    def is_valid(self):
+        ok = super().is_valid()
+        self._mark_invalid_widgets()
+        return ok
+
+    def _mark_invalid_widgets(self):
+        for name in self.errors:
+            if name == "__all__":
+                continue
+            field = self.fields.get(name)
+            if not field:
+                continue
+            css = field.widget.attrs.get("class", "")
+            if "is-invalid" not in css.split():
+                field.widget.attrs["class"] = f"{css} is-invalid".strip()
+
     def clean_reference_number(self):
         return validate_sale_phone_prefix(self.cleaned_data.get("reference_number") or "")
 

@@ -1,13 +1,13 @@
 {% extends "base_employee.html" %}
 {% load i18n static l10n ui_tags humanize %}
 {% block employee_header %}
-<a class="rd-employee-title__link" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+<span>{% trans "Sales entry" %}</span>
 {% endblock %}
 {% block content %}
 <div class="rd-sale-form">
   <form
     method="post"
-    class="d-flex flex-column gap-3"
+    class="d-flex flex-column rd-sale-form__stack"
     novalidate
     id="employee-sale-form"
     data-esim-extra="{{ esim_extra|unlocalize }}"
@@ -15,13 +15,17 @@
     data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
   >
           {% csrf_token %}
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% if form.errors %}
+            <div class="rd-form-error-banner" role="alert">
+              <div class="rd-form-error-banner__title">{% trans "Please fix the highlighted fields." %}</div>
+              {% if form.non_field_errors %}
+                <div class="rd-form-error-banner__list">{{ form.non_field_errors }}</div>
+              {% endif %}
+            </div>
           {% endif %}
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
             <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
-            {{ form.reference_number.errors }}
             <div class="input-group input-group-sm">
               {{ form.reference_number }}
               <button
@@ -32,10 +36,15 @@
                 data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
               >{% trans "Paste" %}</button>
             </div>
+            {% if form.reference_number.errors %}
+              <div class="rd-field-error" id="rd-ref-error">{{ form.reference_number.errors }}</div>
+            {% else %}
+              <div class="rd-field-error d-none" id="rd-ref-error" aria-live="polite"></div>
+            {% endif %}
           </div>
 
           <div
-            class="rd-field-group rd-payer-field-wrap"
+            class="rd-field-group rd-payer-field-wrap{% if form.payer_name.errors %} has-error{% endif %}"
             id="rd-payer-assist-root"
             data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
             data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
@@ -45,7 +54,6 @@
             data-label-cash-payer="{{ _('Cash payer')|escapejs }}"
           >
             <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
-            {{ form.payer_name.errors }}
             <div class="rd-payer-ac-anchor">
               <div class="input-group input-group-sm">
                 {{ form.payer_name }}
@@ -66,9 +74,10 @@
                 hidden
               ></div>
             </div>
+            {% if form.payer_name.errors %}<div class="rd-field-error">{{ form.payer_name.errors }}</div>{% endif %}
           </div>
 
-          <div class="rd-field-group" id="rd-payment-section">
+          <div class="rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
               <div class="rd-field-label mb-0">{% trans "Where did you receive the money?" %}</div>
               <div class="d-flex flex-wrap gap-1">
@@ -92,10 +101,10 @@
                 >{% trans "Mark as on account" %}</button>
               </div>
             </div>
-            {{ form.payment_method.errors }}
             {{ form.payment_method }}
             {{ form.on_account }}
             {{ form.paid_via_employee }}
+            {% if form.payment_method.errors %}<div class="rd-field-error">{{ form.payment_method.errors }}</div>{% endif %}
             {% if acting_employee and app_settings.sales_show_employee_payment %}
             <div id="rd-employee-payment-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
               <span>
@@ -122,13 +131,13 @@
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.company.errors %} has-error{% endif %}">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
               <div class="rd-field-label mb-0">{% trans "Company" %}</div>
               <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
             </div>
-            {{ form.company.errors }}
             {{ form.company }}
+            {% if form.company.errors %}<div class="rd-field-error">{{ form.company.errors }}</div>{% endif %}
             <div class="row row-cols-4 g-1 mt-1 justify-content-center" id="company-tiles">
               {% for c in companies %}
                 <div class="col">
@@ -150,30 +159,30 @@
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.product.errors %} has-error{% endif %}">
             <div class="rd-field-label">{% trans "Product" %}</div>
-            {{ form.product.errors }}
             {{ form.product }}
+            {% if form.product.errors %}<div class="rd-field-error">{{ form.product.errors }}</div>{% endif %}
             <div id="product-tiles-container" class="mt-1">
               {% if product_groups %}
-                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id product_errors=form.product.errors %}
+                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id %}
               {% else %}
                 <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
               {% endif %}
             </div>
           </div>
 
-          <div class="rd-field-group">
+          <div class="rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
             <div class="row g-2 align-items-end">
               <div class="col-4 col-sm-3" id="rd-duration-days-wrap" hidden>
                 <label class="rd-field-label d-block" for="id_duration_days">{% trans "Days" %}</label>
-                {{ form.duration_days.errors }}
                 {{ form.duration_days }}
+                {% if form.duration_days.errors %}<div class="rd-field-error">{{ form.duration_days.errors }}</div>{% endif %}
               </div>
               <div class="col-12" id="rd-sell-price-wrap">
                 <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
-                {{ form.sell_price_actual.errors }}
                 {{ form.sell_price_actual }}
+                {% if form.sell_price_actual.errors %}<div class="rd-field-error">{{ form.sell_price_actual.errors }}</div>{% endif %}
               </div>
             </div>
             <p class="form-text small mb-1" id="rd-days-hint" hidden></p>
@@ -705,8 +714,17 @@
         if (digits.length === 9 && digits.charAt(0) === "5") digits = "0" + digits;
         if (!/^05[0-5]\d{7}$/.test(digits)) {
           e.preventDefault();
-          window.alert(saleForm.getAttribute("data-msg-phone-prefix") || "");
-          saleRefInput.focus();
+          var msg = saleForm.getAttribute("data-msg-phone-prefix") || "";
+          var group = saleRefInput.closest(".rd-field-group");
+          var err = document.getElementById("rd-ref-error");
+          if (group) group.classList.add("has-error");
+          saleRefInput.classList.add("is-invalid");
+          if (err) {
+            err.classList.remove("d-none");
+            err.textContent = msg;
+          }
+          saleRefInput.focus({ preventScroll: false });
+          try { saleRefInput.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (errScroll) {}
         }
       });
     }
@@ -789,4 +807,16 @@
 })();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>
+{% if form.errors %}
+<script>
+(function () {
+  var first = document.querySelector(".rd-sale-form .has-error, .rd-sale-form .is-invalid, .rd-form-error-banner");
+  if (first && first.scrollIntoView) {
+    window.setTimeout(function () {
+      first.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 40);
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

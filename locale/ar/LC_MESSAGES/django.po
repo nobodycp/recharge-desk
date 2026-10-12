@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 05:12+0300\n"
+"POT-Creation-Date: 2026-10-12 05:18+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -73,7 +73,7 @@ msgstr "يجب أن تكون كلمة المرور 8 أحرف على الأقل.
 #: accounts/models.py:10 templates/base_management.html:9
 msgid "Management"
 msgstr "الإدارة"
-#: accounts/models.py:11 sales/forms.py:102 sales/forms.py:225
+#: accounts/models.py:11 sales/forms.py:102 sales/forms.py:241
 #: templates/employees/employee_list.html:62
 #: templates/reports/employee_report.html:66
 #: templates/reports/partials/company_report_sales.html:50
@@ -319,8 +319,8 @@ msgstr "اختر باقة تنتمي لخط المنتج هذا."
 
 #: companies/forms.py:80 companies/forms.py:125 employees/forms.py:83
 #: employees/forms.py:119 expenses/forms.py:17 expenses/views.py:102
-#: inventory/forms.py:240 reports/views.py:299 sales/forms.py:243
-#: sales/forms.py:310 templates/audit/audit_log_list.html:46
+#: inventory/forms.py:240 reports/views.py:299 sales/forms.py:259
+#: sales/forms.py:326 templates/audit/audit_log_list.html:46
 #: templates/companies/partials/company_detail_general.html:7
 #: templates/customers/customer_detailed_invoice.html:24
 #: templates/customers/customer_statement.html:24
@@ -329,8 +329,8 @@ msgid "Date from"
 msgstr "من تاريخ"
 #: companies/forms.py:85 companies/forms.py:130 employees/forms.py:90
 #: employees/forms.py:126 expenses/forms.py:22 expenses/views.py:107
-#: inventory/forms.py:245 reports/views.py:304 sales/forms.py:248
-#: sales/forms.py:317 templates/audit/audit_log_list.html:50
+#: inventory/forms.py:245 reports/views.py:304 sales/forms.py:264
+#: sales/forms.py:333 templates/audit/audit_log_list.html:50
 #: templates/companies/partials/company_detail_general.html:11
 #: templates/customers/customer_detailed_invoice.html:28
 #: templates/customers/customer_statement.html:28
@@ -1081,7 +1081,7 @@ msgid "Access denied"
 msgstr "الوصول مرفوض"
 #: core/views.py:135 employees/forms.py:66 employees/forms.py:108
 #: expenses/forms.py:10 inventory/forms.py:263 reports/forms.py:29
-#: sales/forms.py:281 templates/accounts/user_list.html:26
+#: sales/forms.py:297 templates/accounts/user_list.html:26
 #: templates/base_management.html:71 templates/base_management.html:89
 #: templates/companies/company_list.html:26 templates/core/search.html:6
 #: templates/core/search.html:34
@@ -1190,7 +1190,7 @@ msgid "Customer"
 msgstr "الزبون"
 
 #: customers/forms.py:20 customers/forms.py:125 employees/forms.py:43
-#: sales/forms.py:419 templates/core/search.html:67
+#: sales/forms.py:435 templates/core/search.html:67
 #: templates/core/search.html:155 templates/customers/customer_detail.html:114
 #: templates/customers/customer_detail.html:267
 #: templates/customers/payment_submissions_list.html:34
@@ -1205,7 +1205,7 @@ msgstr "الزبون"
 msgid "Amount"
 msgstr "المبلغ"
 #: customers/forms.py:34 customers/forms.py:132 sales/forms.py:86
-#: sales/forms.py:231 sales/forms.py:298
+#: sales/forms.py:247 sales/forms.py:314
 #: templates/customers/payment_submissions_list.html:35
 #: templates/customers/payment_submissions_list.html:94
 #: templates/sales/employee_record_payment.html:50
@@ -1214,8 +1214,8 @@ msgstr "طريقة الدفع"
 #: customers/forms.py:40 sales/forms.py:97
 #: templates/partials/sale_employee_payment_badge.html:5
 #: templates/partials/sale_employee_payment_badge.html:6
-#: templates/sales/employee_entry.html:82
-#: templates/sales/employee_entry.html:83
+#: templates/sales/employee_entry.html:91
+#: templates/sales/employee_entry.html:92
 #: templates/sales/employee_record_payment.html:58
 #: templates/sales/employee_record_payment.html:59
 #: templates/sales/employee_sale_edit.html:34
@@ -1225,14 +1225,14 @@ msgstr "دفع لدى موظف"
 #: customers/views/statements.py:224 employees/forms.py:50
 #: inventory/forms.py:30 inventory/forms.py:72 inventory/forms.py:114
 #: inventory/forms.py:188 inventory/forms.py:201 inventory/forms.py:214
-#: sales/forms.py:143 sales/forms.py:426 sales/forms.py:440
+#: sales/forms.py:143 sales/forms.py:442 sales/forms.py:456
 #: templates/customers/customer_statement.html:135
 #: templates/customers/payment_submissions_list.html:37
 #: templates/customers/payment_submissions_list.html:109
 #: templates/employees/partials/employee_payments_table.html:27
 #: templates/inventory/line_detail.html:92
 #: templates/inventory/movements.html:64
-#: templates/sales/employee_entry.html:229
+#: templates/sales/employee_entry.html:238
 #: templates/sales/employee_record_payment.html:98
 #: templates/sales/partials/awaiting_results.html:59
 #: templates/sales/partials/awaiting_results.html:108
@@ -1240,10 +1240,10 @@ msgstr "دفع لدى موظف"
 #: templates/sales/partials/pending_payments_results.html:125
 msgid "Notes"
 msgstr "ملاحظات"
-#: customers/forms.py:72 sales/forms.py:187
+#: customers/forms.py:72 sales/forms.py:203
 msgid "Payment to employee is disabled on the sales screen."
 msgstr "الدفع لدى موظف معطّل في شاشة المبيعات."
-#: customers/forms.py:77 sales/forms.py:197
+#: customers/forms.py:77 sales/forms.py:213
 msgid "You are not registered as a payroll employee."
 msgstr "حسابك غير مسجّل في نظام الموظفين."
 #: customers/forms.py:83
@@ -1251,7 +1251,7 @@ msgid "This field is required."
 msgstr "رقم الهاتف مطلوب."
 
 #: customers/forms.py:91 customers/forms.py:111 sales/forms.py:26
-#: templates/sales/employee_entry.html:23
+#: templates/sales/employee_entry.html:28
 msgid "Phone or shipment number"
 msgstr "رقم الهاتف أو الشحنة"
 #: customers/forms.py:96
@@ -1265,7 +1265,7 @@ msgstr ""
 msgid "Label"
 msgstr "الوصف"
 
-#: customers/forms.py:150 sales/forms.py:434
+#: customers/forms.py:150 sales/forms.py:450
 msgid "Signed adjustment (+/-)"
 msgstr "تسوية موقعة (+/-)"
 #: customers/forms.py:164 customers/services.py:509
@@ -1685,13 +1685,13 @@ msgid "Phone, payer, notes…"
 msgstr "المرجع، الدافع، المنتج…"
 
 #: employees/forms.py:78 inventory/forms.py:224 inventory/forms.py:254
-#: sales/forms.py:238 sales/forms.py:255 sales/forms.py:305
+#: sales/forms.py:254 sales/forms.py:271 sales/forms.py:321
 #: templates/audit/audit_log_list.html:21
 #: templates/audit/audit_log_list.html:30
 #: templates/audit/audit_log_list.html:39 templates/reports/dashboard.html:100
 msgid "All"
 msgstr "الكل"
-#: employees/forms.py:102 employees/forms.py:138 sales/forms.py:338
+#: employees/forms.py:102 employees/forms.py:138 sales/forms.py:354
 msgid "'Date from' must be on or before 'Date to'."
 msgstr "'تاريخ من' يجب أن يكون قبل أو يساوي 'تاريخ إلى'."
 
@@ -2236,13 +2236,13 @@ msgstr "ICCID أو رقم الشريحة"
 #: reports/forms.py:35
 msgid "Reference, payer, line, ICCID…"
 msgstr "المرجع، الدافع، الخط، ICCID…"
-#: reports/forms.py:41 sales/forms.py:16 sales/forms.py:213 sales/forms.py:292
+#: reports/forms.py:41 sales/forms.py:16 sales/forms.py:229 sales/forms.py:308
 #: templates/companies/product_list.html:16 templates/core/search.html:66
 #: templates/employees/partials/employee_payments_table.html:21
 #: templates/reports/partials/phone_lines_report_results.html:19
 #: templates/reports/partials/sales_report_results.html:37
 #: templates/reports/profit_report.html:39
-#: templates/sales/employee_entry.html:127
+#: templates/sales/employee_entry.html:136
 #: templates/sales/partials/awaiting_results.html:10
 #: templates/sales/partials/awaiting_results.html:85
 #: templates/sales/partials/management_sale_list_results.html:12
@@ -2258,7 +2258,7 @@ msgstr "الخط"
 #: reports/forms.py:51
 msgid "Same line name across companies (e.g. all Silicom)."
 msgstr "نفس اسم الخط عبر الشركات (مثلاً كل سليكوم)."
-#: reports/forms.py:54 sales/forms.py:237 sales/forms.py:304
+#: reports/forms.py:54 sales/forms.py:253 sales/forms.py:320
 #: templates/core/search.html:68 templates/customers/customer_detail.html:60
 #: templates/employees/employee_list.html:65 templates/inventory/cards.html:44
 #: templates/inventory/line_detail.html:130
@@ -2292,12 +2292,12 @@ msgstr "نوع الشريحة"
 #: reports/forms.py:70
 msgid "Physical SIM"
 msgstr "شريحة فعلية"
-#: reports/forms.py:71 sales/forms.py:253
+#: reports/forms.py:71 sales/forms.py:269
 #: templates/companies/partials/layan_reconcile_review_table.html:59
 #: templates/companies/partials/sky_reconcile_table.html:54
 #: templates/reports/dashboard.html:49
 #: templates/reports/partials/phone_line_status_badge.html:12
-#: templates/sales/employee_entry.html:184
+#: templates/sales/employee_entry.html:193
 msgid "eSIM"
 msgstr "eSIM"
 
@@ -2403,25 +2403,25 @@ msgstr "بنك فلسطين"
 msgid "Palpay"
 msgstr "بال باي"
 
-#: sales/forms.py:21 sales/forms.py:219
+#: sales/forms.py:21 sales/forms.py:235
 #: templates/customers/customer_detail.html:58
 #: templates/customers/customer_statement.html:70
 #: templates/employees/partials/employee_payments_table.html:24
 #: templates/reports/partials/company_report_sales.html:41
 #: templates/reports/partials/sales_report_results.html:40
 #: templates/reports/profit_report.html:100
-#: templates/sales/employee_entry.html:154
+#: templates/sales/employee_entry.html:163
 #: templates/sales/partials/awaiting_results.html:11
 #: templates/sales/partials/awaiting_results.html:89
 #: templates/sales/partials/management_sale_list_results.html:15
 #: templates/sales/partials/pending_payments_results.html:24
 msgid "Product"
 msgstr "المنتج"
-#: sales/forms.py:38 templates/sales/employee_entry.html:47
+#: sales/forms.py:38 templates/sales/employee_entry.html:56
 msgid "Payer name"
 msgstr "اسم الدافع"
 #: sales/forms.py:51 templates/companies/product_list.html:104
-#: templates/sales/employee_entry.html:169
+#: templates/sales/employee_entry.html:178
 msgid "Days"
 msgstr "الأيام"
 #: sales/forms.py:67
@@ -2432,11 +2432,11 @@ msgstr ""
 "فقط للباقات الشهرية على الخطوط التي تسمح بالأيام الجزئية. باقات الثلاثة أشهر "
 "تُحتسب دائماً بالمدة كاملة."
 
-#: sales/forms.py:72 templates/sales/employee_entry.html:174
+#: sales/forms.py:72 templates/sales/employee_entry.html:183
 msgid "Selling price"
 msgstr "سعر البيع"
 #: sales/forms.py:92 templates/reports/partials/company_report_sales.html:90
-#: templates/sales/employee_recent.html:70
+#: templates/sales/employee_recent.html:67
 #: templates/sales/employee_sale_edit.html:36
 msgid "On account"
 msgstr "آجل"
@@ -2447,24 +2447,24 @@ msgstr "رقم الشريحة أو ICCID"
 msgid "Optional"
 msgstr "العمليات"
 
-#: sales/forms.py:172
+#: sales/forms.py:188
 msgid "Selected product does not belong to the company."
 msgstr "المنتج المختار لا يتبع الشركة المحددة."
-#: sales/forms.py:191
+#: sales/forms.py:207
 msgid "Choose either on-account or payment to employee, not both."
 msgstr "اختر إما الآجل أو الدفع لدى موظف، وليس الاثنين."
-#: sales/forms.py:207 sales/forms.py:413
+#: sales/forms.py:223 sales/forms.py:429
 msgid "Pick a payment method."
 msgstr "اختر طريقة الدفع."
-#: sales/forms.py:256
+#: sales/forms.py:272
 msgid "eSIM only"
 msgstr "eSIM فقط"
 
-#: sales/forms.py:257
+#: sales/forms.py:273
 msgid "Non-eSIM"
 msgstr "بدون eSIM"
 
-#: sales/forms.py:286
+#: sales/forms.py:302
 msgid "Phone, shipment number, payer name…"
 msgstr "الهاتف أو رقم الشحنة أو اسم الدافع…"
 
@@ -2754,7 +2754,7 @@ msgid "All entries"
 msgstr "كل الإدخالات"
 
 #: sales/views/employee.py:506 templates/sales/employee_recent.html:3
-#: templates/sales/employee_recent.html:7
+#: templates/sales/employee_recent.html:6
 msgid "My entries"
 msgstr "إدخالاتي"
 #: sales/views/employee.py:530 sales/views/employee.py:579
@@ -3271,7 +3271,7 @@ msgstr "اسم المستخدم أو الاسم الكامل…"
 #: templates/reports/profit_report.html:15
 #: templates/reports/sales_report.html:34
 #: templates/sales/awaiting_approvals.html:31
-#: templates/sales/employee_recent.html:49
+#: templates/sales/employee_recent.html:46
 #: templates/sales/management_sale_list.html:44
 #: templates/sales/pending_payments.html:43
 msgid "Apply"
@@ -3295,7 +3295,7 @@ msgstr "تطبيق"
 #: templates/reports/profit_report.html:16
 #: templates/reports/sales_report.html:35
 #: templates/sales/awaiting_approvals.html:32
-#: templates/sales/employee_recent.html:50
+#: templates/sales/employee_recent.html:47
 #: templates/sales/employee_stock_check.html:41
 #: templates/sales/management_sale_list.html:45
 #: templates/sales/pending_payments.html:44
@@ -5108,7 +5108,7 @@ msgstr "بيع خسارة: سعر البيع صفر؛ تُسجَّل تكلفة 
 msgid "New SIM: stock deducted on approval"
 msgstr "شريحة جديدة: يُخصم المخزون عند الموافقة"
 #: templates/partials/sale_new_sim_badge.html:3
-#: templates/sales/employee_entry.html:196
+#: templates/sales/employee_entry.html:205
 msgid "New SIM"
 msgstr "شريحة جديدة"
 #: templates/partials/sale_status_badge.html:4
@@ -5286,7 +5286,7 @@ msgstr "تفصيل لكل موظف"
 #: templates/reports/profit_report.html:100
 #: templates/reports/profit_report.html:125
 #: templates/reports/profit_report.html:140
-#: templates/sales/employee_entry.html:219
+#: templates/sales/employee_entry.html:228
 #: templates/sales/partials/management_sale_list_results.html:30
 msgid "Profit"
 msgstr "الربح"
@@ -5460,125 +5460,124 @@ msgstr "المرجع، الدافع، الزبون، الشركة…"
 msgid "Could not complete the action."
 msgstr "تعذّر تنفيذ العملية."
 
-#: templates/sales/employee_entry.html:31
-#: templates/sales/employee_entry.html:56
+#: templates/sales/employee_entry.html:20
+msgid "Please fix the highlighted fields."
+msgstr "صلّح الحقول المظلّلة بالأحمر."
+#: templates/sales/employee_entry.html:35
+#: templates/sales/employee_entry.html:64
 #: templates/sales/employee_refresh_number.html:42
 msgid "Paste from clipboard"
 msgstr "لصق من الحافظة"
 
-#: templates/sales/employee_entry.html:32
-#: templates/sales/employee_entry.html:57
+#: templates/sales/employee_entry.html:36
+#: templates/sales/employee_entry.html:65
 #: templates/sales/employee_refresh_number.html:43
 msgid "Could not read clipboard. Allow paste permission or use Ctrl+V."
 msgstr "تعذّر قراءة الحافظة. اسمح بإذن اللصق أو استخدم Ctrl+V."
-#: templates/sales/employee_entry.html:33
-#: templates/sales/employee_entry.html:58
+#: templates/sales/employee_entry.html:37
+#: templates/sales/employee_entry.html:66
 #: templates/sales/employee_refresh_number.html:44
 msgid "Paste"
 msgstr "لصق"
 
-#: templates/sales/employee_entry.html:42
+#: templates/sales/employee_entry.html:51
 msgid "Filled from a previous sale"
 msgstr "مُعبَّأ تلقائياً من بيع سابق"
 
-#: templates/sales/employee_entry.html:43
+#: templates/sales/employee_entry.html:52
 msgid "Previously used"
 msgstr "مستخدمة سابقاً"
 
-#: templates/sales/employee_entry.html:44
+#: templates/sales/employee_entry.html:53
 msgid "Credit account"
 msgstr "حساب أجل"
-#: templates/sales/employee_entry.html:45
+#: templates/sales/employee_entry.html:54
 msgid "Cash payer"
 msgstr "بدون أجل"
-#: templates/sales/employee_entry.html:65
+#: templates/sales/employee_entry.html:73
 msgid "Payer name suggestions"
 msgstr "اقتراحات اسم الدافع"
 
-#: templates/sales/employee_entry.html:73
+#: templates/sales/employee_entry.html:82
 msgid "Where did you receive the money?"
 msgstr "أين استلمت المبلغ؟"
-#: templates/sales/employee_entry.html:81
+#: templates/sales/employee_entry.html:90
 #: templates/sales/employee_record_payment.html:57
 msgid "Payment to employee: ON"
 msgstr "دفع لدى موظف: مفعّل"
-#: templates/sales/employee_entry.html:90
+#: templates/sales/employee_entry.html:99
 msgid "On account: ON"
 msgstr "آجل: مفعّل"
-#: templates/sales/employee_entry.html:91
-#: templates/sales/employee_entry.html:92
+#: templates/sales/employee_entry.html:100
+#: templates/sales/employee_entry.html:101
 msgid "Mark as on account"
 msgstr "تسجيل آجل"
-#: templates/sales/employee_entry.html:102
+#: templates/sales/employee_entry.html:111
 #: templates/sales/employee_record_payment.html:68
 #, python-format
 msgid "Payment will be recorded to your account: %(name)s"
 msgstr "ستُسجّل الدفعة في حسابك: %(name)s"
-#: templates/sales/employee_entry.html:105
+#: templates/sales/employee_entry.html:114
 #: templates/sales/employee_record_payment.html:71
 msgid "Your balance:"
 msgstr "رصيدك:"
-#: templates/sales/employee_entry.html:120
+#: templates/sales/employee_entry.html:129
 #: templates/sales/employee_record_payment.html:86
 #: templates/sales/payment_method_list.html:39
 msgid "No payment methods."
 msgstr "لا توجد طرق دفع."
-#: templates/sales/employee_entry.html:148
+#: templates/sales/employee_entry.html:157
 msgid "No active companies."
 msgstr "لا توجد شركات نشطة."
-#: templates/sales/employee_entry.html:161
-#: templates/sales/partials/employee_product_tiles.html:6
+#: templates/sales/employee_entry.html:170
+#: templates/sales/partials/employee_product_tiles.html:3
 msgid "Choose a company to see products."
 msgstr "اختر شركة لعرض المنتجات."
-#: templates/sales/employee_entry.html:213
+#: templates/sales/employee_entry.html:222
 msgid "Estimate"
 msgstr "التقدير"
 
-#: templates/sales/employee_entry.html:215
+#: templates/sales/employee_entry.html:224
 msgid "Supplier cost"
 msgstr "تكلفة المورّد"
 
-#: templates/sales/employee_entry.html:222
+#: templates/sales/employee_entry.html:231
 msgid "eSIM: extra supplier cost is included in the estimate above."
 msgstr "eSIM: تكلفة المورّد الإضافية مضمَّنة في التقدير أعلاه."
 
-#: templates/sales/employee_entry.html:223
+#: templates/sales/employee_entry.html:232
 msgid "New SIM: estimated chip cost is included in the estimate above."
 msgstr "شريحة جديدة: تكلفة الشريحة التقديرية مضمَّنة في التقدير أعلاه."
-#: templates/sales/employee_entry.html:224
+#: templates/sales/employee_entry.html:233
 msgid ""
 "Selling price is 0: supplier cost will be recorded as a loss in the system."
 msgstr "سعر البيع صفر: ستُسجَّل تكلفة المورّد كخسارة في النظام."
 
-#: templates/sales/employee_entry.html:227
+#: templates/sales/employee_entry.html:236
 #: templates/sales/employee_record_payment.html:96
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
 
-#: templates/sales/employee_entry.html:236
+#: templates/sales/employee_entry.html:245
 msgid "Save sale"
 msgstr "حفظ البيع"
-#: templates/sales/employee_entry.html:387
+#: templates/sales/employee_entry.html:396
 msgid "Prorated from package base:"
 msgstr "محسوب من أساس الباقة:"
-#: templates/sales/employee_entry.html:391
+#: templates/sales/employee_entry.html:400
 msgid "days"
 msgstr "يوم"
-#: templates/sales/employee_entry.html:421
+#: templates/sales/employee_entry.html:430
 msgid "Enter payer name and product to preview SIM stock."
 msgstr "أدخل اسم الدافع والمنتج لمعاينة مخزون الشرائح."
-#: templates/sales/employee_recent.html:9
+#: templates/sales/employee_recent.html:8
 msgid "Sales you entered. You can edit or delete only your last 10 entries."
 msgstr "مبيعاتك المُدخلة. يمكنك تعديل أو حذف آخر 10 إدخالات فقط."
-#: templates/sales/employee_recent.html:15
-msgid "Back to sales entry"
-msgstr "العودة إلى إدخال المبيعات"
-
-#: templates/sales/employee_recent.html:88
+#: templates/sales/employee_recent.html:85
 msgid "No entries today yet."
 msgstr "لا توجد إدخالات اليوم بعد."
 
-#: templates/sales/employee_recent.html:90
+#: templates/sales/employee_recent.html:87
 msgid "No entries match the selected date range."
 msgstr "لا توجد إدخالات ضمن النطاق الزمني المحدد."
 
@@ -5705,7 +5704,7 @@ msgstr "لا توجد مبيعات بانتظار الموافقة."
 msgid "Copy"
 msgstr "نسخ"
 
-#: templates/sales/partials/employee_product_tiles.html:48
+#: templates/sales/partials/employee_product_tiles.html:45
 msgid "Default"
 msgstr "الافتراضي"
 
@@ -5812,6 +5811,9 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid "Back to sales entry"
+#~ msgstr "العودة إلى إدخال المبيعات"
 
 #~ msgid "Recent entries"
 #~ msgstr "آخر الإدخالات"

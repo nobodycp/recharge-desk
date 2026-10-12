@@ -1,7 +1,4 @@
 {% load i18n l10n %}
-{% if product_errors %}
-  <div class="text-danger small mb-2">{{ product_errors }}</div>
-{% endif %}
 {% if not product_groups %}
   <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
 {% else %}
