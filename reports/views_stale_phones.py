@@ -14,13 +14,15 @@ from django.views.decorators.http import require_POST
 from accounts.models import UserProfile
 from accounts.permissions import management_required
 from core.pagination import paginate_request
-from reports.forms import PhoneLinesFilterForm, StalePhoneLineEditForm
+from reports.forms import PhoneLineFullEditForm, PhoneLinesFilterForm, StalePhoneLineEditForm
 from reports.models import PhoneLineTracking
 from reports.stale_phones import (
     STATUS_OVERDUE,
+    dismiss_phone_line,
     filter_stale_rows,
     normalize_reference_key,
     phone_lines_aggregate,
+    rename_phone_line,
     sort_stale_rows,
 )
 from sales.views._shared import is_htmx
@@ -148,6 +150,7 @@ def _row_for_ref(*, ref_key: str, threshold_days: int) -> dict | None:
 
 @management_required
 def stale_phone_edit(request, ref_key: str):
+    """Edit number / ICCID / notes. Changing the number resets disconnect countdown."""
     profile = _management_profile(request)
     key = normalize_reference_key(ref_key)
     if not key:
@@ -163,28 +166,45 @@ def stale_phone_edit(request, ref_key: str):
     back_url = _safe_list_redirect(request, query=next_query)
 
     if request.method == "POST":
-        form = StalePhoneLineEditForm(request.POST)
+        form = PhoneLineFullEditForm(request.POST)
         if form.is_valid():
-            PhoneLineTracking.objects.update_or_create(
-                reference_key=key,
-                defaults={
-                    "sim_identifier": (form.cleaned_data.get("sim_identifier") or "").strip(),
-                    "last_display_reference": (display or "")[:64],
-                },
-            )
-            messages.success(request, _("Line updated."))
-            return redirect(back_url)
-        messages.error(request, _("Please correct the errors below."))
+            try:
+                rename_phone_line(
+                    old_key=key,
+                    new_reference=form.cleaned_data["reference_number"],
+                    sim_identifier=form.cleaned_data.get("sim_identifier") or "",
+                    notes=form.cleaned_data.get("notes") or "",
+                    reset_countdown=True,
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(
+                    request,
+                    _(
+                        "Line updated. Disconnect countdown restarted from today "
+                        "(virtual 1-day renew)."
+                    ),
+                )
+                return redirect(back_url)
+        else:
+            messages.error(request, _("Please correct the errors below."))
     else:
-        form = StalePhoneLineEditForm(
-            initial={"sim_identifier": (meta.sim_identifier if meta else "")}
+        form = PhoneLineFullEditForm(
+            initial={
+                "reference_number": display,
+                "sim_identifier": (meta.sim_identifier if meta else "")
+                or row.get("sim_identifier")
+                or "",
+                "notes": (meta.notes if meta else "") or row.get("notes") or "",
+            }
         )
 
     return render(
         request,
         "reports/stale_phone_edit.html",
         {
-            "title": _("Edit ICCID / SIM"),
+            "title": _("Edit line"),
             "form": form,
             "ref_key": key,
             "display_reference": display,
@@ -198,7 +218,7 @@ def stale_phone_edit(request, ref_key: str):
 @management_required
 @require_POST
 def stale_phone_sim_save(request, ref_key: str):
-    """Inline ICCID save from the list (HTMX or normal POST)."""
+    """Inline ICCID + notes save from the list (HTMX or normal POST)."""
     profile = _management_profile(request)
     key = normalize_reference_key(ref_key)
     if not key:
@@ -212,21 +232,24 @@ def stale_phone_sim_save(request, ref_key: str):
     next_query = _list_query_from_request(request)
     if form.is_valid():
         sim = (form.cleaned_data.get("sim_identifier") or "").strip()
+        notes = (form.cleaned_data.get("notes") or "").strip()
         PhoneLineTracking.objects.update_or_create(
             reference_key=key,
             defaults={
                 "sim_identifier": sim,
+                "notes": notes,
                 "last_display_reference": (row["display_reference"] or "")[:64],
             },
         )
         row["sim_identifier"] = sim
+        row["notes"] = notes
         if is_htmx(request):
             return render(
                 request,
                 "reports/partials/stale_phone_sim_cell.html",
                 {"row": row, "list_query": next_query, "saved": True},
             )
-        messages.success(request, _("ICCID saved."))
+        messages.success(request, _("Saved."))
         return redirect(_safe_list_redirect(request, query=next_query))
 
     if is_htmx(request):
@@ -236,7 +259,30 @@ def stale_phone_sim_save(request, ref_key: str):
             {"row": row, "list_query": next_query, "form": form, "saved": False},
             status=400,
         )
-    messages.error(request, _("Could not save ICCID."))
+    messages.error(request, _("Could not save."))
+    return redirect(_safe_list_redirect(request, query=next_query))
+
+
+@management_required
+@require_POST
+def phone_line_delete(request, ref_key: str):
+    """Remove the number from the statement inventory (dismiss)."""
+    profile = _management_profile(request)
+    key = normalize_reference_key(ref_key)
+    if not key:
+        raise Http404
+    days = profile.stale_phone_threshold_days
+    row = _row_for_ref(ref_key=key, threshold_days=days)
+    if not row:
+        raise Http404
+    dismiss_phone_line(
+        ref_key=key, display_reference=row.get("display_reference") or key
+    )
+    messages.success(
+        request,
+        _("Number removed from the line statement. Sale history is kept."),
+    )
+    next_query = _list_query_from_request(request)
     return redirect(_safe_list_redirect(request, query=next_query))
 
 

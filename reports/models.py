@@ -13,13 +13,23 @@ class PhoneLineTracking(models.Model):
         help_text=_("Lowercased trimmed sale reference / phone key."),
     )
     sim_identifier = models.CharField(_("SIM / chip"), max_length=200, blank=True)
+    notes = models.CharField(
+        _("notes"),
+        max_length=500,
+        blank=True,
+        help_text=_("Optional note on this line in the statement."),
+    )
     last_display_reference = models.CharField(
         _("last display reference"),
         max_length=64,
         blank=True,
         help_text=_("Most recent raw reference as entered on a sale."),
     )
-    is_dismissed = models.BooleanField(_("hidden from stale list"), default=False)
+    is_dismissed = models.BooleanField(
+        _("removed from line statement"),
+        default=False,
+        help_text=_("When set, the number is hidden from بيان الأرقام and dashboard counts."),
+    )
     # Virtual “1-day charge” without creating a Sale. When newer than the last
     # real sale, lifecycle math uses this timestamp + 1 day duration.
     manual_reset_at = models.DateTimeField(

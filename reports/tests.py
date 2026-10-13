@@ -762,13 +762,74 @@ class PhoneLinesStatementTests(_ReportsBase):
         url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTI001"})
         r = self.client.post(
             url,
-            {"sim_identifier": "ICCID-STMT-1", "next_query": "sort=ref"},
+            {
+                "sim_identifier": "ICCID-STMT-1",
+                "notes": "chip at shop",
+                "next_query": "sort=ref",
+            },
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(
-            PhoneLineTracking.objects.get(reference_key="055stmti001").sim_identifier,
-            "ICCID-STMT-1",
+        meta = PhoneLineTracking.objects.get(reference_key="055stmti001")
+        self.assertEqual(meta.sim_identifier, "ICCID-STMT-1")
+        self.assertEqual(meta.notes, "chip at shop")
+
+    def test_delete_removes_number_from_statement(self):
+        s = self._make_sale(ref="055STMTD001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        url = reverse("reports:phone_line_delete", kwargs={"ref_key": "055STMTD001"})
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 302)
+        meta = PhoneLineTracking.objects.get(reference_key="055stmtd001")
+        self.assertTrue(meta.is_dismissed)
+        r2 = self.client.get(reverse("reports:phone_lines_report"))
+        refs = {x["ref_key"] for x in r2.context["page_obj"].object_list}
+        self.assertNotIn("055stmtd001", refs)
+        # Sale history remains.
+        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_edit_number_renames_sales_and_resets_countdown(self):
+        overdue = self._make_sale(ref="055STMTE010", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "055STMTE010"})
+        r = self.client.post(
+            url,
+            {
+                "reference_number": "055STMTE099",
+                "sim_identifier": "ICCID-X",
+                "notes": "corrected",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        overdue.refresh_from_db()
+        self.assertEqual(overdue.reference_number, "055STMTE099")
+        self.assertFalse(
+            PhoneLineTracking.objects.filter(reference_key="055stmte010").exists()
+        )
+        meta = PhoneLineTracking.objects.get(reference_key="055stmte099")
+        self.assertEqual(meta.sim_identifier, "ICCID-X")
+        self.assertEqual(meta.notes, "corrected")
+        self.assertIsNotNone(meta.manual_reset_at)
+        r2 = self.client.get(reverse("reports:phone_lines_report"))
+        by_ref = {x["ref_key"]: x for x in r2.context["page_obj"].object_list}
+        self.assertNotIn("055stmte010", by_ref)
+        self.assertIn("055stmte099", by_ref)
+        self.assertNotEqual(by_ref["055stmte099"]["status"], "overdue")
+        self.assertTrue(by_ref["055stmte099"]["used_manual_renew"])
+
+    def test_statement_shows_notes_edit_and_delete_controls(self):
+        s = self._make_sale(ref="055STMTU001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        body = r.content.decode()
+        self.assertIn('name="notes"', body)
+        self.assertIn(
+            reverse("reports:stale_phone_edit", kwargs={"ref_key": "055stmtu001"}),
+            body,
+        )
+        self.assertIn(
+            reverse("reports:phone_line_delete", kwargs={"ref_key": "055stmtu001"}),
+            body,
         )
 
     def test_htmx_returns_results_partial_only(self):

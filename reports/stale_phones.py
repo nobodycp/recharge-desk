@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Any
 
+from django.db import transaction
 from django.db.models import Max
 from django.db.models.functions import Lower, Trim
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from sales.models import Sale
 
@@ -139,13 +141,16 @@ def phone_lines_aggregate(
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
     }
+    dismissed_keys = {
+        k for k, m in metas.items() if getattr(m, "is_dismissed", False)
+    }
     latest_by_key = _latest_sale_per_ref_key(keys)
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
     out: list[dict[str, Any]] = []
     for row in grouped:
         key = row["ref_key"] or ""
-        if not key:
+        if not key or key in dismissed_keys:
             continue
         sale = latest_by_key.get(key)
         if not sale:
@@ -173,6 +178,7 @@ def phone_lines_aggregate(
                 "last_activity": last,
                 "display_reference": display_map.get(key, key),
                 "sim_identifier": (meta.sim_identifier if meta else "") or "",
+                "notes": (meta.notes if meta else "") or "",
                 "tracking_id": meta.pk if meta else None,
                 "is_esim": bool(sale.is_esim),
                 "used_manual_renew": used_manual,
@@ -228,6 +234,9 @@ def reference_disconnect_counts(
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
     }
+    dismissed_keys = {
+        k for k, m in metas.items() if getattr(m, "is_dismissed", False)
+    }
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
     counts = {
@@ -239,7 +248,7 @@ def reference_disconnect_counts(
     esim_active = 0
     for row in grouped:
         key = row["ref_key"] or ""
-        if not key:
+        if not key or key in dismissed_keys:
             continue
         sale = latest_by_key.get(key)
         if not sale:
@@ -312,11 +321,100 @@ def filter_stale_rows(
                 str(r.get("line_name") or ""),
                 str(r.get("product_display") or ""),
                 str(r.get("sim_identifier") or ""),
+                str(r.get("notes") or ""),
             )
             return any(needle in p.lower() for p in parts)
 
         out = [r for r in out if matches(r)]
     return out
+
+
+@transaction.atomic
+def dismiss_phone_line(*, ref_key: str, display_reference: str = "") -> PhoneLineTracking:
+    """Remove a number from بيان الأرقام / dashboard counts (keeps sale history)."""
+    key = normalize_reference_key(ref_key)
+    if not key:
+        raise ValueError(_("Invalid phone number."))
+    meta, _created = PhoneLineTracking.objects.update_or_create(
+        reference_key=key,
+        defaults={
+            "is_dismissed": True,
+            "last_display_reference": (display_reference or key)[:64],
+        },
+    )
+    if not meta.is_dismissed:
+        meta.is_dismissed = True
+        meta.save(update_fields=["is_dismissed", "updated_at"])
+    return meta
+
+
+@transaction.atomic
+def rename_phone_line(
+    *,
+    old_key: str,
+    new_reference: str,
+    sim_identifier: str = "",
+    notes: str = "",
+    reset_countdown: bool = True,
+) -> str:
+    """Rename a tracked phone across sales + tracking; optionally reset disconnect clock.
+
+    Returns the new normalized ``ref_key``.
+    """
+    old = normalize_reference_key(old_key)
+    new_display = (new_reference or "").strip()
+    new = normalize_reference_key(new_display)
+    if not old or not new:
+        raise ValueError(_("Enter a phone number or reference."))
+
+    sale_ids = list(
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .annotate(rk=Lower(Trim("reference_number")))
+        .filter(rk=old)
+        .values_list("pk", flat=True)
+    )
+    if not sale_ids:
+        raise ValueError(_("No sales found for this number."))
+
+    if new != old:
+        conflict = (
+            Sale.objects.exclude(status=Sale.Status.CANCELLED)
+            .annotate(rk=Lower(Trim("reference_number")))
+            .filter(rk=new)
+            .exclude(pk__in=sale_ids)
+            .exists()
+        )
+        if conflict:
+            raise ValueError(_("Another line already uses this number."))
+
+    Sale.objects.filter(pk__in=sale_ids).update(reference_number=new_display)
+
+    now = timezone.now() if reset_countdown else None
+    old_meta = PhoneLineTracking.objects.filter(reference_key=old).first()
+    defaults = {
+        "sim_identifier": (sim_identifier or "").strip(),
+        "notes": (notes or "").strip(),
+        "last_display_reference": new_display[:64],
+        "is_dismissed": False,
+    }
+    if reset_countdown:
+        defaults["manual_reset_at"] = now
+
+    if new == old:
+        if not reset_countdown and old_meta is not None:
+            defaults["manual_reset_at"] = old_meta.manual_reset_at
+        PhoneLineTracking.objects.update_or_create(
+            reference_key=old, defaults=defaults
+        )
+    else:
+        if old_meta is not None:
+            if not reset_countdown:
+                defaults["manual_reset_at"] = old_meta.manual_reset_at
+            old_meta.delete()
+        PhoneLineTracking.objects.update_or_create(
+            reference_key=new, defaults=defaults
+        )
+    return new
 
 
 _STATUS_SORT_ORDER = {

@@ -7,6 +7,8 @@ from companies.models import Company, ProductLine
 
 
 class StalePhoneLineEditForm(forms.Form):
+    """Inline / page form for ICCID + notes on a tracked line."""
+
     sim_identifier = forms.CharField(
         label=_("ICCID / SIM"),
         required=False,
@@ -20,6 +22,45 @@ class StalePhoneLineEditForm(forms.Form):
             }
         ),
     )
+    notes = forms.CharField(
+        label=_("Notes"),
+        required=False,
+        max_length=500,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm",
+                "autocomplete": "off",
+                "placeholder": _("Note…"),
+            }
+        ),
+    )
+
+
+class PhoneLineFullEditForm(StalePhoneLineEditForm):
+    """Edit page: change the phone/reference (resets disconnect countdown)."""
+
+    reference_number = forms.CharField(
+        label=_("Number / reference"),
+        max_length=64,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-sm font-monospace",
+                "autocomplete": "off",
+                "inputmode": "tel",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Put the number first on the edit page.
+        self.order_fields(["reference_number", "sim_identifier", "notes"])
+
+    def clean_reference_number(self):
+        raw = (self.cleaned_data.get("reference_number") or "").strip()
+        if not raw:
+            raise forms.ValidationError(_("Enter a phone number or reference."))
+        return raw
 
 
 class PhoneLinesFilterForm(forms.Form):
