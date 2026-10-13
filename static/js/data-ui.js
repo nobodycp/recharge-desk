@@ -22,7 +22,9 @@
     }, kind === "error" ? 2800 : 1800);
   }
 
-  // HTMX: HX-Trigger: {"rdToast": {"message": "...", "level": "success"|"error"}}
+  // HTMX only: HX-Trigger {"rdToast": {"message": "...", "level": "success"|"error"}}.
+  // Do not mirror Django flash alerts into toasts — that duplicates the top
+  // banner (e.g. تسوية الرصيد) and used to collapse into a narrow RTL strip.
   document.body.addEventListener("rdToast", function (evt) {
     var detail = (evt && evt.detail) || {};
     var payload = detail.value !== undefined ? detail.value : detail;
@@ -33,28 +35,6 @@
     if (payload && typeof payload === "object") {
       showToast(payload.message || payload.msg || "", payload.level || "info");
     }
-  });
-
-  // Full-page redirects (Delete / Renew / number rename): surface Django flash
-  // messages as toasts so mobile users notice success/failure without scrolling.
-  function toastFromFlashAlerts(root) {
-    var scope = root || document;
-    scope.querySelectorAll(".rd-alert-stack .alert").forEach(function (alert) {
-      var msg = (alert.textContent || "").trim();
-      if (!msg) return;
-      var level = "info";
-      if (alert.classList.contains("alert-danger")) level = "error";
-      else if (alert.classList.contains("alert-success")) level = "success";
-      else if (alert.classList.contains("alert-warning")) level = "warning";
-      showToast(msg, level);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    toastFromFlashAlerts(document);
-  });
-  document.addEventListener("rd:content-swapped", function (e) {
-    toastFromFlashAlerts((e.detail && e.detail.root) || document);
   });
 
   document.body.addEventListener("click", function (e) {

@@ -3152,12 +3152,18 @@ body.rd-inv-dialog-open {
   overflow: hidden;
 }
 
+/* Centered bottom toast. Do NOT use inset-inline: 50% — that sets both
+   inline-start and inline-end to 50% and collapses the box to ~0 width
+   (Arabic text then stacks one word per line). */
 .rd-toast {
   position: fixed;
   bottom: 1.25rem;
-  inset-inline: 50%;
-  transform: translateX(-50%) translateY(0.75rem);
+  left: 50%;
+  right: auto;
   z-index: 1080;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
   padding: 0.55rem 1rem;
   border-radius: var(--rd-radius-md);
   background: var(--bs-secondary-bg);
@@ -3165,11 +3171,13 @@ body.rd-inv-dialog-open {
   color: var(--bs-body-color);
   font-size: 0.85rem;
   font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
   opacity: 0;
+  transform: translateX(-50%) translateY(0.75rem);
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
-  max-width: min(22rem, calc(100vw - 2rem));
-  text-align: center;
 }
 
 .rd-toast--success {
@@ -3190,17 +3198,9 @@ body.rd-inv-dialog-open {
   color: var(--bs-warning-text-emphasis, #664d03);
 }
 
-html[dir="rtl"] .rd-toast {
-  transform: translateX(50%) translateY(0.75rem);
-}
-
 .rd-toast.is-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-html[dir="rtl"] .rd-toast.is-visible {
-  transform: translateX(50%) translateY(0);
 }
 
 /* -------------------------------------------------------------------------- */
