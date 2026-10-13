@@ -773,12 +773,15 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("rdToast", r["HX-Trigger"])
         self.assertIn("Saved", r["HX-Trigger"])
+        # Refreshes the whole results grid (not a single cell).
+        self.assertContains(r, "rd-stale-phones-grid")
+        self.assertContains(r, "ICCID-STMT-1")
         meta = PhoneLineTracking.objects.get(reference_key="055stmti001")
         self.assertEqual(meta.sim_identifier, "ICCID-STMT-1")
         self.assertEqual(meta.notes, "chip at shop")
         self.assertIsNone(meta.manual_reset_at)
 
-    def test_inline_save_error_returns_toast_and_swappable_cell(self):
+    def test_inline_save_error_keeps_grid_and_toasts(self):
         s = self._make_sale(ref="055STMTE002", paid=True)
         self._age_sale(s, days_ago=5, duration_days=30)
         url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTE002"})
@@ -791,11 +794,10 @@ class PhoneLinesStatementTests(_ReportsBase):
             },
             HTTP_HX_REQUEST="true",
         )
-        # 200 (not 400) so htmx swaps errors into the cell + fires toast.
         self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["HX-Reswap"], "none")
         self.assertIn("rdToast", r["HX-Trigger"])
         self.assertIn("error", r["HX-Trigger"])
-        self.assertContains(r, "stale-sim-055stmte002")
 
     def test_delete_removes_number_from_statement(self):
         s = self._make_sale(ref="055STMTD001", paid=True)
@@ -869,8 +871,9 @@ class PhoneLinesStatementTests(_ReportsBase):
             },
             HTTP_HX_REQUEST="true",
         )
-        self.assertEqual(r.status_code, 204)
-        self.assertIn("phone-lines", r["HX-Redirect"])
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("rdToast", r["HX-Trigger"])
+        self.assertContains(r, "rd-stale-phones-grid")
         overdue.refresh_from_db()
         self.assertEqual(overdue.reference_number, "055STMTE099")
         self.assertFalse(
@@ -896,8 +899,8 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertIn('name="notes"', body)
         self.assertIn('name="sim_identifier"', body)
         self.assertIn('id="stale-sim-form-055stmtu001"', body)
-        # Save sits in the compact actions row (form=), not a separate edit page.
-        self.assertIn('form="stale-sim-form-055stmtu001"', body)
+        # Save is inside the form and refreshes the results grid only.
+        self.assertIn('hx-target="#phone-lines-list-results"', body)
         self.assertIn("rd-stale-phone-actions", body)
         self.assertNotIn(
             reverse("reports:stale_phone_edit", kwargs={"ref_key": "055stmtu001"}),

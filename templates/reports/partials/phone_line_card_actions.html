@@ -1,19 +1,15 @@
 {% load i18n %}
-{# Compact Save / Delete / Renew on one row (Save optional via include_save). #}
+{# Compact Delete / Renew — HTMX refreshes the results grid only. #}
 <div class="rd-stale-phone-actions{% if stacked %} rd-stale-phone-actions--stacked{% endif %}">
-  {% if include_save %}
-    <button
-      type="submit"
-      form="stale-sim-form-{{ row.ref_key }}"
-      class="btn btn-sm btn-outline-primary rd-stale-phone-actions__btn"
-    >{% trans "Save" %}</button>
-  {% endif %}
   <form
     method="post"
     action="{% url 'reports:phone_line_delete' ref_key=row.ref_key %}"
     class="rd-stale-phone-actions__item"
+    hx-post="{% url 'reports:phone_line_delete' ref_key=row.ref_key %}"
+    hx-target="#phone-lines-list-results"
+    hx-swap="innerHTML"
     hx-boost="false"
-    onsubmit="return confirm('{% filter escapejs %}{% trans "Remove this number from the line statement? Sale history stays; it will no longer appear in inventory or dashboard counts." %}{% endfilter %}');"
+    hx-confirm="{% filter escapejs %}{% trans "Remove this number from the line statement? Sale history stays; it will no longer appear in inventory or dashboard counts." %}{% endfilter %}"
   >
     {% csrf_token %}
     <input type="hidden" name="next_query" value="{{ list_query }}">
@@ -24,8 +20,11 @@
       method="post"
       action="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
       class="rd-stale-phone-actions__item"
+      hx-post="{% url 'reports:phone_line_renew' ref_key=row.ref_key %}"
+      hx-target="#phone-lines-list-results"
+      hx-swap="innerHTML"
       hx-boost="false"
-      onsubmit="return confirm('{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}');"
+      hx-confirm="{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}"
     >
       {% csrf_token %}
       <input type="hidden" name="next_query" value="{{ list_query }}">
