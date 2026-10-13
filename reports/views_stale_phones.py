@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -26,6 +28,14 @@ from reports.stale_phones import (
     sort_stale_rows,
 )
 from sales.views._shared import is_htmx
+
+
+def _with_htmx_toast(response: HttpResponse, message: str, *, level: str = "success") -> HttpResponse:
+    """Attach a client toast via HX-Trigger (see static/js/data-ui.js ``rdToast``)."""
+    response["HX-Trigger"] = json.dumps(
+        {"rdToast": {"message": str(message), "level": level}}
+    )
+    return response
 
 _SORT_FIELDS = frozenset(
     {
@@ -140,37 +150,62 @@ def _phone_lines_filter_cleaned(request, profile, filter_form, *, default_th: in
     return cleaned, days
 
 
+def _phone_lines_list_context(request, profile, *, get_params=None) -> dict:
+    """Build the list/report context from ``get_params`` (defaults to request.GET)."""
+    get = get_params if get_params is not None else request.GET
+    original_get = request.GET
+    request.GET = get
+    try:
+        default_th = int(profile.stale_phone_threshold_days or 85)
+        filter_form = PhoneLinesFilterForm(
+            get or None, default_threshold=default_th
+        )
+        cleaned, days = _phone_lines_filter_cleaned(
+            request, profile, filter_form, default_th=default_th
+        )
+        rows = phone_lines_aggregate(threshold_days=days, due_soon_hours=24)
+        rows = filter_stale_rows(
+            rows,
+            cleaned=cleaned,
+            q=get.get("q", ""),
+        )
+        sort, order = _sort_params(request, default_sort="last_activity")
+        rows = sort_stale_rows(rows, sort=sort, order=order)
+        page_obj = paginate_request(request, rows, allow_empty_first_page=True)
+        list_query = get.urlencode()
+        return {
+            "title": _("Line statement"),
+            "threshold_days": days,
+            "filter_form": filter_form,
+            "page_obj": page_obj,
+            "sort": sort,
+            "order": order,
+            "list_query": list_query,
+        }
+    finally:
+        request.GET = original_get
+
+
+def _htmx_phone_lines_results(
+    request, profile, *, list_query: str, toast: str, level: str = "success"
+) -> HttpResponse:
+    """Re-render only the results grid after an in-list action + toast."""
+    ctx = _phone_lines_list_context(
+        request, profile, get_params=QueryDict(list_query or "")
+    )
+    resp = render(
+        request,
+        "reports/partials/phone_lines_report_results.html",
+        ctx,
+    )
+    return _with_htmx_toast(resp, toast, level=level)
+
+
 @management_required
 def phone_lines_report(request):
     """Full inventory statement of every phone/reference (بيان الأرقام)."""
     profile = _management_profile(request)
-    default_th = int(profile.stale_phone_threshold_days or 85)
-    filter_form = PhoneLinesFilterForm(
-        request.GET or None, default_threshold=default_th
-    )
-    cleaned, days = _phone_lines_filter_cleaned(
-        request, profile, filter_form, default_th=default_th
-    )
-
-    rows = phone_lines_aggregate(threshold_days=days, due_soon_hours=24)
-    rows = filter_stale_rows(
-        rows,
-        cleaned=cleaned,
-        q=request.GET.get("q", ""),
-    )
-    sort, order = _sort_params(request, default_sort="last_activity")
-    rows = sort_stale_rows(rows, sort=sort, order=order)
-    page_obj = paginate_request(request, rows, allow_empty_first_page=True)
-    list_query = request.GET.urlencode()
-    ctx = {
-        "title": _("Line statement"),
-        "threshold_days": days,
-        "filter_form": filter_form,
-        "page_obj": page_obj,
-        "sort": sort,
-        "order": order,
-        "list_query": list_query,
-    }
+    ctx = _phone_lines_list_context(request, profile)
     if is_htmx(request):
         return render(
             request,
@@ -257,7 +292,7 @@ def stale_phone_edit(request, ref_key: str):
 @management_required
 @require_POST
 def stale_phone_sim_save(request, ref_key: str):
-    """Inline number + ICCID + notes save from the list (HTMX or normal POST)."""
+    """Inline number + ICCID + notes save from the list (HTMX refreshes the grid)."""
     profile = _management_profile(request)
     key = normalize_reference_key(ref_key)
     if not key:
@@ -271,19 +306,19 @@ def stale_phone_sim_save(request, ref_key: str):
     next_query = _list_query_from_request(request)
     list_url = _safe_list_redirect(request, query=next_query)
 
-    def _error_response(*, status: int = 400):
+    def _error_response(message: str | None = None):
+        err = message or _("Could not save.")
         if is_htmx(request):
-            return render(
-                request,
-                "reports/partials/stale_phone_sim_cell.html",
-                {"row": row, "list_query": next_query, "form": form, "saved": False},
-                status=status,
-            )
-        messages.error(request, _("Could not save."))
+            # Leave the grid as-is; toast explains the failure.
+            resp = HttpResponse(status=200)
+            resp["HX-Reswap"] = "none"
+            return _with_htmx_toast(resp, err, level="error")
+        messages.error(request, err)
         return redirect(list_url)
 
     if not form.is_valid():
-        return _error_response()
+        first_err = next(iter(form.errors.values()), [None])[0]
+        return _error_response(str(first_err) if first_err else None)
 
     new_display = form.cleaned_data["reference_number"]
     new_key = normalize_reference_key(new_display)
@@ -298,35 +333,21 @@ def stale_phone_sim_save(request, ref_key: str):
             reset_countdown=number_changed,
         )
     except ValueError as exc:
-        form.add_error("reference_number", str(exc))
-        return _error_response()
+        return _error_response(str(exc))
 
     if number_changed:
-        messages.success(
-            request,
-            _(
-                "Line updated. Disconnect countdown restarted from today "
-                "(virtual 1-day renew)."
-            ),
+        ok_msg = _(
+            "Line updated. Disconnect countdown restarted from today "
+            "(virtual 1-day renew)."
         )
-        if is_htmx(request):
-            resp = HttpResponse(status=204)
-            resp["HX-Redirect"] = list_url
-            return resp
-        return redirect(list_url)
+    else:
+        ok_msg = _("Saved.")
 
-    # Same number: refresh the cell in place (ICCID / notes only).
-    row = _row_for_ref(ref_key=new_key, threshold_days=days) or row
-    row["sim_identifier"] = (form.cleaned_data.get("sim_identifier") or "").strip()
-    row["notes"] = (form.cleaned_data.get("notes") or "").strip()
-    row["display_reference"] = new_display
     if is_htmx(request):
-        return render(
-            request,
-            "reports/partials/stale_phone_sim_cell.html",
-            {"row": row, "list_query": next_query, "saved": True},
+        return _htmx_phone_lines_results(
+            request, profile, list_query=next_query, toast=ok_msg, level="success"
         )
-    messages.success(request, _("Saved."))
+    messages.success(request, ok_msg)
     return redirect(list_url)
 
 
@@ -345,11 +366,13 @@ def phone_line_delete(request, ref_key: str):
     dismiss_phone_line(
         ref_key=key, display_reference=row.get("display_reference") or key
     )
-    messages.success(
-        request,
-        _("Number removed from the line statement. Sale history is kept."),
-    )
+    ok_msg = _("Number removed from the line statement. Sale history is kept.")
     next_query = _list_query_from_request(request)
+    if is_htmx(request):
+        return _htmx_phone_lines_results(
+            request, profile, list_query=next_query, toast=ok_msg, level="success"
+        )
+    messages.success(request, ok_msg)
     return redirect(_safe_list_redirect(request, query=next_query))
 
 
@@ -379,9 +402,13 @@ def phone_line_renew(request, ref_key: str):
             "last_display_reference": (row["display_reference"] or "")[:64],
         },
     )
-    messages.success(
-        request,
-        _("Renewed as a 1-day charge — the line is no longer marked as left the agency."),
+    ok_msg = _(
+        "Renewed as a 1-day charge — the line is no longer marked as left the agency."
     )
     next_query = _list_query_from_request(request)
+    if is_htmx(request):
+        return _htmx_phone_lines_results(
+            request, profile, list_query=next_query, toast=ok_msg, level="success"
+        )
+    messages.success(request, ok_msg)
     return redirect(_safe_list_redirect(request, query=next_query))

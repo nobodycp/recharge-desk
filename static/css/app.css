@@ -1118,6 +1118,10 @@
   width: 100%;
 }
 
+.rd-stale-phone-card .rd-stale-sim-form > .rd-stale-phone-actions__btn {
+  width: 100%;
+}
+
 /* Compact Save / Delete / Renew on one row (especially mobile cards). */
 .rd-stale-phone-actions {
   display: flex;
