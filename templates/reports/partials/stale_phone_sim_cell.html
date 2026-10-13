@@ -3,7 +3,7 @@
   <form
     method="post"
     action="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
-    class="rd-stale-sim-form d-flex flex-column flex-sm-row gap-1 align-items-stretch align-items-sm-center"
+    class="rd-stale-sim-form d-flex flex-column gap-1"
     hx-post="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
     hx-target="#stale-sim-{{ row.ref_key }}"
     hx-swap="outerHTML"
@@ -15,16 +15,28 @@
       type="text"
       name="sim_identifier"
       value="{% if form %}{{ form.sim_identifier.value|default:row.sim_identifier }}{% else %}{{ row.sim_identifier }}{% endif %}"
-      class="form-control form-control-sm rd-stale-sim-input{% if form and form.errors %} is-invalid{% endif %}"
+      class="form-control form-control-sm rd-stale-sim-input{% if form and form.sim_identifier.errors %} is-invalid{% endif %}"
       placeholder="{% trans 'ICCID / SIM' %}"
       autocomplete="off"
       inputmode="text"
       aria-label="{% trans 'ICCID / SIM' %}"
     >
-    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">{% trans "Save" %}</button>
+    <input
+      type="text"
+      name="notes"
+      value="{% if form %}{{ form.notes.value|default:row.notes }}{% else %}{{ row.notes }}{% endif %}"
+      class="form-control form-control-sm{% if form and form.notes.errors %} is-invalid{% endif %}"
+      placeholder="{% trans 'Note…' %}"
+      autocomplete="off"
+      aria-label="{% trans 'Notes' %}"
+    >
+    <button type="submit" class="btn btn-sm btn-outline-primary w-100">{% trans "Save" %}</button>
   </form>
   {% if saved %}
     <div class="small text-success mt-1">{% trans "Saved." %}</div>
   {% endif %}
-  {% if form %}{{ form.sim_identifier.errors }}{% endif %}
+  {% if form %}
+    {{ form.sim_identifier.errors }}
+    {{ form.notes.errors }}
+  {% endif %}
 </div>

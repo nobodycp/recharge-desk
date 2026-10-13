@@ -28,6 +28,11 @@ urlpatterns = [
         name="phone_line_renew",
     ),
     path(
+        "management/reports/phone-lines/delete/<str:ref_key>/",
+        views_stale_phones.phone_line_delete,
+        name="phone_line_delete",
+    ),
+    path(
         "management/reports/phone-lines/",
         views_stale_phones.phone_lines_report,
         name="phone_lines_report",

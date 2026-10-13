@@ -475,7 +475,30 @@ AR: dict[str, str] = {
     "Number / reference": "الرقم / المرجع",
     "SIM / chip": "الشريحة / رقم الشريحة",
     "ICCID / SIM": "ICCID / الشريحة",
+    "ICCID / notes": "ICCID / ملاحظات",
     "ICCID or SIM serial": "ICCID أو رقم الشريحة",
+    "Note…": "ملاحظة…",
+    "Edit number": "تعديل الرقم",
+    "Edit line": "تعديل الرقم",
+    "Number, ICCID, and notes": "الرقم و ICCID والملاحظات",
+    "Changing the number updates all sales for this line and restarts the disconnect countdown from today.": (
+        "تغيير الرقم يحدّث كل مبيعات هذا الخط ويعيد عد أيام الخروج من الوكالة من اليوم."
+    ),
+    "Line updated. Disconnect countdown restarted from today (virtual 1-day renew).": (
+        "تم تحديث الخط. أُعيد عد أيام الخروج من الوكالة من اليوم (تجديد يوم افتراضي)."
+    ),
+    "Remove this number from the line statement? Sale history stays; it will no longer appear in inventory or dashboard counts.": (
+        "إزالة هذا الرقم من بيان الأرقام؟ سجل المبيعات يبقى؛ لن يظهر في المخزون أو عدّادات اللوحة."
+    ),
+    "Number removed from the line statement. Sale history is kept.": (
+        "أُزيل الرقم من بيان الأرقام. سجل المبيعات محفوظ."
+    ),
+    "Enter a phone number or reference.": "أدخل رقم هاتف أو مرجعاً.",
+    "No sales found for this number.": "لا توجد مبيعات لهذا الرقم.",
+    "Another line already uses this number.": "رقم آخر يستخدم هذا الرقم مسبقاً.",
+    "Invalid phone number.": "رقم الهاتف غير صالح.",
+    "Could not save.": "تعذّر الحفظ.",
+    "Number / reference": "الرقم / المرجع",
     "Last sale entry": "آخر إدخال بيع",
     "Last sale": "آخر بيع",
     "Customer or payer": "الزبون أو الدافع",
