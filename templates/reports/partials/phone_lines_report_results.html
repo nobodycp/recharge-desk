@@ -30,8 +30,8 @@
               <th class="text-end">
                 <a class="rd-datagrid-sort {% if sort == 'days_past_end' or sort == 'idle_days' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'days_past_end' and order == 'desc' %}{% querystring sort='days_past_end' order='asc' page=1 %}{% else %}{% querystring sort='days_past_end' order='desc' page=1 %}{% endif %}">{% trans "Days past end" %}</a>
               </th>
-              <th style="min-width: 14rem;">
-                <a class="rd-datagrid-sort {% if sort == 'sim' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sim' and order == 'desc' %}{% querystring sort='sim' order='asc' page=1 %}{% else %}{% querystring sort='sim' order='desc' page=1 %}{% endif %}">{% trans "ICCID / notes" %}</a>
+              <th style="min-width: 16rem;">
+                <a class="rd-datagrid-sort {% if sort == 'sim' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sim' and order == 'desc' %}{% querystring sort='sim' order='asc' page=1 %}{% else %}{% querystring sort='sim' order='desc' page=1 %}{% endif %}">{% trans "Number / ICCID / notes" %}</a>
               </th>
               <th>
                 <a class="rd-datagrid-sort {% if sort == 'last_activity' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'last_activity' and order == 'desc' %}{% querystring sort='last_activity' order='asc' page=1 %}{% else %}{% querystring sort='last_activity' order='desc' page=1 %}{% endif %}">{% trans "Last sale" %}</a>

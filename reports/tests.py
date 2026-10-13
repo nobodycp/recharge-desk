@@ -763,6 +763,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         r = self.client.post(
             url,
             {
+                "reference_number": "055STMTI001",
                 "sim_identifier": "ICCID-STMT-1",
                 "notes": "chip at shop",
                 "next_query": "sort=ref",
@@ -773,6 +774,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         meta = PhoneLineTracking.objects.get(reference_key="055stmti001")
         self.assertEqual(meta.sim_identifier, "ICCID-STMT-1")
         self.assertEqual(meta.notes, "chip at shop")
+        self.assertIsNone(meta.manual_reset_at)
 
     def test_delete_removes_number_from_statement(self):
         s = self._make_sale(ref="055STMTD001", paid=True)
@@ -791,16 +793,20 @@ class PhoneLinesStatementTests(_ReportsBase):
     def test_edit_number_renames_sales_and_resets_countdown(self):
         overdue = self._make_sale(ref="055STMTE010", paid=True)
         self._age_sale(overdue, days_ago=130, duration_days=30)
-        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "055STMTE010"})
+        # Inline save on the statement (no separate edit page).
+        url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTE010"})
         r = self.client.post(
             url,
             {
                 "reference_number": "055STMTE099",
                 "sim_identifier": "ICCID-X",
                 "notes": "corrected",
+                "next_query": "status=overdue",
             },
+            HTTP_HX_REQUEST="true",
         )
-        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.status_code, 204)
+        self.assertIn("phone-lines", r["HX-Redirect"])
         overdue.refresh_from_db()
         self.assertEqual(overdue.reference_number, "055STMTE099")
         self.assertFalse(
@@ -817,13 +823,15 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertNotEqual(by_ref["055stmte099"]["status"], "overdue")
         self.assertTrue(by_ref["055stmte099"]["used_manual_renew"])
 
-    def test_statement_shows_notes_edit_and_delete_controls(self):
+    def test_statement_shows_inline_number_iccid_notes_and_delete(self):
         s = self._make_sale(ref="055STMTU001", paid=True)
         self._age_sale(s, days_ago=5, duration_days=30)
         r = self.client.get(reverse("reports:phone_lines_report"))
         body = r.content.decode()
+        self.assertIn('name="reference_number"', body)
         self.assertIn('name="notes"', body)
-        self.assertIn(
+        self.assertIn('name="sim_identifier"', body)
+        self.assertNotIn(
             reverse("reports:stale_phone_edit", kwargs={"ref_key": "055stmtu001"}),
             body,
         )
@@ -860,7 +868,6 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertNotIn('hx-get=', body)
         self.assertNotIn('hx-boost="true"', body)
         self.assertIn('hx-boost="false"', body)
-        self.assertIn("data-rd-live-skip", body)
         # Active filters keep the filter card open.
         self.assertIn('class="rd-card mb-3 position-relative rd-filter-card" open', body)
 

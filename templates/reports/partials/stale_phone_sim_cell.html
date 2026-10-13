@@ -13,6 +13,16 @@
     <input type="hidden" name="next_query" value="{{ list_query }}">
     <input
       type="text"
+      name="reference_number"
+      value="{% if form %}{{ form.reference_number.value|default:row.display_reference }}{% else %}{{ row.display_reference }}{% endif %}"
+      class="form-control form-control-sm font-monospace{% if form and form.reference_number.errors %} is-invalid{% endif %}"
+      placeholder="{% trans 'Number / reference' %}"
+      autocomplete="off"
+      inputmode="tel"
+      aria-label="{% trans 'Number / reference' %}"
+    >
+    <input
+      type="text"
       name="sim_identifier"
       value="{% if form %}{{ form.sim_identifier.value|default:row.sim_identifier }}{% else %}{{ row.sim_identifier }}{% endif %}"
       class="form-control form-control-sm rd-stale-sim-input{% if form and form.sim_identifier.errors %} is-invalid{% endif %}"
@@ -32,11 +42,16 @@
     >
     <button type="submit" class="btn btn-sm btn-outline-primary w-100">{% trans "Save" %}</button>
   </form>
+  <div class="form-text mt-1">
+    {% trans "Save updates number, ICCID, and notes. Changing the number restarts the disconnect countdown." %}
+  </div>
   {% if saved %}
     <div class="small text-success mt-1">{% trans "Saved." %}</div>
   {% endif %}
   {% if form %}
+    {{ form.reference_number.errors }}
     {{ form.sim_identifier.errors }}
     {{ form.notes.errors }}
+    {{ form.non_field_errors }}
   {% endif %}
 </div>

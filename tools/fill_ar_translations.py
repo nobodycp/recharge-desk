@@ -476,11 +476,15 @@ AR: dict[str, str] = {
     "SIM / chip": "الشريحة / رقم الشريحة",
     "ICCID / SIM": "ICCID / الشريحة",
     "ICCID / notes": "ICCID / ملاحظات",
+    "Number / ICCID / notes": "الرقم / ICCID / ملاحظات",
     "ICCID or SIM serial": "ICCID أو رقم الشريحة",
     "Note…": "ملاحظة…",
     "Edit number": "تعديل الرقم",
     "Edit line": "تعديل الرقم",
     "Number, ICCID, and notes": "الرقم و ICCID والملاحظات",
+    "Save updates number, ICCID, and notes. Changing the number restarts the disconnect countdown.": (
+        "الحفظ يحدّث الرقم و ICCID والملاحظات. تغيير الرقم يعيد عد أيام الخروج من الوكالة."
+    ),
     "Changing the number updates all sales for this line and restarts the disconnect countdown from today.": (
         "تغيير الرقم يحدّث كل مبيعات هذا الخط ويعيد عد أيام الخروج من الوكالة من اليوم."
     ),

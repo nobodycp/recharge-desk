@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from accounts.models import UserProfile
 from accounts.permissions import management_required
 from core.pagination import paginate_request
-from reports.forms import PhoneLineFullEditForm, PhoneLinesFilterForm, StalePhoneLineEditForm
+from reports.forms import PhoneLineFullEditForm, PhoneLinesFilterForm
 from reports.models import PhoneLineTracking
 from reports.stale_phones import (
     STATUS_OVERDUE,
@@ -257,7 +257,7 @@ def stale_phone_edit(request, ref_key: str):
 @management_required
 @require_POST
 def stale_phone_sim_save(request, ref_key: str):
-    """Inline ICCID + notes save from the list (HTMX or normal POST)."""
+    """Inline number + ICCID + notes save from the list (HTMX or normal POST)."""
     profile = _management_profile(request)
     key = normalize_reference_key(ref_key)
     if not key:
@@ -267,39 +267,67 @@ def stale_phone_sim_save(request, ref_key: str):
     if not row:
         raise Http404
 
-    form = StalePhoneLineEditForm(request.POST)
+    form = PhoneLineFullEditForm(request.POST)
     next_query = _list_query_from_request(request)
-    if form.is_valid():
-        sim = (form.cleaned_data.get("sim_identifier") or "").strip()
-        notes = (form.cleaned_data.get("notes") or "").strip()
-        PhoneLineTracking.objects.update_or_create(
-            reference_key=key,
-            defaults={
-                "sim_identifier": sim,
-                "notes": notes,
-                "last_display_reference": (row["display_reference"] or "")[:64],
-            },
-        )
-        row["sim_identifier"] = sim
-        row["notes"] = notes
+    list_url = _safe_list_redirect(request, query=next_query)
+
+    def _error_response(*, status: int = 400):
         if is_htmx(request):
             return render(
                 request,
                 "reports/partials/stale_phone_sim_cell.html",
-                {"row": row, "list_query": next_query, "saved": True},
+                {"row": row, "list_query": next_query, "form": form, "saved": False},
+                status=status,
             )
-        messages.success(request, _("Saved."))
-        return redirect(_safe_list_redirect(request, query=next_query))
+        messages.error(request, _("Could not save."))
+        return redirect(list_url)
 
+    if not form.is_valid():
+        return _error_response()
+
+    new_display = form.cleaned_data["reference_number"]
+    new_key = normalize_reference_key(new_display)
+    old_display = (row.get("display_reference") or "").strip()
+    number_changed = new_key != key or new_display != old_display
+    try:
+        rename_phone_line(
+            old_key=key,
+            new_reference=new_display,
+            sim_identifier=form.cleaned_data.get("sim_identifier") or "",
+            notes=form.cleaned_data.get("notes") or "",
+            reset_countdown=number_changed,
+        )
+    except ValueError as exc:
+        form.add_error("reference_number", str(exc))
+        return _error_response()
+
+    if number_changed:
+        messages.success(
+            request,
+            _(
+                "Line updated. Disconnect countdown restarted from today "
+                "(virtual 1-day renew)."
+            ),
+        )
+        if is_htmx(request):
+            resp = HttpResponse(status=204)
+            resp["HX-Redirect"] = list_url
+            return resp
+        return redirect(list_url)
+
+    # Same number: refresh the cell in place (ICCID / notes only).
+    row = _row_for_ref(ref_key=new_key, threshold_days=days) or row
+    row["sim_identifier"] = (form.cleaned_data.get("sim_identifier") or "").strip()
+    row["notes"] = (form.cleaned_data.get("notes") or "").strip()
+    row["display_reference"] = new_display
     if is_htmx(request):
         return render(
             request,
             "reports/partials/stale_phone_sim_cell.html",
-            {"row": row, "list_query": next_query, "form": form, "saved": False},
-            status=400,
+            {"row": row, "list_query": next_query, "saved": True},
         )
-    messages.error(request, _("Could not save."))
-    return redirect(_safe_list_redirect(request, query=next_query))
+    messages.success(request, _("Saved."))
+    return redirect(list_url)
 
 
 @management_required
