@@ -441,7 +441,10 @@ def approve_customer_payment_submission(
     sub.status = CustomerPaymentSubmission.Status.APPROVED
     sub.approved_by = user
     sub.approved_at = timezone.now()
-    sub.save(update_fields=["status", "approved_by", "approved_at"])
+    sub.resulting_payment = payment
+    sub.save(
+        update_fields=["status", "approved_by", "approved_at", "resulting_payment"]
+    )
     audit_record(
         AuditAction.APPROVE,
         sub,
@@ -479,6 +482,98 @@ def reject_customer_payment_submission(
         sub,
         actor=user,
         changes={"reason": sub.reject_reason},
+    )
+
+
+@transaction.atomic
+def update_awaiting_customer_payment_submission(
+    *,
+    submission: CustomerPaymentSubmission,
+    customer: Customer,
+    amount: Decimal,
+    payment_method,
+    notes: str = "",
+    user,
+    paid_via_employee: bool = False,
+    employee_recipient=None,
+) -> CustomerPaymentSubmission:
+    """Edit an awaiting submission before management acts on it."""
+    sub = CustomerPaymentSubmission.objects.select_for_update().get(pk=submission.pk)
+    if sub.status != CustomerPaymentSubmission.Status.AWAITING:
+        raise ValueError(_("Only awaiting payments can be edited."))
+    if not customer.is_active:
+        raise ValueError(_("Customer is inactive."))
+    amt = Decimal(amount or 0)
+    if amt <= 0:
+        raise ValueError(_("Payment amount must be positive."))
+    paid_via_employee = bool(paid_via_employee)
+    if paid_via_employee:
+        if employee_recipient is None:
+            raise ValueError(_("Employee recipient is required for employee-held payments."))
+        payment_method = None
+    elif payment_method is None:
+        raise ValueError(_("Payment method is required."))
+    sub.customer = customer
+    sub.amount = amt
+    sub.payment_method = payment_method
+    sub.paid_via_employee = paid_via_employee
+    sub.employee_recipient = employee_recipient if paid_via_employee else None
+    sub.notes = (notes or "").strip()
+    sub.save(
+        update_fields=[
+            "customer",
+            "amount",
+            "payment_method",
+            "paid_via_employee",
+            "employee_recipient",
+            "notes",
+        ]
+    )
+    audit_record(
+        AuditAction.UPDATE,
+        sub,
+        actor=user,
+        changes={
+            "customer_id": customer.pk,
+            "amount": str(amt),
+            "payment_method_id": getattr(payment_method, "pk", None),
+            "paid_via_employee": paid_via_employee,
+        },
+    )
+    return sub
+
+
+@transaction.atomic
+def delete_employee_customer_payment_submission(
+    *, submission: CustomerPaymentSubmission, user
+) -> None:
+    """Employee undo: drop awaiting/rejected rows, or reverse an approved payment."""
+    sub = CustomerPaymentSubmission.objects.select_for_update().get(pk=submission.pk)
+    if sub.created_by_id != getattr(user, "pk", None):
+        raise ValueError(_("You can only change your own payment entries."))
+    sub_id = sub.pk
+    status = sub.status
+    if status == CustomerPaymentSubmission.Status.APPROVED:
+        payment = sub.resulting_payment
+        if payment is None:
+            raise ValueError(_("This payment can no longer be undone from here."))
+        # Clear the link first so deleting the payment doesn't fight the FK.
+        sub.resulting_payment = None
+        sub.save(update_fields=["resulting_payment"])
+        delete_customer_payment(payment=payment, user=user)
+        sub.delete()
+    elif status in (
+        CustomerPaymentSubmission.Status.AWAITING,
+        CustomerPaymentSubmission.Status.REJECTED,
+    ):
+        sub.delete()
+    else:
+        raise ValueError(_("This payment cannot be deleted."))
+    audit_record(
+        AuditAction.DELETE,
+        submission,
+        actor=user,
+        changes={"_pk": sub_id, "status": status},
     )
 
 

@@ -104,5 +104,40 @@
     <button type="submit" class="btn btn-primary w-100" id="rd-pay-sub-submit">{% trans "Submit" %}</button>
   </form>
 </div>
+
+{% if recent_payments %}
+<div class="mt-3">
+  <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+    <h2 class="h6 mb-0">{% trans "Today’s payments" %}</h2>
+    <a class="small" href="{% url 'sales:employee_recent_sales' %}">{% trans "All entries" %}</a>
+  </div>
+  <div class="rd-card overflow-hidden">
+    <div class="list-group list-group-flush rd-list-flush">
+      {% for p in recent_payments %}
+        <div id="payment-row-{{ p.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
+          <div class="d-flex justify-content-between gap-3">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate">{{ p.customer.name }}</div>
+              <div class="small text-secondary text-truncate">
+                {% if p.paid_via_employee %}
+                  {% trans "Payment to employee" %}
+                {% elif p.payment_method %}
+                  {{ p.payment_method.name|tdb }}
+                {% endif %}
+                · {{ p.created_at|date:"H:i" }}
+              </div>
+            </div>
+            <div class="text-end flex-shrink-0 small">
+              <div class="fw-semibold tabular-nums">{{ p.amount|intcomma }}</div>
+              <div class="mt-1">{% include "partials/payment_submission_status_badge.html" with submission=p %}</div>
+            </div>
+          </div>
+          {% include "sales/partials/employee_payment_actions.html" with p=p editable_payment_ids=editable_payment_ids use_htmx=True %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 <script src="{% static 'js/employee-record-payment.js' %}{{ static_cache_query }}"></script>
 {% endblock %}

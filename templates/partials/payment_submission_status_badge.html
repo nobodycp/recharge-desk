@@ -1,0 +1,11 @@
+{% load i18n %}
+{# Expects variable `submission` with .status / .get_status_display #}
+{% if submission.status == "awaiting" %}
+  <span class="rd-badge rd-badge--pending">{{ submission.get_status_display }}</span>
+{% elif submission.status == "approved" %}
+  <span class="rd-badge rd-badge--paid">{{ submission.get_status_display }}</span>
+{% elif submission.status == "rejected" %}
+  <span class="rd-badge rd-badge--cancelled">{{ submission.get_status_display }}</span>
+{% else %}
+  <span class="rd-badge rd-badge--neutral">{{ submission.get_status_display }}</span>
+{% endif %}

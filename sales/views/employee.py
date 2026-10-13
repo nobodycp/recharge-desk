@@ -15,7 +15,13 @@ from core.http_utils import get_client_ip
 from core.models import AppSettings
 from core.sale_workflow import finalize_payment_submission_after_entry, finalize_sale_after_entry
 from customers.forms import EmployeeCustomerPaymentSubmissionForm
-from customers.services import resolve_or_create_customer_for_sale, submit_customer_payment_submission
+from customers.models import CustomerPaymentSubmission
+from customers.services import (
+    delete_employee_customer_payment_submission,
+    resolve_or_create_customer_for_sale,
+    submit_customer_payment_submission,
+    update_awaiting_customer_payment_submission,
+)
 from customers.views._shared import flash_form_errors
 from phone_refresh.models import RefreshSource, SystemSettings
 from phone_refresh.services.refresh_service import refresh_phone
@@ -23,7 +29,10 @@ from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, Employee
 from sales.models import PaymentMethod, Sale
 from sales.employee_editing import (
     EMPLOYEE_RECENT_EDIT_LIMIT,
+    employee_editable_payment_submission_ids,
     employee_editable_sale_ids,
+    payment_submission_is_employee_deletable,
+    payment_submission_is_employee_editable,
     sale_is_employee_editable,
 )
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
@@ -209,6 +218,16 @@ def employee_record_payment(request):
         messages.error(request, _("Recording payments from the sales screen is disabled."))
         return redirect("sales:employee_entry")
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    today = timezone.localdate()
+    recent_payments = list(
+        CustomerPaymentSubmission.objects.filter(
+            created_by=request.user,
+            created_at__date=today,
+        )
+        .select_related("customer", "payment_method")
+        .order_by("-created_at", "-id")[:20]
+    )
+    editable_payment_ids = employee_editable_payment_submission_ids(request.user)
     return render(
         request,
         "sales/employee_record_payment.html",
@@ -217,6 +236,8 @@ def employee_record_payment(request):
             "pay_sub_form": EmployeeCustomerPaymentSubmissionForm(user=request.user),
             "payment_methods": payment_methods,
             "acting_employee": get_acting_employee_profile(request.user),
+            "recent_payments": recent_payments,
+            "editable_payment_ids": editable_payment_ids,
         },
     )
 
@@ -374,8 +395,11 @@ def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
         qs = qs.filter(company=data["company"])
     if data.get("payment_method"):
         qs = qs.filter(payment_method=data["payment_method"])
-    if data.get("status"):
-        qs = qs.filter(status=data["status"])
+    status = data.get("status") or ""
+    if status.startswith("pay_"):
+        qs = qs.none()
+    elif status:
+        qs = qs.filter(status=status)
 
     date_from = data.get("date_from")
     date_to = data.get("date_to")
@@ -387,6 +411,67 @@ def _own_sales_qs(user, *, cleaned_filters=None, default_date=None):
         qs = qs.filter(created_at__date__lte=date_to)
 
     return qs.order_by("-created_at"), date_from, date_to
+
+
+def _own_payment_submissions_qs(user, *, cleaned_filters=None, default_date=None):
+    """Payment submissions created by this employee for My entries."""
+    from django.db.models import Q
+
+    qs = CustomerPaymentSubmission.objects.select_related(
+        "customer", "payment_method", "resulting_payment"
+    ).filter(created_by=user)
+
+    data = cleaned_filters or {}
+    # Company is sale-only — skip payments when that filter is active.
+    if data.get("company"):
+        return qs.none(), data.get("date_from"), data.get("date_to")
+
+    q = (data.get("q") or "").strip()
+    if q:
+        qs = qs.filter(customer__name__icontains=q)
+    if data.get("payment_method"):
+        qs = qs.filter(payment_method=data["payment_method"])
+    status = data.get("status") or ""
+    if status.startswith("pay_"):
+        qs = qs.filter(status=status.removeprefix("pay_"))
+    elif status:
+        qs = qs.none()
+
+    date_from = data.get("date_from")
+    date_to = data.get("date_to")
+    if not date_from and not date_to and default_date is not None:
+        date_from = date_to = default_date
+    if date_from:
+        qs = qs.filter(created_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(created_at__date__lte=date_to)
+
+    return qs.order_by("-created_at"), date_from, date_to
+
+
+def _merge_employee_entries(sales, payments):
+    """Newest-first mix of sales and payment submissions for My entries."""
+    entries = []
+    for s in sales:
+        entries.append(
+            {
+                "kind": "sale",
+                "created_at": s.created_at,
+                "sort_id": s.pk,
+                "sale": s,
+            }
+        )
+    for p in payments:
+        entries.append(
+            {
+                "kind": "payment",
+                "created_at": p.created_at,
+                "sort_id": p.pk,
+                "payment": p,
+            }
+        )
+    entries.sort(key=lambda e: (e["created_at"], e["sort_id"]), reverse=True)
+    return entries
 
 
 def _stock_check_customer_groups(balances):
@@ -452,8 +537,7 @@ def employee_stock_check(request):
 
 @employee_required
 def employee_recent_sales(request):
-    """Listing of the current employee's sales with edit/delete buttons
-    for entries management has not yet acted on.
+    """Listing of the current employee's sales and payment submissions.
 
     Defaults to today; an optional collapsible filter card lets the
     employee narrow by free-text (number/name), company, payment
@@ -481,8 +565,13 @@ def employee_recent_sales(request):
     sales_qs, date_from, date_to = _own_sales_qs(
         request.user, cleaned_filters=cleaned, default_date=default_date
     )
-    sales = list(sales_qs)
+    payments_qs, _pay_from, _pay_to = _own_payment_submissions_qs(
+        request.user, cleaned_filters=cleaned, default_date=default_date
+    )
+    del _pay_from, _pay_to
+    entries = _merge_employee_entries(list(sales_qs), list(payments_qs))
     editable_sale_ids = employee_editable_sale_ids(request.user)
+    editable_payment_ids = employee_editable_payment_submission_ids(request.user)
 
     if date_from and date_to and date_from == date_to:
         scope_label = (
@@ -509,8 +598,9 @@ def employee_recent_sales(request):
         "sales/employee_recent.html",
         {
             "title": _("My entries"),
-            "sales": sales,
+            "entries": entries,
             "editable_sale_ids": editable_sale_ids,
+            "editable_payment_ids": editable_payment_ids,
             "filter_form": filter_form,
             "scope_label": scope_label,
             "is_default_today": is_default_today,
@@ -599,6 +689,119 @@ def employee_sale_delete(request, pk):
     if htmx:
         return htmx_remove_target()
     messages.success(request, _("Entry was permanently removed."))
+    return redirect("sales:employee_recent_sales")
+
+
+@employee_required
+def employee_payment_edit(request, pk):
+    """Edit an awaiting customer payment submission the employee created."""
+    if not AppSettings.load().sales_show_record_payment:
+        messages.error(request, _("Recording payments from the sales screen is disabled."))
+        return redirect("sales:employee_entry")
+    submission = get_object_or_404(
+        CustomerPaymentSubmission.objects.select_related(
+            "customer", "payment_method", "employee_recipient"
+        ),
+        pk=pk,
+        created_by=request.user,
+    )
+    if not payment_submission_is_employee_editable(submission, request.user):
+        messages.error(
+            request,
+            _("You can only edit awaiting payments among your last %(count)s payments.")
+            % {"count": EMPLOYEE_RECENT_EDIT_LIMIT},
+        )
+        return redirect("sales:employee_recent_sales")
+
+    payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
+    acting_employee = get_acting_employee_profile(request.user)
+
+    if request.method == "POST":
+        form = EmployeeCustomerPaymentSubmissionForm(request.POST, user=request.user)
+        if form.is_valid():
+            paid_via_employee = (
+                bool(form.cleaned_data.get("paid_via_employee"))
+                and AppSettings.load().sales_show_employee_payment
+            )
+            try:
+                update_awaiting_customer_payment_submission(
+                    submission=submission,
+                    customer=form.cleaned_data["customer"],
+                    amount=form.cleaned_data["amount"],
+                    payment_method=form.cleaned_data.get("payment_method"),
+                    notes=form.cleaned_data.get("notes") or "",
+                    user=request.user,
+                    paid_via_employee=paid_via_employee,
+                    employee_recipient=form.cleaned_data.get("employee_recipient")
+                    if paid_via_employee
+                    else None,
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, _("Payment entry updated."))
+                return redirect("sales:employee_recent_sales")
+        else:
+            flash_form_errors(request, form)
+    else:
+        form = EmployeeCustomerPaymentSubmissionForm(
+            user=request.user,
+            initial={
+                "customer": submission.customer_id,
+                "amount": submission.amount,
+                "payment_method": submission.payment_method_id,
+                "paid_via_employee": submission.paid_via_employee,
+                "notes": submission.notes,
+            },
+        )
+
+    return render(
+        request,
+        "sales/employee_payment_edit.html",
+        {
+            "title": _("Edit payment"),
+            "pay_sub_form": form,
+            "submission": submission,
+            "payment_methods": payment_methods,
+            "acting_employee": acting_employee,
+        },
+    )
+
+
+@employee_required
+@require_POST
+def employee_payment_delete(request, pk):
+    """Undo/delete one of the employee's own payment submissions."""
+    submission = get_object_or_404(
+        CustomerPaymentSubmission, pk=pk, created_by=request.user
+    )
+    htmx = is_htmx(request)
+    if not payment_submission_is_employee_deletable(submission, request.user):
+        msg = _("You can only edit or delete your last %(count)s payments.") % {
+            "count": EMPLOYEE_RECENT_EDIT_LIMIT
+        }
+        if htmx:
+            return htmx_action_error(str(msg))
+        messages.error(request, msg)
+        return redirect("sales:employee_recent_sales")
+    try:
+        delete_employee_customer_payment_submission(
+            submission=submission, user=request.user
+        )
+    except ValueError as exc:
+        if htmx:
+            return htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+        return redirect("sales:employee_recent_sales")
+    except (IntegrityError, DatabaseError) as exc:
+        msg = _("Could not delete this payment: %(reason)s") % {"reason": str(exc)}
+        if htmx:
+            return htmx_action_error(str(msg))
+        messages.error(request, msg)
+        return redirect("sales:employee_recent_sales")
+    if htmx:
+        return htmx_remove_target()
+    messages.success(request, _("Payment entry was removed."))
     return redirect("sales:employee_recent_sales")
 
 

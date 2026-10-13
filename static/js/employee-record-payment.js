@@ -119,6 +119,8 @@
       setPaySubViaEmployee(!isPaySubViaEmployee());
     });
   }
+  // Sync notes/hint on first paint (edit page may load with employee payment ON).
+  syncPaySubNote(isPaySubViaEmployee());
   var subForm = document.getElementById("rd-pay-sub-form");
   if (subForm) {
     subForm.addEventListener("submit", function (e) {

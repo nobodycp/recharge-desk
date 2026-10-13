@@ -1047,6 +1047,121 @@ class EmployeeRecentSalesTests(TestCase):
         # No active filter badge when on the default (today) view.
         self.assertContains(resp, 'data-rd-filter-count style="display:none"')
 
+    def test_recent_page_lists_own_payment_submissions_with_actions(self):
+        from core.models import AppSettings
+        from customers.models import Customer, CustomerPaymentSubmission
+        from customers.services import submit_customer_payment_submission
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": True,
+                "sales_show_record_payment": True,
+            },
+        )
+        customer = Customer.objects.create(name="PayEntry Cust", created_by=self.emp)
+        sub = submit_customer_payment_submission(
+            customer=customer,
+            amount=Decimal("40.00"),
+            payment_method=self.pm,
+            notes="desk",
+            user=self.emp,
+        )
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.AWAITING)
+
+        url = reverse("sales:employee_recent_sales")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "PayEntry Cust")
+        self.assertContains(resp, "Customer payment")
+        self.assertContains(resp, reverse("sales:employee_payment_edit", args=[sub.pk]))
+        self.assertContains(resp, reverse("sales:employee_payment_delete", args=[sub.pk]))
+        kinds = [e["kind"] for e in resp.context["entries"]]
+        self.assertIn("payment", kinds)
+
+    def test_employee_can_edit_and_delete_awaiting_payment(self):
+        from core.models import AppSettings
+        from customers.models import Customer, CustomerPaymentSubmission
+        from customers.services import submit_customer_payment_submission
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": True,
+                "sales_show_record_payment": True,
+            },
+        )
+        customer = Customer.objects.create(name="EditPay Cust", created_by=self.emp)
+        other = Customer.objects.create(name="OtherPay Cust", created_by=self.emp)
+        sub = submit_customer_payment_submission(
+            customer=customer,
+            amount=Decimal("15.00"),
+            payment_method=self.pm,
+            notes="",
+            user=self.emp,
+        )
+        edit_url = reverse("sales:employee_payment_edit", args=[sub.pk])
+        resp = self.client.post(
+            edit_url,
+            {
+                "customer": str(other.pk),
+                "amount": "22.50",
+                "payment_method": str(self.pm2.pk),
+                "notes": "fixed",
+            },
+        )
+        self.assertEqual(resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.customer_id, other.pk)
+        self.assertEqual(sub.amount, Decimal("22.50"))
+        self.assertEqual(sub.payment_method_id, self.pm2.pk)
+        self.assertEqual(sub.notes, "fixed")
+
+        del_url = reverse("sales:employee_payment_delete", args=[sub.pk])
+        resp = self.client.post(del_url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(CustomerPaymentSubmission.objects.filter(pk=sub.pk).exists())
+
+    def test_employee_can_undo_approved_payment_from_entries(self):
+        from core.models import AppSettings
+        from customers.models import Customer, CustomerPayment, CustomerPaymentSubmission
+        from customers.services import (
+            approve_customer_payment_submission,
+            submit_customer_payment_submission,
+        )
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": False,
+                "sales_show_record_payment": True,
+            },
+        )
+        customer = Customer.objects.create(
+            name="UndoPay Cust", created_by=self.emp, current_balance=Decimal("100")
+        )
+        sub = submit_customer_payment_submission(
+            customer=customer,
+            amount=Decimal("30.00"),
+            payment_method=self.pm,
+            notes="",
+            user=self.emp,
+        )
+        approve_customer_payment_submission(submission=sub, user=self.emp)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, CustomerPaymentSubmission.Status.APPROVED)
+        self.assertIsNotNone(sub.resulting_payment_id)
+        customer.refresh_from_db()
+        self.assertEqual(customer.current_balance, Decimal("70"))
+
+        del_url = reverse("sales:employee_payment_delete", args=[sub.pk])
+        resp = self.client.post(del_url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(CustomerPaymentSubmission.objects.filter(pk=sub.pk).exists())
+        self.assertFalse(CustomerPayment.objects.filter(customer=customer).exists())
+        customer.refresh_from_db()
+        self.assertEqual(customer.current_balance, Decimal("100"))
+
 
 class EmployeeRecordPaymentPageTests(TestCase):
     @classmethod
@@ -1058,7 +1173,7 @@ class EmployeeRecordPaymentPageTests(TestCase):
             user=cls.emp,
             defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
         )
-        PaymentMethod.objects.create(name="Cash PayPage")
+        cls.pm = PaymentMethod.objects.create(name="Cash PayPage")
 
     def setUp(self):
         self.client = Client()
@@ -1070,6 +1185,32 @@ class EmployeeRecordPaymentPageTests(TestCase):
         self.assertContains(resp, "rd-pay-sub-page")
         self.assertContains(resp, reverse("sales:employee_submit_customer_payment_submission"))
         self.assertContains(resp, "rd-mobile-tabbar")
+
+    def test_record_payment_page_lists_todays_payments(self):
+        from core.models import AppSettings
+        from customers.models import Customer
+        from customers.services import submit_customer_payment_submission
+
+        AppSettings.objects.update_or_create(
+            pk=1,
+            defaults={
+                "require_settlement_request_approval": True,
+                "sales_show_record_payment": True,
+            },
+        )
+        customer = Customer.objects.create(name="TodayPay Cust", created_by=self.emp)
+        sub = submit_customer_payment_submission(
+            customer=customer,
+            amount=Decimal("12.00"),
+            payment_method=self.pm,
+            notes="",
+            user=self.emp,
+        )
+        resp = self.client.get(reverse("sales:employee_record_payment"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Today’s payments")
+        self.assertContains(resp, "TodayPay Cust")
+        self.assertContains(resp, reverse("sales:employee_payment_edit", args=[sub.pk]))
 
 
 class EmployeeStockCheckTests(TestCase):
