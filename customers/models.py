@@ -217,6 +217,15 @@ class CustomerPaymentSubmission(models.Model):
     )
     rejected_at = models.DateTimeField(_("rejected at"), null=True, blank=True)
     reject_reason = models.TextField(_("reject reason"), blank=True)
+    resulting_payment = models.OneToOneField(
+        CustomerPayment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_submission",
+        verbose_name=_("resulting payment"),
+        help_text=_("Set when the submission is approved and a CustomerPayment is created."),
+    )
 
     class Meta:
         verbose_name = _("customer payment submission")
@@ -224,10 +233,16 @@ class CustomerPaymentSubmission(models.Model):
         ordering = ["-created_at", "-id"]
         indexes = [
             models.Index(fields=["status", "-created_at"], name="cust_pay_sub_stat_idx"),
+            models.Index(fields=["created_by", "-created_at"], name="cust_pay_sub_by_idx"),
         ]
 
     def __str__(self):
         return f"{self.customer.name} · {self.amount} ({self.get_status_display()})"
+
+    @property
+    def is_employee_modifiable(self) -> bool:
+        """Awaiting rows can be edited; approved/rejected are delete-only."""
+        return self.status == self.Status.AWAITING
 
 
 class CustomerLedger(models.Model):

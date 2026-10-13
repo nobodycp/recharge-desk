@@ -4,27 +4,27 @@
   {% if url_name == 'employee_refresh_number' %}{% with n=5 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_record_payment' %}{% with n=5 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_entry' %}{% with n=5 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
-  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=5 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' or url_name == 'employee_payment_edit' or url_name == 'employee_payment_edit' %}{% with n=5 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_stock_check' %}{% with n=5 active_i=4 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% else %}{% with n=5 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}
 {% elif show_refresh and not show_pay %}
   {% if url_name == 'employee_refresh_number' %}{% with n=4 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_entry' %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
-  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' or url_name == 'employee_payment_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_stock_check' %}{% with n=4 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% else %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}
 {% elif show_pay and not show_refresh %}
   {% if url_name == 'employee_record_payment' %}{% with n=4 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_entry' %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
-  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' or url_name == 'employee_payment_edit' %}{% with n=4 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_stock_check' %}{% with n=4 active_i=3 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% else %}{% with n=4 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}
 {% else %}
   {% if url_name == 'employee_entry' %}{% with n=3 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
-  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' %}{% with n=3 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
+  {% elif url_name == 'employee_recent_sales' or url_name == 'employee_sale_edit' or url_name == 'employee_payment_edit' %}{% with n=3 active_i=1 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% elif url_name == 'employee_stock_check' %}{% with n=3 active_i=2 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% else %}{% with n=3 active_i=0 %}{% include "partials/_employee_bottom_nav_inner.html" %}{% endwith %}
   {% endif %}

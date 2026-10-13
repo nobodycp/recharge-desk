@@ -5,7 +5,7 @@
 <div class="mb-3">
   <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
   <p class="rd-text-muted small mb-0">
-    {% trans "Sales you entered. You can edit or delete only your last 10 entries." %}
+    {% trans "Sales and payments you entered. You can edit or delete only your last 10 of each." %}
     <span class="d-block mt-1">
       <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
     </span>
@@ -49,33 +49,64 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-{% if sales %}
+{% if entries %}
   <div class="rd-card overflow-hidden">
     <div class="list-group list-group-flush rd-list-flush">
-      {% for s in sales %}
-        <div id="sale-row-{{ s.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
-          <div class="d-flex justify-content-between gap-3">
-            <div class="min-w-0">
-              <div class="fw-semibold text-truncate">
-                {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
+      {% for entry in entries %}
+        {% if entry.kind == "sale" %}
+          {% with s=entry.sale %}
+            <div id="sale-row-{{ s.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
+              <div class="d-flex justify-content-between gap-3">
+                <div class="min-w-0">
+                  <div class="fw-semibold text-truncate">
+                    {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
+                  </div>
+                  {% if s.payer_name %}
+                    <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
+                  {% endif %}
+                  <div class="small text-secondary text-truncate">
+                    {{ s.reference_number }}
+                    {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% elif s.on_account %} · {% trans "On account" %}{% endif %}
+                  </div>
+                  <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+                <div class="text-end flex-shrink-0 small">
+                  <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
+                  <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+                </div>
               </div>
-              {% if s.payer_name %}
-                <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
-              {% endif %}
-              <div class="small text-secondary text-truncate">
-                {{ s.reference_number }}
-                {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% elif s.on_account %} · {% trans "On account" %}{% endif %}
+              {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids use_htmx=True %}
+            </div>
+          {% endwith %}
+        {% else %}
+          {% with p=entry.payment %}
+            <div id="payment-row-{{ p.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
+              <div class="d-flex justify-content-between gap-3">
+                <div class="min-w-0">
+                  <div class="fw-semibold text-truncate">
+                    {% trans "Payment" %}
+                    <span class="badge bg-info-subtle text-info-emphasis ms-1">{% trans "Customer payment" %}</span>
+                  </div>
+                  <div class="rd-recent-payer text-truncate">{{ p.customer.name }}</div>
+                  <div class="small text-secondary text-truncate">
+                    {% if p.paid_via_employee %}
+                      {% trans "Payment to employee" %}
+                    {% elif p.payment_method %}
+                      {{ p.payment_method.name|tdb }}
+                    {% endif %}
+                    {% if p.notes %} · {{ p.notes|truncatechars:40 }}{% endif %}
+                  </div>
+                  <div class="small text-secondary">{{ p.created_at|date:"Y-m-d H:i" }}</div>
+                </div>
+                <div class="text-end flex-shrink-0 small">
+                  <div class="fw-semibold tabular-nums">{{ p.amount }}</div>
+                  <div class="mt-1">{% include "partials/payment_submission_status_badge.html" with submission=p %}</div>
+                </div>
               </div>
-              <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
+              {% include "sales/partials/employee_payment_actions.html" with p=p editable_payment_ids=editable_payment_ids use_htmx=True %}
             </div>
-            <div class="text-end flex-shrink-0 small">
-              <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
-              <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
-            </div>
-          </div>
-
-          {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids use_htmx=True %}
-        </div>
+          {% endwith %}
+        {% endif %}
       {% endfor %}
     </div>
   </div>

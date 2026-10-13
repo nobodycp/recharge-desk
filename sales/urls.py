@@ -50,6 +50,16 @@ urlpatterns = [
     ),
     path("employee/sales/<int:pk>/edit/", views.employee_sale_edit, name="employee_sale_edit"),
     path("employee/sales/<int:pk>/delete/", views.employee_sale_delete, name="employee_sale_delete"),
+    path(
+        "employee/sales/payments/<int:pk>/edit/",
+        views.employee_payment_edit,
+        name="employee_payment_edit",
+    ),
+    path(
+        "employee/sales/payments/<int:pk>/delete/",
+        views.employee_payment_delete,
+        name="employee_payment_delete",
+    ),
     path("management/sales/", views.management_sale_list, name="management_sale_list"),
     path("management/sales/export.csv", views.sales_export_csv, name="sales_export_csv"),
     path("management/sales/bulk-mark-paid/", views.bulk_sales_mark_paid, name="bulk_sales_mark_paid"),

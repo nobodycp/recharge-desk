@@ -318,7 +318,13 @@ class EmployeeRecentFilterForm(forms.Form):
     )
     status = forms.ChoiceField(
         label=_("Status"),
-        choices=[("", _("All"))] + list(Sale.Status.choices),
+        choices=[
+            ("", _("All")),
+            *list(Sale.Status.choices),
+            ("pay_awaiting", _("Payment · awaiting")),
+            ("pay_approved", _("Payment · approved")),
+            ("pay_rejected", _("Payment · rejected")),
+        ],
         required=False,
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )

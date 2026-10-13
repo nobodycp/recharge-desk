@@ -360,6 +360,40 @@ AR: dict[str, str] = {
     "optional": "اختياري",
     "Save sale": "حفظ البيع",
     "Recent entries": "آخر الإدخالات",
+    "Sales and payments you entered. You can edit or delete only your last 10 of each.": (
+        "المبيعات والدفعات اللي سجّلتها. تقدر تعدّل أو تحذف آخر 10 من كل نوع فقط."
+    ),
+    "Payment · awaiting": "دفعة · بانتظار الموافقة",
+    "Payment · approved": "دفعة · معتمدة",
+    "Payment · rejected": "دفعة · مرفوضة",
+    "Customer payment": "دفعة زبون",
+    "Today’s payments": "دفعات اليوم",
+    "All entries": "كل الإدخالات",
+    "Edit payment": "تعديل الدفعة",
+    "Payment entry updated.": "تم تحديث إدخال الدفعة.",
+    "Payment entry was removed.": "تم حذف إدخال الدفعة.",
+    "You can only edit awaiting payments among your last %(count)s payments.": (
+        "تقدر تعدّل الدفعات بانتظار الموافقة ضمن آخر %(count)s دفعات فقط."
+    ),
+    "You can only edit or delete your last %(count)s payments.": (
+        "تقدر تعدّل أو تحذف آخر %(count)s دفعات فقط."
+    ),
+    "Undo this payment? Customer balance and settlements will be reversed.": (
+        "التراجع عن هذه الدفعة؟ راح يرجع رصيد الزبون والتسويات."
+    ),
+    "Delete this payment entry? This cannot be undone.": (
+        "حذف إدخال هذه الدفعة؟ ما بصير التراجع."
+    ),
+    "Could not delete this payment: %(reason)s": "تعذّر حذف هذه الدفعة: %(reason)s",
+    "Only awaiting payments can be edited.": "يمكن تعديل الدفعات بانتظار الموافقة فقط.",
+    "This payment can no longer be undone from here.": (
+        "ما عاد ينفع التراجع عن هذه الدفعة من هنا."
+    ),
+    "This payment cannot be deleted.": "لا يمكن حذف هذه الدفعة.",
+    "You can only change your own payment entries.": (
+        "تقدر تغيّر إدخالات الدفعات تبعك فقط."
+    ),
+    "Undo": "تراجع",
     "No recent entries yet.": "لا توجد إدخالات حديثة بعد.",
     "Mark paid": "تعليم كمدفوع",
     "Cancel this sale?": "إلغاء هذا البيع؟",
