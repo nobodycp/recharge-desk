@@ -763,6 +763,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         r = self.client.post(
             url,
             {
+                "reference_number": "055STMTI001",
                 "sim_identifier": "ICCID-STMT-1",
                 "notes": "chip at shop",
                 "next_query": "sort=ref",
@@ -773,6 +774,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         meta = PhoneLineTracking.objects.get(reference_key="055stmti001")
         self.assertEqual(meta.sim_identifier, "ICCID-STMT-1")
         self.assertEqual(meta.notes, "chip at shop")
+        self.assertIsNone(meta.manual_reset_at)
 
     def test_delete_removes_number_from_statement(self):
         s = self._make_sale(ref="055STMTD001", paid=True)
@@ -791,16 +793,20 @@ class PhoneLinesStatementTests(_ReportsBase):
     def test_edit_number_renames_sales_and_resets_countdown(self):
         overdue = self._make_sale(ref="055STMTE010", paid=True)
         self._age_sale(overdue, days_ago=130, duration_days=30)
-        url = reverse("reports:stale_phone_edit", kwargs={"ref_key": "055STMTE010"})
+        # Inline save on the statement (no separate edit page).
+        url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTE010"})
         r = self.client.post(
             url,
             {
                 "reference_number": "055STMTE099",
                 "sim_identifier": "ICCID-X",
                 "notes": "corrected",
+                "next_query": "status=overdue",
             },
+            HTTP_HX_REQUEST="true",
         )
-        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.status_code, 204)
+        self.assertIn("phone-lines", r["HX-Redirect"])
         overdue.refresh_from_db()
         self.assertEqual(overdue.reference_number, "055STMTE099")
         self.assertFalse(
@@ -817,13 +823,19 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertNotEqual(by_ref["055stmte099"]["status"], "overdue")
         self.assertTrue(by_ref["055stmte099"]["used_manual_renew"])
 
-    def test_statement_shows_notes_edit_and_delete_controls(self):
+    def test_statement_shows_inline_number_iccid_notes_and_delete(self):
         s = self._make_sale(ref="055STMTU001", paid=True)
         self._age_sale(s, days_ago=5, duration_days=30)
         r = self.client.get(reverse("reports:phone_lines_report"))
         body = r.content.decode()
+        self.assertIn('name="reference_number"', body)
         self.assertIn('name="notes"', body)
-        self.assertIn(
+        self.assertIn('name="sim_identifier"', body)
+        self.assertIn('id="stale-sim-form-055stmtu001"', body)
+        # Save sits in the compact actions row (form=), not a separate edit page.
+        self.assertIn('form="stale-sim-form-055stmtu001"', body)
+        self.assertIn("rd-stale-phone-actions", body)
+        self.assertNotIn(
             reverse("reports:stale_phone_edit", kwargs={"ref_key": "055stmtu001"}),
             body,
         )
@@ -843,6 +855,41 @@ class PhoneLinesStatementTests(_ReportsBase):
         body = r.content.decode()
         self.assertIn("table", body)
         self.assertNotIn("<h1", body)
+
+    def test_filters_use_live_nav_not_htmx_partial(self):
+        """Filter Apply / sort / pagination go through live-nav (full main swap).
+
+        The old hx-get → #phone-lines-list-results path left the filter form
+        out of sync with the URL after Apply/Back, so filters looked broken.
+        """
+        s = self._make_sale(ref="055STMTL001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"status": "active"}
+        )
+        body = r.content.decode()
+        self.assertIn('id="phone-lines-filter-form"', body)
+        self.assertNotIn('hx-get=', body)
+        self.assertNotIn('hx-boost="true"', body)
+        self.assertIn('hx-boost="false"', body)
+        # Active filters keep the filter card open.
+        self.assertIn('class="rd-card mb-3 position-relative rd-filter-card" open', body)
+
+    def test_status_filter_survives_stale_line_name_choice(self):
+        """A bad line_name must not wipe status / sim_type filters."""
+        overdue = self._make_sale(ref="055STMTB001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMTB002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"),
+            {"status": "overdue", "line_name": "not-a-real-line-xyz"},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context["filter_form"].is_valid())
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmtb001", refs)
+        self.assertNotIn("055stmtb002", refs)
 
     def test_disconnect_report_removed(self):
         from django.urls import NoReverseMatch

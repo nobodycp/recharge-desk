@@ -6,15 +6,11 @@
 </div>
 
 {% active_filter_count as phone_lines_filter_active %}
-{% include "partials/filter_card_open.html" with active_count=phone_lines_filter_active indicator_id="phone-lines-htmx-indicator" %}
+{% include "partials/filter_card_open.html" with active_count=phone_lines_filter_active card_open=phone_lines_filter_active %}
     <form
       method="get"
       id="phone-lines-filter-form"
       class="row g-3 align-items-end"
-      hx-get="{% url 'reports:phone_lines_report' %}"
-      hx-target="#phone-lines-list-results"
-      hx-push-url="true"
-      hx-indicator="#phone-lines-htmx-indicator"
     >
       <input type="hidden" name="sort" value="{{ sort }}">
       <input type="hidden" name="order" value="{{ order }}">
@@ -47,15 +43,7 @@
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div
-  class="position-relative"
-  id="phone-lines-list-results"
-  hx-boost="true"
-  hx-target="#phone-lines-list-results"
-  hx-swap="innerHTML"
-  hx-push-url="true"
-  hx-indicator="#phone-lines-htmx-indicator"
->
+<div class="position-relative" id="phone-lines-list-results">
   {% include "reports/partials/phone_lines_report_results.html" %}
 </div>
 {% endblock %}

@@ -24,7 +24,7 @@
     <p class="small text-secondary mb-3">
       {% trans "Changing the number updates all sales for this line and restarts the disconnect countdown from today." %}
     </p>
-    <form method="post" class="d-grid gap-2">
+    <form method="post" class="d-grid gap-2" hx-boost="false" data-rd-live-skip>
       {% csrf_token %}
       <input type="hidden" name="next_query" value="{{ next_query }}">
       {{ form.reference_number.label_tag }}

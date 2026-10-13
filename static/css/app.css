@@ -1118,8 +1118,37 @@
   width: 100%;
 }
 
-.rd-stale-phone-card .rd-stale-sim-form .btn {
-  min-height: 2.25rem;
+/* Compact Save / Delete / Renew on one row (especially mobile cards). */
+.rd-stale-phone-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.rd-stale-phone-actions__item {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.rd-stale-phone-actions__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.rd-stale-phone-actions--stacked > .rd-stale-phone-actions__btn,
+.rd-stale-phone-actions--stacked > .rd-stale-phone-actions__item {
+  flex: 1 1 0;
+}
+
+.rd-stale-phone-card .rd-stale-phone-actions {
+  width: 100%;
 }
 
 /* -------------------------------------------------------------------------- */

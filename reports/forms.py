@@ -37,7 +37,7 @@ class StalePhoneLineEditForm(forms.Form):
 
 
 class PhoneLineFullEditForm(StalePhoneLineEditForm):
-    """Edit page: change the phone/reference (resets disconnect countdown)."""
+    """Inline / page form: number + ICCID + notes (number change resets countdown)."""
 
     reference_number = forms.CharField(
         label=_("Number / reference"),
