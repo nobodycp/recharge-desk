@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
@@ -26,6 +28,14 @@ from reports.stale_phones import (
     sort_stale_rows,
 )
 from sales.views._shared import is_htmx
+
+
+def _with_htmx_toast(response: HttpResponse, message: str, *, level: str = "success") -> HttpResponse:
+    """Attach a client toast via HX-Trigger (see static/js/data-ui.js ``rdToast``)."""
+    response["HX-Trigger"] = json.dumps(
+        {"rdToast": {"message": str(message), "level": level}}
+    )
+    return response
 
 _SORT_FIELDS = frozenset(
     {
@@ -271,15 +281,17 @@ def stale_phone_sim_save(request, ref_key: str):
     next_query = _list_query_from_request(request)
     list_url = _safe_list_redirect(request, query=next_query)
 
-    def _error_response(*, status: int = 400):
+    def _error_response(message: str | None = None):
+        err = message or _("Could not save.")
         if is_htmx(request):
-            return render(
+            # Status 200 so htmx swaps the cell (errors + toast). Non-2xx skips swap.
+            resp = render(
                 request,
                 "reports/partials/stale_phone_sim_cell.html",
                 {"row": row, "list_query": next_query, "form": form, "saved": False},
-                status=status,
             )
-        messages.error(request, _("Could not save."))
+            return _with_htmx_toast(resp, err, level="error")
+        messages.error(request, err)
         return redirect(list_url)
 
     if not form.is_valid():
@@ -299,16 +311,14 @@ def stale_phone_sim_save(request, ref_key: str):
         )
     except ValueError as exc:
         form.add_error("reference_number", str(exc))
-        return _error_response()
+        return _error_response(str(exc))
 
     if number_changed:
-        messages.success(
-            request,
-            _(
-                "Line updated. Disconnect countdown restarted from today "
-                "(virtual 1-day renew)."
-            ),
+        ok_msg = _(
+            "Line updated. Disconnect countdown restarted from today "
+            "(virtual 1-day renew)."
         )
+        messages.success(request, ok_msg)
         if is_htmx(request):
             resp = HttpResponse(status=204)
             resp["HX-Redirect"] = list_url
@@ -321,11 +331,12 @@ def stale_phone_sim_save(request, ref_key: str):
     row["notes"] = (form.cleaned_data.get("notes") or "").strip()
     row["display_reference"] = new_display
     if is_htmx(request):
-        return render(
+        resp = render(
             request,
             "reports/partials/stale_phone_sim_cell.html",
             {"row": row, "list_query": next_query, "saved": True},
         )
+        return _with_htmx_toast(resp, _("Saved."), level="success")
     messages.success(request, _("Saved."))
     return redirect(list_url)
 

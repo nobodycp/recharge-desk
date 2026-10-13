@@ -3168,6 +3168,26 @@ body.rd-inv-dialog-open {
   opacity: 0;
   transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
+  max-width: min(22rem, calc(100vw - 2rem));
+  text-align: center;
+}
+
+.rd-toast--success {
+  background: var(--bs-success-bg-subtle, #d1e7dd);
+  border-color: var(--bs-success-border-subtle, #a3cfbb);
+  color: var(--bs-success-text-emphasis, #0a3622);
+}
+
+.rd-toast--error {
+  background: var(--bs-danger-bg-subtle, #f8d7da);
+  border-color: var(--bs-danger-border-subtle, #f1aeb5);
+  color: var(--bs-danger-text-emphasis, #58151c);
+}
+
+.rd-toast--warning {
+  background: var(--bs-warning-bg-subtle, #fff3cd);
+  border-color: var(--bs-warning-border-subtle, #ffe69c);
+  color: var(--bs-warning-text-emphasis, #664d03);
 }
 
 html[dir="rtl"] .rd-toast {

@@ -47,12 +47,14 @@
     {% trans "Save updates number, ICCID, and notes. Changing the number restarts the disconnect countdown." %}
   </div>
   {% if saved %}
-    <div class="small text-success mt-1">{% trans "Saved." %}</div>
+    <div class="small text-success fw-semibold mt-1" role="status">{% trans "Saved." %}</div>
   {% endif %}
   {% if form %}
-    {{ form.reference_number.errors }}
-    {{ form.sim_identifier.errors }}
-    {{ form.notes.errors }}
-    {{ form.non_field_errors }}
+    <div class="small text-danger mt-1" role="alert">
+      {{ form.reference_number.errors }}
+      {{ form.sim_identifier.errors }}
+      {{ form.notes.errors }}
+      {{ form.non_field_errors }}
+    </div>
   {% endif %}
 </div>

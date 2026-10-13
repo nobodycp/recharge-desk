@@ -771,10 +771,31 @@ class PhoneLinesStatementTests(_ReportsBase):
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(r.status_code, 200)
+        self.assertIn("rdToast", r["HX-Trigger"])
+        self.assertIn("Saved", r["HX-Trigger"])
         meta = PhoneLineTracking.objects.get(reference_key="055stmti001")
         self.assertEqual(meta.sim_identifier, "ICCID-STMT-1")
         self.assertEqual(meta.notes, "chip at shop")
         self.assertIsNone(meta.manual_reset_at)
+
+    def test_inline_save_error_returns_toast_and_swappable_cell(self):
+        s = self._make_sale(ref="055STMTE002", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        url = reverse("reports:stale_phone_sim_save", kwargs={"ref_key": "055STMTE002"})
+        r = self.client.post(
+            url,
+            {
+                "reference_number": "",
+                "sim_identifier": "",
+                "notes": "",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+        # 200 (not 400) so htmx swaps errors into the cell + fires toast.
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("rdToast", r["HX-Trigger"])
+        self.assertIn("error", r["HX-Trigger"])
+        self.assertContains(r, "stale-sim-055stmte002")
 
     def test_delete_removes_number_from_statement(self):
         s = self._make_sale(ref="055STMTD001", paid=True)
