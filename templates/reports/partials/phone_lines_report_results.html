@@ -53,7 +53,7 @@
                 <td>{% include "reports/partials/stale_phone_sim_cell.html" with row=row list_query=list_query %}</td>
                 <td class="small text-secondary text-nowrap">{{ row.last_activity|date:"Y-m-d" }}</td>
                 <td class="text-end">
-                  {% include "reports/partials/phone_line_card_actions.html" with row=row list_query=list_query stacked=False %}
+                  {% include "reports/partials/phone_line_card_actions.html" with row=row list_query=list_query include_save=True %}
                 </td>
               </tr>
             {% empty %}
@@ -92,7 +92,7 @@
             {% include "reports/partials/stale_phone_sim_cell.html" with row=row list_query=list_query %}
           </div>
           <div class="mt-2">
-            {% include "reports/partials/phone_line_card_actions.html" with row=row list_query=list_query stacked=True %}
+            {% include "reports/partials/phone_line_card_actions.html" with row=row list_query=list_query stacked=True include_save=True %}
           </div>
         </div>
       {% empty %}

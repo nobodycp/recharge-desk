@@ -831,6 +831,10 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertIn('name="reference_number"', body)
         self.assertIn('name="notes"', body)
         self.assertIn('name="sim_identifier"', body)
+        self.assertIn('id="stale-sim-form-055stmtu001"', body)
+        # Save sits in the compact actions row (form=), not a separate edit page.
+        self.assertIn('form="stale-sim-form-055stmtu001"', body)
+        self.assertIn("rd-stale-phone-actions", body)
         self.assertNotIn(
             reverse("reports:stale_phone_edit", kwargs={"ref_key": "055stmtu001"}),
             body,
