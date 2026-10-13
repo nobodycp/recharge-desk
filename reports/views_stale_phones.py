@@ -98,6 +98,48 @@ def _apply_threshold_from_form(profile, filter_form) -> int:
     return days
 
 
+def _phone_lines_filter_cleaned(request, profile, filter_form, *, default_th: int) -> tuple[dict, int]:
+    """Return ``(cleaned_filters, threshold_days)``.
+
+    When the bound form is invalid (stale line-name choice, bad company id,
+    …), still honor the safe GET params so one bad field cannot wipe the
+    rest of the filters — that looked like “filters stopped working”.
+    """
+    if filter_form.is_valid():
+        days = _apply_threshold_from_form(profile, filter_form)
+        return filter_form.cleaned_data, days
+
+    days = default_th
+    raw_th = request.GET.get("threshold_days")
+    if raw_th not in (None, ""):
+        try:
+            days = max(1, min(3650, int(raw_th)))
+        except (TypeError, ValueError):
+            pass
+
+    status = (request.GET.get("status") or "").strip().lower()
+    allowed_status = {c[0] for c in filter_form.fields["status"].choices if c[0]}
+    sim_type = (request.GET.get("sim_type") or "").strip().lower()
+    allowed_sim = {c[0] for c in filter_form.fields["sim_type"].choices if c[0]}
+    line_name = (request.GET.get("line_name") or "").strip().lower()
+    allowed_lines = {c[0] for c in filter_form.fields["line_name"].choices if c[0]}
+    cleaned: dict = {}
+    if status in allowed_status:
+        cleaned["status"] = status
+    if sim_type in allowed_sim:
+        cleaned["sim_type"] = sim_type
+    if line_name in allowed_lines:
+        cleaned["line_name"] = line_name
+    company_raw = request.GET.get("company")
+    if company_raw not in (None, ""):
+        try:
+            company = filter_form.fields["company"].queryset.get(pk=int(company_raw))
+            cleaned["company"] = company
+        except (TypeError, ValueError, filter_form.fields["company"].queryset.model.DoesNotExist):
+            pass
+    return cleaned, days
+
+
 @management_required
 def phone_lines_report(request):
     """Full inventory statement of every phone/reference (بيان الأرقام)."""
@@ -106,12 +148,9 @@ def phone_lines_report(request):
     filter_form = PhoneLinesFilterForm(
         request.GET or None, default_threshold=default_th
     )
-    if filter_form.is_valid():
-        days = _apply_threshold_from_form(profile, filter_form)
-        cleaned = filter_form.cleaned_data
-    else:
-        days = default_th
-        cleaned = {}
+    cleaned, days = _phone_lines_filter_cleaned(
+        request, profile, filter_form, default_th=default_th
+    )
 
     rows = phone_lines_aggregate(threshold_days=days, due_soon_hours=24)
     rows = filter_stale_rows(

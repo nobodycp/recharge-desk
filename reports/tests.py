@@ -844,6 +844,42 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertIn("table", body)
         self.assertNotIn("<h1", body)
 
+    def test_filters_use_live_nav_not_htmx_partial(self):
+        """Filter Apply / sort / pagination go through live-nav (full main swap).
+
+        The old hx-get → #phone-lines-list-results path left the filter form
+        out of sync with the URL after Apply/Back, so filters looked broken.
+        """
+        s = self._make_sale(ref="055STMTL001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"status": "active"}
+        )
+        body = r.content.decode()
+        self.assertIn('id="phone-lines-filter-form"', body)
+        self.assertNotIn('hx-get=', body)
+        self.assertNotIn('hx-boost="true"', body)
+        self.assertIn('hx-boost="false"', body)
+        self.assertIn("data-rd-live-skip", body)
+        # Active filters keep the filter card open.
+        self.assertIn('class="rd-card mb-3 position-relative rd-filter-card" open', body)
+
+    def test_status_filter_survives_stale_line_name_choice(self):
+        """A bad line_name must not wipe status / sim_type filters."""
+        overdue = self._make_sale(ref="055STMTB001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMTB002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"),
+            {"status": "overdue", "line_name": "not-a-real-line-xyz"},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context["filter_form"].is_valid())
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmtb001", refs)
+        self.assertNotIn("055stmtb002", refs)
+
     def test_disconnect_report_removed(self):
         from django.urls import NoReverseMatch
 

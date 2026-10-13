@@ -4,6 +4,8 @@
   <a
     class="btn btn-sm btn-outline-secondary{% if stacked %} w-100{% endif %}"
     href="{% url 'reports:stale_phone_edit' ref_key=row.ref_key %}{% if list_query %}?next_query={{ list_query|urlencode }}{% endif %}"
+    hx-boost="false"
+    data-rd-live-skip
   >{% trans "Edit number" %}</a>
   <form
     method="post"

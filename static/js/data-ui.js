@@ -175,7 +175,16 @@
   /* Collapsible filter cards: keep the "N active" badge in sync with the
      current form state after any htmx-driven submit, so the count stays
      accurate even though we never reload the page. */
-  var FILTER_NOISE = { sort: 1, order: 1, page: 1, csrfmiddlewaretoken: 1 };
+  /* Keep in sync with core.templatetags.ui_tags._FILTER_NOISE_KEYS
+     (plus csrf). threshold_days is a saved preference, not a list filter. */
+  var FILTER_NOISE = {
+    sort: 1,
+    order: 1,
+    page: 1,
+    per_page: 1,
+    threshold_days: 1,
+    csrfmiddlewaretoken: 1,
+  };
 
   function countActiveFilters(form) {
     if (!form) return 0;
