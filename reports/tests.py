@@ -790,6 +790,49 @@ class PhoneLinesStatementTests(_ReportsBase):
         # Sale history remains.
         self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
 
+    def test_legacy_dismissed_number_still_in_sales_is_searchable_after_clear(self):
+        """Pre-#43 dismiss meant hide-from-stale-list; inventory must show them.
+
+        Migration 0004 clears legacy flags; this locks the aggregate+filter path
+        for a number that still has sales (e.g. 0535759763-style reports).
+        """
+        s = self._make_sale(ref="0535759763", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        PhoneLineTracking.objects.update_or_create(
+            reference_key="0535759763",
+            defaults={
+                "is_dismissed": True,
+                "last_display_reference": "0535759763",
+            },
+        )
+        # Simulate post-migration clear (what 0004 does in production).
+        PhoneLineTracking.objects.filter(is_dismissed=True).update(is_dismissed=False)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"q": "0535759763"}
+        )
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("0535759763", refs)
+
+    def test_new_sale_restores_deleted_number_to_statement(self):
+        s = self._make_sale(ref="055STMTRST1", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        self.client.post(
+            reverse("reports:phone_line_delete", kwargs={"ref_key": "055STMTRST1"})
+        )
+        self.assertTrue(
+            PhoneLineTracking.objects.get(reference_key="055stmtrst1").is_dismissed
+        )
+        # New sale clears dismiss via signal.
+        self._make_sale(ref="055STMTRST1", paid=True)
+        self.assertFalse(
+            PhoneLineTracking.objects.get(reference_key="055stmtrst1").is_dismissed
+        )
+        r = self.client.get(
+            reverse("reports:phone_lines_report"), {"q": "055STMTRST1"}
+        )
+        refs = {x["ref_key"] for x in r.context["page_obj"].object_list}
+        self.assertIn("055stmtrst1", refs)
+
     def test_edit_number_renames_sales_and_resets_countdown(self):
         overdue = self._make_sale(ref="055STMTE010", paid=True)
         self._age_sale(overdue, days_ago=130, duration_days=30)

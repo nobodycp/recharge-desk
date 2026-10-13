@@ -110,8 +110,10 @@ def phone_lines_aggregate(
     """
     One row per phone/reference that has any non-cancelled sale.
 
-    Includes active / grace / due-soon / overdue and eSIM lines. Each row
-    carries a ``status`` key matching the dashboard lifecycle buckets.
+    Includes active / grace / due-soon / overdue and eSIM lines. Rows with
+    ``PhoneLineTracking.is_dismissed`` (Delete on the statement) are omitted;
+    a new sale clears that flag so the number can return. Each row carries a
+    ``status`` key matching the dashboard lifecycle buckets.
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
