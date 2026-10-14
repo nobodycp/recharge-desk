@@ -58,7 +58,7 @@
           {% now "G" as hour %}
           {% get_current_language_bidi as is_bidi %}
           <div class="rd-hello">
-            <span class="rd-hello__title">{% with h=hour|add:0 %}{% if h < 12 %}{% trans "Good morning" %}{% elif h < 18 %}{% trans "Good afternoon" %}{% else %}{% trans "Good evening" %}{% endif %}{% endwith %}{% if is_bidi %}،{% else %},{% endif %} {{ request.user.first_name|default:request.user.username }}</span>
+            <span class="rd-hello__title">{% with h=hour|add:0 %}{% if h < 12 %}{% trans "Good morning" %}{% elif h < 18 %}{% trans "Good afternoon" %}{% else %}{% trans "Good evening" %}{% endif %}{% endwith %}{% if is_bidi %}،{% else %},{% endif %} {{ request.user.profile.display_name.split.0|default:request.user.username }}</span>
             <span class="rd-hello__date">{% now "l j F" %}</span>
           </div>
         </div>
