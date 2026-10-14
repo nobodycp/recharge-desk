@@ -59,7 +59,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.client.force_login(self.user)
 
     def test_charge_button_hidden_when_company_cannot_charge(self):
-        Company.objects.filter(pk=self.company.pk).update(phone_refresh_provider="")
+        Company.objects.filter(pk=self.company.pk).update(provider_key="")
         resp = self.client.get(reverse("sales:employee_entry"))
         self.assertEqual(resp.status_code, 200)
         self.assertNotContains(resp, 'value="charge"')
@@ -113,7 +113,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
 
     def test_rejected_charge_does_not_create_customer(self):
         payload = {"action": "charge", "on_account": "on", "payment_method": ""}
-        Company.objects.filter(pk=self.company.pk).update(phone_refresh_provider="")
+        Company.objects.filter(pk=self.company.pk).update(provider_key="")
         resp = self.post_entry(**payload)
         self.assertContains(resp, "This company cannot be charged through its provider.")
         self.assertFalse(Customer.objects.exists())
@@ -128,7 +128,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertEqual(Sale.objects.count(), 1)
 
     def test_charge_submit_rejected_when_company_cannot_charge(self):
-        Company.objects.filter(pk=self.company.pk).update(phone_refresh_provider="")
+        Company.objects.filter(pk=self.company.pk).update(provider_key="")
         resp = self.post_entry(action="charge")
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "This company cannot be charged through its provider.")

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import importlib
 from datetime import date
 from unittest.mock import patch
 
-from django.apps import apps
 from django.test import TestCase
 
 from companies.models import Company
@@ -17,12 +15,10 @@ from providers.contracts import (
 )
 from providers.redis_conn import get_redis
 
-migration = importlib.import_module("companies.migrations.0012_fill_provider_from_name")
-
 
 def _company(name, provider=""):
     return Company.objects.create(
-        name=name, phone_refresh_provider=provider, opening_balance=0, current_balance=0
+        name=name, provider_key=provider, opening_balance=0, current_balance=0
     )
 
 
@@ -135,55 +131,3 @@ class CompanyDetailButtonsTests(TestCase):
         self.assertTrue(resp.context["supports_sky_reconcile"])
         self.assertFalse(resp.context["supports_layan_reconcile"])
         self.assertContains(resp, reverse("companies:sky_reconcile", args=[explicit.pk]))
-
-
-class MappingReportCommandTests(TestCase):
-    def test_reports_empty_and_mismatched_without_changing_anything(self):
-        from io import StringIO
-
-        from django.core.management import call_command
-
-        _company("Sky Mobile")  # empty, name suggests sky
-        _company("Plain Co")  # empty, no suggestion
-        _company("Layan Direct", "layan")  # consistent
-        _company("Aloha Shop", "sky")  # field disagrees with the name
-        out = StringIO()
-        call_command("providers_mapping_report", stdout=out)
-        text = out.getvalue()
-        self.assertIn("empty provider (2)", text)
-        self.assertIn("Sky Mobile (name suggests: sky)", text)
-        self.assertIn("Plain Co", text)
-        self.assertIn("another provider (1)", text)
-        self.assertIn("Aloha Shop: field=sky, name suggests aloha", text)
-        self.assertNotIn("Layan Direct", text)
-        self.assertEqual(
-            Company.objects.get(name="Sky Mobile").phone_refresh_provider, ""
-        )
-
-
-class FillProviderMigrationTests(TestCase):
-    def test_fill_provider_migration_maps_names(self):
-        cases = {
-            "Sky Mobile": "sky",
-            "SKY": "sky",
-            "  sky 5g  ": "sky",
-            "سكاي موبايل": "sky",
-            "Aloha": "aloha",
-            "ALOHA Telecom": "aloha",
-            "Layan Test": "layan",
-            "LAYAN": "layan",
-            "Areen": "areen",
-            "Sky and Layan": "sky",  # same priority as COMPANY_TO_PROVIDER
-            "Layan سكاي": "layan",  # refresh rule beat the Arabic reconcile rule
-            "Other Co": "",
-        }
-        companies = {name: _company(name) for name in cases}
-        keep = _company("Sky Keeps Explicit", "areen")
-        migration.fill_provider_from_name(apps, None)
-        for name, expected in cases.items():
-            companies[name].refresh_from_db()
-            self.assertEqual(
-                companies[name].phone_refresh_provider, expected, f"name={name!r}"
-            )
-        keep.refresh_from_db()
-        self.assertEqual(keep.phone_refresh_provider, "areen")

@@ -83,7 +83,7 @@ def _lookup_provider_for_phone(phone: str) -> str | None:
     if not sale or not sale.company:
         return None
 
-    provider = (getattr(sale.company, "phone_refresh_provider", None) or "").strip()
+    provider = (getattr(sale.company, "provider_key", None) or "").strip()
     return provider or None
 
 

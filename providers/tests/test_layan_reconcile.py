@@ -32,7 +32,7 @@ class LayanReconcileTests(TestCase):
         )
         cls.company = Company.objects.create(
             name="Layan Test",
-            phone_refresh_provider="layan",
+            provider_key="layan",
             opening_balance=_decimal(1000),
             current_balance=_decimal(1000),
         )
@@ -486,7 +486,7 @@ class LayanReconcileTests(TestCase):
     def test_reconcile_finds_sale_under_other_supplier(self):
         sky = Company.objects.create(
             name="Sky",
-            phone_refresh_provider="sky",
+            provider_key="sky",
             opening_balance=_decimal(0),
             current_balance=_decimal(0),
         )

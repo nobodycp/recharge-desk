@@ -225,3 +225,15 @@ class CompanyListQueryCountTests(TestCase):
         self.assertContains(r, 'id="company-list-results"')
         self.assertContains(r, 'hx-target="#company-list-results"')
         self.assertContains(r, 'hx-boost="true"')
+
+
+class CompanyProviderKeyTests(TestCase):
+    def test_provider_key_uses_legacy_column(self):
+        self.assertEqual(
+            Company._meta.get_field("provider_key").column, "phone_refresh_provider"
+        )
+
+    def test_company_form_has_provider_key(self):
+        from companies.forms import CompanyForm
+
+        self.assertIn("provider_key", CompanyForm().fields)

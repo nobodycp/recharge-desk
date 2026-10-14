@@ -32,9 +32,10 @@ class Company(models.Model):
         default=Decimal("0"),
     )
     notes = models.TextField(_("notes"), blank=True)
-    phone_refresh_provider = models.CharField(
-        _("phone refresh provider"),
+    provider_key = models.CharField(
+        _("company system"),
         max_length=20,
+        db_column="phone_refresh_provider",
         blank=True,
         choices=[
             ("", _("Not set")),
@@ -44,9 +45,9 @@ class Company(models.Model):
             ("aloha", "Aloha"),
         ],
         help_text=_(
-            "Which upstream API runs phone refresh and reconciliation for this company."
-            " Choose it explicitly: if left empty, this company has no phone refresh"
-            " routing and no provider operations."
+            "Which upstream system runs refresh, charge and reconciliation for this"
+            " company. Choose it explicitly: if left empty, this company has no"
+            " provider routing and no provider operations."
         ),
     )
     is_active = models.BooleanField(_("active"), default=True)

@@ -417,20 +417,20 @@ msgstr "الرصيد الحالي"
 msgid "notes"
 msgstr "ملاحظات"
 #: companies/models.py:36
-msgid "phone refresh provider"
-msgstr "مزوّد تحديث الهاتف"
+msgid "company system"
+msgstr "نظام الشركة"
 #: companies/models.py:40
 msgid "Not set"
 msgstr "غير محدّد"
 #: companies/models.py:47
 msgid ""
-"Which upstream API runs phone refresh and reconciliation for this company. "
-"Choose it explicitly: if left empty, this company has no phone refresh "
+"Which upstream system runs refresh, charge and reconciliation for this "
+"company. Choose it explicitly: if left empty, this company has no provider "
 "routing and no provider operations."
 msgstr ""
-"مزوّد API الذي ينفّذ تحديث الهاتف والمطابقة لهذه الشركة. اختره صراحةً: إ"
-"ذا تُرك فارغاً فلن يكون لهذه الشركة توجيه لتحديث الهاتف ولا عمليات مزوّد"
-"."
+"النظام (المزوّد) الذي ينفّذ التحديث والشحن والمطابقة لهذه الشركة. اختره "
+"صراحةً: إذا تُرك فارغاً فلن يكون لهذه الشركة توجيه للمزوّد ولا عمليات "
+"مزوّد."
 #: companies/models.py:52 companies/models.py:121 companies/models.py:210
 #: customers/models.py:27 employees/models.py:36 sales/models.py:22
 #: sms_gateway/models.py:151

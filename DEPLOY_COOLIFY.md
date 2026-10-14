@@ -250,32 +250,6 @@ Subsequent deploys redo migrations idempotently — صفر downtime ضروري
 
 ---
 
-### Pre-deploy check — قبل أول نشر
-
-Company → provider mapping is now only the explicit `phone_refresh_provider`
-field (the old name-substring guessing was removed). Migration
-`companies 0012` fills the field for companies whose names matched; the
-read-only report below shows what it will fill and flags companies whose name
-suggests a different provider than the field. It changes nothing itself.
-
-The report asks "which companies still have an empty provider?", so it is only
-meaningful **before** `companies 0012` has run. Do it on a **restored copy of
-the pre-deploy production backup** (never on production itself, never a full
-`migrate`), with the new code checked out and `DATABASE_URL` pointing at the
-copy:
-
-```bash
-python manage.py migrate companies 0011   # no-op if the backup is already at 0011; never go further
-python manage.py providers_mapping_report
-```
-
-`migrate companies 0011` only applies the `companies` app (and its
-dependencies) up to 0011, which is all the report's queries need (the
-`phone_refresh_provider` column exists since 0006). Do **not** run it on a copy
-that already has 0012 applied: unapplying 0012 does not clear the filled
-values, so the report would show no empty companies. Fix anything unexpected in
-the company settings (in production, before deploying) and re-run.
-
 ### Rollout — خطوات الإطلاق
 
 Roll the provider gateway out in this order (each step is reversible):

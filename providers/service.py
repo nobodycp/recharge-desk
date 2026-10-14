@@ -162,12 +162,12 @@ def check_charge(
 def company_supports(
     company, capability: Capability, provider: str | None = None
 ) -> bool:
-    """True when the company's explicit ``phone_refresh_provider`` has ``capability``.
+    """True when the company's explicit ``provider_key`` has ``capability``.
 
     ``provider`` additionally requires that exact provider key. Never inspects
     the company name: routing comes from the field only.
     """
-    key = (company.phone_refresh_provider or "").strip().lower()
+    key = (company.provider_key or "").strip().lower()
     if provider is not None and key != provider:
         return False
     adapter_cls = ADAPTERS.get(key)
@@ -191,7 +191,7 @@ def reconcile(
     """
     if not company_supports(company, Capability.RECONCILE):
         raise PermanentError(RECONCILE_NOT_SUPPORTED)
-    adapter = get_adapter((company.phone_refresh_provider or "").strip().lower())
+    adapter = get_adapter((company.provider_key or "").strip().lower())
     deadline = time.monotonic() + budget
 
     def call():

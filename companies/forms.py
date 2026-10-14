@@ -9,12 +9,12 @@ from companies.models import Company, Product, ProductLine
 class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
-        fields = ["name", "icon", "opening_balance", "phone_refresh_provider", "notes", "is_active"]
+        fields = ["name", "icon", "opening_balance", "provider_key", "notes", "is_active"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
             "opening_balance": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "phone_refresh_provider": forms.Select(attrs={"class": "form-select"}),
+            "provider_key": forms.Select(attrs={"class": "form-select"}),
             "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }

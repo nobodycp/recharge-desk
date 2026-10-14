@@ -51,7 +51,7 @@ class ChargingTestBase(TestCase):
             defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
         )
         cls.company = Company.objects.create(
-            name="FakeCo", phone_refresh_provider="fake", current_balance=START
+            name="FakeCo", provider_key="fake", current_balance=START
         )
         line = ProductLine.objects.create(company=cls.company, name="Line")
         cls.product = Product.objects.create(
@@ -250,7 +250,7 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertFalse(self.charge("t-3").charge_cost_mismatch)
 
     def test_rejects_company_that_cannot_charge(self):
-        company = Company.objects.create(name="SkyCo", phone_refresh_provider="sky")
+        company = Company.objects.create(name="SkyCo", provider_key="sky")
         line = ProductLine.objects.create(company=company, name="L")
         product = Product.objects.create(
             line=line, cost_price=COST, default_sell_price=Decimal("20")
@@ -783,7 +783,7 @@ class VerifyTaskTests(ChargingTestBase):
 class CanChargeTests(ChargingTestBase):
     def test_can_charge_false_for_refresh_only_provider(self):
         for key in ("sky", ""):
-            company = Company(name="x", phone_refresh_provider=key)
+            company = Company(name="x", provider_key=key)
             self.assertFalse(charging.can_charge(company))
 
     def test_can_charge_true_for_no_login_adapter_without_account(self):

@@ -84,7 +84,7 @@ class SkyReconcileParseTests(TestCase):
             name="Sky",
             opening_balance=0,
             current_balance=0,
-            phone_refresh_provider="sky",
+            provider_key="sky",
         )
         rows = [
             _row(
@@ -122,13 +122,13 @@ class SkyReconcileMatchTests(TestCase):
             name="Sky Co",
             opening_balance=1000,
             current_balance=800,
-            phone_refresh_provider="sky",
+            provider_key="sky",
         )
         self.other = Company.objects.create(
             name="Other",
             opening_balance=0,
             current_balance=0,
-            phone_refresh_provider="layan",
+            provider_key="layan",
         )
         self.line = ProductLine.objects.create(company=self.company, name="L")
         self.product = Product.objects.create(
@@ -310,7 +310,7 @@ class FetchSkyRowsTests(TestCase):
             name="Sky Co",
             opening_balance=0,
             current_balance=0,
-            phone_refresh_provider="sky",
+            provider_key="sky",
         )
         adapter = _FakeSkyAdapter()
         with patch("providers.service.get_adapter", return_value=adapter):

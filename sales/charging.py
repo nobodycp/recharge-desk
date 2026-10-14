@@ -40,7 +40,7 @@ _STATUS_FOR_RESULT = {
 
 
 def _provider_key(company) -> str:
-    return (company.phone_refresh_provider or "").strip().lower()
+    return (company.provider_key or "").strip().lower()
 
 
 def can_charge(company) -> bool:

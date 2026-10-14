@@ -1473,7 +1473,7 @@ class EmployeeRefreshPhoneTests(TestCase):
 
         cls.company = Company.objects.create(
             name="Sky Emp Co",
-            phone_refresh_provider="sky",
+            provider_key="sky",
             opening_balance=Decimal("1000"),
             current_balance=Decimal("1000"),
         )
