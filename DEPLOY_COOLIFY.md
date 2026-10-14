@@ -85,8 +85,14 @@ fakeredis and eager Celery, i.e. no worker and no shared login locks).
 4. Build pack: **Dockerfile** (Coolify will autodetect the `Dockerfile` at
    the repo root).
 5. Port: **8000**.
-6. Health check path: `/healthz/` (returns `ok`).
-   مسار فحص الصحة هو `/healthz/`.
+6. Health check: **enabled**, type **Command** (`cmd`), command
+   `python /app/scripts/healthcheck.py`; start period `30`, interval `10`,
+   timeout `5`, retries `15`. The image has no curl/wget and Django rejects
+   `Host: localhost`, so the default HTTP check cannot pass; the script calls
+   `/healthz/` with an allowed host. With the check on, a deploy keeps the old
+   container serving until the new one has migrated and booted (zero
+   downtime), and a broken release is never switched in.
+   فعّل فحص الصحة بنوع Command وإلا كل نشر بيوقف الموقع لحد ما يجهز الكونتينر الجديد.
 
 ---
 
