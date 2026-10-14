@@ -5,7 +5,7 @@ import json
 from django import forms
 
 from providers.accounts import load_extra, normalize_totp_secret
-from providers.crypto import encrypt
+from providers.crypto import decrypt_or_empty, encrypt
 from providers.models import ProviderAccount
 
 SAVED_PLACEHOLDER = "•••• (محفوظ)"
@@ -70,8 +70,8 @@ class ProviderAccountForm(forms.Form):
             self.fields["is_enabled"].initial = self.account.is_enabled
             has_proxy = bool(load_extra(self.account).get("proxy_url"))
             for name, saved in (
-                ("password", bool(self.account.secret_encrypted)),
-                ("totp_secret", bool(self.account.totp_secret_encrypted)),
+                ("password", bool(decrypt_or_empty(self.account.secret_encrypted))),
+                ("totp_secret", bool(decrypt_or_empty(self.account.totp_secret_encrypted))),
                 ("proxy_url", has_proxy),
             ):
                 if saved:
@@ -94,7 +94,10 @@ class ProviderAccountForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        has_saved_password = bool(self.account and self.account.secret_encrypted)
+        # An unreadable stored password counts as "not saved" so it can be overwritten.
+        has_saved_password = bool(
+            self.account and decrypt_or_empty(self.account.secret_encrypted)
+        )
         if not cleaned.get("password") and not has_saved_password:
             self.add_error("password", "كلمة المرور مطلوبة.")
         return cleaned
@@ -108,6 +111,8 @@ class ProviderAccountForm(forms.Form):
             account.secret_encrypted = encrypt(data["password"])
         if data["totp_secret"]:
             account.totp_secret_encrypted = encrypt(data["totp_secret"])
+        elif not decrypt_or_empty(account.totp_secret_encrypted):
+            account.totp_secret_encrypted = ""  # drop an unreadable blob
 
         extra = load_extra(account) if account.pk else {}
         if data["clear_proxy"]:

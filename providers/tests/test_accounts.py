@@ -5,7 +5,7 @@ from unittest import mock
 
 import pyotp
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -49,6 +49,84 @@ class CryptoTests(TestCase):
         with self.settings(PROVIDER_SECRETS_KEY=""):
             token = encrypt("abc")
             self.assertEqual(decrypt(token), "abc")
+
+
+OTHER_KEY = "Zm9yLXRlc3RzLW9ubHktb3RoZXIta2V5LTMyYnl0ZXM="
+
+
+class UndecryptableSecretsTests(TestCase):
+    """Secrets saved with one key must not break reads under another key."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.manager = User.objects.create_user("mgr2", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.manager,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        ProviderAccount.objects.all().delete()
+        form = ProviderAccountForm(
+            {
+                "username": "u",
+                "password": "old-pass",
+                "totp_secret": TOTP_SECRET,
+                "proxy_url": "http://old:1",
+                "is_enabled": "on",
+            },
+            provider_key="sky",
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        self.client = Client()
+        self.client.force_login(self.manager)
+
+    def test_admin_tab_renders_and_credentials_fail_closed_then_recover(self):
+        with override_settings(PROVIDER_SECRETS_KEY=OTHER_KEY):
+            page = self.client.get(reverse("phone_refresh:providers_index") + "?tab=sky")
+            self.assertEqual(page.status_code, 200)
+
+            # No silent fallback to env when the DB row is unreadable.
+            with _clean_env(SKY_SALES_USER="envu", SKY_SALES_PASSWORD="envp"):
+                with self.assertLogs("providers.accounts", level="WARNING") as logs:
+                    with self.assertRaises(PermanentError) as ctx:
+                        get_credentials("sky")
+            self.assertEqual(str(ctx.exception), "config_error")
+            self.assertNotIn("old-pass", "".join(logs.output))
+
+            # record_login must not raise (and must not mask the real error).
+            record_login("sky", False, "login failed")
+            self.assertEqual(
+                ProviderAccount.objects.get(provider_key="sky").last_error, "login failed"
+            )
+
+            # Admin can overwrite the password; unreadable TOTP/proxy are dropped.
+            form = ProviderAccountForm(
+                {"username": "u", "password": "new-pass", "is_enabled": "on"},
+                provider_key="sky",
+            )
+            self.assertTrue(form.is_valid(), form.errors)
+            form.save()
+            creds = get_credentials("sky")
+            self.assertEqual(creds.password, "new-pass")
+            self.assertEqual(creds.totp_secret, "")
+            self.assertEqual(creds.extra, {})
+
+    def test_password_required_when_stored_one_is_unreadable(self):
+        with override_settings(PROVIDER_SECRETS_KEY=OTHER_KEY):
+            form = ProviderAccountForm({"username": "u", "is_enabled": "on"}, provider_key="sky")
+            self.assertFalse(form.is_valid())
+            self.assertIn("password", form.errors)
+
+
+class CredentialsReprTests(TestCase):
+    def test_repr_hides_secrets(self):
+        creds = Credentials("alice", "pw-secret-1", "TOTPSECRET234567", {"proxy_url": "http://px:9"})
+        text = repr(creds)
+        for secret in ("pw-secret-1", "TOTPSECRET234567", "px:9"):
+            self.assertNotIn(secret, text)
+        self.assertIn("alice", text)
 
 
 class GetCredentialsTests(TestCase):

@@ -4,7 +4,7 @@ from __future__ import annotations
 import base64
 import hashlib
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 
 
@@ -23,3 +23,13 @@ def encrypt(plain: str) -> str:
 
 def decrypt(token: str) -> str:
     return _fernet().decrypt(token.encode("ascii")).decode("utf-8")
+
+
+def decrypt_or_empty(token: str) -> str:
+    """Decrypt ``token``; an empty or undecryptable value (e.g. rotated key) yields ``""``."""
+    if not token:
+        return ""
+    try:
+        return decrypt(token)
+    except (InvalidToken, ValueError):
+        return ""

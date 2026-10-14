@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 from typing import Any
@@ -9,7 +10,9 @@ from typing import Any
 from django.utils import timezone
 
 from providers.contracts import PermanentError
-from providers.crypto import decrypt
+from providers.crypto import decrypt_or_empty
+
+logger = logging.getLogger(__name__)
 
 MAX_ERROR_LEN = 500
 
@@ -17,9 +20,9 @@ MAX_ERROR_LEN = 500
 @dataclass(frozen=True)
 class Credentials:
     username: str
-    password: str
-    totp_secret: str = ""
-    extra: dict[str, Any] = field(default_factory=dict)
+    password: str = field(repr=False)
+    totp_secret: str = field(default="", repr=False)
+    extra: dict[str, Any] = field(default_factory=dict, repr=False)
 
 
 def normalize_totp_secret(raw: str) -> str:
@@ -66,29 +69,45 @@ def credentials_from_env() -> Credentials | None:
 
 
 def load_extra(account) -> dict[str, Any]:
-    if not account.extra_encrypted:
-        return {}
     try:
-        data = json.loads(decrypt(account.extra_encrypted))
+        data = json.loads(decrypt_or_empty(account.extra_encrypted) or "{}")
     except ValueError:
         return {}
     return data if isinstance(data, dict) else {}
 
 
+def has_unreadable_secrets(account) -> bool:
+    """True if any stored secret field is set but cannot be decrypted."""
+    return any(
+        blob and not decrypt_or_empty(blob)
+        for blob in (
+            account.secret_encrypted,
+            account.totp_secret_encrypted,
+            account.extra_encrypted,
+        )
+    )
+
+
 def get_credentials(provider_key: str) -> Credentials:
-    """DB account first, else the Sky env fallback, else ``PermanentError``."""
+    """DB account first, else the Sky env fallback, else ``PermanentError``.
+
+    A DB account whose secrets cannot be decrypted (rotated/mistyped key) is a
+    config error; it deliberately does not fall back to env credentials.
+    """
     from providers.models import ProviderAccount
 
     account = ProviderAccount.objects.filter(provider_key=provider_key).first()
     if account is not None and account.username and account.secret_encrypted:
+        if has_unreadable_secrets(account):
+            logger.warning(
+                "Provider account secrets are undecryptable (check PROVIDER_SECRETS_KEY): %s",
+                provider_key,
+            )
+            raise PermanentError("config_error")
         return Credentials(
             username=account.username,
-            password=decrypt(account.secret_encrypted),
-            totp_secret=(
-                decrypt(account.totp_secret_encrypted)
-                if account.totp_secret_encrypted
-                else ""
-            ),
+            password=decrypt_or_empty(account.secret_encrypted),
+            totp_secret=decrypt_or_empty(account.totp_secret_encrypted),
             extra=load_extra(account),
         )
     if provider_key == "sky":
@@ -113,8 +132,8 @@ def record_login(provider_key: str, ok: bool, error: str = "") -> None:
     if account is None:
         return
     secrets = [
-        decrypt(account.secret_encrypted) if account.secret_encrypted else "",
-        decrypt(account.totp_secret_encrypted) if account.totp_secret_encrypted else "",
+        decrypt_or_empty(account.secret_encrypted),
+        decrypt_or_empty(account.totp_secret_encrypted),
         str(load_extra(account).get("proxy_url", "")),
     ]
     account.last_login_at = timezone.now()
