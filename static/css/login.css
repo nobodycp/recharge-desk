@@ -94,6 +94,8 @@
 }
 
 .rd-login-lang:focus-within {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
   box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
@@ -282,7 +284,8 @@
   background: var(--lg-field-bg);
   color: var(--rd-ink);
   font: inherit;
-  font-size: 1.1rem;
+  /* 16px floor: below this iPad/iOS zooms the page on focus. */
+  font-size: max(1.1rem, 16px);
   /* State rules set --lg-ring only, so the autofill mask below is never
      replaced by a focus/invalid box-shadow. */
   --lg-ring: 0 0 0 0 transparent;
@@ -447,10 +450,10 @@
 }
 
 .rd-login-submit:focus-visible {
-  outline: 0;
-  box-shadow:
-    0 0 0 0.2rem var(--bs-body-bg),
-    0 0 0 0.4rem var(--rd-accent);
+  /* The submit is ink-filled, so the ring sits outside it on the sheet colour. */
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 3px;
+  box-shadow: none;
 }
 
 .rd-login-submit-arrow {
@@ -537,7 +540,7 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: var(--rd-faint);
+  color: var(--rd-muted);
   font-size: 0.82rem;
 }
 
@@ -915,8 +918,11 @@ html:not([lang="ar"]) .rd-login-title {
     color: color-mix(in srgb, var(--rd-hero-fg) 70%, transparent);
   }
 
+  /* The mobile hero is ink in both themes: outline in its foreground. */
   .rd-login-top .rd-theme-btn:focus-visible,
   .rd-login-top .rd-login-lang:focus-within {
+    outline: 2px solid var(--rd-hero-fg);
+    outline-offset: 2px;
     box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-hero-fg) 18%, transparent);
   }
 

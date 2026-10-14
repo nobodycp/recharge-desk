@@ -75,6 +75,7 @@
           {% if form.errors and not form.non_field_errors %}
             <div data-rd-flash hidden><p data-level="error">{% trans "Please correct the errors below." %}</p></div>
           {% endif %}
+          <p class="visually-hidden" role="status" data-rd-login-status data-empty-message="{% trans 'Please fill in this field.' %}"></p>
           <input type="hidden" name="next" value="{{ next }}">
           <button class="rd-login-submit" type="submit" data-rd-login-submit>
             <span class="rd-login-submit-label">{% trans "Sign in" %}</span>
@@ -86,10 +87,12 @@
       </div>
       <footer class="rd-login-foot">
         <span>© {% now "Y" %} {{ site_name }}</span>
-        <span class="rd-login-secure">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          {% trans "Secure connection" %}
-        </span>
+        {% if request.is_secure %}
+          <span class="rd-login-secure">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            {% trans "Secure connection" %}
+          </span>
+        {% endif %}
       </footer>
     </section>
 

@@ -26,7 +26,21 @@
     return !!scope && scope.getAttribute("hx-boost") === "true";
   }
 
+  // Set once a real browser navigation has started: the progress bar and the
+  // dim must stay until the page unloads instead of flashing off when the
+  // request that triggered it ends. Cleared on pageshow (bfcache restore) and,
+  // as a safety net for navigations that never unload (a download), by a timer.
+  var leaving = false;
+  var leavingTimer = null;
+  var LEAVING_RESET_MS = 8000;
+
   function hardNavigate(url) {
+    leaving = true;
+    clearTimeout(leavingTimer);
+    leavingTimer = setTimeout(function () {
+      leaving = false;
+      stopIfIdle();
+    }, LEAVING_RESET_MS);
     window.location.assign(url);
   }
 
@@ -158,6 +172,7 @@
   }
 
   function stopProgress() {
+    if (leaving) return;
     if (progress.classList.contains("is-active")) {
       progress.classList.remove("is-active");
       progress.classList.add("is-done");
@@ -176,6 +191,7 @@
   // until the last one is done. State is read from the XHRs themselves
   // (OPENED..LOADING), so a missed event can never leave this stuck.
   function stopIfIdle() {
+    if (leaving) return;
     inflight = inflight.filter(function (xhr) {
       return xhr.readyState > 0 && xhr.readyState < 4;
     });
@@ -384,6 +400,8 @@
   // Restored from the browser's back/forward cache: the frozen DOM may still
   // carry a running bar / dimmed content.
   window.addEventListener("pageshow", function (e) {
+    leaving = false;
+    clearTimeout(leavingTimer);
     if (!e.persisted) return;
     inflight = [];
     stopProgress();

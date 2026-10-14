@@ -6305,6 +6305,10 @@ msgid "Caps Lock is on"
 msgstr "زر الأحرف الكبيرة (Caps Lock) مفعّل"
 
 #: templates/accounts/login.html
+msgid "Please fill in this field."
+msgstr "يرجى تعبئة هذا الحقل."
+
+#: templates/accounts/login.html
 msgid "Secure connection"
 msgstr "اتصال آمن"
 

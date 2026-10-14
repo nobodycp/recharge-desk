@@ -899,7 +899,7 @@
 }
 
 .rd-period-switch__opt:focus-visible {
-  outline: 2px solid var(--rd-accent);
+  outline: 2px solid var(--rd-ink);
   outline-offset: 1px;
 }
 
@@ -1559,7 +1559,7 @@
 }
 
 .rd-drop:focus-within {
-  outline: 2px solid color-mix(in srgb, var(--rd-accent) 45%, transparent);
+  outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
 }
 
@@ -2420,4 +2420,14 @@ summary.rd-audit-row:hover {
     transition: none;
     animation: none;
   }
+}
+
+/* Arabic must never be tracked (positive letter-spacing breaks joining). */
+html[lang="ar"] .rd-payer-ac-item-badge,
+html[lang="ar"] .rd-dashboard-kpi-row .rd-stat-loss-trio__lbl,
+html[lang="ar"] .rd-supplier-avatar,
+html[lang="ar"] .rd-supplier-meta,
+html[lang="ar"] .rd-brand-preview__label,
+html[lang="ar"] .rd-bp-login__name {
+  letter-spacing: 0;
 }

@@ -2269,7 +2269,7 @@ a.rd-person__name:hover {
 }
 
 .form-control::placeholder {
-  color: var(--rd-faint);
+  color: var(--rd-muted);
 }
 
 .form-control:disabled,
@@ -3194,7 +3194,7 @@ tr.rd-row-pending {
   background: var(--rd-surface-2);
 }
 .rd-filter-card > summary:focus-visible {
-  outline: 2px solid var(--rd-accent);
+  outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
 }
 .rd-filter-summary-left {
@@ -5555,7 +5555,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-phone-donut {
   --donut-active: var(--rd-ink);
   --donut-due: var(--rd-accent);
-  --donut-grace: var(--rd-faint);
+  --donut-grace: var(--rd-muted);
   --donut-overdue: var(--rd-danger);
 }
 
@@ -6156,7 +6156,9 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
 .rd-employee-title__link:focus-visible,
 .rd-toast__close:focus-visible,
 .rd-mobile-tabbar__item:focus-visible,
-.rd-mobile-tabbar__item--sales:focus-visible .rd-mobile-tabbar__bubble {
+.rd-mobile-tabbar__item--sales:focus-visible .rd-mobile-tabbar__bubble,
+.btn:focus-visible,
+.page-link:focus-visible {
   outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
 }
@@ -6172,7 +6174,41 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   outline: none;
 }
 
-/* Toasts are an inverted surface, so ink would vanish there. */
-.rd-toast__close:focus-visible {
+/* Toasts and the hero KPI are inverted (ink) surfaces, so an ink outline would
+   vanish there: use the on-ink foreground. */
+.rd-toast__close:focus-visible,
+.rd-toast :is(.btn, .page-link):focus-visible,
+.rd-stat--hero :is(.btn, .page-link):focus-visible {
   outline-color: var(--rd-primary-fg);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Arabic: no tracking, no heading face on controls                           */
+/* -------------------------------------------------------------------------- */
+/* Positive letter-spacing breaks Arabic joining. These are the uppercase-label
+   style rules whose text can be Arabic (digit-only or Latin-only marks such as
+   rank indexes are left alone). */
+html[lang="ar"] .rd-label,
+html[lang="ar"] .rd-nav-section,
+html[lang="ar"] .rd-sidebar-nav--accordion .rd-nav-group-label,
+html[lang="ar"] .rd-search-group-label,
+html[lang="ar"] .rd-charge-tag,
+html[lang="ar"] .rd-field-label,
+html[lang="ar"] .app-shell .rd-card > .table-responsive:not(.rd-table-wrap) .table thead th,
+html[lang="ar"] .app-shell .card > .table-responsive:not(.rd-table-wrap) .table thead th,
+html[lang="ar"] .rd-mobile-row-card .rd-mobile-k,
+html[lang="ar"] .rd-top-avatar,
+html[lang="ar"] .rd-profit-hero__lbl,
+html[lang="ar"] .rd-phone-donut__total-lbl,
+html[lang="ar"] .rd-phone-status,
+html[lang="ar"] .rd-invoice-head-title,
+html[lang="ar"] .rd-invoice-head-doc,
+html[lang="ar"] .rd-invoice-summary-item .rd-label,
+html[lang="ar"] .rd-invoice-sig-block .rd-label {
+  letter-spacing: 0;
+}
+
+/* Controls inside an Arabic card header keep the body face, not Noto Kufi. */
+html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, select, button) {
+  font-family: var(--rd-font-ar);
 }

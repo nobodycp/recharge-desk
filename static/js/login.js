@@ -4,7 +4,8 @@
  * - Fields: `.is-focused` / `.is-filled` on `.rd-login-field`; while one is
  *   focused `body.is-typing` collapses the mobile hero.
  * - Password show/hide toggle, Caps Lock hint.
- * - Submit: empty fields shake (`.is-invalid`) instead of posting; otherwise
+ * - Submit: empty fields shake (`.is-invalid`, `aria-invalid`, announced in the
+ *   `[data-rd-login-status]` live region) instead of posting; otherwise
  *   the button shows a spinner and is disabled against double submits.
  */
 (function () {
@@ -26,6 +27,7 @@
       return { el: field, input: field.querySelector("input") };
     }).filter(function (f) { return f.input; });
     var password = form.querySelector('input[name="password"]');
+    var status = form.querySelector("[data-rd-login-status]");
     var loadingTimer = null;
 
     function isMobile() {
@@ -82,6 +84,8 @@
       f.input.addEventListener("input", function () {
         syncFilled(f);
         f.el.classList.remove("is-invalid");
+        f.input.removeAttribute("aria-invalid");
+        if (status) status.textContent = "";
       });
       // Browser autofill fires `change` without `input` on some engines.
       f.input.addEventListener("change", function () { syncFilled(f); });
@@ -118,6 +122,15 @@
       field.classList.remove("is-invalid");
       void field.offsetWidth;
       field.classList.add("is-invalid");
+    }
+
+    // Screen-reader message for the empty-field case (the shake is visual only).
+    function announce() {
+      if (!status) return;
+      var message = status.getAttribute("data-empty-message") || "";
+      // Clear first so a repeated identical message is announced again.
+      status.textContent = "";
+      window.setTimeout(function () { status.textContent = message; }, 50);
     }
 
     function setLoading(on) {
@@ -160,7 +173,11 @@
       });
       if (empty.length) {
         e.preventDefault();
-        empty.forEach(function (f) { shake(f.el); });
+        empty.forEach(function (f) {
+          shake(f.el);
+          f.input.setAttribute("aria-invalid", "true");
+        });
+        announce();
         empty[0].input.focus();
         return;
       }
