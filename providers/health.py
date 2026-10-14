@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import time
 
 from django.conf import settings
 from django.core.cache import cache
@@ -74,6 +75,17 @@ ALERT_REDIS_DOWN = "Redis لا يستجيب"
 ALERT_WORKER_DOWN = "الـ worker متوقف أو الطلبات عالقة"
 ALERT_LOGIN_FAILED = "فشل تسجيل الدخول: {company}"
 
+# Process-local fallback used only while the shared cache is unavailable (e.g.
+# Redis down — exactly when the alert fires), so repeated dashboard loads don't
+# re-probe Redis/Celery every time. ``(monotonic_deadline, items)`` or None.
+_local_alerts = None
+
+
+def reset_local_alerts() -> None:
+    """Forget the process-local fallback (used by tests)."""
+    global _local_alerts
+    _local_alerts = None
+
 
 def _connection_tab_url(company) -> str:
     from django.urls import reverse
@@ -88,9 +100,13 @@ def alerts() -> list:
     Redis/worker items link to the connection tab of the first company (by pk)
     that has a provider system, or have an empty url when there is none.
     """
+    global _local_alerts
     cached = cache.get(ALERTS_CACHE_KEY)
     if cached is not None:
         return cached
+    local = _local_alerts
+    if local is not None and time.monotonic() < local[0]:
+        return local[1]
 
     from companies.models import Company
 
@@ -101,7 +117,9 @@ def alerts() -> list:
     items = []
     if not _redis_ok():
         items.append({"text": ALERT_REDIS_DOWN, "url": health_url})
-    if not _worker_ok() or refresh_queue_stalled():
+        # The broker is unreachable, so the worker is too: don't ping it.
+        items.append({"text": ALERT_WORKER_DOWN, "url": health_url})
+    elif not _worker_ok() or refresh_queue_stalled():
         items.append({"text": ALERT_WORKER_DOWN, "url": health_url})
 
     failed_keys = ProviderConnection.objects.filter(
@@ -109,14 +127,19 @@ def alerts() -> list:
     ).order_by("provider_key").values_list("provider_key", flat=True)
     for key in failed_keys:
         company = companies.filter(provider_key=key).first()
-        if company is None:
-            continue
         items.append(
             {
-                "text": ALERT_LOGIN_FAILED.format(company=company.name),
-                "url": _connection_tab_url(company),
+                "text": ALERT_LOGIN_FAILED.format(
+                    company=company.name if company else key
+                ),
+                "url": _connection_tab_url(company) if company else "",
             }
         )
 
     cache.set(ALERTS_CACHE_KEY, items, timeout=ALERTS_CACHE_TTL)
+    if cache.get(ALERTS_CACHE_KEY) is None:
+        # Shared cache is down (fail-soft no-op): bound probing in this process.
+        _local_alerts = (time.monotonic() + ALERTS_CACHE_TTL, items)
+    else:
+        _local_alerts = None
     return items

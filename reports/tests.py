@@ -90,6 +90,22 @@ class _ReportsBase(TestCase):
 
 # ============================================================ Dashboard
 class DashboardSmokeTests(_ReportsBase):
+    def setUp(self):
+        from unittest import mock
+
+        from providers import health
+
+        super().setUp()
+        # Keep the dashboard's Redis/Celery probes independent of the environment.
+        health.reset_local_alerts()
+        self.addCleanup(health.reset_local_alerts)
+        redis_patch = mock.patch.object(health, "_redis_ok", return_value=True)
+        worker_patch = mock.patch.object(health, "_worker_ok", return_value=True)
+        self.redis_ok = redis_patch.start()
+        self.worker_ok = worker_patch.start()
+        self.addCleanup(redis_patch.stop)
+        self.addCleanup(worker_patch.stop)
+
     def test_empty_dashboard_renders(self):
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.status_code, 200)
@@ -172,17 +188,10 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertContains(r, "فشل تسجيل الدخول: شركة")
 
     def test_dashboard_does_not_ping_health_outside_cached_alerts(self):
-        from unittest import mock
-
-        from providers import health
-
-        cache.delete(health.ALERTS_CACHE_KEY)
-        with mock.patch.object(health, "_redis_ok", return_value=True) as redis_ok, \
-                mock.patch.object(health, "_worker_ok", return_value=True) as worker_ok:
-            self.client.get(reverse("reports:dashboard"))
-            self.client.get(reverse("reports:dashboard"))
-        self.assertEqual(redis_ok.call_count, 1)
-        self.assertEqual(worker_ok.call_count, 1)
+        self.client.get(reverse("reports:dashboard"))
+        self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(self.redis_ok.call_count, 1)
+        self.assertEqual(self.worker_ok.call_count, 1)
 
     def test_refresh_queue_check_is_cached_briefly(self):
         from providers import health
