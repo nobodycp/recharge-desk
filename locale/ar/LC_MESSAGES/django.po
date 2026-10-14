@@ -5357,6 +5357,9 @@ msgstr "الإدخالات"
 #: templates/partials/_employee_bottom_nav_inner.html:69
 msgid "Stock"
 msgstr "مخزون"
+#: templates/partials/_employee_bottom_nav_inner.html:18
+msgid "Check numbers"
+msgstr "فحص الأرقام"
 #: templates/partials/filter_card_open.html:20
 msgid "Search & filters"
 msgstr "البحث والفلاتر"
@@ -5469,6 +5472,10 @@ msgstr "غير مدفوع"
 #: templates/partials/theme_toggle.html:11
 msgid "Toggle color theme"
 msgstr "تبديل المظهر"
+
+#: templates/partials/user_menu.html:21
+msgid "Theme"
+msgstr "المظهر"
 
 #: templates/partials/user_menu.html:7
 #, python-format

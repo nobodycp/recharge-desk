@@ -36,6 +36,27 @@
       </div>
     </div>
 
+    {% if prefs %}
+      <div class="rd-user-menu-prefs">
+        <form action="{% url 'set_language' %}" method="post" class="rd-user-menu-pref mb-0" hx-boost="false">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label class="rd-user-menu-pref__label" for="rd-lang-emp">{% trans "Language" %}</label>
+          <select name="language" id="rd-lang-emp" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% for code, label in languages %}
+              <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <div class="rd-user-menu-pref">
+          <span class="rd-user-menu-pref__label">{% trans "Theme" %}</span>
+          {% include "partials/theme_toggle.html" with variant="shell" %}
+        </div>
+      </div>
+      <div class="rd-user-menu-divider" aria-hidden="true"></div>
+    {% endif %}
+
     <a class="rd-user-menu-item" href="{% url 'accounts:account_settings' %}" role="menuitem">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>

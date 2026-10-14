@@ -1,9 +1,11 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import translation
 
 from companies.models import Company, Product, ProductLine
 from customers.models import Customer
@@ -1706,7 +1708,10 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertIn("d-none", tag)
 
     def test_bottom_nav_label_is_number_check(self):
-        resp = self.client.get(reverse("sales:employee_entry"))
+        # The label is translated now; the test client defaults to English.
+        self.addCleanup(translation.deactivate)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        resp = self.client.get("/ar" + reverse("sales:employee_entry"))
         self.assertContains(
             resp, '<span class="rd-mobile-tabbar__label">فحص الأرقام</span>', html=True
         )

@@ -11,6 +11,7 @@
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
   <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
+  <link href="{% static 'css/employee.css' %}{{ static_cache_query }}" rel="stylesheet">
   {% include "partials/nav_head.html" %}
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/data-ui.js' %}{{ static_cache_query }}" defer></script>
@@ -18,7 +19,13 @@
 <body class="rd-body rd-employee-app app-shell has-employee-tabbar" {% include "partials/nav_body_attrs.html" with shell="employee" %}>
   {% include "partials/toast_region.html" %}
   <header class="rd-employee-topbar">
-    <div class="rd-employee-topbar__start">
+    <div class="rd-employee-topbar__row">
+      {% include "partials/user_menu.html" with variant="ava" prefs=True %}
+      <div class="rd-employee-title">
+        {% block employee_header %}
+          <span>{% trans "Sales entry" %}</span>
+        {% endblock %}
+      </div>
       {% if acting_employee %}
         <a
           class="rd-employee-wallet{% if acting_employee.current_balance < 0 %} is-neg{% elif acting_employee.current_balance > 0 %} is-pos{% endif %}"
@@ -31,27 +38,8 @@
           <span class="rd-employee-wallet__amt tabular-nums">{{ acting_employee.current_balance|intcomma }}</span>
         </a>
       {% endif %}
-      <div class="rd-employee-title">
-        {% block employee_header %}
-          <span>{% trans "Sales entry" %}</span>
-        {% endblock %}
-      </div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <form action="{% url 'set_language' %}" method="post" class="d-flex mb-0" hx-boost="false">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <label class="visually-hidden" for="rd-lang-emp">{% trans "Language" %}</label>
-        <select name="language" id="rd-lang-emp" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
-          {% get_current_language as LANGUAGE_CODE %}
-          {% for code, label in languages %}
-            <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </form>
-      {% include "partials/theme_toggle.html" with variant="shell" %}
-      {% include "partials/user_menu.html" %}
-    </div>
+    {% block employee_progress %}{% endblock %}
   </header>
   <div class="rd-employee-main" data-rd-live>
     {% block content %}{% endblock %}
