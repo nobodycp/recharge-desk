@@ -569,7 +569,11 @@ RAW_EXCERPT_MAX_CHARS = 500
 def internal_result_extras(result: RefreshResult) -> dict:
     """Admin-only diagnostics for ``result`` (scrubbed, excerpt capped)."""
     return {
-        "raw_excerpt": scrub(result.raw_excerpt or "")[:RAW_EXCERPT_MAX_CHARS],
+        # Scrub the whole body first, then cap: a secret straddling the cap
+        # must be masked before it can be cut in half.
+        "raw_excerpt": scrub(result.raw_body_full or result.raw_excerpt or "")[
+            :RAW_EXCERPT_MAX_CHARS
+        ],
         "diagnostics": {
             "provider": result.provider,
             "matched_rule_id": result.matched_rule_id,

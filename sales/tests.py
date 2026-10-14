@@ -6,8 +6,8 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from companies.models import Company, Product, ProductLine
-from phone_refresh.services.refresh_jobs import RefreshTicket
 from customers.models import Customer
+from phone_refresh.services.refresh_jobs import RefreshTicket
 from sales.models import PaymentMethod, Sale
 from sales.payer_lookup import (
     latest_payer_for_reference,

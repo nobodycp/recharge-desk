@@ -206,7 +206,8 @@ def job_payload(job_id: str) -> dict:
         job = ProviderJob.objects.filter(pk=job_id).first()
     except (ValidationError, ValueError):
         job = None
-    if job is None:
+    # Only refresh jobs are pollable; other kinds (charge, ...) look unknown.
+    if job is None or job.kind != ProviderJob.KIND_REFRESH:
         return dict(_EXPIRED_PAYLOAD)
 
     if job.status in (ProviderJob.STATUS_DONE, ProviderJob.STATUS_FAILED):

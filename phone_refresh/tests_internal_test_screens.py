@@ -10,13 +10,20 @@ from django.urls import reverse
 
 from accounts.models import UserProfile
 from phone_refresh.models import (
+    MatchType,
     PhoneProvider,
     ProviderResponseRule,
     RefreshSource,
+    RefreshStatus,
     SystemSettings,
 )
 from phone_refresh.services import refresh_jobs
 from phone_refresh.services.refresh_jobs import job_payload, submit_refresh
+from phone_refresh.services.refresh_service import (
+    INTERNAL_RESULT_KEYS,
+    RefreshResult,
+    internal_result_extras,
+)
 from providers.contracts import RawResponse
 from providers.models import ProviderJob
 from providers.redis_conn import get_redis
@@ -25,6 +32,7 @@ User = get_user_model()
 
 PHONE = "0529000000"
 PROVIDER_REFRESH = "providers.service.refresh"
+EXCERPT_CAP = 500
 SECRET_BODY = 'ok {"jwtToken": "abc.def.ghi"} password=hunter2 ' + "x" * 600
 
 
@@ -71,6 +79,70 @@ class RawExcerptStorageTests(_ScreenTestCase):
         self.assertNotIn("abc.def.ghi", excerpt)
         self.assertNotIn("hunter2", excerpt)
         self.assertIn("***", excerpt)
+
+    @patch(PROVIDER_REFRESH)
+    def test_secret_straddling_the_cap_never_reaches_the_excerpt(self, refresh):
+        secret = "SUPERSECRETJWTVALUE1234567890"
+        prefix = "a" * (EXCERPT_CAP - 20)
+        body = prefix + '"jwtToken": "' + secret + '" tail'
+        # The key starts before char 500 and the value crosses it.
+        self.assertLess(body.index("jwtToken"), EXCERPT_CAP)
+        self.assertGreater(body.index(secret) + len(secret), EXCERPT_CAP)
+        refresh.return_value = _raw(text=body)
+        ticket = self._submit(
+            internal_test=True, forced_provider="sky", bypass_provider_off=True
+        )
+        excerpt = ProviderJob.objects.get(pk=ticket.job_id).result["raw_excerpt"]
+        self.assertLessEqual(len(excerpt), EXCERPT_CAP)
+        self.assertNotIn(secret, excerpt)
+        self.assertNotIn(secret[:8], excerpt)
+
+    def test_extras_scrub_the_full_body_before_capping(self):
+        secret = "SUPERSECRETJWTVALUE1234567890"
+        body = "a" * (EXCERPT_CAP - 20) + '"jwtToken": "' + secret + '" tail'
+        result = RefreshResult(
+            status=None,
+            provider="sky",
+            message_title="",
+            message_body="",
+            matched_rule_id=None,
+            raw_status_code=200,
+            raw_excerpt=body[:EXCERPT_CAP],
+            raw_body_full=body,
+        )
+        excerpt = internal_result_extras(result)["raw_excerpt"]
+        self.assertLessEqual(len(excerpt), EXCERPT_CAP)
+        self.assertNotIn(secret[:8], excerpt)
+        self.assertIn("***", excerpt)
+
+    @patch(PROVIDER_REFRESH, return_value=_raw(text=SECRET_BODY))
+    def test_stored_internal_keys_are_exactly_the_declared_ones(self, refresh):
+        plain = self._submit()
+        internal = self._submit(
+            internal_test=True, forced_provider="sky", bypass_provider_off=True
+        )
+        plain_keys = set(ProviderJob.objects.get(pk=plain.job_id).result)
+        internal_keys = set(ProviderJob.objects.get(pk=internal.job_id).result)
+        # A new internal-only key must be added to INTERNAL_RESULT_KEYS (and
+        # so stripped by job_payload) or this fails.
+        self.assertEqual(internal_keys - set(INTERNAL_RESULT_KEYS), plain_keys)
+        self.assertEqual(internal_keys - plain_keys, set(INTERNAL_RESULT_KEYS))
+
+    @patch(PROVIDER_REFRESH, return_value=_raw(data={"reason": "success"}))
+    def test_job_payload_only_serves_refresh_jobs(self, refresh):
+        ticket = self._submit()
+        self.assertEqual(job_payload(ticket.job_id)["status"], "refreshed")
+        for kind in (ProviderJob.KIND_CHARGE, ProviderJob.KIND_CHECK_CHARGE):
+            ProviderJob.objects.filter(pk=ticket.job_id).update(kind=kind)
+            self.assertEqual(
+                job_payload(ticket.job_id),
+                job_payload("00000000-0000-0000-0000-000000000000"),
+            )
+            response = Client().get(
+                reverse("phone_refresh:public_status", args=[ticket.job_id])
+            )
+            self.assertEqual(response.json()["status"], "error")
+            self.assertNotIn("refreshed", response.content.decode())
 
     @patch(PROVIDER_REFRESH, return_value=_raw(text=SECRET_BODY))
     def test_plain_job_never_stores_excerpt(self, refresh):
@@ -127,7 +199,7 @@ class InternalTestViewTests(_ScreenTestCase):
         self.assertTrue(data["ok"])
         self.assertEqual(data["phone"], PHONE)
         self.assertEqual(data["provider"], "sky")
-        self.assertIn(data["status"], {"error", "not_found", "wait", "refreshed"})
+        self.assertEqual(data["status"], "error")  # no rule matches this body
         self.assertTrue(data["status_label"])
         self.assertEqual(data["raw_status_code"], 200)
         self.assertLessEqual(len(data["raw_excerpt"]), 500)
@@ -211,17 +283,32 @@ class ProviderTestViewTests(_ScreenTestCase):
 
     @patch(PROVIDER_REFRESH, return_value=_raw(data={"reason": "success"}))
     def test_provider_test_reports_matched_rule(self, refresh):
-        rule = ProviderResponseRule.objects.filter(provider="sky").first()
-        if rule is None:
-            self.skipTest("no seeded sky rule")
+        ProviderResponseRule.objects.filter(provider="sky").delete()
+        rule = ProviderResponseRule.objects.create(
+            provider="sky",
+            order=1,
+            match_type=MatchType.JSON_PATH,
+            pattern="$.reason",
+            expected_value="success",
+            target_status=RefreshStatus.objects.get(code="refreshed"),
+        )
         response = self._post(
             "phone_refresh:providers_test", {"phone": PHONE, "provider": "sky"}
         )
         data = response.json()
         self.assertTrue(data["ok"])
-        if data["matched_rule"] is not None:
-            self.assertIn("pattern", data["matched_rule"])
-            self.assertIn("target_status", data["matched_rule"])
+        self.assertEqual(data["status"], "refreshed")
+        self.assertEqual(
+            data["matched_rule"],
+            {
+                "id": rule.pk,
+                "match_type": rule.get_match_type_display(),
+                "pattern": "$.reason",
+                "expected_value": "success",
+                "order": 1,
+                "target_status": rule.target_status.label,
+            },
+        )
 
     @patch(
         "phone_refresh.services.refresh_jobs.wait_for_job",
