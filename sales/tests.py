@@ -6,6 +6,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from companies.models import Company, Product, ProductLine
+from phone_refresh.services.refresh_jobs import RefreshTicket
 from customers.models import Customer
 from sales.models import PaymentMethod, Sale
 from sales.payer_lookup import (
@@ -1511,83 +1512,163 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertContains(resp, reverse("sales:employee_refresh_phone"))
         self.assertContains(resp, "rd-mobile-tabbar")
 
-    def test_unregistered_phone_uses_public_refresh_flow(self):
-        from phone_refresh.models import RefreshStatus
-
-        status = RefreshStatus.objects.get(code="not_found")
-        with patch("sales.views.employee.refresh_phone") as refresh_mock:
-            refresh_mock.return_value = type(
-                "R",
-                (),
-                {
-                    "status": status,
-                    "message_title": "رقم غير موجود",
-                    "message_body": "لم يتم العثور على رقمك في النظام.",
-                    "last_refresh_at": None,
-                    "seconds_since_last_refresh": None,
+    @patch("sales.views.employee.submit_refresh")
+    def test_unregistered_phone_uses_public_refresh_flow(self, submit_mock):
+        submit_mock.return_value = RefreshTicket(
+            None,
+            {
+                "status": "not_found",
+                "message": {
+                    "title": "رقم غير موجود",
+                    "body": "لم يتم العثور على رقمك في النظام.",
                 },
-            )()
-            resp = self._csrf_post({"phone": "0509999999"})
+            },
+        )
+        resp = self._csrf_post({"phone": "0509999999"})
         self.assertEqual(resp.status_code, 200)
         payload = resp.json()
         self.assertEqual(payload["status"], "not_found")
         self.assertEqual(payload["message"]["body"], "لم يتم العثور على رقمك في النظام.")
 
-    @patch("sales.views.employee.refresh_phone")
-    def test_invalid_prefix_delegates_to_refresh_phone(self, refresh_mock):
-        from phone_refresh.models import RefreshStatus
-
-        status = RefreshStatus.objects.get(code="not_found")
-        refresh_mock.return_value = type(
-            "R",
-            (),
+    @patch("sales.views.employee.submit_refresh")
+    def test_invalid_prefix_delegates_to_submit_refresh(self, submit_mock):
+        submit_mock.return_value = RefreshTicket(
+            None,
             {
-                "status": status,
-                "message_title": "رقم غير موجود",
-                "message_body": "لم يتم العثور على رقمك في النظام.",
-                "last_refresh_at": None,
-                "seconds_since_last_refresh": None,
+                "status": "not_found",
+                "message": {"title": "رقم غير موجود", "body": "لم يتم العثور على رقمك في النظام."},
             },
-        )()
+        )
         resp = self._csrf_post({"phone": "0591234567"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["status"], "not_found")
-        refresh_mock.assert_called_once()
+        submit_mock.assert_called_once()
 
-    @patch("sales.views.employee.refresh_phone")
-    def test_refreshes_registered_phone(self, refresh_mock):
-        from phone_refresh.models import RefreshStatus
+    @patch("sales.views.employee.submit_refresh")
+    def test_refreshes_registered_phone(self, submit_mock):
+        self._make_sale("0501234567")
+        submit_mock.return_value = RefreshTicket(
+            None,
+            {"status": "refreshed", "message": {"title": "تم", "body": "تم التحديث"}},
+        )
+        resp = self._csrf_post({"phone": "0501234567"})
+        self.assertEqual(resp.status_code, 200)
+        payload = resp.json()
+        self.assertEqual(payload["status"], "refreshed")
+        self.assertEqual(payload["message"]["body"], "تم التحديث")
+        submit_mock.assert_called_once()
+        args, kwargs = submit_mock.call_args
+        self.assertEqual(args[0], "0501234567")
+        self.assertEqual(kwargs.get("source"), "employee")
 
+    @patch("sales.views.employee.submit_refresh")
+    def test_job_ticket_answers_202_processing(self, submit_mock):
+        submit_mock.return_value = RefreshTicket("job-1", None)
+        resp = self._csrf_post({"phone": "0501234567"})
+        self.assertEqual(resp.status_code, 202)
+        self.assertEqual(resp.json(), {"status": "processing", "job": "job-1"})
+
+    def test_disabled_refresh_returns_403_without_submitting(self):
+        # Stubbed (not saved): AppSettings.load() is cached across tests.
+        disabled = type("S", (), {"sales_show_refresh_phone": False})()
+        with patch(
+            "sales.views.employee.AppSettings.load", return_value=disabled
+        ), patch("sales.views.employee.submit_refresh") as submit_mock:
+            resp = self._csrf_post({"phone": "0501234567"})
+        self.assertEqual(resp.status_code, 403)
+        submit_mock.assert_not_called()
+
+    def _make_sale(self, phone):
         create_sale(
             company=self.company,
             product=self.product,
-            reference_number="0501234567",
+            reference_number=phone,
             payer_name="Ali",
             payment_method=self.pm,
             sell_price_actual=Decimal("10"),
             notes="",
             user=self.emp,
         )
-        status = RefreshStatus.objects.get(code="refreshed")
-        refresh_mock.return_value = type(
-            "R",
-            (),
-            {
-                "status": status,
-                "message_title": "تم",
-                "message_body": "تم التحديث",
-                "last_refresh_at": None,
-                "seconds_since_last_refresh": None,
-            },
-        )()
+
+    def _status_url(self, job_id):
+        return reverse("sales:employee_refresh_status", args=[job_id])
+
+    @patch("providers.service.refresh")
+    def test_employee_refresh_returns_job_then_status_final(self, provider_refresh):
+        from phone_refresh.tasks import run_refresh_job
+        from providers.contracts import RawResponse
+        from providers.redis_conn import get_redis
+
+        get_redis().flushall()
+        provider_refresh.return_value = RawResponse(
+            text="", json={"reason": "success"}, status_code=200
+        )
+        self._make_sale("0501234567")
+
         resp = self._csrf_post({"phone": "0501234567"})
+        self.assertEqual(resp.status_code, 202)
+        body = resp.json()
+        self.assertEqual(body["status"], "processing")
+        job_id = body["job"]
+
+        pending = self.client.get(self._status_url(job_id))
+        self.assertEqual(pending.status_code, 200)
+        self.assertEqual(pending.json()["status"], "processing")
+
+        run_refresh_job(job_id)
+
+        done = self.client.get(self._status_url(job_id))
+        self.assertEqual(done.status_code, 200)
+        self.assertEqual(done.json()["status"], "refreshed")
+        provider_refresh.assert_called_once()
+
+    def test_employee_status_requires_employee_login(self):
+        job_id = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
+        resp = Client().get(self._status_url(job_id))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/login", resp["Location"])
+
+    def test_employee_status_rejects_non_staff_user(self):
+        from accounts.models import UserProfile
+
+        outsider = User.objects.create_user("not_staff_refresh", password="x")
+        UserProfile.objects.update_or_create(
+            user=outsider,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": False},
+        )
+        client = Client()
+        client.force_login(outsider)
+        resp = client.get(self._status_url("5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertNotIn("/login", resp["Location"])
+
+    def test_employee_status_is_get_only_and_never_cached(self):
+        job_id = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
+        resp = self.client.get(self._status_url(job_id))
+        self.assertIn("no-store", resp["Cache-Control"])
+        plain = Client()
+        plain.force_login(self.emp)
+        self.assertEqual(plain.post(self._status_url(job_id)).status_code, 405)
+
+    def test_employee_status_returns_only_job_payload_output(self):
+        stub = {"status": "wait", "message": {"title": "t", "body": "b"}}
+        job_id = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
+        with patch("sales.views.employee.job_payload", return_value=stub) as jp:
+            resp = self.client.get(self._status_url(job_id))
+        self.assertEqual(resp.json(), stub)
+        jp.assert_called_once_with(job_id)
+
+    def test_employee_status_unknown_job_is_generic_error(self):
+        resp = self.client.get(self._status_url("5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"))
         self.assertEqual(resp.status_code, 200)
-        payload = resp.json()
-        self.assertEqual(payload["status"], "refreshed")
-        self.assertEqual(payload["message"]["body"], "تم التحديث")
-        refresh_mock.assert_called_once()
-        _args, kwargs = refresh_mock.call_args
-        self.assertEqual(kwargs.get("source"), "employee")
+        self.assertEqual(resp.json()["status"], "error")
+
+    def test_refresh_page_exposes_status_url_template(self):
+        resp = self.client.get(reverse("sales:employee_refresh_number"))
+        self.assertContains(
+            resp, "data-status-url=\"/employee/refresh/status/00000000-0000-0000-0000-000000000000/\""
+        )
+        self.assertContains(resp, "data-wait-seconds=")
 
 
 class SalePhonePrefixValidationTests(TestCase):

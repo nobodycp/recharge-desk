@@ -37,7 +37,7 @@ from phone_refresh.models import (
     SiteSettings,
     SystemSettings,
 )
-from phone_refresh.services.refresh_service import refresh_phone
+from phone_refresh.services.refresh_jobs import run_internal_test
 from phone_refresh.views.general import GENERAL_TAB_ID
 from providers import health as provider_health
 from providers.forms import ProviderAccountForm
@@ -297,20 +297,20 @@ def providers_test(request):
     provider_key = form.cleaned_data["provider"]
 
     started = time.monotonic()
-    result = refresh_phone(
-        phone,
-        ip=None,
-        internal_test=True,
-        forced_provider=provider_key,
-        bypass_provider_off=True,
-        source=RefreshSource.INTERNAL_TEST,
+    outcome = run_internal_test(
+        phone, forced_provider=provider_key, bypass_provider_off=True
     )
     total_ms = int((time.monotonic() - started) * 1000)
+    payload = outcome.payload
+    diag = outcome.diagnostics
+    status = payload.get("status")
+    status_row = RefreshStatus.objects.filter(code=status).first()
+    provider = diag.get("provider") or provider_key
 
     matched_rule_payload = None
-    if result.matched_rule_id:
+    if diag.get("matched_rule_id"):
         rule = (
-            ProviderResponseRule.objects.filter(pk=result.matched_rule_id)
+            ProviderResponseRule.objects.filter(pk=diag["matched_rule_id"])
             .select_related("target_status")
             .first()
         )
@@ -328,25 +328,21 @@ def providers_test(request):
         {
             "ok": True,
             "phone": phone,
-            "provider": result.provider,
-            "provider_label": dict(PROVIDER_TABS).get(result.provider or "", ""),
-            "status": result.status.code,
-            "status_label": result.status.label,
+            "provider": provider,
+            "provider_label": dict(PROVIDER_TABS).get(provider or "", ""),
+            "status": status,
+            "status_label": status_row.label if status_row else status,
             "matched_rule": matched_rule_payload,
-            "message": {
-                "title": result.message_title,
-                "body": result.message_body,
-            },
-            "raw_status_code": result.raw_status_code,
-            # Full upstream body (no truncation) so reviewers can diagnose
-            # the real response. The DB-persisted RefreshLog.raw_excerpt
-            # stays capped at 500 chars; this field is in-memory only.
-            "raw_body": result.raw_body_full,
-            "raw_body_length": len(result.raw_body_full),
-            "html_form_detected": result.html_form_detected,
+            "message": payload.get("message") or {"title": "", "body": ""},
+            "raw_status_code": diag.get("raw_status_code"),
+            # Scrubbed upstream body, capped at 500 chars (the job result is
+            # persisted, so the full body is no longer carried to this screen).
+            "raw_body": outcome.raw_excerpt,
+            "raw_body_length": diag.get("raw_body_length", len(outcome.raw_excerpt)),
+            "html_form_detected": bool(diag.get("html_form_detected")),
             # Kept for backwards compatibility with anything still reading it.
-            "raw_excerpt": result.raw_body_full,
-            "error": result.error,
+            "raw_excerpt": outcome.raw_excerpt,
+            "error": diag.get("error"),
             "duration_ms": total_ms,
         }
     )

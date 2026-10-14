@@ -559,6 +559,28 @@ def result_payload(result: RefreshResult) -> dict:
     return payload
 
 
+# Keys an internal-test job result carries for the admin diagnostics panels
+# on top of ``result_payload``. They must never reach customers/employees:
+# ``refresh_jobs.job_payload`` strips them.
+INTERNAL_RESULT_KEYS = ("raw_excerpt", "diagnostics")
+RAW_EXCERPT_MAX_CHARS = 500
+
+
+def internal_result_extras(result: RefreshResult) -> dict:
+    """Admin-only diagnostics for ``result`` (scrubbed, excerpt capped)."""
+    return {
+        "raw_excerpt": scrub(result.raw_excerpt or "")[:RAW_EXCERPT_MAX_CHARS],
+        "diagnostics": {
+            "provider": result.provider,
+            "matched_rule_id": result.matched_rule_id,
+            "raw_status_code": result.raw_status_code,
+            "html_form_detected": result.html_form_detected,
+            "raw_body_length": len(result.raw_body_full or ""),
+            "error": scrub(result.error) if result.error else None,
+        },
+    }
+
+
 def _record_and_return(
     *,
     phone: str,

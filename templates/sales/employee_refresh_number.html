@@ -4,10 +4,16 @@
 <span>{% trans "Refresh number" %}</span>
 {% endblock %}
 {% block content %}
+{% trans "Error" as msg_error_title %}
+{% trans "Something went wrong. Please try again." as msg_error_body %}
 <div
   class="rd-card p-3"
   id="rd-refresh-page"
   data-refresh-url="{% url 'sales:employee_refresh_phone' %}"
+  data-status-url="{% url 'sales:employee_refresh_status' '00000000-0000-0000-0000-000000000000' %}"
+  data-wait-seconds="{{ refresh_wait_seconds }}"
+  data-msg-error-title="{{ msg_error_title }}"
+  data-msg-error-body="{{ msg_error_body }}"
   data-msg-phone="{{ _('Enter a phone number.')|escapejs }}"
   data-msg-invalid-phone="{{ _('Phone must be 10 digits and start with 050, 051, 052, 053, 054, 055, or 058.')|escapejs }}"
   data-msg-working="{{ _('Refreshing…')|escapejs }}"

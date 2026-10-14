@@ -9,8 +9,8 @@ from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
 from phone_refresh.forms import InternalTestForm, SystemSettingsForm
-from phone_refresh.models import RefreshSource, SystemSettings
-from phone_refresh.services.refresh_service import refresh_phone
+from phone_refresh.models import RefreshStatus, SystemSettings
+from phone_refresh.services.refresh_jobs import run_internal_test
 
 
 GENERAL_TAB_ID = "general"
@@ -57,33 +57,25 @@ def settings_internal_test(request):
         )
 
     phone = form.cleaned_data["phone"]
-    result = refresh_phone(
-        phone,
-        ip=None,
-        internal_test=True,
-        source=RefreshSource.INTERNAL_TEST,
-    )
+    outcome = run_internal_test(phone)
+    payload = outcome.payload
+    diag = outcome.diagnostics
+    status = payload.get("status")
+    status_row = RefreshStatus.objects.filter(code=status).first()
 
     return JsonResponse(
         {
             "ok": True,
             "phone": phone,
-            "status": result.status.code,
-            "status_label": result.status.label,
-            "provider": result.provider,
-            "matched_rule_id": result.matched_rule_id,
-            "message": {
-                "title": result.message_title,
-                "body": result.message_body,
-            },
-            "raw_status_code": result.raw_status_code,
-            "raw_excerpt": result.raw_excerpt,
-            "error": result.error,
-            "last_refresh_at": (
-                result.last_refresh_at.isoformat()
-                if result.last_refresh_at is not None
-                else None
-            ),
-            "seconds_since_last_refresh": result.seconds_since_last_refresh,
+            "status": status,
+            "status_label": status_row.label if status_row else status,
+            "provider": diag.get("provider"),
+            "matched_rule_id": diag.get("matched_rule_id"),
+            "message": payload.get("message") or {"title": "", "body": ""},
+            "raw_status_code": diag.get("raw_status_code"),
+            "raw_excerpt": outcome.raw_excerpt,
+            "error": diag.get("error"),
+            "last_refresh_at": payload.get("last_refresh_at"),
+            "seconds_since_last_refresh": payload.get("seconds_since_last_refresh"),
         }
     )

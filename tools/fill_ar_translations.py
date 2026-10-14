@@ -1016,6 +1016,7 @@ AR: dict[str, str] = {
     "Sales": "مبيعات",
     "Stock": "مخزون",
     "Refresh number": "تحديث الرقم",
+    "Something went wrong. Please try again.": "حدث خطأ ما. الرجاء المحاولة مرة أخرى.",
     "Refresh numbers": "تحديث الأرقام",
     "Record payment": "تسجيل دفعة",
     "My balance": "رصيدي",

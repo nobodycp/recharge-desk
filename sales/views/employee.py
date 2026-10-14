@@ -7,6 +7,7 @@ from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import employee_required
@@ -23,8 +24,8 @@ from customers.services import (
     update_awaiting_customer_payment_submission,
 )
 from customers.views._shared import flash_form_errors
-from phone_refresh.models import RefreshSource
-from phone_refresh.services.refresh_service import refresh_phone, result_payload
+from phone_refresh.models import RefreshSource, SystemSettings
+from phone_refresh.services.refresh_jobs import job_payload, submit_refresh
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
 from sales.employee_editing import (
@@ -69,10 +70,6 @@ def _build_product_groups(company_id):
                 {"line": line, "variants": variants, "default_product_id": default_product_id}
             )
     return groups
-
-
-def _refresh_json_payload(result) -> dict:
-    return result_payload(result)
 
 
 @employee_required
@@ -196,7 +193,10 @@ def employee_refresh_number(request):
     return render(
         request,
         "sales/employee_refresh_number.html",
-        {"title": _("Refresh number")},
+        {
+            "title": _("Refresh number"),
+            "refresh_wait_seconds": SystemSettings.get().refresh_wait_seconds,
+        },
     )
 
 
@@ -277,7 +277,7 @@ def employee_submit_customer_payment_submission(request):
 @employee_required
 @require_POST
 def employee_refresh_phone(request):
-    """Staff refresh — same flow as the public site, without API rate limits."""
+    """Staff refresh — same queued flow as the public site, without API rate limits."""
     if not AppSettings.load().sales_show_refresh_phone:
         return JsonResponse(
             {
@@ -290,12 +290,26 @@ def employee_refresh_phone(request):
             status=403,
         )
     phone = (request.POST.get("phone") or "").strip()
-    result = refresh_phone(
+    ticket = submit_refresh(
         phone,
         ip=get_client_ip(request) or None,
         source=RefreshSource.EMPLOYEE,
     )
-    return JsonResponse(_refresh_json_payload(result))
+    if ticket.job_id is None:
+        # Answered without a job (validation, cooldown, service off, busy).
+        return JsonResponse(ticket.payload)
+    return JsonResponse({"status": "processing", "job": ticket.job_id}, status=202)
+
+
+@employee_required
+@never_cache
+@require_GET
+def employee_refresh_status(request, job_id):
+    """Poll a refresh job started by :func:`employee_refresh_phone`.
+
+    Returns exactly what :func:`job_payload` returns (customer-safe).
+    """
+    return JsonResponse(job_payload(str(job_id)))
 
 
 @employee_required

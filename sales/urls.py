@@ -27,6 +27,11 @@ urlpatterns = [
         name="employee_refresh_phone",
     ),
     path(
+        "employee/refresh/status/<uuid:job_id>/",
+        views.employee_refresh_status,
+        name="employee_refresh_status",
+    ),
+    path(
         "employee/sales/api/sim-stock-preview/",
         views.api_sim_stock_preview,
         name="api_sim_stock_preview",

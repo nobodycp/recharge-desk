@@ -19,7 +19,9 @@ from redis.exceptions import LockError
 
 from phone_refresh.models import RefreshSource, SystemSettings
 from phone_refresh.services.refresh_service import (
+    INTERNAL_RESULT_KEYS,
     complete_failure,
+    internal_result_extras,
     normalize_source,
     precheck,
     refresh_phone,
@@ -208,7 +210,11 @@ def job_payload(job_id: str) -> dict:
         return dict(_EXPIRED_PAYLOAD)
 
     if job.status in (ProviderJob.STATUS_DONE, ProviderJob.STATUS_FAILED):
-        return job.result or dict(_EXPIRED_PAYLOAD)
+        if not job.result:
+            return dict(_EXPIRED_PAYLOAD)
+        # Admin-only diagnostics (internal tests) never leave this module
+        # through the customer/employee status endpoints.
+        return {k: v for k, v in job.result.items() if k not in INTERNAL_RESULT_KEYS}
 
     age = (timezone.now() - job.created_at).total_seconds()
     if age < SystemSettings.get().refresh_wait_seconds:
@@ -238,3 +244,68 @@ def wait_for_job(job_id: str, timeout_seconds: float = 45) -> dict:
         if time.monotonic() >= deadline:
             return payload
         time.sleep(POLL_INTERVAL_SECONDS)
+
+
+@dataclass
+class InternalTestOutcome:
+    """What the admin test screens render: customer payload + raw diagnostics."""
+
+    payload: dict
+    raw_excerpt: str = ""
+    diagnostics: dict | None = None
+
+    def __post_init__(self) -> None:
+        if self.diagnostics is None:
+            self.diagnostics = {}
+
+
+def run_internal_test(
+    phone: str,
+    *,
+    forced_provider: str | None = None,
+    bypass_provider_off: bool = False,
+    timeout_seconds: float = 45,
+) -> InternalTestOutcome:
+    """Admin internal test: submit as a job and wait for it (never past ``timeout_seconds``).
+
+    A job still running after the wait is reported with the final
+    ``processing`` message; the job keeps going in the background.
+    """
+    kwargs = dict(
+        internal_test=True,
+        forced_provider=forced_provider,
+        bypass_provider_off=bypass_provider_off,
+    )
+    if not settings.REFRESH_ASYNC_ENABLED:
+        # Kill switch: run inline like before, so diagnostics are still available.
+        result = refresh_phone(
+            phone, ip=None, source=RefreshSource.INTERNAL_TEST, **kwargs
+        )
+        extras = internal_result_extras(result)
+        return InternalTestOutcome(
+            result_payload(result), extras["raw_excerpt"], extras["diagnostics"]
+        )
+
+    ticket = submit_refresh(
+        phone, ip=None, source=RefreshSource.INTERNAL_TEST, **kwargs
+    )
+    if ticket.job_id is None:
+        return InternalTestOutcome(ticket.payload)
+
+    payload = wait_for_job(ticket.job_id, timeout_seconds)
+    if payload.get("status") == "processing" and not payload.get("final"):
+        payload = status_payload("processing", final=True)
+    stored = _stored_result(ticket.job_id)
+    return InternalTestOutcome(
+        payload, stored.get("raw_excerpt") or "", stored.get("diagnostics") or {}
+    )
+
+
+def _stored_result(job_id: str) -> dict:
+    job = ProviderJob.objects.filter(pk=job_id).first()
+    if job is None or job.status not in (
+        ProviderJob.STATUS_DONE,
+        ProviderJob.STATUS_FAILED,
+    ):
+        return {}
+    return job.result or {}

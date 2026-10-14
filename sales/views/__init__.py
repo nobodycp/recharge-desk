@@ -42,6 +42,7 @@ from sales.views.employee import (
     employee_stock_check,
     employee_submit_customer_payment_submission,
     employee_refresh_phone,
+    employee_refresh_status,
 )
 from sales.views.management import (
     awaiting_approvals,
@@ -80,6 +81,7 @@ __all__ = [
     "employee_stock_check",
     "employee_submit_customer_payment_submission",
     "employee_refresh_phone",
+    "employee_refresh_status",
     "api_payer_by_number",
     "api_payer_name_suggestions",
     "api_sim_stock_preview",

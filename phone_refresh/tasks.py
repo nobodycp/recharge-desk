@@ -12,6 +12,7 @@ from django.db import close_old_connections
 from phone_refresh.services.refresh_service import (
     complete,
     complete_failure,
+    internal_result_extras,
     result_payload,
     status_payload,
 )
@@ -73,6 +74,14 @@ def _load_job(job_id: str) -> ProviderJob | None:
         return None
 
 
+def _job_result(result, internal_test: bool) -> dict:
+    payload = result_payload(result)
+    if internal_test:
+        # Admin test screens read these back from ``ProviderJob.result``.
+        payload.update(internal_result_extras(result))
+    return payload
+
+
 def _execute(job: ProviderJob) -> dict:
     ctx = job.payload or {}
     started = time.monotonic()
@@ -84,14 +93,15 @@ def _execute(job: ProviderJob) -> dict:
         started=started,
         internal_test=bool(ctx.get("internal_test")),
     )
+    internal_test = common["internal_test"]
     try:
         raw = provider_service.refresh(
             job.provider_key, job.phone, budget=WORKER_REFRESH_BUDGET_SECONDS
         )
     except Exception as exc:  # noqa: BLE001 — provider errors must not escape the worker
         log.exception("provider %s crashed for phone %s", job.provider_key, job.phone)
-        return result_payload(complete_failure(error=str(exc), **common))
-    return result_payload(complete(raw=raw, **common))
+        return _job_result(complete_failure(error=str(exc), **common), internal_test)
+    return _job_result(complete(raw=raw, **common), internal_test)
 
 
 @shared_task

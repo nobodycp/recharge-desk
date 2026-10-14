@@ -3,6 +3,8 @@
   if (!root) return;
 
   var refreshUrl = root.getAttribute("data-refresh-url") || "";
+  var statusUrlTemplate = root.getAttribute("data-status-url") || "";
+  var waitSeconds = Number(root.getAttribute("data-wait-seconds")) || 90;
   var phoneInp = document.getElementById("rd-refresh-phone-input");
   var submitBtn = document.getElementById("rd-refresh-submit");
   var resultBox = document.getElementById("rd-refresh-result");
@@ -68,6 +70,89 @@
     });
   }
 
+  // Status polling (same rules as the public page): never faster than every
+  // 2 s, back off (not a failure) on HTTP 429, give up after 3 failed
+  // requests in a row, and stop as soon as another number is submitted.
+  var JOB_PLACEHOLDER = "00000000-0000-0000-0000-000000000000";
+  var POLL_INTERVAL_MS = 2000;
+  var POLL_MAX_BACKOFF_MS = 10000;
+  var POLL_MAX_FAILURES = 3;
+  var POLL_GRACE_SECONDS = 10;
+  var activeRun = 0;
+
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function genericErrorPayload() {
+    return {
+      status: "error",
+      message: {
+        title: root.getAttribute("data-msg-error-title") || "",
+        body: root.getAttribute("data-msg-error-body") || "",
+      },
+    };
+  }
+
+  function statusUrlFor(jobId) {
+    return statusUrlTemplate.replace(JOB_PLACEHOLDER, encodeURIComponent(jobId));
+  }
+
+  function showPayload(data) {
+    var msg = (data && data.message) || {};
+    showResult(msg.title || "", buildRefreshBody(data));
+  }
+
+  // Resolves with the final payload, or `null` when the run was superseded.
+  function pollJob(jobId, runId) {
+    var deadline = Date.now() + (waitSeconds + POLL_GRACE_SECONDS) * 1000;
+    var failures = 0;
+    var delay = POLL_INTERVAL_MS;
+
+    function step() {
+      if (Date.now() > deadline) return Promise.resolve(genericErrorPayload());
+      return sleep(delay).then(function () {
+        if (runId !== activeRun) return null;
+        return fetch(statusUrlFor(jobId), {
+          method: "GET",
+          credentials: "same-origin",
+          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        })
+          .then(function (r) {
+            if (r.status === 429) return { throttled: true };
+            if (!r.ok) return { data: null };
+            return r.json().then(function (data) {
+              return { data: data };
+            });
+          })
+          .catch(function () {
+            return { data: null };
+          })
+          .then(function (res) {
+            if (runId !== activeRun) return null;
+            if (res.throttled) {
+              // Rate limited: wait longer, but this is not a failure.
+              delay = Math.min(delay * 2, POLL_MAX_BACKOFF_MS);
+              return step();
+            }
+            delay = POLL_INTERVAL_MS;
+            var data = res.data;
+            if (!data || typeof data !== "object") {
+              failures += 1;
+              if (failures >= POLL_MAX_FAILURES) return genericErrorPayload();
+              return step();
+            }
+            failures = 0;
+            if (data.status !== "processing" || data.final === true) return data;
+            return step();
+          });
+      });
+    }
+    return step();
+  }
+
   function runRefresh() {
     if (!phoneInp) return;
     var phone = String(phoneInp.value || "").replace(/\D/g, "");
@@ -82,6 +167,7 @@
       window.alert(root.getAttribute("data-msg-invalid-phone") || "");
       return;
     }
+    var runId = ++activeRun;
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = root.getAttribute("data-msg-working") || "…";
@@ -101,18 +187,29 @@
     })
       .then(function (r) {
         return r.json().then(function (data) {
-          return { ok: r.ok, data: data };
+          return { status: r.status, data: data };
         });
       })
       .then(function (res) {
+        if (runId !== activeRun) return null;
         var data = res.data || {};
-        var msg = data.message || {};
-        showResult(msg.title || "", buildRefreshBody(data));
+        if (res.status === 202) {
+          // Without a job id or status URL we cannot poll: generic error.
+          if (!(data.job && statusUrlTemplate)) return genericErrorPayload();
+          // Keep the "refreshing" label up while the worker (re)logs in.
+          return pollJob(data.job, runId);
+        }
+        return data;
+      })
+      .then(function (data) {
+        if (data === null || runId !== activeRun) return;
+        showPayload(data);
       })
       .catch(function () {
-        showResult("", "");
+        if (runId === activeRun) showPayload(genericErrorPayload());
       })
       .finally(function () {
+        if (runId !== activeRun) return;
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = submitBtn.getAttribute("data-default-label") || "";
