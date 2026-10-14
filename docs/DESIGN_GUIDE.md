@@ -1,5 +1,7 @@
 # دليل التصميم الموحّد — Recharge Desk
 
+> **الهوية البصرية (Pearl): المرجع الرسمي هو [`DESIGN.md`](../DESIGN.md)** — الألوان، الخطوط، الأزرار، الشارات، الحركة، الوضع الداكن وقائمة «ممنوع». عند أي تعارض في الألوان أو الخطوط أو الشارات يُعتمد `DESIGN.md`. هذا الدليل يبقى مرجعاً لهيكل الصفحات والقوالب.
+
 هذا الملف المرجعي لأي شاشة أو مكوّن جديد في المشروع. **لا ت invent أسلوباً جديداً** — استخدم الأصناف والأنماط الموجودة في `static/css/design-system.css` واتبع القوالب المرجعية أدناه.
 
 ---
@@ -228,7 +230,7 @@ widget=forms.Select(attrs={"class": "form-select"})
 ## 11. الألوان والثيم
 
 - الثيم: `data-bs-theme="light|dark"` على `<html>`.
-- اللون الأساسي: `--rd-accent` / `--bs-primary` (بنفسجي indigo).
+- اللون الأساسي (Pearl): الحبر `--rd-primary-bg` / `--bs-primary` (أسود، وأبيض دافئ في الداكن)؛ البرتقالي `--rd-accent` للتمييز فقط (انظر `DESIGN.md`).
 - **لا** ت hard-code ألوان hex في القوالب — استخدم متغيرات CSS أو أصناف KPI:
   - `kpi-success`, `kpi-danger`, `kpi-warning`, `kpi-info`
 
@@ -238,7 +240,7 @@ widget=forms.Select(attrs={"class": "form-select"})
 
 - `dir="rtl"` و `lang="ar"` يُضبطان من Django i18n.
 - استخدم `margin-inline-*`، `padding-inline-*`، `text-start`/`text-end` — لا `ml-*`/`mr-*` في CSS جديد.
-- خط العربية: `--rd-font-ar` (Cairo) يُفعّل تلقائياً على `html[lang="ar"]`.
+- خط العربية: `--rd-font-ar` (IBM Plex Sans Arabic، والعناوين Noto Kufi Arabic) يُفعّل تلقائياً على `html[lang="ar"]`.
 
 ---
 

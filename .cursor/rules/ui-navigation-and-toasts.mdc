@@ -42,3 +42,5 @@ rest, so run it after UI changes.
 <!-- ✅ nothing in the template; in the view: -->
 <!-- messages.success(request, _("Saved.")) -->
 ```
+
+Visual identity (tokens, badges, fonts, buttons): see `.cursor/rules/pearl-ui.mdc` and `DESIGN.md`.

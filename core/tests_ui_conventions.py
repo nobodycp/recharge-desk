@@ -31,6 +31,46 @@ SEVERITY_ALERT = re.compile(r"<[a-z]+\b[^>]*\balert-(success|danger)\b[^>]*>", r
 MESSAGES_LOOP = re.compile(r"{%\s*for\s+\w+\s+in\s+messages\s*%}")
 CUSTOM_NONFIELD = re.compile(r"non_field_errors\s*\|\s*join|in\s+[\w.]*non_field_errors\s*%}")
 
+# --- Pearl identity guardrails -------------------------------------------------
+# The LEGACY_* sets list templates that still need migrating in later phases. They
+# are computed once and may only SHRINK: fix a file, then delete it from its set
+# (test_legacy_lists_only_shrink fails if a listed file no longer offends).
+# Never add a new file to a LEGACY_* set; fix the template instead.
+RAW_HEX = re.compile(r"#[0-9a-fA-F]{6}\b")
+# A Bootstrap colour badge: a standalone `badge` class and a `bg-*` / `text-bg-*` class
+# in the same tag, in either order. The `(?<![\w-])...(?![\w-])` guards keep `.rd-badge`
+# and `rd-badge--paid` from matching.
+_BADGE = r"(?<![\w-])badge(?![\w-])"
+_BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
+BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
+TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
+
+LEGACY_BADGES = {  # 14 files
+    "templates/companies/layan_reconcile.html",
+    "templates/companies/partials/layan_reconcile_review_table.html",
+    "templates/companies/partials/layan_reconcile_settlements.html",
+    "templates/companies/partials/layan_reconcile_table.html",
+    "templates/companies/partials/sky_reconcile_table.html",
+    "templates/companies/product_list.html",
+    "templates/companies/sky_reconcile.html",
+    "templates/core/search.html",
+    "templates/inventory/_serials_paste_field.html",
+    "templates/partials/sale_employee_payment_badge.html",
+    "templates/partials/sale_esim_badge.html",
+    "templates/partials/sale_loss_badge.html",
+    "templates/partials/sale_new_sim_badge.html",
+    "templates/sales/employee_recent.html",
+}
+LEGACY_TABLE_LIGHT = {  # 3 files
+    "templates/core/search.html",
+    "templates/customers/customer_detailed_invoice.html",
+    "templates/customers/customer_statement.html",
+}
+LEGACY_HEX = {  # 2 files
+    "templates/sms_gateway/settings_index.html",
+    "phone_refresh/templates/phone_refresh/reports.html",
+}
+
 
 def _template_files():
     roots = [BASE_DIR / "templates"]
@@ -159,3 +199,63 @@ class TemplateConventionTests(SimpleTestCase):
             )
             name = re.search(r"fonts/([\w.-]+\.woff2)", href).group(1)
             self.assertIn('url("../fonts/%s")' % name, css, name)
+
+    # ---- Pearl identity guardrails (see DESIGN.md) ----
+
+    def _offenders(self, pattern, legacy):
+        found = {
+            name
+            for name, text in _template_files()
+            if name not in OUT_OF_SCOPE and pattern.search(text)
+        }
+        return found, sorted(found - legacy)
+
+    def test_no_raw_hex_colors_in_templates(self):
+        _, offenders = self._offenders(RAW_HEX, LEGACY_HEX)
+        self._assert_none(
+            offenders,
+            "Raw hex colours in templates bypass the Pearl tokens (and dark mode). Use a "
+            "var(--rd-*) token or a utility/component class from design-system.css:",
+        )
+
+    def test_no_bootstrap_color_badges(self):
+        _, offenders = self._offenders(BS_BADGE, LEGACY_BADGES)
+        self._assert_none(
+            offenders,
+            "Bootstrap colour badges (badge bg-* / text-bg-*) are off-palette. Use "
+            "`rd-badge rd-badge--paid|pending|cancelled|neutral` instead:",
+        )
+
+    def test_no_table_light(self):
+        _, offenders = self._offenders(TABLE_LIGHT, LEGACY_TABLE_LIGHT)
+        self._assert_none(
+            offenders,
+            "`table-light` is a Bootstrap grey header. `rd-table-modern` already styles the "
+            "<thead>; drop `table-light`:",
+        )
+
+    def test_badge_regex_ignores_rd_badges(self):
+        self.assertFalse(BS_BADGE.search('<span class="rd-badge rd-badge--paid">x</span>'))
+        self.assertFalse(BS_BADGE.search('<div class="bg-white"><span class="rd-badge">x</span></div>'))
+        for html in (
+            '<span class="badge bg-success">x</span>',
+            '<span class="badge text-bg-warning">x</span>',
+            '<span class="bg-danger text-white badge">x</span>',
+            '<span class="small badge rounded-pill bg-secondary">x</span>',
+        ):
+            self.assertTrue(BS_BADGE.search(html), html)
+
+    def test_legacy_lists_only_shrink(self):
+        for label, pattern, legacy in (
+            ("LEGACY_BADGES", BS_BADGE, LEGACY_BADGES),
+            ("LEGACY_TABLE_LIGHT", TABLE_LIGHT, LEGACY_TABLE_LIGHT),
+            ("LEGACY_HEX", RAW_HEX, LEGACY_HEX),
+        ):
+            found, _ = self._offenders(pattern, legacy)
+            stale = sorted(legacy - found)
+            self._assert_none(
+                stale,
+                f"These files no longer offend, so remove them from {label} "
+                "(the legacy lists may only shrink):",
+            )
+            self.assertFalse(legacy & OUT_OF_SCOPE, label)

@@ -1,0 +1,19 @@
+---
+description: Pearl visual identity for all UI work (tokens, fonts, badges, buttons, motion, accessibility)
+alwaysApply: true
+---
+
+# Pearl UI
+
+Full spec: `DESIGN.md`. Tests: `core/tests_ui_conventions.py`, `core/tests_design_tokens.py`.
+
+- Colours come from `--rd-*` tokens in `static/css/design-system.css`. No raw hex in templates, `app.css`, `number-check.css`, `login.css`. New colour = new token in both theme blocks.
+- Primary action is ink (`btn-primary`). Orange is accent only (`btn-accent`, max one per screen, dots, progress). Never orange for errors; errors are `--rd-danger`.
+- Status uses `rd-badge rd-badge--paid|pending|cancelled|neutral`. Never `badge bg-*` / `text-bg-*`. Never `table-light` (`rd-table-modern` styles the header).
+- Fonts are self-hosted: include `partials/fonts_head.html` on any standalone page. No Google Fonts. Numbers use `.tabular-nums`. Keep `html { font-size: 80% }`.
+- Reuse `rd-*` components (`.rd-card`, `.rd-stat`, `.rd-section-tabs`, `.rd-trend--*`, `.rd-skeleton`, `.rd-period-switch`); no inline styles for repeated patterns.
+- Motion 150–450 ms, transform/opacity only. Touch targets ≥ 44 px; employee entry fits one screen.
+- Accessibility: text ≥ 4.5:1, meaningful non-text ≥ 3:1, visible `:focus-visible`, never colour alone. Check light and dark.
+- RTL first: logical properties, `{% trans %}` for strings.
+- Legacy offenders live in shrink-only `LEGACY_*` sets in `tests_ui_conventions.py`: never add to them; remove a file once migrated.
+- Out of scope: `phone_refresh/templates/phone_refresh/public_refresh.html`.
