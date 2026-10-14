@@ -41,7 +41,7 @@ from phone_refresh.services.refresh_jobs import run_internal_test
 from phone_refresh.views.general import GENERAL_TAB_ID
 from providers import health as provider_health
 from providers.forms import ProviderAccountForm
-from providers.models import ProviderAccount
+from providers.models import ProviderConnection
 from providers.registry import ADAPTERS
 
 PROVIDER_TABS = [(p.value, p.label) for p in PhoneProvider]
@@ -230,7 +230,7 @@ def providers_index(request):
     account_form = None
     provider_account = None
     if active_tab in PROVIDERS_WITH_ACCOUNTS:
-        provider_account = ProviderAccount.objects.filter(provider_key=active_tab).first()
+        provider_account = ProviderConnection.objects.filter(provider_key=active_tab).first()
         account_form = ProviderAccountForm(provider_key=active_tab)
 
     ctx = {

@@ -4,18 +4,29 @@ import uuid
 
 from django.db import models
 
+from providers.contracts import Capability
 from providers.registry import ADAPTERS
 
 PROVIDER_KEY_CHOICES = [(key, key) for key in ADAPTERS]
 
 
-class ProviderAccount(models.Model):
-    """Login credentials for a provider, stored encrypted (write-only in the UI)."""
+class ProviderConnection(models.Model):
+    """Provider login credentials (stored encrypted, write-only in the UI) and
+    the per-service switches for that provider."""
+
+    SERVICE_FIELDS = {
+        Capability.REFRESH: "refresh_enabled",
+        Capability.CHARGE: "charge_enabled",
+        Capability.RECONCILE: "reconcile_enabled",
+    }
 
     provider_key = models.CharField(
         max_length=32, unique=True, choices=PROVIDER_KEY_CHOICES
     )
     is_enabled = models.BooleanField(default=True)
+    refresh_enabled = models.BooleanField(default=True)
+    charge_enabled = models.BooleanField(default=False)
+    reconcile_enabled = models.BooleanField(default=True)
     username = models.CharField(max_length=150, blank=True)
     secret_encrypted = models.TextField(blank=True)
     totp_secret_encrypted = models.TextField(blank=True)
@@ -25,6 +36,14 @@ class ProviderAccount(models.Model):
     last_login_ok = models.BooleanField(null=True, blank=True)
     last_error = models.CharField(max_length=500, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "providers_provideraccount"
+
+    @classmethod
+    def for_key(cls, provider_key: str) -> ProviderConnection:
+        connection, _ = cls.objects.get_or_create(provider_key=provider_key)
+        return connection
 
     def __str__(self) -> str:
         return self.provider_key

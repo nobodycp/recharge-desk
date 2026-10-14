@@ -9,7 +9,7 @@ from django.test import TestCase
 
 from providers.contracts import AuthRequired, BaseAdapter, TransientError
 from providers.crypto import encrypt
-from providers.models import ProviderAccount
+from providers.models import ProviderConnection
 from providers.redis_conn import get_redis
 from providers.sessions import SessionStore, run_authenticated
 
@@ -79,39 +79,6 @@ class RunAuthenticatedTests(TestCase):
         self.assertEqual(run_authenticated(adapter, lambda: "ok"), "ok")
         self.assertEqual(adapter.login_calls, 0)
 
-    def test_concurrent_auth_required_logs_in_once(self):
-        adapter = FakeAdapter(login_delay=0.2)
-        store = SessionStore("sky")
-        start = store.generation()
-
-        def fn():
-            if store.generation() <= start:
-                raise AuthRequired("expired")
-            return "ok"
-
-        results: list = []
-        errors: list = []
-        barrier = threading.Barrier(5)
-
-        def worker():
-            try:
-                barrier.wait(timeout=5)
-                results.append(run_authenticated(adapter, fn))
-            except Exception as exc:  # pragma: no cover - surfaced by asserts
-                errors.append(exc)
-            finally:
-                connection.close()
-
-        threads = [threading.Thread(target=worker) for _ in range(5)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=10)
-        self.assertFalse(any(t.is_alive() for t in threads))
-        self.assertEqual(errors, [])
-        self.assertEqual(adapter.login_calls, 1)
-        self.assertEqual(results, ["ok"] * 5)
-
     def test_second_auth_required_propagates(self):
         adapter = FakeAdapter()
         calls = {"n": 0}
@@ -126,7 +93,8 @@ class RunAuthenticatedTests(TestCase):
         self.assertEqual(calls["n"], 2)
 
     def test_login_failure_becomes_transient_and_records_account_error(self):
-        ProviderAccount.objects.create(
+        ProviderConnection.objects.all().delete()
+        ProviderConnection.objects.create(
             provider_key="sky",
             username="user",
             secret_encrypted=encrypt("hunter2"),
@@ -148,7 +116,7 @@ class RunAuthenticatedTests(TestCase):
         self.assertNotIn("hunter2", logs.output[0])
         self.assertEqual(SessionStore("sky").generation(), 0)
 
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         self.assertIs(account.last_login_ok, False)
         self.assertIsNotNone(account.last_login_at)
         self.assertIn("Login failed", account.last_error)
@@ -156,7 +124,8 @@ class RunAuthenticatedTests(TestCase):
         self.assertNotIn("eyJsecret", account.last_error)
 
     def test_login_success_records_account(self):
-        ProviderAccount.objects.create(
+        ProviderConnection.objects.all().delete()
+        ProviderConnection.objects.create(
             provider_key="sky",
             username="user",
             secret_encrypted=encrypt("hunter2"),
@@ -173,7 +142,7 @@ class RunAuthenticatedTests(TestCase):
             return "ok"
 
         run_authenticated(adapter, fn)
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         self.assertIs(account.last_login_ok, True)
         self.assertEqual(account.last_error, "")
 
@@ -199,40 +168,6 @@ class RunAuthenticatedTests(TestCase):
         self.assertLessEqual(sessions.LOGIN_LOCK_WAIT_SECONDS, 40)
         self.assertLess(sessions.LOGIN_LOCK_WAIT_SECONDS, sessions.LOGIN_LOCK_TIMEOUT_SECONDS)
         self.assertLessEqual(service.SYNC_BUDGET_SECONDS, 45)
-
-    def test_concurrent_failing_login_is_attempted_once(self):
-        adapter = FakeAdapter(login_delay=0.2, login_error=Exception("Sky down"))
-
-        def fn():
-            raise AuthRequired("expired")
-
-        errors: list = []
-        barrier = threading.Barrier(5)
-
-        def worker():
-            try:
-                barrier.wait(timeout=5)
-                run_authenticated(adapter, fn)
-            except Exception as exc:
-                errors.append(exc)
-            finally:
-                connection.close()
-
-        threads = [threading.Thread(target=worker) for _ in range(5)]
-        with self.assertLogs("providers.sessions", level="WARNING"):
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join(timeout=10)
-        self.assertFalse(any(t.is_alive() for t in threads))
-        self.assertEqual(adapter.login_calls, 1)
-        self.assertEqual(len(errors), 5)
-        for exc in errors:
-            self.assertIsInstance(exc, TransientError)
-            self.assertEqual(str(exc), "login_failed")
-        ttl = get_redis().ttl("provider:login-cooldown:sky")
-        self.assertGreater(ttl, 0)
-        self.assertLessEqual(ttl, 60)
 
     def test_cooldown_blocks_login_until_it_expires(self):
         get_redis().set("provider:login-cooldown:sky", "1", ex=60)
@@ -307,7 +242,8 @@ class RunAuthenticatedTests(TestCase):
     def test_disabled_account_stops_refresh_and_login(self):
         from providers.contracts import PermanentError
 
-        ProviderAccount.objects.create(
+        ProviderConnection.objects.all().delete()
+        ProviderConnection.objects.create(
             provider_key="sky",
             username="user",
             secret_encrypted=encrypt("hunter2"),
@@ -329,3 +265,85 @@ class RunAuthenticatedTests(TestCase):
         self.assertTrue(lock.acquire(blocking=False))
         lock.do_release(lock.local.token.decode())
         self.assertIsNone(get_redis().get("provider:login-lock:test"))
+
+
+class ConcurrentLoginTests(TestCase):
+    """Thread-based tests. Kept apart from RunAuthenticatedTests: main-thread
+    writes to the provider table there would keep it locked for these threads
+    (SQLite shared cache) until the whole class finishes."""
+
+    def setUp(self):
+        get_redis().flushall()
+
+    # Threads must not write the (migration-seeded) provider row: the test
+    # transaction on the in-memory SQLite DB would lock the table.
+    @patch("providers.accounts.record_login", new=lambda *args, **kwargs: None)
+    def test_concurrent_auth_required_logs_in_once(self):
+        adapter = FakeAdapter(login_delay=0.2)
+        store = SessionStore("sky")
+        start = store.generation()
+
+        def fn():
+            if store.generation() <= start:
+                raise AuthRequired("expired")
+            return "ok"
+
+        results: list = []
+        errors: list = []
+        barrier = threading.Barrier(5)
+
+        def worker():
+            try:
+                barrier.wait(timeout=5)
+                results.append(run_authenticated(adapter, fn))
+            except Exception as exc:  # pragma: no cover - surfaced by asserts
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=10)
+        self.assertFalse(any(t.is_alive() for t in threads))
+        self.assertEqual(errors, [])
+        self.assertEqual(adapter.login_calls, 1)
+        self.assertEqual(results, ["ok"] * 5)
+
+    # Threads must not write the (migration-seeded) provider row: the test
+    # transaction on the in-memory SQLite DB would lock the table.
+    @patch("providers.accounts.record_login", new=lambda *args, **kwargs: None)
+    def test_concurrent_failing_login_is_attempted_once(self):
+        adapter = FakeAdapter(login_delay=0.2, login_error=Exception("Sky down"))
+
+        def fn():
+            raise AuthRequired("expired")
+
+        errors: list = []
+        barrier = threading.Barrier(5)
+
+        def worker():
+            try:
+                barrier.wait(timeout=5)
+                run_authenticated(adapter, fn)
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker) for _ in range(5)]
+        with self.assertLogs("providers.sessions", level="WARNING"):
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=10)
+        self.assertFalse(any(t.is_alive() for t in threads))
+        self.assertEqual(adapter.login_calls, 1)
+        self.assertEqual(len(errors), 5)
+        for exc in errors:
+            self.assertIsInstance(exc, TransientError)
+            self.assertEqual(str(exc), "login_failed")
+        ttl = get_redis().ttl("provider:login-cooldown:sky")
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 60)

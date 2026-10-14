@@ -6,7 +6,7 @@ from django import forms
 
 from providers.accounts import load_extra, normalize_totp_secret
 from providers.crypto import decrypt_or_empty, encrypt
-from providers.models import ProviderAccount
+from providers.models import ProviderConnection
 
 SAVED_PLACEHOLDER = "•••• (محفوظ)"
 
@@ -64,7 +64,7 @@ class ProviderAccountForm(forms.Form):
     def __init__(self, *args, provider_key: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.provider_key = provider_key
-        self.account = ProviderAccount.objects.filter(provider_key=provider_key).first()
+        self.account = ProviderConnection.objects.filter(provider_key=provider_key).first()
         if self.account is not None:
             self.fields["username"].initial = self.account.username
             self.fields["is_enabled"].initial = self.account.is_enabled
@@ -102,9 +102,9 @@ class ProviderAccountForm(forms.Form):
             self.add_error("password", "كلمة المرور مطلوبة.")
         return cleaned
 
-    def save(self) -> ProviderAccount:
+    def save(self) -> ProviderConnection:
         data = self.cleaned_data
-        account = self.account or ProviderAccount(provider_key=self.provider_key)
+        account = self.account or ProviderConnection(provider_key=self.provider_key)
         account.username = data["username"].strip()
         account.is_enabled = data["is_enabled"]
         if data["password"]:

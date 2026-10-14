@@ -22,7 +22,7 @@ from providers.contracts import (
     ChargeResult,
     TransientError,
 )
-from providers.models import ProviderAccount, ProviderJob
+from providers.models import ProviderConnection, ProviderJob
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.tests.fakes import FakeChargeAdapter
@@ -219,7 +219,7 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.fake.sent, 1)
 
     def test_charge_never_sent_because_login_failed_reverses(self):
-        ProviderAccount.objects.create(provider_key="fake", is_enabled=True)
+        ProviderConnection.objects.create(provider_key="fake", is_enabled=True)
         self.use(
             needs_login=True,
             raise_before_send=AuthRequired("expired"),
@@ -792,7 +792,7 @@ class CanChargeTests(ChargingTestBase):
     def test_login_adapter_needs_enabled_account(self):
         self.use(needs_login=True)
         self.assertFalse(charging.can_charge(self.company))
-        account = ProviderAccount.objects.create(provider_key="fake", is_enabled=False)
+        account = ProviderConnection.objects.create(provider_key="fake", is_enabled=False)
         self.assertFalse(charging.can_charge(self.company))
         account.is_enabled = True
         account.save()

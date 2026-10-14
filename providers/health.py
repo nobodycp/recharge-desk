@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 
-from providers.models import ProviderAccount, ProviderJob
+from providers.models import ProviderConnection, ProviderJob
 from providers.redis_conn import get_redis
 
 log = logging.getLogger(__name__)
@@ -62,6 +62,6 @@ def status() -> dict:
             "last_login_at": account.last_login_at,
             "last_login_ok": account.last_login_ok,
         }
-        for account in ProviderAccount.objects.order_by("provider_key")
+        for account in ProviderConnection.objects.order_by("provider_key")
     ]
     return {"redis_ok": _redis_ok(), "worker_ok": _worker_ok(), "accounts": accounts}

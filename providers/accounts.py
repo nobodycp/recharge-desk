@@ -94,9 +94,9 @@ PROVIDER_DISABLED = "provider_disabled"
 
 def ensure_enabled(provider_key: str) -> None:
     """Raise ``PermanentError(PROVIDER_DISABLED)`` if the DB account is disabled."""
-    from providers.models import ProviderAccount
+    from providers.models import ProviderConnection
 
-    if ProviderAccount.objects.filter(
+    if ProviderConnection.objects.filter(
         provider_key=provider_key, is_enabled=False
     ).exists():
         raise PermanentError(PROVIDER_DISABLED)
@@ -109,9 +109,9 @@ def get_credentials(provider_key: str) -> Credentials:
     secrets cannot be decrypted (rotated/mistyped key) is a config error; it
     deliberately does not fall back to env credentials.
     """
-    from providers.models import ProviderAccount
+    from providers.models import ProviderConnection
 
-    account = ProviderAccount.objects.filter(provider_key=provider_key).first()
+    account = ProviderConnection.objects.filter(provider_key=provider_key).first()
     if account is not None and not account.is_enabled:
         raise PermanentError(PROVIDER_DISABLED)
     if account is not None and account.username and account.secret_encrypted:
@@ -144,9 +144,9 @@ def _scrub(text: str, secrets: list[str]) -> str:
 
 def record_login(provider_key: str, ok: bool, error: str = "") -> None:
     """Persist the outcome of the latest login attempt (no-op without a DB account)."""
-    from providers.models import ProviderAccount
+    from providers.models import ProviderConnection
 
-    account = ProviderAccount.objects.filter(provider_key=provider_key).first()
+    account = ProviderConnection.objects.filter(provider_key=provider_key).first()
     if account is None:
         return
     secrets = [

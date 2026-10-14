@@ -123,7 +123,7 @@ Other apps import only `providers.service`, `providers.contracts`, `providers.re
 | `registry.py` | provider key → adapter, with capabilities (`can_charge`, `needs_login`). |
 | `adapters/<x>/` | One package per company (`sky`, `layan`, `aloha`, `areen`): `adapter.py` (the operations), `client.py` (HTTP client, where the provider needs one, e.g. Sky), `reconcile.py` (report matching, Sky and Layan). Each company keeps its own logic. |
 | `sessions.py` | Redis session store + distributed login lock (one login per provider account). |
-| `accounts.py`, `crypto.py`, `models.py` | Provider accounts encrypted with Fernet (`PROVIDER_SECRETS_KEY`); `ProviderAccount`, `ProviderJob`. |
+| `accounts.py`, `crypto.py`, `models.py` | Provider accounts encrypted with Fernet (`PROVIDER_SECRETS_KEY`); `ProviderConnection`, `ProviderJob`. |
 | `service.py` | Entry point used by the rest of the system (refresh, charge, check_charge, reconcile, keepalive). |
 | `jobs.py`, `tasks.py` | Job lifecycle and Celery periodic tasks (keep-alive, retention). |
 | `api/` | `/api/v1/` refresh API (Bearer tokens with scopes). |

@@ -9,7 +9,7 @@ from django.utils import timezone
 from providers import service
 from providers.accounts import get_credentials
 from providers.contracts import PermanentError
-from providers.models import ProviderAccount, ProviderJob
+from providers.models import ProviderConnection, ProviderJob
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 
@@ -24,7 +24,7 @@ def keepalive_sessions() -> None:
     env fallback), except providers whose DB account is disabled.
     """
     disabled = set(
-        ProviderAccount.objects.filter(is_enabled=False).values_list(
+        ProviderConnection.objects.filter(is_enabled=False).values_list(
             "provider_key", flat=True
         )
     )

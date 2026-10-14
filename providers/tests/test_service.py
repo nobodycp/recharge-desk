@@ -21,6 +21,7 @@ from providers.contracts import (
     RawResponse,
     TransientError,
 )
+from providers.models import ProviderConnection
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
@@ -63,6 +64,7 @@ def _with_adapter(adapter):
 class ServiceTests(TestCase):
     def setUp(self):
         get_redis().flushall()
+        ProviderConnection.objects.all().delete()
 
     def test_refresh_retries_transient_three_times_then_error_response(self):
         adapter = StubAdapter(TransientError("connection_error"))
@@ -334,13 +336,13 @@ class ServiceTests(TestCase):
     def test_record_login_masks_url_credentials(self):
         from providers.accounts import record_login
         from providers.crypto import encrypt
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
 
-        ProviderAccount.objects.create(
+        ProviderConnection.objects.create(
             provider_key="sky", username="u", secret_encrypted=encrypt("pw")
         )
         record_login("sky", False, "Failed via socks5://other:S3cret@1.2.3.4:1080")
-        error = ProviderAccount.objects.get(provider_key="sky").last_error
+        error = ProviderConnection.objects.get(provider_key="sky").last_error
         self.assertNotIn("S3cret", error)
         self.assertIn("socks5://***@1.2.3.4:1080", error)
 
@@ -441,6 +443,7 @@ class SkySessionStoreTests(TestCase):
 class KeepaliveTaskTests(TestCase):
     def setUp(self):
         get_redis().flushall()
+        ProviderConnection.objects.all().delete()
 
     def test_keepalive_pings_login_providers_only_and_never_raises(self):
         from providers.tasks import keepalive_sessions
@@ -459,10 +462,10 @@ class KeepaliveTaskTests(TestCase):
         self.assertIn("login_failed", logs.output[0])
 
     def test_keepalive_covers_env_only_credentials(self):
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
         from providers.tasks import keepalive_sessions
 
-        self.assertFalse(ProviderAccount.objects.exists())
+        self.assertFalse(ProviderConnection.objects.exists())
         env = {"SKY_SALES_USER": "user", "SKY_SALES_PASSWORD": "pass"}
         with patch.dict("os.environ", env), patch(
             "providers.tasks.service.keepalive"
@@ -471,7 +474,7 @@ class KeepaliveTaskTests(TestCase):
         keepalive.assert_called_once_with("sky")
 
     def test_keepalive_skips_missing_credentials_and_disabled_accounts(self):
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
         from providers.tasks import keepalive_sessions
 
         with patch(
@@ -480,7 +483,7 @@ class KeepaliveTaskTests(TestCase):
             keepalive_sessions()
         keepalive.assert_not_called()
 
-        ProviderAccount.objects.create(provider_key="sky", is_enabled=False)
+        ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
         with patch(
             "providers.tasks.get_credentials", return_value=Credentials("u", "p")
         ), patch("providers.tasks.service.keepalive") as keepalive:
@@ -515,15 +518,16 @@ class KeepaliveTaskTests(TestCase):
 class HealthTests(TestCase):
     def setUp(self):
         get_redis().flushall()
+        ProviderConnection.objects.all().delete()
 
     def test_status_reports_redis_worker_and_accounts(self):
         from django.utils import timezone
 
         from providers import health
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
 
         now = timezone.now()
-        ProviderAccount.objects.create(
+        ProviderConnection.objects.create(
             provider_key="sky", last_login_at=now, last_login_ok=True
         )
         data = health.status()
@@ -543,14 +547,14 @@ class HealthTests(TestCase):
         from django.urls import reverse
 
         from accounts.models import UserProfile
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
 
         user = get_user_model().objects.create_user("mgr", password="x")
         UserProfile.objects.update_or_create(
             user=user,
             defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
         )
-        ProviderAccount.objects.create(provider_key="sky", last_login_ok=False)
+        ProviderConnection.objects.create(provider_key="sky", last_login_ok=False)
         self.client.force_login(user)
 
         page = self.client.get(reverse("phone_refresh:providers_index") + "?tab=general")

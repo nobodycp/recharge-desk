@@ -18,7 +18,7 @@ from audit.services import record as audit_record
 from core.sale_workflow import finalize_sale_after_entry
 from providers import jobs
 from providers.contracts import Capability, ChargeContext, ChargeOutcome, ChargeResult
-from providers.models import ProviderAccount, ProviderJob
+from providers.models import ProviderConnection, ProviderJob
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 from providers.service import company_supports
@@ -50,7 +50,7 @@ def can_charge(company) -> bool:
     key = _provider_key(company)
     if not ADAPTERS[key].needs_login:
         return True
-    return ProviderAccount.objects.filter(provider_key=key, is_enabled=True).exists()
+    return ProviderConnection.objects.filter(provider_key=key, is_enabled=True).exists()
 
 
 def clean_message(message: str) -> str:

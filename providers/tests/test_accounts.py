@@ -14,7 +14,7 @@ from providers.accounts import Credentials, get_credentials, record_login
 from providers.contracts import PermanentError
 from providers.crypto import decrypt, encrypt
 from providers.forms import ProviderAccountForm
-from providers.models import ProviderAccount
+from providers.models import ProviderConnection
 
 User = get_user_model()
 
@@ -66,7 +66,7 @@ class UndecryptableSecretsTests(TestCase):
         )
 
     def setUp(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
         form = ProviderAccountForm(
             {
                 "username": "u",
@@ -98,7 +98,7 @@ class UndecryptableSecretsTests(TestCase):
             # record_login must not raise (and must not mask the real error).
             record_login("sky", False, "login failed")
             self.assertEqual(
-                ProviderAccount.objects.get(provider_key="sky").last_error, "login failed"
+                ProviderConnection.objects.get(provider_key="sky").last_error, "login failed"
             )
 
             # Admin can overwrite the password; unreadable TOTP/proxy are dropped.
@@ -132,7 +132,7 @@ class CredentialsReprTests(TestCase):
 class GetCredentialsTests(TestCase):
     def setUp(self):
         # A migration may have imported env values into the test DB.
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
 
     def _create_account(self, **kw):
         form = ProviderAccountForm(
@@ -190,10 +190,10 @@ class GetCredentialsTests(TestCase):
         self.assertEqual(str(ctx.exception), "config_error")
 
     def test_get_credentials_disabled_account_raises_without_env_fallback(self):
-        from providers.models import ProviderAccount
+        from providers.models import ProviderConnection
 
         self._create_account()
-        ProviderAccount.objects.filter(provider_key="sky").update(is_enabled=False)
+        ProviderConnection.objects.filter(provider_key="sky").update(is_enabled=False)
         with _clean_env(SKY_SALES_USER="envuser", SKY_SALES_PASSWORD="envpass"):
             with self.assertRaises(PermanentError) as ctx:
                 get_credentials("sky")
@@ -207,14 +207,24 @@ class GetCredentialsTests(TestCase):
 
 class ImportSkyEnvMigrationTests(TestCase):
     def setUp(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
         from importlib import import_module
 
         from django.apps import apps
 
+        class _RenamedModelApps:
+            """Migration 0002 asks for ``ProviderAccount``; the model is now
+            ``ProviderConnection`` (same table)."""
+
+            @staticmethod
+            def get_model(app_label, model_name):
+                if (app_label, model_name) == ("providers", "ProviderAccount"):
+                    model_name = "ProviderConnection"
+                return apps.get_model(app_label, model_name)
+
         self.run = lambda: import_module(
             "providers.migrations.0002_import_sky_env"
-        ).import_sky_env(apps, None)
+        ).import_sky_env(_RenamedModelApps, None)
 
     def test_imports_env_encrypted(self):
         with _clean_env(
@@ -224,7 +234,7 @@ class ImportSkyEnvMigrationTests(TestCase):
             SKY_SALES_PROXY="http://px:1",
         ):
             self.run()
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         self.assertEqual(account.username, "envu")
         self.assertNotIn("envp-pass", account.secret_encrypted)
         with _clean_env():
@@ -236,16 +246,16 @@ class ImportSkyEnvMigrationTests(TestCase):
     def test_does_not_overwrite_existing_or_import_incomplete_env(self):
         with _clean_env(SKY_SALES_USER="only-user"):
             self.run()
-        self.assertFalse(ProviderAccount.objects.exists())
-        ProviderAccount.objects.create(provider_key="sky", username="keep")
+        self.assertFalse(ProviderConnection.objects.exists())
+        ProviderConnection.objects.create(provider_key="sky", username="keep")
         with _clean_env(SKY_SALES_USER="envu", SKY_SALES_PASSWORD="envp"):
             self.run()
-        self.assertEqual(ProviderAccount.objects.get(provider_key="sky").username, "keep")
+        self.assertEqual(ProviderConnection.objects.get(provider_key="sky").username, "keep")
 
 
 class RecordLoginTests(TestCase):
     def setUp(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
         form = ProviderAccountForm(
             {
                 "username": "u",
@@ -280,14 +290,14 @@ class RecordLoginTests(TestCase):
         self.assertLessEqual(len(self.account.last_error), 500)
 
     def test_record_login_without_account_is_noop(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
         record_login("sky", True)  # must not raise
-        self.assertFalse(ProviderAccount.objects.exists())
+        self.assertFalse(ProviderConnection.objects.exists())
 
 
 class ProviderAccountFormTests(TestCase):
     def setUp(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
 
     def _data(self, **kw):
         data = {"username": "u", "password": "first-pass", "is_enabled": "on"}
@@ -298,14 +308,14 @@ class ProviderAccountFormTests(TestCase):
         form = ProviderAccountForm(self._data(), provider_key="sky")
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        before = decrypt(ProviderAccount.objects.get(provider_key="sky").secret_encrypted)
+        before = decrypt(ProviderConnection.objects.get(provider_key="sky").secret_encrypted)
 
         form2 = ProviderAccountForm(
             self._data(username="renamed", password=""), provider_key="sky"
         )
         self.assertTrue(form2.is_valid(), form2.errors)
         form2.save()
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         self.assertEqual(decrypt(account.secret_encrypted), before)
         self.assertEqual(before, "first-pass")
         self.assertEqual(account.username, "renamed")
@@ -345,7 +355,7 @@ class ProviderAccountFormTests(TestCase):
         form = ProviderAccountForm(self._data(totp_secret=uri), provider_key="sky")
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         self.assertEqual(decrypt(account.totp_secret_encrypted), TOTP_SECRET)
 
     def test_invalid_totp_secret_rejected(self):
@@ -360,7 +370,7 @@ class ProviderAccountFormTests(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         for blob in (
             account.secret_encrypted,
             account.totp_secret_encrypted,
@@ -398,7 +408,7 @@ class AccountCardViewTests(TestCase):
         )
 
     def setUp(self):
-        ProviderAccount.objects.all().delete()
+        ProviderConnection.objects.all().delete()
         self.client = Client(enforce_csrf_checks=True)
         self.client.force_login(self.manager)
         self.index_url = reverse("phone_refresh:providers_index") + "?tab=sky"
@@ -433,7 +443,7 @@ class AccountCardViewTests(TestCase):
 
     def test_card_shows_last_login_state_and_escapes_error(self):
         self._post({"username": "u", "password": "p", "is_enabled": "on"})
-        account = ProviderAccount.objects.get(provider_key="sky")
+        account = ProviderConnection.objects.get(provider_key="sky")
         account.last_login_ok = False
         account.last_login_at = timezone.now()
         account.last_error = "<script>alert(1)</script>"
@@ -451,7 +461,7 @@ class AccountCardViewTests(TestCase):
     def test_invalid_post_does_not_create_account(self):
         response = self._post({"username": "u", "password": ""})
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(ProviderAccount.objects.exists())
+        self.assertFalse(ProviderConnection.objects.exists())
 
     def test_save_rejects_unknown_provider(self):
         token = str(self.client.get(self.index_url).context["csrf_token"])
@@ -464,7 +474,7 @@ class AccountCardViewTests(TestCase):
         emp.force_login(self.employee)
         response = emp.post(self.save_url, {"username": "u", "password": "p"})
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(ProviderAccount.objects.exists())
+        self.assertFalse(ProviderConnection.objects.exists())
 
     def test_save_requires_csrf(self):
         response = self.client.post(self.save_url, {"username": "u", "password": "p"})
