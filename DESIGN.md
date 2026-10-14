@@ -86,10 +86,11 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 
 ## Badges And Status
 
-Use `rd-badge` + one variant; leading dot is automatic.
+Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular-nums` badges and badges that contain an icon).
 
 - `.rd-badge--paid` — success / active / paid.
-- `.rd-badge--pending` — waiting.
+- `.rd-badge--pending` (alias `.rd-badge--warning`) — waiting / needs attention.
+- `.rd-badge--conflict` — data conflicts that need review.
 - `.rd-badge--cancelled` — failed / cancelled / destructive.
 - `.rd-badge--neutral` — inactive, metadata, plain labels.
 

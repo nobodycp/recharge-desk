@@ -66,9 +66,8 @@ LEGACY_TABLE_LIGHT = {  # 3 files
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_statement.html",
 }
-LEGACY_HEX = {  # 2 files
+LEGACY_HEX = {  # 1 file
     "templates/sms_gateway/settings_index.html",
-    "phone_refresh/templates/phone_refresh/reports.html",
 }
 
 
