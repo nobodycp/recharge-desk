@@ -12,6 +12,13 @@
   </nav>
 </div>
 
+{% if refresh_queue_stalled %}
+<div id="refresh-queue-alert" class="alert alert-warning py-2 px-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+  <span>{% trans "Number refreshes have waited in the queue for over 2 minutes." %} {% trans "The background worker may be down." %}</span>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'phone_refresh:providers_index' %}?tab=general">{% trans "Providers → General health" %}</a>
+</div>
+{% endif %}
+
 {# 1) Top KPIs — scoped by the period switch, except customer debt (current balance). #}
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-3 rd-dashboard-kpi-row rd-dashboard-section rd-dashboard-section--today">
   <div class="col d-flex">

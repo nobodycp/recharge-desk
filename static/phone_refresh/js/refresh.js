@@ -33,6 +33,8 @@ const TRANSLATIONS = {
         "msg.auth": "تعذّر المصادقة — تحقق من إعدادات التوكن",
         "msg.session": "انتهت الجلسة، يتم التحديث...",
         "msg.service_off": "الخدمة متوقفة حالياً",
+        "msg.busy": "الخدمة مشغولة حالياً، حاول بعد قليل.",
+        "msg.processing": "طلبك قيد المعالجة، أعد المحاولة بعد دقيقة.",
         "time.hour": "ساعة",
         "time.hours": "ساعات",
         "time.minute": "دقيقة",
@@ -66,6 +68,8 @@ const TRANSLATIONS = {
         "msg.auth": "Authentication failed — check token settings",
         "msg.session": "Session expired, reloading...",
         "msg.service_off": "Service is currently offline",
+        "msg.busy": "The service is busy right now, please try again shortly.",
+        "msg.processing": "Your request is still being processed, please try again in a minute.",
         "time.hour": "hour",
         "time.hours": "hours",
         "time.minute": "minute",
@@ -266,6 +270,8 @@ const STATUS_TO_FALLBACK_KEY = {
     not_found: "msg.notfound",
     error: "msg.error",
     service_off: "msg.service_off",
+    busy: "msg.busy",
+    processing: "msg.processing",
 };
 
 function formatElapsed(seconds) {

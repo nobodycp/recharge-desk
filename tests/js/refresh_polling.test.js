@@ -114,5 +114,13 @@ const check = (name, cond, extra) => { console.log((cond ? "PASS " : "FAIL ") + 
   await vm.runInContext('submitRefresh("0529000000")', e.ctx);
   check("202 without job shows generic error", e.alerts[e.alerts.length - 1] === "حدث خطأ غير متوقع" && e.fetchCalls.length === 1, e.alerts);
 
+  // 11. busy / final processing without a message body use their own fallbacks
+  e = makeEnv({ fetchImpl: () => resp(200, { status: "busy" }) });
+  await vm.runInContext('submitRefresh("0529000000")', e.ctx);
+  check("busy without body uses busy fallback", e.alerts[e.alerts.length - 1] === "الخدمة مشغولة حالياً، حاول بعد قليل.", e.alerts);
+  e = makeEnv({ fetchImpl: (url, o) => o.method === "POST" ? resp(202, { status: "processing", job: "a" }) : resp(200, { status: "processing", final: true }) });
+  await vm.runInContext('submitRefresh("0529000000")', e.ctx);
+  check("final processing without body uses processing fallback", e.alerts[e.alerts.length - 1] === "طلبك قيد المعالجة، أعد المحاولة بعد دقيقة.", e.alerts);
+
   console.log(fail ? "FAILED" : "ALL OK"); process.exit(fail ? 1 : 0);
 })();

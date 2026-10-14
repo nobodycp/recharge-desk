@@ -39,10 +39,14 @@
     return minutes + " " + minuteWord;
   }
 
+  // Localized bodies for statuses whose payload may arrive without a message.
+  var FALLBACK_BODY_ATTR = { busy: "data-msg-busy", processing: "data-msg-processing" };
+
   function buildRefreshBody(data) {
     var msg = data && data.message ? data.message : {};
-    var body = msg.body || "";
     var status = (data && data.status) || "";
+    var fallbackAttr = FALLBACK_BODY_ATTR[status];
+    var body = msg.body || (fallbackAttr && root.getAttribute(fallbackAttr)) || "";
     var secs = data && data.seconds_since_last_refresh;
     if (status === "wait" && typeof secs === "number" && secs > 0 && body) {
       var tpl = root.getAttribute("data-msg-wait-with-time") || "{body} (last refresh {time} ago)";

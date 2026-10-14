@@ -114,6 +114,42 @@ class DashboardSmokeTests(_ReportsBase):
         self.assertContains(r, "rd-phone-donut")
         self.assertContains(r, "eSIM:")
 
+    def _queued_refresh_job(self, age_seconds):
+        from providers import jobs
+        from providers.models import ProviderJob
+
+        job = jobs.create_job(
+            kind=ProviderJob.KIND_REFRESH, provider_key="sky", phone="0599000000", source="web"
+        )
+        ProviderJob.objects.filter(pk=job.pk).update(
+            created_at=timezone.now() - timedelta(seconds=age_seconds)
+        )
+        return job
+
+    def test_refresh_queue_alert_hidden_when_queue_is_healthy(self):
+        self._queued_refresh_job(60)
+        stale_done = self._queued_refresh_job(600)
+        type(stale_done).objects.filter(pk=stale_done.pk).update(status="done")
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertNotContains(r, 'id="refresh-queue-alert"')
+
+    def test_refresh_queue_alert_shown_when_jobs_wait_over_two_minutes(self):
+        self._queued_refresh_job(180)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertContains(r, 'id="refresh-queue-alert"')
+        self.assertContains(
+            r, reverse("phone_refresh:providers_index") + "?tab=general"
+        )
+
+    def test_refresh_queue_check_is_cached_briefly(self):
+        from providers import health
+
+        self.assertFalse(health.refresh_queue_stalled())
+        self._queued_refresh_job(180)
+        self.assertFalse(health.refresh_queue_stalled())
+        cache.delete(health.REFRESH_QUEUE_ALERT_CACHE_KEY)
+        self.assertTrue(health.refresh_queue_stalled())
+
     def test_dashboard_phone_disconnect_kpis(self):
         from reports.stale_phones import reference_disconnect_counts
 

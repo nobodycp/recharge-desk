@@ -285,6 +285,12 @@ Roll the provider gateway out in this order (each step is reversible):
 4. **Charge button**: enable "Charge & record sale" for Sky once the Sky charge
    capability ships (not available yet, see below).
 
+> **Keep step 1 short.** With `REFRESH_ASYNC_ENABLED=0` (and always for the
+> Sky reconcile screen) a Sky login runs *inside the web request*. A cold login
+> can take up to ~120 s, longer than gunicorn's 60 s timeout, so the first
+> customer after a logout may get a killed request. Log in once from the admin
+> provider test (step 2) before letting traffic in, and move to step 3 quickly.
+
 ### What changed for operators — ما الذي تغيّر
 
 - **Public refresh is asynchronous**: the page gets a job id immediately and
@@ -292,7 +298,13 @@ Roll the provider gateway out in this order (each step is reversible):
   90) it shows the "processing" message while the job keeps running and still
   logs its result. If Redis/worker are down customers see the "busy" message,
   never a technical error. `REFRESH_ASYNC_ENABLED=0` restores the old
-  synchronous path.
+  synchronous path. The management dashboard shows a warning when refresh
+  jobs have been queued for over 2 minutes (worker down).
+- **Login trouble shows "busy"**: while Sky is logged out the worker waits for
+  the login (up to its 150 s budget); a failed login, the login cool-down
+  (60 s, doubling per consecutive failure up to 15 min), or a disabled
+  provider account answer customers with "busy". The real code is kept in the
+  refresh log.
 - **Provider accounts are encrypted in the DB** (Fernet, `PROVIDER_SECRETS_KEY`)
   and write-only in the UI. Sky `SKY_SALES_*` env vars are imported once by a
   migration; afterwards edit the account in the admin screen.

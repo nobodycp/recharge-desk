@@ -12,6 +12,8 @@ const ATTRS = {
   "data-msg-error-title": "خطأ",
   "data-msg-error-body": "حدث خطأ ما",
   "data-msg-working": "جارٍ التحديث…",
+  "data-msg-busy": "الخدمة مشغولة",
+  "data-msg-processing": "قيد المعالجة",
 };
 
 function makeEnv({ fetchImpl }) {
@@ -132,6 +134,14 @@ const post = (o) => o.method === "POST";
   e = makeEnv({ fetchImpl: () => Promise.reject(new Error("down")) });
   e.click(); await e.settle();
   check("POST failure shows generic error, button restored", e.bodyEl.textContent === "حدث خطأ ما" && e.button.disabled === false, [e.shown, e.button.disabled]);
+
+  // 11. busy / final processing without a message body use the localized fallbacks
+  e = makeEnv({ fetchImpl: () => resp(200, { status: "busy" }) });
+  e.click(); await e.settle();
+  check("busy without body uses busy fallback", e.bodyEl.textContent === "الخدمة مشغولة" && e.titleEl.textContent === "", [e.shown]);
+  e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "a" }) : resp(200, { status: "processing", final: true }) });
+  e.click(); await e.settle();
+  check("final processing without body uses processing fallback", e.bodyEl.textContent === "قيد المعالجة", e.shown);
 
   console.log(fail ? "FAILED" : "ALL OK"); process.exit(fail ? 1 : 0);
 })();

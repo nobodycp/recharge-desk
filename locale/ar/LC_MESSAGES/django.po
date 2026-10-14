@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 07:15+0300\n"
+"POT-Creation-Date: 2026-10-14 07:51+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -319,7 +319,7 @@ msgstr "اختر باقة تنتمي لخط المنتج هذا."
 
 #: companies/forms.py:80 companies/forms.py:125 employees/forms.py:83
 #: employees/forms.py:119 expenses/forms.py:17 expenses/views.py:102
-#: inventory/forms.py:245 reports/views.py:350 sales/forms.py:260
+#: inventory/forms.py:245 reports/views.py:352 sales/forms.py:260
 #: sales/forms.py:347 templates/audit/audit_log_list.html:47
 #: templates/companies/partials/company_detail_general.html:7
 #: templates/customers/customer_detailed_invoice.html:24
@@ -329,7 +329,7 @@ msgid "Date from"
 msgstr "من تاريخ"
 #: companies/forms.py:85 companies/forms.py:130 employees/forms.py:90
 #: employees/forms.py:126 expenses/forms.py:22 expenses/views.py:107
-#: inventory/forms.py:250 reports/views.py:355 sales/forms.py:265
+#: inventory/forms.py:250 reports/views.py:357 sales/forms.py:265
 #: sales/forms.py:354 templates/audit/audit_log_list.html:51
 #: templates/companies/partials/company_detail_general.html:11
 #: templates/customers/customer_detailed_invoice.html:28
@@ -1608,7 +1608,7 @@ msgid "Phone, payer, notes…"
 msgstr "المرجع، الدافع، المنتج…"
 
 #: employees/forms.py:78 inventory/forms.py:224 inventory/forms.py:259
-#: reports/views.py:312 sales/forms.py:255 sales/forms.py:272
+#: reports/views.py:313 sales/forms.py:255 sales/forms.py:272
 #: sales/forms.py:281 sales/forms.py:287 sales/forms.py:337
 #: templates/audit/audit_log_list.html:22
 #: templates/audit/audit_log_list.html:31
@@ -1743,7 +1743,7 @@ msgid "expenses"
 msgstr "المصروفات"
 #: expenses/views.py:38 templates/expenses/expense_list.html:6
 #: templates/partials/management_nav.html:57
-#: templates/reports/dashboard.html:46
+#: templates/reports/dashboard.html:53
 msgid "Expenses"
 msgstr "المصروفات"
 #: expenses/views.py:54
@@ -2168,7 +2168,7 @@ msgstr "sha256 للرمز الخام؛ تُعرض القيمة الأصلية م
 #: phone_refresh/models.py:405
 msgid "First 8 chars of the raw token, for identification in lists."
 msgstr "أول 8 أحرف من الرمز الخام للتعرّف في القوائم."
-#: phone_refresh/models.py:421
+#: phone_refresh/models.py:420
 msgid "Comma-separated scopes this token may use (e.g. refresh)."
 msgstr "الصلاحيات المسموحة لهذا التوكن مفصولة بفواصل (مثل refresh)."
 #: providers/adapters/layan/reconcile.py:319
@@ -2342,19 +2342,19 @@ msgstr "نفس اسم الخط عبر الشركات (مثلاً كل سليكو
 #: templates/sales/sale_edit.html:62
 msgid "Status"
 msgstr "الحالة"
-#: reports/forms.py:99 templates/reports/dashboard.html:110
+#: reports/forms.py:99 templates/reports/dashboard.html:117
 #: templates/reports/partials/phone_line_status_badge.html:3
 msgid "Active lines"
 msgstr "فعّال"
-#: reports/forms.py:100 templates/reports/dashboard.html:120
+#: reports/forms.py:100 templates/reports/dashboard.html:127
 #: templates/reports/partials/phone_line_status_badge.html:5
 msgid "Ends today"
 msgstr "ينتهي اليوم"
-#: reports/forms.py:101 templates/reports/dashboard.html:127
+#: reports/forms.py:101 templates/reports/dashboard.html:134
 #: templates/reports/partials/phone_line_status_badge.html:7
 msgid "Disconnected only"
 msgstr "مفصول فقط"
-#: reports/forms.py:102 templates/reports/dashboard.html:134
+#: reports/forms.py:102 templates/reports/dashboard.html:141
 #: templates/reports/partials/phone_line_status_badge.html:9
 msgid "Left the agency"
 msgstr "خرج من الوكالة"
@@ -2367,7 +2367,7 @@ msgstr "شريحة فعلية"
 #: reports/forms.py:112 sales/forms.py:270
 #: templates/companies/partials/layan_reconcile_review_table.html:59
 #: templates/companies/partials/sky_reconcile_table.html:54
-#: templates/reports/dashboard.html:29
+#: templates/reports/dashboard.html:36
 #: templates/reports/partials/phone_line_status_badge.html:12
 #: templates/sales/employee_entry.html:195
 msgid "eSIM"
@@ -2440,102 +2440,102 @@ msgstr "رقم آخر يستخدم هذا الرقم مسبقاً."
 #: reports/stale_phones.py:405
 msgid "This number has a charge still in progress; try again after it settles."
 msgstr "لهذا الرقم شحن ما زال قيد التنفيذ؛ حاول مجدداً بعد حسمه."
-#: reports/views.py:35
+#: reports/views.py:36
 msgid "Today's sales"
 msgstr "مبيعات اليوم"
-#: reports/views.py:36
+#: reports/views.py:37
 msgid "Today's profit"
 msgstr "ربح اليوم"
-#: reports/views.py:37
+#: reports/views.py:38
 msgid "Today's loss"
 msgstr "خسائر اليوم"
 
-#: reports/views.py:38
+#: reports/views.py:39
 msgid "Sales last 14 days"
 msgstr "المبيعات آخر 14 يومًا"
 
-#: reports/views.py:39 reports/views.py:48
+#: reports/views.py:40 reports/views.py:49
 msgid "Avg per day"
 msgstr "متوسط يومي"
 
-#: reports/views.py:40 reports/views.py:49 sales/views/employee.py:652
+#: reports/views.py:41 reports/views.py:50 sales/views/employee.py:652
 msgid "Today"
 msgstr "اليوم"
 
-#: reports/views.py:41
+#: reports/views.py:42
 msgid "Top companies today (by profit)"
 msgstr "أفضل الشركات اليوم (حسب الربح)"
 
-#: reports/views.py:44
+#: reports/views.py:45
 msgid "This month's sales"
 msgstr "مبيعات هذا الشهر"
 
-#: reports/views.py:45
+#: reports/views.py:46
 msgid "This month profit"
 msgstr "ربح هذا الشهر"
-#: reports/views.py:46
+#: reports/views.py:47
 msgid "This month's loss"
 msgstr "خسائر هذا الشهر"
 
-#: reports/views.py:47
+#: reports/views.py:48
 msgid "Daily sales this month"
 msgstr "المبيعات اليومية هذا الشهر"
 
-#: reports/views.py:50
+#: reports/views.py:51
 msgid "Top companies (this month, by profit)"
 msgstr "أفضل الشركات (هذا الشهر، حسب الربح)"
 
-#: reports/views.py:53
+#: reports/views.py:54
 msgid "All-time sales"
 msgstr "إجمالي المبيعات"
 
-#: reports/views.py:54
+#: reports/views.py:55
 msgid "All-time profit"
 msgstr "الربح الكلي"
-#: reports/views.py:55
+#: reports/views.py:56
 msgid "All-time loss"
 msgstr "إجمالي الخسائر"
 
-#: reports/views.py:56
+#: reports/views.py:57
 msgid "Monthly sales"
 msgstr "المبيعات الشهرية"
 
-#: reports/views.py:57
+#: reports/views.py:58
 msgid "Avg per month"
 msgstr "متوسط شهري"
 
-#: reports/views.py:58 templates/customers/customer_detailed_invoice.html:33
+#: reports/views.py:59 templates/customers/customer_detailed_invoice.html:33
 #: templates/customers/customer_statement.html:33
 msgid "This month"
 msgstr "هذا الشهر"
 
-#: reports/views.py:59
+#: reports/views.py:60
 msgid "Top companies (all time, by profit)"
 msgstr "أفضل الشركات (كل الوقت، حسب الربح)"
 
-#: reports/views.py:307
+#: reports/views.py:308
 msgid "Dashboard"
 msgstr "لوحة التحكم"
-#: reports/views.py:310
+#: reports/views.py:311
 msgid "Day"
 msgstr "اليوم"
-#: reports/views.py:311
+#: reports/views.py:312
 msgid "Month"
 msgstr "الشهر"
-#: reports/views.py:431 templates/partials/management_nav.html:78
+#: reports/views.py:433 templates/partials/management_nav.html:78
 #: templates/reports/profit_report.html:5
 msgid "Profit report"
 msgstr "تقرير الأرباح"
-#: reports/views.py:519
+#: reports/views.py:521
 msgid "Unknown"
 msgstr "غير معروف"
 
-#: reports/views.py:533 templates/partials/management_nav.html:86
+#: reports/views.py:535 templates/partials/management_nav.html:86
 #: templates/reports/employee_report.html:5
 msgid "Employee performance"
 msgstr "أداء الموظفين"
 
-#: reports/views.py:580 templates/partials/management_nav.html:82
+#: reports/views.py:582 templates/partials/management_nav.html:82
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
@@ -3938,7 +3938,7 @@ msgstr "الآن"
 #: templates/customers/customer_detail.html:23
 #: templates/employees/employee_detail.html:18
 #: templates/employees/my_balance.html:13
-#: templates/reports/company_report.html:64 templates/reports/dashboard.html:62
+#: templates/reports/company_report.html:64 templates/reports/dashboard.html:69
 msgid "Current balance"
 msgstr "الرصيد الحالي"
 #: templates/companies/partials/company_detail_general.html:65
@@ -4894,7 +4894,7 @@ msgid "Export payments CSV"
 msgstr "تصدير الدفعات CSV"
 
 #: templates/customers/customer_list.html:25
-#: templates/reports/dashboard.html:59
+#: templates/reports/dashboard.html:66
 msgid "Total customer debt"
 msgstr "إجمالي ديون الزبائن"
 
@@ -5332,7 +5332,7 @@ msgstr "لا يوجد مخزون عند الزبائن."
 msgid "Employee shortcuts"
 msgstr "اختصارات الموظف"
 #: templates/partials/_employee_bottom_nav_inner.html:21
-#: templates/sales/employee_refresh_number.html:57
+#: templates/sales/employee_refresh_number.html:59
 msgid "Refresh"
 msgstr "تحديث"
 #: templates/partials/_employee_bottom_nav_inner.html:58
@@ -5473,77 +5473,86 @@ msgstr "كشف المورّد وسجل الرصيد الداخلي"
 msgid "Statistics period"
 msgstr "فترة الإحصائيات"
 
-#: templates/reports/dashboard.html:28
+#: templates/reports/dashboard.html:17
+msgid "Number refreshes have waited in the queue for over 2 minutes."
+msgstr "طلبات تحديث الأرقام تنتظر في الطابور منذ أكثر من دقيقتين."
+#: templates/reports/dashboard.html:17
+msgid "The background worker may be down."
+msgstr "قد يكون عامل المهام الخلفية متوقفاً."
+#: templates/reports/dashboard.html:18
+msgid "Providers → General health"
+msgstr "المزوّدون ← حالة البوابة"
+#: templates/reports/dashboard.html:35
 #: templates/reports/employee_report.html:28
 #: templates/reports/employee_report.html:49
 #: templates/reports/profit_report.html:37
 #: templates/reports/profit_report.html:142
 msgid "Volume"
 msgstr "الحجم"
-#: templates/reports/dashboard.html:41 templates/reports/profit_report.html:25
+#: templates/reports/dashboard.html:48 templates/reports/profit_report.html:25
 msgid "Paid sales only"
 msgstr "المبيعات المدفوعة فقط"
 
-#: templates/reports/dashboard.html:47
+#: templates/reports/dashboard.html:54
 msgid "Net"
 msgstr "الصافي"
 
-#: templates/reports/dashboard.html:75
+#: templates/reports/dashboard.html:82
 msgid "Cost of sales at zero price"
 msgstr "تكلفة المبيعات بسعر صفر"
 
-#: templates/reports/dashboard.html:88
+#: templates/reports/dashboard.html:95
 msgid "Line status"
 msgstr "حالة الأرقام"
-#: templates/reports/dashboard.html:90
+#: templates/reports/dashboard.html:97
 msgid "Open line statement"
 msgstr "افتح بيان الأرقام"
-#: templates/reports/dashboard.html:97
+#: templates/reports/dashboard.html:104
 #, python-format
 msgid "%(n)s lines by status"
 msgstr "%(n)s رقماً حسب الحالة"
-#: templates/reports/dashboard.html:103
+#: templates/reports/dashboard.html:110
 msgid "Total lines"
 msgstr "إجمالي الأرقام"
-#: templates/reports/dashboard.html:112
+#: templates/reports/dashboard.html:119
 #, python-format
 msgid "eSIM: %(n)s"
 msgstr "eSIM: %(n)s"
-#: templates/reports/dashboard.html:148
+#: templates/reports/dashboard.html:155
 msgid "Supplier balances"
 msgstr "أرصدة المورّدين"
-#: templates/reports/dashboard.html:150
+#: templates/reports/dashboard.html:157
 msgid "View all"
 msgstr "عرض الكل"
-#: templates/reports/dashboard.html:161
+#: templates/reports/dashboard.html:168
 msgid "Overdrawn"
 msgstr "مكشوف"
 
-#: templates/reports/dashboard.html:161
+#: templates/reports/dashboard.html:168
 msgid "Empty"
 msgstr "مستنفد"
 
-#: templates/reports/dashboard.html:161
+#: templates/reports/dashboard.html:168
 msgid "Available"
 msgstr "متاح"
 
-#: templates/reports/dashboard.html:169
+#: templates/reports/dashboard.html:176
 msgid "No companies yet."
 msgstr "لا توجد شركات بعد."
-#: templates/reports/dashboard.html:184
+#: templates/reports/dashboard.html:191
 msgid "Total volume"
 msgstr "إجمالي الحجم"
 
-#: templates/reports/dashboard.html:189
+#: templates/reports/dashboard.html:196
 msgid "Open profit report"
 msgstr "فتح تقرير الأرباح"
 
-#: templates/reports/dashboard.html:220
+#: templates/reports/dashboard.html:227
 #: templates/reports/employee_report.html:69
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
-#: templates/reports/dashboard.html:252
+#: templates/reports/dashboard.html:259
 msgid "No paid sales in this period yet."
 msgstr "لا توجد مبيعات مدفوعة في هذه الفترة بعد."
 
@@ -5757,18 +5766,18 @@ msgid "Please fix the highlighted fields."
 msgstr "صلّح الحقول المظلّلة بالأحمر."
 #: templates/sales/employee_entry.html:36
 #: templates/sales/employee_entry.html:65
-#: templates/sales/employee_refresh_number.html:48
+#: templates/sales/employee_refresh_number.html:50
 msgid "Paste from clipboard"
 msgstr "لصق من الحافظة"
 
 #: templates/sales/employee_entry.html:37
 #: templates/sales/employee_entry.html:66
-#: templates/sales/employee_refresh_number.html:49
+#: templates/sales/employee_refresh_number.html:51
 msgid "Could not read clipboard. Allow paste permission or use Ctrl+V."
 msgstr "تعذّر قراءة الحافظة. اسمح بإذن اللصق أو استخدم Ctrl+V."
 #: templates/sales/employee_entry.html:38
 #: templates/sales/employee_entry.html:67
-#: templates/sales/employee_refresh_number.html:50
+#: templates/sales/employee_refresh_number.html:52
 msgid "Paste"
 msgstr "لصق"
 
@@ -5941,41 +5950,47 @@ msgstr ""
 msgid "Refreshing…"
 msgstr "جاري التحديث…"
 #: templates/sales/employee_refresh_number.html:20
+msgid "The service is busy right now, please try again shortly."
+msgstr "الخدمة مشغولة حالياً، حاول بعد قليل."
+#: templates/sales/employee_refresh_number.html:21
+msgid "Your request is still being processed, please try again in a minute."
+msgstr "طلبك قيد المعالجة، أعد المحاولة بعد دقيقة."
+#: templates/sales/employee_refresh_number.html:22
 #, python-brace-format
 msgid "{body} (last refresh {time} ago)"
 msgstr "{body} (آخر تحديث منذ {time})"
 
-#: templates/sales/employee_refresh_number.html:21
+#: templates/sales/employee_refresh_number.html:23
 msgid "less than a minute"
 msgstr "أقل من دقيقة"
 
-#: templates/sales/employee_refresh_number.html:22
+#: templates/sales/employee_refresh_number.html:24
 msgid "hour"
 msgstr "ساعة"
 
-#: templates/sales/employee_refresh_number.html:23
+#: templates/sales/employee_refresh_number.html:25
 msgid "hours"
 msgstr "ساعات"
 
-#: templates/sales/employee_refresh_number.html:24
+#: templates/sales/employee_refresh_number.html:26
 msgid "minute"
 msgstr "دقيقة"
 
-#: templates/sales/employee_refresh_number.html:25
+#: templates/sales/employee_refresh_number.html:27
 msgid "minutes"
 msgstr "دقائق"
 
-#: templates/sales/employee_refresh_number.html:26
+#: templates/sales/employee_refresh_number.html:28
 msgid "and"
 msgstr "و"
 
-#: templates/sales/employee_refresh_number.html:29
+#: templates/sales/employee_refresh_number.html:31
 msgid ""
 "Same routing and messages as the public refresh page, without rate limits."
 msgstr ""
 "نفس التوجيه والرسائل كصفحة التحديث العامة، بدون حدود على عدد المحاولات."
 
-#: templates/sales/employee_refresh_number.html:31
+#: templates/sales/employee_refresh_number.html:33
 msgid "Phone number"
 msgstr "رقم الهاتف"
 #: templates/sales/employee_sale_edit.html:9 templates/sales/sale_edit.html:11
