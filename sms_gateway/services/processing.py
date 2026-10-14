@@ -102,8 +102,8 @@ def _reply_for(status_code: str, default_title: str, default_body: str,
     return text or None
 
 
-_ERROR_TITLE = "خطأ"
-_ERROR_BODY = "تعذّر تنفيذ التحديث حالياً. يرجى المحاولة لاحقاً."
+# An inbound still ``refreshing`` after this long lost its job notification.
+STUCK_INBOUND_MINUTES = 15
 
 
 def _queue_reply(inbound: InboundSms, reply: str | None, s: SmsGatewaySettings) -> int | None:
@@ -146,6 +146,33 @@ def complete_inbound(inbound_id: int, status_code: str, title: str, body: str) -
         _queue_reply(InboundSms.objects.get(pk=inbound_id), reply, s)
 
 
+def fail_inbound(inbound_id: int) -> None:
+    """Finish ``inbound_id`` with the generic error reply (customer text comes
+    from the seeded ``error`` CustomerMessage). No-op unless still refreshing."""
+    # Lazy: phone_refresh imports sms_gateway lazily too.
+    from phone_refresh.tasks import error_payload
+
+    payload = error_payload()
+    message = payload.get("message") or {}
+    complete_inbound(
+        inbound_id, payload["status"], message.get("title") or "", message.get("body") or ""
+    )
+
+
+def sweep_stuck_inbound() -> int:
+    """Fail inbound SMS stuck in ``refreshing``; returns how many were finished."""
+    cutoff = timezone.now() - timedelta(minutes=STUCK_INBOUND_MINUTES)
+    stuck = list(
+        InboundSms.objects.filter(
+            state=InboundSms.State.REFRESHING, received_at__lt=cutoff
+        ).values_list("pk", flat=True)
+    )
+    for pk in stuck:
+        log.warning("inbound SMS %s was stuck refreshing; failing it", pk)
+        fail_inbound(pk)
+    return len(stuck)
+
+
 def _refresh_async(inbound: InboundSms, number: str) -> ProcessResult:
     """Submit the refresh as a job; the reply is queued when it completes."""
     from phone_refresh.models import RefreshSource
@@ -169,10 +196,9 @@ def _refresh_async(inbound: InboundSms, number: str) -> ProcessResult:
         payload = ticket.payload
     except Exception:  # noqa: BLE001 — never leave the inbound stuck in refreshing
         log.exception("could not submit refresh for inbound SMS %s", inbound.pk)
-        payload = {
-            "status": "error",
-            "message": {"title": _ERROR_TITLE, "body": _ERROR_BODY},
-        }
+        from phone_refresh.tasks import error_payload
+
+        payload = error_payload()
 
     status_code = None
     if payload is not None:

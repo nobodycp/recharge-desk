@@ -35,7 +35,8 @@ _FALLBACK_ERROR_PAYLOAD = {
 }
 
 
-def _error_payload() -> dict:
+def error_payload() -> dict:
+    """Generic customer error payload (seeded message, or a fixed fallback)."""
     try:
         return status_payload("error")
     except Exception:  # noqa: BLE001 — the failure path must never raise
@@ -132,7 +133,7 @@ def run_refresh_job(job_id: str) -> None:
         result = _execute(job)
     except Exception as exc:  # noqa: BLE001
         log.error("refresh job %s failed: %s", job.pk, scrub(str(exc)), exc_info=True)
-        result = _error_payload()
+        result = error_payload()
         _refresh_db_connection()
         jobs.mark_failed(job, result)
     else:
@@ -149,7 +150,7 @@ def reap_stuck_jobs() -> int:
     SMS callers that asked to be notified are told.
     """
     reaped = jobs.fail_stuck(
-        ProviderJob.KIND_REFRESH, STUCK_JOB_SECONDS, _error_payload()
+        ProviderJob.KIND_REFRESH, STUCK_JOB_SECONDS, error_payload()
     )
     for job in reaped:
         log.warning("refresh job %s was stuck in its queue/worker; failed it", job.pk)

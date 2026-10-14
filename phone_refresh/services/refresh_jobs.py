@@ -28,7 +28,7 @@ from phone_refresh.services.refresh_service import (
     result_payload,
     status_payload,
 )
-from phone_refresh.tasks import run_refresh_job
+from phone_refresh.tasks import _safe_notify, run_refresh_job
 from providers import jobs
 from providers.models import ProviderJob
 from providers.redis_conn import get_redis
@@ -137,6 +137,9 @@ def submit_refresh(
             )
             jobs.mark_failed(job, busy)
             enqueue_failure["payload"] = busy
+            # The task never ran, so nobody else will tell a waiting caller
+            # (e.g. an inbound SMS); the hooks are idempotent.
+            _safe_notify(job, busy)
 
     # Outside a transaction this runs immediately, so ``enqueue_failure`` is
     # filled before we return; inside one the failed job is what pollers see.

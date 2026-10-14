@@ -482,6 +482,7 @@ class AsyncInboundTests(SmsBaseTest):
     @mock.patch(PROVIDER_REFRESH)
     def test_enqueue_failure_finishes_inbound_with_busy_reply(self, refresh):
         from phone_refresh.tasks import run_refresh_job
+        from providers.models import ProviderJob
 
         # The inbound view runs in autocommit, where on_commit fires at once
         # (TestCase's wrapping transaction would defer it).
@@ -489,11 +490,49 @@ class AsyncInboundTests(SmsBaseTest):
                 mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()):
             with self.assertLogs("phone_refresh.services.refresh_jobs", level="ERROR"):
                 result = self._inbound()
+        refresh.assert_not_called()
         self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        job = ProviderJob.objects.get()
+        self.assertEqual(job.status, "failed")
+        self.assertEqual(job.result["status"], "busy")
+        message = job.result["message"]
+        expected = "\n".join(p for p in [message["title"].strip(), message["body"].strip()] if p)
+        self.assertTrue(expected)
+        self.assertEqual(OutboundSms.objects.get().body, expected)
+        self.assertNotIn("redis down", expected)
+
+    @mock.patch(PROVIDER_REFRESH)
+    def test_enqueue_failure_after_commit_still_finishes_inbound(self, refresh):
+        """Enqueue failing in a deferred on_commit (job ticket already returned)."""
+        from phone_refresh.tasks import run_refresh_job
+
+        with mock.patch.object(run_refresh_job, "delay", side_effect=RuntimeError("redis down")):
+            with self.assertLogs("phone_refresh.services.refresh_jobs", level="ERROR"):
+                with self.captureOnCommitCallbacks(execute=True):
+                    result = self._inbound()
+                    self.assertEqual(result.state, InboundSms.State.REFRESHING)
         refresh.assert_not_called()
         inbound = InboundSms.objects.get(pk=result.inbound_id)
         self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
         self.assertEqual(OutboundSms.objects.count(), 1)
+
+    @mock.patch(PROVIDER_REFRESH, side_effect=RuntimeError("secret provider boom"))
+    def test_provider_crash_in_job_sends_generic_error_reply(self, refresh):
+        from phone_refresh.tasks import error_payload
+
+        with self.assertLogs("phone_refresh.tasks", level="ERROR"):
+            with self.captureOnCommitCallbacks(execute=True):
+                result = self._inbound()
+        refresh.assert_called_once()
+        inbound = InboundSms.objects.get(pk=result.inbound_id)
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        outbound = OutboundSms.objects.get()
+        self.assertEqual(outbound.to_number, SENDER)
+        self.assertTrue(outbound.body.strip())
+        self.assertNotIn("secret provider boom", outbound.body)
+        self.assertNotIn("boom", inbound.reply_text)
+        message = error_payload()["message"]
+        self.assertIn(message["body"].strip(), outbound.body)
 
     def test_reaper_completes_stuck_inbound_with_error_reply(self):
         from phone_refresh.tasks import reap_stuck_jobs
@@ -551,3 +590,58 @@ class AsyncInboundTests(SmsBaseTest):
     def test_refreshing_state_has_a_label(self):
         self.assertEqual(InboundSms.State.REFRESHING.value, "refreshing")
         self.assertIn(("refreshing", InboundSms.State.REFRESHING.label), InboundSms.State.choices)
+
+
+class StuckInboundSweepTests(SmsBaseTest):
+    def _refreshing(self, minutes_old, from_number=SENDER):
+        inbound = InboundSms.objects.create(
+            from_number=from_number,
+            raw_text=REFRESHED_NUMBER,
+            extracted_number=REFRESHED_NUMBER,
+            state=InboundSms.State.REFRESHING,
+        )
+        InboundSms.objects.filter(pk=inbound.pk).update(
+            received_at=timezone.now() - timedelta(minutes=minutes_old)
+        )
+        return inbound
+
+    def test_sweep_fails_old_refreshing_inbound_with_generic_error_reply(self):
+        from phone_refresh.tasks import error_payload
+        from sms_gateway.tasks import sweep_stuck_inbound_sms
+
+        old = self._refreshing(minutes_old=16)
+        with self.assertLogs("sms_gateway.services.processing", level="WARNING"):
+            self.assertEqual(sweep_stuck_inbound_sms(), 1)
+        old.refresh_from_db()
+        self.assertEqual(old.state, InboundSms.State.PROCESSED)
+        outbound = OutboundSms.objects.get()
+        self.assertEqual(outbound.to_number, SENDER)
+        message = error_payload()["message"]
+        self.assertIn(message["body"].strip(), outbound.body)
+        # Second run finds nothing and sends nothing more.
+        self.assertEqual(sweep_stuck_inbound_sms(), 0)
+        self.assertEqual(OutboundSms.objects.count(), 1)
+
+    def test_sweep_leaves_recent_and_other_states_alone(self):
+        from sms_gateway.tasks import sweep_stuck_inbound_sms
+
+        recent = self._refreshing(minutes_old=5, from_number="0595108209")
+        other = self._refreshing(minutes_old=60, from_number="0595108210")
+        InboundSms.objects.filter(pk=other.pk).update(state=InboundSms.State.PROCESSED)
+        self.assertEqual(sweep_stuck_inbound_sms(), 0)
+        recent.refresh_from_db()
+        self.assertEqual(recent.state, InboundSms.State.REFRESHING)
+        self.assertEqual(OutboundSms.objects.count(), 0)
+
+    def test_sweep_is_scheduled_every_five_minutes(self):
+        from django.conf import settings
+
+        entry = settings.CELERY_BEAT_SCHEDULE["sms-gateway-sweep-stuck-inbound"]
+        self.assertEqual(entry["task"], "sms_gateway.tasks.sweep_stuck_inbound_sms")
+        self.assertEqual(entry["schedule"], 300.0)
+
+    def test_sweep_task_is_registered_with_celery(self):
+        from config.celery import app
+
+        app.loader.import_default_modules()
+        self.assertIn("sms_gateway.tasks.sweep_stuck_inbound_sms", app.tasks)

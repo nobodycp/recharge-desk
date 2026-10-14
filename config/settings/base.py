@@ -185,6 +185,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "phone_refresh.tasks.reap_stuck_jobs",
         "schedule": 300.0,
     },
+    "sms-gateway-sweep-stuck-inbound": {
+        "task": "sms_gateway.tasks.sweep_stuck_inbound_sms",
+        "schedule": 300.0,
+    },
     "providers-purge-old-jobs": {
         "task": "providers.tasks.purge_old_jobs",
         "schedule": 86400.0,
