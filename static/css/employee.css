@@ -434,10 +434,9 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 }
 
 /* ========================================================================== */
-/* Record payment pages: legacy tile + note styling                           */
-/* Moved verbatim from app.css (Task 5 restyles these pages). Only the        */
-/* rules that still match a live selector are kept; the focus-ring reset is   */
-/* dropped so the ink focus ring shows.                                       */
+/* Shared tile / note bases                                                    */
+/* Base rules for the icon mark and the "+ Note" summary. The sale entry and   */
+/* the record-payment pages restyle the tiles in their own sections below.     */
 /* ========================================================================== */
 .employee-chip {
   font-size: 0.78rem;
@@ -475,43 +474,6 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
-}
-
-#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile {
-  white-space: normal;
-  border: none !important;
-  box-shadow: none !important;
-  background-color: transparent !important;
-  min-height: clamp(1.9rem, 9vw, 2.85rem);
-  padding-block: 0.15rem !important;
-  padding-inline: 0.1rem !important;
-}
-
-#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile .employee-chip-icon {
-  width: 100%;
-  max-width: 100%;
-  height: clamp(1.35rem, 5.5vw, 2.1rem);
-  max-height: 2.1rem;
-  object-fit: contain;
-}
-
-#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile .employee-chip-label {
-  width: 100%;
-  min-height: clamp(1.35rem, 5.5vw, 2.1rem);
-  font-size: clamp(0.58rem, 2.7vw, 0.78rem);
-  font-weight: 650;
-  background-color: transparent;
-  color: var(--bs-body-color);
-  border: none;
-}
-
-#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile.is-active {
-  border: 2px solid var(--bs-primary) !important;
-  border-radius: 0.375rem;
-  background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.22),
-    0 0 0 2px rgba(var(--bs-primary-rgb), 0.2);
 }
 
 .employee-notes-details {
@@ -844,11 +806,13 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   min-width: 0;
 }
 
-#payment-tiles {
+#payment-tiles,
+#rd-pay-sub-payment-tiles {
   transition: opacity 0.2s ease;
 }
 
-#payment-tiles.is-muted {
+#payment-tiles.is-muted,
+#rd-pay-sub-payment-tiles.is-muted {
   opacity: 0.5;
 }
 
@@ -1317,7 +1281,8 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.rd-entry-dock .employee-save-sale-btn {
+.rd-entry-dock .employee-save-sale-btn,
+.rd-entry-dock .rd-dock-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1484,4 +1449,292 @@ html:has(.rd-entry-dock) {
   .rd-entry-valid {
     animation: none;
   }
+}
+
+/* ========================================================================== */
+/* Record payment + payment edit (same blocks, fields, tiles and dock as the  */
+/* sale entry; only what differs is below)                                    */
+/* ========================================================================== */
+
+/* The page column fills the screen, so the dock (its last child) rests on the
+   bottom edge even when the form is short; on a long page it sticks there. */
+.rd-employee-main:has(.rd-pay-sub) {
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-pay-sub,
+.rd-pay-sub-recent,
+.rd-pay-sub-dock {
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+.rd-pay-sub-dock {
+  margin-block-start: auto;
+}
+
+.rd-pay-sub-dock__actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.rd-pay-sub-dock__actions > .rd-dock-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Save is the primary action next to Cancel. */
+.rd-pay-sub-dock__actions > .rd-dock-btn:first-child:not(:last-child) {
+  flex-grow: 2;
+}
+
+/* Amount: digits read left to right, big and tabular like the sale price. */
+#id_pay_sub_amount {
+  direction: ltr;
+  text-align: start;
+  font-family: var(--rd-font-num);
+  font-size: 1.25rem;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+[dir="rtl"] #id_pay_sub_amount {
+  text-align: end;
+}
+
+#id_pay_sub_amount::-webkit-outer-spin-button,
+#id_pay_sub_amount::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+/* Customer suggestions (rows are built in JS as list-group buttons). */
+.rd-pay-sub-ac {
+  max-height: 15rem;
+  overflow-y: auto;
+  background: var(--rd-surface);
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 0.85rem;
+}
+
+.rd-pay-sub-ac .list-group-item {
+  display: flex;
+  align-items: center;
+  min-height: 3.45rem;
+  padding-inline: 0.8rem;
+  color: var(--rd-ink);
+  background: transparent;
+  border-color: var(--bs-border-color);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: start;
+}
+
+.rd-pay-sub-ac .list-group-item:hover,
+.rd-pay-sub-ac .list-group-item:focus {
+  color: var(--rd-ink);
+  background: var(--rd-surface-2);
+}
+
+.rd-pay-sub-ac .list-group-item:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -3px;
+}
+
+/* Balance of the picked customer: label at the start, figure at the end. */
+.rd-pay-sub-balance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-inline: 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.rd-pay-sub-balance[hidden] {
+  display: none;
+}
+
+.rd-pay-sub-balance__k {
+  color: var(--rd-muted);
+}
+
+.rd-pay-sub-balance__v {
+  color: var(--rd-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* Payment tiles: the page has room, so they are bigger than the entry's
+   (names stay on one line; 4 per row at 375px, wrapping for more methods). */
+#rd-pay-sub-payment-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr));
+  gap: 0.4rem;
+}
+
+#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile {
+  min-height: 3.9rem;
+  padding-inline: 0.45rem;
+  font-size: 0.8rem;
+}
+
+#rd-pay-sub-payment-tiles .employee-chip-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+/* "Add note" block: a 44px summary that opens the textarea in place. */
+.rd-pay-sub-notes {
+  padding-block: 0.15rem;
+}
+
+.rd-pay-sub-notes .employee-notes-summary {
+  display: flex;
+  align-items: center;
+  min-height: 3.45rem;
+  padding-inline: 0.35rem;
+  color: var(--rd-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rd-pay-sub-notes .employee-notes-summary:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -3px;
+  border-radius: 0.85rem;
+}
+
+.rd-pay-sub-notes__body {
+  padding: 0 0.15rem 0.35rem;
+}
+
+.rd-pay-sub-notes__body .form-control {
+  min-height: 5rem;
+  padding: 0.6rem 0.8rem;
+  color: var(--rd-ink);
+  background: var(--rd-surface);
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 0.85rem;
+  box-shadow: none;
+  font-size: 1rem;
+}
+
+.rd-pay-sub-notes__body .form-control:focus {
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+/* Today's payments */
+.rd-pay-sub-recent {
+  margin-block-start: 1rem;
+}
+
+.rd-pay-sub-recent__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.15rem;
+  padding-inline: 0.15rem;
+}
+
+.rd-pay-sub-recent__title {
+  margin: 0;
+  color: var(--rd-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.rd-pay-sub-recent__all {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3.45rem;
+  color: var(--rd-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.rd-pay-sub-recent__all:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -3px;
+}
+
+.rd-pay-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rd-pay-row__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.rd-pay-row__who {
+  min-width: 0;
+}
+
+.rd-pay-row__name,
+.rd-pay-row__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-pay-row__name {
+  color: var(--rd-ink);
+  font-weight: 600;
+}
+
+.rd-pay-row__sub {
+  color: var(--rd-muted);
+  font-size: 0.8rem;
+}
+
+.rd-pay-row__end {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.rd-pay-row__amount {
+  color: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* Edit / Delete / Undo (also used by the recent entries list). */
+.rd-pay-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0.4rem;
+}
+
+.rd-pay-actions form {
+  display: block;
+  margin: 0;
+}
+
+.rd-pay-actions .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.45rem;
+  padding-inline: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }

@@ -379,11 +379,10 @@ class EmployeeEntryCssTests(SimpleTestCase):
             with self.subTest(selector=gone):
                 self.assertNotIn(gone, self.app_css)
 
-    def test_record_payment_page_keeps_its_styling(self):
-        """Ruling 1: rules still matching a live selector moved to employee.css."""
+    def test_record_payment_pages_use_the_entry_tile_language(self):
+        """Task 5: the payment tiles share the entry tile rules; the legacy
+        borderless/transparent tile rules are gone."""
         for selector in (
-            "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile",
-            "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile.is-active",
             ".employee-chip",
             ".employee-chip-icon",
             ".employee-chip-label",
@@ -392,6 +391,12 @@ class EmployeeEntryCssTests(SimpleTestCase):
         ):
             with self.subTest(selector=selector):
                 self.assertTrue(_bodies(self.css, selector), selector)
+        for sels, body in _rules(self.css):
+            for sel in sels:
+                if sel.startswith("#rd-pay-sub-payment-tiles"):
+                    self.assertNotIn("border: none", body, sel)
+                    self.assertNotIn("transparent !important", body, sel)
+                    self.assertNotIn("--bs-primary", body, sel)
 
     def test_hidden_guards(self):
         for selector in (
@@ -514,3 +519,228 @@ class EmployeeEntryCssTests(SimpleTestCase):
         joined = " ".join(_bodies(self.css, "html:has(.rd-entry-dock)"))
         self.assertIn("--rd-entry-dock-offset", joined)
         self.assertIn("--rd-entry-dock-height", joined)
+
+
+class EmployeePaymentPagesTests(TestCase):
+    """Record payment + payment edit: Pearl markup, every JS hook kept."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from customers.models import Customer
+        from customers.services import submit_customer_payment_submission
+        from employees.models import EmployeeProfile
+
+        cls.pm = PaymentMethod.objects.create(name="Cash Box")
+        cls.pm2 = PaymentMethod.objects.create(name="Bank Wire")
+        cls.emp = User.objects.create_user("emp_pay_pages", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        EmployeeProfile.objects.create(user=cls.emp, monthly_salary=Decimal("0"))
+        row = AppSettings.load()
+        row.sales_show_record_payment = True
+        row.sales_show_employee_payment = True
+        row.require_settlement_request_approval = True
+        row.save()
+        cache.clear()
+        cls.customer = Customer.objects.create(name="Pearl Cust", created_by=cls.emp)
+        cls.sub = submit_customer_payment_submission(
+            customer=cls.customer,
+            amount=Decimal("12.00"),
+            payment_method=cls.pm,
+            notes="",
+            user=cls.emp,
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def _record(self):
+        resp = self.client.get(reverse("sales:employee_record_payment"))
+        self.assertEqual(resp.status_code, 200)
+        return resp.content.decode()
+
+    def _edit(self):
+        resp = self.client.get(reverse("sales:employee_payment_edit", args=[self.sub.pk]))
+        self.assertEqual(resp.status_code, 200)
+        return resp.content.decode()
+
+    SHARED_HOOKS = [
+        'id="rd-pay-sub-page"',
+        "data-lookup-url=",
+        "data-msg-customer=",
+        "data-msg-payment=",
+        'id="rd-pay-sub-form"',
+        'id="rd-pay-sub-search"',
+        'id="rd-pay-sub-ac"',
+        'id="id_pay_sub_customer"',
+        'id="rd-pay-sub-balance-line"',
+        'id="rd-pay-sub-balance-val"',
+        'id="id_pay_sub_amount"',
+        'id="id_pay_sub_payment_method"',
+        'id="id_pay_sub_paid_via_employee"',
+        'id="rd-pay-sub-employee-toggle"',
+        'id="rd-pay-sub-employee-hint"',
+        'id="rd-pay-sub-payment-tiles"',
+        "data-payment-id=",
+        'id="id_pay_sub_notes"',
+        'id="rd-pay-sub-submit"',
+    ]
+    LEGACY = ("btn-outline-info", "btn-info", "text-info", "text-primary", "row-cols-",
+              "btn-outline-primary", "opacity-50", "badge bg-", "text-bg-")
+
+    def test_record_page_keeps_every_hook(self):
+        html = self._record()
+        for hook in self.SHARED_HOOKS + [
+            'id="rd-pay-sub-note-method"',
+            'id="rd-pay-sub-note-employee"',
+            'id="rd-pay-sub-notes-details"',
+        ]:
+            with self.subTest(hook=hook):
+                self.assertIn(hook, html)
+
+    def test_edit_page_keeps_every_hook(self):
+        html = self._edit()
+        for hook in self.SHARED_HOOKS:
+            with self.subTest(hook=hook):
+                self.assertIn(hook, html)
+
+    def test_no_legacy_classes_on_either_page(self):
+        for name, html in (("record", self._record()), ("edit", self._edit())):
+            body = html.split('id="rd-pay-sub-page"', 1)[1]
+            for legacy in self.LEGACY:
+                with self.subTest(page=name, legacy=legacy):
+                    self.assertNotIn(legacy, body)
+
+    def test_pages_use_the_entry_building_blocks(self):
+        for name, html in (("record", self._record()), ("edit", self._edit())):
+            for needle in (
+                "rd-entry-blk",
+                "rd-entry-field",
+                "rd-entry-tiles rd-entry-tiles--pay",
+                "rd-entry-pill",
+                "rd-entry-dock",
+                "btn btn-primary",
+            ):
+                with self.subTest(page=name, needle=needle):
+                    self.assertIn(needle, html)
+
+    def test_tiles_are_buttons_with_names_and_no_btn_classes(self):
+        for name, html in (("record", self._record()), ("edit", self._edit())):
+            tiles = re.findall(r'<button[^>]*rd-pay-sub-pm-tile[^>]*>', html)
+            self.assertEqual(len(tiles), 2, name)
+            for tag in tiles:
+                self.assertNotIn("btn-outline", tag)
+                self.assertRegex(tag, r'class="employee-chip rd-pay-sub-pm-tile')
+            for label in ("Cash Box", "Bank Wire"):
+                self.assertRegex(
+                    html, r'class="employee-chip-label"[^>]*>\s*%s\s*<' % label
+                )
+
+    def test_submit_is_the_ink_primary_button_in_the_dock(self):
+        for name, html in (("record", self._record()), ("edit", self._edit())):
+            submit = re.search(r'<button[^>]*id="rd-pay-sub-submit"[^>]*>', html).group(0)
+            self.assertIn("btn-primary", submit, name)
+            self.assertIn('type="submit"', submit, name)
+            # outside the form box, tied to it with the form attribute
+            self.assertIn('form="rd-pay-sub-form"', submit, name)
+            dock = html.split("rd-entry-dock", 1)[1]
+            self.assertIn('id="rd-pay-sub-submit"', dock, name)
+
+    def test_edit_page_renders_the_employee_toggle_state_as_is_on(self):
+        html = self._edit()
+        tag = re.search(r'<button[^>]*id="rd-pay-sub-employee-toggle"[^>]*>', html).group(0)
+        self.assertIn('aria-pressed="false"', tag)
+        self.assertNotIn("is-on", tag)
+        self.sub.paid_via_employee = True
+        self.sub.payment_method = None
+        self.sub.save()
+        html = self._edit()
+        tag = re.search(r'<button[^>]*id="rd-pay-sub-employee-toggle"[^>]*>', html).group(0)
+        self.assertIn('aria-pressed="true"', tag)
+        self.assertIn("is-on", tag)
+        self.assertRegex(html, r'id="rd-pay-sub-payment-tiles"[^>]*>')
+        self.assertIn("is-muted", html)
+
+    def test_edit_page_marks_the_chosen_method_tile_active(self):
+        html = self._edit()
+        active = re.findall(r'<button[^>]*rd-pay-sub-pm-tile[^>]*is-active[^>]*>', html)
+        self.assertEqual(len(active), 1)
+        self.assertIn('data-payment-id="%d"' % self.pm.pk, active[0])
+
+    def test_todays_payments_are_row_cards_with_pearl_badges(self):
+        html = self._record()
+        self.assertIn("Today’s payments", html)
+        row = re.search(r'<div[^>]*id="payment-row-%d"[^>]*>' % self.sub.pk, html).group(0)
+        self.assertIn("rd-mobile-row-card", row)
+        self.assertIn("rd-badge rd-badge--pending", html)
+        self.assertIn(reverse("sales:employee_payment_edit", args=[self.sub.pk]), html)
+        self.assertIn("hx-target=\"#payment-row-%d\"" % self.sub.pk, html)
+
+    def test_payment_actions_partial_has_no_legacy_button_colours(self):
+        from pathlib import Path as _P
+
+        text = (_P(settings.BASE_DIR) / "templates/sales/partials/employee_payment_actions.html").read_text()
+        self.assertNotIn("btn-outline-primary", text)
+
+    def test_script_uses_is_on_and_is_muted_not_bootstrap_colours(self):
+        js = (Path(settings.BASE_DIR) / "static/js/employee-record-payment.js").read_text()
+        self.assertIn('"is-on"', js)
+        self.assertIn('"is-muted"', js)
+        for legacy in ("btn-info", "btn-outline-info", "opacity-50"):
+            self.assertNotIn(legacy, js)
+
+    def test_script_inits_immediately_without_bind_once_guard(self):
+        js = (Path(settings.BASE_DIR) / "static/js/employee-record-payment.js").read_text()
+        # Runs on script execution (boosted visits re-insert the tag after htmx:load).
+        self.assertTrue(js.rstrip().endswith("})();"))
+        self.assertNotIn("window.__", js)
+        self.assertNotIn("htmx.onLoad", js)
+
+    def test_new_strings_are_translated(self):
+        po = (Path(settings.BASE_DIR) / "locale/ar/LC_MESSAGES/django.po").read_text()
+        for msgid in ("Current balance (owed to shop)", "Add note (optional)"):
+            self.assertIn('msgid "%s"' % msgid, po)
+
+
+class EmployeePaymentCssTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.css = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+
+    def _assert_decl(self, selector, *needles):
+        bodies = _bodies(self.css, selector)
+        self.assertTrue(bodies, f"no rule for {selector} in employee.css")
+        joined = " ".join(" ".join(b.split()) for b in bodies)
+        for needle in needles:
+            self.assertIn(needle, joined, f"{selector}: {needle}")
+
+    def test_payment_tiles_are_roomy_44px_targets_in_a_wrapping_grid(self):
+        self._assert_decl("#rd-pay-sub-payment-tiles", "display: grid", "repeat(auto-fill")
+        joined = " ".join(_bodies(self.css, "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile"))
+        size = float(re.search(r"min-height:\s*([\d.]+)rem", joined).group(1))
+        self.assertGreaterEqual(size, 3.45)
+
+    def test_payment_tiles_dim_when_muted(self):
+        self._assert_decl("#rd-pay-sub-payment-tiles.is-muted", "opacity: 0.5")
+
+    def test_dock_buttons_share_the_entry_dock_rule(self):
+        self._assert_decl(".rd-entry-dock .rd-dock-btn", "min-height: 3.6rem")
+
+    def test_record_page_pins_the_dock_to_the_bottom(self):
+        self._assert_decl(".rd-pay-sub-dock", "margin-block-start: auto")
+        self._assert_decl(".rd-employee-main:has(.rd-pay-sub)", "display: flex", "flex-direction: column")
+
+    def test_autocomplete_rows_are_touch_sized(self):
+        self._assert_decl(".rd-pay-sub-ac .list-group-item", "min-height: 3.45rem")
+
+    def test_actions_and_links_are_touch_sized(self):
+        self._assert_decl(".rd-pay-actions .btn", "min-height: 3.45rem")
+        self._assert_decl(".rd-pay-sub-recent__all", "min-height: 3.45rem")
+        self._assert_decl(".rd-pay-sub-notes .employee-notes-summary", "min-height: 3.45rem")
+
+    def test_balance_row_has_a_hidden_guard(self):
+        self._assert_decl(".rd-pay-sub-balance[hidden]", "display: none")

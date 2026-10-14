@@ -1,3 +1,5 @@
+// Runs as soon as the script executes: a boosted visit re-inserts this tag after
+// htmx:load has fired, so an onLoad-only init would miss the first visit.
 (function () {
   var root = document.getElementById("rd-pay-sub-page");
   if (!root) return;
@@ -18,7 +20,9 @@
   var tmr;
 
   function isPaySubViaEmployee() {
-    return !!(empPayHid && empPayHid.value);
+    // The edit page renders the hidden field as "False" when the payment went to a method.
+    var v = empPayHid ? String(empPayHid.value || "").toLowerCase() : "";
+    return v !== "" && v !== "false" && v !== "0";
   }
   function syncPaySubNote(viaEmployee) {
     if (payNoteMethod) payNoteMethod.hidden = !!viaEmployee;
@@ -28,11 +32,10 @@
     if (!empPayHid || !empPayBtn) return;
     if (enabled) {
       empPayHid.value = "1";
-      empPayBtn.classList.remove("btn-outline-info");
-      empPayBtn.classList.add("btn-info");
+      empPayBtn.classList.add("is-on");
       empPayBtn.setAttribute("aria-pressed", "true");
       empPayBtn.textContent = empPayBtn.getAttribute("data-on-label") || "ON";
-      if (payTiles) payTiles.classList.add("opacity-50");
+      if (payTiles) payTiles.classList.add("is-muted");
       if (pmHid) pmHid.value = "";
       document.querySelectorAll("#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile").forEach(function (t) {
         t.classList.remove("is-active");
@@ -41,11 +44,10 @@
       syncPaySubNote(true);
     } else {
       empPayHid.value = "";
-      empPayBtn.classList.remove("btn-info");
-      empPayBtn.classList.add("btn-outline-info");
+      empPayBtn.classList.remove("is-on");
       empPayBtn.setAttribute("aria-pressed", "false");
       empPayBtn.textContent = empPayBtn.getAttribute("data-off-label") || "Employee";
-      if (payTiles) payTiles.classList.remove("opacity-50");
+      if (payTiles) payTiles.classList.remove("is-muted");
       if (empPayHint) empPayHint.hidden = true;
       syncPaySubNote(false);
     }

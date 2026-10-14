@@ -1,8 +1,8 @@
 {% load i18n %}
 {% if p.pk in editable_payment_ids %}
-  <div class="d-flex gap-2 justify-content-end mt-1">
+  <div class="rd-pay-actions">
     {% if p.status == "awaiting" %}
-      <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_payment_edit' p.pk %}">{% trans "Edit" %}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:employee_payment_edit' p.pk %}">{% trans "Edit" %}</a>
     {% endif %}
     {% if p.status == "awaiting" or p.status == "rejected" or p.resulting_payment_id %}
       <form
