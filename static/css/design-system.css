@@ -27,8 +27,12 @@ html {
 /* -> the sidebar loses its 1040 stacking and renders under dashboard cards.  */
 /* -------------------------------------------------------------------------- */
 :root {
-  --rd-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --rd-font-ar: "Cairo", "Inter", system-ui, sans-serif;
+  /* Pearl type stack: IBM Plex Sans Arabic (Arabic body), Noto Kufi Arabic
+     (Arabic headings), Inter Tight (numbers + English body). */
+  --rd-font: "Inter Tight", system-ui, sans-serif;
+  --rd-font-ar: "IBM Plex Sans Arabic", "Inter Tight", system-ui, sans-serif;
+  --rd-font-heading: "Noto Kufi Arabic", var(--rd-font-ar);
+  --rd-font-num: "Inter Tight", system-ui, sans-serif;
 
   --rd-radius-xs: 0.375rem;
   --rd-radius-sm: 0.625rem;
@@ -46,86 +50,117 @@ html {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — light                                                             */
+/* Tokens — light (Pearl: warm off-white, ink primary, orange accent)         */
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="light"] {
   color-scheme: light;
 
-  --rd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --rd-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --rd-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --rd-shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.1);
+  /* Pearl core */
+  --rd-ink: #0a0a0a;
+  --rd-muted: #6b6b68;
+  --rd-faint: #a3a39e;
+  --rd-surface: #ffffff;
+  --rd-surface-2: #f4f4f2;
+  --rd-accent: #ff5a1f;
+  --rd-accent-soft: rgba(255, 90, 31, 0.1);
+  /* Text-safe orange (>= 4.5:1 on surface). Orange fills are accent only. */
+  --rd-accent-ink: #c2410c;
+  --rd-primary-bg: #0a0a0a;
+  --rd-primary-fg: #ffffff;
 
-  --bs-body-bg: #f4f6f9;
-  --bs-body-color: #0f172a;
-  --bs-secondary-bg: #ffffff;
-  --bs-tertiary-bg: #eef1f6;
-  --bs-border-color: rgba(15, 23, 42, 0.08);
-  --bs-border-color-translucent: rgba(15, 23, 42, 0.1);
+  --rd-shadow-card: 0 1px 2px rgba(10, 10, 10, 0.04), 0 1px 1px rgba(10, 10, 10, 0.02);
+  --rd-shadow-xs: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --rd-shadow-sm: 0 2px 8px rgba(10, 10, 10, 0.06);
+  --rd-shadow-md: 0 8px 24px rgba(10, 10, 10, 0.08);
+  --rd-shadow-lg: 0 16px 48px rgba(10, 10, 10, 0.1);
 
-  --rd-accent: #4f46e5;
-  --rd-accent-hover: #4338ca;
-  --rd-accent-muted: rgba(79, 70, 229, 0.12);
-  --rd-accent-2: #0891b2;
-  /* Text-safe cyan: fill behind white text / small text on a cyan tint (≥ 4.5:1). */
-  --rd-accent-2-strong: #0e7490;
-  --rd-accent-2-strong-rgb: 14, 116, 144;
-  --rd-accent-2-ink: #155e75;
-  --rd-success: #059669;
-  --rd-success-soft: rgba(5, 150, 105, 0.12);
-  --rd-warning: #d97706;
-  --rd-warning-soft: rgba(217, 119, 6, 0.14);
+  --bs-body-bg: #fafaf8;
+  --bs-body-color: var(--rd-ink);
+  --bs-secondary-color: var(--rd-muted);
+  --bs-secondary-bg: var(--rd-surface);
+  --bs-tertiary-bg: var(--rd-surface-2);
+  --bs-border-color: #ececea;
+  --bs-border-color-translucent: rgba(10, 10, 10, 0.08);
+
+  /* Legacy accent names — kept so existing CSS/templates keep working */
+  --rd-accent-hover: #e84a10;
+  --rd-accent-muted: var(--rd-accent-soft);
+  --rd-accent-2: #ff5a1f;
+  /* Text-safe orange: fill behind white text / small text on an orange tint (>= 4.5:1). */
+  --rd-accent-2-strong: #c2410c;
+  --rd-accent-2-strong-rgb: 194, 65, 12;
+  --rd-accent-2-ink: #9a3412;
+
+  --rd-success: #0a7a3e;
+  --rd-success-soft: #e8f6ee;
+  --rd-warning: #c2410c;
+  --rd-warning-soft: #fff0e9;
   --rd-warning-ink: var(--rd-warning);
-  --rd-danger: #dc2626;
-  --rd-danger-soft: rgba(220, 38, 38, 0.1);
-  --rd-info: #0284c7;
-  --rd-info-soft: rgba(2, 132, 199, 0.12);
+  --rd-danger: #b91c1c;
+  --rd-danger-soft: #fdecec;
+  --rd-info: var(--rd-ink);
+  --rd-info-soft: var(--rd-surface-2);
 
-  --bs-primary: #4f46e5;
-  --bs-primary-rgb: 79, 70, 229;
-  --bs-link-color: #4f46e5;
-  --bs-link-hover-color: #3730a3;
+  --bs-primary: var(--rd-ink);
+  --bs-primary-rgb: 10, 10, 10;
+  --bs-link-color: var(--rd-ink);
+  --bs-link-hover-color: var(--rd-accent-ink);
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — dark (layered surfaces, not pure black)                           */
+/* Tokens — dark (layered warm surfaces, not pure black)                      */
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="dark"] {
   color-scheme: dark;
 
+  /* Pearl core */
+  --rd-ink: #f5f5f2;
+  --rd-muted: #9a9a94;
+  --rd-faint: #6b6b66;
+  --rd-surface: #151514;
+  --rd-surface-2: #1f1f1d;
+  --rd-accent: #ff6a33;
+  --rd-accent-soft: rgba(255, 106, 51, 0.15);
+  --rd-accent-ink: #ff8a5c;
+  --rd-primary-bg: #f5f5f2;
+  --rd-primary-fg: #0a0a0a;
+
+  --rd-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --rd-shadow-xs: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --rd-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
   --rd-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
   --rd-shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.55);
 
-  --bs-body-bg: #0c0f14;
-  --bs-body-color: #e8eaef;
-  --bs-secondary-bg: #141a22;
-  --bs-tertiary-bg: #1a222c;
-  --bs-border-color: rgba(255, 255, 255, 0.08);
+  --bs-body-bg: #0b0b0a;
+  --bs-body-color: var(--rd-ink);
+  --bs-secondary-color: var(--rd-muted);
+  --bs-secondary-bg: var(--rd-surface);
+  --bs-tertiary-bg: var(--rd-surface-2);
+  --bs-border-color: #2a2a27;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
 
-  --rd-accent: #818cf8;
-  --rd-accent-hover: #a5b4fc;
-  --rd-accent-muted: rgba(129, 140, 248, 0.15);
-  --rd-accent-2: #22d3ee;
-  --rd-accent-2-strong: #22d3ee;
-  --rd-accent-2-strong-rgb: 34, 211, 238;
-  --rd-accent-2-ink: #22d3ee;
-  --rd-success: #34d399;
-  --rd-success-soft: rgba(52, 211, 153, 0.14);
+  /* Legacy accent names — kept so existing CSS/templates keep working */
+  --rd-accent-hover: #ff8a5c;
+  --rd-accent-muted: var(--rd-accent-soft);
+  --rd-accent-2: #ff6a33;
+  --rd-accent-2-strong: #ff8a5c;
+  --rd-accent-2-strong-rgb: 255, 138, 92;
+  --rd-accent-2-ink: #ff8a5c;
+
+  --rd-success: #4ade80;
+  --rd-success-soft: rgba(74, 222, 128, 0.12);
   --rd-warning: #fbbf24;
-  --rd-warning-soft: rgba(251, 191, 36, 0.14);
+  --rd-warning-soft: rgba(251, 191, 36, 0.12);
   --rd-warning-ink: #fcd34d;
   --rd-danger: #f87171;
   --rd-danger-soft: rgba(248, 113, 113, 0.12);
-  --rd-info: #38bdf8;
-  --rd-info-soft: rgba(56, 189, 248, 0.14);
+  --rd-info: var(--rd-ink);
+  --rd-info-soft: var(--rd-surface-2);
 
-  --bs-primary: #818cf8;
-  --bs-primary-rgb: 129, 140, 248;
-  --bs-link-color: #a5b4fc;
-  --bs-link-hover-color: #c7d2fe;
+  --bs-primary: var(--rd-ink);
+  --bs-primary-rgb: 245, 245, 242;
+  --bs-link-color: var(--rd-ink);
+  --bs-link-hover-color: var(--rd-accent-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -153,7 +188,31 @@ body.rd-body,
 body.app-shell {
   font-feature-settings: "kern" 1, "liga" 1;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Latin tracking only — Arabic letters must never be tracked (breaks joining). */
+html:not([lang="ar"]) body.rd-body,
+html:not([lang="ar"]) body.app-shell {
   letter-spacing: -0.01em;
+}
+
+/* Arabic headings use Noto Kufi Arabic (600/700 only). */
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] .rd-heading-xl,
+html[lang="ar"] .rd-heading-lg,
+html[lang="ar"] .rd-card-header {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4 {
+  font-weight: 700;
 }
 
 .rd-heading-xl {
@@ -172,6 +231,18 @@ body.app-shell {
 .rd-text-muted {
   color: var(--bs-secondary-color) !important;
   font-size: 0.875rem;
+}
+
+/* Numbers always use Inter Tight (Arabic UI included) with tabular figures. */
+.tabular-nums,
+.rd-stat-value,
+.kpi-success,
+.kpi-warning,
+.kpi-danger,
+.kpi-info,
+.kpi-muted,
+.kpi-expense {
+  font-family: var(--rd-font-num);
 }
 
 .tabular-nums {
