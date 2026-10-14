@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 06:05+0300\n"
+"POT-Creation-Date: 2026-10-14 06:14+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -297,7 +297,7 @@ msgstr "عنوان IP"
 
 #: audit/models.py:73 customers/models.py:126 customers/models.py:304
 #: employees/models.py:37 employees/models.py:119 inventory/models.py:126
-#: inventory/models.py:192 sales/models.py:191 sales/models.py:302
+#: inventory/models.py:192 sales/models.py:191 sales/models.py:344
 msgid "created at"
 msgstr "تاريخ الإنشاء"
 #: audit/models.py:76
@@ -413,7 +413,7 @@ msgstr "الرصيد الحالي"
 #: companies/models.py:34 customers/models.py:16 customers/models.py:119
 #: customers/models.py:186 customers/models.py:295 employees/models.py:110
 #: expenses/models.py:19 inventory/models.py:118 reports/models.py:17
-#: sales/models.py:193 sales/models.py:293
+#: sales/models.py:193 sales/models.py:335
 msgid "notes"
 msgstr "ملاحظات"
 #: companies/models.py:36
@@ -437,7 +437,7 @@ msgstr ""
 msgid "active"
 msgstr "نشط"
 #: companies/models.py:57 companies/models.py:87 sales/models.py:49
-#: sales/models.py:279
+#: sales/models.py:321
 msgid "company"
 msgstr "الشركة"
 #: companies/models.py:58
@@ -1181,7 +1181,7 @@ msgstr ""
 
 #: customers/models.py:32 customers/models.py:302 employees/models.py:117
 #: expenses/models.py:25 inventory/models.py:124 sales/models.py:189
-#: sales/models.py:300
+#: sales/models.py:342
 msgid "created by"
 msgstr "أنشأه"
 #: customers/models.py:38 customers/models.py:56 customers/models.py:93
@@ -1210,7 +1210,7 @@ msgid "customer phones"
 msgstr "هواتف الزبائن"
 
 #: customers/models.py:95 customers/models.py:162 customers/models.py:274
-#: employees/models.py:81 expenses/models.py:13 sales/models.py:286
+#: employees/models.py:81 expenses/models.py:13 sales/models.py:328
 msgid "amount"
 msgstr "المبلغ"
 #: customers/models.py:100 customers/models.py:167 sales/models.py:25
@@ -1321,18 +1321,18 @@ msgstr "سحب"
 msgid "Payment"
 msgstr "دفعة"
 #: customers/models.py:259 customers/views/statements.py:253
-#: employees/models.py:66 inventory/models.py:68 sales/models.py:266
+#: employees/models.py:66 inventory/models.py:68 sales/models.py:308
 #: templates/customers/customer_detailed_invoice.html:74
 #: templates/customers/customer_statement.html:150
 msgid "Adjustment"
 msgstr "تسوية"
 #: customers/models.py:260 customers/views/statements.py:257
-#: employees/models.py:67 sales/models.py:267
+#: employees/models.py:67 sales/models.py:309
 #: templates/customers/customer_detailed_invoice.html:75
 #: templates/customers/customer_statement.html:151
 msgid "Reversal"
 msgstr "عكس حركة"
-#: customers/models.py:269 employees/models.py:76 sales/models.py:282
+#: customers/models.py:269 employees/models.py:76 sales/models.py:324
 msgid "type"
 msgstr "النوع"
 #: customers/models.py:277
@@ -1340,7 +1340,7 @@ msgid "Always stored positive; entry_type signs it."
 msgstr "تُخزَّن دائماً موجبة؛ نوع الحركة هو الذي يحدد إشارتها."
 
 #: customers/models.py:285 employees/models.py:98 inventory/models.py:114
-#: inventory/models.py:180 sales/models.py:214
+#: inventory/models.py:180 sales/models.py:249
 msgid "sale"
 msgstr "عملية بيع"
 #: customers/models.py:293
@@ -1568,7 +1568,7 @@ msgstr "المرجع"
 msgid "To employee"
 msgstr "موظف"
 
-#: customers/views/statements.py:270 sales/models.py:272
+#: customers/views/statements.py:270 sales/models.py:314
 #: templates/companies/partials/company_detail_general.html:32
 #: templates/customers/customer_detailed_invoice.html:62
 #: templates/customers/customer_statement.html:140
@@ -2563,6 +2563,18 @@ msgstr "بنك فلسطين"
 msgid "Palpay"
 msgstr "بال باي"
 
+#: sales/charging.py:74
+msgid "This form was already submitted."
+msgstr "تم إرسال هذا النموذج مسبقاً."
+#: sales/charging.py:127
+msgid "This form has expired. Reload the page and try again."
+msgstr "انتهت صلاحية النموذج. أعد تحميل الصفحة وحاول مجدداً."
+#: sales/charging.py:132
+msgid "This company cannot be charged through its provider."
+msgstr "لا يمكن الشحن لهذه الشركة عبر مزوّدها."
+#: sales/charging.py:203
+msgid "Only charges in progress or unverified can be resolved."
+msgstr "يمكن حسم الشحنات الجارية أو غير المؤكدة فقط."
 #: sales/forms.py:21 sales/forms.py:235
 #: templates/customers/customer_detail.html:58
 #: templates/customers/customer_statement.html:70
@@ -2738,35 +2750,77 @@ msgstr "تاريخ الإلغاء"
 #: sales/models.py:210
 msgid "cancelled by"
 msgstr "ألغاه"
+#: sales/models.py:214 sales/models.py:313
+msgid "Manual"
+msgstr "يدوي"
 #: sales/models.py:215
+msgid "Charged via provider"
+msgstr "شحن عبر المزوّد"
+#: sales/models.py:218
+msgid "Not charged"
+msgstr "لم يُشحن"
+#: sales/models.py:219
+msgid "Charging"
+msgstr "جارٍ الشحن"
+#: sales/models.py:220
+msgid "Charged"
+msgstr "تم الشحن"
+#: sales/models.py:221
+msgid "Charge failed"
+msgstr "فشل الشحن"
+#: sales/models.py:222
+msgid "Charge unverified"
+msgstr "شحن غير مؤكد"
+#: sales/models.py:225
+msgid "entry mode"
+msgstr "طريقة الإدخال"
+#: sales/models.py:231
+msgid "charge status"
+msgstr "حالة الشحن"
+#: sales/models.py:239
+msgid "charge job"
+msgstr "مهمة الشحن"
+#: sales/models.py:240
+msgid "provider reference"
+msgstr "مرجع المزوّد"
+#: sales/models.py:241
+msgid "provider plan"
+msgstr "باقة المزوّد"
+#: sales/models.py:243
+msgid "provider cost"
+msgstr "تكلفة المزوّد"
+#: sales/models.py:245
+msgid "charge checked at"
+msgstr "وقت آخر فحص للشحن"
+#: sales/models.py:246
+msgid "charge message"
+msgstr "رسالة الشحن"
+#: sales/models.py:250
 msgid "sales"
 msgstr "المبيعات"
-#: sales/models.py:264
+#: sales/models.py:306
 msgid "Deposit"
 msgstr "إيداع"
-#: sales/models.py:265
+#: sales/models.py:307
 msgid "Deduction"
 msgstr "خصم"
-#: sales/models.py:270 templates/inventory/cards.html:46
+#: sales/models.py:312 templates/inventory/cards.html:46
 #: templates/inventory/cards.html:78 templates/inventory/line_detail.html:147
 msgid "Sale"
 msgstr "بيع"
-#: sales/models.py:271
-msgid "Manual"
-msgstr "يدوي"
-#: sales/models.py:273
+#: sales/models.py:315
 msgid "Cancellation"
 msgstr "إلغاء"
-#: sales/models.py:288
+#: sales/models.py:330
 msgid "reference type"
 msgstr "نوع المرجع"
-#: sales/models.py:292
+#: sales/models.py:334
 msgid "reference id"
 msgstr "معرّف المرجع"
-#: sales/models.py:305
+#: sales/models.py:347
 msgid "balance transaction"
 msgstr "حركة رصيد"
-#: sales/models.py:306
+#: sales/models.py:348
 msgid "balance transactions"
 msgstr "حركات الرصيد"
 #: sales/phone_validation.py:21 templates/sales/employee_entry.html:15

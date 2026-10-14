@@ -193,6 +193,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "providers.tasks.purge_old_jobs",
         "schedule": 86400.0,
     },
+    "sales-verify-charges": {
+        "task": "sales.tasks.verify_unverified_charges",
+        "schedule": 120.0,
+    },
 }
 
 REFRESH_ASYNC_ENABLED = os.environ.get("REFRESH_ASYNC_ENABLED", "1").strip() != "0"

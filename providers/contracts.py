@@ -93,6 +93,14 @@ class BaseAdapter:
         raise NotImplementedError
 
     def charge(self, ctx: ChargeContext) -> ChargeOutcome:
+        """Charge ``ctx.phone`` once (the provider finds the line by number).
+
+        Raise ``AuthRequired`` only if no charge request reached the provider
+        (the sale is then reversed). Once a request may have been sent, any
+        failure must be ``TransientError`` (the charge stays unverified until
+        ``check_charge`` settles it); ``PermanentError`` means the provider
+        definitely rejected it.
+        """
         raise NotImplementedError
 
     def check_charge(self, ctx: ChargeContext, provider_ref: str) -> ChargeOutcome:

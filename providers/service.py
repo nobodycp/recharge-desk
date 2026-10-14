@@ -6,6 +6,7 @@ import time
 
 from providers.contracts import (
     RECONCILE_NOT_SUPPORTED,
+    AuthRequired,
     Capability,
     ChargeContext,
     ChargeOutcome,
@@ -80,18 +81,46 @@ def refresh(
     return _error_response(error)
 
 
+def _not_sent_code(exc: Exception) -> str:
+    if isinstance(exc, AuthRequired):
+        return "auth_required"
+    if isinstance(exc, TransientError):
+        return _error_text(exc)
+    return exc.__class__.__name__
+
+
 def charge(
     provider_key: str, ctx: ChargeContext, budget: float = SYNC_BUDGET_SECONDS
 ) -> ChargeOutcome:
+    """Charge once; never retried.
+
+    ``FAILED`` when the provider rejected the charge or no request ever reached
+    it (login busy/failed, ``AuthRequired`` that persists after a login: message
+    ``not_sent:<code>``); ``UNVERIFIED`` when a request may have been sent.
+    """
     adapter = get_adapter(provider_key)
     deadline = time.monotonic() + budget
+    may_have_sent = False
+
+    def attempt() -> ChargeOutcome:
+        nonlocal may_have_sent
+        try:
+            return adapter.charge(ctx)
+        except AuthRequired:
+            raise
+        except BaseException:
+            may_have_sent = True
+            raise
+
     try:
-        return run_authenticated(
-            adapter, lambda: adapter.charge(ctx), lock_wait=_lock_wait(deadline)
-        )
+        return run_authenticated(adapter, attempt, lock_wait=_lock_wait(deadline))
     except PermanentError as exc:
         return ChargeOutcome(result=ChargeResult.FAILED, message=_error_text(exc))
     except Exception as exc:
+        if not may_have_sent:
+            message = f"not_sent:{_not_sent_code(exc)}"
+            log.warning("provider %s charge not sent: %s", provider_key, message)
+            return ChargeOutcome(result=ChargeResult.FAILED, message=message)
         log.warning("provider %s charge unverified: %s", provider_key, _error_text(exc))
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
 

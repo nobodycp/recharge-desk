@@ -210,6 +210,41 @@ class Sale(models.Model):
         verbose_name=_("cancelled by"),
     )
 
+    class EntryMode(models.TextChoices):
+        MANUAL = "manual", _("Manual")
+        AUTO_CHARGE = "auto_charge", _("Charged via provider")
+
+    class ChargeStatus(models.TextChoices):
+        NONE = "", _("Not charged")
+        PROCESSING = "processing", _("Charging")
+        SUCCESS = "success", _("Charged")
+        FAILED = "failed", _("Charge failed")
+        UNVERIFIED = "unverified", _("Charge unverified")
+
+    entry_mode = models.CharField(
+        _("entry mode"),
+        max_length=20,
+        choices=EntryMode.choices,
+        default=EntryMode.MANUAL,
+    )
+    charge_status = models.CharField(
+        _("charge status"),
+        max_length=20,
+        choices=ChargeStatus.choices,
+        default=ChargeStatus.NONE,
+        blank=True,
+        db_index=True,
+    )
+    # providers.ProviderJob id; no FK so sales stays independent of the gateway.
+    charge_job_id = models.UUIDField(_("charge job"), null=True, blank=True, db_index=True)
+    charge_provider_ref = models.CharField(_("provider reference"), max_length=100, blank=True)
+    charge_plan_name = models.CharField(_("provider plan"), max_length=200, blank=True)
+    charge_provider_cost = models.DecimalField(
+        _("provider cost"), max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    charge_checked_at = models.DateTimeField(_("charge checked at"), null=True, blank=True)
+    charge_message = models.CharField(_("charge message"), max_length=255, blank=True)
+
     class Meta:
         verbose_name = _("sale")
         verbose_name_plural = _("sales")
@@ -234,6 +269,13 @@ class Sale(models.Model):
 
     def __str__(self):
         return f"{self.reference_number} — {self.product.display_name}"
+
+    @property
+    def charge_cost_mismatch(self) -> bool:
+        return (
+            self.charge_provider_cost is not None
+            and self.charge_provider_cost != self.cost_price_snapshot
+        )
 
     @property
     def is_employee_modifiable(self) -> bool:

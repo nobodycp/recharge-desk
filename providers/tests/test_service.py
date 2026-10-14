@@ -22,8 +22,10 @@ from providers.contracts import (
     TransientError,
 )
 from providers.redis_conn import get_redis
+from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 from providers.sessions import SessionStore
+from providers.tests.fakes import FakeChargeAdapter
 
 TOTP_SECRET = "JBSWY3DPEHPK3PXP"
 OLD_SESSION_FILE = Path("/tmp") / ".sky_sales_session.json"
@@ -174,6 +176,70 @@ class ServiceTests(TestCase):
         ):
             outcome = service.charge("stub", _ctx())
         self.assertEqual(outcome.result, ChargeResult.UNVERIFIED)
+
+    def test_charge_never_sent_because_login_lock_busy_is_failed(self):
+        fake = FakeChargeAdapter.configured(
+            needs_login=True, raise_before_send=AuthRequired("expired")
+        )
+        get_redis().set("provider:login-lock:fake", "other-worker", ex=30)
+        with patch.dict(ADAPTERS, {"fake": fake}), self.assertLogs(
+            "providers.service", level="WARNING"
+        ):
+            outcome = service.charge("fake", _ctx(), budget=0.2)
+        self.assertEqual(outcome.result, ChargeResult.FAILED)
+        self.assertEqual(outcome.message, "not_sent:login_busy")
+        self.assertEqual(fake.sent, 0)
+        self.assertEqual(fake.logins, 0)
+
+    def test_charge_never_sent_because_login_failed_is_failed(self):
+        fake = FakeChargeAdapter.configured(
+            needs_login=True,
+            raise_before_send=AuthRequired("expired"),
+            login_error=RuntimeError("bad otp"),
+        )
+        with patch.dict(ADAPTERS, {"fake": fake}), patch(
+            "providers.sessions.accounts.record_login"
+        ), self.assertLogs("providers.sessions", level="WARNING"), self.assertLogs(
+            "providers.service", level="WARNING"
+        ):
+            outcome = service.charge("fake", _ctx())
+        self.assertEqual(outcome.result, ChargeResult.FAILED)
+        self.assertEqual(outcome.message, "not_sent:login_failed")
+        self.assertEqual(fake.sent, 0)
+
+    def test_charge_auth_required_after_fresh_login_is_failed_not_sent(self):
+        fake = FakeChargeAdapter.configured(
+            needs_login=True, raise_before_send=AuthRequired("expired")
+        )
+        with patch.dict(ADAPTERS, {"fake": fake}), patch(
+            "providers.sessions.accounts.record_login"
+        ), self.assertLogs("providers.service", level="WARNING"):
+            outcome = service.charge("fake", _ctx())
+        self.assertEqual(outcome.result, ChargeResult.FAILED)
+        self.assertEqual(outcome.message, "not_sent:auth_required")
+        self.assertEqual(fake.logins, 1)
+        self.assertEqual(len(fake.charges), 2)
+        self.assertEqual(fake.sent, 0)
+
+    def test_charge_error_after_request_sent_stays_unverified(self):
+        # Even a login-looking code is unverified once the adapter sent the request.
+        for error in (TransientError("login_failed"), TransientError("timeout")):
+            fake = FakeChargeAdapter.configured(raise_after_send=error)
+            with patch.dict(ADAPTERS, {"fake": fake}), self.assertLogs(
+                "providers.service", level="WARNING"
+            ):
+                outcome = service.charge("fake", _ctx())
+            self.assertEqual(outcome.result, ChargeResult.UNVERIFIED)
+            self.assertEqual(fake.sent, 1)
+
+    def test_charge_never_retries_after_send(self):
+        fake = FakeChargeAdapter.configured(raise_after_send=TransientError("timeout"))
+        with patch.dict(ADAPTERS, {"fake": fake}), patch(
+            "providers.service.time.sleep"
+        ) as sleep, self.assertLogs("providers.service", level="WARNING"):
+            service.charge("fake", _ctx())
+        self.assertEqual(len(fake.charges), 1)
+        sleep.assert_not_called()
 
     def test_check_charge_errors_are_unverified(self):
         with _with_adapter(StubAdapter(PermanentError("x"))), self.assertLogs(
