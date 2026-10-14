@@ -25,7 +25,7 @@ from phone_refresh.services.refresh_service import (
     internal_result_extras,
 )
 from providers.contracts import RawResponse
-from providers.models import ProviderJob
+from providers.models import ProviderConnection, ProviderJob
 from providers.redis_conn import get_redis
 
 User = get_user_model()
@@ -258,9 +258,9 @@ class InternalTestViewTests(_ScreenTestCase):
 class ProviderTestViewTests(_ScreenTestCase):
     @patch(PROVIDER_REFRESH, return_value=_raw(text=SECRET_BODY))
     def test_provider_test_forces_provider_and_bypasses_off_toggle(self, refresh):
-        from phone_refresh.models import ProviderConfig
-
-        ProviderConfig.objects.filter(provider="layan").update(is_enabled=False)
+        connection = ProviderConnection.for_key("layan")
+        connection.refresh_enabled = False
+        connection.save()
         response = self._post(
             "phone_refresh:providers_test", {"phone": PHONE, "provider": "layan"}
         )

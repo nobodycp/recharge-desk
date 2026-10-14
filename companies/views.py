@@ -86,8 +86,11 @@ def company_detail(request, pk):
 
 def _supports_reconcile(company, provider_key: str) -> bool:
     """Each reconcile page serves only its own provider's companies."""
-    return provider_service.company_supports(
-        company, Capability.RECONCILE, provider=provider_key
+    return (
+        provider_service.service_state(
+            company, Capability.RECONCILE, provider=provider_key
+        ).code
+        == "active"
     )
 
 

@@ -15,7 +15,6 @@ from django.utils import timezone
 
 from phone_refresh.models import (
     CustomerMessage,
-    ProviderConfig,
     ProviderResponseRule,
     RefreshLog,
     RefreshSource,
@@ -23,7 +22,7 @@ from phone_refresh.models import (
     SystemSettings,
 )
 from providers import service as provider_service
-from providers.contracts import RawResponse
+from providers.contracts import Capability, RawResponse
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 from phone_refresh.services.pattern_matcher import match_response
@@ -327,7 +326,9 @@ def precheck(
             )
 
     # 4b. Per-provider on/off toggle (skipped on admin bypass).
-    if not bypass_provider_off and not ProviderConfig.is_provider_enabled(provider_key):
+    if not bypass_provider_off and not provider_service.service_enabled(
+        provider_key, Capability.REFRESH
+    ):
         return (
             _record_and_return(
                 phone=phone,

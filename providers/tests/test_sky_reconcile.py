@@ -14,10 +14,19 @@ from providers import service
 from providers.adapters.sky.adapter import SkyAdapter
 from providers.adapters.sky.reconcile import parse_sky_balance_rows, reconcile_sky_report
 from providers.contracts import AuthRequired, TransientError
+from providers.crypto import encrypt
+from providers.models import ProviderConnection
 from providers.redis_conn import get_redis
 from sales.models import PaymentMethod, Sale
 
 User = get_user_model()
+
+
+def _save_sky_credentials():
+    connection = ProviderConnection.for_key("sky")
+    connection.username = "user"
+    connection.secret_encrypted = encrypt("pass")
+    connection.save()
 
 
 def _row(
@@ -118,6 +127,7 @@ class SkyReconcileParseTests(TestCase):
 
 class SkyReconcileMatchTests(TestCase):
     def setUp(self):
+        _save_sky_credentials()
         self.company = Company.objects.create(
             name="Sky Co",
             opening_balance=1000,
@@ -304,6 +314,7 @@ class _FakeSkyAdapter(SkyAdapter):
 class FetchSkyRowsTests(TestCase):
     def setUp(self):
         get_redis().flushall()
+        _save_sky_credentials()
 
     def test_logs_in_once_then_fetches(self):
         company = Company.objects.create(

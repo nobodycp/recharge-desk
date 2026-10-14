@@ -13,7 +13,17 @@ from providers.contracts import (
     Capability,
     PermanentError,
 )
+from providers.crypto import encrypt
+from providers.models import ProviderConnection
 from providers.redis_conn import get_redis
+
+
+def _save_credentials(key):
+    connection = ProviderConnection.for_key(key)
+    connection.username = "user"
+    connection.secret_encrypted = encrypt("pass")
+    connection.save()
+    return connection
 
 
 def _company(name, provider=""):
@@ -22,23 +32,35 @@ def _company(name, provider=""):
     )
 
 
-class CompanySupportsTests(TestCase):
-    def test_company_supports_uses_field_not_name(self):
+class ServiceStateMappingTests(TestCase):
+    def test_service_state_uses_field_not_name(self):
         by_name = _company("Sky Mobile")
         explicit = _company("Sky Mobile", "sky")
-        self.assertFalse(service.company_supports(by_name, Capability.RECONCILE))
-        self.assertTrue(service.company_supports(explicit, Capability.RECONCILE))
+        _save_credentials("sky")
+        self.assertEqual(
+            service.service_state(by_name, Capability.RECONCILE).code, "unsupported"
+        )
+        self.assertEqual(
+            service.service_state(explicit, Capability.RECONCILE).code, "active"
+        )
 
-    def test_company_supports_layan_and_unknown_provider(self):
-        self.assertTrue(
-            service.company_supports(_company("x", "layan"), Capability.RECONCILE)
-        )
-        self.assertFalse(
-            service.company_supports(_company("x", "aloha"), Capability.RECONCILE)
-        )
-        self.assertFalse(
-            service.company_supports(_company("x", "nope"), Capability.RECONCILE)
-        )
+    def test_service_state_layan_and_unknown_provider(self):
+        def code(provider):
+            return service.service_state(
+                _company("x", provider), Capability.RECONCILE
+            ).code
+
+        self.assertEqual(code("layan"), "active")
+        self.assertEqual(code("aloha"), "unsupported")
+        self.assertEqual(code("nope"), "unsupported")
+
+    def test_reconcile_with_switch_off_is_not_supported(self):
+        connection = ProviderConnection.for_key("layan")
+        connection.reconcile_enabled = False
+        connection.save()
+        with self.assertRaises(PermanentError) as ctx:
+            service.reconcile(_company("L", "layan"), date(2026, 8, 1), date(2026, 8, 31))
+        self.assertEqual(str(ctx.exception), RECONCILE_NOT_SUPPORTED)
 
 
 class ReconcileServiceTests(TestCase):
@@ -66,6 +88,7 @@ class ReconcileServiceTests(TestCase):
             def reconcile(self, company, period_from, period_to, **opts):
                 return ("result", opts)
 
+        _save_credentials("sky")
         company = _company("Sky Co", "sky")
         with patch("providers.service.get_adapter", return_value=Fake()), patch(
             "providers.service.run_authenticated", side_effect=lambda a, fn, lock_wait: fn()
@@ -122,6 +145,7 @@ class CompanyDetailButtonsTests(TestCase):
             defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
         )
         self.client.force_login(user)
+        _save_credentials("sky")
         by_name = _company("Sky Mobile")
         explicit = _company("Other", "sky")
         resp = self.client.get(reverse("companies:company_detail", args=[by_name.pk]))

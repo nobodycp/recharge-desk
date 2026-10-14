@@ -18,10 +18,9 @@ from audit.services import record as audit_record
 from core.sale_workflow import finalize_sale_after_entry
 from providers import jobs
 from providers.contracts import Capability, ChargeContext, ChargeOutcome, ChargeResult
-from providers.models import ProviderConnection, ProviderJob
-from providers.registry import ADAPTERS
+from providers.models import ProviderJob
 from providers.sanitize import scrub
-from providers.service import company_supports
+from providers.service import service_state
 from sales.models import Sale
 from sales.services import _cancellation_ledger_exists, cancel_sale, create_sale
 
@@ -44,13 +43,8 @@ def _provider_key(company) -> str:
 
 
 def can_charge(company) -> bool:
-    """The company's provider can charge and, if it logs in, its account is enabled."""
-    if not company_supports(company, Capability.CHARGE):
-        return False
-    key = _provider_key(company)
-    if not ADAPTERS[key].needs_login:
-        return True
-    return ProviderConnection.objects.filter(provider_key=key, is_enabled=True).exists()
+    """The company's provider can charge: supported, configured, and switched on."""
+    return service_state(company, Capability.CHARGE).code == "active"
 
 
 def clean_message(message: str) -> str:

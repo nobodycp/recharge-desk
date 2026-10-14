@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import time
+from dataclasses import dataclass
 
 from providers.contracts import (
     RECONCILE_NOT_SUPPORTED,
@@ -16,6 +17,8 @@ from providers.contracts import (
     RawResponse,
     TransientError,
 )
+from providers import accounts
+from providers.models import ProviderConnection
 from providers.registry import ADAPTERS, get_adapter
 from providers.sanitize import scrub
 from providers import sessions
@@ -159,19 +162,82 @@ def check_charge(
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
 
 
-def company_supports(
+@dataclass(frozen=True)
+class ServiceState:
+    """Whether a provider service can run for a company.
+
+    ``code`` is ``active``, ``off``, ``unsupported`` or ``not_configured``;
+    ``reason`` is the Arabic explanation (empty when active).
+    """
+
+    code: str
+    reason: str = ""
+
+
+_NO_SYSTEM = "لم يتم تحديد نظام الشركة"
+_NOT_AVAILABLE = "غير متاح لهذا النظام بعد"
+_NOT_CONFIGURED = "بيانات الحساب ناقصة أو غير مقروءة"
+_OFF = "موقوفة"
+
+
+def _switch_field(capability: Capability) -> str | None:
+    if capability is Capability.CHECK_CHARGE:
+        capability = Capability.CHARGE
+    return ProviderConnection.SERVICE_FIELDS.get(capability)
+
+
+def _switches_on(connection: ProviderConnection | None, capability: Capability) -> bool:
+    """Master and service switch of ``connection`` (model defaults without a row)."""
+    if connection is None:
+        connection = ProviderConnection(provider_key="")
+    if not connection.is_enabled:
+        return False
+    field = _switch_field(capability)
+    return True if field is None else bool(getattr(connection, field))
+
+
+def service_enabled(provider_key: str, capability: Capability) -> bool:
+    """Master and per-service switches for ``provider_key``.
+
+    Read-only (hot path): never creates a connection row; without one the model
+    field defaults apply. ``CHECK_CHARGE`` follows ``charge_enabled``.
+    """
+    connection = ProviderConnection.objects.filter(provider_key=provider_key).first()
+    return _switches_on(connection, capability)
+
+
+def service_state(
     company, capability: Capability, provider: str | None = None
-) -> bool:
-    """True when the company's explicit ``provider_key`` has ``capability``.
+) -> ServiceState:
+    """Gate for ``capability`` on the company's explicit ``provider_key``.
 
     ``provider`` additionally requires that exact provider key. Never inspects
-    the company name: routing comes from the field only.
+    the company name. A connection row alone is not an account: for adapters
+    that log in, credentials must resolve via ``accounts.get_credentials``.
     """
     key = (company.provider_key or "").strip().lower()
-    if provider is not None and key != provider:
-        return False
     adapter_cls = ADAPTERS.get(key)
-    return adapter_cls is not None and capability in adapter_cls.capabilities
+    if adapter_cls is None:
+        return ServiceState("unsupported", _NO_SYSTEM)
+    if provider is not None and key != provider:
+        return ServiceState("unsupported", _NOT_AVAILABLE)
+    if capability not in adapter_cls.capabilities:
+        return ServiceState("unsupported", _NOT_AVAILABLE)
+    connection = ProviderConnection.objects.filter(provider_key=key).first()
+    if connection is not None and not connection.is_enabled:
+        return ServiceState("off", _OFF)
+    if adapter_cls.needs_login:
+        try:
+            accounts.get_credentials(key)
+        except PermanentError as exc:
+            if str(exc) == accounts.PROVIDER_DISABLED:
+                return ServiceState("off", _OFF)
+            if str(exc) == "config_error":
+                return ServiceState("not_configured", _NOT_CONFIGURED)
+            raise
+    if not _switches_on(connection, capability):
+        return ServiceState("off", _OFF)
+    return ServiceState("active")
 
 
 def reconcile(
@@ -186,10 +252,11 @@ def reconcile(
 
     Runs synchronously in the web request (admin-only), so lock waits stay within
     ``budget`` seconds; a Sky ``AuthRequired`` triggers one login and a retry.
-    Raises ``PermanentError(RECONCILE_NOT_SUPPORTED)`` when the company has no
-    provider or its provider cannot reconcile.
+    Raises ``PermanentError(RECONCILE_NOT_SUPPORTED)`` unless the company's
+    reconcile ``service_state`` is ``active`` (no provider, unsupported,
+    switched off or not configured).
     """
-    if not company_supports(company, Capability.RECONCILE):
+    if service_state(company, Capability.RECONCILE).code != "active":
         raise PermanentError(RECONCILE_NOT_SUPPORTED)
     adapter = get_adapter((company.provider_key or "").strip().lower())
     deadline = time.monotonic() + budget

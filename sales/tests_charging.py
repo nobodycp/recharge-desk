@@ -22,6 +22,7 @@ from providers.contracts import (
     ChargeResult,
     TransientError,
 )
+from providers.crypto import encrypt
 from providers.models import ProviderConnection, ProviderJob
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
@@ -35,6 +36,14 @@ from sales.tasks import check_sale_charge, run_charge_job, verify_unverified_cha
 User = get_user_model()
 START = Decimal("1000.00")
 COST = Decimal("10.00")
+
+
+def _save_credentials(key):
+    connection = ProviderConnection.for_key(key)
+    connection.username = "user"
+    connection.secret_encrypted = encrypt("pass")
+    connection.save()
+    return connection
 
 
 class ChargingTestBase(TestCase):
@@ -62,6 +71,9 @@ class ChargingTestBase(TestCase):
     def setUp(self):
         get_redis().flushall()
         self.use()
+        connection = ProviderConnection.for_key("fake")
+        connection.charge_enabled = True
+        connection.save()
 
     def use(self, **options):
         self.fake = FakeChargeAdapter.configured(**options)
@@ -219,7 +231,7 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.fake.sent, 1)
 
     def test_charge_never_sent_because_login_failed_reverses(self):
-        ProviderConnection.objects.create(provider_key="fake", is_enabled=True)
+        _save_credentials("fake")
         self.use(
             needs_login=True,
             raise_before_send=AuthRequired("expired"),
@@ -791,9 +803,26 @@ class CanChargeTests(ChargingTestBase):
 
     def test_login_adapter_needs_enabled_account(self):
         self.use(needs_login=True)
+        # The seeded row has no credentials: not an account.
         self.assertFalse(charging.can_charge(self.company))
-        account = ProviderConnection.objects.create(provider_key="fake", is_enabled=False)
-        self.assertFalse(charging.can_charge(self.company))
-        account.is_enabled = True
+        account = _save_credentials("fake")
+        self.assertTrue(charging.can_charge(self.company))
+        account.is_enabled = False
         account.save()
+        self.assertFalse(charging.can_charge(self.company))
+
+    def test_login_adapter_with_undecryptable_credentials_cannot_charge(self):
+        self.use(needs_login=True)
+        account = _save_credentials("fake")
+        account.secret_encrypted = "garbage"
+        account.save()
+        self.assertFalse(charging.can_charge(self.company))
+
+    def test_can_charge_needs_charge_switch(self):
+        connection = ProviderConnection.for_key("fake")
+        connection.charge_enabled = False
+        connection.save()
+        self.assertFalse(charging.can_charge(self.company))
+        connection.charge_enabled = True
+        connection.save()
         self.assertTrue(charging.can_charge(self.company))
