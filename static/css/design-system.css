@@ -63,6 +63,7 @@ html {
   --rd-surface-2: #f4f4f2;
   --rd-accent: #ff5a1f;
   --rd-accent-soft: rgba(255, 90, 31, 0.1);
+  --rd-on-accent: #0a0a0a;
   /* Text-safe orange (>= 4.5:1 on surface). Orange fills are accent only. */
   --rd-accent-ink: #c2410c;
   --rd-primary-bg: #0a0a0a;
@@ -121,6 +122,7 @@ html {
   --rd-surface-2: #1f1f1d;
   --rd-accent: #ff6a33;
   --rd-accent-soft: rgba(255, 106, 51, 0.15);
+  --rd-on-accent: #0a0a0a;
   --rd-accent-ink: #ff8a5c;
   --rd-primary-bg: #f5f5f2;
   --rd-primary-fg: #0a0a0a;
@@ -1739,16 +1741,16 @@ a.rd-card:hover {
 
 /* The one special orange action per screen (e.g. charge). */
 .btn-accent {
-  --bs-btn-color: white;
+  --bs-btn-color: var(--rd-on-accent);
   --bs-btn-bg: var(--rd-accent);
   --bs-btn-border-color: var(--rd-accent);
-  --bs-btn-hover-color: white;
+  --bs-btn-hover-color: var(--rd-on-accent);
   --bs-btn-hover-bg: var(--rd-accent-hover);
   --bs-btn-hover-border-color: var(--rd-accent-hover);
-  --bs-btn-active-color: white;
+  --bs-btn-active-color: var(--rd-on-accent);
   --bs-btn-active-bg: var(--rd-accent);
   --bs-btn-active-border-color: var(--rd-accent);
-  --bs-btn-disabled-color: white;
+  --bs-btn-disabled-color: var(--rd-on-accent);
   --bs-btn-disabled-bg: var(--rd-accent);
   --bs-btn-disabled-border-color: var(--rd-accent);
   --bs-btn-focus-box-shadow: 0 0 0 0.25rem var(--rd-accent-soft);
@@ -1809,6 +1811,8 @@ a.rd-card:hover {
   --bs-btn-active-color: var(--rd-success);
   --bs-btn-active-bg: var(--rd-success-soft);
   --bs-btn-active-border-color: var(--rd-success);
+  --bs-btn-disabled-color: var(--rd-success);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-success) 35%, transparent);
 }
 
 .btn-success,
@@ -1885,7 +1889,7 @@ a.rd-card:hover {
   box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
-/* Pearl switch: hairline track that turns orange, white knob with a soft shadow.
+/* Pearl switch: grey track that turns orange, white knob with a soft shadow.
    Sized in em (= 2.25rem x 1.3rem at body size) so wrappers that bump
    font-size to scale the switch keep working. */
 .form-switch .form-check-input,
@@ -1899,7 +1903,8 @@ a.rd-card:hover {
   height: 1.3em;
   margin-top: 0.1em;
   border: 0;
-  background-color: var(--bs-border-color);
+  /* >= 3:1 against --rd-surface in both themes (non-text contrast). */
+  background-color: color-mix(in srgb, var(--rd-ink) 48%, var(--rd-surface));
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--rd-ink) 10%, transparent);
   cursor: pointer;
 }
