@@ -11,7 +11,7 @@ import re
 from typing import Any
 
 from phone_refresh.models import MatchType, ProviderResponseRule, RefreshStatus
-from phone_refresh.providers.base import RawResponse
+from providers.contracts import RawResponse
 
 log = logging.getLogger(__name__)
 

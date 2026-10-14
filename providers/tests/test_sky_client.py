@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
-from phone_refresh.providers.sky_sales_client import (
+from providers.adapters.sky.client import (
     SkySalesClient,
     SkySalesSession,
     client_from_env,
@@ -29,14 +29,14 @@ class SkySalesSessionFileTests(SimpleTestCase):
         self.addCleanup(lambda: path.unlink(missing_ok=True))
 
         with patch(
-            "phone_refresh.providers.sky_sales_client.session_file_path",
+            "providers.adapters.sky.client.session_file_path",
             return_value=path,
         ):
             self.assertIsNone(SkySalesClient.load_session_file())
             self.assertFalse(path.exists())
 
-    @patch("phone_refresh.providers.sky_sales_client.SkySalesClient.ensure_authenticated")
-    @patch("phone_refresh.providers.sky_sales_client.load_dotenv_sky")
+    @patch("providers.adapters.sky.client.SkySalesClient.ensure_authenticated")
+    @patch("providers.adapters.sky.client.load_dotenv_sky")
     def test_client_from_env_skips_pending_otp_resume(
         self, _load_env, ensure_authenticated
     ):
@@ -50,7 +50,7 @@ class SkySalesSessionFileTests(SimpleTestCase):
             clear=False,
         ):
             with patch(
-                "phone_refresh.providers.sky_sales_client.SkySalesClient.load_session_file",
+                "providers.adapters.sky.client.SkySalesClient.load_session_file",
                 return_value=None,
             ):
                 client_from_env()
@@ -68,7 +68,7 @@ class SkySalesSessionFileTests(SimpleTestCase):
     def test_fetch_balance_report_calls_template_22(self):
         from datetime import date
 
-        from phone_refresh.providers.sky_sales_client import SkySalesError
+        from providers.adapters.sky.client import SkySalesError
 
         client = SkySalesClient(
             session=SkySalesSession(jwt_token="jwt", session_id="sid", eot_user_id=1550)

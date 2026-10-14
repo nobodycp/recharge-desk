@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import requests
 
-from phone_refresh.providers.base import BaseProvider, RawResponse
+from providers.contracts import BaseAdapter, Capability, RawResponse
 
 
-class LayanProvider(BaseProvider):
-    name = "layan"
+class LayanAdapter(BaseAdapter):
+    key = "layan"
+    capabilities = frozenset({Capability.REFRESH})
 
     URL = "https://api.layan-t.net/api/Subscribtions/CustomersRefreshNumber"
     HEADERS = {
@@ -18,7 +19,7 @@ class LayanProvider(BaseProvider):
         "Referer": "https://rn.layan-t.net/",
     }
 
-    def call(self, phone: str) -> RawResponse:
+    def refresh(self, phone: str) -> RawResponse:
         try:
             r = requests.post(
                 self.URL,

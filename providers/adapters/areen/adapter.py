@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import requests
 
-from phone_refresh.providers.base import BaseProvider, RawResponse
+from providers.contracts import BaseAdapter, Capability, RawResponse
 
 
-class AreenProvider(BaseProvider):
-    name = "areen"
+class AreenAdapter(BaseAdapter):
+    key = "areen"
+    capabilities = frozenset({Capability.REFRESH})
 
     URL = "https://api.areen.net/api/common/RefreshMobileNumber"
     HEADERS = {
@@ -24,7 +25,7 @@ class AreenProvider(BaseProvider):
         "Referer": "https://update.areen.net/",
     }
 
-    def call(self, phone: str) -> RawResponse:
+    def refresh(self, phone: str) -> RawResponse:
         # NOTE: upstream uses ``data=`` (form-encoded) even though the
         # Content-Type header advertises JSON — preserved from the original
         # Flask client because it's what the live endpoint actually accepts.

@@ -753,7 +753,7 @@ def _sky_env_paths() -> list[Path]:
     custom = os.environ.get("SKY_SALES_ENV_FILE", "").strip()
     if custom:
         paths.append(Path(custom))
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[3]
     paths.append(repo_root / "sky_lab" / ".env")
     return paths
 

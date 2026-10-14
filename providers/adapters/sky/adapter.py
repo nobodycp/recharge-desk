@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from phone_refresh.providers.base import BaseProvider, RawResponse
-from phone_refresh.providers.sky_sales_client import execute_refresh
+from providers.adapters.sky.client import execute_refresh
+from providers.contracts import BaseAdapter, Capability, RawResponse
 
 _SKY_SYSTEM_ERROR_REASONS = frozenset(
     {
@@ -18,13 +18,14 @@ _SKY_SYSTEM_ERROR_REASONS = frozenset(
 )
 
 
-class SkyProvider(BaseProvider):
+class SkyAdapter(BaseAdapter):
     """Sky Sales Portal refresh via HTTP (sales-ps.sky5g.ps)."""
 
-    name = "sky"
+    key = "sky"
+    capabilities = frozenset({Capability.REFRESH})
     timeout: int = 120
 
-    def call(self, phone: str) -> RawResponse:
+    def refresh(self, phone: str) -> RawResponse:
         result = execute_refresh(phone)
         text = json.dumps(result, ensure_ascii=False)
         reason = str(result.get("reason") or "")

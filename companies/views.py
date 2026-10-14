@@ -167,7 +167,7 @@ def sky_reconcile(request, pk):
                 _("Sky report processed (%(rows)s rows).") % {"rows": result.row_count},
             )
         except Exception as exc:
-            from phone_refresh.providers.sky_sales_client import SkySalesError
+            from providers.adapters.sky.client import SkySalesError
 
             if isinstance(exc, SkySalesError):
                 messages.error(

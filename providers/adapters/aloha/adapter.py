@@ -4,7 +4,7 @@ import re
 
 import requests
 
-from phone_refresh.providers.base import BaseProvider, RawResponse
+from providers.contracts import BaseAdapter, Capability, RawResponse
 
 _REFRESH_TOKEN_RE = re.compile(
     r'name=["\']refresh_token["\'][^>]*value=["\']([^"\']+)["\']'
@@ -18,8 +18,9 @@ _USER_AGENT = (
 )
 
 
-class AlohaProvider(BaseProvider):
-    name = "aloha"
+class AlohaAdapter(BaseAdapter):
+    key = "aloha"
+    capabilities = frozenset({Capability.REFRESH})
 
     BASE_URL = "https://refresh.telecom.co.il"
     HOME_URL = f"{BASE_URL}/home"
@@ -45,7 +46,7 @@ class AlohaProvider(BaseProvider):
         "Referer": HOME_URL,
     }
 
-    def call(self, phone: str) -> RawResponse:
+    def refresh(self, phone: str) -> RawResponse:
         session = requests.Session()
         try:
             refresh_token = self._fetch_refresh_token(session)

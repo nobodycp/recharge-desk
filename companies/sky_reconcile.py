@@ -710,7 +710,7 @@ def reconcile_sky_report(
 
 def fetch_sky_rows_for_reconcile(date_from: date, date_to: date) -> list[dict[str, Any]]:
     """Live pull of template 22 using env Sky credentials."""
-    from phone_refresh.providers.sky_sales_client import client_from_env
+    from providers.adapters.sky.client import client_from_env
 
     client = client_from_env()
     return client.fetch_balance_report(date_from, date_to)

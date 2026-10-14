@@ -3,7 +3,7 @@ from __future__ import annotations
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from phone_refresh.providers.aloha import AlohaProvider, _REFRESH_TOKEN_RE
+from providers.adapters.aloha.adapter import AlohaAdapter, _REFRESH_TOKEN_RE
 
 _HOME_HTML = """
 <input type="hidden" id="refresh_token" autocomplete="OFF" name="refresh_token"
@@ -22,8 +22,8 @@ class RefreshTokenRegexTests(TestCase):
         )
 
 
-class AlohaProviderTests(TestCase):
-    @patch("phone_refresh.providers.aloha.requests.Session")
+class AlohaAdapterTests(TestCase):
+    @patch("providers.adapters.aloha.adapter.requests.Session")
     def test_call_posts_phone_and_refresh_token(self, session_cls: MagicMock) -> None:
         session = session_cls.return_value
         home_resp = MagicMock()
@@ -38,7 +38,7 @@ class AlohaProviderTests(TestCase):
         session.get.return_value = home_resp
         session.post.return_value = post_resp
 
-        result = AlohaProvider().call("0501234567")
+        result = AlohaAdapter().refresh("0501234567")
 
         session.get.assert_called_once()
         session.post.assert_called_once()
