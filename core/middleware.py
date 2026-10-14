@@ -160,6 +160,9 @@ class DefaultLanguagePrefixRedirectMiddleware:
         # Device-facing SMS gateway API: locale-free machine endpoints. A
         # language redirect here would turn the device POST into a GET.
         "/sms-gateway/api/",
+        # Versioned bearer-token API: same reasoning (a redirect would turn
+        # the client's POST into a GET and break scripted callers).
+        "/api/v1/",
     )
 
     def __init__(self, get_response):

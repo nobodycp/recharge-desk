@@ -225,29 +225,18 @@ def unknown_job_payload() -> dict:
     return dict(_EXPIRED_PAYLOAD)
 
 
-def job_owned_by_token(job_id: str, api_token_id: int) -> bool:
-    """Whether ``job_id`` is a refresh job submitted with ``api_token_id``."""
+def _load_refresh_job(job_id: str) -> ProviderJob | None:
     try:
         job = ProviderJob.objects.filter(pk=job_id).first()
     except (ValidationError, ValueError):
-        return False
-    return (
-        job is not None
-        and job.kind == ProviderJob.KIND_REFRESH
-        and (job.payload or {}).get("api_token_id") == api_token_id
-    )
-
-
-def job_payload(job_id: str) -> dict:
-    """Current customer-facing JSON for ``job_id`` (safe to expose)."""
-    try:
-        job = ProviderJob.objects.filter(pk=job_id).first()
-    except (ValidationError, ValueError):
-        job = None
+        return None
     # Only refresh jobs are pollable; other kinds (charge, ...) look unknown.
     if job is None or job.kind != ProviderJob.KIND_REFRESH:
-        return dict(_EXPIRED_PAYLOAD)
+        return None
+    return job
 
+
+def _payload_for(job: ProviderJob) -> dict:
     if job.status in (ProviderJob.STATUS_DONE, ProviderJob.STATUS_FAILED):
         if not job.result:
             return dict(_EXPIRED_PAYLOAD)
@@ -259,6 +248,33 @@ def job_payload(job_id: str) -> dict:
     if age < SystemSettings.get().refresh_wait_seconds:
         return {"status": "processing", "job": str(job.id)}
     return status_payload("processing", final=True)
+
+
+def job_payload(job_id: str, *, include_api_jobs: bool = False) -> dict:
+    """Current customer-facing JSON for ``job_id`` (safe to expose).
+
+    Jobs submitted through ``/api/v1`` belong to their token and look
+    unknown here unless ``include_api_jobs`` is set (see
+    :func:`token_job_payload`).
+    """
+    job = _load_refresh_job(job_id)
+    if job is None:
+        return dict(_EXPIRED_PAYLOAD)
+    if not include_api_jobs and (job.payload or {}).get("api_token_id") is not None:
+        return dict(_EXPIRED_PAYLOAD)
+    return _payload_for(job)
+
+
+def token_job_payload(job_id: str, api_token_id: int) -> dict | None:
+    """Payload of a refresh job submitted by ``api_token_id``, else ``None``.
+
+    ``None`` covers "not yours", "unknown" and "not a refresh job" alike (one
+    lookup), so callers can answer all three identically.
+    """
+    job = _load_refresh_job(job_id)
+    if job is None or (job.payload or {}).get("api_token_id") != api_token_id:
+        return None
+    return _payload_for(job)
 
 
 def wait_for_job(job_id: str, timeout_seconds: float = 45) -> dict:

@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='apitoken',
             name='scopes',
-            field=models.CharField(blank=True, default='refresh', help_text='Comma-separated scopes this token may use (e.g. refresh).', max_length=200),
+            field=models.CharField(default='refresh', help_text='Comma-separated scopes this token may use (e.g. refresh).', max_length=200),
         ),
     ]

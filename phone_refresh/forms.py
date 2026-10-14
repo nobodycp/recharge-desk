@@ -426,9 +426,15 @@ class ApiTokenForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        caller_initial = kwargs.get("initial") or {}
         super().__init__(*args, **kwargs)
-        # ``initial`` from the (new) instance would be the raw comma string.
-        self.initial["scopes"] = DEFAULT_API_SCOPES.split(",")
+        if "scopes" not in caller_initial:
+            # ``initial`` from the instance would be the raw comma string.
+            self.initial["scopes"] = (
+                self.instance.scope_list
+                if self.instance.pk
+                else DEFAULT_API_SCOPES.split(",")
+            )
 
     def clean_name(self) -> str:
         value = (self.cleaned_data.get("name") or "").strip()

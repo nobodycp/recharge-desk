@@ -7,7 +7,10 @@ import logging
 import uuid
 from unittest.mock import patch
 
-from django.test import Client, TestCase
+from datetime import timedelta
+
+from django.conf import settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -19,8 +22,9 @@ from phone_refresh.models import (
     RefreshSource,
     SystemSettings,
 )
-from phone_refresh.services.refresh_jobs import submit_refresh
+from phone_refresh.services.refresh_jobs import job_payload, submit_refresh
 from providers.contracts import RawResponse
+from phone_refresh.token_auth import touch_token
 from providers.models import ProviderJob
 from providers.redis_conn import get_redis
 
@@ -369,3 +373,200 @@ class TokenCreateViewTests(TestCase):
         resp = self.client.post(self.url, {"name": "shop"})
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(ApiToken.objects.filter(name="shop").exists())
+
+
+class HeaderParsingTests(_ApiTestCase):
+    def _call(self, header):
+        extra = {} if header is None else {"HTTP_AUTHORIZATION": header}
+        return self.client.post(
+            URL,
+            data=json.dumps({"phone": "123"}),
+            content_type="application/json",
+            **extra,
+        )
+
+    def test_authorization_header_variants(self):
+        raw = self.raw
+        cases = [
+            ("Bearer", 401),
+            ("Bearer ", 401),
+            ("Bearer    ", 401),
+            (f"bearer {raw}", 200),
+            (f"BEARER {raw}", 200),
+            (f"Bearer    {raw}  ", 200),
+            (f"Bearer {raw}", 200),
+            ("Basic xyz", 401),
+            (f"Token {raw}", 401),
+            (raw, 401),
+            (None, 401),
+        ]
+        for header, expected in cases:
+            with self.subTest(header=header):
+                resp = self._call(header)
+                self.assertEqual(resp.status_code, expected)
+                if expected == 401:
+                    self.assertEqual(resp.json(), {"error": "unauthorized"})
+                    self.assertEqual(resp["WWW-Authenticate"], "Bearer")
+
+
+class LocaleAndJsonErrorTests(_ApiTestCase):
+    def _locale_headers(self):
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        return {"HTTP_ACCEPT_LANGUAGE": "ar"}
+
+    def test_no_locale_redirect_on_api(self):
+        extra = self._locale_headers()
+        resp = self.client.post(
+            URL,
+            data=json.dumps({"phone": "123"}),
+            content_type="application/json",
+            **self.auth(),
+            **extra,
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.has_header("Location"))
+        resp = self.client.get(f"{URL}{uuid.uuid4()}/", **self.auth(), **extra)
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(resp.has_header("Location"))
+        resp = self.client.get("/api/v1/nope/", **extra)
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(resp.has_header("Location"))
+
+    def test_405_is_json_with_allow_header(self):
+        resp = self.client.get(URL, **self.auth())
+        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(resp.json(), {"error": "method_not_allowed"})
+        self.assertEqual(resp["Allow"], "POST")
+        resp = self.client.post(f"{URL}{uuid.uuid4()}/", **self.auth())
+        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(resp.json(), {"error": "method_not_allowed"})
+        self.assertEqual(resp["Allow"], "GET")
+        # Method is judged before auth, so even anonymous callers get JSON.
+        resp = self.client.put(URL)
+        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(resp.json(), {"error": "method_not_allowed"})
+
+    def test_oversized_body_is_json_413(self):
+        with override_settings(DATA_UPLOAD_MAX_MEMORY_SIZE=64):
+            resp = self.post({"phone": PHONE, "pad": "x" * 500})
+        self.assertEqual(resp.status_code, 413)
+        self.assertEqual(resp.json(), {"error": "payload_too_large"})
+
+    def test_unknown_routes_are_json_404(self):
+        for method, path in [
+            ("get", f"{URL}not-a-uuid/"),
+            ("get", "/api/v1/"),
+            ("get", "/api/v1/nope/"),
+            ("get", "/api/v1/refresh"),
+            ("post", "/api/v1/nope/"),
+            ("delete", f"{URL}not-a-uuid/"),
+        ]:
+            with self.subTest(method=method, path=path):
+                resp = getattr(self.client, method)(path, **self.auth())
+                self.assertEqual(resp.status_code, 404)
+                self.assertEqual(resp.json(), {"error": "not_found"})
+
+
+class FailedAuthThrottleTests(_ApiTestCase):
+    def _bad(self):
+        return self.post(raw="wrong-token")
+
+    def test_failures_are_throttled_per_ip(self):
+        for _ in range(30):
+            self.assertEqual(self._bad().status_code, 401)
+        resp = self._bad()
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp.json(), {"error": "rate_limited"})
+        self.assertEqual(resp["Retry-After"], "60")
+        # Checked before the token lookup: even a valid token is held back.
+        self.assertEqual(self.post().status_code, 429)
+
+    def test_missing_header_counts_as_failure(self):
+        for _ in range(30):
+            self.assertEqual(self.post(raw="").status_code, 401)
+        self.assertEqual(self.post(raw="").status_code, 429)
+
+    def test_successful_requests_do_not_count(self):
+        for _ in range(40):
+            self.assertEqual(self.post({"phone": "123"}).status_code, 200)
+        self.assertEqual(self._bad().status_code, 401)
+
+    def test_throttle_is_per_ip(self):
+        for _ in range(30):
+            self._bad()
+        resp = self.post(raw="wrong-token", REMOTE_ADDR="10.9.9.9")
+        self.assertEqual(resp.status_code, 401)
+
+    def test_scope_failures_do_not_count(self):
+        _, raw = make_token("noscope", scopes="charge")
+        for _ in range(35):
+            self.assertEqual(self.post(raw=raw).status_code, 403)
+        self.assertEqual(self._bad().status_code, 401)
+
+
+class ApiJobsHiddenFromOtherEndpointsTests(_ApiTestCase):
+    def test_job_payload_hides_api_jobs_unless_asked(self):
+        job_id = self.post(run_jobs=True).json()["job"]
+        self.assertEqual(job_payload(job_id)["status"], "error")
+        self.assertEqual(job_payload(job_id, include_api_jobs=False)["status"], "error")
+        self.assertEqual(job_payload(job_id, include_api_jobs=True)["status"], "refreshed")
+
+    def test_public_status_endpoint_treats_api_job_as_unknown(self):
+        job_id = self.post().json()["job"]
+        url = reverse("phone_refresh:public_status", args=[job_id])
+        unknown = self.client.get(
+            reverse("phone_refresh:public_status", args=[uuid.uuid4()])
+        )
+        resp = self.client.get(url)
+        self.assertEqual(resp.json(), unknown.json())
+        self.assertNotEqual(resp.json().get("status"), "refreshed")
+
+    def test_employee_status_endpoint_treats_api_job_as_unknown(self):
+        from django.contrib.auth import get_user_model
+
+        from accounts.models import UserProfile
+
+        user = get_user_model().objects.create_user("emp_x", password="x")
+        UserProfile.objects.update_or_create(
+            user=user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        job_id = self.post().json()["job"]
+        self.client.force_login(user)
+        resp = self.client.get(reverse("sales:employee_refresh_status", args=[job_id]))
+        unknown = self.client.get(
+            reverse("sales:employee_refresh_status", args=[uuid.uuid4()])
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json(), unknown.json())
+
+    def test_status_endpoint_does_one_job_lookup(self):
+        job_id = self.post().json()["job"]
+        with self.assertNumQueries(3):  # token lookup, last_used touch, the one job lookup
+            self.get(job_id)
+
+
+class TouchTokenThrottleTests(_ApiTestCase):
+    def test_last_used_at_updates_at_most_once_a_minute(self):
+        self.post({"phone": "123"})
+        self.token.refresh_from_db()
+        first = self.token.last_used_at
+        self.assertIsNotNone(first)
+        self.post({"phone": "123"})
+        self.token.refresh_from_db()
+        self.assertEqual(self.token.last_used_at, first)
+        old = timezone.now() - timedelta(seconds=61)
+        ApiToken.objects.filter(pk=self.token.pk).update(last_used_at=old)
+        touch_token(self.token)
+        self.token.refresh_from_db()
+        self.assertGreater(self.token.last_used_at, old + timedelta(seconds=30))
+
+
+class FormInitialTests(TestCase):
+    def test_caller_initial_scopes_are_kept(self):
+        form = ApiTokenForm(initial={"scopes": []})
+        self.assertEqual(form.initial["scopes"], [])
+        self.assertNotRegex(str(form["scopes"]), r"checked")
+
+    def test_default_initial_when_not_supplied(self):
+        self.assertEqual(ApiTokenForm().initial["scopes"], ["refresh"])

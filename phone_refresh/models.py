@@ -417,7 +417,6 @@ class ApiToken(models.Model):
     scopes = models.CharField(
         max_length=200,
         default=DEFAULT_API_SCOPES,
-        blank=True,
         help_text=_("Comma-separated scopes this token may use (e.g. refresh)."),
     )
 
