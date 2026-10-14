@@ -4088,8 +4088,12 @@ msgstr "الفرق"
 #, python-format
 msgid "%(c)s settlement cycle"
 msgid_plural "%(c)s settlement cycles"
-msgstr[0] "%(c)s دورة تسوية"
-msgstr[1] "%(c)s دورات تسوية"
+msgstr[0] "لا دورات تسوية"
+msgstr[1] "دورة تسوية واحدة"
+msgstr[2] "دورتا تسوية"
+msgstr[3] "%(c)s دورات تسوية"
+msgstr[4] "%(c)s دورة تسوية"
+msgstr[5] "%(c)s دورة تسوية"
 
 #: templates/companies/partials/layan_reconcile_settlements.html:30
 msgid "New recharge in period"

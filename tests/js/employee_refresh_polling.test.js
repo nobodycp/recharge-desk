@@ -1,9 +1,9 @@
 // Plain-node tests for the polling logic in static/js/employee-refresh-number.js
 // (stubbed DOM/fetch/timers). Run from anywhere:
-//   node static/phone_refresh/js/tests/employee_refresh_polling.test.js
+//   node tests/js/employee_refresh_polling.test.js
 // No dependencies; exits non-zero on failure.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const src = fs.readFileSync(path.join(__dirname, "..", "..", "..", "js", "employee-refresh-number.js"), "utf8");
+const src = fs.readFileSync(path.join(__dirname, "..", "..", "static", "js", "employee-refresh-number.js"), "utf8");
 
 const ATTRS = {
   "data-refresh-url": "/employee/sales/api/refresh-phone/",

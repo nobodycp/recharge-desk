@@ -28,6 +28,15 @@ db.sqlite3
 media/
 staticfiles/
 
+# DB dumps, exports and archives must never end up in an image
+*.dump
+*.json.gz
+*.tgz
+reports/*.csv
+
+# JS node harness tests
+tests/
+
 node_modules
 
 *.log

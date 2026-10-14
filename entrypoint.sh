@@ -34,6 +34,17 @@ except Exception as exc:
     sys.exit(1)
 PY
 
+if [ "$1" = "worker" ]; then
+    # Celery worker with embedded beat (-B). Migrations/collectstatic are the
+    # web service's job. Run exactly ONE replica of this service: every extra
+    # replica would run its own beat and duplicate the periodic tasks.
+    echo "[entrypoint] Starting celery worker (queues: refresh,charge,reports)"
+    exec celery -A config worker -B \
+        -Q refresh,charge,reports \
+        --concurrency ${CELERY_CONCURRENCY:-4} \
+        --loglevel INFO
+fi
+
 echo "[entrypoint] Running migrations..."
 python manage.py migrate --noinput
 

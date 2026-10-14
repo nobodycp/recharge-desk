@@ -175,7 +175,11 @@ CELERY_TASK_ROUTES = {
     "phone_refresh.tasks.*": {"queue": "refresh"},
     "sales.tasks.*": {"queue": "charge"},
     "providers.tasks.*": {"queue": "refresh"},
+    "sms_gateway.tasks.*": {"queue": "refresh"},
 }
+# Queues the production worker consumes (``entrypoint.sh worker -Q ...``); a test
+# keeps this, the routes and the beat schedule in sync so no task is orphaned.
+CELERY_WORKER_QUEUES = ("refresh", "charge", "reports")
 CELERY_BEAT_SCHEDULE = {
     "providers-keepalive": {
         "task": "providers.tasks.keepalive_sessions",

@@ -1,8 +1,8 @@
-// Plain-node tests for the polling logic in ../refresh.js (stubbed DOM/fetch/timers).
-// Run from anywhere:  node static/phone_refresh/js/tests/refresh_polling.test.js
+// Plain-node tests for the polling logic in static/phone_refresh/js/refresh.js (stubbed DOM/fetch/timers).
+// Run from anywhere:  node tests/js/refresh_polling.test.js
 // No dependencies; exits non-zero on failure.
 const fs = require("fs"), vm = require("vm"), path = require("path");
-const src = fs.readFileSync(path.join(__dirname, "..", "refresh.js"), "utf8");
+const src = fs.readFileSync(path.join(__dirname, "..", "..", "static", "phone_refresh", "js", "refresh.js"), "utf8");
 
 function makeEnv({ fetchImpl }) {
   const alerts = [];

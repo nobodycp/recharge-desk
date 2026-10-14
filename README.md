@@ -108,6 +108,47 @@ Safe to re-run; already-optimized files are skipped.
 - `expenses` — business expenses + expense report.
 - `reports` — dashboard, profit/sales/company reports (includes manual supplier top-ups & adjustments on the company report).
 - `core` — home routing, forbidden page, `seed_demo` command, shared context (Bootstrap RTL/LTR).
+- `phone_refresh` — public/employee number refresh, refresh logs, response rules/messages, API tokens, provider settings screens. Refresh jobs run in the Celery worker (`phone_refresh/tasks.py`).
+- `sales` also holds the optional "charge & record sale" flow (`sales/charging.py`, `sales/tasks.py`).
+- `sms_gateway` — SMS gateway (inbound refresh requests, outbound replies).
+- `providers` — the provider gateway: the **only** place that talks to telecom companies (see below).
+
+### Provider gateway (`providers/`)
+
+Other apps import only `providers.service`, `providers.contracts`, `providers.registry`, `providers.jobs` and `providers.health` — never `providers.adapters.*`.
+
+| Module | Role |
+|--------|------|
+| `contracts.py` | `ProviderAdapter` protocol, `Capability` (refresh / charge / check_charge / reconcile), result dataclasses, error types (`AuthRequired`, `TransientError`, `PermanentError`). |
+| `registry.py` | provider key → adapter, with capabilities (`can_charge`, `needs_login`). |
+| `adapters/<x>/` | One package per company (`sky`, `layan`, `aloha`, `areen`): `adapter.py` (the operations), `client.py` (HTTP client, where the provider needs one, e.g. Sky), `reconcile.py` (report matching, Sky and Layan). Each company keeps its own logic. |
+| `sessions.py` | Redis session store + distributed login lock (one login per provider account). |
+| `accounts.py`, `crypto.py`, `models.py` | Provider accounts encrypted with Fernet (`PROVIDER_SECRETS_KEY`); `ProviderAccount`, `ProviderJob`. |
+| `service.py` | Entry point used by the rest of the system (refresh, charge, check_charge, reconcile, keepalive). |
+| `jobs.py`, `tasks.py` | Job lifecycle and Celery periodic tasks (keep-alive, retention). |
+| `api/` | `/api/v1/` refresh API (Bearer tokens with scopes). |
+
+Runtime: `web` (gunicorn) + `worker` (Celery with embedded beat, **one replica**) + PostgreSQL + Redis. Without `REDIS_URL` (local dev and tests) Celery runs eagerly and Redis calls use an in-process `fakeredis`, so no extra services are needed. Production (`config.settings.production`) requires `REDIS_URL` and `PROVIDER_SECRETS_KEY`. Deployment: see `DEPLOY_COOLIFY.md`.
+
+Run the worker locally against a real Redis:
+
+```bash
+REDIS_URL=redis://localhost:6379/0 celery -A config worker -B -Q refresh,charge,reports --loglevel INFO
+```
+
+## Tests
+
+```bash
+python manage.py test --parallel 1            # Python tests
+python manage.py makemigrations --check       # no pending model changes
+```
+
+JS polling tests (plain Node, no dependencies; kept outside `static/` so they are not collected or served):
+
+```bash
+node tests/js/refresh_polling.test.js
+node tests/js/employee_refresh_polling.test.js
+```
 
 ## Settings modules
 

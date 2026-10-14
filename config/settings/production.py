@@ -59,6 +59,10 @@ else:
 
     PROVIDER_SECRETS_KEY = _require("PROVIDER_SECRETS_KEY")
 
+    # Without Redis, base.py would fall back to eager Celery + in-process
+    # fakeredis: no worker, no shared locks/sessions. Never boot like that.
+    REDIS_URL = _require("REDIS_URL")
+
     SECRET_KEY = _require("DJANGO_SECRET_KEY")
 
     hosts_raw = _require("DJANGO_ALLOWED_HOSTS")

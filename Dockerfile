@@ -24,4 +24,6 @@ RUN mkdir -p /app/media \
 
 EXPOSE 8000
 
-CMD ["./entrypoint.sh"]
+# ``web`` (default) = migrate + collectstatic + gunicorn; ``worker`` = celery -B.
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["web"]
