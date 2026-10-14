@@ -2659,6 +2659,9 @@ html[lang="ar"] .rd-employee-title {
     0 0 0 0.3rem var(--bs-body-bg);
   opacity: 1;
   transform: translateX(-50%);
+  /* The FAB sits above the items layer; it must catch taps itself (its
+     parent <a> still receives the click). */
+  pointer-events: auto;
 }
 
 .rd-mobile-tabbar .rd-mobile-tabbar__item--sales:active .rd-mobile-tabbar__bubble {
@@ -5782,4 +5785,42 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-invoice-sig-rule {
     border-bottom-color: #000 !important;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chrome keyboard focus                                                      */
+/* -------------------------------------------------------------------------- */
+/* The soft rings above are decoration; this ink outline is the visible
+   indicator (ink on page/surface is well over 3:1 in both themes). Kept last
+   so it overrides the per-component `outline: none`. */
+.rd-search-toggle:focus-visible,
+.rd-menu-btn:focus-visible,
+.rd-theme-btn:focus-visible,
+.rd-user-menu > summary:focus-visible,
+.rd-user-menu-item:focus-visible,
+.rd-sidebar-nav--accordion .rd-nav-group-toggle:focus-visible,
+.rd-sidebar-nav--accordion .rd-nav-link:focus-visible,
+.rd-employee-wallet:focus-visible,
+.rd-employee-title__link:focus-visible,
+.rd-toast__close:focus-visible,
+.rd-mobile-tabbar__item:focus-visible,
+.rd-mobile-tabbar__item--sales:focus-visible .rd-mobile-tabbar__bubble {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+/* Tab items fill the rail height: draw the outline inside them. */
+.rd-mobile-tabbar__item:focus-visible {
+  outline-offset: -2px;
+  border-radius: 0.9rem;
+}
+
+/* On the FAB the outline goes around the bubble, not the tall link. */
+.rd-mobile-tabbar .rd-mobile-tabbar__item--sales:focus-visible {
+  outline: none;
+}
+
+/* Toasts are an inverted surface, so ink would vanish there. */
+.rd-toast__close:focus-visible {
+  outline-color: var(--rd-primary-fg);
 }
