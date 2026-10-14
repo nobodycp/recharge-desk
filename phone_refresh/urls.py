@@ -8,6 +8,11 @@ urlpatterns = [
     # Public surfaces (no auth)
     path("phone-refresh/", views.public_refresh_page, name="public"),
     path("phone-refresh/api/refresh/", views.public_refresh_api, name="public_api"),
+    path(
+        "phone-refresh/api/refresh/status/<uuid:job_id>/",
+        views.public_refresh_status,
+        name="public_status",
+    ),
     # Management surfaces — nested under /management/ to match the rest of the panel.
     path(
         "management/phone-refresh/settings/",

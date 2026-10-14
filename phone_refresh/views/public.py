@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import threading
-import time
 
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
@@ -19,53 +17,26 @@ from phone_refresh.models import (
     ApiToken,
     RefreshSource,
     SiteSettings,
+    SystemSettings,
 )
 from core.http_utils import get_client_ip
-from phone_refresh.services.refresh_service import refresh_phone, result_payload
+from core.ratelimit import allow
+from phone_refresh.services.refresh_jobs import (
+    job_payload,
+    submit_refresh,
+    wait_for_job,
+)
 
-# --- Lightweight in-process rate limiter ------------------------------------
-# Sliding-window cap of N requests per IP per window. Two windows now (per
-# minute and per hour) since the limits are admin-configurable from the API
-# settings tab. Good enough for a single-process dev server; for production
-# behind multiple workers, swap for django-ratelimit or a Redis-backed
-# token bucket.
-_RATE_WINDOW_MINUTE = 60
-_RATE_WINDOW_HOUR = 3600
+SYNC_WAIT_SECONDS = 45
+STATUS_LIMIT_PER_MINUTE = 60
 
-_rate_lock = threading.Lock()
-_rate_state_minute: dict[str, list[float]] = {}
-_rate_state_hour: dict[str, list[float]] = {}
-
-
-def _check_rate_limit(ip: str, limit_per_min: int, limit_per_hour: int) -> bool:
-    """Sliding-window check against per-minute and per-hour caps.
-
-    Records the request in both windows when both checks pass.
-    A limit of ``0`` disables that window (admins can opt out).
-    """
-    if not ip:
-        return True
-    now = time.monotonic()
-    cutoff_min = now - _RATE_WINDOW_MINUTE
-    cutoff_hour = now - _RATE_WINDOW_HOUR
-    with _rate_lock:
-        minute_bucket = [t for t in _rate_state_minute.get(ip, []) if t >= cutoff_min]
-        hour_bucket = [t for t in _rate_state_hour.get(ip, []) if t >= cutoff_hour]
-
-        if limit_per_min and len(minute_bucket) >= limit_per_min:
-            _rate_state_minute[ip] = minute_bucket
-            _rate_state_hour[ip] = hour_bucket
-            return False
-        if limit_per_hour and len(hour_bucket) >= limit_per_hour:
-            _rate_state_minute[ip] = minute_bucket
-            _rate_state_hour[ip] = hour_bucket
-            return False
-
-        minute_bucket.append(now)
-        hour_bucket.append(now)
-        _rate_state_minute[ip] = minute_bucket
-        _rate_state_hour[ip] = hour_bucket
-    return True
+_RATE_LIMITED_BODY = {
+    "status": "error",
+    "message": {
+        "title": "محاولات كثيرة",
+        "body": "لقد أرسلت طلبات كثيرة بسرعة. يرجى الانتظار قليلًا.",
+    },
+}
 
 
 def _check_origin(request, api_settings: ApiSettings) -> bool:
@@ -99,10 +70,18 @@ def _resolve_token(raw_token: str) -> ApiToken | None:
     return token if token.is_active else None
 
 
-def _parse_refresh_payload(request) -> tuple[str | None, str, str, HttpResponse | None]:
-    """Extract ``phone``, ``client_hint``, and honeypot from the POST body.
+def _truthy(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "true", "yes")
 
-    Returns a 4-tuple ``(phone, client_hint, honeypot, error_response)``.
+
+def _parse_refresh_payload(
+    request,
+) -> tuple[str | None, str, str, bool, HttpResponse | None]:
+    """Extract ``phone``, ``client_hint``, honeypot and ``async`` from the POST body.
+
+    Returns ``(phone, client_hint, honeypot, want_async, error_response)``.
     When ``error_response`` is not ``None`` the caller should return it
     immediately (malformed JSON).
     """
@@ -110,20 +89,23 @@ def _parse_refresh_payload(request) -> tuple[str | None, str, str, HttpResponse 
     phone: str | None = None
     client_hint = ""
     honeypot = ""
+    want_async = False
     if "application/json" in content_type:
         try:
             payload = json.loads(request.body.decode("utf-8") or "{}")
         except ValueError:
-            return None, "", "", HttpResponseBadRequest("invalid JSON body")
+            return None, "", "", False, HttpResponseBadRequest("invalid JSON body")
         if isinstance(payload, dict):
             phone = payload.get("phone_number") or payload.get("phone")
             client_hint = str(payload.get("client") or "").strip().lower()
             honeypot = str(payload.get("website") or "").strip()
+            want_async = _truthy(payload.get("async"))
     else:
         phone = request.POST.get("phone_number") or request.POST.get("phone")
         client_hint = (request.POST.get("client") or "").strip().lower()
         honeypot = (request.POST.get("website") or "").strip()
-    return phone, client_hint, honeypot, None
+        want_async = _truthy(request.POST.get("async"))
+    return phone, client_hint, honeypot, want_async, None
 
 
 def _token_required(api_settings: ApiSettings, client_hint: str) -> bool:
@@ -157,6 +139,11 @@ def public_refresh_page(request):
     theme = app_settings.public_default_theme or "dark"
     with translation.override(lang):
         public_api_url = reverse("phone_refresh:public_api")
+        # The JS swaps the all-zero placeholder for the real job id.
+        public_status_url = reverse(
+            "phone_refresh:public_status",
+            args=["00000000-0000-0000-0000-000000000000"],
+        )
     return render(
         request,
         "phone_refresh/public_refresh.html",
@@ -165,6 +152,8 @@ def public_refresh_page(request):
             "facebook_url": site_settings.facebook_url,
             "public_api_token": public_api_token,
             "public_api_url": public_api_url,
+            "public_status_url": public_status_url,
+            "refresh_wait_seconds": SystemSettings.get().refresh_wait_seconds,
             "public_default_language": lang,
             "public_default_theme": theme,
             "public_html_dir": "rtl" if lang == "ar" else "ltr",
@@ -185,7 +174,10 @@ def public_refresh_api(request):
       public form (``client=web``) skip the token gate (not recommended
       for production).
     * ``rate_limit_per_minute`` / ``rate_limit_per_hour`` → sliding
-      window per client IP.
+      window per client IP (shared across workers via Redis).
+    * ``"async": true`` → answer ``202 {"status": "processing", "job": id}``
+      and let the caller poll :func:`public_refresh_status`; otherwise
+      wait up to 45 s for the final payload (previous behaviour).
     * ``allowed_origins`` → simple Origin header allowlist (empty =
       allow any).
     """
@@ -195,23 +187,15 @@ def public_refresh_api(request):
     if not _check_origin(request, api_settings):
         return JsonResponse({"error": "origin_not_allowed"}, status=403)
 
-    if not _check_rate_limit(
-        ip,
-        api_settings.rate_limit_per_minute,
-        api_settings.rate_limit_per_hour,
+    if not (
+        allow("refresh-min", ip, api_settings.rate_limit_per_minute, 60)
+        and allow("refresh-hour", ip, api_settings.rate_limit_per_hour, 3600)
     ):
-        return JsonResponse(
-            {
-                "status": "error",
-                "message": {
-                    "title": "محاولات كثيرة",
-                    "body": "لقد أرسلت طلبات كثيرة بسرعة. يرجى الانتظار قليلًا.",
-                },
-            },
-            status=429,
-        )
+        return JsonResponse(_RATE_LIMITED_BODY, status=429)
 
-    phone, client_hint, honeypot, parse_error = _parse_refresh_payload(request)
+    phone, client_hint, honeypot, want_async, parse_error = _parse_refresh_payload(
+        request
+    )
     if parse_error is not None:
         return parse_error
 
@@ -253,13 +237,36 @@ def public_refresh_api(request):
         source = RefreshSource.SMS
     else:
         source = RefreshSource.API
-    result = refresh_phone(str(phone), ip=ip or None, source=source)
+    ticket = submit_refresh(str(phone), ip=ip or None, source=source)
 
-    payload = result_payload(result)
+    status_code = 200
+    if ticket.job_id is None:
+        # Answered without a job (validation, cooldown, service off, or a
+        # failed enqueue → "busy"): always a plain 200 with that payload.
+        payload = ticket.payload
+    elif want_async:
+        status_code = 202
+        payload = {"status": "processing", "job": ticket.job_id}
+    else:
+        payload = wait_for_job(ticket.job_id, SYNC_WAIT_SECONDS)
 
     if token is not None:
         # Update audit field after the response logic settled so a slow
         # save can't delay/error out the actual refresh result.
         ApiToken.objects.filter(pk=token.pk).update(last_used_at=timezone.now())
 
-    return JsonResponse(payload)
+    return JsonResponse(payload, status=status_code)
+
+
+@require_GET
+def public_refresh_status(request, job_id):
+    """Poll a refresh job started with ``async: true``.
+
+    Returns exactly what :func:`job_payload` returns (customer-safe). Job
+    ids are random UUIDs, so unknown ids simply get the generic error
+    payload instead of a 404.
+    """
+    ip = get_client_ip(request) or ""
+    if not allow("refresh-status", ip, STATUS_LIMIT_PER_MINUTE, 60):
+        return JsonResponse(_RATE_LIMITED_BODY, status=429)
+    return JsonResponse(job_payload(str(job_id)))

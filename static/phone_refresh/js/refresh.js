@@ -84,6 +84,9 @@ const STORAGE = { LANG: "rn_lang", THEME: "rn_theme" };
 const META = (name) => (document.querySelector(`meta[name="${name}"]`) || {}).content || "";
 const API_URL = META("refresh-api");
 const API_TOKEN = META("refresh-api-token");
+const STATUS_URL_TEMPLATE = META("refresh-status-url");
+const WAIT_SECONDS = Number(META("refresh-wait-seconds")) || 90;
+const JOB_PLACEHOLDER = "00000000-0000-0000-0000-000000000000";
 
 const $ = (s) => document.querySelector(s);
 
@@ -253,6 +256,8 @@ const STATUS_TO_TYPE = {
     not_found: "error",
     error: "error",
     service_off: "info",
+    processing: "info",
+    busy: "warn",
 };
 
 const STATUS_TO_FALLBACK_KEY = {
@@ -293,7 +298,64 @@ function buildMessage(status, message, secondsSinceLastRefresh) {
     return body;
 }
 
+// Status polling: never faster than every 2 s, give up after 3 failed
+// requests in a row, and stop as soon as the user starts another request.
+const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_FAILURES = 3;
+const POLL_GRACE_SECONDS = 10;
+let activeRun = 0;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function statusUrlFor(jobId) {
+    return STATUS_URL_TEMPLATE.replace(JOB_PLACEHOLDER, encodeURIComponent(jobId));
+}
+
+// Resolves with the final payload, or `null` when the run was superseded.
+// Falls back to a bare `{ status: "error" }` (-> generic message via
+// buildMessage) after repeated failures or when the deadline passes.
+async function pollJob(jobId, runId) {
+    const deadline = Date.now() + (WAIT_SECONDS + POLL_GRACE_SECONDS) * 1000;
+    let failures = 0;
+
+    while (Date.now() <= deadline) {
+        await sleep(POLL_INTERVAL_MS);
+        if (runId !== activeRun) return null;
+
+        let data = null;
+        try {
+            const res = await fetch(statusUrlFor(jobId), {
+                method: "GET",
+                credentials: "same-origin",
+                headers: { "Accept": "application/json" },
+            });
+            if (res.ok) data = await res.json();
+        } catch (_) {
+            data = null;
+        }
+        if (runId !== activeRun) return null;
+
+        if (!data || typeof data !== "object") {
+            failures += 1;
+            if (failures >= POLL_MAX_FAILURES) break;
+            continue;
+        }
+        failures = 0;
+
+        if (data.status !== "processing" || data.final === true) return data;
+    }
+    return { status: "error" };
+}
+
+function showPayload(data) {
+    const status = (data && data.status) || "error";
+    const type = STATUS_TO_TYPE[status] || "error";
+    const message = buildMessage(status, data && data.message, data && data.seconds_since_last_refresh);
+    showAlert(message, type);
+}
+
 async function submitRefresh(number) {
+    const runId = ++activeRun;
     setLoading(true);
     showAlert(t("msg.sending"), "info");
 
@@ -301,6 +363,7 @@ async function submitRefresh(number) {
         const body = {
             phone_number: number,
             client: "web",
+            async: true,
             // Honeypot field name matches the Django view (`website`).
             website: (document.getElementById("hp-website") || {}).value || "",
         };
@@ -324,6 +387,7 @@ async function submitRefresh(number) {
 
         let data = {};
         try { data = await res.json(); } catch (_) {}
+        if (runId !== activeRun) return;
 
         if (res.status === 429) {
             const fallback = t("msg.ratelimit");
@@ -343,14 +407,19 @@ async function submitRefresh(number) {
             return;
         }
 
-        const status = (data && data.status) || "error";
-        const type = STATUS_TO_TYPE[status] || "error";
-        const message = buildMessage(status, data && data.message, data && data.seconds_since_last_refresh);
-        showAlert(message, type);
+        if (res.status === 202 && data && data.job && STATUS_URL_TEMPLATE) {
+            // Keep the "sending" loader up while the worker (re)logs in.
+            const final = await pollJob(data.job, runId);
+            if (final === null) return;
+            showPayload(final);
+            return;
+        }
+
+        showPayload(data);
     } catch (_) {
-        showAlert(t("msg.network"), "error");
+        if (runId === activeRun) showAlert(t("msg.network"), "error");
     } finally {
-        setLoading(false);
+        if (runId === activeRun) setLoading(false);
     }
 }
 

@@ -9,6 +9,8 @@
     <meta name="refresh-default-theme" content="{{ public_default_theme|default:'dark' }}" />
     <title data-i18n="page.title">تحديث الهاتف - Pro Sim</title>
     <meta name="refresh-api" content="{{ public_api_url|default:'/phone-refresh/api/refresh/' }}" />
+    <meta name="refresh-status-url" content="{{ public_status_url }}" />
+    <meta name="refresh-wait-seconds" content="{{ refresh_wait_seconds }}" />
     {% if public_api_token %}
     <meta name="refresh-api-token" content="{{ public_api_token }}" />
     {% endif %}

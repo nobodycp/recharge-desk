@@ -15,7 +15,11 @@ from phone_refresh.views.general import (
     settings_general_save,
     settings_internal_test,
 )
-from phone_refresh.views.public import public_refresh_api, public_refresh_page
+from phone_refresh.views.public import (
+    public_refresh_api,
+    public_refresh_page,
+    public_refresh_status,
+)
 from phone_refresh.views.settings import (
     message_create,
     message_delete,
@@ -58,6 +62,7 @@ __all__ = [
     "report_logs_bulk_delete",
     "public_refresh_page",
     "public_refresh_api",
+    "public_refresh_status",
     "api_index",
     "api_settings_save",
     "api_token_create",
