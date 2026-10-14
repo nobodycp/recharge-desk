@@ -93,6 +93,13 @@ class ProviderOperationsReportTests(TestCase):
         response = self.client.get(self.url, {"provider": "layan"})
         self.assertEqual(self._page_ids(response), [layan.pk])
 
+    def test_tab_names_are_arabic_for_sky_and_titled_otherwise(self):
+        response = self.client.get(self.url)
+        names = {t["key"]: t["name"] for t in response.context["providers"]}
+        self.assertEqual(names["sky"], "سكاي")
+        self.assertEqual(names["layan"], "Layan")
+        self.assertContains(response, "سكاي")
+
     def test_tab_counts_ignore_other_filters_but_respect_period(self):
         self._op(provider_key="sky", outcome="failed", error_code="connection")
         self._op(provider_key="sky", outcome="success")

@@ -77,6 +77,9 @@ _CODE_TO_CAUSE = {
     "login_error": "login_failed",
     "otp_required": "login_failed",
     "auth_required": "login_failed",
+    # AuthRequired texts that persist after a login (sky adapter, refresh path).
+    "session_expired": "login_failed",
+    "session not ready": "login_failed",
     "login_busy": "login_busy",
     "provider_disabled": "service_off",
     "config_error": "not_configured",
@@ -173,6 +176,8 @@ def record(
     """Write one operation row; never raises and never poisons the caller's transaction."""
     from providers.models import ProviderOperation
 
+    # Postgres rejects overlong values (SQLite doesn't), so clip to the column.
+    phone = (phone or "")[: ProviderOperation._meta.get_field("phone").max_length]
     outcome = classified.outcome
     if source not in SOURCES:
         log.warning(
@@ -195,7 +200,7 @@ def record(
             ProviderOperation.objects.create(
                 provider_key=provider_key,
                 service=service,
-                phone=phone or "",
+                phone=phone,
                 outcome=outcome,
                 error_code=classified.error_code,
                 message=classified.message[:MESSAGE_MAX],

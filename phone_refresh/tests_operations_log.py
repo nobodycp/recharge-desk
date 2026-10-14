@@ -4,9 +4,11 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from django.test import TestCase
+from kombu.exceptions import OperationalError
 
 from phone_refresh.models import RefreshLog, RefreshSource, SystemSettings
 from phone_refresh.services import refresh_jobs
+from phone_refresh.services.refresh_jobs import job_payload
 from phone_refresh.services.refresh_service import (
     complete_failure,
     refresh_phone,
@@ -115,7 +117,27 @@ class RefreshOutcomeRowTests(_OperationsTestCase):
         self.assertEqual(row.attempts, 1)
         self.assertEqual(RefreshLog.objects.get().status.code, "error")
 
-    def test_enqueue_failure_row_is_a_busy_login_busy_failure(self):
+    @patch(
+        "phone_refresh.services.refresh_jobs.run_refresh_job.delay",
+        side_effect=OperationalError("broker down"),
+    )
+    def test_enqueue_failure_writes_no_operation_row(self, delay):
+        # No provider was called, so the log stays empty; the customer still
+        # gets the busy payload and the RefreshLog row, unchanged.
+        with self.assertLogs("phone_refresh.services.refresh_jobs", level="ERROR"):
+            with self.captureOnCommitCallbacks(execute=True):
+                ticket = refresh_jobs.submit_refresh(
+                    PHONE, ip=None, source=RefreshSource.WEB
+                )
+        delay.assert_called_once()
+        self.assertEqual(ProviderOperation.objects.count(), 0)
+        self.assertEqual(job_payload(ticket.job_id)["status"], "busy")
+        self.assertEqual(ProviderJob.objects.get().status, "failed")
+        log = RefreshLog.objects.get()
+        self.assertEqual(log.status.code, "busy")
+        self.assertEqual(log.raw_excerpt, "")
+
+    def test_complete_failure_busy_returns_busy_result_and_no_row(self):
         result = complete_failure(
             phone=PHONE,
             provider_key="sky",
@@ -125,13 +147,10 @@ class RefreshOutcomeRowTests(_OperationsTestCase):
             started=0.0,
             status_code="busy",
         )
-        row = self.only_row()
         self.assertEqual(result.status.code, "busy")
-        self.assertEqual(row.error_code, "login_busy")
-        self.assertEqual(
-            row.message, "فشل التحديث — تسجيل الدخول قيد التنفيذ، حاول بعد قليل"
-        )
-        self.assertEqual(row.detail, "enqueue_failed")
+        self.assertEqual(result_payload(result)["status"], "busy")
+        self.assertEqual(RefreshLog.objects.get().status.code, "busy")
+        self.assertEqual(ProviderOperation.objects.count(), 0)
 
 
 class PreCheckWritesNothingTests(_OperationsTestCase):

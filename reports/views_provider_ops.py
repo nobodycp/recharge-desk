@@ -31,6 +31,7 @@ PERIOD_LABELS = {
     "custom": "فترة مخصصة",
 }
 TOP_CAUSES = 5
+PROVIDER_NAMES = {"sky": "سكاي"}
 _MESSAGE_PREFIX = re.compile(r"^فشل .+? — ")
 
 
@@ -148,7 +149,12 @@ def provider_operations(request):
     if provider not in ADAPTERS:
         provider = next((key for key in ADAPTERS if counts.get(key)), "sky")
     providers = [
-        {"key": key, "name": key, "count": counts.get(key, 0), "active": key == provider}
+        {
+            "key": key,
+            "name": PROVIDER_NAMES.get(key, key.title()),
+            "count": counts.get(key, 0),
+            "active": key == provider,
+        }
         for key in ADAPTERS
     ]
 

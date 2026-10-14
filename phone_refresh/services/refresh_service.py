@@ -545,9 +545,9 @@ def complete_failure(
     """Log + answer a call that never produced a provider response.
 
     Defaults to the generic ``error`` status (provider crashed); the queue
-    uses ``status_code="busy"`` when a job cannot even be enqueued. Also
-    writes the refresh's provider-operations row (internal error for a crash,
-    ``login_busy`` for a busy answer).
+    uses ``status_code="busy"`` when a job cannot even be enqueued. A crash
+    also writes the refresh's provider-operations row (internal error); the
+    busy (enqueue-failure) case writes none, since no provider was called.
     """
     phone = (phone or "").strip()
     source = normalize_source(source)
@@ -566,19 +566,18 @@ def complete_failure(
         internal_test=internal_test,
         source=source,
     )
-    _record_operation(
-        result,
-        operations.classify_code(
-            "refresh", "login_busy" if status_code == "busy" else "context_error"
-        ),
-        phone=phone,
-        provider_key=provider_key,
-        source=source,
-        job_id=job_id,
-        attempts=1,
-        # No provider body exists; the scrubbed failure text is the diagnostic.
-        detail=safe_error,
-    )
+    if status_code != "busy":
+        _record_operation(
+            result,
+            operations.classify_code("refresh", "context_error"),
+            phone=phone,
+            provider_key=provider_key,
+            source=source,
+            job_id=job_id,
+            attempts=1,
+            # No provider body exists; the scrubbed failure text is the diagnostic.
+            detail=safe_error,
+        )
     return result
 
 

@@ -30,6 +30,17 @@ class ClassifyCodeTests(TestCase):
                     Classified("failed", "login_failed", "فشل الشحن — خطأ تسجيل الدخول"),
                 )
 
+    def test_session_errors_after_login_map_to_login_failed(self):
+        # AuthRequired texts that persist after a login (adapter/service refresh path).
+        for code in ("session_expired", "session not ready"):
+            with self.subTest(code=code):
+                result = operations.classify_code("refresh", code)
+                self.assertEqual(result.error_code, "login_failed")
+                self.assertIn("خطأ تسجيل الدخول", result.message)
+                self.assertEqual(
+                    result, Classified("failed", "login_failed", "فشل التحديث — خطأ تسجيل الدخول")
+                )
+
     def test_not_sent_prefix_is_stripped(self):
         self.assertEqual(
             operations.classify_code("charge", "not_sent:login_failed"),
@@ -346,6 +357,14 @@ class RecordTests(TestCase):
         warn.assert_not_called()
         row = ProviderOperation.objects.get()
         self.assertEqual((row.source, row.outcome), ("api", "success"))
+
+    def test_phone_is_truncated_to_the_model_max_length(self):
+        operations.record(
+            "sky", "refresh", operations.success("refresh"), phone="9" * 64
+        )
+        row = ProviderOperation.objects.get()
+        self.assertEqual(len(row.phone), 20)
+        self.assertEqual(row.phone, "9" * 20)
 
     def test_message_is_truncated_to_255(self):
         operations.record(
