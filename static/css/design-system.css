@@ -92,6 +92,13 @@ html {
   --rd-warning-on-ink: #fbbf24;
   --rd-danger-on-ink: #f87171;
 
+  /* Hero surface: stays ink in both themes (login brand panel). The plate
+     sits behind uploaded logos, which are drawn for a light background. */
+  --rd-hero-bg: #0a0a0a;
+  --rd-hero-fg: #ffffff;
+  --rd-hero-plate: #ffffff;
+  --rd-hero-success: #4ade80;
+
   --bs-body-bg: #fafaf8;
   --bs-body-color: var(--rd-ink);
   --bs-secondary-color: var(--rd-muted);
@@ -184,6 +191,11 @@ html {
   --rd-success-on-ink: #0a7a3e;
   --rd-warning-on-ink: #c2410c;
   --rd-danger-on-ink: #b91c1c;
+
+  --rd-hero-bg: #050505;
+  --rd-hero-fg: #f5f5f2;
+  --rd-hero-plate: #f5f5f2;
+  --rd-hero-success: #4ade80;
 
   --bs-body-bg: #0b0b0a;
   --bs-body-color: var(--rd-ink);
@@ -2638,60 +2650,6 @@ html[lang="ar"] .rd-employee-title {
   background: color-mix(in srgb, var(--bs-secondary-bg) 92%, var(--bs-tertiary-bg));
   border-bottom: 1px solid var(--bs-border-color);
   white-space: nowrap;
-}
-
-/* Login alignment */
-.login-shell {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-[data-bs-theme="light"] .login-shell {
-  background:
-    radial-gradient(ellipse 56.25rem 31.25rem at 10% -10%, rgba(79, 70, 229, 0.12), transparent 55%),
-    radial-gradient(ellipse 43.75rem 25rem at 100% 100%, rgba(8, 145, 178, 0.1), transparent 50%),
-    var(--bs-body-bg);
-}
-
-[data-bs-theme="dark"] .login-shell {
-  background:
-    radial-gradient(ellipse 50rem 30rem at 15% 0%, rgba(129, 140, 248, 0.14), transparent 55%),
-    radial-gradient(ellipse 37.5rem 25rem at 95% 90%, rgba(34, 211, 238, 0.08), transparent 45%),
-    var(--bs-body-bg);
-}
-
-.login-card {
-  max-width: 26.25rem;
-  width: 100%;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
-  background: var(--bs-secondary-bg);
-}
-
-.login-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-
-.login-brand-img {
-  width: 100%;
-  max-width: 13rem;
-  max-height: 6rem;
-  height: auto;
-  object-fit: contain;
-}
-
-@media (min-width: 576px) {
-  .login-brand-img {
-    max-width: 15rem;
-    max-height: 7rem;
-  }
 }
 
 /* Empty state */

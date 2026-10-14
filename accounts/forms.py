@@ -16,9 +16,22 @@ class LoginForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].widget.attrs.update(
-            {"class": "form-control form-control-lg", "autofocus": True}
+            {
+                "class": "rd-login-input",
+                "autofocus": True,
+                "autocomplete": "username",
+                "autocapitalize": "none",
+                "spellcheck": "false",
+                "placeholder": " ",
+            }
         )
-        self.fields["password"].widget.attrs.update({"class": "form-control form-control-lg"})
+        self.fields["password"].widget.attrs.update(
+            {
+                "class": "rd-login-input",
+                "autocomplete": "current-password",
+                "placeholder": " ",
+            }
+        )
 
 
 class ManagementUserForm(UserCreationForm):

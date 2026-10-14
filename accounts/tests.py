@@ -13,12 +13,16 @@ Decorator behavior recap (accounts/permissions.py):
   hit via GET).
 """
 
+import io
+import tempfile
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
-from django.urls import reverse
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse, reverse_lazy
 
 from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
@@ -634,3 +638,62 @@ class UserListHxBoostTests(TestCase):
         self.assertContains(r, 'id="user-list-results"')
         self.assertContains(r, 'hx-target="#user-list-results"')
         self.assertContains(r, 'hx-boost="true"')
+
+
+class LoginPageTests(TestCase):
+    url = reverse_lazy("accounts:login")
+
+    def setUp(self):
+        from core.models import SITE_BRANDING_CACHE_KEY, SiteBranding
+
+        SiteBranding.objects.all().delete()
+        cache.delete(SITE_BRANDING_CACHE_KEY)
+
+    def test_form_hooks_present(self):
+        r = self.client.get(self.url)
+        for s in (
+            'name="username"',
+            'name="password"',
+            'name="next"',
+            "csrfmiddlewaretoken",
+            "data-rd-password-toggle",
+            "data-rd-caps-hint",
+            "js/login.js",
+            "css/login.css",
+        ):
+            self.assertContains(r, s)
+
+    def test_next_is_preserved(self):
+        r = self.client.get(f"{self.url}?next=/ar/management/customers/")
+        self.assertContains(r, 'value="/ar/management/customers/"')
+
+    def test_invalid_login_rerenders_with_username(self):
+        User.objects.create_user("pearl", password="right-pass-123")
+        r = self.client.post(self.url, {"username": "pearl", "password": "wrong"})
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'value="pearl"')
+        self.assertContains(r, "data-rd-flash")
+
+    def test_valid_login_redirects(self):
+        User.objects.create_user("pearl", password="right-pass-123")
+        r = self.client.post(self.url, {"username": "pearl", "password": "right-pass-123"})
+        self.assertEqual(r.status_code, 302)
+
+    def test_brand_panel_uses_logo_when_set(self):
+        from PIL import Image
+
+        from core.models import SiteBranding
+
+        r = self.client.get(self.url)
+        self.assertContains(r, "rd-login-mark")
+        self.assertNotContains(r, "rd-login-logo")
+
+        buf = io.BytesIO()
+        Image.new("RGB", (32, 32), (120, 10, 10)).save(buf, format="PNG")
+        with tempfile.TemporaryDirectory() as tmpdir, override_settings(MEDIA_ROOT=tmpdir):
+            b = SiteBranding.load()
+            b.logo = SimpleUploadedFile("logo.png", buf.getvalue(), "image/png")
+            b.save()
+            r = self.client.get(self.url)
+            self.assertContains(r, 'class="rd-login-logo"')
+            self.assertContains(r, b.logo.url)

@@ -5,65 +5,138 @@
   <meta charset="utf-8">
   {% include "partials/theme_head.html" %}
   {% include "partials/favicon.html" %}
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% trans "Sign in" %} · {{ site_name }}</title>
   {% include "partials/fonts_head.html" %}
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
-  <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
+  <link href="{% static 'css/login.css' %}{{ static_cache_query }}" rel="stylesheet">
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/toast.js' %}{{ static_cache_query }}" defer></script>
+  <script src="{% static 'js/login.js' %}{{ static_cache_query }}" defer></script>
 </head>
-<body class="login-shell rd-body app-shell">
+<body class="rd-login rd-body">
   {% include "partials/toast_region.html" %}
-  <div class="p-3 w-100 d-flex justify-content-center">
-    <div class="card login-card">
-      <div class="card-body p-4 p-md-5">
+  <div class="rd-login-split">
+    <div class="rd-login-top">
+      <div class="rd-login-mini">
         {% if site_branding.logo %}
-          <div class="login-brand text-center">
-            <img src="{{ site_branding.logo.url }}" alt="{% trans 'Site logo' %}" class="login-brand-img">
-          </div>
+          <span class="rd-login-plate rd-login-plate--sm"><img src="{{ site_branding.logo.url }}" alt="" class="rd-login-mini-logo"></span>
+        {% else %}
+          <span class="rd-login-mark rd-login-mark--sm" aria-hidden="true">{{ site_name|slice:":1" }}</span>
         {% endif %}
-        <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
-          <div>
-            <div class="text-uppercase text-secondary small fw-semibold">{{ site_name }}</div>
-            <h1 class="h4 mb-0 mt-1">{% trans "Sign in" %}</h1>
-          </div>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            {% include "partials/theme_toggle.html" with variant="shell" %}
-            <form action="{% url 'set_language' %}" method="post" class="mb-0">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.get_full_path }}">
-              <select name="language" class="form-select form-select-sm" onchange="this.form.submit()">
-                {% get_current_language as LANGUAGE_CODE %}
-                {% for code, label in languages %}
-                  <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </form>
-          </div>
-        </div>
-        {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
-        <form method="post" novalidate>
+        <span class="rd-login-mini-name">{{ site_name }}</span>
+      </div>
+      <div class="rd-login-controls">
+        {% include "partials/theme_toggle.html" with variant="shell" %}
+        <form action="{% url 'set_language' %}" method="post" class="rd-login-lang">
           {% csrf_token %}
-          <div class="mb-3">
-            {{ form.username.label_tag }}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <svg class="rd-login-lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          <select name="language" class="rd-login-lang-select" aria-label="{% trans 'Language' %}" onchange="this.form.submit()">
+            {% get_current_language as LANGUAGE_CODE %}
+            {% for code, label in languages %}
+              <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <section class="rd-login-form-side">
+      <span class="rd-login-grab" aria-hidden="true"></span>
+      <div class="rd-login-body">
+        <p class="rd-login-eyebrow">{% trans "Management & sales desk" %}</p>
+        <h1 class="rd-login-title">{% trans "Welcome back" %}</h1>
+        <p class="rd-login-lead">{% trans "Sign in and pick up where you left off." %}</p>
+
+        {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
+        <form method="post" novalidate data-rd-login>
+          {% csrf_token %}
+          <div class="rd-login-field{% if form.username.value %} is-filled{% endif %}">
+            <svg class="rd-login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <label class="rd-login-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
             {{ form.username }}
-            {{ form.username.errors }}
           </div>
-          <div class="mb-4">
-            {{ form.password.label_tag }}
+          {{ form.username.errors }}
+          <div class="rd-login-field rd-login-field--password">
+            <svg class="rd-login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <label class="rd-login-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
             {{ form.password }}
-            {{ form.password.errors }}
+            <button type="button" class="rd-login-toggle" data-rd-password-toggle aria-pressed="false" aria-controls="{{ form.password.id_for_label }}" data-show-label="{% trans 'Show' %}" data-hide-label="{% trans 'Hide' %}">{% trans "Show" %}</button>
+            <p class="rd-login-caps" data-rd-caps-hint role="status" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 4 12h4v4h8v-4h4z"/><path d="M8 20h8"/></svg>
+              {% trans "Caps Lock is on" %}
+            </p>
           </div>
+          {{ form.password.errors }}
           {% if form.errors and not form.non_field_errors %}
             <div data-rd-flash hidden><p data-level="error">{% trans "Please correct the errors below." %}</p></div>
           {% endif %}
           <input type="hidden" name="next" value="{{ next }}">
-          <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Sign in" %}</button>
+          <button class="rd-login-submit" type="submit" data-rd-login-submit>
+            <span class="rd-login-submit-label">{% trans "Sign in" %}</span>
+            <span class="rd-login-submit-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span>
+            <span class="rd-login-spinner" aria-hidden="true"></span>
+          </button>
         </form>
+        <p class="rd-login-help">{% trans "Forgot your password? Ask management to reset it." %}</p>
       </div>
-    </div>
+      <footer class="rd-login-foot">
+        <span>© {% now "Y" %} {{ site_name }}</span>
+        <span class="rd-login-secure">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          {% trans "Secure connection" %}
+        </span>
+      </footer>
+    </section>
+
+    <aside class="rd-login-brand rd-login-hero">
+      <span class="rd-login-glow" aria-hidden="true"></span>
+      <span class="rd-login-grid" aria-hidden="true"></span>
+      <span class="rd-login-orb" aria-hidden="true"></span>
+      <span class="rd-login-rings" aria-hidden="true"><span></span><span></span><span></span></span>
+
+      <div class="rd-login-brand-id">
+        {% if site_branding.logo %}
+          <span class="rd-login-plate"><img src="{{ site_branding.logo.url }}" alt="{% trans 'Site logo' %}" class="rd-login-logo"></span>
+        {% else %}
+          <span class="rd-login-mark" aria-hidden="true">{{ site_name|slice:":1" }}</span>
+        {% endif %}
+        <span class="rd-login-brand-text">
+          <b>{{ site_name }}</b>
+          <small>{{ site_tagline }}</small>
+        </span>
+      </div>
+
+      <div class="rd-login-cards" aria-hidden="true">
+        <div class="rd-login-card">
+          <span class="rd-login-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>
+          <span class="rd-login-card-text"><b>{% trans "Recharge completed" %}</b><span dir="ltr">05•• ••• 456</span></span>
+          <span class="rd-login-card-amt">50</span>
+        </div>
+        <div class="rd-login-card">
+          <span class="rd-login-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>
+          <span class="rd-login-card-text"><b>{% trans "Payment received" %}</b><span>{% trans "Customer" %}</span></span>
+          <span class="rd-login-card-amt rd-login-card-amt--ok" dir="ltr">+120</span>
+        </div>
+      </div>
+
+      <h2 class="rd-login-headline">{% trans "Every recharge," %}<br><em>{% trans "in one place." %}</em></h2>
+      <div class="rd-login-ticker" aria-hidden="true">
+        <div class="rd-login-ticker-track">
+          <p>{% trans "Sell from your phone in seconds" %}</p>
+          <p>{% trans "Company balances always up to date" %}</p>
+          <p>{% trans "Every operation saved and reviewed" %}</p>
+        </div>
+      </div>
+      <p class="rd-login-copy">{% trans "Live sales, company and customer balances, and SIM stock — accurate and fast, from desktop or phone." %}</p>
+      <ul class="rd-login-pills">
+        <li><i aria-hidden="true"></i>{% trans "Live sales" %}</li>
+        <li><i aria-hidden="true"></i>{% trans "Accurate balances" %}</li>
+        <li><i aria-hidden="true"></i>{% trans "Clear reports" %}</li>
+      </ul>
+    </aside>
   </div>
 </body>
 </html>

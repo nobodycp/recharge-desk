@@ -164,7 +164,7 @@ class SiteBrandingTests(TestCase):
     def test_login_page_omits_logo_when_unset(self):
         r = Client().get(reverse("accounts:login"))
         self.assertEqual(r.status_code, 200)
-        self.assertNotContains(r, "login-brand-img")
+        self.assertNotContains(r, "rd-login-logo")
 
     def test_login_page_renders_logo_when_set(self):
         b = SiteBranding.load()
@@ -172,7 +172,7 @@ class SiteBrandingTests(TestCase):
         b.save()
         r = Client().get(reverse("accounts:login"))
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "login-brand-img")
+        self.assertContains(r, "rd-login-logo")
         self.assertContains(r, b.logo.url)
 
     def test_login_page_uses_branded_site_name_not_request_host(self):

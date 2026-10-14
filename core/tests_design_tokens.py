@@ -79,6 +79,6 @@ class PearlTokenTests(SimpleTestCase):
         )
 
     def test_page_css_has_no_hex(self):
-        for f in ("app.css", "number-check.css"):
+        for f in ("app.css", "number-check.css", "login.css"):
             text = (CSS_DIR / f).read_text(encoding="utf-8")
             self.assertEqual([l for l in text.splitlines() if HEX.search(l)], [], f)

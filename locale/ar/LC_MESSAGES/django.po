@@ -6240,6 +6240,82 @@ msgstr "تحديث الرسائل"
 msgid "Provider rules"
 msgstr "قواعد المزودين"
 
+#: templates/accounts/login.html
+msgid "Management & sales desk"
+msgstr "لوحة الإدارة والمبيعات"
+
+#: templates/accounts/login.html
+msgid "Welcome back"
+msgstr "أهلاً بعودتك"
+
+#: templates/accounts/login.html
+msgid "Sign in and pick up where you left off."
+msgstr "سجّل دخولك وكمّل شغلك من حيث وقفت."
+
+#: templates/accounts/login.html
+msgid "Forgot your password? Ask management to reset it."
+msgstr "نسيت كلمة المرور؟ تواصل مع الإدارة لإعادة تعيينها."
+
+#: templates/accounts/login.html
+msgid "Every recharge,"
+msgstr "كل عمليات الشحن،"
+
+#: templates/accounts/login.html
+msgid "in one place."
+msgstr "بمكان واحد."
+
+#: templates/accounts/login.html
+msgid "Live sales, company and customer balances, and SIM stock — accurate and fast, from desktop or phone."
+msgstr "مبيعات لحظية، أرصدة الشركات والعملاء، ومخزون الشرائح — بدقة وسرعة، من الكمبيوتر أو الجوال."
+
+#: templates/accounts/login.html
+msgid "Live sales"
+msgstr "مبيعات لحظية"
+
+#: templates/accounts/login.html
+msgid "Accurate balances"
+msgstr "أرصدة دقيقة"
+
+#: templates/accounts/login.html
+msgid "Clear reports"
+msgstr "تقارير واضحة"
+
+#: templates/accounts/login.html
+msgid "Sell from your phone in seconds"
+msgstr "مبيعات لحظية من جوالك"
+
+#: templates/accounts/login.html
+msgid "Company balances always up to date"
+msgstr "أرصدة الشركات محدّثة دائماً"
+
+#: templates/accounts/login.html
+msgid "Every operation saved and reviewed"
+msgstr "كل عملية محفوظة ومراجَعة"
+
+#: templates/accounts/login.html
+msgid "Show"
+msgstr "إظهار"
+
+#: templates/accounts/login.html
+msgid "Hide"
+msgstr "إخفاء"
+
+#: templates/accounts/login.html
+msgid "Caps Lock is on"
+msgstr "زر الأحرف الكبيرة (Caps Lock) مفعّل"
+
+#: templates/accounts/login.html
+msgid "Secure connection"
+msgstr "اتصال آمن"
+
+#: templates/accounts/login.html
+msgid "Recharge completed"
+msgstr "عملية شحن ناجحة"
+
+#: templates/accounts/login.html
+msgid "Payment received"
+msgstr "دفعة مستلمة"
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
