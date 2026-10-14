@@ -2975,9 +2975,13 @@ msgstr "بيع جديد"
 msgid "Number refresh is disabled on the sales screen."
 msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
 
-#: sales/views/employee.py:247 templates/sales/employee_refresh_number.html:4
+#: sales/views/employee.py:247 templates/sales/employee_refresh_number.html:60
 msgid "Refresh number"
 msgstr "تحديث الرقم"
+
+#: templates/sales/employee_refresh_number.html:61
+msgid "Check number"
+msgstr "فحص الرقم"
 #: sales/views/employee.py:257 sales/views/employee.py:289
 #: sales/views/employee.py:778
 msgid "Recording payments from the sales screen is disabled."
