@@ -42,7 +42,7 @@ rows).
 | `outcome` | char(12) | `success`, `failed`, `pending` (charge sent but unconfirmed) |
 | `error_code` | char(24), blank | cause code (table below); blank on success |
 | `message` | char(255) | Arabic staff message, e.g. "فشل الشحن — خطأ تسجيل الدخول" |
-| `source` | char(20) | `web` (public page), `sms`, `api`, `employee`, `management`, `system` (tasks) |
+| `source` | char(20) | `web` (public page), `sms`, `api`, `employee`, `management` (incl. the admin number test), `system` (tasks) |
 | `user` | FK user, null, `SET_NULL` | the employee/manager when known |
 | `sale_id` | int, null | no FK (providers never imports sales) |
 | `job_id` | UUID, null | `ProviderJob` when the operation ran as a job |
@@ -86,16 +86,21 @@ Known Sky reasons map to Arabic reasons (`not_found` → "الرقم غير مو
   - `record(provider_key, service, *, phone="", source, user=None, sale_id=None, job_id=None,
     attempts=1, duration_ms=None, outcome, error_code="", message, detail="")` — writes one row;
     any exception is logged as a warning and swallowed (recording never breaks an operation).
-- `providers/service.py` — `refresh`, `charge`, `check_charge`, `reconcile` gain keyword-only
-  `source`, `user=None`, `sale_id=None`, `job_id=None` (defaults keep current callers working) and
-  record exactly one row each before returning or re-raising. Return values and exceptions are
-  unchanged.
-- Callers pass their context: `phone_refresh/services/refresh_service.py` (sync: web/sms/api/
-  employee), `phone_refresh/tasks.py` (async refresh jobs, source from the job), `sales/tasks.py`
-  (charge: `employee` + user + sale; follow-up: `system` + sale), `companies/views.py`
-  (reconcile: `management` + user).
-- Employee charge message: `sales/charging.py` stores/shows the classified Arabic message instead
-  of raw codes like `not_sent:login_failed`.
+- `providers/service.py` — `charge`, `check_charge`, `reconcile` gain keyword-only context
+  (`source`, `user_id`, `job_id`; sale id comes from the `ChargeContext`) and record exactly one
+  row each before returning or re-raising. `refresh` reports its attempt count on the returned
+  `RawResponse` (`attempts`). Return values and exceptions are otherwise unchanged.
+- Refresh rows are written by `phone_refresh/services/refresh_service.py` `complete()` /
+  `complete_failure()`, because only there is the provider's reply turned into a final status
+  by the response rules (for Aloha/Layan/Areen a HTTP 200 can still mean "number not found").
+  Matched status `refreshed` → success; a provider error code → its cause; any other matched
+  status → `rejected` with the status's Arabic label as the reason. Pre-checks that never call
+  the provider (rate limit, invalid number, refresh switched off) get no row.
+- Callers pass their context: `phone_refresh` (source from the request / job, job id for async
+  jobs), `sales/tasks.py` (charge: `employee` + `sale.created_by_id` + job; follow-up: `system`),
+  `companies/views.py` (reconcile: `management` + user).
+- Employee charge message: `sales/charging.py` stores the classified Arabic message in
+  `Sale.charge_message` (shown to the employee) instead of raw codes like `not_sent:login_failed`.
 - Report page: `reports/views_provider_ops.py` + `templates/reports/provider_operations.html`,
   URL `reports:provider_operations` → `management/reports/providers/`, `@management_required`,
   nav link "تقارير المزودين" in the Reports group of `templates/partials/management_nav.html`.
