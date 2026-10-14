@@ -181,6 +181,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "providers.tasks.keepalive_sessions",
         "schedule": 300.0,
     },
+    "phone-refresh-reap-stuck-jobs": {
+        "task": "phone_refresh.tasks.reap_stuck_jobs",
+        "schedule": 300.0,
+    },
     "providers-purge-old-jobs": {
         "task": "providers.tasks.purge_old_jobs",
         "schedule": 86400.0,

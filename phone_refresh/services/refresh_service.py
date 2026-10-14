@@ -195,7 +195,7 @@ _KNOWN_SOURCES = frozenset(
 )
 
 
-def _normalize_source(source: str) -> str:
+def normalize_source(source: str) -> str:
     """Callers may pass an unknown string but we must never persist anything
     outside the known choices. Unknown values fall back to ``web`` (the
     safest "real traffic" bucket) and ``legacy`` is explicitly rejected for
@@ -233,7 +233,7 @@ def precheck(
     started = time.monotonic()
     phone = (phone or "").strip()
     settings = SystemSettings.get()
-    source = _normalize_source(source)
+    source = normalize_source(source)
     skip_cooldown = internal_test
 
     # 1. Service-off short-circuit (skipped during internal test only).
@@ -403,7 +403,7 @@ def complete(
     """Turn a provider response into a logged, customer-facing result."""
     phone = (phone or "").strip()
     settings = SystemSettings.get()
-    source = _normalize_source(source)
+    source = normalize_source(source)
     last_log = _last_successful_refresh(phone)
     safe_raw = _scrubbed(raw)
 
@@ -416,7 +416,7 @@ def complete(
             matched_rule=None,
             ip=ip,
             started=started,
-            error=raw.error,
+            error=scrub(raw.error),
             last_log=last_log,
             settings=settings,
             internal_test=internal_test,
@@ -482,7 +482,7 @@ def complete_failure(
         last_log=_last_successful_refresh(phone),
         settings=SystemSettings.get(),
         internal_test=internal_test,
-        source=_normalize_source(source),
+        source=normalize_source(source),
     )
 
 

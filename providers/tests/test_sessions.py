@@ -257,9 +257,9 @@ class RunAuthenticatedTests(TestCase):
         self.assertFalse(get_redis().exists("provider:login-cooldown:sky"))
 
     def test_lock_release_handles_str_tokens(self):
-        from providers.sessions import _LoginLock
+        from providers.sessions import NoLuaLock
 
-        lock = _LoginLock(get_redis(), "provider:login-lock:test", timeout=10)
+        lock = NoLuaLock(get_redis(), "provider:login-lock:test", timeout=10)
         self.assertTrue(lock.acquire(blocking=False))
         lock.do_release(lock.local.token.decode())
         self.assertIsNone(get_redis().get("provider:login-lock:test"))

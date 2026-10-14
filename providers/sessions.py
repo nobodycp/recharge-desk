@@ -29,7 +29,7 @@ def _as_bytes(value) -> bytes | None:
     return value.encode() if isinstance(value, str) else value
 
 
-class _LoginLock(Lock):
+class NoLuaLock(Lock):
     """``redis.lock.Lock`` whose release avoids Lua (fakeredis has no Lua engine)."""
 
     def do_release(self, expected_token: bytes) -> None:
@@ -125,7 +125,7 @@ def _login_once(
         f"provider:login-lock:{key}",
         timeout=LOGIN_LOCK_TIMEOUT_SECONDS,
         blocking_timeout=lock_wait,
-        lock_class=_LoginLock,
+        lock_class=NoLuaLock,
     )
     if not lock.acquire():
         raise TransientError("login_busy")

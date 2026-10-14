@@ -5,7 +5,9 @@ import logging
 import time
 
 from celery import shared_task
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import close_old_connections
 
 from phone_refresh.services.refresh_service import (
     complete,
@@ -23,6 +25,8 @@ log = logging.getLogger(__name__)
 # Workers are not bound by the web request timeout, so they may wait out a
 # login lock and retry for much longer than the 45 s sync default.
 WORKER_REFRESH_BUDGET_SECONDS = 150
+# A job still queued/running after this long lost its worker (crash, restart).
+STUCK_JOB_SECONDS = 600
 
 _FALLBACK_ERROR_PAYLOAD = {
     "status": "error",
@@ -50,6 +54,16 @@ def _safe_notify(job: ProviderJob, result: dict) -> None:
         _notify(job, result)
     except Exception:  # noqa: BLE001 — a notify failure must not undo a finished job
         log.exception("refresh job %s completion hook failed", job.pk)
+
+
+def _refresh_db_connection() -> None:
+    """Drop a connection that went stale during the long provider call.
+
+    Skipped in eager mode, where the task shares the caller's connection
+    (and possibly its transaction).
+    """
+    if not settings.CELERY_TASK_ALWAYS_EAGER:
+        close_old_connections()
 
 
 def _load_job(job_id: str) -> ProviderJob | None:
@@ -99,7 +113,25 @@ def run_refresh_job(job_id: str) -> None:
     except Exception as exc:  # noqa: BLE001
         log.error("refresh job %s failed: %s", job.pk, scrub(str(exc)), exc_info=True)
         result = _error_payload()
+        _refresh_db_connection()
         jobs.mark_failed(job, result)
     else:
+        _refresh_db_connection()
         jobs.mark_done(job, result)
     _safe_notify(job, result)
+
+
+@shared_task
+def reap_stuck_jobs() -> int:
+    """Fail refresh jobs whose worker vanished (beat, every 5 min); returns count.
+
+    Pollers then see the generic error instead of ``processing`` forever, and
+    SMS callers that asked to be notified are told.
+    """
+    reaped = jobs.fail_stuck(
+        ProviderJob.KIND_REFRESH, STUCK_JOB_SECONDS, _error_payload()
+    )
+    for job in reaped:
+        log.warning("refresh job %s was stuck in its queue/worker; failed it", job.pk)
+        _safe_notify(job, job.result)
+    return len(reaped)

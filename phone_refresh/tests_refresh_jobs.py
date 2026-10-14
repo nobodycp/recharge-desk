@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import datetime as dt
+import threading
+import time
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.db import connection
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 from kombu.exceptions import OperationalError
 
@@ -25,7 +28,13 @@ from phone_refresh.services.refresh_service import (
     refresh_phone,
     result_payload,
 )
-from phone_refresh.tasks import WORKER_REFRESH_BUDGET_SECONDS, run_refresh_job
+from phone_refresh.tasks import (
+    WORKER_REFRESH_BUDGET_SECONDS,
+    reap_stuck_jobs,
+    run_refresh_job,
+)
+from providers import jobs
+from providers.redis_conn import get_redis
 from providers.contracts import RawResponse
 from providers.models import ProviderJob
 
@@ -90,6 +99,65 @@ class SubmitAndTaskTests(_JobTestCase):
         self.assertEqual(ProviderJob.objects.count(), 1)
         refresh.assert_not_called()  # on_commit never ran inside TestCase
 
+    def test_sms_submit_with_notify_does_not_join_web_job(self):
+        web = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        sms = refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.SMS, notify={"sms_inbound_id": 5}
+        )
+        self.assertNotEqual(web.job_id, sms.job_id)
+        self.assertEqual(
+            ProviderJob.objects.get(pk=sms.job_id).payload["notify"],
+            {"sms_inbound_id": 5},
+        )
+
+    def test_forced_provider_submit_gets_its_own_job(self):
+        web = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        admin = refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.WEB, forced_provider="sky"
+        )
+        self.assertNotEqual(web.job_id, admin.job_id)
+        self.assertEqual(ProviderJob.objects.get(pk=admin.job_id).payload["forced_provider"], "sky")
+
+    def test_internal_test_submit_gets_its_own_job(self):
+        web = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        test = refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.INTERNAL_TEST, internal_test=True
+        )
+        self.assertNotEqual(web.job_id, test.job_id)
+
+    def test_plain_submit_does_not_latch_onto_special_job(self):
+        refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.SMS, notify={"sms_inbound_id": 5}
+        )
+        refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.WEB, forced_provider="sky"
+        )
+        plain = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        self.assertEqual(ProviderJob.objects.count(), 3)
+        job = ProviderJob.objects.get(pk=plain.job_id)
+        self.assertFalse(job.payload["notify"])
+        self.assertFalse(job.payload["forced_provider"])
+        # ...but a second plain submit now joins that plain job.
+        again = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        self.assertEqual(again.job_id, plain.job_id)
+
+    def test_job_source_is_normalised(self):
+        ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source="bogus")
+        self.assertEqual(ProviderJob.objects.get(pk=ticket.job_id).source, RefreshSource.WEB)
+        legacy = refresh_jobs.submit_refresh(
+            PHONE, ip=None, source=RefreshSource.LEGACY, notify={"x": 1}
+        )
+        self.assertEqual(ProviderJob.objects.get(pk=legacy.job_id).source, RefreshSource.WEB)
+
+    def test_submit_still_creates_job_when_redis_lock_unavailable(self):
+        with patch(
+            "phone_refresh.services.refresh_jobs.get_redis",
+            side_effect=ConnectionError("redis down"),
+        ), self.assertLogs("phone_refresh.services.refresh_jobs", level="WARNING"):
+            ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        self.assertIsNotNone(ticket.job_id)
+        self.assertEqual(ProviderJob.objects.count(), 1)
+
     @patch(PROVIDER_REFRESH, return_value=_raw())
     def test_stored_job_payload_keeps_context_and_notify(self, refresh):
         ticket = refresh_jobs.submit_refresh(
@@ -131,6 +199,20 @@ class SubmitAndTaskTests(_JobTestCase):
         self.assertEqual(log.status.code, "busy")
         self.assertEqual(log.raw_excerpt, "")
         self.assertEqual(ProviderJob.objects.get().status, "failed")
+
+    @patch(
+        "phone_refresh.services.refresh_jobs.run_refresh_job.delay",
+        side_effect=RuntimeError("unexpected broker bug"),
+    )
+    def test_enqueue_generic_exception_still_fails_job_with_busy(self, delay):
+        with patch(
+            "phone_refresh.services.refresh_jobs.transaction.on_commit",
+            side_effect=lambda fn: fn(),
+        ), self.assertLogs("phone_refresh.services.refresh_jobs", level="ERROR") as logs:
+            ticket = submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        self.assertEqual(ticket.payload["status"], "busy")
+        self.assertEqual(ProviderJob.objects.get().status, "failed")
+        self.assertIn("Traceback", logs.output[0])
 
     @patch(
         "phone_refresh.services.refresh_jobs.run_refresh_job.delay",
@@ -199,15 +281,23 @@ class JobPayloadTests(_JobTestCase):
 class WaitForJobTests(_JobTestCase):
     @patch(PROVIDER_REFRESH, return_value=_raw())
     def test_eager_mode_runs_queued_job_inline(self, refresh):
-        ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            ticket = refresh_jobs.submit_refresh(
+                PHONE, ip=None, source=RefreshSource.WEB
+            )
+        self.assertEqual(len(callbacks), 1)
+        self.assertEqual(ProviderJob.objects.get().status, "queued")
+
         payload = wait_for_job(ticket.job_id, timeout_seconds=5)
+
         self.assertEqual(payload["status"], "refreshed")
-        # The deferred on_commit run must not double-execute the job.
-        with self.captureOnCommitCallbacks(execute=True):
-            pass
-        run_refresh_job(ticket.job_id)
+        refresh.assert_called_once()
+        # The deferred enqueue now fires; mark_running must make it a no-op.
+        for callback in callbacks:
+            callback()
         refresh.assert_called_once()
         self.assertEqual(RefreshLog.objects.count(), 1)
+        self.assertEqual(ProviderJob.objects.get().attempts, 1)
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
     def test_non_eager_polls_until_timeout_and_returns_last_payload(self):
@@ -389,3 +479,148 @@ class RefreshWaitSettingTests(TestCase):
         bad = SystemSettingsForm({**data, "refresh_wait_seconds": "3"}, instance=instance)
         self.assertFalse(bad.is_valid())
         self.assertIn("refresh_wait_seconds", bad.errors)
+
+
+class ErrorScrubbingTests(_JobTestCase):
+    @patch(PROVIDER_REFRESH)
+    def test_raw_error_is_scrubbed_before_persisting(self, refresh):
+        refresh.return_value = RawResponse(
+            text="", json=None, status_code=0, error="login failed password=hunter2"
+        )
+        result = refresh_phone(PHONE)
+        self.assertNotIn("hunter2", result.error)
+        self.assertIn("password=***", result.error)
+
+
+class ReapStuckJobsTests(_JobTestCase):
+    def _job(self, status, *, created_ago=0, started_ago=None, **extra):
+        job = jobs.create_job(
+            kind="refresh", provider_key="sky", phone=PHONE, source="web"
+        )
+        now = timezone.now()
+        ProviderJob.objects.filter(pk=job.pk).update(
+            status=status,
+            created_at=now - dt.timedelta(seconds=created_ago),
+            started_at=(now - dt.timedelta(seconds=started_ago)) if started_ago is not None else None,
+            **extra,
+        )
+        return str(job.pk)
+
+    def test_fails_old_running_and_old_queued_jobs_only(self):
+        stuck_running = self._job("running", created_ago=900, started_ago=700)
+        stuck_queued = self._job("queued", created_ago=700)
+        fresh_running = self._job("running", created_ago=900, started_ago=60)
+        fresh_queued = self._job("queued", created_ago=60)
+        done = self._job("done", created_ago=900, result={"status": "refreshed"})
+
+        with self.assertLogs("phone_refresh.tasks", level="WARNING"):
+            self.assertEqual(reap_stuck_jobs(), 2)
+
+        status = lambda pk: ProviderJob.objects.get(pk=pk).status  # noqa: E731
+        self.assertEqual(status(stuck_running), "failed")
+        self.assertEqual(status(stuck_queued), "failed")
+        self.assertEqual(status(fresh_running), "running")
+        self.assertEqual(status(fresh_queued), "queued")
+        self.assertEqual(status(done), "done")
+        failed = ProviderJob.objects.get(pk=stuck_running)
+        self.assertEqual(failed.result["status"], "error")
+        self.assertIsNotNone(failed.finished_at)
+        self.assertEqual(job_payload(stuck_running)["status"], "error")
+
+    def test_only_refresh_jobs_are_reaped(self):
+        other = ProviderJob.objects.create(
+            kind="charge", provider_key="sky", phone=PHONE, source="web", status="running"
+        )
+        ProviderJob.objects.filter(pk=other.pk).update(
+            started_at=timezone.now() - dt.timedelta(hours=1)
+        )
+        self.assertEqual(reap_stuck_jobs(), 0)
+        self.assertEqual(ProviderJob.objects.get(pk=other.pk).status, "running")
+
+    @patch("phone_refresh.tasks._notify")
+    def test_notifies_reaped_jobs(self, notify):
+        job_id = self._job("running", created_ago=900, started_ago=700)
+        with self.assertLogs("phone_refresh.tasks", level="WARNING"):
+            reap_stuck_jobs()
+        (job, result), _ = notify.call_args
+        self.assertEqual(str(job.pk), job_id)
+        self.assertEqual(result["status"], "error")
+
+    def test_reaper_is_scheduled_every_five_minutes(self):
+        from django.conf import settings
+
+        entry = settings.CELERY_BEAT_SCHEDULE["phone-refresh-reap-stuck-jobs"]
+        self.assertEqual(entry["task"], "phone_refresh.tasks.reap_stuck_jobs")
+        self.assertEqual(entry["schedule"], 300.0)
+
+
+class WorkerConnectionTests(_JobTestCase):
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @patch("phone_refresh.tasks.close_old_connections")
+    @patch(PROVIDER_REFRESH, return_value=_raw())
+    def test_connection_refreshed_before_final_write(self, refresh, close):
+        ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        order = []
+        close.side_effect = lambda: order.append("close")
+        with patch(
+            "phone_refresh.tasks.jobs.mark_done",
+            side_effect=lambda *a, **k: order.append("mark_done"),
+        ):
+            run_refresh_job(ticket.job_id)
+        self.assertEqual(order, ["close", "mark_done"])
+
+    @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+    @patch("phone_refresh.tasks.close_old_connections")
+    @patch("phone_refresh.tasks.complete", side_effect=RuntimeError("x"))
+    @patch(PROVIDER_REFRESH, return_value=_raw())
+    def test_connection_refreshed_before_failed_write(self, refresh, complete, close):
+        ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+        with self.assertLogs("phone_refresh.tasks", level="ERROR"):
+            run_refresh_job(ticket.job_id)
+        close.assert_called_once()
+        self.assertEqual(ProviderJob.objects.get(pk=ticket.job_id).status, "failed")
+
+
+class ConcurrentSubmitTests(TransactionTestCase):
+    def setUp(self):
+        get_redis().flushall()
+        s = SystemSettings.get()
+        s.db_precheck_enabled = False
+        s.default_provider = "sky"
+        s.save()
+
+    def test_simultaneous_submits_create_one_job(self):
+        real_find = jobs.find_inflight
+
+        def slow_find(*args, **kwargs):
+            found = real_find(*args, **kwargs)
+            time.sleep(0.3)  # widen the find -> create race window
+            return found
+
+        barrier = threading.Barrier(2)
+        results, errors = [], []
+
+        def submit():
+            try:
+                barrier.wait(timeout=5)
+                results.append(
+                    refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+                )
+            except Exception as exc:  # noqa: BLE001
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        # Patched once here: patching from inside the threads would race.
+        with patch(
+            "phone_refresh.services.refresh_jobs.jobs.find_inflight", slow_find
+        ), patch("phone_refresh.services.refresh_jobs.run_refresh_job.delay"):
+            threads = [threading.Thread(target=submit) for _ in range(2)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=20)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(ProviderJob.objects.count(), 1)
+        self.assertEqual(len({t.job_id for t in results}), 1)

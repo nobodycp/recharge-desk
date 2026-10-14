@@ -1,7 +1,8 @@
 """Add ``refresh_wait_seconds`` and seed the ``processing`` / ``busy`` statuses.
 
 Existing statuses and customer messages are never overwritten: an admin may
-already have created or edited rows with these codes.
+already have created or edited rows with these codes. The reverse is a no-op
+for the same reason (and rows may be referenced by logs or rules).
 """
 from django.db import migrations, models
 
@@ -37,18 +38,6 @@ def seed_forward(apps, schema_editor):
         )
 
 
-def seed_reverse(apps, schema_editor):
-    RefreshStatus = apps.get_model("phone_refresh", "RefreshStatus")
-    CustomerMessage = apps.get_model("phone_refresh", "CustomerMessage")
-    RefreshLog = apps.get_model("phone_refresh", "RefreshLog")
-    for code, *_ in NEW_STATUSES:
-        status = RefreshStatus.objects.filter(code=code).first()
-        if status is None or RefreshLog.objects.filter(status=status).exists():
-            continue
-        CustomerMessage.objects.filter(status=status).delete()
-        status.delete()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -64,5 +53,5 @@ class Migration(migrations.Migration):
                 help_text="Longest a customer waits for a refresh before being told it is still processing (in seconds).",
             ),
         ),
-        migrations.RunPython(seed_forward, seed_reverse),
+        migrations.RunPython(seed_forward, migrations.RunPython.noop),
     ]

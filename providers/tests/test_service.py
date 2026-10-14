@@ -123,7 +123,7 @@ class ServiceTests(TestCase):
                 raise AssertionError("login must not run while the lock is held")
 
         get_redis().set("provider:login-lock:stub", "other-worker", ex=30)
-        real_acquire = sessions._LoginLock.acquire
+        real_acquire = sessions.NoLuaLock.acquire
         waits = []
 
         def counting_acquire(lock, *args, **kwargs):
@@ -132,7 +132,7 @@ class ServiceTests(TestCase):
 
         started = time.monotonic()
         with _with_adapter(NeedsLogin()), patch.object(
-            sessions._LoginLock, "acquire", counting_acquire
+            sessions.NoLuaLock, "acquire", counting_acquire
         ), self.assertLogs("providers.service", level="WARNING"):
             raw = service.refresh("stub", "0599000000", budget=1.0)
         elapsed = time.monotonic() - started

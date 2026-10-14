@@ -8,18 +8,19 @@ from __future__ import annotations
 
 import logging
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 
-import redis.exceptions
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from kombu.exceptions import OperationalError
+from redis.exceptions import LockError
 
 from phone_refresh.models import RefreshSource, SystemSettings
 from phone_refresh.services.refresh_service import (
     complete_failure,
+    normalize_source,
     precheck,
     refresh_phone,
     result_payload,
@@ -28,12 +29,20 @@ from phone_refresh.services.refresh_service import (
 from phone_refresh.tasks import run_refresh_job
 from providers import jobs
 from providers.models import ProviderJob
+from providers.redis_conn import get_redis
+from providers.sessions import NoLuaLock
 
 log = logging.getLogger(__name__)
 
 POLL_INTERVAL_SECONDS = 0.5
 
-_ENQUEUE_ERRORS = (OperationalError, redis.exceptions.ConnectionError, OSError)
+SUBMIT_LOCK_TIMEOUT_SECONDS = 10
+SUBMIT_LOCK_WAIT_SECONDS = 3
+
+_FALLBACK_BUSY_PAYLOAD = {
+    "status": "busy",
+    "message": {"title": "الخدمة مشغولة", "body": "الخدمة مشغولة حالياً، حاول بعد قليل."},
+}
 
 _EXPIRED_PAYLOAD = {
     "status": "error",
@@ -82,42 +91,47 @@ def submit_refresh(
     if immediate is not None:
         return RefreshTicket(None, result_payload(immediate))
 
+    source = normalize_source(source)
     wait = SystemSettings.get().refresh_wait_seconds
-    existing = jobs.find_inflight(ProviderJob.KIND_REFRESH, phone, wait)
-    if existing is not None:
-        return RefreshTicket(str(existing.id), None)
+    # Only a plain customer submit may share a job, and only with another
+    # plain one: notify targets, admin overrides and test runs must stay
+    # on a job of their own.
+    shareable = not (notify or forced_provider or internal_test or bypass_provider_off)
 
-    job = jobs.create_job(
-        kind=ProviderJob.KIND_REFRESH,
-        provider_key=provider_key,
-        phone=phone,
-        source=source,
-        payload={
-            "ip": ip,
-            "internal_test": internal_test,
-            "forced_provider": forced_provider,
-            "bypass_provider_off": bypass_provider_off,
-            "notify": notify,
-        },
-    )
+    job = None
+    with _submit_lock(phone):
+        if shareable:
+            existing = jobs.find_inflight(
+                ProviderJob.KIND_REFRESH, phone, wait, accept=_is_plain_job
+            )
+            if existing is not None:
+                return RefreshTicket(str(existing.id), None)
+        job = jobs.create_job(
+            kind=ProviderJob.KIND_REFRESH,
+            provider_key=provider_key,
+            phone=phone,
+            source=source,
+            payload={
+                "ip": ip,
+                "internal_test": internal_test,
+                "forced_provider": forced_provider,
+                "bypass_provider_off": bypass_provider_off,
+                "notify": notify,
+            },
+        )
     enqueue_failure: dict = {}
 
     def _enqueue() -> None:
         try:
             run_refresh_job.delay(str(job.id))
-        except _ENQUEUE_ERRORS:
+        except Exception:  # noqa: BLE001 — broker/redis/OS errors; never leave a job queued
             log.exception("could not enqueue refresh job %s", job.id)
-            busy = result_payload(
-                complete_failure(
-                    phone=phone,
-                    provider_key=provider_key,
-                    error="enqueue_failed",
-                    ip=ip,
-                    source=source,
-                    started=time.monotonic(),
-                    internal_test=internal_test,
-                    status_code="busy",
-                )
+            busy = _busy_payload(
+                phone=phone,
+                provider_key=provider_key,
+                ip=ip,
+                source=source,
+                internal_test=internal_test,
             )
             jobs.mark_failed(job, busy)
             enqueue_failure["payload"] = busy
@@ -128,6 +142,60 @@ def submit_refresh(
     if enqueue_failure:
         return RefreshTicket(None, enqueue_failure["payload"])
     return RefreshTicket(str(job.id), None)
+
+
+def _is_plain_job(job: ProviderJob) -> bool:
+    ctx = job.payload or {}
+    return not (
+        ctx.get("notify")
+        or ctx.get("forced_provider")
+        or ctx.get("internal_test")
+        or ctx.get("bypass_provider_off")
+    )
+
+
+@contextmanager
+def _submit_lock(phone: str):
+    """Serialise find-or-create per phone; never blocks submits on Redis trouble."""
+    lock = None
+    acquired = False
+    try:
+        lock = get_redis().lock(
+            f"refresh-submit:{phone}",
+            timeout=SUBMIT_LOCK_TIMEOUT_SECONDS,
+            blocking_timeout=SUBMIT_LOCK_WAIT_SECONDS,
+            lock_class=NoLuaLock,
+        )
+        acquired = lock.acquire()
+    except Exception:  # noqa: BLE001 — fall through and create the job anyway
+        log.warning("refresh submit lock unavailable for %s", phone, exc_info=True)
+    try:
+        yield
+    finally:
+        if acquired:
+            try:
+                lock.release()
+            except LockError:
+                log.warning("refresh submit lock expired before release for %s", phone)
+
+
+def _busy_payload(*, phone, provider_key, ip, source, internal_test) -> dict:
+    try:
+        return result_payload(
+            complete_failure(
+                phone=phone,
+                provider_key=provider_key,
+                error="enqueue_failed",
+                ip=ip,
+                source=source,
+                started=time.monotonic(),
+                internal_test=internal_test,
+                status_code="busy",
+            )
+        )
+    except Exception:  # noqa: BLE001 — the fallback path must not raise
+        log.exception("could not log enqueue failure for %s", phone)
+        return dict(_FALLBACK_BUSY_PAYLOAD)
 
 
 def job_payload(job_id: str) -> dict:
