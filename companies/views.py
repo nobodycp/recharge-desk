@@ -116,21 +116,37 @@ def company_connection_status(request, pk):
     return connection.login_status(request, get_object_or_404(Company, pk=pk))
 
 
-def _supports_reconcile(company, provider_key: str) -> bool:
+def _reconcile_state(company, provider_key: str):
     """Each reconcile page serves only its own provider's companies."""
-    return (
-        provider_service.service_state(
-            company, Capability.RECONCILE, provider=provider_key
-        ).code
-        == "active"
+    return provider_service.service_state(
+        company, Capability.RECONCILE, provider=provider_key
     )
+
+
+def _supports_reconcile(company, provider_key: str) -> bool:
+    return _reconcile_state(company, provider_key).code == "active"
+
+
+def _reconcile_blocked_message(company, provider_key: str, unsupported: str):
+    """Flash text when the reconcile page is closed to ``company``, else ``None``.
+
+    A company of the right provider whose service is off or not configured is
+    told why; "only available for X" is kept for truly unsupported ones.
+    """
+    state = _reconcile_state(company, provider_key)
+    if state.code == "active":
+        return None
+    return unsupported if state.code == "unsupported" else state.reason
 
 
 @management_required
 def layan_reconcile(request, pk):
     company = get_object_or_404(Company, pk=pk)
-    if not _supports_reconcile(company, "layan"):
-        messages.error(request, _("Layan report matching is only available for Layan."))
+    blocked = _reconcile_blocked_message(
+        company, "layan", _("Layan report matching is only available for Layan.")
+    )
+    if blocked:
+        messages.error(request, blocked)
         return redirect("companies:company_detail", pk=pk)
 
     form = LayanReportReconcileForm(request.POST or None, request.FILES or None)
@@ -184,8 +200,11 @@ def layan_reconcile(request, pk):
 @management_required
 def sky_reconcile(request, pk):
     company = get_object_or_404(Company, pk=pk)
-    if not _supports_reconcile(company, "sky"):
-        messages.error(request, _("Sky report matching is only available for Sky."))
+    blocked = _reconcile_blocked_message(
+        company, "sky", _("Sky report matching is only available for Sky.")
+    )
+    if blocked:
+        messages.error(request, blocked)
         return redirect("companies:company_detail", pk=pk)
 
     form = SkyReportReconcileForm(request.POST or None)

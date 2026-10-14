@@ -21,6 +21,7 @@ from providers.sessions import (
 
 KEY = "sky"
 CACHE_KEY = f"providers:login-test:{KEY}"
+STARTED_KEY = f"providers:login-test-started:{KEY}"
 
 
 def _make_account(**form_kw) -> ProviderConnection:
@@ -35,8 +36,9 @@ class _Base(TestCase):
     def setUp(self):
         ProviderConnection.objects.all().delete()
         get_redis().flushall()
-        cache.delete(CACHE_KEY)
-        self.addCleanup(cache.delete, CACHE_KEY)
+        for key in (CACHE_KEY, STARTED_KEY):
+            cache.delete(key)
+            self.addCleanup(cache.delete, key)
 
 
 class ResetSessionTests(_Base):
@@ -121,8 +123,33 @@ class StartStatusTests(_Base):
                 "last_login_at": None,
                 "last_login_ok": None,
                 "last_error": "",
+                "expired": False,
             },
         )
+
+    def test_status_expired_when_marker_gone_without_new_result(self):
+        _make_account()
+        with patch.object(tasks.test_connection, "delay"):
+            login_test.start(KEY)
+        self.assertFalse(login_test.status(KEY)["expired"])  # still pending
+        cache.delete(CACHE_KEY)  # the 150 s marker expires; no worker result
+        status = login_test.status(KEY)
+        self.assertFalse(status["pending"])
+        self.assertTrue(status["expired"])
+
+    def test_status_not_expired_once_a_result_is_recorded(self):
+        _make_account()
+        with patch.object(tasks.test_connection, "delay"):
+            login_test.start(KEY)
+        record_login(KEY, True)
+        cache.delete(CACHE_KEY)
+        self.assertFalse(login_test.status(KEY)["expired"])
+
+    def test_failed_enqueue_is_not_reported_as_expired(self):
+        _make_account()
+        with patch.object(tasks.test_connection, "delay", side_effect=OSError("down")):
+            login_test.start(KEY)
+        self.assertFalse(login_test.status(KEY)["expired"])
 
 
 class TestConnectionTaskTests(_Base):
@@ -228,6 +255,16 @@ class FormTests(_Base):
         self.assertIsNone(SessionStore(KEY).load())
         self.assertFalse(get_redis().exists(_cooldown_key(KEY)))
         self.assertFalse(get_redis().exists(_failures_key(KEY)))
+
+    def test_form_save_survives_redis_failure_when_resetting_session(self):
+        with patch(
+            "providers.forms.reset_session", side_effect=ConnectionError("redis down")
+        ), self.assertLogs("providers.forms", level="WARNING") as logs:
+            account = _make_account(password="pw-persisted")
+        self.assertEqual(account.pk, ProviderConnection.objects.get(provider_key=KEY).pk)
+        self.assertEqual(ProviderConnection.objects.get(provider_key=KEY).username, "u")
+        self.assertTrue(ProviderConnection.objects.get(provider_key=KEY).secret_encrypted)
+        self.assertNotIn("pw-persisted", "\n".join(logs.output))
 
     def test_form_save_keeps_is_enabled(self):
         account = _make_account()

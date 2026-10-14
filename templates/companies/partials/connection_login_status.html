@@ -1,8 +1,11 @@
-{# Login test status; swapped in place (outerHTML). Polls only while a test is pending. Context: company, login, unavailable. #}
+{# Login test status; swapped in place (outerHTML). Polls only while a test is pending. Context: company, login, unavailable, disabled, login_disabled_note. #}
 <div id="connection-login-status" class="small"
      {% if login.pending %}hx-get="{% url 'companies:company_connection_status' company.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
   {% if unavailable %}
     <div class="text-danger mb-1">تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام.</div>
+  {% endif %}
+  {% if disabled %}
+    <div class="text-warning mb-1">{{ login_disabled_note }}</div>
   {% endif %}
   {% if login.pending %}
     <span class="rd-badge rd-badge--pending">جارٍ اختبار تسجيل الدخول…</span>
@@ -21,6 +24,9 @@
     </div>
     {% if login.last_login_ok is False and login.last_error %}
       <div class="text-danger text-break mt-1" dir="auto">{{ login.last_error }}</div>
+    {% endif %}
+    {% if login.expired %}
+      <div class="text-warning mt-1">لم تصل نتيجة من الـ worker — تأكد أنه يعمل</div>
     {% endif %}
   {% endif %}
 </div>

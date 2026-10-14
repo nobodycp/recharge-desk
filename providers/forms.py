@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from django import forms
 
 from providers.accounts import load_extra, normalize_totp_secret
 from providers.crypto import decrypt_or_empty, encrypt
 from providers.models import ProviderConnection
+from providers.sanitize import scrub
 from providers.sessions import reset_session
+
+log = logging.getLogger(__name__)
 
 SAVED_PLACEHOLDER = "•••• (محفوظ)"
 
@@ -113,7 +117,15 @@ class ProviderAccountForm(forms.Form):
 
         account.save()
         # New credentials: drop the stored session and any login cool-down so
-        # the next authenticated call logs in with them right away.
-        reset_session(self.provider_key)
+        # the next authenticated call logs in with them right away. The save
+        # above already succeeded, so a Redis outage must not turn it into a 500.
+        try:
+            reset_session(self.provider_key)
+        except Exception as exc:
+            log.warning(
+                "provider %s session reset failed after saving credentials: %s",
+                self.provider_key,
+                scrub(str(exc)) or exc.__class__.__name__,
+            )
         self.account = account
         return account

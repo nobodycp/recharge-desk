@@ -49,10 +49,18 @@ def needs_login(company) -> bool:
     return bool(key) and ADAPTERS[key].needs_login
 
 
+LOGIN_TEST_DISABLED_NOTE = "فعّل الربط أولاً لاختبار تسجيل الدخول"
+
+
 def login_status_context(company) -> dict:
+    key = company_key(company)
+    connection = ProviderConnection.objects.filter(provider_key=key).first()
     return {
         "company": company,
-        "login": login_test.status(company_key(company)),
+        "login": login_test.status(key),
+        # No row yet means the model defaults apply (master switch on).
+        "login_enabled": connection is None or connection.is_enabled,
+        "login_disabled_note": LOGIN_TEST_DISABLED_NOTE,
     }
 
 
@@ -170,7 +178,16 @@ def start_login_test(request, company):
     if not needs_login(company):
         raise Http404("This system has no login account")
     key = company_key(company)
-    ProviderConnection.for_key(key)
+    if not ProviderConnection.for_key(key).is_enabled:
+        # Master switch off: the services would refuse a login anyway.
+        if request.headers.get("HX-Request"):
+            ctx = login_status_context(company)
+            ctx["disabled"] = True
+            return render(
+                request, "companies/partials/connection_login_status.html", ctx
+            )
+        messages.error(request, LOGIN_TEST_DISABLED_NOTE)
+        return redirect_to_tab(company)
     result = login_test.start(key)
     if request.headers.get("HX-Request"):
         ctx = login_status_context(company)

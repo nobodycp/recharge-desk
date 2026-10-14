@@ -128,14 +128,18 @@
 
             <hr class="my-3">
             <div class="d-flex flex-wrap align-items-start gap-3">
-              <form method="post" action="{% url 'companies:company_connection_test' company.pk %}"
-                    class="m-0"
-                    hx-post="{% url 'companies:company_connection_test' company.pk %}"
-                    hx-target="#connection-login-status"
-                    hx-swap="outerHTML">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-secondary">اختبار تسجيل الدخول</button>
-              </form>
+              {% if login_enabled %}
+                <form method="post" action="{% url 'companies:company_connection_test' company.pk %}"
+                      class="m-0"
+                      hx-post="{% url 'companies:company_connection_test' company.pk %}"
+                      hx-target="#connection-login-status"
+                      hx-swap="outerHTML">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-secondary">اختبار تسجيل الدخول</button>
+                </form>
+              {% else %}
+                <div class="rd-text-muted small align-self-center">{{ login_disabled_note }}</div>
+              {% endif %}
               {% include "companies/partials/connection_login_status.html" %}
             </div>
           </div>

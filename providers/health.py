@@ -50,7 +50,7 @@ def _worker_ok() -> bool:
     from config.celery import app
 
     try:
-        return bool(app.control.ping(timeout=1))
+        return bool(app.control.ping(timeout=1, limit=1))
     except Exception:
         log.warning("Celery worker ping failed", exc_info=True)
         return False
@@ -65,7 +65,13 @@ def status() -> dict:
         }
         for account in ProviderConnection.objects.order_by("provider_key")
     ]
-    return {"redis_ok": _redis_ok(), "worker_ok": _worker_ok(), "accounts": accounts}
+    redis_ok = _redis_ok()
+    # Workers are reached through Redis: don't wait on a ping that cannot work.
+    return {
+        "redis_ok": redis_ok,
+        "worker_ok": redis_ok and _worker_ok(),
+        "accounts": accounts,
+    }
 
 
 ALERTS_CACHE_KEY = "providers:health-alerts"

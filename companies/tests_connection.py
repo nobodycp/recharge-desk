@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -263,6 +264,22 @@ class AccountTests(_Base):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ProviderConnection.objects.get(provider_key="sky").username, "")
 
+    def test_account_post_succeeds_when_redis_session_reset_fails(self):
+        company = self.company(provider_key="sky")
+        with patch(
+            "providers.forms.reset_session", side_effect=ConnectionError("redis down")
+        ):
+            response = self.post(
+                "company_connection_account",
+                company,
+                {"username": "sky_user", "password": "PlainPassw0rd!"},
+            )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"], self.url("company_detail", company) + "?tab=connection"
+        )
+        self.assertEqual(ProviderConnection.objects.get(provider_key="sky").username, "sky_user")
+
     def test_account_post_requires_management(self):
         company = self.company(provider_key="sky")
         client = Client()  # CSRF not enforced: isolate the permission check
@@ -347,6 +364,61 @@ class LoginTestTests(_Base):
         self.assertEqual(response.status_code, 404)
         start.assert_not_called()
 
+    def test_test_button_hidden_with_note_when_master_switch_off(self):
+        ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
+        company = self.company(provider_key="sky")
+        response = self.tab(company)
+        self.assertNotContains(response, self.url("company_connection_test", company))
+        self.assertContains(response, "فعّل الربط أولاً لاختبار تسجيل الدخول")
+
+    def test_test_button_shown_without_note_when_master_switch_on(self):
+        ProviderConnection.objects.create(provider_key="sky", is_enabled=True)
+        company = self.company(provider_key="sky")
+        response = self.tab(company)
+        self.assertContains(response, self.url("company_connection_test", company))
+        self.assertNotContains(response, "فعّل الربط أولاً")
+
+    def test_test_login_refused_when_master_switch_off_htmx(self):
+        ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
+        company = self.company(provider_key="sky")
+        with patch("providers.login_test.start") as start:
+            response = self.post("company_connection_test", company, HTTP_HX_REQUEST="true")
+        start.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "فعّل الربط أولاً لاختبار تسجيل الدخول")
+        self.assertNotContains(response, "hx-trigger")
+
+    def test_test_login_refused_when_master_switch_off_non_htmx(self):
+        ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
+        company = self.company(provider_key="sky")
+        with patch("providers.login_test.start") as start:
+            response = self.post("company_connection_test", company)
+        start.assert_not_called()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response["Location"], self.url("company_detail", company) + "?tab=connection"
+        )
+        flashed = [m.message for m in get_messages(response.wsgi_request)]
+        self.assertIn("فعّل الربط أولاً لاختبار تسجيل الدخول", flashed)
+
+    def test_status_shows_no_result_hint_when_test_expired(self):
+        connection = ProviderConnection.for_key("sky")
+        connection.last_login_ok = True
+        connection.last_login_at = timezone.now() - timezone.timedelta(hours=1)
+        connection.save()
+        company = self.company(provider_key="sky")
+        cache.set("providers:login-test-started:sky", timezone.now().timestamp(), 3600)
+        response = self.client.get(self.url("company_connection_status", company))
+        self.assertContains(response, "لم تصل نتيجة من الـ worker — تأكد أنه يعمل")
+        self.assertContains(response, "آخر دخول: ناجح")
+        self.assertNotContains(response, "hx-trigger")
+
+    def test_status_has_no_hint_without_expired_test(self):
+        company = self.company(provider_key="sky")
+        ProviderConnection.for_key("sky")
+        response = self.client.get(self.url("company_connection_status", company))
+        self.assertNotContains(response, "لم تصل نتيجة")
+
     def test_status_without_pending_test_has_no_trigger(self):
         company = self.company(provider_key="sky")
         ProviderConnection.for_key("sky")
@@ -380,6 +452,40 @@ class LoginTestTests(_Base):
         client.force_login(self.employee)
         response = client.get(self.url("company_connection_status", company))
         self.assertEqual(response.status_code, 302)
+
+
+class ReconcileGateMessageTests(_Base):
+    def flashed(self, response):
+        return [m.message for m in get_messages(response.wsgi_request)]
+
+    def test_layan_with_reconcile_off_gets_the_service_reason(self):
+        ProviderConnection.objects.create(provider_key="layan", reconcile_enabled=False)
+        company = self.company(provider_key="layan")
+        response = self.client.get(self.url("layan_reconcile", company))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.flashed(response), ["موقوفة"])
+
+    def test_sky_not_configured_gets_the_service_reason(self):
+        ProviderConnection.objects.create(provider_key="sky")
+        company = self.company(provider_key="sky")
+        response = self.client.get(self.url("sky_reconcile", company))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.flashed(response), ["بيانات الحساب ناقصة أو غير مقروءة"])
+
+    def test_truly_unsupported_keeps_the_provider_only_message(self):
+        layan = self.company(name="L", provider_key="layan")
+        sky = self.company(name="S", provider_key="sky")
+        none = self.company(name="N")
+        for name, company, expected in (
+            ("layan_reconcile", sky, "Layan report matching is only available for Layan."),
+            ("sky_reconcile", layan, "Sky report matching is only available for Sky."),
+            ("sky_reconcile", none, "Sky report matching is only available for Sky."),
+        ):
+            client = Client()  # fresh session: flashes would otherwise accumulate
+            client.force_login(self.manager)
+            response = client.get(self.url(name, company))
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(self.flashed(response), [expected])
 
 
 class SharedSystemTests(_Base):

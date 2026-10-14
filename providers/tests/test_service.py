@@ -541,3 +541,25 @@ class HealthTests(TestCase):
         with patch.object(type(get_redis()), "ping", side_effect=ConnectionError("x")):
             with self.assertLogs("providers.health", level="WARNING"):
                 self.assertIs(health.status()["redis_ok"], False)
+
+    def test_status_does_not_ping_worker_when_redis_is_down(self):
+        from providers import health
+
+        with patch.object(health, "_redis_ok", return_value=False), patch.object(
+            health, "_worker_ok", return_value=True
+        ) as worker_ok:
+            data = health.status()
+        worker_ok.assert_not_called()
+        self.assertIs(data["redis_ok"], False)
+        self.assertIs(data["worker_ok"], False)
+
+    def test_worker_ping_waits_for_a_single_reply(self):
+        from django.test import override_settings
+
+        from providers import health
+
+        with override_settings(CELERY_TASK_ALWAYS_EAGER=False), patch(
+            "celery.app.control.Control.ping", return_value=[{"w": {"ok": "pong"}}]
+        ) as ping:
+            self.assertIs(health._worker_ok(), True)
+        ping.assert_called_once_with(timeout=1, limit=1)
