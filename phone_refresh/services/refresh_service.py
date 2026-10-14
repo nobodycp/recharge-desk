@@ -27,10 +27,16 @@ from providers.contracts import RawResponse
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 from phone_refresh.services.pattern_matcher import match_response
+from phone_refresh.validation import PHONE_RE
 
 log = logging.getLogger(__name__)
 
-from phone_refresh.validation import PHONE_RE
+# Provider errors that only mean "can't reach the provider right now" (login
+# failed/cooling down/busy, budget spent, account disabled): customers get the
+# seeded ``busy`` message; the real code stays in the RefreshLog body.
+BUSY_ERROR_CODES = frozenset(
+    {"login_failed", "login_busy", "sync_budget_exceeded", "provider_disabled"}
+)
 
 # Upper bound on how much of the upstream body we persist in
 # ``RefreshLog.raw_body``. Sized to comfortably hold a full provider HTML
@@ -388,15 +394,18 @@ def complete(
     safe_raw = _scrubbed(raw)
 
     if raw.error:
+        error = scrub(raw.error)
+        if not safe_raw.text:
+            safe_raw = dataclasses.replace(safe_raw, text=f"error: {error}")
         return _record_and_return(
             phone=phone,
             provider_key=provider_key,
-            status=_S("error"),
+            status=_S("busy" if raw.error in BUSY_ERROR_CODES else "error"),
             raw=safe_raw,
             matched_rule=None,
             ip=ip,
             started=started,
-            error=scrub(raw.error),
+            error=error,
             last_log=last_log,
             settings=settings,
             internal_test=internal_test,

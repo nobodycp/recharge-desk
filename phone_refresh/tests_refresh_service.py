@@ -20,7 +20,7 @@ class RefreshServiceProviderCallTests(TestCase):
     @patch("phone_refresh.services.refresh_service.provider_service.refresh")
     def test_calls_provider_service_and_keeps_raw_error_handling(self, refresh):
         refresh.return_value = RawResponse(
-            text="", json=None, status_code=0, error="login_failed"
+            text="", json=None, status_code=0, error="connection_error"
         )
         result = refresh_phone(
             "0529000000",
@@ -30,7 +30,7 @@ class RefreshServiceProviderCallTests(TestCase):
         )
         refresh.assert_called_once_with("sky", "0529000000")
         self.assertEqual(result.status.code, "error")
-        self.assertEqual(result.error, "login_failed")
+        self.assertEqual(result.error, "connection_error")
 
     @patch(
         "phone_refresh.services.refresh_service.provider_service.refresh",

@@ -117,7 +117,9 @@ def _charge(job: ProviderJob, sale: Sale) -> ChargeOutcome:
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=error)
 
 
-@shared_task
+@shared_task(
+    time_limit=jobs.JOB_TASK_TIME_LIMIT, soft_time_limit=jobs.JOB_TASK_SOFT_TIME_LIMIT
+)
 def run_charge_job(job_id: str) -> None:
     """Send the one charge for a queued job and record the outcome; never raises."""
     job = _load_job(job_id)

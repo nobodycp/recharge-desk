@@ -492,6 +492,39 @@ class ErrorScrubbingTests(_JobTestCase):
         self.assertIn("password=***", result.error)
 
 
+class LoginPathErrorsAreBusyTests(_JobTestCase):
+    @patch(PROVIDER_REFRESH)
+    def test_login_and_budget_errors_show_busy_and_log_the_code(self, refresh):
+        for code in (
+            "login_failed",
+            "login_busy",
+            "sync_budget_exceeded",
+            "provider_disabled",
+        ):
+            with self.subTest(code=code):
+                RefreshLog.objects.all().delete()
+                refresh.return_value = RawResponse(
+                    text="", json=None, status_code=0, error=code
+                )
+                result = refresh_phone(PHONE)
+                payload = result_payload(result)
+                self.assertEqual(payload["status"], "busy")
+                self.assertEqual(
+                    payload["message"]["body"], "الخدمة مشغولة حالياً، حاول بعد قليل."
+                )
+                self.assertEqual(result.error, code)
+                log = RefreshLog.objects.get()
+                self.assertEqual(log.status.code, "busy")
+                self.assertIn(code, log.raw_body)
+
+    @patch(PROVIDER_REFRESH)
+    def test_other_errors_stay_generic_error(self, refresh):
+        refresh.return_value = RawResponse(
+            text="", json=None, status_code=0, error="connection_error"
+        )
+        self.assertEqual(result_payload(refresh_phone(PHONE))["status"], "error")
+
+
 class ReapStuckJobsTests(_JobTestCase):
     def _job(self, status, *, created_ago=0, started_ago=None, **extra):
         job = jobs.create_job(
@@ -545,6 +578,24 @@ class ReapStuckJobsTests(_JobTestCase):
         (job, result), _ = notify.call_args
         self.assertEqual(str(job.pk), job_id)
         self.assertEqual(result["status"], "error")
+
+    @patch("phone_refresh.tasks._notify")
+    def test_worker_finishing_after_the_reaper_keeps_the_reaped_result(self, notify):
+        ticket = refresh_jobs.submit_refresh(PHONE, ip=None, source=RefreshSource.WEB)
+
+        def reaped_mid_call(*args, **kwargs):
+            self.assertEqual(reap_stuck_jobs(), 1)
+            return _raw()
+
+        with patch(PROVIDER_REFRESH, side_effect=reaped_mid_call), patch(
+            "phone_refresh.tasks.STUCK_JOB_SECONDS", -1
+        ), self.assertLogs("phone_refresh.tasks", level="INFO") as logs:
+            run_refresh_job(ticket.job_id)
+        job = ProviderJob.objects.get(pk=ticket.job_id)
+        self.assertEqual(job.status, "failed")
+        self.assertEqual(job.result["status"], "error")
+        self.assertEqual(notify.call_count, 1)
+        self.assertTrue(any("already finished" in line for line in logs.output))
 
     def test_reaper_is_scheduled_every_five_minutes(self):
         from django.conf import settings

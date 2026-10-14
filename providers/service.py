@@ -40,8 +40,17 @@ def _error_response(error: str) -> RawResponse:
     return RawResponse(text="", json=None, status_code=0, error=error)
 
 
-def _lock_wait(deadline: float) -> float:
-    return max(0.0, min(sessions.LOGIN_LOCK_WAIT_SECONDS, deadline - time.monotonic()))
+def _lock_wait(deadline: float, budget: float) -> float:
+    """Login lock wait left before ``deadline``.
+
+    Sync callers (budget <= ``SYNC_BUDGET_SECONDS``) keep the web cap; workers
+    may wait out another worker's login for the rest of their budget.
+    """
+    if budget > SYNC_BUDGET_SECONDS:
+        cap = sessions.LOGIN_LOCK_TIMEOUT_SECONDS
+    else:
+        cap = sessions.LOGIN_LOCK_WAIT_SECONDS
+    return max(0.0, min(cap, deadline - time.monotonic()))
 
 
 def refresh(
@@ -49,7 +58,9 @@ def refresh(
 ) -> RawResponse:
     """Refresh ``phone``; transient failures are retried, errors become a RawResponse.
 
-    Retries and lock waits stay within ``budget`` seconds. Raises ``KeyError``
+    Retries and lock waits stay within ``budget`` seconds; a budget above
+    ``SYNC_BUDGET_SECONDS`` (worker) may wait on another login past the web
+    lock cap. Raises ``KeyError``
     for an unknown ``provider_key``.
     """
     adapter = get_adapter(provider_key)
@@ -60,7 +71,9 @@ def refresh(
             break
         try:
             return run_authenticated(
-                adapter, lambda: adapter.refresh(phone), lock_wait=_lock_wait(deadline)
+                adapter,
+                lambda: adapter.refresh(phone),
+                lock_wait=_lock_wait(deadline, budget),
             )
         except TransientError as exc:
             error = _error_text(exc)
@@ -113,7 +126,7 @@ def charge(
             raise
 
     try:
-        return run_authenticated(adapter, attempt, lock_wait=_lock_wait(deadline))
+        return run_authenticated(adapter, attempt, lock_wait=_lock_wait(deadline, budget))
     except PermanentError as exc:
         return ChargeOutcome(result=ChargeResult.FAILED, message=_error_text(exc))
     except Exception as exc:
@@ -139,7 +152,7 @@ def check_charge(
         return run_authenticated(
             adapter,
             lambda: adapter.check_charge(ctx, provider_ref),
-            lock_wait=_lock_wait(deadline),
+            lock_wait=_lock_wait(deadline, budget),
         )
     except Exception as exc:
         log.warning("provider %s check_charge failed: %s", provider_key, _error_text(exc))
@@ -185,7 +198,7 @@ def reconcile(
         return adapter.reconcile(company, period_from, period_to, **opts)
 
     if adapter.needs_login:
-        result = run_authenticated(adapter, call, lock_wait=_lock_wait(deadline))
+        result = run_authenticated(adapter, call, lock_wait=_lock_wait(deadline, budget))
     else:
         result = call()
     return result, adapter.reconcile_template

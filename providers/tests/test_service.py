@@ -144,6 +144,48 @@ class ServiceTests(TestCase):
         self.assertLessEqual(waits[0], 1.0)
         self.assertEqual(NeedsLogin.calls, 1)
 
+    def _lock_wait_passed(self, budget):
+        waits = []
+
+        def fake_run(adapter, fn, lock_wait=None):
+            waits.append(lock_wait)
+            return RawResponse(text="ok", json=None, status_code=200)
+
+        with _with_adapter(StubAdapter(RuntimeError("unused"))), patch(
+            "providers.service.run_authenticated", side_effect=fake_run
+        ):
+            service.refresh("stub", "0599000000", budget=budget)
+        return waits[0]
+
+    def test_worker_budget_may_wait_past_the_web_lock_cap(self):
+        from providers import sessions
+
+        wait = self._lock_wait_passed(150)
+        self.assertGreater(wait, sessions.LOGIN_LOCK_WAIT_SECONDS)
+        self.assertLessEqual(wait, 150)
+        self.assertLessEqual(wait, sessions.LOGIN_LOCK_TIMEOUT_SECONDS)
+
+    def test_sync_budget_keeps_the_web_lock_cap(self):
+        from providers import sessions
+
+        self.assertLessEqual(self._lock_wait_passed(45), sessions.LOGIN_LOCK_WAIT_SECONDS)
+        self.assertLessEqual(self._lock_wait_passed(45), 40)
+
+    def test_charge_with_worker_budget_may_wait_past_the_web_lock_cap(self):
+        from providers import sessions
+
+        waits = []
+
+        def fake_run(adapter, fn, lock_wait=None):
+            waits.append(lock_wait)
+            return ChargeOutcome(result=ChargeResult.SUCCESS)
+
+        with _with_adapter(StubAdapter(RuntimeError("unused"))), patch(
+            "providers.service.run_authenticated", side_effect=fake_run
+        ):
+            service.charge("stub", _ctx(), budget=150)
+        self.assertGreater(waits[0], sessions.LOGIN_LOCK_WAIT_SECONDS)
+
     def test_refresh_permanent_error_is_error_response_without_retry(self):
         adapter = StubAdapter(PermanentError("config_error"))
         with _with_adapter(adapter), patch("providers.service.time.sleep") as sleep:

@@ -54,6 +54,33 @@ class JobHelperTests(TestCase):
         self.assertIsNotNone(done.finished_at)
         self.assertIsNotNone(failed.finished_at)
 
+    def test_finish_never_overwrites_a_finished_job(self):
+        job = _make()
+        self.assertTrue(jobs.mark_running(job))
+        reaped = jobs.fail_stuck("refresh", -1, {"status": "error", "reaped": True})
+        self.assertEqual([j.pk for j in reaped], [job.pk])
+
+        self.assertFalse(jobs.mark_done(job, {"status": "refreshed"}))
+        self.assertFalse(jobs.mark_failed(job, {"status": "late"}))
+        job.refresh_from_db()
+        self.assertEqual(job.status, "failed")
+        self.assertEqual(job.result, {"status": "error", "reaped": True})
+
+    def test_provider_job_tasks_have_time_limits_below_the_reaper(self):
+        from phone_refresh.tasks import STUCK_JOB_SECONDS, run_refresh_job
+        from sales.tasks import run_charge_job
+
+        for task in (run_refresh_job, run_charge_job):
+            with self.subTest(task=task.name):
+                self.assertEqual(task.time_limit, 300)
+                self.assertEqual(task.soft_time_limit, 270)
+                self.assertLess(task.time_limit, STUCK_JOB_SECONDS)
+
+    def test_finish_returns_true_when_it_wins(self):
+        job = _make()
+        jobs.mark_running(job)
+        self.assertTrue(jobs.mark_done(job, {"status": "refreshed"}))
+
 
 class FindInflightTests(TestCase):
     def test_reuses_queued_and_running_within_window(self):

@@ -115,7 +115,9 @@ def _execute(job: ProviderJob) -> dict:
     return _job_result(complete(raw=raw, **common), internal_test)
 
 
-@shared_task
+@shared_task(
+    time_limit=jobs.JOB_TASK_TIME_LIMIT, soft_time_limit=jobs.JOB_TASK_SOFT_TIME_LIMIT
+)
 def run_refresh_job(job_id: str) -> None:
     """Run one queued refresh job to completion; never raises."""
     job = _load_job(job_id)
@@ -135,10 +137,14 @@ def run_refresh_job(job_id: str) -> None:
         log.error("refresh job %s failed: %s", job.pk, scrub(str(exc)), exc_info=True)
         result = error_payload()
         _refresh_db_connection()
-        jobs.mark_failed(job, result)
+        finished = jobs.mark_failed(job, result)
     else:
         _refresh_db_connection()
-        jobs.mark_done(job, result)
+        finished = jobs.mark_done(job, result)
+    if not finished:
+        # The reaper failed it (and notified) while the provider call ran.
+        log.info("refresh job %s already finished elsewhere; result dropped", job.pk)
+        return
     _safe_notify(job, result)
 
 

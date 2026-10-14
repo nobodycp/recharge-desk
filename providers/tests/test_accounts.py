@@ -189,6 +189,16 @@ class GetCredentialsTests(TestCase):
                 get_credentials("sky")
         self.assertEqual(str(ctx.exception), "config_error")
 
+    def test_get_credentials_disabled_account_raises_without_env_fallback(self):
+        from providers.models import ProviderAccount
+
+        self._create_account()
+        ProviderAccount.objects.filter(provider_key="sky").update(is_enabled=False)
+        with _clean_env(SKY_SALES_USER="envuser", SKY_SALES_PASSWORD="envpass"):
+            with self.assertRaises(PermanentError) as ctx:
+                get_credentials("sky")
+        self.assertEqual(str(ctx.exception), "provider_disabled")
+
     def test_get_credentials_other_provider_has_no_env_fallback(self):
         with _clean_env(SKY_SALES_USER="u", SKY_SALES_PASSWORD="p"):
             with self.assertRaises(PermanentError):

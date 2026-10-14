@@ -22,7 +22,11 @@ SESSION_TTL_SECONDS = 12 * 3600
 LOGIN_LOCK_TIMEOUT_SECONDS = 180
 # Default lock wait for in-request callers (must stay below gunicorn's timeout).
 LOGIN_LOCK_WAIT_SECONDS = 40
+# Cool-down after a failed login doubles per consecutive failure, up to the cap;
+# the failure counter is forgotten after LOGIN_FAILURES_TTL_SECONDS or a success.
 LOGIN_COOLDOWN_SECONDS = 60
+LOGIN_COOLDOWN_MAX_SECONDS = 15 * 60
+LOGIN_FAILURES_TTL_SECONDS = 3600
 
 
 def _as_bytes(value) -> bytes | None:
@@ -90,6 +94,20 @@ def _cooldown_key(provider_key: str) -> str:
     return f"provider:login-cooldown:{provider_key}"
 
 
+def _failures_key(provider_key: str) -> str:
+    return f"provider:login-failures:{provider_key}"
+
+
+def _start_cooldown(redis_client, provider_key: str) -> None:
+    failures_key = _failures_key(provider_key)
+    failures = int(redis_client.incr(failures_key))
+    redis_client.expire(failures_key, LOGIN_FAILURES_TTL_SECONDS)
+    seconds = min(
+        LOGIN_COOLDOWN_SECONDS * 2 ** min(failures - 1, 10), LOGIN_COOLDOWN_MAX_SECONDS
+    )
+    redis_client.set(_cooldown_key(provider_key), "1", ex=seconds)
+
+
 def run_authenticated(
     adapter: BaseAdapter,
     fn: Callable[[], T],
@@ -100,8 +118,10 @@ def run_authenticated(
     The generation counter lets callers that waited on the lock skip the
     login another worker already performed while they were blocked. After a
     failed login no one retries until the cool-down expires. ``lock_wait``
-    defaults to ``LOGIN_LOCK_WAIT_SECONDS`` (sized for web requests).
+    defaults to ``LOGIN_LOCK_WAIT_SECONDS`` (sized for web requests). A
+    disabled provider account raises ``PermanentError`` before ``fn`` runs.
     """
+    accounts.ensure_enabled(adapter.key)
     store = SessionStore(adapter.key)
     gen = store.generation()
     try:
@@ -137,13 +157,13 @@ def _login_once(
         try:
             adapter.login()
         except Exception as exc:
-            redis_client.set(_cooldown_key(key), "1", ex=LOGIN_COOLDOWN_SECONDS)
+            _start_cooldown(redis_client, key)
             error = scrub(str(exc)) or exc.__class__.__name__
             log.warning("provider %s login failed: %s", key, error)
             accounts.record_login(key, False, error)
             raise TransientError("login_failed") from exc
         store.bump_generation()
-        redis_client.delete(_cooldown_key(key))
+        redis_client.delete(_cooldown_key(key), _failures_key(key))
         accounts.record_login(key, True)
     finally:
         try:

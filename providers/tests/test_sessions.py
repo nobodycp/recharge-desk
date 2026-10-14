@@ -256,6 +256,72 @@ class RunAuthenticatedTests(TestCase):
         self.assertEqual(adapter.login_calls, 1)
         self.assertFalse(get_redis().exists("provider:login-cooldown:sky"))
 
+    def _fail_login_once(self, adapter):
+        def fn():
+            raise AuthRequired("expired")
+
+        with self.assertRaises(TransientError), self.assertLogs(
+            "providers.sessions", level="WARNING"
+        ):
+            run_authenticated(adapter, fn)
+
+    def test_consecutive_failed_logins_back_off_exponentially(self):
+        adapter = FakeAdapter(login_error=Exception("Sky down"))
+        ttls = []
+        for _ in range(6):
+            self._fail_login_once(adapter)
+            ttls.append(get_redis().ttl("provider:login-cooldown:sky"))
+            get_redis().delete("provider:login-cooldown:sky")
+        expected = [60, 120, 240, 480, 900, 900]
+        for ttl, want in zip(ttls, expected):
+            self.assertGreater(ttl, want - 5)
+            self.assertLessEqual(ttl, want)
+        self.assertEqual(adapter.login_calls, 6)
+        failures_ttl = get_redis().ttl("provider:login-failures:sky")
+        self.assertGreater(failures_ttl, 0)
+        self.assertLessEqual(failures_ttl, 3600)
+
+    def test_successful_login_resets_the_backoff(self):
+        adapter = FakeAdapter(login_error=Exception("Sky down"))
+        self._fail_login_once(adapter)
+        get_redis().delete("provider:login-cooldown:sky")
+        self._fail_login_once(adapter)
+        get_redis().delete("provider:login-cooldown:sky")
+
+        adapter.login_error = None
+        calls = {"n": 0}
+
+        def fn():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise AuthRequired("expired")
+            return "ok"
+
+        self.assertEqual(run_authenticated(adapter, fn), "ok")
+        self.assertFalse(get_redis().exists("provider:login-failures:sky"))
+
+        adapter.login_error = Exception("Sky down")
+        self._fail_login_once(adapter)
+        self.assertLessEqual(get_redis().ttl("provider:login-cooldown:sky"), 60)
+
+    def test_disabled_account_stops_refresh_and_login(self):
+        from providers.contracts import PermanentError
+
+        ProviderAccount.objects.create(
+            provider_key="sky",
+            username="user",
+            secret_encrypted=encrypt("hunter2"),
+            is_enabled=False,
+        )
+        adapter = FakeAdapter()
+        called = []
+
+        with self.assertRaises(PermanentError) as ctx:
+            run_authenticated(adapter, lambda: called.append(1))
+        self.assertEqual(str(ctx.exception), "provider_disabled")
+        self.assertEqual(called, [])
+        self.assertEqual(adapter.login_calls, 0)
+
     def test_lock_release_handles_str_tokens(self):
         from providers.sessions import NoLuaLock
 

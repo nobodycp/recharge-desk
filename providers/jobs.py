@@ -9,6 +9,12 @@ from django.utils import timezone
 
 from providers.models import ProviderJob
 
+# Celery limits for one provider job task (refresh/charge): above the 150 s
+# worker budgets, below the 600 s stuck-job reaper so a hung call never
+# outlives it. The soft limit raises inside the task, which records a result.
+JOB_TASK_TIME_LIMIT = 300
+JOB_TASK_SOFT_TIME_LIMIT = 270
+
 
 def create_job(
     *,
@@ -47,22 +53,31 @@ def mark_running(job: ProviderJob) -> bool:
     return True
 
 
-def _finish(job: ProviderJob, status: str, result: dict) -> None:
+FINISHED_STATUSES = (ProviderJob.STATUS_DONE, ProviderJob.STATUS_FAILED)
+
+
+def _finish(job: ProviderJob, status: str, result: dict) -> bool:
+    """Finish ``job`` unless it already finished (e.g. reaped); True if this call did."""
     now = timezone.now()
-    ProviderJob.objects.filter(pk=job.pk).update(
-        status=status, result=result, finished_at=now
+    updated = (
+        ProviderJob.objects.filter(pk=job.pk)
+        .exclude(status__in=FINISHED_STATUSES)
+        .update(status=status, result=result, finished_at=now)
     )
+    if updated != 1:
+        return False
     job.status = status
     job.result = result
     job.finished_at = now
+    return True
 
 
-def mark_done(job: ProviderJob, result: dict) -> None:
-    _finish(job, ProviderJob.STATUS_DONE, result)
+def mark_done(job: ProviderJob, result: dict) -> bool:
+    return _finish(job, ProviderJob.STATUS_DONE, result)
 
 
-def mark_failed(job: ProviderJob, result: dict) -> None:
-    _finish(job, ProviderJob.STATUS_FAILED, result)
+def mark_failed(job: ProviderJob, result: dict) -> bool:
+    return _finish(job, ProviderJob.STATUS_FAILED, result)
 
 
 def fail_if_queued(job: ProviderJob, result: dict) -> bool:
