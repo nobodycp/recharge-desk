@@ -73,7 +73,6 @@ class UndecryptableSecretsTests(TestCase):
                 "password": "old-pass",
                 "totp_secret": TOTP_SECRET,
                 "proxy_url": "http://old:1",
-                "is_enabled": "on",
             },
             provider_key="sky",
         )
@@ -103,7 +102,7 @@ class UndecryptableSecretsTests(TestCase):
 
             # Admin can overwrite the password; unreadable TOTP/proxy are dropped.
             form = ProviderAccountForm(
-                {"username": "u", "password": "new-pass", "is_enabled": "on"},
+                {"username": "u", "password": "new-pass"},
                 provider_key="sky",
             )
             self.assertTrue(form.is_valid(), form.errors)
@@ -115,7 +114,7 @@ class UndecryptableSecretsTests(TestCase):
 
     def test_password_required_when_stored_one_is_unreadable(self):
         with override_settings(PROVIDER_SECRETS_KEY=OTHER_KEY):
-            form = ProviderAccountForm({"username": "u", "is_enabled": "on"}, provider_key="sky")
+            form = ProviderAccountForm({"username": "u"}, provider_key="sky")
             self.assertFalse(form.is_valid())
             self.assertIn("password", form.errors)
 
@@ -141,7 +140,6 @@ class GetCredentialsTests(TestCase):
                 "password": kw.get("password", "dbpass"),
                 "totp_secret": kw.get("totp_secret", TOTP_SECRET),
                 "proxy_url": kw.get("proxy_url", "http://proxy.example:8080"),
-                "is_enabled": "on",
             },
             provider_key="sky",
         )
@@ -261,7 +259,6 @@ class RecordLoginTests(TestCase):
                 "username": "u",
                 "password": "hunter2-pass",
                 "totp_secret": TOTP_SECRET,
-                "is_enabled": "on",
             },
             provider_key="sky",
         )
@@ -300,7 +297,7 @@ class ProviderAccountFormTests(TestCase):
         ProviderConnection.objects.all().delete()
 
     def _data(self, **kw):
-        data = {"username": "u", "password": "first-pass", "is_enabled": "on"}
+        data = {"username": "u", "password": "first-pass"}
         data.update(kw)
         return data
 
@@ -426,7 +423,6 @@ class AccountCardViewTests(TestCase):
                 "password": "PlainPassw0rd!",
                 "totp_secret": TOTP_SECRET,
                 "proxy_url": "http://px:secretproxypw@host:1",
-                "is_enabled": "on",
             }
         )
         self.assertEqual(response.status_code, 302)
@@ -442,7 +438,7 @@ class AccountCardViewTests(TestCase):
         self.assertIn('autocomplete="new-password"', body)
 
     def test_card_shows_last_login_state_and_escapes_error(self):
-        self._post({"username": "u", "password": "p", "is_enabled": "on"})
+        self._post({"username": "u", "password": "p"})
         account = ProviderConnection.objects.get(provider_key="sky")
         account.last_login_ok = False
         account.last_login_at = timezone.now()

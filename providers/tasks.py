@@ -7,11 +7,12 @@ from celery import shared_task
 from django.utils import timezone
 
 from providers import service
-from providers.accounts import get_credentials
+from providers.accounts import get_credentials, record_login
 from providers.contracts import PermanentError
 from providers.models import ProviderConnection, ProviderJob
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
+from providers.sessions import reset_session
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +41,35 @@ def keepalive_sessions() -> None:
             log.info("provider %s keep-alive ok", key)
         except Exception as exc:
             log.warning("provider %s keep-alive failed: %s", key, scrub(str(exc)))
+
+
+@shared_task
+def test_connection(provider_key: str) -> None:
+    """Admin login test: fresh session, then one authenticated ping; never raises.
+
+    Routed to the ``refresh`` queue by ``providers.tasks.*`` in
+    ``CELERY_TASK_ROUTES``. A real login records its own result; if none was
+    recorded (missing credentials, busy lock, Redis down, ...) the failure is
+    recorded here so the UI never stays "pending".
+    """
+    started = timezone.now()
+    error = ""
+    try:
+        reset_session(provider_key)
+        service.keepalive(provider_key)
+    except Exception as exc:
+        error = scrub(str(exc)) or exc.__class__.__name__
+        log.warning("provider %s login test failed: %s", provider_key, error)
+    try:
+        account = ProviderConnection.objects.filter(provider_key=provider_key).first()
+        if account is not None and (
+            account.last_login_at is None or account.last_login_at < started
+        ):
+            record_login(provider_key, not error, error)
+    except Exception as exc:
+        log.warning(
+            "provider %s login test result not recorded: %s", provider_key, scrub(str(exc))
+        )
 
 
 REFRESH_JOB_RETENTION_DAYS = 30

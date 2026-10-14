@@ -7,6 +7,7 @@ from django import forms
 from providers.accounts import load_extra, normalize_totp_secret
 from providers.crypto import decrypt_or_empty, encrypt
 from providers.models import ProviderConnection
+from providers.sessions import reset_session
 
 SAVED_PLACEHOLDER = "•••• (محفوظ)"
 
@@ -53,13 +54,6 @@ class ProviderAccountForm(forms.Form):
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
-    is_enabled = forms.BooleanField(
-        label="مفعّل",
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={"class": "form-check-input", "role": "switch"}
-        ),
-    )
 
     def __init__(self, *args, provider_key: str, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,7 +61,6 @@ class ProviderAccountForm(forms.Form):
         self.account = ProviderConnection.objects.filter(provider_key=provider_key).first()
         if self.account is not None:
             self.fields["username"].initial = self.account.username
-            self.fields["is_enabled"].initial = self.account.is_enabled
             has_proxy = bool(load_extra(self.account).get("proxy_url"))
             for name, saved in (
                 ("password", bool(decrypt_or_empty(self.account.secret_encrypted))),
@@ -76,8 +69,6 @@ class ProviderAccountForm(forms.Form):
             ):
                 if saved:
                     self.fields[name].widget.attrs["placeholder"] = SAVED_PLACEHOLDER
-        else:
-            self.fields["is_enabled"].initial = True
 
     def clean_totp_secret(self) -> str:
         raw = self.cleaned_data.get("totp_secret", "")
@@ -106,7 +97,6 @@ class ProviderAccountForm(forms.Form):
         data = self.cleaned_data
         account = self.account or ProviderConnection(provider_key=self.provider_key)
         account.username = data["username"].strip()
-        account.is_enabled = data["is_enabled"]
         if data["password"]:
             account.secret_encrypted = encrypt(data["password"])
         if data["totp_secret"]:
@@ -122,5 +112,8 @@ class ProviderAccountForm(forms.Form):
         account.extra_encrypted = encrypt(json.dumps(extra)) if extra else ""
 
         account.save()
+        # New credentials: drop the stored session and any login cool-down so
+        # the next authenticated call logs in with them right away.
+        reset_session(self.provider_key)
         self.account = account
         return account

@@ -98,6 +98,16 @@ def _failures_key(provider_key: str) -> str:
     return f"provider:login-failures:{provider_key}"
 
 
+def reset_session(provider_key: str) -> None:
+    """Forget the stored session and the login cool-down / failure counter.
+
+    Used when credentials change or an admin runs a login test, so the next
+    authenticated call performs a fresh login instead of waiting out a cool-down.
+    """
+    SessionStore(provider_key).clear()
+    get_redis().delete(_cooldown_key(provider_key), _failures_key(provider_key))
+
+
 def _start_cooldown(redis_client, provider_key: str) -> None:
     failures_key = _failures_key(provider_key)
     failures = int(redis_client.incr(failures_key))
