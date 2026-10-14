@@ -29,7 +29,7 @@ html {
 :root {
   /* Pearl type stack: IBM Plex Sans Arabic (Arabic body), Noto Kufi Arabic
      (Arabic headings), Inter Tight (numbers + English body). */
-  --rd-font: "Inter Tight", system-ui, sans-serif;
+  --rd-font: "Inter Tight", "IBM Plex Sans Arabic", system-ui, sans-serif;
   --rd-font-ar: "IBM Plex Sans Arabic", "Inter Tight", system-ui, sans-serif;
   --rd-font-heading: "Noto Kufi Arabic", var(--rd-font-ar);
   --rd-font-num: "Inter Tight", system-ui, sans-serif;
@@ -1157,74 +1157,103 @@ html[lang="ar"] h4 {
 
 /* Page chrome */
 .rd-page-header {
-  margin-bottom: 1.35rem;
+  margin-bottom: 1.5rem;
 }
 
 .rd-page-header h1,
 .rd-page-header .rd-heading-xl {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
+  color: var(--rd-ink);
+}
+
+.rd-page-header p,
+.rd-page-header .rd-text-muted {
+  color: var(--rd-muted);
 }
 
 /* Section tabs — settings, phone refresh, SIM inventory, API */
 .rd-section-tabs.nav-tabs {
   border-bottom: 1px solid var(--bs-border-color);
-  gap: 0.15rem;
+  gap: 0.35rem;
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .rd-section-tabs .nav-link {
+  position: relative;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--rd-radius-sm) var(--rd-radius-sm) 0 0;
-  color: var(--bs-secondary-color);
+  border-radius: 0;
+  margin-bottom: -1px;
+  color: var(--rd-muted);
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.55rem 0.9rem;
+  padding: 0.6rem 0.85rem;
   white-space: nowrap;
+  background: transparent;
+  transition: color var(--rd-transition-fast);
+}
+
+.rd-section-tabs .nav-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.85rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--rd-accent);
+  transform: scaleX(0);
+  opacity: 0;
   transition:
-    color var(--rd-transition-fast),
-    border-color var(--rd-transition-fast),
-    background var(--rd-transition-fast);
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.15s ease;
 }
 
 .rd-section-tabs .nav-link:hover {
-  color: var(--bs-body-color);
-  border-bottom-color: color-mix(in srgb, var(--bs-primary) 35%, transparent);
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 65%, transparent);
+  color: var(--rd-ink);
+  background: transparent;
 }
 
 .rd-section-tabs .nav-link.active {
-  color: var(--bs-primary);
+  color: var(--rd-ink);
   background: transparent;
-  border-bottom-color: var(--bs-primary);
+}
+
+.rd-section-tabs .nav-link.active::after {
+  transform: scaleX(1);
+  opacity: 1;
 }
 
 /* Cards */
 .rd-card {
-  background: var(--bs-secondary-bg);
+  background: var(--rd-surface);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  box-shadow: var(--rd-shadow-xs);
-  transition: box-shadow var(--rd-transition), border-color var(--rd-transition-fast);
+  border-radius: var(--rd-radius-lg);
+  box-shadow: var(--rd-shadow-card);
 }
 
-.rd-card:hover {
+a.rd-card {
+  color: inherit;
+  transition: transform var(--rd-transition);
+}
+
+a.rd-card:hover {
+  transform: translateY(-1px);
   box-shadow: var(--rd-shadow-sm);
 }
 
 .rd-card-body {
-  padding: 1.1rem 1.2rem;
+  padding: 1.15rem 1.25rem;
 }
 
 .rd-card-header {
-  padding: 0.85rem 1.2rem;
+  padding: 0.9rem 1.25rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  color: var(--rd-ink);
   border-bottom: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md) var(--rd-radius-md) 0 0;
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-secondary-bg));
+  border-radius: var(--rd-radius-lg) var(--rd-radius-lg) 0 0;
+  background: transparent;
 }
 
 /* Stat KPI */
@@ -1234,15 +1263,7 @@ html[lang="ar"] h4 {
 }
 
 .rd-stat::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: -20%;
-  inset-block-start: -40%;
-  width: 55%;
-  height: 120%;
-  background: radial-gradient(circle, var(--rd-accent-muted) 0%, transparent 70%);
-  pointer-events: none;
-  opacity: 0.9;
+  content: none;
 }
 
 .rd-stat .rd-card-body {
@@ -1251,10 +1272,13 @@ html[lang="ar"] h4 {
 }
 
 .rd-stat-value {
+  font-family: var(--rd-font-num);
   font-size: clamp(1.65rem, 3vw, 2.1rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   line-height: 1.1;
+  color: var(--rd-ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .rd-stat-icon {
@@ -1264,9 +1288,81 @@ html[lang="ar"] h4 {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  background: var(--rd-accent-muted);
-  color: var(--bs-primary);
-  margin-bottom: 0.65rem;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  margin-bottom: 0.75rem;
+}
+
+/* Trend chip (KPI deltas): direction-neutral numbers, so always LTR. */
+.rd-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--rd-font-num);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
+.rd-trend svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.rd-trend--up {
+  background: var(--rd-success-soft);
+  color: var(--rd-success);
+}
+
+.rd-trend--down {
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning-ink);
+}
+
+/* Loading placeholder. The sweep runs on a pseudo-element (transform only). */
+.rd-skeleton {
+  --rd-skeleton-from: -100%;
+  --rd-skeleton-to: 100%;
+  position: relative;
+  display: block;
+  min-height: 1em;
+  overflow: hidden;
+  border-radius: var(--rd-radius-sm);
+  background: var(--rd-surface-2);
+  color: transparent;
+}
+
+[dir="rtl"] .rd-skeleton {
+  --rd-skeleton-from: 100%;
+  --rd-skeleton-to: -100%;
+}
+
+.rd-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--rd-surface) 65%, transparent),
+    transparent
+  );
+  transform: translateX(var(--rd-skeleton-from));
+  animation: rd-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes rd-skeleton-sweep {
+  to {
+    transform: translateX(var(--rd-skeleton-to));
+  }
 }
 
 .rd-stat-icon svg {
@@ -1279,26 +1375,34 @@ html[lang="ar"] h4 {
 
 /* Filter toolbar */
 .rd-filter-bar .form-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--bs-secondary-color);
-  margin-bottom: 0.25rem;
+  color: var(--rd-muted);
+  margin-bottom: 0.3rem;
 }
 
 .rd-filter-bar .form-control,
 .rd-filter-bar .form-select {
-  border-radius: var(--rd-radius-sm);
   font-size: 0.875rem;
 }
 
-/* Tables */
+/* Tables — Bootstrap paints cells with the page color; inside Pearl cards
+   they must stay on the card surface. */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--rd-ink);
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-hover-bg: var(--rd-surface-2);
+  --bs-table-hover-color: var(--rd-ink);
+  --bs-table-striped-bg: color-mix(in srgb, var(--rd-surface-2) 55%, transparent);
+  --bs-table-active-bg: var(--rd-surface-2);
+}
+
 .rd-table-wrap {
-  border-radius: var(--rd-radius-md);
+  border-radius: var(--rd-radius-lg);
   overflow: hidden;
   border: 1px solid var(--bs-border-color);
-  background: var(--bs-secondary-bg);
+  background: var(--rd-surface);
 }
 
 .rd-table-wrap .table {
@@ -1306,12 +1410,10 @@ html[lang="ar"] h4 {
 }
 
 .rd-table-wrap thead th {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--bs-secondary-color);
-  background: var(--bs-tertiary-bg) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rd-muted);
+  background: var(--rd-surface) !important;
   border-bottom: 1px solid var(--bs-border-color);
   white-space: nowrap;
 }
@@ -1319,11 +1421,15 @@ html[lang="ar"] h4 {
 .rd-table-wrap tbody td {
   vertical-align: middle;
   padding-block: 0.85rem;
-  border-color: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  border-color: var(--bs-border-color);
+}
+
+.rd-table-wrap tbody tr:last-child > td {
+  border-bottom: 0;
 }
 
 .rd-table-wrap.table-responsive {
-  border-radius: var(--rd-radius-md);
+  border-radius: var(--rd-radius-lg);
 }
 
 .rd-card > .table-responsive.rd-table-wrap {
@@ -1333,27 +1439,24 @@ html[lang="ar"] h4 {
   border-top: 1px solid var(--bs-border-color);
 }
 
-[data-bs-theme="light"] .rd-table-wrap .table-hover > tbody > tr:hover > * {
-  --bs-table-hover-bg: rgba(79, 70, 229, 0.04);
-}
-
-[data-bs-theme="dark"] .rd-table-wrap .table-hover > tbody > tr:hover > * {
-  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
-}
-
-/* Badges */
+/* Badges — soft status pills with a leading dot */
 .rd-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.72rem;
+  gap: 0.35rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.28rem 0.55rem;
+  line-height: 1.3;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
-.rd-badge--pending {
+.rd-badge--pending,
+.rd-badge--warning {
   background: var(--rd-warning-soft);
   color: var(--rd-warning-ink);
 }
@@ -1369,19 +1472,28 @@ html[lang="ar"] h4 {
 }
 
 .rd-badge--neutral {
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
-  border: 1px solid var(--bs-border-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
+/* Count badges and badges that carry their own icon skip the dot. */
+:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral):not(.tabular-nums):not(:has(svg))::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rd-badge--neutral:not(.tabular-nums):not(:has(svg))::before {
+  background: var(--rd-faint);
 }
 
 /* Solid danger: needs a human, louder than a cancelled/failed chip. */
 .rd-badge--conflict {
   background: var(--rd-danger);
-  color: #fff;
-}
-
-[data-bs-theme="dark"] .rd-badge--conflict {
-  color: var(--bs-body-bg);
+  color: var(--rd-surface);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1577,18 +1689,19 @@ html[lang="ar"] h4 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--rd-radius-sm);
+  border-radius: 0.75rem;
 }
 
 .btn {
-  border-radius: var(--rd-radius-sm);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  border-radius: 0.75rem;
   font-weight: 600;
   transition:
     background-color var(--rd-transition-fast),
     border-color var(--rd-transition-fast),
     color var(--rd-transition-fast),
     box-shadow var(--rd-transition-fast),
-    transform 0.1s ease;
+    transform 0.15s ease;
 }
 
 .btn:active:not(:disabled) {
@@ -1596,33 +1709,207 @@ html[lang="ar"] h4 {
 }
 
 .btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.35);
+  box-shadow: var(--bs-btn-focus-box-shadow);
 }
 
 .btn-primary {
+  --bs-btn-color: var(--rd-primary-fg);
+  --bs-btn-bg: var(--rd-primary-bg);
+  --bs-btn-border-color: var(--rd-primary-bg);
+  --bs-btn-hover-color: var(--rd-primary-fg);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-primary-bg) 86%, var(--rd-surface));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-primary-bg) 86%, var(--rd-surface));
+  --bs-btn-active-color: var(--rd-primary-fg);
+  --bs-btn-active-bg: var(--rd-primary-bg);
+  --bs-btn-active-border-color: var(--rd-primary-bg);
+  --bs-btn-disabled-color: var(--rd-primary-fg);
+  --bs-btn-disabled-bg: var(--rd-primary-bg);
+  --bs-btn-disabled-border-color: var(--rd-primary-bg);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-accent:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* The one special orange action per screen (e.g. charge). */
+.btn-accent {
+  --bs-btn-color: white;
   --bs-btn-bg: var(--rd-accent);
   --bs-btn-border-color: var(--rd-accent);
+  --bs-btn-hover-color: white;
   --bs-btn-hover-bg: var(--rd-accent-hover);
   --bs-btn-hover-border-color: var(--rd-accent-hover);
+  --bs-btn-active-color: white;
+  --bs-btn-active-bg: var(--rd-accent);
+  --bs-btn-active-border-color: var(--rd-accent);
+  --bs-btn-disabled-color: white;
+  --bs-btn-disabled-bg: var(--rd-accent);
+  --bs-btn-disabled-border-color: var(--rd-accent);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem var(--rd-accent-soft);
+  font-weight: 700;
 }
 
 .btn-outline-secondary {
-  border-color: var(--bs-border-color);
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: var(--rd-surface);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: var(--rd-surface-2);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: var(--rd-surface-2);
+  --bs-btn-active-border-color: var(--bs-border-color);
+  --bs-btn-disabled-color: var(--rd-faint);
+  --bs-btn-disabled-bg: var(--rd-surface);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+/* Compiled Bootstrap hard-codes its blue/green/red here; map them to Pearl. */
+.btn-outline-primary {
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--rd-ink);
+  --bs-btn-hover-color: var(--rd-primary-fg);
+  --bs-btn-hover-bg: var(--rd-primary-bg);
+  --bs-btn-hover-border-color: var(--rd-primary-bg);
+  --bs-btn-active-color: var(--rd-primary-fg);
+  --bs-btn-active-bg: var(--rd-primary-bg);
+  --bs-btn-active-border-color: var(--rd-primary-bg);
+  --bs-btn-disabled-color: var(--rd-faint);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--rd-danger);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-danger) 35%, transparent);
+  --bs-btn-hover-color: var(--rd-danger);
+  --bs-btn-hover-bg: var(--rd-danger-soft);
+  --bs-btn-hover-border-color: var(--rd-danger);
+  --bs-btn-active-color: var(--rd-danger);
+  --bs-btn-active-bg: var(--rd-danger-soft);
+  --bs-btn-active-border-color: var(--rd-danger);
+  --bs-btn-disabled-color: var(--rd-danger);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-danger) 35%, transparent);
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--rd-success);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-success) 35%, transparent);
+  --bs-btn-hover-color: var(--rd-success);
+  --bs-btn-hover-bg: var(--rd-success-soft);
+  --bs-btn-hover-border-color: var(--rd-success);
+  --bs-btn-active-color: var(--rd-success);
+  --bs-btn-active-bg: var(--rd-success-soft);
+  --bs-btn-active-border-color: var(--rd-success);
+}
+
+.btn-success,
+.btn-danger {
+  --bs-btn-color: var(--rd-surface);
+  --bs-btn-hover-color: var(--rd-surface);
+  --bs-btn-active-color: var(--rd-surface);
+  --bs-btn-disabled-color: var(--rd-surface);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--rd-success);
+  --bs-btn-border-color: var(--rd-success);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-success) 86%, var(--rd-ink));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-success) 86%, var(--rd-ink));
+  --bs-btn-active-bg: var(--rd-success);
+  --bs-btn-active-border-color: var(--rd-success);
+  --bs-btn-disabled-bg: var(--rd-success);
+  --bs-btn-disabled-border-color: var(--rd-success);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--rd-danger);
+  --bs-btn-border-color: var(--rd-danger);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-danger) 86%, var(--rd-ink));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-danger) 86%, var(--rd-ink));
+  --bs-btn-active-bg: var(--rd-danger);
+  --bs-btn-active-border-color: var(--rd-danger);
+  --bs-btn-disabled-bg: var(--rd-danger);
+  --bs-btn-disabled-border-color: var(--rd-danger);
 }
 
 /* Forms */
 .form-control,
 .form-select {
-  border-radius: var(--rd-radius-sm);
+  border-radius: 0.75rem;
+  background-color: var(--rd-surface);
+  border-color: var(--bs-border-color);
+  color: var(--rd-ink);
   transition:
     border-color var(--rd-transition-fast),
     box-shadow var(--rd-transition-fast);
 }
 
+.form-control::placeholder {
+  color: var(--rd-faint);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
 .form-control:focus,
 .form-select:focus {
-  border-color: rgba(var(--bs-primary-rgb), 0.55);
-  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.18);
+  background-color: var(--rd-surface);
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+.form-check-input {
+  background-color: var(--rd-surface);
+  border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+}
+
+.form-check-input:checked {
+  background-color: var(--rd-accent);
+  border-color: var(--rd-accent);
+}
+
+.form-check-input:focus {
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+/* Pearl switch: hairline track that turns orange, white knob with a soft shadow.
+   Sized in em (= 2.25rem x 1.3rem at body size) so wrappers that bump
+   font-size to scale the switch keep working. */
+.form-switch .form-check-input,
+.form-switch .form-check-input:focus,
+[data-bs-theme] .form-switch .form-check-input:not(:checked):not(:focus) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3.1' fill='white'/%3e%3c/svg%3e");
+}
+
+.form-switch .form-check-input {
+  width: 2.25em;
+  height: 1.3em;
+  margin-top: 0.1em;
+  border: 0;
+  background-color: var(--bs-border-color);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--rd-ink) 10%, transparent);
+  cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+  background-color: var(--rd-accent);
+}
+
+.form-switch .form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem var(--rd-accent-soft);
 }
 
 @keyframes rd-fade-in {
@@ -1996,11 +2283,11 @@ html[lang="ar"] h4 {
 /* Empty state */
 .empty-state {
   border: 1px dashed var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  padding: 2rem 1.25rem;
+  border-radius: var(--rd-radius-lg);
+  padding: 2.25rem 1.25rem;
   text-align: center;
-  color: var(--bs-secondary-color);
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 40%, var(--bs-secondary-bg));
+  color: var(--rd-muted);
+  background: var(--rd-surface);
 }
 
 /* Sky reconcile — compact run strip + waiting steps */
@@ -2339,11 +2626,11 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 
 /* List group inside cards — management */
 .rd-list-flush .list-group-item {
-  border-color: color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  border-color: var(--bs-border-color);
 }
 
 .rd-list-flush .list-group-item-action:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2419,34 +2706,28 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   position: sticky;
   top: 0;
   z-index: 2;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-  background: color-mix(in srgb, var(--bs-secondary-bg) 92%, var(--bs-tertiary-bg));
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rd-muted);
+  background: var(--rd-surface);
   border-bottom: 1px solid var(--bs-border-color);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--bs-border-color) 55%, transparent);
-  padding: 0.65rem var(--rd-table-row-pad-x);
+  box-shadow: 0 1px 0 var(--bs-border-color);
+  padding: 0.7rem var(--rd-table-row-pad-x);
   white-space: nowrap;
 }
 
 .rd-table-modern tbody td {
   padding: var(--rd-table-row-pad-y) var(--rd-table-row-pad-x);
-  border-bottom: 1px solid color-mix(in srgb, var(--bs-border-color) 55%, transparent);
+  border-bottom: 1px solid var(--bs-border-color);
   vertical-align: middle;
 }
 
-.rd-table-modern tbody tr {
-  transition: background-color var(--rd-transition-fast);
-}
-
-.rd-table-modern tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 35%, transparent);
+.rd-table-modern tbody tr:last-child > td {
+  border-bottom: 0;
 }
 
 .rd-table-modern tbody tr:hover {
-  background: color-mix(in srgb, var(--rd-accent-muted) 55%, var(--bs-secondary-bg));
+  background: var(--rd-surface-2);
 }
 
 .rd-table-modern .tabular-nums {
@@ -2478,8 +2759,8 @@ tr.rd-row-pending {
   justify-content: space-between;
   gap: 0.75rem;
   font-weight: 600;
-  color: var(--bs-body-color);
-  border-radius: var(--rd-radius, 0.75rem);
+  color: var(--rd-ink);
+  border-radius: var(--rd-radius-lg);
 }
 .rd-filter-card > summary::-webkit-details-marker {
   display: none;
@@ -2488,10 +2769,10 @@ tr.rd-row-pending {
   content: "";
 }
 .rd-filter-card > summary:hover {
-  background: color-mix(in srgb, var(--bs-body-color) 4%, transparent);
+  background: var(--rd-surface-2);
 }
 .rd-filter-card > summary:focus-visible {
-  outline: 2px solid var(--rd-primary, #2563eb);
+  outline: 2px solid var(--rd-accent);
   outline-offset: 2px;
 }
 .rd-filter-summary-left {
@@ -2503,14 +2784,14 @@ tr.rd-row-pending {
 .rd-filter-chevron {
   flex-shrink: 0;
   transition: transform 200ms ease;
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
 }
 .rd-filter-card[open] .rd-filter-chevron {
   transform: rotate(180deg);
 }
 .rd-filter-card[open] > summary {
   border-bottom: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius, 0.75rem) var(--rd-radius, 0.75rem) 0 0;
+  border-radius: var(--rd-radius-lg) var(--rd-radius-lg) 0 0;
 }
 .rd-filter-active-badge {
   display: inline-flex;
@@ -2521,8 +2802,9 @@ tr.rd-row-pending {
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 999px;
-  background: var(--rd-primary, #2563eb);
-  color: #fff;
+  font-family: var(--rd-font-num);
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
   line-height: 1;
 }
 
@@ -2559,10 +2841,10 @@ tr.rd-row-pending {
 
 .rd-mobile-row-card {
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  padding: 0.75rem 0.85rem;
-  background: var(--bs-secondary-bg);
-  box-shadow: var(--rd-shadow-xs);
+  border-radius: var(--rd-radius-lg);
+  padding: 0.8rem 0.9rem;
+  background: var(--rd-surface);
+  box-shadow: var(--rd-shadow-card);
 }
 
 .rd-stock-check-lines {
@@ -2963,13 +3245,38 @@ tr.rd-row-pending {
   border-color: var(--bs-border-color);
 }
 
-/* Pagination strip */
-.rd-pagination {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 25%, var(--bs-secondary-bg));
+/* Pagination — borderless pages, active page is an ink pill */
+.pagination {
+  --bs-pagination-color: var(--rd-ink);
+  --bs-pagination-bg: transparent;
+  --bs-pagination-border-color: transparent;
+  --bs-pagination-hover-color: var(--rd-ink);
+  --bs-pagination-hover-bg: var(--rd-surface-2);
+  --bs-pagination-hover-border-color: transparent;
+  --bs-pagination-focus-color: var(--rd-ink);
+  --bs-pagination-focus-bg: var(--rd-surface-2);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  --bs-pagination-active-color: var(--rd-primary-fg);
+  --bs-pagination-active-bg: var(--rd-primary-bg);
+  --bs-pagination-active-border-color: var(--rd-primary-bg);
+  --bs-pagination-disabled-color: var(--rd-faint);
+  --bs-pagination-disabled-bg: transparent;
+  --bs-pagination-disabled-border-color: transparent;
+  gap: 0.25rem;
 }
 
-.rd-pagination .page-link {
-  border-radius: var(--rd-radius-xs);
+.pagination .page-item .page-link {
+  margin: 0;
+  min-width: 2.1em;
+  text-align: center;
+  border-radius: 999px;
+  font-family: var(--rd-font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.rd-pagination {
+  background: var(--rd-surface);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2986,7 +3293,7 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-toolbar {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 30%, var(--bs-secondary-bg));
+  background: var(--rd-surface);
 }
 
 .rd-datagrid-sort {
@@ -3002,12 +3309,12 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-sort:hover {
-  color: var(--bs-link-color);
-  background: color-mix(in srgb, var(--rd-accent-muted) 40%, transparent);
+  color: var(--rd-ink);
+  background: var(--rd-surface-2);
 }
 
 .rd-datagrid-sort.is-active {
-  color: var(--bs-link-color);
+  color: var(--rd-ink);
 }
 
 .rd-datagrid-sort.is-asc::after {
@@ -3023,30 +3330,32 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-pagination__bar {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 22%, var(--bs-secondary-bg));
+  background: var(--rd-surface);
 }
 
 .rd-datagrid-pagination__pages .page-item.active .page-link {
-  background: var(--bs-primary);
-  border-color: var(--bs-primary);
-  color: #fff;
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
 }
 
 .rd-datagrid-per-page__link {
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--rd-radius-xs);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
   text-decoration: none;
-  color: var(--bs-link-color);
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
   font-weight: 600;
 }
 
 .rd-datagrid-per-page__link:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-datagrid-per-page__link.is-active {
-  background: color-mix(in srgb, var(--bs-primary) 18%, var(--bs-secondary-bg));
-  color: var(--bs-body-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-actions-details summary {
@@ -3065,8 +3374,8 @@ tr.rd-row-pending {
 }
 
 .rd-actions-details[open] summary {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bs-primary) 35%, transparent);
-  border-radius: var(--rd-radius-xs);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  border-radius: 0.75rem;
 }
 
 /* SIM inventory — receive form, table, dialogs, autocomplete */
