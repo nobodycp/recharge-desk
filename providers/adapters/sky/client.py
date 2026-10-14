@@ -31,9 +31,10 @@ REQUEST_TIMEOUT_SECONDS = 90
 LOGIN_CONNECT_TIMEOUT_SECONDS = 5
 LOGIN_READ_TIMEOUT_SECONDS = 15
 LOGIN_DEADLINE_SECONDS = 100
-# The OTP retry (login + init2fa + confirm2fa) only starts if all three
-# requests fit before the deadline at their max duration.
-OTP_RETRY_REQUESTS = 3
+# The OTP retry (login, init2fa, confirm2fa, getLoginInfo, genJwtToken) only
+# starts if its five requests fit before the deadline at the read timeout each;
+# the deadline guard still caps the worst case.
+OTP_RETRY_REQUESTS = 5
 
 
 @dataclass
@@ -389,9 +390,7 @@ class SkySalesClient:
     def _otp_retry_fits_deadline(self) -> bool:
         if self._login_deadline is None:
             return True
-        needed = OTP_RETRY_REQUESTS * (
-            LOGIN_CONNECT_TIMEOUT_SECONDS + LOGIN_READ_TIMEOUT_SECONDS
-        )
+        needed = OTP_RETRY_REQUESTS * LOGIN_READ_TIMEOUT_SECONDS
         return self._login_deadline - time.monotonic() >= needed
 
     def auto_login(self, username: str, password: str, otp_code: str = "") -> None:

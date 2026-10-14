@@ -96,7 +96,7 @@ class SkySalesClientTests(SimpleTestCase):
 
     def test_otp_retry_skipped_when_it_would_not_fit_the_deadline(self):
         client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
-        client._login_deadline = time.monotonic() + 30
+        client._login_deadline = time.monotonic() + 70
         with patch.object(client, "begin_login") as begin, patch.object(
             client,
             "confirm_otp",
@@ -106,7 +106,7 @@ class SkySalesClientTests(SimpleTestCase):
                 client.auto_login("user", "pass")
         self.assertEqual(begin.call_count, 1)
 
-        client._login_deadline = time.monotonic() + 61
+        client._login_deadline = time.monotonic() + 76
         with patch.object(client, "begin_login") as begin, patch.object(
             client,
             "confirm_otp",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
@@ -76,6 +77,71 @@ class ServiceTests(TestCase):
         self.assertEqual(adapter.calls, 3)
         self.assertEqual([c.args[0] for c in sleep.call_args_list], [1, 2])
 
+    def test_refresh_does_not_retry_login_path_failures(self):
+        for code in ("login_busy", "login_failed"):
+            adapter = StubAdapter(TransientError(code))
+            with _with_adapter(adapter), patch(
+                "providers.service.time.sleep"
+            ) as sleep, self.assertLogs("providers.service", level="WARNING"):
+                raw = service.refresh("stub", "0599000000")
+            self.assertEqual(raw.error, code)
+            self.assertEqual(adapter.calls, 1)
+            sleep.assert_not_called()
+
+    def test_refresh_stops_retrying_when_budget_would_be_exceeded(self):
+        adapter = StubAdapter(TransientError("connection_error"))
+        with _with_adapter(adapter), patch(
+            "providers.service.time.sleep"
+        ) as sleep, self.assertLogs("providers.service", level="WARNING"):
+            raw = service.refresh("stub", "0599000000", budget=0.5)
+        self.assertEqual(raw.error, "connection_error")
+        self.assertEqual(adapter.calls, 1)
+        sleep.assert_not_called()
+
+        # 1.5 s fits the 1 s sleep but not the following 2 s one.
+        adapter = StubAdapter(TransientError("connection_error"))
+        with _with_adapter(adapter), patch(
+            "providers.service.time.sleep"
+        ) as sleep, self.assertLogs("providers.service", level="WARNING"):
+            service.refresh("stub", "0599000000", budget=1.5)
+        self.assertEqual(adapter.calls, 2)
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [1])
+
+    def test_refresh_with_lock_held_elsewhere_returns_within_budget_with_one_wait(self):
+        from providers import sessions
+
+        class NeedsLogin(BaseAdapter):
+            key = "stub"
+            needs_login = True
+            calls = 0
+
+            def refresh(self, phone):
+                NeedsLogin.calls += 1
+                raise AuthRequired("expired")
+
+            def login(self):  # pragma: no cover - must not be reached
+                raise AssertionError("login must not run while the lock is held")
+
+        get_redis().set("provider:login-lock:stub", "other-worker", ex=30)
+        real_acquire = sessions._LoginLock.acquire
+        waits = []
+
+        def counting_acquire(lock, *args, **kwargs):
+            waits.append(lock.blocking_timeout)
+            return real_acquire(lock, *args, **kwargs)
+
+        started = time.monotonic()
+        with _with_adapter(NeedsLogin()), patch.object(
+            sessions._LoginLock, "acquire", counting_acquire
+        ), self.assertLogs("providers.service", level="WARNING"):
+            raw = service.refresh("stub", "0599000000", budget=1.0)
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 2.0)
+        self.assertEqual(raw.error, "login_busy")
+        self.assertEqual(len(waits), 1)
+        self.assertLessEqual(waits[0], 1.0)
+        self.assertEqual(NeedsLogin.calls, 1)
+
     def test_refresh_permanent_error_is_error_response_without_retry(self):
         adapter = StubAdapter(PermanentError("config_error"))
         with _with_adapter(adapter), patch("providers.service.time.sleep") as sleep:
@@ -137,6 +203,9 @@ class ServiceTests(TestCase):
         self.assertNotIn("LOGIN_s_sky", text)
         self.assertIn("http://***@res.geonix.com:10000", text)
         self.assertEqual(scrub("https://api.ipify.org/x"), "https://api.ipify.org/x")
+        self.assertEqual(
+            scrub("via http://u:p@ss@host:8080/x ok"), "via http://***@host:8080/x ok"
+        )
 
     def test_record_login_masks_url_credentials(self):
         from providers.accounts import record_login

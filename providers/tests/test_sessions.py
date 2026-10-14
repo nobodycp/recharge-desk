@@ -191,11 +191,14 @@ class RunAuthenticatedTests(TestCase):
         self.assertEqual(str(ctx.exception), "login_busy")
         self.assertEqual(adapter.login_calls, 0)
 
-    def test_default_lock_wait_fits_inside_a_web_request(self):
-        from providers import sessions
+    def test_default_lock_wait_is_bounded(self):
+        # Guarantee: one lock wait is at most 40 s; sync service calls further
+        # cap it (and all retries) by their total budget, see test_service.
+        from providers import service, sessions
 
         self.assertLessEqual(sessions.LOGIN_LOCK_WAIT_SECONDS, 40)
         self.assertLess(sessions.LOGIN_LOCK_WAIT_SECONDS, sessions.LOGIN_LOCK_TIMEOUT_SECONDS)
+        self.assertLessEqual(service.SYNC_BUDGET_SECONDS, 45)
 
     def test_concurrent_failing_login_is_attempted_once(self):
         adapter = FakeAdapter(login_delay=0.2, login_error=Exception("Sky down"))

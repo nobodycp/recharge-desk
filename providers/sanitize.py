@@ -18,8 +18,8 @@ _BARE_PAIR = re.compile(
     re.IGNORECASE,
 )
 
-# URL userinfo: scheme://user:pass@host
-_URL_USERINFO = re.compile(r"(?P<scheme>[a-z][a-z0-9+.-]*://)[^/\s@]+@", re.IGNORECASE)
+# URL userinfo up to the last "@" before the host: scheme://user:p@ss@host
+_URL_USERINFO = re.compile(r"(?P<scheme>[a-z][a-z0-9+.-]*://)[^/\s]*@", re.IGNORECASE)
 
 
 def _mask_quoted(match: re.Match) -> str:
