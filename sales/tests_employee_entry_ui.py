@@ -264,6 +264,14 @@ class EmployeeEntryMarkupTests(TestCase):
         html = self._html()
         self.assertEqual(len(re.findall(r'<div class="rd-entry-blk__head">\s*<span class="rd-entry-step"', html)), 4)
 
+    def test_progress_script_inits_immediately_and_on_htmx_load(self):
+        """A boosted visit re-inserts the script after htmx:load fired: init() must also run at top level."""
+        js = (Path(settings.BASE_DIR) / "static" / "js" / "employee-entry-progress.js").read_text(encoding="utf-8")
+        js = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
+        self.assertRegex(js, r"\n  init\(\);\n")
+        self.assertIn("htmx.onLoad(init)", js)
+        self.assertIn("form.__rdEntryProgress", js)
+
     def test_progress_script_is_display_only(self):
         js = (Path(settings.BASE_DIR) / "static" / "js" / "employee-entry-progress.js").read_text(encoding="utf-8")
         js = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
@@ -482,11 +490,18 @@ class EmployeeEntryCssTests(SimpleTestCase):
 
     def test_valid_tick_is_inside_the_field_grid_and_uses_success(self):
         self._assert_decl(
-            ".rd-entry-valid", "grid-row: 1", "color: var(--rd-success)", "pointer-events: none"
+            ".rd-entry-valid", "grid-row: 1 / span 2", "align-self: center",
+            "color: var(--rd-success)", "pointer-events: none"
         )
         self._assert_decl(".rd-entry-valid[hidden]", "display: none")
         joined = " ".join(_bodies(self.css, ".rd-entry-valid"))
         self.assertNotRegex(joined, r"\b(height|min-height):\s*[3-9]")
+
+    def test_progress_track_is_visible_and_tick_pads_the_input(self):
+        self.assertIn("var(--rd-faint)", " ".join(_bodies(self.css, ".rd-entry-progress")))
+        self.assertIn(
+            ".rd-entry-field:has(> .rd-entry-valid:not([hidden])) > .form-control", self.css
+        )
 
     def test_progress_motion_respects_reduced_motion(self):
         block = self.css.split("prefers-reduced-motion: reduce", 1)[1]

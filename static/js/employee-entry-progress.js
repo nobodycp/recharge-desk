@@ -9,7 +9,8 @@
  * done/5; the four numbered dots (data-step pay | co | pk | pr) get `is-done`.
  *
  * Bound to the form element (replaced on every visit), so each page visit and
- * each history restore binds afresh. Listeners are on the form, not on
+ * each history restore binds afresh. init() runs when the script runs and again
+ * from htmx.onLoad; the per-form marker makes the repeats cheap no-ops. Listeners are on the form, not on
  * document, so there is nothing to clean up when the page is left.
  */
 (function () {
@@ -92,11 +93,14 @@
     later(form);
   }
 
+  /* Run now: the form is above this script. After a boosted visit the script
+     is re-inserted and loads after the body's htmx:load already fired, so
+     onLoad alone would miss it. The per-form marker keeps this idempotent. */
+  init();
+  /* Later htmx loads (product partial swap, another boosted visit). */
   if (window.htmx) {
     window.htmx.onLoad(init);
-  } else if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
   } else {
-    init();
+    document.addEventListener("DOMContentLoaded", init);
   }
 })();
