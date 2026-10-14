@@ -1206,6 +1206,86 @@ class EmployeeSecondaryPagesTests(TestCase):
         self.assertIn(reverse("employees:employee_ledger_delete", args=[self.profile.pk, self.entry.pk]), html)
         self.assertIn("rd-datagrid-sort", html)
 
+    # -- fix round 1 -------------------------------------------------------
+    def _on_account_pending(self):
+        from sales.models import Sale
+
+        Sale.objects.filter(pk=self.sale.pk).update(
+            on_account=True, status=Sale.Status.PENDING, payment_method=None
+        )
+
+    def test_sale_edit_status_text_is_get_status_display_for_on_account_pending(self):
+        from django.utils import translation
+
+        self._on_account_pending()
+        html = self._edit()
+        self.assertIn('rd-badge rd-badge--pending">Pending<', html)
+        self.assertNotIn("NotPaid", html)
+        self.addCleanup(translation.deactivate)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        resp = self.client.get(
+            reverse("sales:employee_sale_edit", args=[self.sale.pk]), follow=True
+        )
+        self.assertEqual(resp.status_code, 200, resp.redirect_chain)
+        html = resp.content.decode()
+        self.assertIn('rd-badge rd-badge--pending">معلّق<', html)
+        self.assertNotIn("غير مدفوع", html)
+
+    def test_sale_edit_status_badge_variants_keep_their_text(self):
+        from sales.models import Sale
+
+        for status, variant in (("paid", "paid"), ("awaiting", "neutral")):
+            Sale.objects.filter(pk=self.sale.pk).update(status=status)
+            label = Sale.Status(status).label
+            self.assertIn('rd-badge rd-badge--%s">%s<' % (variant, label), self._edit())
+
+    def test_sale_edit_dock_is_the_shared_sticky_dock_outside_the_form(self):
+        html = self._edit()
+        form = html.split('id="employee-sale-edit-form"', 1)[1].split("</form>", 1)[0]
+        self.assertNotIn("rd-entry-dock", form)
+        self.assertEqual(html.count('class="rd-entry-dock '), 1)
+        self.assertRegex(html, r'class="rd-entry-dock rd-pay-sub-dock">\s*<div class="sticky-save">')
+
+    def test_my_balance_hero_keeps_the_sign_tone(self):
+        from employees.models import EmployeeProfile
+
+        html = self._get("employees:my_balance")
+        self.assertRegex(html, r'rd-stat-value tabular-nums is-pos">\s*1,200')
+        EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("-35"))
+        html = self._get("employees:my_balance")
+        self.assertRegex(html, r'rd-stat-value tabular-nums is-neg">\s*-35')
+        EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("0"))
+        html = self._get("employees:my_balance")
+        self.assertNotRegex(html, r'rd-stat-value tabular-nums is-(pos|neg)')
+
+    def test_wallet_amount_is_isolated_left_to_right(self):
+        from employees.models import EmployeeProfile
+
+        EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("-35"))
+        html = self._get("employees:my_balance")
+        self.assertRegex(html, r'<span class="rd-employee-wallet__amt tabular-nums" dir="ltr">-35')
+
+    def test_ledger_pager_is_a_pearl_pager_with_unchanged_links(self):
+        from employees.models import EmployeeLedgerEntry
+
+        for i in range(30):
+            EmployeeLedgerEntry.objects.create(
+                employee=self.profile,
+                entry_type=EmployeeLedgerEntry.EntryType.ADJUSTMENT,
+                amount=Decimal("1"),
+                created_by=self.emp,
+            )
+        html = self._get("employees:my_balance")
+        nav = html.split('class="rd-datagrid-pagination"', 1)[1].split("</nav>", 1)[0]
+        self.assertNotIn("style=", nav)
+        self.assertIn("rd-datagrid-pagination__bar", nav)
+        self.assertRegex(nav, r'<li class="page-item rd-pager__num active">\s*<a class="page-link" href="[^"]*" aria-current="page">1</a>')
+        self.assertIn("rd-pager__step", nav)
+        self.assertRegex(nav, r'class="page-item rd-pager__step">\s*<a class="page-link" href="\?ledger_page=2">Next')
+        self.assertRegex(nav, r'class="page-item rd-pager__edge">\s*<a class="page-link" href="\?ledger_page=2" title="Last" aria-label="Last">')
+        self.assertRegex(nav, r'class="rd-datagrid-per-page__link is-active" aria-current="true" href="\?per_page=25&amp;ledger_page=1"')
+        self.assertRegex(nav, r'class="rd-datagrid-per-page__link " href="\?per_page=10&amp;ledger_page=1"')
+
 
 class EmployeeSecondaryCssTests(SimpleTestCase):
     @classmethod
@@ -1266,3 +1346,24 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
         self.assertNotRegex(section, r"#[0-9a-fA-F]{3,8}\b")
         self.assertNotRegex(section, r"\b(margin|padding|border)-(left|right)\b|\b(left|right):")
         self.assertNotIn("outline: none", section)
+
+    def test_flat_blocks_and_hero_tones_use_existing_tokens(self):
+        self._assert_decl(".rd-sale-edit .rd-entry-blk", "border: 0", "background: none", "padding: 0")
+        self._assert_decl(".rd-stock-check .rd-entry-blk", "border: 0")
+        self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-neg", "var(--rd-danger-on-ink)")
+        self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-pos", "var(--rd-success-on-ink)")
+        # The field border is the entry page's own token; the edit page adds no override.
+        self._assert_decl(".rd-entry-field", "var(--bs-border-color)")
+        for sels, _body in _rules(self._section()):
+            for s in sels:
+                self.assertFalse(s.endswith(".rd-entry-field") and "rd-sale-edit" in s, s)
+
+    def test_pager_targets_are_touch_sized_and_scoped(self):
+        self._assert_decl(".rd-employee-app .pagination .page-item .page-link", "min-height: 3.45rem", "min-width: 3.45rem")
+        self._assert_decl(".rd-employee-app .rd-datagrid-per-page__link", "min-height: 3.45rem", "min-width: 3.45rem")
+        self._assert_decl(".rd-employee-app .rd-datagrid-pagination__pages", "flex-wrap: nowrap")
+        self._assert_decl(".rd-employee-app .rd-datagrid-per-page__link.is-active", "text-decoration: underline")
+        for sels, _body in _rules(self._section()):
+            for s in sels:
+                if "pagination" in s or "per-page" in s or "pager" in s:
+                    self.assertTrue(s.startswith(".rd-employee-app "), s)

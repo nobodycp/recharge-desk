@@ -58,7 +58,8 @@
       </div>
       <div class="rd-sale-edit__meta">
         <span>{% trans "Status" %}</span>
-        {% include "partials/sale_status_badge.html" with sale=sale %}
+        {# Same text as before (get_status_display), Pearl badge look. #}
+        <span class="rd-badge rd-badge--{% if sale.status == 'paid' %}paid{% elif sale.status == 'pending' %}pending{% elif sale.status == 'cancelled' or sale.status == 'written_off' %}cancelled{% else %}neutral{% endif %}">{{ sale.get_status_display }}</span>
         <span class="tabular-nums">{{ sale.created_at|time:"H:i" }}</span>
       </div>
     </div>

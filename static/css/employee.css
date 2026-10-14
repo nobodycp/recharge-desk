@@ -2061,3 +2061,108 @@ html:has(.rd-entry-dock) {
 .rd-employee-app .rd-ledger-card__detail {
   color: var(--rd-ink);
 }
+
+/* Sale edit and stock check: no card around the fields. The block's own border
+   next to the field border read as a double outline in dark mode, so the
+   fields (same border token as the entry page) sit straight on the page. */
+.rd-sale-edit .rd-entry-blk,
+.rd-stock-check .rd-entry-blk {
+  gap: 0.4rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Hero balance keeps its sign cue: danger / success tones made for an ink
+   surface (the hero is ink in light and pearl in dark). Both pairs are
+   >= 4.5:1 on the hero in both themes, and a negative still prints "-". */
+.rd-balance-stats .rd-stat--hero .rd-stat-value.is-neg {
+  color: var(--rd-danger-on-ink);
+}
+
+.rd-balance-stats .rd-stat--hero .rd-stat-value.is-pos {
+  color: var(--rd-success-on-ink);
+}
+
+/* Pager (shared partial; only inside the employee shell). One row of 44px
+   targets: « Previous [page] Next »; the numbered window is hidden because the
+   "Page X of Y" line and the current-page pill say where you are. Rows-per-page
+   are 44px chips on their own line. */
+.rd-employee-app .rd-datagrid-pagination__bar > *,
+.rd-employee-app .rd-datagrid-pagination__bar > div > * {
+  flex: 1 1 100%;
+}
+
+.rd-employee-app .rd-datagrid-pagination__pages {
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.rd-employee-app .rd-datagrid-pagination__pages .page-item {
+  display: flex;
+}
+
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__step {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__edge,
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num {
+  flex: 0 0 3.45rem;
+}
+
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__gap,
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num:not(.active) {
+  display: none;
+}
+
+.rd-employee-app .pagination .page-item .page-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 3.45rem;
+  min-height: 3.45rem;
+  padding-inline: 0.6rem;
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 1.1rem;
+  font-size: 0.95rem;
+}
+
+.rd-employee-app .pagination .page-item.active .page-link {
+  border-color: var(--rd-primary-bg);
+  font-weight: 800;
+}
+
+.rd-employee-app .pagination .page-item.disabled .page-link {
+  opacity: 0.5;
+}
+
+.rd-employee-app .rd-datagrid-per-page {
+  gap: 0.3rem;
+}
+
+.rd-employee-app .rd-datagrid-per-page__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.45rem;
+  min-height: 3.45rem;
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 1.1rem;
+}
+
+.rd-employee-app .rd-datagrid-per-page__link.is-active {
+  border-color: var(--rd-ink);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.rd-employee-app .rd-datagrid-per-page__link:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
