@@ -151,10 +151,11 @@ In Coolify, use shared variables or copy the list to both applications.
 Sky credentials are no longer env-driven. If `SKY_SALES_USER`,
 `SKY_SALES_PASSWORD`, `SKY_SALES_TOTP_SECRET` (and optionally
 `SKY_SALES_PROXY`) are still set on the **first** deploy, a data migration
-imports them once into the encrypted provider account; afterwards manage the
-account in **Phone Refresh → Providers → Sky** (the env vars remain only a
-fallback until the account is saved there, then they are ignored and can be
-removed):
+imports them once into the encrypted provider connection; afterwards manage the
+account and the service switches in **Companies → \<company\> → الربط مع المزوّد**
+(the env vars remain only a fallback while the stored connection has no
+credentials; once the stored account's **اختبار تسجيل الدخول** succeeds they can
+be removed):
 
 ```env
 # one-time import only
@@ -167,7 +168,7 @@ SKY_SALES_PROXY=http://LOGIN_s_skysales:PASSWORD@res.geonix.com:10000
 Use a **sticky session** in the Geonix username (e.g. `LOGIN_s_skysales`) so
 login and refresh share the same exit IP. Optional geo: `LOGIN_c_IL_s_skysales`.
 
-Put the Geonix residential proxy URL in the Sky account's proxy field (or in
+Put the Geonix residential proxy URL in the Sky connection's proxy field (or in
 `SKY_SALES_PROXY` for the one-time import). Use **Runtime only** in Coolify
 (never bake secrets into the Docker image). The Sky session lives in Redis
 (`REDIS_URL`) — one login at a time, shared by all workers; a Celery beat job
@@ -221,7 +222,11 @@ periodic tasks. Without it the public refresh page will answer "processing".
    tasks (keep-alive logins, stuck-job reaping, charge verification). Scale
    throughput with `CELERY_CONCURRENCY`, never with replicas.
 6. The worker does **not** run migrations or `collectstatic`; `web` does.
-   Deploy `web` first on a release that adds migrations.
+   Deploy `web` first on a release that adds migrations, then the worker. The
+   worker must be on the same release: the connection login test runs there
+   as `providers.tasks.test_connection` (it is listed in the worker boot logs).
+   The `providers 0004` / `companies 0014` migrations are rename-only at the DB
+   level, so the web/worker overlap during the rollout is safe.
 
 ---
 
@@ -255,11 +260,12 @@ Subsequent deploys redo migrations idempotently — صفر downtime ضروري
 Roll the provider gateway out in this order (each step is reversible):
 
 1. **Deploy** Redis + `web` + `worker` with `REFRESH_ASYNC_ENABLED=0`. Verify
-   the worker is healthy: **Phone Refresh → Providers → General** shows Redis
-   and worker status green.
-2. **Save the Sky account** in **Phone Refresh → Providers → Sky** (or confirm
-   the one-time env import landed); use the test button and confirm the
-   keep-alive login succeeds (shows "last login OK").
+   the worker is healthy: **Companies → \<company\> → الربط مع المزوّد** shows
+   the Redis / worker line green, and the dashboard shows no "حالة الربط" alert.
+2. **Save the Sky account** in **Companies → Sky → الربط مع المزوّد** (or
+   confirm the one-time env import landed); click **اختبار تسجيل الدخول** (runs
+   on the worker) and confirm it succeeds. Settings are shared by every company
+   that uses the same system (**نظام الشركة**).
 3. **Enable async**: set `REFRESH_ASYNC_ENABLED=1` and redeploy `web`. Watch
    the refresh logs for a day. Emergency rollback = set it back to `0`.
 4. **Charge button**: enable "Charge & record sale" for Sky once the Sky charge
@@ -268,8 +274,8 @@ Roll the provider gateway out in this order (each step is reversible):
 > **Keep step 1 short.** With `REFRESH_ASYNC_ENABLED=0` (and always for the
 > Sky reconcile screen) a Sky login runs *inside the web request*. A cold login
 > can take up to ~120 s, longer than gunicorn's 60 s timeout, so the first
-> customer after a logout may get a killed request. Log in once from the admin
-> provider test (step 2) before letting traffic in, and move to step 3 quickly.
+> customer after a logout may get a killed request. Run the login test from the
+> connection tab (step 2) before letting traffic in, and move to step 3 quickly.
 
 ### What changed for operators — ما الذي تغيّر
 
@@ -285,13 +291,21 @@ Roll the provider gateway out in this order (each step is reversible):
   (60 s, doubling per consecutive failure up to 15 min), or a disabled
   provider account answer customers with "busy". The real code is kept in the
   refresh log.
-- **Provider accounts are encrypted in the DB** (Fernet, `PROVIDER_SECRETS_KEY`)
-  and write-only in the UI. Sky `SKY_SALES_*` env vars are imported once by a
-  migration; afterwards edit the account in the admin screen.
+- **Provider connections are encrypted in the DB** (Fernet, `PROVIDER_SECRETS_KEY`)
+  and write-only in the UI. Each system (sky, aloha, layan, areen…) has one
+  connection with a master switch and per-service switches (تحديث الأرقام /
+  الشحن / مطابقة الحسابات), edited in **Companies → \<company\> →
+  الربط مع المزوّد**. Sky `SKY_SALES_*` env vars are imported once by a
+  migration; afterwards edit the account on that tab.
+- **Provider rules vs. connection**: **Phone Refresh → قواعد المزودين** now
+  holds only the refresh rules and the number test; it links to each company's
+  connection tab. The dashboard **حالة الربط** block alerts on Redis down,
+  worker stopped / queue stalled, or a failed login for an enabled connection
+  (cached 30 s).
 - **Sky session lives in Redis** with a single distributed login — concurrent
   requests no longer start parallel logins; the `/tmp` session file is gone.
-- **Admin provider test** shows a scrubbed excerpt (max 500 chars) of the
-  provider response; passwords, OTPs, tokens and cookies are stripped.
+- **Provider tests** (the number test on the rules page and the connection
+  login test) show a scrubbed excerpt (max 500 chars) of the provider response; passwords, OTPs, tokens and cookies are stripped.
 - **"Charge & record sale"** appears in sales entry only for providers that
   declare the CHARGE capability. **None today**: Sky charge/check-charge are
   blocked until a capture of the Sky Sales charge flow is provided, so the
@@ -343,7 +357,8 @@ Tick all of these before announcing the deploy is done:
 - [ ] `https://s.prosim.ps/` → login screen renders with CSS (proves
       WhiteNoise is serving static assets).
 - [ ] Login as the superuser; navigate to **Phone Refresh → Reports**.
-- [ ] **Phone Refresh → Providers → General**: Redis ✔ and worker ✔.
+- [ ] **Companies → Sky → الربط مع المزوّد**: Redis ✔ and worker ✔,
+      **اختبار تسجيل الدخول** succeeds, and the dashboard shows no "حالة الربط" alert.
 - [ ] Worker runtime logs show `celery@... ready.` and no repeated
       `Starting celery worker` restarts (and the service has 1 replica).
 - [ ] `https://rn.prosim.ps/` → public refresh form renders.
@@ -377,8 +392,9 @@ No extra steps unless you added a new env var — في حال أضفت متغي�
 | 502 from Coolify proxy | Container crashed during boot | Open **Runtime Logs**: usually a missing env var or DB unreachable. |
 | Static files 404 / unstyled UI | `collectstatic` did not run | Check entrypoint logs; WhiteNoise needs `staticfiles/` populated. |
 | Settings reset after every redeploy | `DATABASE_URL` uses SQLite inside the container, or Postgres has no persistent volume | Point `DATABASE_URL` at the Coolify Postgres internal URL; enable persistent storage on the DB service. Runtime logs show `Database engine=...postgresql...` on boot. |
-| Sky refresh fails with login/proxy error | Missing credentials, bad TOTP, or proxy rejected | Re-save the Sky account in **Phone Refresh → Providers → Sky** (username, password, TOTP secret, proxy) and use the test button; check the worker Runtime Logs for `proxy_error` / `login_error`. |
+| Sky refresh fails with login/proxy error | Missing credentials, bad TOTP, or proxy rejected | Re-save the Sky account in **Companies → Sky → الربط مع المزوّد** (username, password, TOTP secret, proxy; blank secret fields keep the stored value) and click **اختبار تسجيل الدخول**; check the worker Runtime Logs for `proxy_error` / `login_error`. |
 | `web`/`worker` crash at boot: `...require the REDIS_URL environment variable` | `REDIS_URL` (or `PROVIDER_SECRETS_KEY`) missing | Set it on **both** services and redeploy. |
-| Public page stays on "processing" / shows "busy" | Worker not running, wrong `REDIS_URL`, or worker on a different env | Check the worker Runtime Logs and **Providers → General** health; temporary fix: `REFRESH_ASYNC_ENABLED=0`. |
+| Public page stays on "processing" / shows "busy" | Worker not running, wrong `REDIS_URL`, or worker on a different env | Check the worker Runtime Logs and the Redis / worker line on the company's **الربط مع المزوّد** tab (or the dashboard "حالة الربط" block); temporary fix: `REFRESH_ASYNC_ENABLED=0`. |
 | Duplicate keep-alive logins / periodic tasks firing twice | `worker` has more than one replica (each runs embedded beat) | Scale `worker` back to exactly 1 replica. |
 | Provider login fails right after a deploy with stored accounts | `PROVIDER_SECRETS_KEY` changed, so stored passwords cannot be decrypted | Restore the original key, or re-enter the provider accounts. |
+| Connection tab: "اختبار تسجيل الدخول" never finishes / stays pending | `worker` not running, or on an older release without `providers.tasks.test_connection` | Redeploy `worker` (after `web`) and check its boot logs list `providers.tasks.test_connection`. |

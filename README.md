@@ -108,7 +108,7 @@ Safe to re-run; already-optimized files are skipped.
 - `expenses` — business expenses + expense report.
 - `reports` — dashboard, profit/sales/company reports (includes manual supplier top-ups & adjustments on the company report).
 - `core` — home routing, forbidden page, `seed_demo` command, shared context (Bootstrap RTL/LTR).
-- `phone_refresh` — public/employee number refresh, refresh logs, response rules/messages, API tokens, provider settings screens. Refresh jobs run in the Celery worker (`phone_refresh/tasks.py`).
+- `phone_refresh` — public/employee number refresh, refresh logs, response rules/messages, API tokens, and the refresh-rules page "قواعد مزوّدي التحديث" (refresh rules + number test; the provider account and switches live on the company page). Refresh jobs run in the Celery worker (`phone_refresh/tasks.py`).
 - `sales` also holds the optional "charge & record sale" flow (`sales/charging.py`, `sales/tasks.py`).
 - `sms_gateway` — SMS gateway (inbound refresh requests, outbound replies).
 - `providers` — the provider gateway: the **only** place that talks to telecom companies (see below).
@@ -123,12 +123,14 @@ Other apps import only `providers.service`, `providers.contracts`, `providers.re
 | `registry.py` | provider key → adapter, with capabilities (`can_charge`, `needs_login`). |
 | `adapters/<x>/` | One package per company (`sky`, `layan`, `aloha`, `areen`): `adapter.py` (the operations), `client.py` (HTTP client, where the provider needs one, e.g. Sky), `reconcile.py` (report matching, Sky and Layan). Each company keeps its own logic. |
 | `sessions.py` | Redis session store + distributed login lock (one login per provider account). |
-| `accounts.py`, `crypto.py`, `models.py` | Provider accounts encrypted with Fernet (`PROVIDER_SECRETS_KEY`); `ProviderConnection`, `ProviderJob`. |
+| `accounts.py`, `crypto.py`, `models.py` | Provider accounts encrypted with Fernet (`PROVIDER_SECRETS_KEY`); `ProviderConnection` (one per system key, table `providers_provideraccount`: master `is_enabled` + per-service `refresh_enabled` / `charge_enabled` / `reconcile_enabled`), `ProviderJob`. A company picks its system with `Company.provider_key` ("نظام الشركة"); companies on the same system share the connection. |
 | `service.py` | Entry point used by the rest of the system (refresh, charge, check_charge, reconcile, keepalive). |
-| `jobs.py`, `tasks.py` | Job lifecycle and Celery periodic tasks (keep-alive, retention). |
+| `jobs.py`, `tasks.py` | Job lifecycle and Celery tasks (keep-alive, retention, `test_connection` — the login test runs on the worker, never in a web request). |
 | `api/` | `/api/v1/` refresh API (Bearer tokens with scopes). |
 
 Runtime: `web` (gunicorn) + `worker` (Celery with embedded beat, **one replica**) + PostgreSQL + Redis. Without `REDIS_URL` (local dev and tests) Celery runs eagerly and Redis calls use an in-process `fakeredis`, so no extra services are needed. Production (`config.settings.production`) requires `REDIS_URL` and `PROVIDER_SECRETS_KEY`. Deployment: see `DEPLOY_COOLIFY.md`.
+
+**Where to manage a provider:** *Companies → \<company\> → الربط مع المزوّد* — system select, service switches, account credentials (write-only secrets), **اختبار تسجيل الدخول**, Redis / worker status. The dashboard "حالة الربط" block surfaces Redis / worker / failed-login problems. `SKY_SALES_*` env vars are only a fallback when the stored connection has no credentials.
 
 Run the worker locally against a real Redis:
 
