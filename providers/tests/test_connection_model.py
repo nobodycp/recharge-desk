@@ -37,6 +37,8 @@ class ProviderConnectionModelTests(TestCase):
 
 
 class ProviderConnectionMigrationTests(TransactionTestCase):
+    # NB: the post-test flush removes migration-seeded rows, so later
+    # TransactionTestCases must not rely on them.
     before = [
         ("providers", "0003_providerjob"),
         ("phone_refresh", "0020_apitoken_scopes"),
@@ -58,15 +60,41 @@ class ProviderConnectionMigrationTests(TransactionTestCase):
         OldAccount = old_apps.get_model("providers", "ProviderAccount")
         OldAccount.objects.all().delete()
         ProviderConfig.objects.all().delete()
+        # layan: toggle row only -> new connection created.
         ProviderConfig.objects.create(provider="layan", is_enabled=False)
+        # sky / areen: toggle row AND an existing connection with credentials.
         ProviderConfig.objects.create(provider="sky", is_enabled=True)
+        OldAccount.objects.create(provider_key="sky", username="sky-user")
+        ProviderConfig.objects.create(provider="areen", is_enabled=False)
+        OldAccount.objects.create(provider_key="areen", username="areen-user")
+        # aloha: connection with credentials, NO toggle row -> untouched.
+        OldAccount.objects.create(provider_key="aloha", username="aloha-user")
+        # "ghost" has neither -> must not get a row.
 
         new_apps = self._migrate(self.after)
         Connection = new_apps.get_model("providers", "ProviderConnection")
 
-        self.assertFalse(Connection.objects.get(provider_key="layan").refresh_enabled)
-        self.assertTrue(Connection.objects.get(provider_key="sky").refresh_enabled)
+        layan = Connection.objects.get(provider_key="layan")
+        self.assertFalse(layan.refresh_enabled)
+        self.assertEqual(layan.username, "")
+
+        sky = Connection.objects.get(provider_key="sky")
+        self.assertTrue(sky.refresh_enabled)
+        self.assertEqual(sky.username, "sky-user")
+
+        areen = Connection.objects.get(provider_key="areen")
+        self.assertFalse(areen.refresh_enabled)
+        self.assertEqual(areen.username, "areen-user")
+
+        aloha = Connection.objects.get(provider_key="aloha")
+        self.assertEqual(aloha.username, "aloha-user")
+        self.assertTrue(aloha.is_enabled)
+        self.assertTrue(aloha.refresh_enabled)
+        self.assertFalse(aloha.charge_enabled)
+        self.assertTrue(aloha.reconcile_enabled)
+
+        self.assertFalse(Connection.objects.filter(provider_key="ghost").exists())
         self.assertEqual(
             set(Connection.objects.values_list("provider_key", flat=True)),
-            {"layan", "sky"},
+            {"layan", "sky", "areen", "aloha"},
         )
