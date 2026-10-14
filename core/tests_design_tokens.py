@@ -82,3 +82,12 @@ class PearlTokenTests(SimpleTestCase):
         for f in ("app.css", "number-check.css", "login.css", "employee.css"):
             text = (CSS_DIR / f).read_text(encoding="utf-8")
             self.assertEqual([l for l in text.splitlines() if HEX.search(l)], [], f)
+
+    def test_employee_css_keeps_focus_outline(self):
+        # employee.css loads after the "kept last" ink focus ring in design-system.css,
+        # so an `outline: none` here would silently remove the keyboard focus indicator.
+        text = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+        offenders = [
+            l.strip() for l in text.splitlines() if re.search(r"outline\s*:\s*(none|0)\b", l)
+        ]
+        self.assertEqual(offenders, [], "employee.css must not remove outlines")

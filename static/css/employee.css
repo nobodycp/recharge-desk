@@ -150,7 +150,6 @@ html[lang="ar"] .rd-employee-title {
 .rd-employee-wallet:focus-visible {
   border-color: color-mix(in srgb, currentColor 30%, transparent);
   color: inherit;
-  outline: none;
 }
 
 .rd-employee-wallet.is-pos {
@@ -312,7 +311,6 @@ html[lang="ar"] .rd-employee-title {
 .rd-mobile-tabbar__item:focus-visible {
   color: var(--rd-ink);
   background: transparent;
-  outline: none;
 }
 
 /* Regular tabs: the bubble is a small orange dot under the active label. */
