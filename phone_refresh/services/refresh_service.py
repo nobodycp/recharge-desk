@@ -15,7 +15,6 @@ from django.utils import timezone
 
 from phone_refresh.models import (
     CustomerMessage,
-    PhoneProvider,
     ProviderConfig,
     ProviderResponseRule,
     RefreshLog,
@@ -38,16 +37,6 @@ from phone_refresh.validation import PHONE_RE
 # page (Sky's longest known response is ~12 KB) while keeping table
 # growth bounded if an upstream ever streams something unexpected.
 MAX_RAW_BODY_CHARS = 64_000
-
-# Company name → provider key. Case-insensitive prefix match against
-# ``sale.company.name``; the first key whose lowercased value is a
-# substring of the lowercased company name wins.
-COMPANY_TO_PROVIDER: dict[str, str] = {
-    "sky": PhoneProvider.SKY.value,
-    "aloha": PhoneProvider.ALOHA.value,
-    "layan": PhoneProvider.LAYAN.value,
-    "areen": PhoneProvider.AREEN.value,
-}
 
 
 @dataclass
@@ -89,16 +78,7 @@ def _lookup_provider_for_phone(phone: str) -> str | None:
         return None
 
     provider = (getattr(sale.company, "phone_refresh_provider", None) or "").strip()
-    if provider:
-        return provider
-
-    name = (sale.company.name or "").strip().lower()
-    if not name:
-        return None
-    for needle, provider_key in COMPANY_TO_PROVIDER.items():
-        if needle in name:
-            return provider_key
-    return None
+    return provider or None
 
 
 def _S(code: str) -> RefreshStatus:

@@ -5,6 +5,7 @@ import logging
 import time
 
 from providers.contracts import (
+    Capability,
     ChargeContext,
     ChargeOutcome,
     ChargeResult,
@@ -13,7 +14,7 @@ from providers.contracts import (
     RawResponse,
     TransientError,
 )
-from providers.registry import get_adapter
+from providers.registry import ADAPTERS, get_adapter
 from providers.sanitize import scrub
 from providers import sessions
 from providers.sessions import run_authenticated
@@ -111,6 +112,45 @@ def check_charge(
     except Exception as exc:
         log.warning("provider %s check_charge failed: %s", provider_key, _error_text(exc))
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
+
+
+def company_supports(company, capability: Capability) -> bool:
+    """True when the company's explicit ``phone_refresh_provider`` has ``capability``.
+
+    Never inspects the company name: routing comes from the field only.
+    """
+    adapter_cls = ADAPTERS.get((company.phone_refresh_provider or "").strip().lower())
+    return adapter_cls is not None and capability in adapter_cls.capabilities
+
+
+def reconcile(
+    company,
+    period_from,
+    period_to,
+    *,
+    budget: float = SYNC_BUDGET_SECONDS,
+    **opts,
+) -> tuple[object, str]:
+    """Run the company's provider reconciliation; returns ``(result, template)``.
+
+    Runs synchronously in the web request (admin-only), so lock waits stay within
+    ``budget`` seconds; a Sky ``AuthRequired`` triggers one login and a retry.
+    Raises ``PermanentError("reconcile_not_supported")`` when the company has no
+    provider or its provider cannot reconcile.
+    """
+    if not company_supports(company, Capability.RECONCILE):
+        raise PermanentError("reconcile_not_supported")
+    adapter = get_adapter((company.phone_refresh_provider or "").strip().lower())
+    deadline = time.monotonic() + budget
+
+    def call():
+        return adapter.reconcile(company, period_from, period_to, **opts)
+
+    if adapter.needs_login:
+        result = run_authenticated(adapter, call, lock_wait=_lock_wait(deadline))
+    else:
+        result = call()
+    return result, adapter.reconcile_template
 
 
 def keepalive(provider_key: str) -> None:

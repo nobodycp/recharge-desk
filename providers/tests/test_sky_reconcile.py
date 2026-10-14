@@ -9,13 +9,11 @@ from django.utils import timezone
 
 from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
-from companies.sky_reconcile import (
-    company_supports_sky_reconcile,
-    fetch_sky_rows_for_reconcile,
-    parse_sky_balance_rows,
-    reconcile_sky_report,
-)
-from providers.contracts import AuthRequired, BaseAdapter, TransientError
+from companies.views import _supports_reconcile
+from providers import service
+from providers.adapters.sky.adapter import SkyAdapter
+from providers.adapters.sky.reconcile import parse_sky_balance_rows, reconcile_sky_report
+from providers.contracts import AuthRequired, TransientError
 from providers.redis_conn import get_redis
 from sales.models import PaymentMethod, Sale
 
@@ -240,8 +238,8 @@ class SkyReconcileMatchTests(TestCase):
         self.assertEqual(len(result.logged_other_supplier), 1)
 
     def test_gate_and_view(self):
-        self.assertTrue(company_supports_sky_reconcile(self.company))
-        self.assertFalse(company_supports_sky_reconcile(self.other))
+        self.assertTrue(_supports_reconcile(self.company, "sky"))
+        self.assertFalse(_supports_reconcile(self.other, "sky"))
         self.client.force_login(self.user)
         r = self.client.get(reverse("companies:sky_reconcile", args=[self.other.pk]))
         self.assertEqual(r.status_code, 302)
@@ -251,8 +249,9 @@ class SkyReconcileMatchTests(TestCase):
         self.assertIsNone(form["period_from"].value())
         self.assertIsNone(form["period_to"].value())
 
-        with patch(
-            "companies.views.fetch_sky_rows_for_reconcile",
+        with patch.object(
+            SkyAdapter,
+            "fetch_balance_rows",
             return_value=[_row(phone="0599999999")],
         ):
             r = self.client.post(
@@ -268,8 +267,9 @@ class SkyReconcileMatchTests(TestCase):
 
     def test_view_shows_fetch_error_for_provider_errors(self):
         self.client.force_login(self.user)
-        with patch(
-            "companies.views.fetch_sky_rows_for_reconcile",
+        with patch.object(
+            SkyAdapter,
+            "fetch_balance_rows",
             side_effect=TransientError("login_failed"),
         ):
             r = self.client.post(
@@ -286,10 +286,7 @@ class SkyReconcileMatchTests(TestCase):
         self.assertTrue(any("Sky" in m and "login_failed" in m for m in msgs), msgs)
 
 
-class _FakeSkyAdapter(BaseAdapter):
-    key = "sky"
-    needs_login = True
-
+class _FakeSkyAdapter(SkyAdapter):
     def __init__(self):
         self.login_calls = 0
         self.fetch_calls = []
@@ -309,10 +306,22 @@ class FetchSkyRowsTests(TestCase):
         get_redis().flushall()
 
     def test_logs_in_once_then_fetches(self):
+        company = Company.objects.create(
+            name="Sky Co",
+            opening_balance=0,
+            current_balance=0,
+            phone_refresh_provider="sky",
+        )
         adapter = _FakeSkyAdapter()
-        with patch("providers.registry.get_adapter", return_value=adapter):
-            rows = fetch_sky_rows_for_reconcile(date(2026, 8, 1), date(2026, 8, 31))
-        self.assertEqual(rows[0]["ext_return_value_6"], "0599999999")
+        with patch("providers.service.get_adapter", return_value=adapter):
+            result, template = service.reconcile(
+                company,
+                date(2026, 8, 1),
+                date(2026, 8, 31),
+                min_amount_diff=Decimal("3"),
+            )
+        self.assertEqual(result.not_recorded[0].phone, "0599999999")
+        self.assertEqual(template, "companies/sky_reconcile.html")
         self.assertEqual(adapter.login_calls, 1)
         self.assertEqual(
             adapter.fetch_calls, [(date(2026, 8, 1), date(2026, 8, 31))] * 2

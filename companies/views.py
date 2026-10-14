@@ -15,19 +15,11 @@ from companies.forms import (
     ProductVariantForm,
     SkyReportReconcileForm,
 )
-from companies.layan_reconcile import (
-    company_supports_layan_reconcile,
-    parse_pending_credits,
-    reconcile_layan_report,
-)
 from companies.models import Company, Product, ProductLine
 from companies.query_utils import apply_company_list_ordering
-from companies.sky_reconcile import (
-    company_supports_sky_reconcile,
-    fetch_sky_rows_for_reconcile,
-    reconcile_sky_report,
-)
 from core.pagination import paginate_request
+from providers import service as provider_service
+from providers.contracts import Capability, PermanentError, ProviderError
 from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
 
@@ -87,29 +79,36 @@ def company_detail(request, pk):
     return render_company_statement(request, company)
 
 
+def _supports_reconcile(company, provider_key: str) -> bool:
+    """Each reconcile page serves only its own provider's companies."""
+    return (
+        (company.phone_refresh_provider or "").strip().lower() == provider_key
+        and provider_service.company_supports(company, Capability.RECONCILE)
+    )
+
+
 @management_required
 def layan_reconcile(request, pk):
     company = get_object_or_404(Company, pk=pk)
-    if not company_supports_layan_reconcile(company):
+    if not _supports_reconcile(company, "layan"):
         messages.error(request, _("Layan report matching is only available for Layan."))
         return redirect("companies:company_detail", pk=pk)
 
     form = LayanReportReconcileForm(request.POST or None, request.FILES or None)
     result = None
+    template = "companies/layan_reconcile.html"
     if request.method == "POST" and form.is_valid():
         try:
             min_settle = form.cleaned_data.get("min_settlement_difference")
             if min_settle is None:
                 min_settle = 3
-            result = reconcile_layan_report(
+            result, template = provider_service.reconcile(
                 company,
-                form.cleaned_data["report_file"],
-                period_from=form.cleaned_data.get("period_from"),
-                period_to=form.cleaned_data.get("period_to"),
-                pending_credits=parse_pending_credits(
-                    form.cleaned_data.get("pending_credits") or ""
-                ),
-                min_settlement_difference=min_settle,
+                form.cleaned_data.get("period_from"),
+                form.cleaned_data.get("period_to"),
+                workbook=form.cleaned_data["report_file"],
+                min_amount_diff=min_settle,
+                pending_credits_text=form.cleaned_data.get("pending_credits") or "",
             )
             messages.success(
                 request,
@@ -121,6 +120,11 @@ def layan_reconcile(request, pk):
                 _("Excel support is not installed (openpyxl). Contact your administrator."),
             )
         except Exception as exc:
+            if isinstance(exc, PermanentError) and str(exc) == "reconcile_not_supported":
+                messages.error(
+                    request, _("Layan report matching is only available for Layan.")
+                )
+                return redirect("companies:company_detail", pk=pk)
             messages.error(
                 request,
                 _("Could not read the report: %(error)s") % {"error": exc},
@@ -128,7 +132,7 @@ def layan_reconcile(request, pk):
 
     return render(
         request,
-        "companies/layan_reconcile.html",
+        template,
         {
             "company": company,
             "form": form,
@@ -141,12 +145,13 @@ def layan_reconcile(request, pk):
 @management_required
 def sky_reconcile(request, pk):
     company = get_object_or_404(Company, pk=pk)
-    if not company_supports_sky_reconcile(company):
+    if not _supports_reconcile(company, "sky"):
         messages.error(request, _("Sky report matching is only available for Sky."))
         return redirect("companies:company_detail", pk=pk)
 
     form = SkyReportReconcileForm(request.POST or None)
     result = None
+    template = "companies/sky_reconcile.html"
     if request.method == "POST" and form.is_valid():
         period_from = form.cleaned_data["period_from"]
         period_to = form.cleaned_data["period_to"]
@@ -154,12 +159,10 @@ def sky_reconcile(request, pk):
         if min_diff is None:
             min_diff = 3
         try:
-            rows = fetch_sky_rows_for_reconcile(period_from, period_to)
-            result = reconcile_sky_report(
+            result, template = provider_service.reconcile(
                 company,
-                rows,
-                period_from=period_from,
-                period_to=period_to,
+                period_from,
+                period_to,
                 min_amount_diff=min_diff,
             )
             messages.success(
@@ -167,8 +170,9 @@ def sky_reconcile(request, pk):
                 _("Sky report processed (%(rows)s rows).") % {"rows": result.row_count},
             )
         except Exception as exc:
-            from providers.contracts import ProviderError
-
+            if isinstance(exc, PermanentError) and str(exc) == "reconcile_not_supported":
+                messages.error(request, _("Sky report matching is only available for Sky."))
+                return redirect("companies:company_detail", pk=pk)
             if isinstance(exc, ProviderError):
                 messages.error(
                     request,
@@ -182,7 +186,7 @@ def sky_reconcile(request, pk):
 
     return render(
         request,
-        "companies/sky_reconcile.html",
+        template,
         {
             "company": company,
             "form": form,

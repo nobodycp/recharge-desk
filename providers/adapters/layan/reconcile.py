@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
@@ -10,23 +9,20 @@ from typing import BinaryIO
 
 from django.utils.translation import gettext_lazy as _
 
+from providers.shared.activity import (
+    PhoneActivityBreakdown,
+    PhoneActivityDetail,
+    phone_activity_breakdown,
+)
+from providers.shared.phones import norm_phone
+from providers.shared.rd_sales import rd_ledger_totals, rd_sales_by_phone
+
 REFUND_MARKERS = ("إعادة مال",)
 DEPOSIT_OP = "دفع جديد"
 BALANCE_BEFORE_COL = 7
 BALANCE_AFTER_COL = 8
 COST_COL = 10
 DATE_COL = 12
-
-
-def norm_phone(raw: str) -> str:
-    d = re.sub(r"\D", "", str(raw or "").strip())
-    if not d:
-        return ""
-    if d.startswith("972"):
-        d = "0" + d[3:]
-    if len(d) == 9 and d[0] == "5":
-        d = "0" + d
-    return d
 
 
 def _row_affects_balance(row) -> bool:
@@ -76,72 +72,6 @@ class LayanPhoneAgg:
         return self.refunds < 0
 
 
-@dataclass
-class SettlementCycleDetail:
-    charge_amount: Decimal
-    refund_amount: Decimal
-    retained: Decimal
-    charge_at: datetime
-    refund_at: datetime
-    charge_op: str
-    refund_op: str
-
-
-@dataclass
-class OrphanRefundDetail:
-    amount: Decimal
-    at: datetime
-    op: str
-
-
-@dataclass
-class UnpairedRechargeDetail:
-    amount: Decimal
-    at: datetime
-    op: str
-
-
-@dataclass
-class PhoneActivityDetail:
-    """Per-number Layan report breakdown for the reconcile UI."""
-
-    cycles: list[SettlementCycleDetail]
-    orphan_refunds: list[OrphanRefundDetail]
-    recharges: list[UnpairedRechargeDetail]
-    layan_charges: Decimal
-    layan_refunds: Decimal
-
-    @property
-    def layan_net_movement(self) -> Decimal:
-        return self.layan_charges + self.layan_refunds
-
-
-@dataclass
-class PhoneActivityBreakdown:
-    """Charge+refund cycles (settlements) vs standalone recharges on one number."""
-
-    settlement_net: Decimal
-    recharge_total: Decimal
-    settlement_cycles: int
-    had_settlement: bool
-    cycles: list[SettlementCycleDetail] = field(default_factory=list)
-    orphan_refunds: list[OrphanRefundDetail] = field(default_factory=list)
-    recharges: list[UnpairedRechargeDetail] = field(default_factory=list)
-
-    @property
-    def layan_for_match(self) -> Decimal:
-        return self.recharge_total
-
-    def to_detail(self, charges: Decimal, refunds: Decimal) -> PhoneActivityDetail:
-        return PhoneActivityDetail(
-            cycles=self.cycles,
-            orphan_refunds=self.orphan_refunds,
-            recharges=self.recharges,
-            layan_charges=charges,
-            layan_refunds=refunds,
-        )
-
-
 def _same_day_passive_charges(lay: LayanPhoneAgg) -> Decimal:
     """Re-activation rows (no balance move) on a day that also has a real charge.
 
@@ -186,68 +116,6 @@ def _layan_presence_amount(
     if lay.refunds < 0:
         return abs(lay.refunds)
     return Decimal("0")
-
-
-def _phone_activity_breakdown(lay: LayanPhoneAgg) -> PhoneActivityBreakdown:
-    """Pair each charge with the next refund by time; leftover charges are recharges."""
-    ordered = sorted(
-        (ln for ln in lay.lines if len(ln) > 3 and ln[3]),
-        key=lambda x: x[0],
-    )
-    settlement_net = Decimal("0")
-    recharge_total = Decimal("0")
-    used_refunds: set[int] = set()
-    cycles = 0
-    cycle_details: list[SettlementCycleDetail] = []
-    recharge_details: list[UnpairedRechargeDetail] = []
-    for i, ln in enumerate(ordered):
-        amount = ln[1]
-        if amount <= 0:
-            continue
-        paired = False
-        for j in range(i + 1, len(ordered)):
-            if j in used_refunds:
-                continue
-            refund_ln = ordered[j]
-            refund_amt = refund_ln[1]
-            if refund_amt < 0:
-                retained = amount + refund_amt
-                settlement_net += retained
-                used_refunds.add(j)
-                cycles += 1
-                cycle_details.append(
-                    SettlementCycleDetail(
-                        charge_amount=amount,
-                        refund_amount=refund_amt,
-                        retained=retained,
-                        charge_at=ln[0],
-                        refund_at=refund_ln[0],
-                        charge_op=ln[2],
-                        refund_op=refund_ln[2],
-                    )
-                )
-                paired = True
-                break
-        if not paired:
-            recharge_total += amount
-            recharge_details.append(
-                UnpairedRechargeDetail(amount=amount, at=ln[0], op=ln[2])
-            )
-    orphan_details: list[OrphanRefundDetail] = []
-    for j, ln in enumerate(ordered):
-        if ln[1] < 0 and j not in used_refunds:
-            orphan_details.append(
-                OrphanRefundDetail(amount=ln[1], at=ln[0], op=ln[2])
-            )
-    return PhoneActivityBreakdown(
-        settlement_net=settlement_net,
-        recharge_total=recharge_total,
-        settlement_cycles=cycles,
-        had_settlement=cycles > 0,
-        cycles=cycle_details,
-        orphan_refunds=orphan_details,
-        recharges=recharge_details,
-    )
 
 
 @dataclass
@@ -408,63 +276,6 @@ def parse_layan_workbook(
     return by_phone, deposits, net_movement, report_end_balance, parsed_rows
 
 
-def _rd_sales_by_phone(
-    period_from: date | None,
-    period_to: date | None,
-    *,
-    company=None,
-) -> tuple[dict[str, Decimal], dict[str, list[str]]]:
-    """Sum cost snapshots by normalized phone for sales in the period.
-
-    Pass ``company`` to scope matching to one supplier (e.g. Layan only).
-    """
-    from sales.models import Sale
-
-    qs = Sale.objects.exclude(status=Sale.Status.CANCELLED).select_related("company")
-    if company is not None:
-        qs = qs.filter(company=company)
-    if period_from:
-        qs = qs.filter(created_at__date__gte=period_from)
-    if period_to:
-        qs = qs.filter(created_at__date__lte=period_to)
-    out: dict[str, Decimal] = {}
-    suppliers: dict[str, list[str]] = {}
-    for ref, cost, company_name in qs.values_list(
-        "reference_number", "cost_price_snapshot", "company__name"
-    ):
-        ph = norm_phone(ref or "")
-        if not ph:
-            continue
-        out[ph] = out.get(ph, Decimal("0")) + Decimal(cost)
-        names = suppliers.setdefault(ph, [])
-        if company_name and company_name not in names:
-            names.append(company_name)
-    return out, suppliers
-
-
-def _rd_ledger_totals(company, period_from: date | None, period_to: date | None):
-    from sales.models import CompanyBalanceTransaction
-
-    qs = company.balance_transactions.all()
-    if period_from:
-        qs = qs.filter(created_at__date__gte=period_from)
-    if period_to:
-        qs = qs.filter(created_at__date__lte=period_to)
-
-    deposits = Decimal("0")
-    deductions = Decimal("0")
-    adjustments = Decimal("0")
-    for entry_type, amount in qs.values_list("entry_type", "amount"):
-        amount = Decimal(amount)
-        if entry_type == CompanyBalanceTransaction.EntryType.DEPOSIT:
-            deposits += amount
-        elif entry_type == CompanyBalanceTransaction.EntryType.DEDUCTION:
-            deductions += amount
-        elif entry_type == CompanyBalanceTransaction.EntryType.ADJUSTMENT:
-            adjustments += amount
-    return deposits, deductions, adjustments
-
-
 def _settlement_row_difference(row: ReconcilePhoneRow) -> Decimal:
     return abs(row.settlement_amount or row.layan_net)
 
@@ -512,11 +323,11 @@ def reconcile_layan_report(
         for credit in pending_credits.values():
             layan_end += credit
 
-    rd_by_phone, rd_layan_suppliers = _rd_sales_by_phone(
+    rd_by_phone, rd_layan_suppliers = rd_sales_by_phone(
         period_from, period_to, company=company
     )
-    rd_other_by_phone, rd_other_suppliers = _rd_sales_by_phone(period_from, period_to)
-    rd_dep, rd_ded, rd_adj = _rd_ledger_totals(company, period_from, period_to)
+    rd_other_by_phone, rd_other_suppliers = rd_sales_by_phone(period_from, period_to)
+    rd_dep, rd_ded, rd_adj = rd_ledger_totals(company, period_from, period_to)
 
     def _other_supplier_note(ph: str) -> str:
         names = [
@@ -543,7 +354,7 @@ def reconcile_layan_report(
         layan_ref = lay.refunds if lay else Decimal("0")
         layan_net_ph = lay.net if lay else Decimal("0")
         breakdown = (
-            _phone_activity_breakdown(lay)
+            phone_activity_breakdown(lay)
             if lay
             else PhoneActivityBreakdown(Decimal("0"), Decimal("0"), 0, False)
         )
@@ -919,12 +730,6 @@ def _annotate_layan_row(
     ):
         row.rd_sales = list(rd_sales_map.get(row.phone) or [])
     return row
-
-
-def company_supports_layan_reconcile(company) -> bool:
-    if (company.phone_refresh_provider or "").lower() == "layan":
-        return True
-    return "layan" in (company.name or "").lower()
 
 
 def parse_pending_credits(text: str) -> dict[str, Decimal]:

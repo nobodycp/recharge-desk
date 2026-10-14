@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from datetime import date
+from decimal import Decimal
 from typing import Any, Iterator
 
 import requests
@@ -14,6 +15,7 @@ from providers.adapters.sky.client import (
     SkySalesError,
     SkySalesSessionError,
 )
+from providers.adapters.sky.reconcile import SkyReconcileResult, reconcile_sky_report
 from providers.contracts import (
     AuthRequired,
     BaseAdapter,
@@ -54,9 +56,10 @@ class SkyAdapter(BaseAdapter):
     """Sky Sales Portal refresh via HTTP (sales-ps.sky5g.ps)."""
 
     key = PROVIDER_KEY
-    capabilities = frozenset({Capability.REFRESH})
+    capabilities = frozenset({Capability.REFRESH, Capability.RECONCILE})
     timeout: int = 120
     needs_login = True
+    reconcile_template = "companies/sky_reconcile.html"
 
     def _stored_client(self) -> SkySalesClient:
         """Client for the session in Redis; ``AuthRequired`` if it can't be used."""
@@ -101,6 +104,24 @@ class SkyAdapter(BaseAdapter):
         client = self._stored_client()
         with _sky_errors():
             return client.fetch_balance_report(date_from, date_to)
+
+    def reconcile(
+        self,
+        company,
+        period_from: date | None,
+        period_to: date | None,
+        *,
+        min_amount_diff: Decimal | None = None,
+    ) -> SkyReconcileResult:
+        """Live Sky balance rows for the period, matched against our sales."""
+        rows = self.fetch_balance_rows(period_from, period_to)
+        return reconcile_sky_report(
+            company,
+            rows,
+            period_from=period_from,
+            period_to=period_to,
+            min_amount_diff=min_amount_diff,
+        )
 
     def login(self) -> None:
         creds = get_credentials(PROVIDER_KEY)

@@ -9,17 +9,16 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
-from companies.layan_reconcile import (
+from providers.shared.activity import (
     OrphanRefundDetail,
     PhoneActivityBreakdown,
     PhoneActivityDetail,
     SettlementCycleDetail,
     UnpairedRechargeDetail,
-    _phone_activity_breakdown,
-    _rd_ledger_totals,
-    _rd_sales_by_phone,
-    norm_phone,
+    phone_activity_breakdown,
 )
+from providers.shared.phones import norm_phone
+from providers.shared.rd_sales import rd_ledger_totals, rd_sales_by_phone
 
 REFUND_OP_MARKERS = (
     "إعادة",
@@ -32,12 +31,6 @@ REFUND_OP_MARKERS = (
     "cancel",
 )
 CHARGE_OP_MARKERS = ("شحن", "طلب جديد", "charge", "topup", "top-up")
-
-
-def company_supports_sky_reconcile(company) -> bool:
-    if (company.phone_refresh_provider or "").lower() == "sky":
-        return True
-    return "sky" in (company.name or "").lower() or "سكاي" in (company.name or "")
 
 
 def _dec(value: Any) -> Decimal | None:
@@ -197,7 +190,7 @@ class SkyReconcileResult:
 
 
 class _SkyLineBag:
-    """Duck-type compatible with LayanPhoneAgg for ``_phone_activity_breakdown``."""
+    """Duck-type compatible with LayanPhoneAgg for ``phone_activity_breakdown``."""
 
     def __init__(self, lines: list):
         self.lines = lines
@@ -459,11 +452,11 @@ def reconcile_sky_report(
         rows, period_from=period_from, period_to=period_to
     )
 
-    rd_by_phone, _rd_suppliers = _rd_sales_by_phone(
+    rd_by_phone, _rd_suppliers = rd_sales_by_phone(
         period_from, period_to, company=company
     )
-    rd_other_by_phone, rd_other_suppliers = _rd_sales_by_phone(period_from, period_to)
-    _rd_dep, _rd_ded, _rd_adj = _rd_ledger_totals(company, period_from, period_to)
+    rd_other_by_phone, rd_other_suppliers = rd_sales_by_phone(period_from, period_to)
+    _rd_dep, _rd_ded, _rd_adj = rd_ledger_totals(company, period_from, period_to)
 
     def _other_supplier_note(ph: str) -> str:
         names = [
@@ -492,7 +485,7 @@ def reconcile_sky_report(
 
         bag = _SkyLineBag(lines) if sky else _SkyLineBag([])
         breakdown = (
-            _phone_activity_breakdown(bag)
+            phone_activity_breakdown(bag)
             if sky
             else PhoneActivityBreakdown(Decimal("0"), Decimal("0"), 0, False)
         )
@@ -705,15 +698,4 @@ def reconcile_sky_report(
         row_count=row_count,
         balance_gap=balance_gap,
         min_amount_diff=min_diff,
-    )
-
-
-def fetch_sky_rows_for_reconcile(date_from: date, date_to: date) -> list[dict[str, Any]]:
-    """Live pull of template 22 through the shared Sky session (logs in if needed)."""
-    from providers.registry import get_adapter
-    from providers.sessions import run_authenticated
-
-    adapter = get_adapter("sky")
-    return run_authenticated(
-        adapter, lambda: adapter.fetch_balance_rows(date_from, date_to)
     )
