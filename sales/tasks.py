@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
-import uuid
 from time import monotonic
 
 from celery import shared_task
@@ -20,6 +19,7 @@ from providers.models import ProviderJob
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
+from providers.sessions import NoLuaLock
 from sales import charging
 from sales.models import Sale
 
@@ -210,10 +210,11 @@ def _verify_due_sales() -> None:
 @shared_task
 def verify_unverified_charges() -> None:
     """Settle open charges (beat, every 2 min); single-flight, never raises."""
-    token = uuid.uuid4().hex
     try:
-        redis_client = get_redis()
-        if not redis_client.set(VERIFY_LOCK_KEY, token, nx=True, ex=VERIFY_LOCK_TTL_SECONDS):
+        lock = get_redis().lock(
+            VERIFY_LOCK_KEY, timeout=VERIFY_LOCK_TTL_SECONDS, lock_class=NoLuaLock
+        )
+        if not lock.acquire(blocking=False):
             log.info("charge verification already running; skipping")
             return
     except Exception as exc:  # noqa: BLE001 — without the lock, skip this run
@@ -223,8 +224,7 @@ def verify_unverified_charges() -> None:
         _verify_due_sales()
     finally:
         try:
-            if redis_client.get(VERIFY_LOCK_KEY) in (token, token.encode()):
-                redis_client.delete(VERIFY_LOCK_KEY)
+            lock.release()
         except Exception as exc:  # noqa: BLE001 — the lock expires on its own
             log.warning("charge verification lock not released: %s", _error_text(exc))
 

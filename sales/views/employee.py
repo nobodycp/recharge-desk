@@ -611,6 +611,17 @@ def employee_recent_sales(request):
     )
 
 
+def _not_employee_editable_message(sale: Sale) -> str:
+    if sale.entry_mode == Sale.EntryMode.AUTO_CHARGE:
+        return _(
+            "Sales charged through the provider can't be edited or deleted by "
+            "employees. Ask management."
+        )
+    return _("You can only edit or delete your last %(count)s entries.") % {
+        "count": EMPLOYEE_RECENT_EDIT_LIMIT
+    }
+
+
 @employee_required
 def employee_sale_edit(request, pk):
     """Employee edits one of their own sales — only while it's still in
@@ -623,11 +634,7 @@ def employee_sale_edit(request, pk):
         created_by=request.user,
     )
     if not sale_is_employee_editable(sale, request.user):
-        messages.error(
-            request,
-            _("You can only edit or delete your last %(count)s entries.")
-            % {"count": EMPLOYEE_RECENT_EDIT_LIMIT},
-        )
+        messages.error(request, _not_employee_editable_message(sale))
         return redirect("sales:employee_recent_sales")
 
     if request.method == "POST":
@@ -674,9 +681,7 @@ def employee_sale_delete(request, pk):
     sale = get_object_or_404(Sale, pk=pk, created_by=request.user)
     htmx = is_htmx(request)
     if not sale_is_employee_editable(sale, request.user):
-        msg = _("You can only edit or delete your last %(count)s entries.") % {
-            "count": EMPLOYEE_RECENT_EDIT_LIMIT
-        }
+        msg = _not_employee_editable_message(sale)
         if htmx:
             return htmx_action_error(str(msg))
         messages.error(request, msg)

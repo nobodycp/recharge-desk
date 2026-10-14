@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 06:29+0300\n"
+"POT-Creation-Date: 2026-10-14 06:36+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2287,7 +2287,7 @@ msgstr "ملاحظة…"
 #: templates/reports/partials/stale_phone_sim_cell.html:24
 msgid "Number / reference"
 msgstr "الرقم / المرجع"
-#: reports/forms.py:62 reports/stale_phones.py:370
+#: reports/forms.py:62 reports/stale_phones.py:376
 msgid "Enter a phone number or reference."
 msgstr "أدخل رقم هاتف أو مرجعاً."
 #: reports/forms.py:76
@@ -2415,12 +2415,16 @@ msgstr "متابعة خط الهاتف"
 #: reports/stale_phones.py:339
 msgid "Invalid phone number."
 msgstr "رقم الهاتف غير صالح."
-#: reports/stale_phones.py:379
+#: reports/stale_phones.py:385
 msgid "No sales found for this number."
 msgstr "لا توجد مبيعات لهذا الرقم."
-#: reports/stale_phones.py:390
+#: reports/stale_phones.py:396
 msgid "Another line already uses this number."
 msgstr "رقم آخر يستخدم هذا الرقم مسبقاً."
+#: reports/stale_phones.py:408
+msgid ""
+"This number's sales are still being charged by the provider; try again later."
+msgstr "ما زال المزوّد يشحن مبيعات هذا الرقم؛ حاول لاحقاً."
 #: reports/views.py:35
 msgid "Today's sales"
 msgstr "مبيعات اليوم"
@@ -2520,34 +2524,38 @@ msgstr "أداء الموظفين"
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
-#: reports/views_stale_phones.py:177 templates/partials/management_nav.html:90
+#: reports/views_stale_phones.py:34
+msgid ""
+"Sales still being charged by the provider kept the old number: %(count)s."
+msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
+#: reports/views_stale_phones.py:183 templates/partials/management_nav.html:90
 #: templates/reports/phone_lines_report.html:5
 msgid "Line statement"
 msgstr "بيان الأرقام"
-#: reports/views_stale_phones.py:259 reports/views_stale_phones.py:340
+#: reports/views_stale_phones.py:265 reports/views_stale_phones.py:348
 msgid ""
 "Line updated. Disconnect countdown restarted from today (virtual 1-day "
 "renew)."
 msgstr ""
 "تم تحديث الخط. أُعيد عد أيام الخروج من الوكالة من اليوم (تجديد يوم افترا"
 "ضي)."
-#: reports/views_stale_phones.py:265 templates/accounts/login.html:60
+#: reports/views_stale_phones.py:273 templates/accounts/login.html:60
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
-#: reports/views_stale_phones.py:281 templates/companies/product_list.html:173
+#: reports/views_stale_phones.py:289 templates/companies/product_list.html:173
 #: templates/reports/stale_phone_edit.html:5
 msgid "Edit line"
 msgstr "تعديل الخط"
-#: reports/views_stale_phones.py:310
+#: reports/views_stale_phones.py:318
 msgid "Could not save."
 msgstr "تعذّر الحفظ."
-#: reports/views_stale_phones.py:344
+#: reports/views_stale_phones.py:352
 msgid "Saved."
 msgstr "تم الحفظ."
-#: reports/views_stale_phones.py:369
+#: reports/views_stale_phones.py:384
 msgid "Number removed from the line statement. Sale history is kept."
 msgstr "أُزيل الرقم من بيان الأرقام. سجل المبيعات محفوظ."
-#: reports/views_stale_phones.py:406
+#: reports/views_stale_phones.py:421
 msgid ""
 "Renewed as a 1-day charge — the line is no longer marked as left the agency."
 msgstr "تم التجديد كشحن يوم — الرقم لم يعد معلماً كخارج من الوكالة."
@@ -2572,11 +2580,15 @@ msgstr "انتهت صلاحية النموذج. أعد تحميل الصفحة �
 #: sales/charging.py:141
 msgid "This company cannot be charged through its provider."
 msgstr "لا يمكن الشحن لهذه الشركة عبر مزوّدها."
-#: sales/charging.py:272
+#: sales/charging.py:269
+msgid ""
+"This charge was never sent to the provider. Resolve it as failed instead."
+msgstr "لم يُرسل هذا الشحن إلى المزوّد إطلاقاً. احسمه كفاشل بدلاً من ذلك."
+#: sales/charging.py:279
 msgid ""
 "The provider is still processing this charge. Try again in a few minutes."
 msgstr "ما زال المزوّد يعالج هذا الشحن. حاول مجدداً بعد بضع دقائق."
-#: sales/charging.py:285
+#: sales/charging.py:293
 msgid "Only charges in progress or unverified can be resolved."
 msgstr "يمكن حسم الشحنات الجارية أو غير المؤكدة فقط."
 #: sales/forms.py:21 sales/forms.py:235
@@ -2940,7 +2952,7 @@ msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
 msgid "Refresh number"
 msgstr "تحديث الرقم"
 #: sales/views/employee.py:207 sales/views/employee.py:239
-#: sales/views/employee.py:702
+#: sales/views/employee.py:707
 msgid "Recording payments from the sales screen is disabled."
 msgstr "تسجيل الدفعات من شاشة المبيعات معطّل."
 #: sales/views/employee.py:268
@@ -2993,45 +3005,52 @@ msgstr "كل الإدخالات"
 #: templates/sales/employee_recent.html:6
 msgid "My entries"
 msgstr "إدخالاتي"
-#: sales/views/employee.py:628 sales/views/employee.py:677
+#: sales/views/employee.py:617
+msgid ""
+"Sales charged through the provider can't be edited or deleted by employees. "
+"Ask management."
+msgstr ""
+"لا يمكن للموظفين تعديل أو حذف المبيعات المشحونة عبر المزوّد. راجع الإدار"
+"ة."
+#: sales/views/employee.py:620
 #, python-format
 msgid "You can only edit or delete your last %(count)s entries."
 msgstr "يمكنك تعديل أو حذف آخر %(count)s إدخالات فقط."
-#: sales/views/employee.py:654 sales/views/management.py:248
+#: sales/views/employee.py:661 sales/views/management.py:248
 msgid "Sale updated."
 msgstr "تم تحديث البيع."
-#: sales/views/employee.py:665 templates/sales/employee_sale_edit.html:3
+#: sales/views/employee.py:672 templates/sales/employee_sale_edit.html:3
 #: templates/sales/employee_sale_edit.html:7
 msgid "Edit entry"
 msgstr "تعديل الإدخال"
-#: sales/views/employee.py:687
+#: sales/views/employee.py:692
 #, python-format
 msgid "Could not delete this entry: %(reason)s"
 msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
 
-#: sales/views/employee.py:694
+#: sales/views/employee.py:699
 msgid "Entry was permanently removed."
 msgstr "أُزيل الإدخال نهائياً."
-#: sales/views/employee.py:714
+#: sales/views/employee.py:719
 #, python-format
 msgid "You can only edit awaiting payments among your last %(count)s payments."
 msgstr "تقدر تعدّل الدفعات بانتظار الموافقة ضمن آخر %(count)s دفعات فقط."
-#: sales/views/employee.py:745
+#: sales/views/employee.py:750
 msgid "Payment entry updated."
 msgstr "تم تحديث إدخال الدفعة."
-#: sales/views/employee.py:765 templates/sales/employee_payment_edit.html:4
+#: sales/views/employee.py:770 templates/sales/employee_payment_edit.html:4
 #: templates/sales/employee_payment_edit.html:8
 msgid "Edit payment"
 msgstr "تعديل الدفعة"
-#: sales/views/employee.py:783
+#: sales/views/employee.py:788
 #, python-format
 msgid "You can only edit or delete your last %(count)s payments."
 msgstr "تقدر تعدّل أو تحذف آخر %(count)s دفعات فقط."
-#: sales/views/employee.py:800
+#: sales/views/employee.py:805
 #, python-format
 msgid "Could not delete this payment: %(reason)s"
 msgstr "تعذّر حذف هذه الدفعة: %(reason)s"
-#: sales/views/employee.py:807
+#: sales/views/employee.py:812
 msgid "Payment entry was removed."
 msgstr "تم حذف إدخال الدفعة."
 #: sales/views/management.py:106 templates/partials/management_nav.html:31

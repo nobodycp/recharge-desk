@@ -30,6 +30,12 @@ from reports.stale_phones import (
 from sales.views._shared import is_htmx
 
 
+def _skipped_open_charges_message(result) -> str:
+    return _("Sales still being charged by the provider kept the old number: %(count)s.") % {
+        "count": result.skipped_open_charges
+    }
+
+
 def _with_htmx_toast(response: HttpResponse, message: str, *, level: str = "success") -> HttpResponse:
     """Attach a client toast via HX-Trigger (see static/js/data-ui.js ``rdToast``)."""
     response["HX-Trigger"] = json.dumps(
@@ -243,7 +249,7 @@ def stale_phone_edit(request, ref_key: str):
         form = PhoneLineFullEditForm(request.POST)
         if form.is_valid():
             try:
-                rename_phone_line(
+                result = rename_phone_line(
                     old_key=key,
                     new_reference=form.cleaned_data["reference_number"],
                     sim_identifier=form.cleaned_data.get("sim_identifier") or "",
@@ -260,6 +266,8 @@ def stale_phone_edit(request, ref_key: str):
                         "(virtual 1-day renew)."
                     ),
                 )
+                if result.skipped_open_charges:
+                    messages.warning(request, _skipped_open_charges_message(result))
                 return redirect(back_url)
         else:
             messages.error(request, _("Please correct the errors below."))
@@ -325,7 +333,7 @@ def stale_phone_sim_save(request, ref_key: str):
     old_display = (row.get("display_reference") or "").strip()
     number_changed = new_key != key or new_display != old_display
     try:
-        rename_phone_line(
+        result = rename_phone_line(
             old_key=key,
             new_reference=new_display,
             sim_identifier=form.cleaned_data.get("sim_identifier") or "",
@@ -342,12 +350,19 @@ def stale_phone_sim_save(request, ref_key: str):
         )
     else:
         ok_msg = _("Saved.")
+    level = "success"
+    if result.skipped_open_charges:
+        ok_msg = f"{ok_msg} {_skipped_open_charges_message(result)}"
+        level = "warning"
 
     if is_htmx(request):
         return _htmx_phone_lines_results(
-            request, profile, list_query=next_query, toast=ok_msg, level="success"
+            request, profile, list_query=next_query, toast=ok_msg, level=level
         )
-    messages.success(request, ok_msg)
+    if level == "warning":
+        messages.warning(request, ok_msg)
+    else:
+        messages.success(request, ok_msg)
     return redirect(list_url)
 
 

@@ -501,9 +501,41 @@ class GuardTests(ChargingTestBase):
         self.assertNotIn(sale.pk, employee_editable_sale_ids(self.user))
 
         self.client.force_login(self.user)
-        self.client.post(reverse("sales:employee_sale_delete", args=[sale.pk]))
+        response = self.client.post(
+            reverse("sales:employee_sale_delete", args=[sale.pk]), follow=True
+        )
+        self.assertContains(response, "charged through the provider")
+        self.assertNotContains(response, "You can only edit or delete your last")
         self.assertTrue(Sale.objects.filter(pk=sale.pk).exists())
         self.assertEqual(self.balance(), START - COST)
+
+        response = self.client.get(
+            reverse("sales:employee_sale_edit", args=[sale.pk]), follow=True
+        )
+        self.assertContains(response, "charged through the provider")
+
+    def test_phone_line_rename_skips_open_charge_sales(self):
+        from reports.stale_phones import rename_phone_line
+
+        open_sale = self.unverified()
+        self.use()
+        done_sale = self.charge("t-done")
+        result = rename_phone_line(old_key="0599123456", new_reference="0501234567")
+        open_sale.refresh_from_db()
+        done_sale.refresh_from_db()
+        self.assertEqual(open_sale.reference_number, "0599123456")
+        self.assertEqual(done_sale.reference_number, "0501234567")
+        self.assertEqual(result.ref_key, "0501234567")
+        self.assertEqual(result.skipped_open_charges, 1)
+
+    def test_phone_line_rename_of_only_open_charge_sales_is_rejected(self):
+        from reports.stale_phones import rename_phone_line
+
+        sale = self.unverified()
+        with self.assertRaises(ValueError):
+            rename_phone_line(old_key="0599123456", new_reference="0501234567")
+        sale.refresh_from_db()
+        self.assertEqual(sale.reference_number, "0599123456")
 
 
 class ManualResolveTests(ChargingTestBase):
@@ -551,6 +583,18 @@ class ManualResolveTests(ChargingTestBase):
             run_charge_job(str(sale.charge_job_id))
         self.assertEqual(self.fake.charges, [])
         self.assertEqual(self.reversals(sale), 1)
+
+    def test_manual_success_rejected_when_charge_never_sent(self):
+        sale = self.charge_without_worker()
+        with self.assertRaises(charging.ChargeNotSent):
+            charging.manual_resolve(sale, success=True, user=self.manager)
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.PROCESSING)
+        self.assertEqual(self.job(sale).status, ProviderJob.STATUS_QUEUED)
+
+        sale = charging.manual_resolve(sale, success=False, user=self.manager)
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(self.balance(), START)
 
     def test_manual_resolve_rejects_freshly_running_job(self):
         sale = self.charge_without_worker()
@@ -637,6 +681,19 @@ class VerifyTaskTests(ChargingTestBase):
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
         self.assertFalse(get_redis().exists("sales:verify-charges:lock"))
+
+    def test_verify_lock_release_is_token_checked_and_atomic(self):
+        from providers.sessions import NoLuaLock
+
+        def lose_lock():
+            get_redis().set("sales:verify-charges:lock", "next-run", ex=60)
+
+        with patch("sales.tasks._verify_due_sales", side_effect=lose_lock), patch.object(
+            NoLuaLock, "do_release", autospec=True, side_effect=NoLuaLock.do_release
+        ) as release, self.assertLogs("sales.tasks", level="WARNING"):
+            verify_unverified_charges()
+        release.assert_called_once()
+        self.assertEqual(get_redis().get("sales:verify-charges:lock"), b"next-run")
 
     def test_verify_task_stops_when_run_budget_is_spent(self):
         self.use(raise_after_send=TransientError("timeout"), check_result=ChargeResult.SUCCESS)

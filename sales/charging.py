@@ -251,7 +251,11 @@ class ChargeInProgress(ValueError):
     """The provider is still working on the charge; it cannot be resolved by hand yet."""
 
 
-def _stop_pending_job(sale: Sale) -> None:
+class ChargeNotSent(ValueError):
+    """The charge was never sent, so it cannot be marked successful."""
+
+
+def _stop_pending_job(sale: Sale, *, success: bool) -> None:
     """Keep the worker from charging a sale that is being resolved by hand.
 
     Caller holds the sale lock, which the worker also takes to claim the job.
@@ -259,10 +263,13 @@ def _stop_pending_job(sale: Sale) -> None:
     job = ProviderJob.objects.filter(pk=sale.charge_job_id).first() if sale.charge_job_id else None
     if job is None:
         return
-    if job.status == ProviderJob.STATUS_QUEUED and not jobs.fail_if_queued(
-        job, {"error": "manually_resolved"}
-    ):
-        job.refresh_from_db()
+    if job.status == ProviderJob.STATUS_QUEUED:
+        if success:
+            raise ChargeNotSent(
+                _("This charge was never sent to the provider. Resolve it as failed instead.")
+            )
+        if not jobs.fail_if_queued(job, {"error": "manually_resolved"}):
+            job.refresh_from_db()
     if (
         job.status == ProviderJob.STATUS_RUNNING
         and job.started_at is not None
@@ -276,14 +283,15 @@ def _stop_pending_job(sale: Sale) -> None:
 def manual_resolve(sale: Sale, *, success: bool, user) -> Sale:
     """Management settles an open charge by hand (failure reverses the sale).
 
-    Raises ``ChargeInProgress`` while a worker is (recently) charging it and
-    ``ValueError`` when the charge is not open.
+    Raises ``ChargeInProgress`` while a worker is (recently) charging it,
+    ``ChargeNotSent`` for ``success=True`` on a charge that was never sent,
+    and ``ValueError`` when the charge is not open.
     """
     with transaction.atomic():
         locked = Sale.objects.select_for_update().get(pk=sale.pk)
         if not locked.charge_is_open:
             raise ValueError(_("Only charges in progress or unverified can be resolved."))
-        _stop_pending_job(locked)
+        _stop_pending_job(locked, success=success)
         result = ChargeResult.SUCCESS if success else ChargeResult.FAILED
         outcome = ChargeOutcome(result=result, message=f"manual:{result.value}")
         return apply_outcome(
