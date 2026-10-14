@@ -1,56 +1,107 @@
-# Recharge Desk Design System
+# Recharge Desk Design System — Pearl
 
-This file is the source of truth for new UI work in the project. The goal is a calm, compact, RTL-first management interface that feels consistent across sales, customers, employees, companies, inventory, reports, and settings.
+This file is the source of truth for new UI work. Pearl is a calm, warm, RTL-first management interface: off-white paper, ink-black primary actions, one orange accent used sparingly, and clear numbers. `core/tests_ui_conventions.py` and `core/tests_design_tokens.py` enforce the parts that can be checked mechanically; run them after any UI change.
 
-## Design Direction
+## Identity
 
-- Use a clean SaaS dashboard style: light surfaces, soft borders, compact spacing, subtle shadows, and one clear primary accent.
-- Prefer density over empty space. The app is operational and data-heavy; screens should show useful information without feeling cramped.
-- Keep interactions predictable. Lists, filters, sorting, pagination, buttons, and mobile cards should behave the same everywhere.
-- RTL must be first-class. Avoid physical left/right decisions in new CSS unless required; prefer Bootstrap utilities and logical properties.
+- **Paper and ink.** Warm off-white page, white surfaces, near-black text. Dark mode is the same system on layered warm blacks, never pure `#000`.
+- **Primary = ink.** `btn-primary` is black (white in dark mode). Orange is *not* the primary colour.
+- **Orange = accent only.** Active dots, focus/progress cues, and at most one special action per screen (`btn-accent`, e.g. charge). Never for errors, warnings-as-fill, or decoration.
+- **Dense but quiet.** Operational, data-heavy screens: compact spacing, hairline borders, very light shadows, numbers that line up.
+- **RTL first.** Use logical properties (`margin-inline-*`, `text-start`); no `ml-*`/`mr-*` in new CSS.
 
 ## Core Files
 
-- `static/css/design-system.css` owns tokens, layout, cards, tables, filters, buttons, badges, navigation, and compatibility styling.
-- `static/css/app.css` is for specialized product flows only, especially employee sale-entry chips and page-specific behavior.
-- `templates/base_management.html` is the shell for management pages.
-- `templates/partials/filter_card_open.html` and `templates/partials/filter_card_close.html` are the only pattern for collapsible filters.
-- `templates/partials/pagination.html` is the only pagination pattern.
+- `static/css/design-system.css` — tokens (light + dark blocks at the top, ending at `/* @end-tokens */`), layout, shell, components. Below the marker there is no raw hex.
+- `static/css/app.css` — specialised product flows only (employee sale entry, dashboard period switch). No raw hex.
+- `static/css/number-check.css`, `static/css/login.css` — page-specific; no raw hex.
+- `static/css/fonts.css` — self-hosted `@font-face` (woff2 in `static/fonts/`).
+- `templates/base_management.html`, `templates/base_employee.html` — the two shells. Every page extends one (see `.cursor/rules/ui-navigation-and-toasts.mdc`).
+- `templates/partials/filter_card_open.html` / `filter_card_close.html` — the only collapsible-filter pattern. `templates/partials/pagination.html` — the only pagination.
+- `templates/accounts/login.html` + `static/css/login.css` + `static/js/login.js` — the login page; reference for a full-bleed, token-only page.
+
+## Tokens
+
+Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`). Use the token, never the value.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--bs-body-bg` | `#fafaf8` | `#0b0b0a` | page background |
+| `--rd-surface` | `#ffffff` | `#151514` | cards, inputs, popovers |
+| `--rd-surface-2` | `#f4f4f2` | `#1f1f1d` | table headers, chips, skeletons, hover |
+| `--bs-border-color` | `#ececea` | `#2a2a27` | hairline borders |
+| `--rd-ink` | `#0a0a0a` | `#f5f5f2` | text, primary fills, focus outline |
+| `--rd-muted` | `#6b6b68` | `#9a9a94` | secondary text (≥ 4.5:1) |
+| `--rd-faint` | `#a3a39e` | `#6b6b66` | placeholders, decorative marks only |
+| `--rd-accent` | `#ff5a1f` | `#ff6a33` | the accent fill (dots, progress, `btn-accent`) |
+| `--rd-accent-soft` | `rgba(255,90,31,.10)` | `rgba(255,106,51,.15)` | accent tint behind small marks |
+| `--rd-accent-ink` | `#c2410c` | `#ff8a5c` | orange *text* (≥ 4.5:1) |
+| `--rd-on-accent` | `#0a0a0a` | `#0a0a0a` | text on an orange fill |
+| `--rd-primary-bg` / `--rd-primary-fg` | `#0a0a0a` / `#fff` | `#f5f5f2` / `#0a0a0a` | primary buttons |
+| `--rd-success` / `-soft` | `#0a7a3e` / `#e8f6ee` | `#4ade80` / `rgba(74,222,128,.12)` | paid, up |
+| `--rd-warning` / `-soft` | `#c2410c` / `#fff0e9` | `#fbbf24` / `rgba(251,191,36,.12)` | pending, down |
+| `--rd-danger` / `-soft` | `#b91c1c` / `#fdecec` | `#f87171` / `rgba(248,113,113,.12)` | cancelled, failed, destructive |
+| `--rd-shadow-card/-xs/-sm/-md/-lg/-float` | ink-tinted, very light | inset hairline + deep shadows | elevation |
+| `--rd-radius-xs … -xl` | `0.375` … `1.375rem` | same | corners |
+
+Bootstrap's `--bs-primary/-success/-warning/-danger/-info`, link and subtle-background variables are remapped to these tokens in both blocks, so Bootstrap utilities (`text-success`, `border-danger`, …) already render in Pearl. Need a new colour? Add a token to *both* theme blocks first.
+
+Colour is never the only signal: badges carry a leading dot and a label, trends carry an arrow.
+
+## Typography
+
+Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page template that renders `<head>` includes `{% include "partials/fonts_head.html" %}` (the two shells, login, forbidden do already; new standalone pages must too).
+
+- **Body (Arabic):** IBM Plex Sans Arabic 400/500/600/700 — `--rd-font-ar`.
+- **Headings (Arabic):** Noto Kufi Arabic 600/700 — `--rd-font-heading` (applied to `h1–h4`, `.rd-heading-*`, `.rd-card-header`).
+- **Numbers and English body:** Inter Tight 500/600/700 — `--rd-font-num` / `--rd-font`.
+- Numbers, money, dates, references: `.tabular-nums` (Inter Tight + tabular figures), even in Arabic text.
+- Classes: `.rd-heading-xl` (page H1), `.rd-heading-lg` (section), `.rd-text-muted` (secondary).
+- `html { font-size: 80% }` is intentional; all `rem` values are relative to it. Don't change it.
+- Never link Google Fonts (`test_no_google_fonts`).
 
 ## Layout
 
-- Every management page starts with:
-  - `.rd-page-header`
-  - `.rd-heading-xl`
-  - optional `.rd-text-muted` subtitle
-  - action buttons grouped in `d-flex flex-wrap gap-2`
-- Main content should use Bootstrap grid with `g-3` as the default gap.
-- Avoid inline widths and styles. If a max-width is needed, use a small wrapper and document why.
-- Do not introduce new page shells unless there is a distinct user mode like employee sales entry.
+- Every management page starts with `.rd-page-header` → `.rd-heading-xl` → optional `.rd-text-muted` subtitle → actions in `d-flex flex-wrap gap-2`.
+- The management topbar carries the greeting (`.rd-hello`: name + date) and the sidebar is an accordion (`rd-nav-group-toggle` / `rd-nav-link`). Don't re-implement either per page.
+- Content uses the Bootstrap grid with `g-3` as the default gap.
+- No inline widths/styles; if a max-width is unavoidable, use a small wrapper class and say why.
+- No new page shell unless there is a distinct user mode (like employee entry).
 
-## Cards
+## Cards And KPIs
 
-- New surfaces must use `.rd-card`.
-- Card content uses `.rd-card-body`; headers use `.rd-card-header`.
-- Legacy `.card` and `.app-card` are visually normalized in CSS, but new templates should not use them.
-- Use `.rd-stat` only for KPI cards that need visual emphasis.
-- Avoid large empty cards. Combine related small metrics when the information belongs together.
+- Surfaces: `.rd-card` + `.rd-card-body` / `.rd-card-header` / `.rd-card-footer`. Don't use raw `.card` / `.app-card` in new templates.
+- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
+- Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill); it is LTR-isolated.
+- Loading placeholders: `.rd-skeleton` (sweep on a pseudo-element, transform only).
+- Avoid large empty cards; merge related small metrics.
 
-## Filters
+## Buttons
 
-- Filters belong above the data, not inside table headers.
-- Use:
-  - `{% include "partials/filter_card_open.html" with active_count=... indicator_id=... %}`
-  - a `form.row.g-3.align-items-end`
-  - `{% include "partials/filter_card_close.html" %}`
-- Add hidden `sort` / `order` fields when the filtered data is sortable.
-- Controls should usually be `form-control-sm` / `form-select-sm`.
-- Keep filters on one row on wide screens when the fields fit.
-- Reset buttons are `btn btn-outline-secondary btn-sm`.
+- Primary: `btn btn-primary` (ink). One per action group.
+- The single special action of a screen: `btn btn-accent` (orange, text `--rd-on-accent`). At most one per screen.
+- Secondary/export/edit: `btn btn-outline-secondary`. Permanent delete: `btn btn-outline-danger`. Reversible cancel/void is not red.
+- Table actions are `btn-sm`. Avoid `btn-link` for operational actions.
+- Toggles are Bootstrap `.form-check.form-switch` (Pearl skin in `design-system.css`); don't hand-roll switches. Period/segment pickers: `.rd-period-switch`.
 
-## Data Grids
+## Badges And Status
 
-Use this structure for data-heavy lists:
+Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular-nums` badges and badges that contain an icon).
+
+- `.rd-badge--paid` — success / active / paid.
+- `.rd-badge--pending` (alias `.rd-badge--warning`) — waiting / needs attention.
+- `.rd-badge--conflict` — data conflicts that need review.
+- `.rd-badge--cancelled` — failed / cancelled / destructive.
+- `.rd-badge--neutral` — inactive, metadata, plain labels.
+
+Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are red (`--rd-danger`), never orange.
+
+## Filters, Data Grids, Sorting
+
+Unchanged from the structural contract; only the look is Pearl.
+
+- Filters sit above data: `filter_card_open.html` → `form.row.g-3.align-items-end` → `filter_card_close.html`. Hidden `sort`/`order` for sortable data. Controls `form-control-sm` / `form-select-sm`. Reset = `btn btn-outline-secondary btn-sm`.
+- Data grid skeleton:
 
 ```html
 <div class="rd-card overflow-hidden rd-datagrid" id="...">
@@ -60,87 +111,76 @@ Use this structure for data-heavy lists:
   <div class="rd-table-dual rd-datagrid-body">
     <div class="d-none d-md-block rd-data-shell">
       <div class="table-responsive border-0">
-        <table class="table mb-0 align-middle rd-table-modern">
-          ...
-        </table>
+        <table class="table mb-0 align-middle rd-table-modern">...</table>
       </div>
     </div>
-    <div class="d-md-none rd-mobile-stack p-2">
-      ...
-    </div>
+    <div class="d-md-none rd-mobile-stack p-2">...</div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
 </div>
 ```
 
-- Desktop tables use `.rd-table-modern`.
-- Mobile views use `.rd-mobile-row-card`; do not rely on horizontal table scrolling on phones.
-- Empty desktop table rows should contain `<div class="empty-state border-0 mb-0">...`.
-- Use `.tabular-nums` for all numbers, balances, dates, and references.
+- Desktop tables: `.rd-table-modern` only. It styles the `<thead>`; **never add `table-light`**.
+- Empty rows: `<div class="empty-state border-0 mb-0">…`.
+- Sortable headers: `.rd-datagrid-sort`; active header owns `is-active is-asc|is-desc`, rendered by the server. No stale `hx-vals` for sort; reset page to `1` on sort change.
 
-## Sorting
+## Forms And Tabs
 
-- Sortable headers must use `.rd-datagrid-sort`.
-- The active header owns `is-active is-asc` or `is-active is-desc`.
-- The selected header and arrow must update through the server-rendered response, exactly like the sales table.
-- Do not pass stale sort/order values through `hx-vals`; let the clicked header URL be the source of truth.
-- When changing sort, reset the relevant page number to `1`.
+- Simple forms: `d-grid gap-2`; filter/search bars: `row g-3 align-items-end`. Labels stay visible except in dense toolbars. Short help text. `novalidate` where server errors are expected.
+- Form-wide errors become toasts (`partials/form_errors_toast.html`); field errors stay under their fields.
+- Tabs: `.rd-section-tabs` on Bootstrap `nav nav-tabs`, for major sections only — not for filter changes.
 
-## Buttons
+## HTMX And Feedback
 
-- Primary action: `btn btn-primary`.
-- Secondary navigation/export/edit: `btn btn-outline-secondary`.
-- Destructive permanent delete: `btn btn-outline-danger`.
-- Cancel/void actions that are reversible should not be red unless they are destructive.
-- Keep table action buttons `btn-sm`.
-- Avoid `btn-link` for operational actions unless it is clearly a low-emphasis text action.
+- HTMX for list filtering, sorting, pagination and small in-place actions. `hx-target` is the data-grid container, not an inner table (unless replacing a single row).
+- After actions that change summary cards or balances, redirect or refresh the whole section so numbers stay in sync.
+- Irreversible actions: `hx-confirm` or `onsubmit="return confirm(...)"`.
+- Feedback goes through Django messages → corner toasts. Never loop over `messages`, never `alert-success`/`alert-danger` boxes; JS uses `window.rdToast` / `window.rdNavigate`. Full rules: `.cursor/rules/ui-navigation-and-toasts.mdc`.
+- Navigation feedback is built in: a top progress bar and a dim on `[data-rd-live].is-live-loading` (`static/js/nav.js`). Mark live-swapped regions with `data-rd-live` instead of writing spinners.
 
-## Badges And Status
+## Motion
 
-- Use `.rd-badge` variants:
-  - `.rd-badge--paid` for success/active/paid.
-  - `.rd-badge--pending` for waiting states.
-  - `.rd-badge--cancelled` for failed/cancelled/destructive status.
-  - `.rd-badge--neutral` for inactive, metadata, and plain labels.
-- Avoid raw Bootstrap badge colors in management pages.
-
-## Forms
-
-- Forms inside cards use `d-grid gap-2` for simple vertical forms or `row g-3 align-items-end` for filter/search bars.
-- Labels should remain visible; use visually hidden labels only in dense toolbars where the context is obvious.
-- Help text should be short. Do not place long explanatory text between compact fields.
-- Use `novalidate` on custom forms where server-rendered errors are expected.
-
-## Tabs
-
-- Use `.rd-section-tabs` with Bootstrap `nav nav-tabs`.
-- Tabs switch major page sections only. Do not use tabs for small filter changes.
-- Tab content should preserve the same grid/table/filter patterns as standalone pages.
-
-## HTMX
-
-- Use HTMX for list filtering, sorting, pagination, and small in-place actions.
-- `hx-target` should point at the data grid container, not a random inner table, unless deliberately replacing one row.
-- After actions that affect summary cards or balances, redirect or refresh the whole relevant page section so numbers stay synchronized.
-- For irreversible operations, always include `hx-confirm` or a normal `onsubmit` confirmation.
+- 150–450 ms, `transform` and `opacity` only (no animating width/height/top/left/box-shadow layout). Use `--rd-transition-fast` / `--rd-transition`.
+- Purposeful only: state change, progress, loading. No decorative loops other than `.rd-skeleton`.
+- `prefers-reduced-motion` already neutralises animations globally in `design-system.css`; don't add per-component opt-outs that fight it.
 
 ## Mobile
 
-- Every important desktop data table needs a mobile card representation.
-- Mobile cards should show: main identifier, status/badge, key money amount, and primary actions.
-- Avoid putting all columns into mobile cards; choose the most operationally useful values.
+- Every important desktop table needs a mobile card (`.rd-mobile-row-card`): identifier, status badge, key amount, primary actions. No horizontal-scroll tables on phones.
+- **Employee entry is one screen**: the common task (record a sale) fits without scrolling on a phone; secondary fields collapse.
+- Touch targets ≥ 44 px (≈ 2.75 rem at the 80% root) with ≥ 8 px between neighbours.
+- Employee shell uses a bottom tab bar (`.rd-mobile-tabbar`) with an ink FAB for the primary "sales" action. Don't add a second fixed bottom element.
+- Form controls stay ≥ 16 px on small screens (iOS auto-zoom guard in `design-system.css`).
+
+## Accessibility
+
+- Body text ≥ 4.5:1; meaningful non-text (borders of inputs, icons, focus) ≥ 3:1. Use `--rd-accent-ink` for orange text, `--rd-muted` (not `--rd-faint`) for readable secondary text.
+- Visible keyboard focus everywhere: `:focus-visible` gets a 2 px `--rd-ink` outline (grouped rule at the end of `design-system.css`). New interactive components with custom chrome must be added to that rule.
+- Never rely on colour alone; keep labels and icons with status.
+
+## Dark Mode
+
+- Set by `data-bs-theme="dark"` on `<html>`; tokens swap, components don't.
+- Only token-based colours work in both themes — that is why raw hex is forbidden. Surfaces are layered (`bg-body` < `--rd-surface` < `--rd-surface-2`); shadows give way to inset hairlines.
+- Check a new page in both themes before merging.
 
 ## Copy And Language
 
-- Use Django `{% trans %}` for UI strings.
-- Arabic labels should be clear and operational, not decorative.
-- Keep titles short and subtitles explanatory.
-- Avoid mixing untranslated hardcoded Arabic with translated strings unless the section is intentionally Arabic-only and stable.
+- UI strings via `{% trans %}`; add Arabic to `locale/ar/LC_MESSAGES/django.po` and run `compilemessages` (the `.mo` is committed).
+- Arabic labels are clear and operational. Short titles, explanatory subtitles.
+- Don't mix hard-coded Arabic with translated strings unless the section is intentionally Arabic-only.
 
 ## Do Not
 
-- Do not add a new visual style for one page when an existing `rd-*` component fits.
-- Do not use raw `.card`, `.table-sm`, `.table-light`, or Bootstrap badges in new management UI.
-- Do not hide filters inside table toolbars.
-- Do not add large empty whitespace to “balance” a layout.
-- Do not use inline style for repeated visual patterns; add or reuse a class in `design-system.css`.
+- No raw hex colours in templates or in `app.css` / `number-check.css` / `login.css` / below `@end-tokens` — use tokens.
+- No Bootstrap colour badges (`badge bg-*`, `badge text-bg-*`) — use `rd-badge--*`.
+- No `table-light`; `rd-table-modern` styles the header.
+- No Google Fonts or other CDN fonts — `fonts_head.html` only.
+- No inline styles for repeated visual patterns — add or reuse a class.
+- No orange for errors, destructive actions or warnings; no orange primary buttons; no more than one `btn-accent` per screen.
+- No new visual style for a single page when an `rd-*` component fits; no raw `.card`, `.table-sm`; no filters inside table headers; no whitespace "balancing".
+- No `alert-success` / `alert-danger` boxes or `messages` loops; no new `<body>`.
+
+## Guardrails And Legacy Lists
+
+`core/tests_ui_conventions.py` fails on raw hex, Bootstrap colour badges and `table-light` in any template, except files in the shrink-only sets `LEGACY_HEX`, `LEGACY_BADGES`, `LEGACY_TABLE_LIGHT`. These are pages still waiting for migration in later phases. **Never add a file to them**; fix the template instead. When you migrate a legacy file, remove it from its set (`test_legacy_lists_only_shrink` fails otherwise). `phone_refresh/templates/phone_refresh/public_refresh.html` is out of scope and exempt.

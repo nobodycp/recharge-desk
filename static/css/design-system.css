@@ -27,8 +27,12 @@ html {
 /* -> the sidebar loses its 1040 stacking and renders under dashboard cards.  */
 /* -------------------------------------------------------------------------- */
 :root {
-  --rd-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --rd-font-ar: "Cairo", "Inter", system-ui, sans-serif;
+  /* Pearl type stack: IBM Plex Sans Arabic (Arabic body), Noto Kufi Arabic
+     (Arabic headings), Inter Tight (numbers + English body). */
+  --rd-font: "Inter Tight", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --rd-font-ar: "IBM Plex Sans Arabic", "Inter Tight", system-ui, sans-serif;
+  --rd-font-heading: "Noto Kufi Arabic", var(--rd-font-ar);
+  --rd-font-num: "Inter Tight", system-ui, sans-serif;
 
   --rd-radius-xs: 0.375rem;
   --rd-radius-sm: 0.625rem;
@@ -38,95 +42,221 @@ html {
 
   --rd-z-sidebar: 1040;
   --rd-z-topbar: 1030;
-  --rd-z-backdrop: 1025;
+  /* Management drawer scrim: above the topbar so it dims it too, below the
+     sidebar it belongs to. */
+  --rd-z-backdrop: 1035;
   --rd-z-sticky: 1020;
 
   --rd-transition-fast: 0.14s ease;
   --rd-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Print: paper is white in either theme. */
+  --rd-print-paper: #ffffff;
+  --rd-print-ink: #000000;
+  --rd-print-rule: #888888;
+  --rd-print-rule-soft: #cccccc;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — light                                                             */
+/* Tokens — light (Pearl: warm off-white, ink primary, orange accent)         */
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="light"] {
   color-scheme: light;
 
-  --rd-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --rd-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --rd-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
-  --rd-shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.1);
+  /* Pearl core */
+  --rd-ink: #0a0a0a;
+  --rd-muted: #6b6b68;
+  --rd-faint: #a3a39e;
+  --rd-surface: #ffffff;
+  --rd-surface-2: #f4f4f2;
+  --rd-accent: #ff5a1f;
+  --rd-accent-soft: rgba(255, 90, 31, 0.1);
+  --rd-on-accent: #0a0a0a;
+  /* Text-safe orange (>= 4.5:1 on surface). Orange fills are accent only. */
+  --rd-accent-ink: #c2410c;
+  --rd-primary-bg: #0a0a0a;
+  --rd-primary-fg: #ffffff;
 
-  --bs-body-bg: #f4f6f9;
-  --bs-body-color: #0f172a;
-  --bs-secondary-bg: #ffffff;
-  --bs-tertiary-bg: #eef1f6;
-  --bs-border-color: rgba(15, 23, 42, 0.08);
-  --bs-border-color-translucent: rgba(15, 23, 42, 0.1);
+  --rd-shadow-card: 0 1px 2px rgba(10, 10, 10, 0.04), 0 1px 1px rgba(10, 10, 10, 0.02);
+  --rd-shadow-xs: 0 1px 2px rgba(10, 10, 10, 0.04);
+  --rd-shadow-sm: 0 2px 8px rgba(10, 10, 10, 0.06);
+  --rd-shadow-md: 0 8px 24px rgba(10, 10, 10, 0.08);
+  --rd-shadow-lg: 0 16px 48px rgba(10, 10, 10, 0.1);
+  --rd-shadow-float: 0 10px 22px -10px rgba(10, 10, 10, 0.55);
 
-  --rd-accent: #4f46e5;
-  --rd-accent-hover: #4338ca;
-  --rd-accent-muted: rgba(79, 70, 229, 0.12);
-  --rd-accent-2: #0891b2;
-  /* Text-safe cyan: fill behind white text / small text on a cyan tint (≥ 4.5:1). */
-  --rd-accent-2-strong: #0e7490;
-  --rd-accent-2-strong-rgb: 14, 116, 144;
-  --rd-accent-2-ink: #155e75;
-  --rd-success: #059669;
-  --rd-success-soft: rgba(5, 150, 105, 0.12);
-  --rd-warning: #d97706;
-  --rd-warning-soft: rgba(217, 119, 6, 0.14);
+  /* Chrome: drawer scrim, text on red count chips, and status tones that
+     sit on an ink surface (toasts), i.e. the opposite theme's values. */
+  --rd-scrim: rgba(10, 10, 10, 0.32);
+  --rd-on-danger: #ffffff;
+  --rd-success-on-ink: #4ade80;
+  --rd-warning-on-ink: #fbbf24;
+  --rd-danger-on-ink: #f87171;
+
+  /* Hero surface: stays ink in both themes (login brand panel). The plate
+     sits behind uploaded logos, which are drawn for a light background. */
+  --rd-hero-bg: #0a0a0a;
+  --rd-hero-fg: #ffffff;
+  --rd-hero-plate: #ffffff;
+  --rd-hero-success: #4ade80;
+
+  --bs-body-bg: #fafaf8;
+  --bs-body-color: var(--rd-ink);
+  --bs-secondary-color: var(--rd-muted);
+  --bs-secondary-bg: var(--rd-surface);
+  --bs-tertiary-bg: var(--rd-surface-2);
+  --bs-border-color: #ececea;
+  --bs-border-color-translucent: rgba(10, 10, 10, 0.08);
+
+  /* Legacy accent names — kept so existing CSS/templates keep working */
+  --rd-accent-hover: #e84a10;
+  --rd-accent-muted: var(--rd-accent-soft);
+  --rd-accent-2: #ff5a1f;
+  /* Text-safe orange: fill behind white text / small text on an orange tint (>= 4.5:1). */
+  --rd-accent-2-strong: #c2410c;
+  --rd-accent-2-strong-rgb: 194, 65, 12;
+  --rd-on-accent-strong: #ffffff;
+  --rd-accent-2-ink: #9a3412;
+
+  --rd-success: #0a7a3e;
+  --rd-success-soft: #e8f6ee;
+  --rd-warning: #c2410c;
+  --rd-warning-soft: #fff0e9;
   --rd-warning-ink: var(--rd-warning);
-  --rd-danger: #dc2626;
-  --rd-danger-soft: rgba(220, 38, 38, 0.1);
-  --rd-info: #0284c7;
-  --rd-info-soft: rgba(2, 132, 199, 0.12);
+  --rd-danger: #b91c1c;
+  --rd-danger-soft: #fdecec;
+  --rd-info: var(--rd-ink);
+  --rd-info-soft: var(--rd-surface-2);
 
-  --bs-primary: #4f46e5;
-  --bs-primary-rgb: 79, 70, 229;
-  --bs-link-color: #4f46e5;
-  --bs-link-hover-color: #3730a3;
+  /* Bootstrap 5.3 theme colors -> Pearl (utilities, badges, alerts, links
+     read these; `-rgb` triplets feed rgba(var(...), opacity)). */
+  --bs-primary: var(--rd-ink);
+  --bs-primary-rgb: 10, 10, 10;
+  --bs-primary-text-emphasis: var(--rd-ink);
+  --bs-primary-bg-subtle: var(--rd-surface-2);
+  --bs-primary-border-subtle: var(--bs-border-color);
+  --bs-success: var(--rd-success);
+  --bs-success-rgb: 10, 122, 62;
+  --bs-success-text-emphasis: var(--rd-success);
+  --bs-success-bg-subtle: var(--rd-success-soft);
+  --bs-success-border-subtle: rgba(10, 122, 62, 0.25);
+  --bs-warning: var(--rd-warning);
+  --bs-warning-rgb: 194, 65, 12;
+  --bs-warning-text-emphasis: var(--rd-warning-ink);
+  --bs-warning-bg-subtle: var(--rd-warning-soft);
+  --bs-warning-border-subtle: rgba(194, 65, 12, 0.25);
+  --bs-danger: var(--rd-danger);
+  --bs-danger-rgb: 185, 28, 28;
+  --bs-danger-text-emphasis: var(--rd-danger);
+  --bs-danger-bg-subtle: var(--rd-danger-soft);
+  --bs-danger-border-subtle: rgba(185, 28, 28, 0.25);
+  --bs-info: var(--rd-ink);
+  --bs-info-rgb: 10, 10, 10;
+  --bs-info-text-emphasis: var(--rd-ink);
+  --bs-info-bg-subtle: var(--rd-surface-2);
+  --bs-info-border-subtle: var(--bs-border-color);
+  --bs-link-color: var(--rd-ink);
+  --bs-link-color-rgb: 10, 10, 10;
+  --bs-link-hover-color: var(--rd-accent-ink);
+  --bs-link-hover-color-rgb: 194, 65, 12;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — dark (layered surfaces, not pure black)                           */
+/* Tokens — dark (layered warm surfaces, not pure black)                      */
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="dark"] {
   color-scheme: dark;
 
+  /* Pearl core */
+  --rd-ink: #f5f5f2;
+  --rd-muted: #9a9a94;
+  --rd-faint: #6b6b66;
+  --rd-surface: #151514;
+  --rd-surface-2: #1f1f1d;
+  --rd-accent: #ff6a33;
+  --rd-accent-soft: rgba(255, 106, 51, 0.15);
+  --rd-on-accent: #0a0a0a;
+  --rd-accent-ink: #ff8a5c;
+  --rd-primary-bg: #f5f5f2;
+  --rd-primary-fg: #0a0a0a;
+
+  --rd-shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --rd-shadow-xs: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --rd-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
   --rd-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
   --rd-shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.55);
+  --rd-shadow-float: 0 10px 24px -10px rgba(0, 0, 0, 0.85);
 
-  --bs-body-bg: #0c0f14;
-  --bs-body-color: #e8eaef;
-  --bs-secondary-bg: #141a22;
-  --bs-tertiary-bg: #1a222c;
-  --bs-border-color: rgba(255, 255, 255, 0.08);
+  --rd-scrim: rgba(0, 0, 0, 0.6);
+  --rd-on-danger: #0a0a0a;
+  --rd-success-on-ink: #0a7a3e;
+  --rd-warning-on-ink: #c2410c;
+  --rd-danger-on-ink: #b91c1c;
+
+  --rd-hero-bg: #050505;
+  --rd-hero-fg: #f5f5f2;
+  --rd-hero-plate: #f5f5f2;
+  --rd-hero-success: #4ade80;
+
+  --bs-body-bg: #0b0b0a;
+  --bs-body-color: var(--rd-ink);
+  --bs-secondary-color: var(--rd-muted);
+  --bs-secondary-bg: var(--rd-surface);
+  --bs-tertiary-bg: var(--rd-surface-2);
+  --bs-border-color: #2a2a27;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
 
-  --rd-accent: #818cf8;
-  --rd-accent-hover: #a5b4fc;
-  --rd-accent-muted: rgba(129, 140, 248, 0.15);
-  --rd-accent-2: #22d3ee;
-  --rd-accent-2-strong: #22d3ee;
-  --rd-accent-2-strong-rgb: 34, 211, 238;
-  --rd-accent-2-ink: #22d3ee;
-  --rd-success: #34d399;
-  --rd-success-soft: rgba(52, 211, 153, 0.14);
+  /* Legacy accent names — kept so existing CSS/templates keep working */
+  --rd-accent-hover: #ff8a5c;
+  --rd-accent-muted: var(--rd-accent-soft);
+  --rd-accent-2: #ff6a33;
+  --rd-accent-2-strong: #ff8a5c;
+  --rd-accent-2-strong-rgb: 255, 138, 92;
+  --rd-on-accent-strong: #0a0a0a;
+  --rd-accent-2-ink: #ff8a5c;
+
+  --rd-success: #4ade80;
+  --rd-success-soft: rgba(74, 222, 128, 0.12);
   --rd-warning: #fbbf24;
-  --rd-warning-soft: rgba(251, 191, 36, 0.14);
+  --rd-warning-soft: rgba(251, 191, 36, 0.12);
   --rd-warning-ink: #fcd34d;
   --rd-danger: #f87171;
   --rd-danger-soft: rgba(248, 113, 113, 0.12);
-  --rd-info: #38bdf8;
-  --rd-info-soft: rgba(56, 189, 248, 0.14);
+  --rd-info: var(--rd-ink);
+  --rd-info-soft: var(--rd-surface-2);
 
-  --bs-primary: #818cf8;
-  --bs-primary-rgb: 129, 140, 248;
-  --bs-link-color: #a5b4fc;
-  --bs-link-hover-color: #c7d2fe;
+  --bs-primary: var(--rd-ink);
+  --bs-primary-rgb: 245, 245, 242;
+  --bs-primary-text-emphasis: var(--rd-ink);
+  --bs-primary-bg-subtle: var(--rd-surface-2);
+  --bs-primary-border-subtle: var(--bs-border-color);
+  --bs-success: var(--rd-success);
+  --bs-success-rgb: 74, 222, 128;
+  --bs-success-text-emphasis: var(--rd-success);
+  --bs-success-bg-subtle: var(--rd-success-soft);
+  --bs-success-border-subtle: rgba(74, 222, 128, 0.25);
+  --bs-warning: var(--rd-warning);
+  --bs-warning-rgb: 251, 191, 36;
+  --bs-warning-text-emphasis: var(--rd-warning-ink);
+  --bs-warning-bg-subtle: var(--rd-warning-soft);
+  --bs-warning-border-subtle: rgba(251, 191, 36, 0.25);
+  --bs-danger: var(--rd-danger);
+  --bs-danger-rgb: 248, 113, 113;
+  --bs-danger-text-emphasis: var(--rd-danger);
+  --bs-danger-bg-subtle: var(--rd-danger-soft);
+  --bs-danger-border-subtle: rgba(248, 113, 113, 0.25);
+  --bs-info: var(--rd-ink);
+  --bs-info-rgb: 245, 245, 242;
+  --bs-info-text-emphasis: var(--rd-ink);
+  --bs-info-bg-subtle: var(--rd-surface-2);
+  --bs-info-border-subtle: var(--bs-border-color);
+  --bs-link-color: var(--rd-ink);
+  --bs-link-color-rgb: 245, 245, 242;
+  --bs-link-hover-color: var(--rd-accent-ink);
+  --bs-link-hover-color-rgb: 255, 138, 92;
 }
+
+/* @end-tokens */
+/* Below this line: tokens only — no raw hex (core/tests_design_tokens.py). */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -153,7 +283,31 @@ body.rd-body,
 body.app-shell {
   font-feature-settings: "kern" 1, "liga" 1;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Latin tracking only — Arabic letters must never be tracked (breaks joining). */
+html:not([lang="ar"]) body.rd-body,
+html:not([lang="ar"]) body.app-shell {
   letter-spacing: -0.01em;
+}
+
+/* Arabic headings use Noto Kufi Arabic (600/700 only). */
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4,
+html[lang="ar"] .rd-heading-xl,
+html[lang="ar"] .rd-heading-lg,
+html[lang="ar"] .rd-card-header {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+html[lang="ar"] h1,
+html[lang="ar"] h2,
+html[lang="ar"] h3,
+html[lang="ar"] h4 {
+  font-weight: 700;
 }
 
 .rd-heading-xl {
@@ -172,6 +326,18 @@ body.app-shell {
 .rd-text-muted {
   color: var(--bs-secondary-color) !important;
   font-size: 0.875rem;
+}
+
+/* Numbers always use Inter Tight (Arabic UI included) with tabular figures. */
+.tabular-nums,
+.rd-stat-value,
+.kpi-success,
+.kpi-warning,
+.kpi-danger,
+.kpi-info,
+.kpi-muted,
+.kpi-expense {
+  font-family: var(--rd-font-num);
 }
 
 .tabular-nums {
@@ -205,6 +371,38 @@ body.app-shell {
     grid-template-columns: minmax(14rem, 16.75rem) 1fr;
     grid-template-rows: 1fr;
   }
+}
+
+/* Pearl page glow: soft orange at the top inline-end, faint ink at the
+   bottom inline-start. A fixed layer at z-index -1 inside .rd-app's
+   isolated stacking context paints behind all shell content (and works on
+   iOS, unlike background-attachment: fixed). */
+.rd-app {
+  --rd-glow-accent: color-mix(in srgb, var(--rd-accent) 10%, transparent);
+  --rd-glow-ink: color-mix(in srgb, var(--rd-ink) 3.5%, transparent);
+  --rd-glow-end-x: 85%;
+  --rd-glow-start-x: 0%;
+}
+
+.rd-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(52rem 26rem at var(--rd-glow-end-x) -8%, var(--rd-glow-accent), transparent 70%),
+    radial-gradient(50rem 30rem at var(--rd-glow-start-x) 105%, var(--rd-glow-ink), transparent 70%);
+}
+
+[dir="rtl"] .rd-app {
+  --rd-glow-end-x: 15%;
+  --rd-glow-start-x: 100%;
+}
+
+[data-bs-theme="dark"] .rd-app {
+  --rd-glow-accent: color-mix(in srgb, var(--rd-accent) 6%, transparent);
+  --rd-glow-ink: color-mix(in srgb, var(--rd-ink) 2%, transparent);
 }
 
 .rd-sidebar {
@@ -249,6 +447,7 @@ body.app-shell {
     bottom: auto;
     left: auto;
     right: auto;
+    width: auto;
     height: 100vh;
     transform: none !important;
     box-shadow: none;
@@ -274,18 +473,13 @@ body.app-shell {
   position: fixed;
   inset: 0;
   z-index: var(--rd-z-backdrop);
-  background: rgba(2, 6, 23, 0.45);
+  /* --rd-scrim is darker in dark mode so the dim layer stays unambiguous
+     over an already-dark body. */
+  background: var(--rd-scrim);
   backdrop-filter: blur(2px);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--rd-transition);
-}
-
-[data-bs-theme="dark"] .rd-sidebar-backdrop {
-  /* The default 0.45 alpha is barely visible over an already-dark body,
-     making the sidebar look like it's bleeding into the content. Bump it
-     so the dim layer is unambiguous on mobile. */
-  background: rgba(0, 0, 0, 0.65);
 }
 
 .rd-sidebar-backdrop.is-visible {
@@ -302,7 +496,7 @@ body.app-shell {
 .rd-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   padding: 0.35rem 0.5rem 0.85rem;
   text-decoration: none;
   color: inherit;
@@ -316,16 +510,50 @@ body.app-shell {
 }
 
 .rd-sidebar-brand-mark {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--rd-radius-sm);
-  background: linear-gradient(135deg, var(--rd-accent), #6366f1);
+  flex: 0 0 auto;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+  background: var(--rd-primary-bg);
   display: grid;
   place-items: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.85rem;
-  box-shadow: var(--rd-shadow-sm);
+  color: var(--rd-primary-fg);
+  font-family: var(--rd-font-heading);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.rd-sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.rd-sidebar-brand-name {
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--rd-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[lang="ar"] .rd-sidebar-brand-name {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+.rd-sidebar-brand-tagline {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--rd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* When the admin has uploaded a SiteBranding logo we replace the
@@ -344,6 +572,16 @@ body.app-shell {
   max-height: 3rem;
   height: auto;
   object-fit: contain;
+}
+
+/* Brand logos are drawn for light paper; in dark give them a soft light
+   plate instead of recolouring the image. */
+[data-bs-theme="dark"] .rd-sidebar-brand-logo {
+  box-sizing: border-box;
+  max-height: 3.6rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--rd-radius-sm);
+  background: color-mix(in srgb, var(--rd-ink) 90%, var(--rd-surface));
 }
 
 /* Tighten the surrounding chrome when the brand is just a logo so the
@@ -394,14 +632,15 @@ body.app-shell {
 }
 
 .rd-nav-link:hover {
-  background: var(--bs-tertiary-bg);
-  color: inherit;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-nav-link.is-active {
-  background: var(--rd-accent-muted);
-  color: var(--bs-primary);
-  border-color: rgba(var(--bs-primary-rgb), 0.2);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  border-color: var(--bs-border-color);
+  box-shadow: var(--rd-shadow-xs);
   font-weight: 600;
 }
 
@@ -414,7 +653,7 @@ body.app-shell {
 
 .rd-nav-link.is-active .rd-nav-icon {
   opacity: 1;
-  color: var(--bs-primary);
+  color: var(--rd-accent);
 }
 
 .rd-nav-icon svg {
@@ -428,7 +667,7 @@ body.app-shell {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Sidebar accordion nav — follows active theme, lilac highlights              */
+/* Sidebar accordion nav — Pearl: muted items, active pill with orange icon    */
 /* -------------------------------------------------------------------------- */
 /* Declare the palette on BOTH the sidebar (parent) and the nav itself so
    that rules targeting either side resolve the same variables. CSS custom
@@ -437,46 +676,33 @@ body.app-shell {
    silently resolved to an invalid value (and the sidebar fell back to a
    transparent background).
 
-   Active / hover / open-group accents reuse the global lilac (`--rd-accent`
-   / `--bs-primary` — the same pill color used by the topbar's primary
-   actions like "إدخال مبيعات"). Light mode keeps a white surface; the
-   dark-mode bg is overridden below so it composites identically to the
-   topbar (no visible seam). */
+   The sidebar sits on the page color (it reads as part of the canvas, split
+   off by a hairline). Items read muted; hover is a surface-2 wash; the
+   active item is a raised surface pill (hairline + soft shadow) with ink
+   text and the only orange in the sidebar: its icon. The page color is
+   opaque so the mobile drawer never shows the content through it. */
 .rd-sidebar:has(.rd-sidebar-nav--accordion),
 .rd-sidebar-nav--accordion {
-  --rd-nav-bw-bg: #ffffff;
-  --rd-nav-bw-surface: #f7f7f8;
-  --rd-nav-bw-text: #111111;
-  --rd-nav-bw-muted: #6b7280;
-  --rd-nav-bw-border: rgba(17, 17, 17, 0.08);
-  /* Match the pre-redesign sidebar: translucent lilac tint on hover/active,
-     lilac text+icon on top of it (NOT a solid lilac pill with white text).
-     Hover is a softer wash than the active state so the two read as
-     distinct layers. */
-  --rd-nav-bw-hover: color-mix(in srgb, var(--rd-accent-muted) 55%, transparent);
-  --rd-nav-bw-active-bg: var(--rd-accent-muted);
-  --rd-nav-bw-active-text: var(--bs-primary);
-  --rd-nav-bw-active-border: rgba(var(--bs-primary-rgb), 0.2);
+  --rd-nav-bw-bg: var(--bs-body-bg);
+  --rd-nav-bw-surface: var(--rd-surface-2);
+  --rd-nav-bw-text: var(--rd-ink);
+  --rd-nav-bw-muted: var(--rd-muted);
+  --rd-nav-bw-border: var(--bs-border-color);
+  --rd-nav-bw-hover: var(--rd-surface-2);
+  --rd-nav-bw-active-bg: var(--rd-surface);
+  --rd-nav-bw-active-text: var(--rd-ink);
+  --rd-nav-bw-active-border: var(--bs-border-color);
+  --rd-nav-bw-active-shadow: var(--rd-shadow-xs);
+  --rd-nav-bw-active-icon: var(--rd-accent);
 }
 
 .rd-sidebar-nav--accordion {
   gap: 0.2rem;
 }
 
-/* Dark mode: bg matches the `.rd-topbar` formula
-   (`color-mix(in srgb, var(--bs-secondary-bg) 88%, transparent)`) so the
-   sidebar and topbar composite to the exact same color over `--bs-body-bg`
-   and there is no visible seam where they meet. Text/border swap to the
-   light-on-dark palette; the lilac active/hover accents inherit from the
-   light-mode declaration above, and `--rd-accent` itself is already
-   redefined by the global `[data-bs-theme="dark"]` block to `#818cf8`. */
 [data-bs-theme="dark"] .rd-sidebar:has(.rd-sidebar-nav--accordion),
 [data-bs-theme="dark"] .rd-sidebar-nav--accordion {
-  --rd-nav-bw-bg: color-mix(in srgb, var(--bs-secondary-bg) 88%, transparent);
-  --rd-nav-bw-surface: #141a22;
-  --rd-nav-bw-text: #e8eaef;
-  --rd-nav-bw-muted: #9ca3af;
-  --rd-nav-bw-border: rgba(255, 255, 255, 0.08);
+  --rd-nav-bw-active-shadow: var(--rd-shadow-card);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group {
@@ -485,46 +711,52 @@ body.app-shell {
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group + .rd-nav-group {
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
+/* Group toggles read as quiet section labels (no fill), not as rows. */
 .rd-sidebar-nav--accordion .rd-nav-group-toggle {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.5rem;
   width: 100%;
-  padding: 0.62rem 0.75rem;
+  padding: 0.55rem 0.8rem 0.35rem;
   border: none;
-  border-radius: 0.7rem;
+  border-radius: 0.6rem;
   background: transparent;
-  color: var(--rd-nav-bw-text);
+  color: var(--rd-nav-bw-muted);
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-align: start;
   cursor: pointer;
-  transition:
-    background var(--rd-transition-fast),
-    color var(--rd-transition-fast);
+  transition: color var(--rd-transition-fast);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-toggle:hover {
-  background: var(--rd-nav-bw-hover);
+  background: transparent;
+  color: var(--rd-nav-bw-text);
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-toggle:focus-visible,
+.rd-sidebar-nav--accordion .rd-nav-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem var(--rd-accent-soft);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-chevron {
   flex: 0 0 auto;
-  width: 1rem;
-  height: 1rem;
+  width: 0.85rem;
+  height: 0.85rem;
   display: grid;
   place-items: center;
-  color: var(--rd-nav-bw-muted);
+  color: var(--rd-faint);
   transition: transform var(--rd-transition-fast);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-chevron svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.75rem;
+  height: 0.75rem;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -538,40 +770,21 @@ body.app-shell {
 
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
   transform: rotate(90deg);
-  color: var(--rd-accent);
 }
 
 [dir="rtl"] .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
   transform: rotate(-90deg);
 }
 
-/* When a section is expanded, tint the header (label + icon) lilac so the
-   currently-open group is visually anchored to the active page below it. */
+/* An expanded section's header lifts from muted to ink so the open group is
+   anchored to the active page below it; orange stays on the active item. */
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-toggle {
-  color: var(--rd-accent);
-}
-
-.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-icon {
-  color: var(--rd-accent);
-  opacity: 1;
-}
-
-.rd-sidebar-nav--accordion .rd-nav-group-icon {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
   color: var(--rd-nav-bw-text);
-  opacity: 0.72;
 }
 
-.rd-sidebar-nav--accordion .rd-nav-group-icon svg {
-  width: 1.15rem;
-  height: 1.15rem;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* Section labels carry no icon; the links below them do. */
+.rd-sidebar-nav--accordion .rd-nav-group-icon {
+  display: none;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-label {
@@ -599,27 +812,23 @@ body.app-shell {
   flex-direction: column;
   gap: 0.12rem;
   min-height: 0;
-  /* No padding / border while collapsed — they would otherwise show
-     through the `grid-template-rows: 0fr` collapse and look like a stray
-     1px line under the group toggle. */
+  /* No vertical padding while collapsed — it would otherwise show through
+     the `grid-template-rows: 0fr` collapse. */
   padding-block: 0;
-  padding-inline-start: 0.55rem;
-  margin-inline-start: 0.85rem;
-  border-inline-start: 0 solid var(--rd-nav-bw-border);
+  padding-inline-start: 0.45rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-panel-inner {
-  padding-block: 0.15rem;
-  border-inline-start-width: 1px;
+  padding-block: 0.1rem 0.2rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.52rem 0.7rem;
-  border-radius: 0.625rem;
-  font-size: 0.84rem;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 0.92rem;
   font-weight: 500;
   color: var(--rd-nav-bw-muted);
   border-color: transparent;
@@ -634,11 +843,12 @@ body.app-shell {
   background: var(--rd-nav-bw-active-bg);
   color: var(--rd-nav-bw-active-text);
   border-color: var(--rd-nav-bw-active-border);
+  box-shadow: var(--rd-nav-bw-active-shadow);
   font-weight: 600;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link.is-active .rd-nav-icon {
-  color: inherit;
+  color: var(--rd-nav-bw-active-icon);
   opacity: 1;
 }
 
@@ -663,25 +873,14 @@ body.app-shell {
   stroke-width: 2;
 }
 
-/* Pinned quick-access section: a flat list of links above the accordions.
-   Reuses .rd-nav-link styling for visual consistency but is slightly more
-   prominent than nested sub-links (a touch larger, no inset border/padding
-   from the panel-inner gutter) and is separated from the accordions below
-   by a hairline divider. */
+/* Pinned quick-access section: a flat list of links above the accordions,
+   same rows as the grouped links but without the group indent. The
+   section labels below separate it, so no divider. */
 .rd-sidebar-nav--accordion .rd-nav-pinned {
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.4rem;
-  border-bottom: 1px solid var(--rd-nav-bw-border);
-}
-
-.rd-sidebar-nav--accordion .rd-nav-link--pinned {
-  padding: 0.58rem 0.75rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--rd-nav-bw-text);
+  padding-bottom: 0.35rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon {
@@ -693,6 +892,10 @@ body.app-shell {
 .rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon svg {
   width: 1.15rem;
   height: 1.15rem;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link--pinned.is-active .rd-nav-icon {
+  opacity: 1;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link-label {
@@ -711,8 +914,9 @@ body.app-shell {
   height: 1.15rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: var(--rd-danger, #dc3545);
-  color: #fff;
+  background: var(--rd-danger);
+  color: var(--rd-on-danger);
+  font-family: var(--rd-font-num);
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.15rem;
@@ -733,13 +937,14 @@ body.app-shell {
   color: var(--rd-nav-bw-text);
   border: 0;
   border-radius: 0;
-  padding: 1rem 0.75rem;
+  padding: 1.4rem 0.9rem 1rem;
+  gap: 1rem;
   box-shadow: none;
 }
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand {
   color: var(--rd-nav-bw-text);
-  padding: 0.25rem 0.55rem 0.95rem;
+  padding: 0.3rem 0.5rem;
 }
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand:hover {
@@ -797,24 +1002,117 @@ body.app-shell {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.65rem 1rem;
-  background: color-mix(in srgb, var(--bs-secondary-bg) 88%, transparent);
-  backdrop-filter: blur(12px);
+  padding: 0.7rem 1rem;
+  /* Translucent page color: content scrolls under a frosted strip. */
+  background: color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
   border-bottom: 1px solid var(--bs-border-color);
 }
 
 @media (min-width: 992px) {
   .rd-topbar {
-    padding-inline: 1.35rem;
+    padding: 0.95rem 1.5rem;
   }
 }
 
+/* Start: mobile menu button + greeting. Shrinks first (greeting ellipsis). */
+.rd-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rd-hello {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.rd-hello__title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--rd-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[lang="ar"] .rd-hello__title {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+.rd-hello__date {
+  font-size: 0.8rem;
+  color: var(--rd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .rd-hello {
+    display: none;
+  }
+}
+
+/* End: search, bell, then the compact cluster (language, theme, CTA, avatar). */
 .rd-topbar-meta {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  flex: 0 1 auto;
+  min-width: 0;
   flex-wrap: wrap;
+}
+
+.rd-topbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rd-topbar-cta {
+  min-height: 2.375rem;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 0.85rem;
+  border-radius: 0.75rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 992px) {
+  .rd-topbar-meta {
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .rd-topbar-meta,
+  .rd-topbar-cluster {
+    gap: 0.3rem;
+  }
+  .rd-topbar .rd-lang-select {
+    max-width: 6.25rem;
+    padding-inline: 0.5rem 1.75rem;
+    text-overflow: ellipsis;
+  }
+  .rd-topbar-cta {
+    padding-inline: 0.6rem;
+  }
+}
+
+.rd-topbar .rd-lang-select {
+  min-height: 2.375rem;
+  border-radius: 0.75rem;
+  background-color: var(--rd-surface);
 }
 
 /* Topbar search — collapses to an icon button matching the bell /
@@ -827,33 +1125,98 @@ body.app-shell {
   align-items: center;
 }
 
+/* Topbar icon buttons (search, theme, bell, mobile menu) share one shape:
+   a surface square with a hairline, ink icon, surface-2 on hover. */
 .rd-search-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  gap: 0.5rem;
+  width: 2.375rem;
+  height: 2.375rem;
   padding: 0;
-  border: 0;
-  border-radius: var(--rd-radius-sm);
-  background: transparent;
-  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  background: var(--rd-surface);
+  color: var(--rd-ink);
   cursor: pointer;
   transition:
     background var(--rd-transition-fast),
+    border-color var(--rd-transition-fast),
     color var(--rd-transition-fast);
 }
 
-.rd-search-toggle:hover,
+.rd-search-toggle:hover {
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+}
+
 .rd-search-toggle:focus-visible {
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
   outline: none;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
 .rd-search[data-rd-search-open="true"] .rd-search-toggle {
-  background: var(--bs-tertiary-bg);
-  color: var(--rd-accent);
+  background: var(--rd-surface-2);
+  border-color: color-mix(in srgb, var(--rd-ink) 22%, var(--bs-border-color));
+}
+
+.rd-search-toggle__placeholder,
+.rd-search-toggle__kbd {
+  display: none;
+}
+
+/* Desktop: the toggle reads as a wide search field with the "/" shortcut. */
+@media (min-width: 992px) {
+  .rd-search-toggle {
+    width: clamp(13rem, 24vw, 21rem);
+    justify-content: flex-start;
+    gap: 0.55rem;
+    padding-inline: 0.8rem 0.5rem;
+    color: var(--rd-muted);
+  }
+
+  .rd-search-toggle svg {
+    flex: 0 0 auto;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .rd-search-toggle__placeholder {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+
+  .rd-search-toggle__kbd {
+    display: block;
+    flex: 0 0 auto;
+    min-width: 1.45rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 0.45rem;
+    background: var(--rd-surface-2);
+    color: var(--rd-muted);
+    font-family: var(--rd-font-num);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    box-shadow: none;
+  }
+
+  .rd-search-toggle:hover {
+    color: var(--rd-ink);
+  }
+
+  .rd-search .rd-search-panel {
+    width: max(100%, 20rem);
+  }
 }
 
 .rd-search-panel {
@@ -868,12 +1231,12 @@ body.app-shell {
   inset-inline-start: 0;
   z-index: 1080;
   width: min(16.5rem, calc(100vw - 1rem));
-  background: var(--bs-body-bg);
+  background: var(--rd-surface);
   color: var(--bs-body-color);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  box-shadow: var(--rd-shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.18));
-  padding: 0.35rem;
+  border-radius: var(--rd-radius-lg);
+  box-shadow: var(--rd-shadow-lg);
+  padding: 0.4rem;
   display: block;
   animation: rd-user-menu-in 0.12s ease-out;
 }
@@ -887,17 +1250,18 @@ body.app-shell {
   position: relative;
   display: flex;
   align-items: center;
-  background: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-sm);
-  padding: 0.22rem 0.45rem;
-  gap: 0.4rem;
+  background: var(--rd-surface-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  gap: 0.45rem;
   transition: border-color var(--rd-transition-fast), box-shadow var(--rd-transition-fast);
 }
 
 .rd-search-field:focus-within {
-  border-color: var(--rd-accent);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--rd-accent) 18%, transparent);
+  border-color: var(--rd-ink);
+  background: var(--rd-surface);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
 .rd-search-field-icon {
@@ -942,9 +1306,9 @@ body.app-shell {
   font-family: inherit;
   font-weight: 600;
   color: var(--bs-secondary-color);
-  background: var(--bs-body-bg);
+  background: var(--rd-surface);
   border: 1px solid var(--bs-border-color);
-  border-radius: 0.3rem;
+  border-radius: 0.4rem;
   padding: 0.03rem 0.3rem;
   line-height: 1;
 }
@@ -1022,14 +1386,15 @@ body.app-shell {
   margin-top: 0.4rem;
   padding: 0.55rem;
   border-top: 1px solid var(--bs-border-color);
-  color: var(--rd-accent);
+  color: var(--rd-ink);
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .rd-search-more:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
+  color: var(--rd-accent-ink);
   text-decoration: none;
 }
 
@@ -1053,15 +1418,20 @@ body.app-shell {
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: var(--rd-radius-sm);
+  border-radius: 0.75rem;
   border: 1px solid var(--bs-border-color);
-  background: var(--bs-secondary-bg);
-  color: inherit;
+  background: var(--rd-surface);
+  color: var(--rd-ink);
   transition: background var(--rd-transition-fast), border-color var(--rd-transition-fast);
 }
 
 .rd-menu-btn:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
+}
+
+.rd-menu-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
 @media (min-width: 992px) {
@@ -1086,74 +1456,111 @@ body.app-shell {
 
 /* Page chrome */
 .rd-page-header {
-  margin-bottom: 1.35rem;
+  margin-bottom: 1.5rem;
 }
 
 .rd-page-header h1,
 .rd-page-header .rd-heading-xl {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
+  color: var(--rd-ink);
+}
+
+.rd-page-header p,
+.rd-page-header .rd-text-muted {
+  color: var(--rd-muted);
 }
 
 /* Section tabs — settings, phone refresh, SIM inventory, API */
 .rd-section-tabs.nav-tabs {
   border-bottom: 1px solid var(--bs-border-color);
-  gap: 0.15rem;
+  gap: 0.35rem;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-inline: 0.25rem;
+  scroll-padding-inline: 0.25rem;
+}
+
+.rd-section-tabs.nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .rd-section-tabs .nav-link {
+  position: relative;
   border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: var(--rd-radius-sm) var(--rd-radius-sm) 0 0;
-  color: var(--bs-secondary-color);
+  border-radius: 0;
+  margin-bottom: -1px;
+  color: var(--rd-muted);
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.55rem 0.9rem;
+  padding: 0.6rem 0.85rem;
   white-space: nowrap;
+  background: transparent;
+  transition: color var(--rd-transition-fast);
+}
+
+.rd-section-tabs .nav-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0.85rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--rd-accent);
+  transform: scaleX(0);
+  opacity: 0;
   transition:
-    color var(--rd-transition-fast),
-    border-color var(--rd-transition-fast),
-    background var(--rd-transition-fast);
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.15s ease;
 }
 
 .rd-section-tabs .nav-link:hover {
-  color: var(--bs-body-color);
-  border-bottom-color: color-mix(in srgb, var(--bs-primary) 35%, transparent);
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 65%, transparent);
+  color: var(--rd-ink);
+  background: transparent;
 }
 
 .rd-section-tabs .nav-link.active {
-  color: var(--bs-primary);
+  color: var(--rd-ink);
   background: transparent;
-  border-bottom-color: var(--bs-primary);
+}
+
+.rd-section-tabs .nav-link.active::after {
+  transform: scaleX(1);
+  opacity: 1;
 }
 
 /* Cards */
 .rd-card {
-  background: var(--bs-secondary-bg);
+  background: var(--rd-surface);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  box-shadow: var(--rd-shadow-xs);
-  transition: box-shadow var(--rd-transition), border-color var(--rd-transition-fast);
+  border-radius: var(--rd-radius-lg);
+  box-shadow: var(--rd-shadow-card);
 }
 
-.rd-card:hover {
+a.rd-card {
+  color: inherit;
+  transition: transform var(--rd-transition);
+}
+
+a.rd-card:hover {
+  transform: translateY(-1px);
   box-shadow: var(--rd-shadow-sm);
 }
 
 .rd-card-body {
-  padding: 1.1rem 1.2rem;
+  padding: 1.15rem 1.25rem;
 }
 
 .rd-card-header {
-  padding: 0.85rem 1.2rem;
+  padding: 0.9rem 1.25rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  color: var(--rd-ink);
   border-bottom: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md) var(--rd-radius-md) 0 0;
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-secondary-bg));
+  border-radius: var(--rd-radius-lg) var(--rd-radius-lg) 0 0;
+  background: transparent;
 }
 
 /* Stat KPI */
@@ -1163,15 +1570,7 @@ body.app-shell {
 }
 
 .rd-stat::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: -20%;
-  inset-block-start: -40%;
-  width: 55%;
-  height: 120%;
-  background: radial-gradient(circle, var(--rd-accent-muted) 0%, transparent 70%);
-  pointer-events: none;
-  opacity: 0.9;
+  content: none;
 }
 
 .rd-stat .rd-card-body {
@@ -1180,10 +1579,13 @@ body.app-shell {
 }
 
 .rd-stat-value {
+  font-family: var(--rd-font-num);
   font-size: clamp(1.65rem, 3vw, 2.1rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   line-height: 1.1;
+  color: var(--rd-ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .rd-stat-icon {
@@ -1193,9 +1595,81 @@ body.app-shell {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  background: var(--rd-accent-muted);
-  color: var(--bs-primary);
-  margin-bottom: 0.65rem;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  margin-bottom: 0.75rem;
+}
+
+/* Trend chip (KPI deltas): direction-neutral numbers, so always LTR. */
+.rd-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--rd-font-num);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
+.rd-trend svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.rd-trend--up {
+  background: var(--rd-success-soft);
+  color: var(--rd-success);
+}
+
+.rd-trend--down {
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning-ink);
+}
+
+/* Loading placeholder. The sweep runs on a pseudo-element (transform only). */
+.rd-skeleton {
+  --rd-skeleton-from: -100%;
+  --rd-skeleton-to: 100%;
+  position: relative;
+  display: block;
+  min-height: 1em;
+  overflow: hidden;
+  border-radius: var(--rd-radius-sm);
+  background: var(--rd-surface-2);
+  color: transparent;
+}
+
+[dir="rtl"] .rd-skeleton {
+  --rd-skeleton-from: 100%;
+  --rd-skeleton-to: -100%;
+}
+
+.rd-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--rd-surface) 65%, transparent),
+    transparent
+  );
+  transform: translateX(var(--rd-skeleton-from));
+  animation: rd-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes rd-skeleton-sweep {
+  to {
+    transform: translateX(var(--rd-skeleton-to));
+  }
 }
 
 .rd-stat-icon svg {
@@ -1208,26 +1682,34 @@ body.app-shell {
 
 /* Filter toolbar */
 .rd-filter-bar .form-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--bs-secondary-color);
-  margin-bottom: 0.25rem;
+  color: var(--rd-muted);
+  margin-bottom: 0.3rem;
 }
 
 .rd-filter-bar .form-control,
 .rd-filter-bar .form-select {
-  border-radius: var(--rd-radius-sm);
   font-size: 0.875rem;
 }
 
-/* Tables */
+/* Tables — Bootstrap paints cells with the page color; inside Pearl cards
+   they must stay on the card surface. */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--rd-ink);
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-hover-bg: var(--rd-surface-2);
+  --bs-table-hover-color: var(--rd-ink);
+  --bs-table-striped-bg: color-mix(in srgb, var(--rd-surface-2) 55%, transparent);
+  --bs-table-active-bg: var(--rd-surface-2);
+}
+
 .rd-table-wrap {
-  border-radius: var(--rd-radius-md);
+  border-radius: var(--rd-radius-lg);
   overflow: hidden;
   border: 1px solid var(--bs-border-color);
-  background: var(--bs-secondary-bg);
+  background: var(--rd-surface);
 }
 
 .rd-table-wrap .table {
@@ -1235,12 +1717,10 @@ body.app-shell {
 }
 
 .rd-table-wrap thead th {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--bs-secondary-color);
-  background: var(--bs-tertiary-bg) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rd-muted);
+  background: var(--rd-surface) !important;
   border-bottom: 1px solid var(--bs-border-color);
   white-space: nowrap;
 }
@@ -1248,11 +1728,15 @@ body.app-shell {
 .rd-table-wrap tbody td {
   vertical-align: middle;
   padding-block: 0.85rem;
-  border-color: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  border-color: var(--bs-border-color);
+}
+
+.rd-table-wrap tbody tr:last-child > td {
+  border-bottom: 0;
 }
 
 .rd-table-wrap.table-responsive {
-  border-radius: var(--rd-radius-md);
+  border-radius: var(--rd-radius-lg);
 }
 
 .rd-card > .table-responsive.rd-table-wrap {
@@ -1262,27 +1746,24 @@ body.app-shell {
   border-top: 1px solid var(--bs-border-color);
 }
 
-[data-bs-theme="light"] .rd-table-wrap .table-hover > tbody > tr:hover > * {
-  --bs-table-hover-bg: rgba(79, 70, 229, 0.04);
-}
-
-[data-bs-theme="dark"] .rd-table-wrap .table-hover > tbody > tr:hover > * {
-  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
-}
-
-/* Badges */
+/* Badges — soft status pills with a leading dot */
 .rd-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.72rem;
+  gap: 0.35rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.28rem 0.55rem;
+  line-height: 1.3;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  white-space: nowrap;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
-.rd-badge--pending {
+.rd-badge--pending,
+.rd-badge--warning {
   background: var(--rd-warning-soft);
   color: var(--rd-warning-ink);
 }
@@ -1298,19 +1779,66 @@ body.app-shell {
 }
 
 .rd-badge--neutral {
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
-  border: 1px solid var(--bs-border-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
+/* Count badges and badges that carry their own icon skip the dot. */
+:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral):not(.tabular-nums):not(:has(svg))::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rd-badge--neutral:not(.tabular-nums):not(:has(svg))::before {
+  background: var(--rd-faint);
 }
 
 /* Solid danger: needs a human, louder than a cancelled/failed chip. */
 .rd-badge--conflict {
   background: var(--rd-danger);
-  color: #fff;
+  color: var(--rd-surface);
 }
 
-[data-bs-theme="dark"] .rd-badge--conflict {
-  color: var(--bs-body-bg);
+/* Bootstrap contextual badges -> Pearl soft pills. Bootstrap's utilities are
+   !important (and some templates add .text-dark), so these must be too. */
+.badge:is(.bg-success, .text-bg-success, .bg-warning, .text-bg-warning, .bg-danger, .text-bg-danger, .bg-info, .text-bg-info, .bg-secondary, .text-bg-secondary) {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.badge:is(.bg-success, .text-bg-success) {
+  background-color: var(--rd-success-soft) !important;
+  color: var(--rd-success) !important;
+}
+
+.badge:is(.bg-warning, .text-bg-warning) {
+  background-color: var(--rd-warning-soft) !important;
+  color: var(--rd-warning-ink) !important;
+}
+
+.badge:is(.bg-danger, .text-bg-danger) {
+  background-color: var(--rd-danger-soft) !important;
+  color: var(--rd-danger) !important;
+}
+
+.badge:is(.bg-info, .text-bg-info) {
+  background-color: var(--rd-surface-2) !important;
+  color: var(--rd-ink) !important;
+}
+
+.badge:is(.bg-secondary, .text-bg-secondary) {
+  background-color: var(--rd-surface-2) !important;
+  color: var(--rd-muted) !important;
+}
+
+/* .text-bg-primary hard-codes white text; follow the ink primary pair. */
+.badge.text-bg-primary {
+  background-color: var(--rd-primary-bg) !important;
+  color: var(--rd-primary-fg) !important;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1506,18 +2034,19 @@ body.app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--rd-radius-sm);
+  border-radius: 0.75rem;
 }
 
 .btn {
-  border-radius: var(--rd-radius-sm);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  border-radius: 0.75rem;
   font-weight: 600;
   transition:
     background-color var(--rd-transition-fast),
     border-color var(--rd-transition-fast),
     color var(--rd-transition-fast),
     box-shadow var(--rd-transition-fast),
-    transform 0.1s ease;
+    transform 0.15s ease;
 }
 
 .btn:active:not(:disabled) {
@@ -1525,33 +2054,278 @@ body.app-shell {
 }
 
 .btn:focus-visible {
-  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.35);
+  box-shadow: var(--bs-btn-focus-box-shadow);
 }
 
 .btn-primary {
+  --bs-btn-color: var(--rd-primary-fg);
+  --bs-btn-bg: var(--rd-primary-bg);
+  --bs-btn-border-color: var(--rd-primary-bg);
+  --bs-btn-hover-color: var(--rd-primary-fg);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-primary-bg) 86%, var(--rd-surface));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-primary-bg) 86%, var(--rd-surface));
+  --bs-btn-active-color: var(--rd-primary-fg);
+  --bs-btn-active-bg: var(--rd-primary-bg);
+  --bs-btn-active-border-color: var(--rd-primary-bg);
+  --bs-btn-disabled-color: var(--rd-primary-fg);
+  --bs-btn-disabled-bg: var(--rd-primary-bg);
+  --bs-btn-disabled-border-color: var(--rd-primary-bg);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-accent:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* The one special orange action per screen (e.g. charge). */
+.btn-accent {
+  --bs-btn-color: var(--rd-on-accent);
   --bs-btn-bg: var(--rd-accent);
   --bs-btn-border-color: var(--rd-accent);
+  --bs-btn-hover-color: var(--rd-on-accent);
   --bs-btn-hover-bg: var(--rd-accent-hover);
   --bs-btn-hover-border-color: var(--rd-accent-hover);
+  --bs-btn-active-color: var(--rd-on-accent);
+  --bs-btn-active-bg: var(--rd-accent);
+  --bs-btn-active-border-color: var(--rd-accent);
+  --bs-btn-disabled-color: var(--rd-on-accent);
+  --bs-btn-disabled-bg: var(--rd-accent);
+  --bs-btn-disabled-border-color: var(--rd-accent);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem var(--rd-accent-soft);
+  font-weight: 700;
 }
 
 .btn-outline-secondary {
-  border-color: var(--bs-border-color);
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: var(--rd-surface);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: var(--rd-surface-2);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: var(--rd-surface-2);
+  --bs-btn-active-border-color: var(--bs-border-color);
+  --bs-btn-disabled-color: var(--rd-faint);
+  --bs-btn-disabled-bg: var(--rd-surface);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+/* Compiled Bootstrap hard-codes its blue/green/red here; map them to Pearl. */
+.btn-outline-primary {
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: var(--rd-ink);
+  --bs-btn-hover-color: var(--rd-primary-fg);
+  --bs-btn-hover-bg: var(--rd-primary-bg);
+  --bs-btn-hover-border-color: var(--rd-primary-bg);
+  --bs-btn-active-color: var(--rd-primary-fg);
+  --bs-btn-active-bg: var(--rd-primary-bg);
+  --bs-btn-active-border-color: var(--rd-primary-bg);
+  --bs-btn-disabled-color: var(--rd-faint);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--rd-danger);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-danger) 35%, transparent);
+  --bs-btn-hover-color: var(--rd-danger);
+  --bs-btn-hover-bg: var(--rd-danger-soft);
+  --bs-btn-hover-border-color: var(--rd-danger);
+  --bs-btn-active-color: var(--rd-danger);
+  --bs-btn-active-bg: var(--rd-danger-soft);
+  --bs-btn-active-border-color: var(--rd-danger);
+  --bs-btn-disabled-color: var(--rd-danger);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-danger) 35%, transparent);
+}
+
+.btn-outline-success {
+  --bs-btn-color: var(--rd-success);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-success) 35%, transparent);
+  --bs-btn-hover-color: var(--rd-success);
+  --bs-btn-hover-bg: var(--rd-success-soft);
+  --bs-btn-hover-border-color: var(--rd-success);
+  --bs-btn-active-color: var(--rd-success);
+  --bs-btn-active-bg: var(--rd-success-soft);
+  --bs-btn-active-border-color: var(--rd-success);
+  --bs-btn-disabled-color: var(--rd-success);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-success) 35%, transparent);
+}
+
+/* Warning = soft burnt-orange family, never Bootstrap's bright yellow. */
+.btn-warning,
+.btn-outline-warning {
+  --bs-btn-color: var(--rd-warning-ink);
+  --bs-btn-hover-color: var(--rd-warning-ink);
+  /* Fills stay at the soft tint so warning-ink text keeps >= 4.5:1;
+     feedback comes from the border. */
+  --bs-btn-hover-bg: var(--rd-warning-soft);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-warning) 70%, transparent);
+  --bs-btn-active-color: var(--rd-warning-ink);
+  --bs-btn-active-bg: var(--rd-warning-soft);
+  --bs-btn-active-border-color: var(--rd-warning-ink);
+  --bs-btn-disabled-color: var(--rd-warning-ink);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-warning) 35%, transparent);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-warning) 18%, transparent);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--rd-warning-soft);
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-warning) 35%, transparent);
+  --bs-btn-disabled-bg: var(--rd-warning-soft);
+}
+
+.btn-outline-warning {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-warning) 45%, transparent);
+  --bs-btn-disabled-bg: transparent;
+}
+
+/* Info = neutral (surface + hairline + ink), not cyan. */
+.btn-info,
+.btn-outline-info {
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: var(--rd-surface);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: var(--rd-surface-2);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: var(--rd-surface-2);
+  --bs-btn-active-border-color: var(--rd-ink);
+  --bs-btn-disabled-color: var(--rd-muted);
+  --bs-btn-disabled-bg: var(--rd-surface);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+/* Solid info is the "pressed" state of toggles: an ink hairline marks it. */
+.btn-info {
+  --bs-btn-bg: var(--rd-surface-2);
+  --bs-btn-border-color: var(--rd-ink);
+  --bs-btn-hover-border-color: var(--rd-ink);
+}
+
+.btn-success,
+.btn-danger {
+  --bs-btn-color: var(--rd-surface);
+  --bs-btn-hover-color: var(--rd-surface);
+  --bs-btn-active-color: var(--rd-surface);
+  --bs-btn-disabled-color: var(--rd-surface);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--rd-success);
+  --bs-btn-border-color: var(--rd-success);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-success) 86%, var(--rd-ink));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-success) 86%, var(--rd-ink));
+  --bs-btn-active-bg: var(--rd-success);
+  --bs-btn-active-border-color: var(--rd-success);
+  --bs-btn-disabled-bg: var(--rd-success);
+  --bs-btn-disabled-border-color: var(--rd-success);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--rd-danger);
+  --bs-btn-border-color: var(--rd-danger);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-danger) 86%, var(--rd-ink));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-danger) 86%, var(--rd-ink));
+  --bs-btn-active-bg: var(--rd-danger);
+  --bs-btn-active-border-color: var(--rd-danger);
+  --bs-btn-disabled-bg: var(--rd-danger);
+  --bs-btn-disabled-border-color: var(--rd-danger);
+}
+
+/* Text links in tables and lists (customer names, product lines, people):
+   ink, no underline at rest; text-safe orange + underline on hover. The
+   underline is !important to beat .text-decoration-none on the same anchors. */
+a.fw-semibold:not(.btn),
+a.rd-person__name {
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+
+a.fw-semibold:not(.btn):hover,
+a.rd-person__name:hover {
+  color: var(--rd-accent-ink);
+  text-decoration: underline !important;
 }
 
 /* Forms */
 .form-control,
 .form-select {
-  border-radius: var(--rd-radius-sm);
+  border-radius: 0.75rem;
+  background-color: var(--rd-surface);
+  border-color: var(--bs-border-color);
+  color: var(--rd-ink);
   transition:
     border-color var(--rd-transition-fast),
     box-shadow var(--rd-transition-fast);
 }
 
+.form-control::placeholder {
+  color: var(--rd-muted);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
 .form-control:focus,
 .form-select:focus {
-  border-color: rgba(var(--bs-primary-rgb), 0.55);
-  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.18);
+  background-color: var(--rd-surface);
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+.form-check-input {
+  background-color: var(--rd-surface);
+  border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+}
+
+.form-check-input:checked {
+  background-color: var(--rd-accent);
+  border-color: var(--rd-accent);
+}
+
+.form-check-input:focus {
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+/* Pearl switch: grey track that turns orange, white knob with a soft shadow.
+   Sized in em (= 2.25rem x 1.3rem at body size) so wrappers that bump
+   font-size to scale the switch keep working. */
+.form-switch .form-check-input,
+.form-switch .form-check-input:focus,
+[data-bs-theme] .form-switch .form-check-input:not(:checked):not(:focus) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3.1' fill='white'/%3e%3c/svg%3e");
+}
+
+.form-switch .form-check-input {
+  width: 2.25em;
+  height: 1.3em;
+  margin-top: 0.1em;
+  border: 0;
+  /* >= 3:1 against --rd-surface in both themes (non-text contrast). */
+  background-color: color-mix(in srgb, var(--rd-ink) 48%, var(--rd-surface));
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--rd-ink) 10%, transparent);
+  cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+  background-color: var(--rd-accent);
+}
+
+.form-switch .form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem var(--rd-accent-soft);
 }
 
 @keyframes rd-fade-in {
@@ -1575,9 +2349,9 @@ body.app-shell {
 }
 
 .rd-theme-toggle .btn.active {
-  background: var(--bs-primary);
-  border-color: var(--bs-primary);
-  color: #fff;
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
 }
 
 /* New single-icon theme toggle. Visually matches .rd-search-toggle and
@@ -1589,24 +2363,27 @@ body.app-shell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.375rem;
+  height: 2.375rem;
   padding: 0;
-  border: 0;
-  border-radius: var(--rd-radius-sm);
-  background: transparent;
-  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.75rem;
+  background: var(--rd-surface);
+  color: var(--rd-ink);
   cursor: pointer;
   transition:
     background var(--rd-transition-fast),
     color var(--rd-transition-fast);
 }
 
-.rd-theme-btn:hover,
+.rd-theme-btn:hover {
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+}
+
 .rd-theme-btn:focus-visible {
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
   outline: none;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
 .rd-theme-icon { display: none; }
@@ -1634,8 +2411,9 @@ body.app-shell {
   gap: 0.5rem;
   padding: 0.55rem 0.85rem;
   padding-top: max(0.55rem, env(safe-area-inset-top));
-  background: color-mix(in srgb, var(--bs-secondary-bg) 92%, transparent);
-  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
   border-bottom: 1px solid var(--bs-border-color);
 }
 
@@ -1652,30 +2430,31 @@ body.app-shell {
   align-items: center;
   gap: 0.3rem;
   max-width: 9.5rem;
-  padding: 0.28rem 0.55rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
-  background: color-mix(in srgb, var(--bs-body-bg) 70%, var(--bs-secondary-bg));
-  color: var(--bs-body-color);
+  border: 1px solid transparent;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
   text-decoration: none;
-  font-weight: 800;
+  font-family: var(--rd-font-num);
+  font-weight: 700;
   line-height: 1;
   flex: 0 0 auto;
+  transition: border-color var(--rd-transition-fast);
 }
 .rd-employee-wallet:hover,
 .rd-employee-wallet:focus-visible {
-  border-color: color-mix(in srgb, var(--bs-primary) 35%, var(--bs-border-color));
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
   color: inherit;
+  outline: none;
 }
 .rd-employee-wallet.is-pos {
   color: var(--rd-success);
-  border-color: color-mix(in srgb, var(--rd-success) 35%, var(--bs-border-color));
-  background: color-mix(in srgb, var(--rd-success-soft) 70%, var(--bs-body-bg));
+  background: var(--rd-success-soft);
 }
 .rd-employee-wallet.is-neg {
   color: var(--rd-danger);
-  border-color: color-mix(in srgb, var(--rd-danger) 35%, var(--bs-border-color));
-  background: color-mix(in srgb, var(--rd-danger-soft) 70%, var(--bs-body-bg));
+  background: var(--rd-danger-soft);
 }
 .rd-employee-wallet__icon {
   display: inline-flex;
@@ -1724,7 +2503,12 @@ body.app-shell {
 }
 .rd-employee-title__link:hover,
 .rd-employee-title__link:focus-visible {
-  color: var(--bs-primary);
+  color: var(--rd-accent-ink);
+}
+
+html[lang="ar"] .rd-employee-title {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
 }
 
 .rd-lang-select {
@@ -1868,68 +2652,14 @@ body.app-shell {
   white-space: nowrap;
 }
 
-/* Login alignment */
-.login-shell {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-[data-bs-theme="light"] .login-shell {
-  background:
-    radial-gradient(ellipse 56.25rem 31.25rem at 10% -10%, rgba(79, 70, 229, 0.12), transparent 55%),
-    radial-gradient(ellipse 43.75rem 25rem at 100% 100%, rgba(8, 145, 178, 0.1), transparent 50%),
-    var(--bs-body-bg);
-}
-
-[data-bs-theme="dark"] .login-shell {
-  background:
-    radial-gradient(ellipse 50rem 30rem at 15% 0%, rgba(129, 140, 248, 0.14), transparent 55%),
-    radial-gradient(ellipse 37.5rem 25rem at 95% 90%, rgba(34, 211, 238, 0.08), transparent 45%),
-    var(--bs-body-bg);
-}
-
-.login-card {
-  max-width: 26.25rem;
-  width: 100%;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
-  background: var(--bs-secondary-bg);
-}
-
-.login-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-
-.login-brand-img {
-  width: 100%;
-  max-width: 13rem;
-  max-height: 6rem;
-  height: auto;
-  object-fit: contain;
-}
-
-@media (min-width: 576px) {
-  .login-brand-img {
-    max-width: 15rem;
-    max-height: 7rem;
-  }
-}
-
 /* Empty state */
 .empty-state {
   border: 1px dashed var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  padding: 2rem 1.25rem;
+  border-radius: var(--rd-radius-lg);
+  padding: 2.25rem 1.25rem;
   text-align: center;
-  color: var(--bs-secondary-color);
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 40%, var(--bs-secondary-bg));
+  color: var(--rd-muted);
+  background: var(--rd-surface);
 }
 
 /* Sky reconcile — compact run strip + waiting steps */
@@ -2059,16 +2789,14 @@ body.app-shell {
   padding-bottom: 0.65rem;
 }
 
-/* Employee mobile bottom shortcuts — floating rail + protruding active bubble */
+/* Employee mobile bottom shortcuts — glass rail, ink Sales FAB, orange dot
+   marks the active tab. */
 .rd-mobile-tabbar {
   --rd-tab-n: 5;
   --rd-tab-active: 2;
   --rd-tab-bubble: 3.35rem;
-  --rd-tab-notch-r: calc(var(--rd-tab-bubble) / 2 + 0.42rem);
-  /* LTR: slot centers left→right. RTL overridden below. */
-  --rd-tab-cx: calc((var(--rd-tab-active) + 0.5) / var(--rd-tab-n) * 100%);
   --rd-tab-rail-h: 4.05rem;
-  --rd-tab-rail-bg: var(--bs-secondary-bg);
+  --rd-tab-rail-bg: color-mix(in srgb, var(--rd-surface) 85%, transparent);
   --rd-tab-pad-inline: 0.7rem;
   --rd-tab-pad-bottom: calc(0.45rem + env(safe-area-inset-bottom));
   position: fixed;
@@ -2084,8 +2812,14 @@ body.app-shell {
   pointer-events: none;
 }
 
-[dir="rtl"] .rd-mobile-tabbar {
-  --rd-tab-cx: calc((var(--rd-tab-n) - var(--rd-tab-active) - 0.5) / var(--rd-tab-n) * 100%);
+/* Wider screens: keep the bar over the employee column (.rd-employee-main
+   max-width + inline padding), not stretched across the viewport. */
+@media (min-width: 768px) {
+  .rd-mobile-tabbar {
+    --rd-tab-pad-inline: 1rem;
+    max-width: 40rem;
+    margin-inline: auto;
+  }
 }
 
 .rd-mobile-tabbar__rail {
@@ -2093,37 +2827,19 @@ body.app-shell {
   inset-inline: var(--rd-tab-pad-inline);
   bottom: var(--rd-tab-pad-bottom);
   height: var(--rd-tab-rail-h);
-  border-radius: 1.65rem;
+  border-radius: 1.4rem;
+  border: 1px solid var(--bs-border-color);
   background: var(--rd-tab-rail-bg);
-  box-shadow:
-    0 10px 28px color-mix(in srgb, #000 12%, transparent),
-    0 1px 0 color-mix(in srgb, #fff 55%, transparent) inset;
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: var(--rd-shadow-md);
   pointer-events: none;
-  /* Smooth circular notch from the top edge — no box-shadow “wings”. */
-  -webkit-mask-image:
-    linear-gradient(#000 0 0),
-    radial-gradient(
-      circle at var(--rd-tab-cx) 0,
-      #000 0,
-      #000 var(--rd-tab-notch-r),
-      transparent calc(var(--rd-tab-notch-r) + 0.5px)
-    );
-  -webkit-mask-size: 100% 100%, 100% 100%;
-  -webkit-mask-position: 0 0, 0 0;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-composite: destination-out;
-  mask-image:
-    linear-gradient(#000 0 0),
-    radial-gradient(
-      circle at var(--rd-tab-cx) 0,
-      #000 0,
-      #000 var(--rd-tab-notch-r),
-      transparent calc(var(--rd-tab-notch-r) + 0.5px)
-    );
-  mask-size: 100% 100%, 100% 100%;
-  mask-position: 0 0, 0 0;
-  mask-repeat: no-repeat;
-  mask-composite: exclude;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rd-mobile-tabbar__rail {
+    background: var(--rd-surface);
+  }
 }
 
 .rd-mobile-tabbar__items {
@@ -2152,7 +2868,7 @@ body.app-shell {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
   text-decoration: none;
   font: inherit;
   line-height: 1.1;
@@ -2162,27 +2878,26 @@ body.app-shell {
 
 .rd-mobile-tabbar__item:hover,
 .rd-mobile-tabbar__item:focus-visible {
-  color: var(--bs-body-color);
+  color: var(--rd-ink);
   background: transparent;
+  outline: none;
 }
 
+/* Regular tabs: the bubble is a small orange dot under the active label. */
 .rd-mobile-tabbar__bubble {
   position: absolute;
-  top: calc(var(--rd-tab-bubble) / -2);
+  bottom: 0.2rem;
   left: 50%;
-  width: var(--rd-tab-bubble);
-  height: var(--rd-tab-bubble);
+  width: 0.3rem;
+  height: 0.3rem;
   border-radius: 50%;
-  background: var(--rd-tab-rail-bg);
-  transform: translateX(-50%) scale(0.55);
+  background: var(--rd-accent);
+  transform: translateX(-50%) scale(0);
   opacity: 0;
   pointer-events: none;
-  box-shadow: 0 4px 14px color-mix(in srgb, #000 14%, transparent);
   transition:
-    transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1),
-    opacity 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
 }
 
 .rd-mobile-tabbar__icon {
@@ -2193,29 +2908,27 @@ body.app-shell {
   justify-content: center;
   width: 1.55rem;
   height: 1.55rem;
-  transition: transform 0.28s cubic-bezier(0.34, 1.3, 0.64, 1), color 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .rd-mobile-tabbar__label {
   position: relative;
   z-index: 1;
   font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
   color: inherit;
-  transition: color 0.2s ease, font-weight 0.2s ease;
 }
 
 .rd-mobile-tabbar__item.is-active {
-  color: var(--bs-body-color);
+  color: var(--rd-ink);
 }
 
 .rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__label {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__bubble {
@@ -2223,27 +2936,62 @@ body.app-shell {
   transform: translateX(-50%) scale(1);
 }
 
-.rd-mobile-tabbar__item.is-active .rd-mobile-tabbar__icon {
+/* Sales (center): an ink FAB that always protrudes above the rail, ringed
+   in the page color; the orange dot on its corner marks it active. The
+   icon lifts by half the bubble so it sits centered inside it. */
+.rd-mobile-tabbar .rd-mobile-tabbar__item--sales .rd-mobile-tabbar__bubble {
+  top: calc(var(--rd-tab-bubble) / -2);
+  bottom: auto;
+  width: var(--rd-tab-bubble);
+  height: var(--rd-tab-bubble);
+  border-radius: 1.1rem;
+  background: var(--rd-primary-bg);
+  box-shadow:
+    var(--rd-shadow-float),
+    0 0 0 0.3rem var(--bs-body-bg);
+  opacity: 1;
+  transform: translateX(-50%);
+  /* The FAB sits above the items layer; it must catch taps itself (its
+     parent <a> still receives the click). */
+  pointer-events: auto;
+}
+
+.rd-mobile-tabbar .rd-mobile-tabbar__item--sales:active .rd-mobile-tabbar__bubble {
+  transform: translateX(-50%) scale(0.95);
+}
+
+.rd-mobile-tabbar__item--sales .rd-mobile-tabbar__bubble::after {
+  content: "";
+  position: absolute;
+  top: -0.2rem;
+  inset-inline-end: -0.2rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--rd-accent);
+  border: 2px solid var(--bs-body-bg);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+.rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__bubble::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.rd-mobile-tabbar .rd-mobile-tabbar__item--sales .rd-mobile-tabbar__icon {
   transform: translateY(calc(var(--rd-tab-bubble) / -2));
-  color: var(--bs-body-color);
+  color: var(--rd-primary-fg);
 }
 
-/* Sales (center): distinct teal bubble when active */
-.rd-mobile-tabbar__item--sales.is-active {
-  color: var(--rd-accent-2);
-}
-
-.rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__bubble {
-  background: var(--rd-accent-2);
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--rd-accent-2) 38%, transparent);
-}
-
-.rd-mobile-tabbar__item--sales.is-active .rd-mobile-tabbar__icon {
-  color: #fff;
-}
-
-.rd-mobile-tabbar__item--sales:not(.is-active) .rd-mobile-tabbar__icon {
-  color: var(--rd-accent-2);
+.rd-mobile-tabbar__item--sales:focus-visible .rd-mobile-tabbar__bubble {
+  box-shadow:
+    var(--rd-shadow-float),
+    0 0 0 0.3rem var(--bs-body-bg),
+    0 0 0 0.5rem var(--rd-accent-soft);
 }
 
 /* Soft dim while tabbar HTMX navigation is in flight */
@@ -2268,11 +3016,11 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 
 /* List group inside cards — management */
 .rd-list-flush .list-group-item {
-  border-color: color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  border-color: var(--bs-border-color);
 }
 
 .rd-list-flush .list-group-item-action:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2327,6 +3075,38 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 85%, var(--bs-secondary-bg));
 }
 
+/* Hero KPI: the one inverted card on a page (ink in light, pearl in dark).
+   Prefixed with .rd-stat so it outranks the dashboard rules in app.css. */
+.rd-stat.rd-stat--hero {
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  box-shadow: var(--rd-shadow-sm);
+}
+
+.rd-stat.rd-stat--hero .rd-stat-icon {
+  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
+  color: var(--rd-accent);
+}
+
+.rd-stat.rd-stat--hero .rd-stat-value,
+.rd-stat.rd-stat--hero .kpi-info {
+  color: var(--rd-primary-fg);
+}
+
+.rd-stat.rd-stat--hero .rd-label,
+.rd-stat.rd-stat--hero .rd-stat-footnote {
+  color: color-mix(in srgb, var(--rd-primary-fg) 66%, transparent);
+}
+
+.rd-stat.rd-stat--hero .text-secondary {
+  color: color-mix(in srgb, var(--rd-primary-fg) 62%, transparent) !important;
+}
+
+.rd-stat.rd-stat--hero .rd-stat-meta {
+  border-top-color: color-mix(in srgb, var(--rd-primary-fg) 16%, transparent);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Data tables — shell, density, zebra, sticky header                        */
 /* -------------------------------------------------------------------------- */
@@ -2348,34 +3128,28 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   position: sticky;
   top: 0;
   z-index: 2;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-  background: color-mix(in srgb, var(--bs-secondary-bg) 92%, var(--bs-tertiary-bg));
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rd-muted);
+  background: var(--rd-surface);
   border-bottom: 1px solid var(--bs-border-color);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--bs-border-color) 55%, transparent);
-  padding: 0.65rem var(--rd-table-row-pad-x);
+  box-shadow: 0 1px 0 var(--bs-border-color);
+  padding: 0.7rem var(--rd-table-row-pad-x);
   white-space: nowrap;
 }
 
 .rd-table-modern tbody td {
   padding: var(--rd-table-row-pad-y) var(--rd-table-row-pad-x);
-  border-bottom: 1px solid color-mix(in srgb, var(--bs-border-color) 55%, transparent);
+  border-bottom: 1px solid var(--bs-border-color);
   vertical-align: middle;
 }
 
-.rd-table-modern tbody tr {
-  transition: background-color var(--rd-transition-fast);
-}
-
-.rd-table-modern tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 35%, transparent);
+.rd-table-modern tbody tr:last-child > td {
+  border-bottom: 0;
 }
 
 .rd-table-modern tbody tr:hover {
-  background: color-mix(in srgb, var(--rd-accent-muted) 55%, var(--bs-secondary-bg));
+  background: var(--rd-surface-2);
 }
 
 .rd-table-modern .tabular-nums {
@@ -2407,8 +3181,8 @@ tr.rd-row-pending {
   justify-content: space-between;
   gap: 0.75rem;
   font-weight: 600;
-  color: var(--bs-body-color);
-  border-radius: var(--rd-radius, 0.75rem);
+  color: var(--rd-ink);
+  border-radius: var(--rd-radius-lg);
 }
 .rd-filter-card > summary::-webkit-details-marker {
   display: none;
@@ -2417,10 +3191,10 @@ tr.rd-row-pending {
   content: "";
 }
 .rd-filter-card > summary:hover {
-  background: color-mix(in srgb, var(--bs-body-color) 4%, transparent);
+  background: var(--rd-surface-2);
 }
 .rd-filter-card > summary:focus-visible {
-  outline: 2px solid var(--rd-primary, #2563eb);
+  outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
 }
 .rd-filter-summary-left {
@@ -2432,14 +3206,14 @@ tr.rd-row-pending {
 .rd-filter-chevron {
   flex-shrink: 0;
   transition: transform 200ms ease;
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
 }
 .rd-filter-card[open] .rd-filter-chevron {
   transform: rotate(180deg);
 }
 .rd-filter-card[open] > summary {
   border-bottom: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius, 0.75rem) var(--rd-radius, 0.75rem) 0 0;
+  border-radius: var(--rd-radius-lg) var(--rd-radius-lg) 0 0;
 }
 .rd-filter-active-badge {
   display: inline-flex;
@@ -2450,8 +3224,9 @@ tr.rd-row-pending {
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 999px;
-  background: var(--rd-primary, #2563eb);
-  color: #fff;
+  font-family: var(--rd-font-num);
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
   line-height: 1;
 }
 
@@ -2488,10 +3263,10 @@ tr.rd-row-pending {
 
 .rd-mobile-row-card {
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  padding: 0.75rem 0.85rem;
-  background: var(--bs-secondary-bg);
-  box-shadow: var(--rd-shadow-xs);
+  border-radius: var(--rd-radius-lg);
+  padding: 0.8rem 0.9rem;
+  background: var(--rd-surface);
+  box-shadow: var(--rd-shadow-card);
 }
 
 .rd-stock-check-lines {
@@ -2892,13 +3667,38 @@ tr.rd-row-pending {
   border-color: var(--bs-border-color);
 }
 
-/* Pagination strip */
-.rd-pagination {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 25%, var(--bs-secondary-bg));
+/* Pagination — borderless pages, active page is an ink pill */
+.pagination {
+  --bs-pagination-color: var(--rd-ink);
+  --bs-pagination-bg: transparent;
+  --bs-pagination-border-color: transparent;
+  --bs-pagination-hover-color: var(--rd-ink);
+  --bs-pagination-hover-bg: var(--rd-surface-2);
+  --bs-pagination-hover-border-color: transparent;
+  --bs-pagination-focus-color: var(--rd-ink);
+  --bs-pagination-focus-bg: var(--rd-surface-2);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  --bs-pagination-active-color: var(--rd-primary-fg);
+  --bs-pagination-active-bg: var(--rd-primary-bg);
+  --bs-pagination-active-border-color: var(--rd-primary-bg);
+  --bs-pagination-disabled-color: var(--rd-muted);
+  --bs-pagination-disabled-bg: transparent;
+  --bs-pagination-disabled-border-color: transparent;
+  gap: 0.25rem;
 }
 
-.rd-pagination .page-link {
-  border-radius: var(--rd-radius-xs);
+.pagination .page-item .page-link {
+  margin: 0;
+  min-width: 2.1em;
+  text-align: center;
+  border-radius: 999px;
+  font-family: var(--rd-font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.rd-pagination {
+  background: var(--rd-surface);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2915,7 +3715,7 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-toolbar {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 30%, var(--bs-secondary-bg));
+  background: var(--rd-surface);
 }
 
 .rd-datagrid-sort {
@@ -2931,12 +3731,12 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-sort:hover {
-  color: var(--bs-link-color);
-  background: color-mix(in srgb, var(--rd-accent-muted) 40%, transparent);
+  color: var(--rd-ink);
+  background: var(--rd-surface-2);
 }
 
 .rd-datagrid-sort.is-active {
-  color: var(--bs-link-color);
+  color: var(--rd-ink);
 }
 
 .rd-datagrid-sort.is-asc::after {
@@ -2952,30 +3752,32 @@ tr.rd-row-pending {
 }
 
 .rd-datagrid-pagination__bar {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 22%, var(--bs-secondary-bg));
+  background: var(--rd-surface);
 }
 
 .rd-datagrid-pagination__pages .page-item.active .page-link {
-  background: var(--bs-primary);
-  border-color: var(--bs-primary);
-  color: #fff;
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
 }
 
 .rd-datagrid-per-page__link {
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--rd-radius-xs);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
   text-decoration: none;
-  color: var(--bs-link-color);
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
   font-weight: 600;
 }
 
 .rd-datagrid-per-page__link:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-datagrid-per-page__link.is-active {
-  background: color-mix(in srgb, var(--bs-primary) 18%, var(--bs-secondary-bg));
-  color: var(--bs-body-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-actions-details summary {
@@ -2994,8 +3796,8 @@ tr.rd-row-pending {
 }
 
 .rd-actions-details[open] summary {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bs-primary) 35%, transparent);
-  border-radius: var(--rd-radius-xs);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+  border-radius: 0.75rem;
 }
 
 /* SIM inventory — receive form, table, dialogs, autocomplete */
@@ -3325,7 +4127,8 @@ body.rd-inv-dialog-open {
 /* Toasts (static/js/toast.js)                                                */
 /* -------------------------------------------------------------------------- */
 /* Stacked under the topbar on the inline-end side: top-left in Arabic,
-   top-right in English. Frosted glass so the page stays readable beneath. */
+   top-right in English. Inverted ink surface (light in dark mode); the
+   status reads from the colored icon dot and the draining timer. */
 .rd-toast-region {
   position: fixed;
   top: calc(4.35rem + env(safe-area-inset-top));
@@ -3339,25 +4142,19 @@ body.rd-inv-dialog-open {
 }
 
 .rd-toast {
-  --rd-toast-tone: var(--rd-info);
+  --rd-toast-tone: var(--rd-primary-fg);
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 0.7rem;
-  padding: 0.75rem 0.7rem 0.9rem;
-  padding-inline-start: 0.8rem;
-  border-radius: var(--rd-radius-md);
-  border: 1px solid color-mix(in srgb, var(--rd-toast-tone) 30%, transparent);
-  background:
-    linear-gradient(color-mix(in srgb, var(--rd-toast-tone) 9%, transparent), color-mix(in srgb, var(--rd-toast-tone) 9%, transparent)),
-    color-mix(in srgb, var(--bs-body-bg) 68%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
-  box-shadow:
-    0 14px 34px -12px color-mix(in srgb, var(--rd-toast-tone) 45%, rgba(15, 23, 42, 0.35)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  color: var(--bs-body-color);
+  padding: 0.7rem 0.65rem 0.85rem;
+  padding-inline-start: 0.75rem;
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--rd-primary-fg) 8%, transparent);
+  background: var(--rd-primary-bg);
+  box-shadow: var(--rd-shadow-lg);
+  color: var(--rd-primary-fg);
   overflow: hidden;
   pointer-events: auto;
   opacity: 0;
@@ -3365,21 +4162,6 @@ body.rd-inv-dialog-open {
   transition:
     opacity 0.22s ease,
     transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15);
-}
-
-[data-bs-theme="dark"] .rd-toast {
-  background:
-    linear-gradient(color-mix(in srgb, var(--rd-toast-tone) 12%, transparent), color-mix(in srgb, var(--rd-toast-tone) 12%, transparent)),
-    color-mix(in srgb, var(--bs-body-bg) 62%, transparent);
-  box-shadow:
-    0 16px 40px -12px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
-}
-
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .rd-toast {
-    background: var(--bs-body-bg);
-  }
 }
 
 .rd-toast.is-visible {
@@ -3393,20 +4175,25 @@ body.rd-inv-dialog-open {
   transition-duration: 0.2s;
 }
 
-.rd-toast--success { --rd-toast-tone: var(--rd-success); }
-.rd-toast--error { --rd-toast-tone: var(--rd-danger); }
-.rd-toast--warning { --rd-toast-tone: var(--rd-warning); }
-.rd-toast--info { --rd-toast-tone: var(--rd-info); }
+.rd-toast--success { --rd-toast-tone: var(--rd-success-on-ink); }
+.rd-toast--error { --rd-toast-tone: var(--rd-danger-on-ink); }
+.rd-toast--warning { --rd-toast-tone: var(--rd-warning-on-ink); }
+.rd-toast--info { --rd-toast-tone: var(--rd-primary-fg); }
 
 .rd-toast__icon {
   display: grid;
   place-items: center;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: 0.1rem;
   border-radius: 999px;
-  color: #fff;
+  color: var(--rd-primary-bg);
   background: var(--rd-toast-tone);
-  box-shadow: 0 4px 12px -4px var(--rd-toast-tone);
+}
+
+.rd-toast__icon svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .rd-toast__text {
@@ -3429,14 +4216,15 @@ body.rd-inv-dialog-open {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--bs-secondary-color);
+  color: color-mix(in srgb, var(--rd-primary-fg) 60%, transparent);
   transition: background var(--rd-transition-fast), color var(--rd-transition-fast);
 }
 
 .rd-toast__close:hover,
 .rd-toast__close:focus-visible {
-  background: color-mix(in srgb, var(--bs-body-color) 9%, transparent);
-  color: var(--bs-body-color);
+  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
+  color: var(--rd-primary-fg);
+  outline: none;
 }
 
 /* Draining countdown; its animationend dismisses the toast (toast.js).
@@ -3445,9 +4233,9 @@ body.rd-inv-dialog-open {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  height: 3px;
+  height: 2px;
   background: var(--rd-toast-tone);
-  opacity: 0.6;
+  opacity: 0.7;
   transform-origin: left center;
 }
 
@@ -3485,7 +4273,10 @@ body.rd-inv-dialog-open {
 }
 
 /* Boosted navigation progress (static/js/nav.js). Lives on <html> so body
-   swaps never remove it. */
+   swaps never remove it. The bar grows with transform only: 0 -> 80% over
+   2.5s while loading (.is-active), then runs to 100% and fades (.is-done).
+   Idle state is scaleX(0) with no transitions so a new run always restarts
+   from zero. */
 .rd-nav-progress {
   position: fixed;
   inset-inline: 0;
@@ -3495,25 +4286,46 @@ body.rd-inv-dialog-open {
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.rd-nav-progress.is-active {
-  opacity: 1;
 }
 
 .rd-nav-progress::before {
   content: "";
   position: absolute;
-  inset-block: 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, var(--rd-accent), var(--rd-accent-2), transparent);
-  animation: rd-nav-progress 1.1s ease-in-out infinite;
+  inset: 0;
+  background: var(--rd-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
 }
 
-@keyframes rd-nav-progress {
-  from { left: -40%; }
-  to { left: 100%; }
+[dir="rtl"] .rd-nav-progress::before {
+  transform-origin: right center;
+}
+
+.rd-nav-progress.is-active {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.rd-nav-progress.is-active::before {
+  transform: scaleX(0.8);
+  transition: transform 2.5s cubic-bezier(0.1, 0.7, 0.3, 1);
+}
+
+.rd-nav-progress.is-done {
+  opacity: 0;
+  transition: opacity 0.3s ease 0.15s;
+}
+
+.rd-nav-progress.is-done::before {
+  transform: scaleX(1);
+  transition: transform 0.2s ease-out;
+}
+
+/* Content of the swapped region while the next page loads. */
+[data-rd-live].is-live-loading {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -3570,14 +4382,12 @@ body.rd-inv-dialog-open {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--rd-accent), var(--rd-accent-2, var(--rd-accent)));
-  color: #fff;
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
   font-weight: 700;
   font-size: 0.78rem;
-  letter-spacing: 0.02em;
   overflow: hidden;
   flex: 0 0 auto;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .rd-avatar img {
@@ -3604,11 +4414,13 @@ body.rd-inv-dialog-open {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0.55rem 0.25rem 0.3rem;
+  min-height: 2.375rem;
+  padding-block: 0.15rem;
+  padding-inline: 0.15rem 0.6rem;
   border-radius: 999px;
   border: 1px solid var(--bs-border-color);
-  background: var(--bs-secondary-bg);
-  color: inherit;
+  background: var(--rd-surface);
+  color: var(--rd-ink);
   transition: background var(--rd-transition-fast), border-color var(--rd-transition-fast);
   user-select: none;
 }
@@ -3617,12 +4429,17 @@ body.rd-inv-dialog-open {
 .rd-user-menu > summary::marker { content: ""; }
 
 .rd-user-menu > summary:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
+}
+
+.rd-user-menu > summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
 }
 
 .rd-user-menu[open] > summary {
-  border-color: var(--rd-accent);
-  background: var(--bs-tertiary-bg);
+  border-color: color-mix(in srgb, var(--rd-ink) 22%, var(--bs-border-color));
+  background: var(--rd-surface-2);
 }
 
 .rd-user-menu-name {
@@ -3653,12 +4470,12 @@ body.rd-inv-dialog-open {
   z-index: 1080;
   min-width: 16rem;
   max-width: calc(100vw - 1rem);
-  background: var(--bs-body-bg);
+  background: var(--rd-surface);
   color: var(--bs-body-color);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-md);
-  box-shadow: var(--rd-shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.18));
-  padding: 0.5rem;
+  border-radius: var(--rd-radius-lg);
+  box-shadow: var(--rd-shadow-lg);
+  padding: 0.45rem;
   animation: rd-user-menu-in 140ms ease-out;
 }
 
@@ -3672,8 +4489,8 @@ body.rd-inv-dialog-open {
   align-items: center;
   gap: 0.65rem;
   padding: 0.6rem;
-  border-radius: var(--rd-radius-sm);
-  background: var(--bs-secondary-bg);
+  border-radius: 0.75rem;
+  background: var(--rd-surface-2);
   margin-bottom: 0.35rem;
 }
 
@@ -3692,8 +4509,7 @@ body.rd-inv-dialog-open {
 
 .rd-user-menu-handle {
   font-size: 0.75rem;
-  color: var(--bs-secondary-color, var(--bs-body-color));
-  opacity: 0.75;
+  color: var(--rd-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3727,8 +4543,8 @@ body.rd-inv-dialog-open {
 
 .rd-user-menu-item:hover,
 .rd-user-menu-item:focus-visible {
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
   text-decoration: none;
   outline: none;
 }
@@ -3739,13 +4555,13 @@ body.rd-inv-dialog-open {
 }
 
 .rd-user-menu-item--danger {
-  color: var(--bs-danger, #dc3545);
+  color: var(--rd-danger);
 }
 
 .rd-user-menu-item--danger:hover,
 .rd-user-menu-item--danger:focus-visible {
-  background: color-mix(in srgb, var(--bs-danger, #dc3545) 12%, transparent);
-  color: var(--bs-danger, #dc3545);
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
 }
 
 .rd-user-menu-item--danger svg {
@@ -3757,11 +4573,51 @@ body.rd-inv-dialog-open {
   .rd-user-menu-panel { min-width: 14rem; }
 }
 
+/* Management topbar: the trigger is just the ink avatar circle. */
+.rd-user-menu--ava > summary {
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.rd-user-menu--ava > summary:hover,
+.rd-user-menu--ava[open] > summary {
+  background: transparent;
+}
+
+.rd-user-menu--ava .rd-avatar {
+  width: 2.375rem;
+  height: 2.375rem;
+  font-size: 0.95rem;
+  transition: box-shadow var(--rd-transition-fast);
+}
+
+html[lang="ar"] .rd-user-menu--ava .rd-avatar {
+  font-family: var(--rd-font-heading);
+}
+
+.rd-user-menu--ava > summary:hover .rd-avatar,
+.rd-user-menu--ava[open] .rd-avatar {
+  box-shadow: 0 0 0 3px var(--bs-border-color);
+}
+
 /* ---------------- Topbar notification bell ---------------- */
+/* Same square as the other topbar icon buttons (beats the summary pill). */
 .rd-notif-trigger {
   position: relative;
-  padding: 0.35rem 0.55rem !important;
+  justify-content: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  min-height: 0;
+  padding: 0 !important;
   gap: 0 !important;
+}
+
+.rd-user-menu > summary.rd-notif-trigger {
+  border-radius: 0.75rem;
 }
 
 .rd-notif-trigger svg { display: block; transform-origin: 50% 4px; }
@@ -3796,13 +4652,14 @@ body.rd-inv-dialog-open {
   height: 1.05rem;
   padding: 0 0.32rem;
   border-radius: 999px;
-  background: var(--rd-danger, #dc3545);
-  color: #fff;
+  background: var(--rd-danger);
+  color: var(--rd-on-danger);
+  font-family: var(--rd-font-num);
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1.05rem;
   text-align: center;
-  box-shadow: 0 0 0 2px var(--bs-secondary-bg);
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
 }
 
 .rd-notif-panel { min-width: 19rem; }
@@ -3823,8 +4680,9 @@ body.rd-inv-dialog-open {
   min-width: 1.5rem;
   padding: 0 0.45rem;
   border-radius: 999px;
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
   font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
@@ -3832,8 +4690,8 @@ body.rd-inv-dialog-open {
 }
 
 .rd-notif-count.is-active {
-  background: color-mix(in srgb, var(--rd-danger, #dc3545) 14%, transparent);
-  color: var(--rd-danger, #dc3545);
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
 }
 
 .rd-notif-empty {
@@ -3842,14 +4700,14 @@ body.rd-inv-dialog-open {
   gap: 0.5rem;
   padding: 0.7rem 0.7rem;
   margin-top: 0.25rem;
-  border-radius: var(--rd-radius-sm);
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
+  border-radius: 0.75rem;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
   font-size: 0.85rem;
 }
 
 .rd-notif-empty svg {
-  color: var(--rd-success, #198754);
+  color: var(--rd-success);
   opacity: 0.95;
 }
 
@@ -3863,6 +4721,9 @@ body.rd-inv-dialog-open {
   gap: 0.5rem;
   min-height: 220px;
   padding-top: 0.25rem;
+  /* Hidden tooltips still count for scroll width; keep them from widening
+     the page on phones. `clip` (unlike `hidden`) leaves the y axis visible. */
+  overflow-x: clip;
 }
 
 /* Subtle horizontal grid lines (4 levels) sitting behind the bars. */
@@ -3925,8 +4786,8 @@ body.rd-inv-dialog-open {
 .rd-mini-chart-bar-cell.is-today .rd-mini-chart-bar {
   background: linear-gradient(
     180deg,
-    var(--rd-success, #16a34a) 0%,
-    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+    var(--rd-accent) 0%,
+    color-mix(in srgb, var(--rd-accent) 45%, transparent) 100%
   );
 }
 
@@ -3986,36 +4847,40 @@ body.rd-inv-dialog-open {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Edge cells: nudge the tooltip inward so it doesn't clip outside the chart. */
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip {
-  left: 0;
+/* Edge cells (and their neighbours, which clip at 375px): nudge the tooltip
+   inward so it does not clip outside the chart.
+   Logical insets so the first (start) cell works in RTL as well. */
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)) .rd-mini-chart-tip {
+  left: auto;
+  inset-inline-start: 0;
   transform: translateY(4px);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:hover .rd-mini-chart-tip,
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:focus-within .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)):hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)):focus-within .rd-mini-chart-tip {
   transform: translateY(0);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip::after {
-  left: 12px;
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)) .rd-mini-chart-tip::after {
+  left: auto;
+  inset-inline-start: 12px;
   transform: none;
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)) .rd-mini-chart-tip {
   left: auto;
-  right: 0;
+  inset-inline-end: 0;
   transform: translateY(4px);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:hover .rd-mini-chart-tip,
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:focus-within .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)):hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)):focus-within .rd-mini-chart-tip {
   transform: translateY(0);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip::after {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)) .rd-mini-chart-tip::after {
   left: auto;
-  right: 12px;
+  inset-inline-end: 12px;
   transform: none;
 }
 
@@ -4111,7 +4976,7 @@ body.rd-inv-dialog-open {
   border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
 }
 
-/* Rank chip — gold/silver/bronze for top 3, neutral for the rest. */
+/* Rank chip — ink / accent / faint for the top 3, neutral for the rest. */
 .rd-top-rank {
   display: inline-flex;
   align-items: center;
@@ -4128,28 +4993,29 @@ body.rd-inv-dialog-open {
   flex: 0 0 auto;
 }
 
-.rd-top-item--rank-1 .rd-top-rank {
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  color: #78350f;
-  border-color: color-mix(in srgb, #f59e0b 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #f59e0b 35%, transparent);
+.rd-top-item--rank-1 .rd-top-rank,
+.rd-profit-rank__item:nth-child(1) .rd-profit-rank__idx {
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  border-color: var(--rd-primary-bg);
 }
 
-.rd-top-item--rank-2 .rd-top-rank {
-  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
-  color: #1f2937;
-  border-color: color-mix(in srgb, #9ca3af 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #6b7280 35%, transparent);
+.rd-top-item--rank-2 .rd-top-rank,
+.rd-profit-rank__item:nth-child(2) .rd-profit-rank__idx {
+  background: var(--rd-accent);
+  color: var(--rd-on-accent);
+  border-color: var(--rd-accent);
 }
 
-.rd-top-item--rank-3 .rd-top-rank {
-  background: linear-gradient(135deg, #fed7aa, #c2410c);
-  color: #fff;
-  border-color: color-mix(in srgb, #c2410c 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #c2410c 35%, transparent);
+.rd-top-item--rank-3 .rd-top-rank,
+.rd-profit-rank__item:nth-child(3) .rd-profit-rank__idx {
+  background: var(--rd-faint);
+  color: var(--rd-ink);
+  border-color: var(--rd-faint);
 }
 
-/* Letter avatar — color rotates per rank to mirror the supplier list look. */
+/* Letter avatar — neutral chip; every second one takes the accent tint,
+   matching the supplier list. */
 .rd-top-avatar {
   display: inline-flex;
   align-items: center;
@@ -4161,48 +5027,17 @@ body.rd-inv-dialog-open {
   font-size: 0.92rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, #6366f1 14%, transparent);
-  color: #6366f1;
-  border: 1px solid color-mix(in srgb, #6366f1 22%, transparent);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
   flex: 0 0 auto;
 }
 
-.rd-top-item:nth-child(6n+2) .rd-top-avatar {
-  background: color-mix(in srgb, #10b981 14%, transparent);
-  color: #059669;
-  border-color: color-mix(in srgb, #10b981 22%, transparent);
+.rd-top-item:nth-child(2n) .rd-top-avatar {
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent-ink);
+  border-color: color-mix(in srgb, var(--rd-accent) 22%, transparent);
 }
-
-.rd-top-item:nth-child(6n+3) .rd-top-avatar {
-  background: color-mix(in srgb, #f59e0b 16%, transparent);
-  color: #b45309;
-  border-color: color-mix(in srgb, #f59e0b 24%, transparent);
-}
-
-.rd-top-item:nth-child(6n+4) .rd-top-avatar {
-  background: color-mix(in srgb, #ec4899 14%, transparent);
-  color: #be185d;
-  border-color: color-mix(in srgb, #ec4899 22%, transparent);
-}
-
-.rd-top-item:nth-child(6n+5) .rd-top-avatar {
-  background: color-mix(in srgb, #06b6d4 14%, transparent);
-  color: #0e7490;
-  border-color: color-mix(in srgb, #06b6d4 22%, transparent);
-}
-
-.rd-top-item:nth-child(6n) .rd-top-avatar {
-  background: color-mix(in srgb, #8b5cf6 14%, transparent);
-  color: #7c3aed;
-  border-color: color-mix(in srgb, #8b5cf6 22%, transparent);
-}
-
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+1) .rd-top-avatar { color: #a5b4fc; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+2) .rd-top-avatar { color: #6ee7b7; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+3) .rd-top-avatar { color: #fcd34d; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+4) .rd-top-avatar { color: #f9a8d4; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+5) .rd-top-avatar { color: #67e8f9; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n)   .rd-top-avatar { color: #c4b5fd; }
 
 .rd-top-body {
   display: flex;
@@ -4249,8 +5084,8 @@ body.rd-inv-dialog-open {
   height: 100%;
   background: linear-gradient(
     90deg,
-    var(--rd-success, #198754) 0%,
-    color-mix(in srgb, var(--rd-success, #198754) 55%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 55%, transparent) 100%
   );
   border-radius: inherit;
 }
@@ -4382,24 +5217,6 @@ body.rd-inv-dialog-open {
   flex: 0 0 auto;
 }
 
-.rd-profit-rank__item:nth-child(1) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  color: #78350f;
-  border-color: color-mix(in srgb, #f59e0b 45%, transparent);
-}
-
-.rd-profit-rank__item:nth-child(2) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
-  color: #1f2937;
-  border-color: color-mix(in srgb, #9ca3af 45%, transparent);
-}
-
-.rd-profit-rank__item:nth-child(3) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #fed7aa, #c2410c);
-  color: #fff;
-  border-color: color-mix(in srgb, #c2410c 45%, transparent);
-}
-
 .rd-profit-rank__name--stack {
   align-items: flex-start;
   white-space: normal;
@@ -4448,8 +5265,8 @@ body.rd-inv-dialog-open {
   border-radius: inherit;
   background: linear-gradient(
     90deg,
-    var(--rd-success, #198754) 0%,
-    color-mix(in srgb, var(--rd-success, #198754) 50%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 50%, transparent) 100%
   );
   transition: width 0.35s ease;
 }
@@ -4457,8 +5274,8 @@ body.rd-inv-dialog-open {
 .rd-profit-rank__fill.is-neg {
   background: linear-gradient(
     90deg,
-    var(--rd-danger, #dc2626) 0%,
-    color-mix(in srgb, var(--rd-danger, #dc2626) 50%, transparent) 100%
+    var(--rd-danger) 0%,
+    color-mix(in srgb, var(--rd-danger) 50%, transparent) 100%
   );
 }
 
@@ -4522,8 +5339,8 @@ body.rd-inv-dialog-open {
 .rd-profit-rank--expense .rd-profit-rank__fill {
   background: linear-gradient(
     90deg,
-    var(--rd-danger, #dc2626) 0%,
-    color-mix(in srgb, var(--rd-danger, #dc2626) 45%, transparent) 100%
+    var(--rd-danger) 0%,
+    color-mix(in srgb, var(--rd-danger) 45%, transparent) 100%
   );
 }
 
@@ -4643,13 +5460,13 @@ body.rd-inv-dialog-open {
 .rd-mini-chart--profit .rd-mini-chart-bar {
   background: linear-gradient(
     180deg,
-    var(--rd-success, #16a34a) 0%,
-    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 45%, transparent) 100%
   );
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success, #16a34a) 32%, transparent);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success) 32%, transparent);
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
@@ -4734,12 +5551,16 @@ body.rd-inv-dialog-open {
   gap: 1.25rem 1.75rem;
 }
 
+.rd-phone-lifecycle,
 .rd-phone-donut {
-  --donut-active: #198754;
-  --donut-due: #d97706;
-  --donut-grace: #0d6efd;
-  --donut-overdue: #dc3545;
-  --donut-empty: color-mix(in srgb, var(--bs-border-color) 55%, var(--bs-tertiary-bg));
+  --donut-active: var(--rd-ink);
+  --donut-due: var(--rd-accent);
+  --donut-grace: var(--rd-muted);
+  --donut-overdue: var(--rd-danger);
+}
+
+.rd-phone-donut {
+  --donut-empty: var(--bs-border-color);
   --donut-active-end: 0%;
   --donut-due-end: 0%;
   --donut-grace-end: 0%;
@@ -4748,6 +5569,11 @@ body.rd-inv-dialog-open {
   height: 9.5rem;
   flex: 0 0 auto;
   margin-inline: auto;
+}
+
+/* The dark hairline border is ~1.3:1 on surface; the empty ring needs more. */
+[data-bs-theme="dark"] .rd-phone-donut {
+  --donut-empty: color-mix(in srgb, var(--rd-ink) 28%, var(--rd-surface));
 }
 
 .rd-phone-donut__ring {
@@ -4761,8 +5587,8 @@ body.rd-inv-dialog-open {
     var(--donut-grace) var(--donut-due-end) var(--donut-grace-end),
     var(--donut-overdue) var(--donut-grace-end) 100%
   );
-  -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
-  mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
+  -webkit-mask: radial-gradient(circle at center, transparent 56%, black 57.5%);
+  mask: radial-gradient(circle at center, transparent 56%, black 57.5%);
   animation: rd-phone-donut-in 520ms ease-out both;
 }
 
@@ -4887,20 +5713,20 @@ body.rd-inv-dialog-open {
 }
 
 .rd-phone-lifecycle__item--active .rd-phone-lifecycle__swatch {
-  background: #198754;
-  color: #198754;
+  background: var(--donut-active);
+  color: var(--donut-active);
 }
 .rd-phone-lifecycle__item--due .rd-phone-lifecycle__swatch {
-  background: #d97706;
-  color: #d97706;
+  background: var(--donut-due);
+  color: var(--donut-due);
 }
 .rd-phone-lifecycle__item--grace .rd-phone-lifecycle__swatch {
-  background: #0d6efd;
-  color: #0d6efd;
+  background: var(--donut-grace);
+  color: var(--donut-grace);
 }
 .rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__swatch {
-  background: #dc3545;
-  color: #dc3545;
+  background: var(--donut-overdue);
+  color: var(--donut-overdue);
 }
 
 .rd-phone-lifecycle__body {
@@ -4928,7 +5754,7 @@ a.rd-phone-lifecycle__hint--link {
 }
 a.rd-phone-lifecycle__hint--link:hover,
 a.rd-phone-lifecycle__hint--link:focus-visible {
-  color: #4b5563;
+  color: var(--rd-ink);
   text-decoration: underline;
 }
 
@@ -4967,24 +5793,24 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   margin-inline-start: 0.25rem;
 }
 .rd-phone-status--active {
-  background: color-mix(in srgb, #198754 14%, transparent);
-  color: #146c43;
-  border: 1px solid color-mix(in srgb, #198754 28%, transparent);
+  background: var(--rd-success-soft);
+  color: var(--rd-success);
+  border: 1px solid color-mix(in srgb, var(--rd-success) 28%, transparent);
 }
 .rd-phone-status--due {
-  background: color-mix(in srgb, #d97706 16%, transparent);
-  color: #9a3412;
-  border: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning-ink);
+  border: 1px solid color-mix(in srgb, var(--rd-warning) 30%, transparent);
 }
 .rd-phone-status--grace {
-  background: color-mix(in srgb, #0d6efd 12%, transparent);
-  color: #0a58ca;
-  border: 1px solid color-mix(in srgb, #0d6efd 26%, transparent);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
 }
 .rd-phone-status--overdue {
-  background: color-mix(in srgb, #dc3545 14%, transparent);
-  color: #b02a37;
-  border: 1px solid color-mix(in srgb, #dc3545 28%, transparent);
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
+  border: 1px solid color-mix(in srgb, var(--rd-danger) 28%, transparent);
 }
 .rd-phone-status--esim {
   background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);
@@ -5217,8 +6043,8 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     margin: 0;
   }
   html, body {
-    background: #fff !important;
-    color: #000 !important;
+    background: var(--rd-print-paper) !important;
+    color: var(--rd-print-ink) !important;
   }
   /* Trimmed from 1.5cm/1.2cm. The previous values were chosen to look
    * "safe" but they reserved nearly 2cm of dead space above the
@@ -5233,16 +6059,20 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-sidebar,
   .rd-topbar,
   .rd-mobile-tabbar,
+  .rd-app::before,
   .d-print-none {
     display: none !important;
   }
+  .rd-app {
+    background-image: none !important;
+  }
   .rd-main, .rd-page, .rd-content {
-    background: #fff !important;
+    background: var(--rd-print-paper) !important;
     margin: 0 !important;
     padding: 0 !important;
   }
   .rd-card {
-    border: 1px solid #999 !important;
+    border: 1px solid var(--rd-print-rule) !important;
     box-shadow: none !important;
     break-inside: avoid;
   }
@@ -5265,7 +6095,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-card.rd-print-flow tr {
     break-inside: avoid;
   }
-  .table { color: #000 !important; }
+  .table { color: var(--rd-print-ink) !important; }
   a { color: inherit !important; text-decoration: none !important; }
 
   /* Legacy print-only logo header. The current customer statement /
@@ -5276,7 +6106,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     text-align: center;
     margin-bottom: 0.6rem;
     padding-bottom: 0.4rem;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--rd-print-rule-soft);
   }
   .rd-print-brand-logo {
     max-height: 64px;
@@ -5287,8 +6117,8 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   /* Tighter borders + ink-friendly background for invoice bands. */
   .rd-invoice-head,
   .rd-invoice-summary {
-    border: 1px solid #888 !important;
-    background: #fff !important;
+    border: 1px solid var(--rd-print-rule) !important;
+    background: var(--rd-print-paper) !important;
     padding: 0.55rem 0.75rem !important;
     break-inside: avoid;
   }
@@ -5296,7 +6126,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-invoice-summary { margin-bottom: 0.5rem !important; }
 
   .rd-invoice-summary-item--total {
-    border-inline-start-color: #888 !important;
+    border-inline-start-color: var(--rd-print-rule) !important;
   }
 
   .rd-invoice-sig {
@@ -5304,6 +6134,81 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     break-inside: avoid;
   }
   .rd-invoice-sig-rule {
-    border-bottom-color: #000 !important;
+    border-bottom-color: var(--rd-print-ink) !important;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chrome keyboard focus                                                      */
+/* -------------------------------------------------------------------------- */
+/* The soft rings above are decoration; this ink outline is the visible
+   indicator (ink on page/surface is well over 3:1 in both themes). Kept last
+   so it overrides the per-component `outline: none`. */
+.rd-search-toggle:focus-visible,
+.rd-menu-btn:focus-visible,
+.rd-theme-btn:focus-visible,
+.rd-user-menu > summary:focus-visible,
+.rd-user-menu-item:focus-visible,
+.rd-sidebar-nav--accordion .rd-nav-group-toggle:focus-visible,
+.rd-sidebar-nav--accordion .rd-nav-link:focus-visible,
+.rd-sidebar-brand:focus-visible,
+.rd-employee-wallet:focus-visible,
+.rd-employee-title__link:focus-visible,
+.rd-toast__close:focus-visible,
+.rd-mobile-tabbar__item:focus-visible,
+.rd-mobile-tabbar__item--sales:focus-visible .rd-mobile-tabbar__bubble,
+.btn:focus-visible,
+.page-link:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+/* Tab items fill the rail height: draw the outline inside them. */
+.rd-mobile-tabbar__item:focus-visible {
+  outline-offset: -2px;
+  border-radius: 0.9rem;
+}
+
+/* On the FAB the outline goes around the bubble, not the tall link. */
+.rd-mobile-tabbar .rd-mobile-tabbar__item--sales:focus-visible {
+  outline: none;
+}
+
+/* Toasts and the hero KPI are inverted (ink) surfaces, so an ink outline would
+   vanish there: use the on-ink foreground. */
+.rd-toast__close:focus-visible,
+.rd-toast :is(.btn, .page-link):focus-visible,
+.rd-stat--hero :is(.btn, .page-link):focus-visible {
+  outline-color: var(--rd-primary-fg);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Arabic: no tracking, no heading face on controls                           */
+/* -------------------------------------------------------------------------- */
+/* Positive letter-spacing breaks Arabic joining. These are the uppercase-label
+   style rules whose text can be Arabic (digit-only or Latin-only marks such as
+   rank indexes are left alone). */
+html[lang="ar"] .rd-label,
+html[lang="ar"] .rd-nav-section,
+html[lang="ar"] .rd-sidebar-nav--accordion .rd-nav-group-label,
+html[lang="ar"] .rd-search-group-label,
+html[lang="ar"] .rd-charge-tag,
+html[lang="ar"] .rd-field-label,
+html[lang="ar"] .app-shell .rd-card > .table-responsive:not(.rd-table-wrap) .table thead th,
+html[lang="ar"] .app-shell .card > .table-responsive:not(.rd-table-wrap) .table thead th,
+html[lang="ar"] .rd-mobile-row-card .rd-mobile-k,
+html[lang="ar"] .rd-top-avatar,
+html[lang="ar"] .rd-profit-hero__lbl,
+html[lang="ar"] .rd-phone-donut__total-lbl,
+html[lang="ar"] .rd-phone-status,
+html[lang="ar"] .rd-invoice-head-title,
+html[lang="ar"] .rd-invoice-head-doc,
+html[lang="ar"] .rd-invoice-summary-item .rd-label,
+html[lang="ar"] .rd-invoice-sig-block .rd-label {
+  letter-spacing: 0;
+}
+
+/* Controls inside an Arabic card header keep the body face, not Noto Kufi. */
+html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, select, button) {
+  font-family: var(--rd-font-ar);
 }

@@ -26,7 +26,21 @@
     return !!scope && scope.getAttribute("hx-boost") === "true";
   }
 
+  // Set once a real browser navigation has started: the progress bar and the
+  // dim must stay until the page unloads instead of flashing off when the
+  // request that triggered it ends. Cleared on pageshow (bfcache restore) and,
+  // as a safety net for navigations that never unload (a download), by a timer.
+  var leaving = false;
+  var leavingTimer = null;
+  var LEAVING_RESET_MS = 8000;
+
   function hardNavigate(url) {
+    leaving = true;
+    clearTimeout(leavingTimer);
+    leavingTimer = setTimeout(function () {
+      leaving = false;
+      stopIfIdle();
+    }, LEAVING_RESET_MS);
     window.location.assign(url);
   }
 
@@ -138,21 +152,61 @@
   var progress = document.createElement("div");
   progress.className = "rd-nav-progress";
   document.documentElement.appendChild(progress);
-  var progressTimer = null;
+  var doneTimer = null;
+  var inflight = [];
   var nav = null;
 
+  // The bar starts and the current content dims in the same tick the request
+  // is issued; the loading state is cleared by stopProgress() from every
+  // terminal event (see the listeners below).
   function startProgress() {
-    clearTimeout(progressTimer);
-    progressTimer = setTimeout(function () {
-      progress.classList.add("is-active");
-    }, 120);
+    clearTimeout(doneTimer);
+    if (progress.classList.contains("is-done")) {
+      // Snap a still-fading bar back to zero before the new run starts.
+      progress.classList.remove("is-done");
+      void progress.offsetWidth;
+    }
+    progress.classList.add("is-active");
+    var live = document.querySelector("[data-rd-live]");
+    if (live) live.classList.add("is-live-loading");
   }
 
   function stopProgress() {
-    clearTimeout(progressTimer);
-    progress.classList.remove("is-active");
-    var live = document.querySelector("[data-rd-live].is-live-loading");
-    if (live) live.classList.remove("is-live-loading");
+    if (leaving) return;
+    if (progress.classList.contains("is-active")) {
+      progress.classList.remove("is-active");
+      progress.classList.add("is-done");
+      clearTimeout(doneTimer);
+      doneTimer = setTimeout(function () {
+        progress.classList.remove("is-done");
+      }, 500);
+    }
+    document.querySelectorAll("[data-rd-live].is-live-loading").forEach(function (live) {
+      live.classList.remove("is-live-loading");
+    });
+  }
+
+  // A body request that finished may be followed by another one already in
+  // flight (HX-Redirect is followed in place; a second click). Keep the bar
+  // until the last one is done. State is read from the XHRs themselves
+  // (OPENED..LOADING), so a missed event can never leave this stuck.
+  function stopIfIdle() {
+    if (leaving) return;
+    inflight = inflight.filter(function (xhr) {
+      return xhr.readyState > 0 && xhr.readyState < 4;
+    });
+    if (!inflight.length) stopProgress();
+  }
+
+  // Safety net: `loadend` fires for load, error, abort and timeout, after
+  // htmx's own handlers, even when one of them threw or (history fetch) was
+  // never set. stopIfIdle() is idempotent and only stops once no tracked
+  // request is still in flight, so an older request ending never cuts short
+  // a newer one.
+  function trackRequest(xhr) {
+    if (!xhr) return;
+    inflight.push(xhr);
+    xhr.addEventListener("loadend", stopIfIdle);
   }
 
   function targetsBody(detail) {
@@ -197,11 +251,8 @@
         return c.open;
       }),
     };
+    trackRequest(d.xhr);
     startProgress();
-    if (nav.samePath && nav.verb === "get") {
-      var live = document.querySelector("[data-rd-live]");
-      if (live) live.classList.add("is-live-loading");
-    }
     if (elt && elt.tagName === "FORM") {
       setTimeout(function () {
         setFormBusy(elt, true);
@@ -211,7 +262,7 @@
 
   document.addEventListener("htmx:afterRequest", function (evt) {
     if (!targetsBody(evt.detail)) return;
-    stopProgress();
+    stopIfIdle();
     var elt = evt.detail.elt;
     if (elt && elt.isConnected) setFormBusy(elt, false);
   });
@@ -305,7 +356,7 @@
   document.addEventListener("htmx:responseError", function (evt) {
     var d = evt.detail;
     if (!targetsBody(d)) return;
-    stopProgress();
+    stopIfIdle();
     if (d.requestConfig && d.requestConfig.verb === "get") {
       hardNavigate(d.xhr.responseURL || d.pathInfo.requestPath);
       return;
@@ -315,11 +366,46 @@
 
   document.addEventListener("htmx:sendError", function (evt) {
     if (!targetsBody(evt.detail)) return;
-    stopProgress();
+    stopIfIdle();
     if (window.rdToast) window.rdToast(failureMessage("data-rd-network-error", "Network error."), "error");
   });
 
-  document.addEventListener("htmx:historyRestore", stopProgress);
+  // Failures that never reach afterRequest (a throwing swap) or never go
+  // through a request at all (history restore) must not leave the bar or
+  // the dimmed content behind.
+  ["htmx:onLoadError", "htmx:swapError", "htmx:sendAbort", "htmx:timeout"].forEach(function (name) {
+    document.addEventListener(name, function (evt) {
+      if (targetsBody(evt.detail)) stopIfIdle();
+    });
+  });
+
+  // Back/forward: htmx restores a cached snapshot or fetches it itself
+  // (no htmx:beforeRequest), so the history events drive the bar here.
+  document.addEventListener("htmx:historyCacheMiss", function (evt) {
+    trackRequest(evt.detail && evt.detail.xhr);
+    startProgress();
+  });
+  ["htmx:historyRestore", "htmx:historyCacheMissError", "htmx:historyCacheMissLoadError"].forEach(function (name) {
+    document.addEventListener(name, stopProgress);
+  });
+
+  // The snapshot htmx stores for back/forward is taken just before the swap;
+  // it must not contain the dimmed state.
+  document.addEventListener("htmx:beforeHistorySave", function () {
+    document.querySelectorAll("[data-rd-live].is-live-loading").forEach(function (live) {
+      live.classList.remove("is-live-loading");
+    });
+  });
+
+  // Restored from the browser's back/forward cache: the frozen DOM may still
+  // carry a running bar / dimmed content.
+  window.addEventListener("pageshow", function (e) {
+    leaving = false;
+    clearTimeout(leavingTimer);
+    if (!e.persisted) return;
+    inflight = [];
+    stopProgress();
+  });
 
   window.addEventListener("beforeunload", function (e) {
     if (!document.querySelector("form.is-dirty:not([data-rd-submitting])")) return;

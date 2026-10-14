@@ -31,7 +31,7 @@ can break interactivity.
     z-index: 10001;
     background: var(--bs-body-bg, #fff);
     color: var(--bs-body-color, #111);
-    border: 1px solid var(--bs-border-color, #dee2e6);
+    border: 1px solid var(--bs-border-color);
     border-radius: 8px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
     width: min(960px, 92vw);
@@ -51,11 +51,11 @@ can break interactivity.
     gap: 0.5rem;
   }
   .pr-detail-header {
-    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    border-bottom: 1px solid var(--bs-border-color);
     justify-content: space-between;
   }
   .pr-detail-footer {
-    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    border-top: 1px solid var(--bs-border-color);
     justify-content: flex-start;
   }
   .pr-detail-title {
@@ -94,8 +94,8 @@ can break interactivity.
   }
   .pr-detail-copy-btn,
   .pr-detail-dismiss-btn {
-    border: 1px solid var(--bs-border-color, #ced4da);
-    background: var(--bs-secondary-bg, #f1f3f5);
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-secondary-bg);
     color: var(--bs-body-color, #111);
     padding: 0.35rem 0.8rem;
     border-radius: 0.375rem;
@@ -107,7 +107,7 @@ can break interactivity.
   .pr-detail-dismiss-btn:focus-visible {
     filter: brightness(0.97);
     outline: none;
-    box-shadow: 0 0 0 2px var(--bs-primary, #0d6efd);
+    box-shadow: 0 0 0 2px var(--bs-primary);
   }
 
   body.pr-detail-open { overflow: hidden; }
@@ -126,11 +126,11 @@ can break interactivity.
     border: 1px solid transparent;
     white-space: nowrap;
   }
-  .pr-source-badge--web      { background: #e7f1ff; color: #0a58ca; border-color: #b6d4fe; }
-  .pr-source-badge--api      { background: #d1f4e0; color: #0a6b3a; border-color: #a3e3bf; }
-  .pr-source-badge--internal { background: #efe5ff; color: #5a2ea6; border-color: #d8c4ff; }
-  .pr-source-badge--employee  { background: #fff3cd; color: #856404; border-color: #ffecb5; }
-  .pr-source-badge--legacy   { background: #eef0f2; color: #5a6268; border-color: #d6d8db; }
+  .pr-source-badge--web      { background: var(--rd-surface-2); color: var(--rd-ink); border-color: var(--bs-border-color); }
+  .pr-source-badge--api      { background: var(--rd-success-soft); color: var(--rd-success); }
+  .pr-source-badge--internal { background: var(--rd-accent-soft); color: var(--rd-accent-ink); }
+  .pr-source-badge--employee  { background: var(--rd-warning-soft); color: var(--rd-warning); }
+  .pr-source-badge--legacy   { background: var(--rd-surface-2); color: var(--rd-muted); }
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -138,7 +138,7 @@ can break interactivity.
     margin-bottom: 0.75rem;
   }
   .pr-bulk-toolbar .pr-bulk-count {
-    color: var(--bs-secondary-color, #6c757d);
+    color: var(--bs-secondary-color);
     font-size: 0.85rem;
   }
 </style>
@@ -381,7 +381,7 @@ can break interactivity.
           الرد الكامل لا يُحفظ إلا عند حدوث خطأ أو عدم تطابق أي قاعدة. هذا السجل تم تطابقه بنجاح، فيظهر المقتطف القصير فقط.
         </div>
         <pre id="pr-log-detail-body" dir="ltr"
-             style="white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; background: var(--bs-tertiary-bg, #f8f9fa); padding: 0.75rem; border-radius: 0.375rem; font-size: 0.85rem;"></pre>
+             style="white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; background: var(--bs-tertiary-bg); padding: 0.75rem; border-radius: 0.375rem; font-size: 0.85rem;"></pre>
       </div>
     </div>
     <div class="pr-detail-footer">

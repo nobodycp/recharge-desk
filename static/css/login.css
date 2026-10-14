@@ -1,0 +1,1229 @@
+/**
+ * Pearl login (templates/accounts/login.html, behaviour in static/js/login.js).
+ * Desktop >= 992px: form half (inline-start) + ink brand panel.
+ * Below 992px: the brand panel becomes an ink hero and the form a bottom sheet.
+ * Tokens only — no raw hex (core/tests_design_tokens.py).
+ */
+
+.rd-login {
+  --lg-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --lg-field-bg: var(--rd-surface);
+  --lg-sheet-bg: var(--bs-body-bg);
+  --lg-hero-h: 42vh;
+  --lg-hero-min: max(18vh, 8.5rem);
+  /* Mirrors physical X motion (orb drift, button sheen) for LTR. */
+  --lg-x: 1;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--rd-ink);
+  background: var(--bs-body-bg);
+  overflow-x: hidden;
+}
+
+@supports (height: 1svh) {
+  .rd-login {
+    --lg-hero-h: 42svh;
+    --lg-hero-min: max(18svh, 8.5rem);
+  }
+}
+
+[dir="ltr"] .rd-login {
+  --lg-x: -1;
+}
+
+.rd-login-split {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Top row: mini mark + site name, theme toggle, language                     */
+/* -------------------------------------------------------------------------- */
+.rd-login-top {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rd-login-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  font-family: var(--rd-font-heading);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.rd-login-mini-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-login-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+}
+
+.rd-login .rd-theme-btn {
+  border-radius: 999px;
+}
+
+.rd-login-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.375rem;
+  margin: 0;
+  padding-inline: 0.85rem 0.7rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  transition: background var(--rd-transition-fast);
+}
+
+.rd-login-lang:hover {
+  background: var(--rd-surface-2);
+}
+
+.rd-login-lang:focus-within {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+.rd-login-lang-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
+  color: var(--rd-muted);
+}
+
+.rd-login-lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.rd-login-lang-select option {
+  color: var(--rd-ink);
+  background: var(--rd-surface);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Marks and logo plates                                                      */
+/* -------------------------------------------------------------------------- */
+.rd-login-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 0.95rem;
+  background: var(--rd-hero-plate);
+  color: var(--rd-hero-bg);
+  font-family: var(--rd-font-heading);
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.rd-login-mark::after {
+  content: "";
+  position: absolute;
+  bottom: -0.15rem;
+  inset-inline-end: -0.15rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--rd-accent);
+  border: 2px solid var(--rd-hero-bg);
+}
+
+.rd-login-mark--sm {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.7rem;
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  font-size: 1.1rem;
+}
+
+.rd-login-mark--sm::after {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-color: var(--bs-body-bg);
+}
+
+.rd-login-plate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: 3.2rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.95rem;
+  background: var(--rd-hero-plate);
+}
+
+.rd-login-logo {
+  display: block;
+  max-width: 10rem;
+  max-height: 2.6rem;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.rd-login-plate--sm {
+  min-height: 2.35rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--bs-border-color);
+}
+
+.rd-login-mini-logo {
+  display: block;
+  max-width: 6rem;
+  max-height: 1.8rem;
+  object-fit: contain;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Form side                                                                  */
+/* -------------------------------------------------------------------------- */
+.rd-login-form-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rd-login-grab {
+  display: none;
+}
+
+.rd-login-body {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.rd-login-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--rd-accent-ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.rd-login-eyebrow::before {
+  content: "";
+  width: 1.4rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--rd-accent);
+}
+
+.rd-login-title {
+  margin: 0.6rem 0 0.35rem;
+  font-family: var(--rd-font-heading);
+  font-size: clamp(2.2rem, 1.5rem + 1vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rd-login-lead {
+  margin: 0 0 1.75rem;
+  color: var(--rd-muted);
+  font-size: 1.05rem;
+}
+
+/* Field: label row, then one box (icon + input + toggle overlaid), then hint. */
+.rd-login-field {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.1rem minmax(0, 1fr) auto;
+  margin-bottom: 1rem;
+}
+
+.rd-login-label {
+  grid-area: 1 / 1 / 2 / -1;
+  justify-self: start;
+  margin-bottom: 0.45rem;
+  color: var(--rd-ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.rd-login-input {
+  grid-area: 2 / 1 / 3 / -1;
+  width: 100%;
+  height: 3.75rem;
+  padding: 0;
+  padding-inline: 3.1rem 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.95rem;
+  outline: 0;
+  background: var(--lg-field-bg);
+  color: var(--rd-ink);
+  font: inherit;
+  /* 16px floor: below this iPad/iOS zooms the page on focus. */
+  font-size: max(1.1rem, 16px);
+  /* State rules set --lg-ring only, so the autofill mask below is never
+     replaced by a focus/invalid box-shadow. */
+  --lg-ring: 0 0 0 0 transparent;
+  box-shadow: var(--lg-ring);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Separate rules: an unknown pseudo-class would drop a combined selector list. */
+.rd-login-input:-webkit-autofill {
+  box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
+  -webkit-text-fill-color: var(--rd-ink);
+  caret-color: var(--rd-ink);
+}
+
+.rd-login-input:autofill {
+  box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
+  -webkit-text-fill-color: var(--rd-ink);
+  caret-color: var(--rd-ink);
+}
+
+.rd-login-field--password .rd-login-input {
+  padding-inline-end: 5.6rem;
+}
+
+.rd-login-icon {
+  grid-area: 2 / 1 / 3 / 2;
+  z-index: 1;
+  align-self: center;
+  justify-self: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--rd-faint);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.rd-login-toggle {
+  grid-area: 2 / 3 / 3 / 4;
+  z-index: 1;
+  align-self: center;
+  margin-inline-end: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color var(--rd-transition-fast),
+    background var(--rd-transition-fast);
+}
+
+.rd-login-toggle:hover,
+.rd-login-toggle.is-revealed {
+  color: var(--rd-ink);
+}
+
+.rd-login-toggle:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 1px;
+}
+
+/* The live region stays in the DOM so the first reveal is announced. */
+.rd-login-caps {
+  grid-area: 3 / 1 / 4 / -1;
+}
+
+.rd-login-caps-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.45rem 0 0;
+  color: var(--rd-warning);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.rd-login-caps-msg[hidden] {
+  display: none;
+}
+
+.rd-login-caps svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.rd-login-input:focus,
+.rd-login-field.is-focused .rd-login-input {
+  border-color: var(--rd-ink);
+  --lg-ring: 0 0 0 0.3rem color-mix(in srgb, var(--rd-ink) 6%, transparent);
+}
+
+.rd-login-field:focus-within .rd-login-icon,
+.rd-login-field.is-focused .rd-login-icon {
+  color: var(--rd-ink);
+}
+
+.rd-login-field.is-invalid {
+  animation: rd-login-shake 0.4s ease;
+}
+
+.rd-login-field.is-invalid .rd-login-input {
+  border-color: var(--rd-danger);
+  --lg-ring: 0 0 0 0.3rem var(--rd-danger-soft);
+}
+
+.rd-login-field.is-invalid .rd-login-icon {
+  color: var(--rd-danger);
+}
+
+@keyframes rd-login-shake {
+  20%,
+  60% {
+    transform: translateX(-0.45rem);
+  }
+  40%,
+  80% {
+    transform: translateX(0.45rem);
+  }
+}
+
+.rd-login .errorlist {
+  margin: -0.5rem 0 0.9rem;
+  padding: 0;
+  list-style: none;
+  color: var(--rd-danger);
+  font-size: 0.85rem;
+}
+
+/* Submit: ink button, orange arrow chip, loading spinner. */
+.rd-login-submit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  width: 100%;
+  height: 3.75rem;
+  margin-top: 1.4rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    opacity 0.2s ease;
+}
+
+.rd-login-submit:active {
+  transform: scale(0.97);
+}
+
+.rd-login-submit:focus-visible {
+  /* The submit is ink-filled, so the ring sits outside it on the sheet colour. */
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+.rd-login-submit-arrow {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.65rem;
+  background: var(--rd-accent);
+  color: var(--rd-on-accent);
+  transition: transform 0.3s var(--lg-ease);
+}
+
+.rd-login-submit-arrow svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+[dir="ltr"] .rd-login-submit-arrow svg {
+  transform: scaleX(-1);
+}
+
+.rd-login-submit:hover .rd-login-submit-arrow {
+  transform: translateX(calc(-0.3rem * var(--lg-x)));
+}
+
+.rd-login-spinner {
+  display: none;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--rd-primary-fg) 25%, transparent);
+  border-top-color: var(--rd-primary-fg);
+  animation: rd-login-spin 0.7s linear infinite;
+}
+
+.rd-login-submit.is-loading {
+  cursor: progress;
+}
+
+.rd-login-submit.is-loading .rd-login-submit-label {
+  position: absolute;
+  opacity: 0;
+}
+
+.rd-login-submit.is-loading .rd-login-submit-arrow {
+  display: none;
+}
+
+.rd-login-submit.is-loading .rd-login-spinner {
+  display: block;
+}
+
+@keyframes rd-login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rd-login-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rd-primary-fg) 30%, transparent);
+  transform: scale(0);
+  animation: rd-login-ripple 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes rd-login-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.rd-login-help {
+  margin: 1.25rem 0 0;
+  color: var(--rd-muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.rd-login-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--rd-muted);
+  font-size: 0.82rem;
+}
+
+.rd-login-secure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rd-login-secure svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Brand panel / hero (ink in both themes)                                    */
+/* -------------------------------------------------------------------------- */
+.rd-login-brand {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--rd-hero-bg);
+  color: var(--rd-hero-fg);
+}
+
+.rd-login-brand-id {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.rd-login-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rd-login-brand-text b {
+  overflow: hidden;
+  font-family: var(--rd-font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-login-brand-text small {
+  color: color-mix(in srgb, var(--rd-hero-fg) 55%, transparent);
+  font-size: 0.82rem;
+}
+
+.rd-login-headline {
+  margin: 0 0 0.6rem;
+  font-family: var(--rd-font-heading);
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+html:not([lang="ar"]) .rd-login-headline,
+html:not([lang="ar"]) .rd-login-title {
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.rd-login-headline em {
+  font-style: normal;
+  color: var(--rd-accent);
+}
+
+.rd-login-copy {
+  max-width: 27rem;
+  margin: 0 0 1.25rem;
+  color: color-mix(in srgb, var(--rd-hero-fg) 62%, transparent);
+  font-size: 0.98rem;
+  line-height: 1.9;
+}
+
+.rd-login-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rd-login-pills li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--rd-hero-fg) 14%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rd-hero-fg) 4%, transparent);
+  font-size: 0.85rem;
+}
+
+.rd-login-pills i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--rd-accent);
+}
+
+.rd-login-glow,
+.rd-login-grid,
+.rd-login-orb,
+.rd-login-rings {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.rd-login-glow {
+  bottom: -18rem;
+  inset-inline-start: -12rem;
+  width: 42rem;
+  height: 42rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--rd-accent) 55%, transparent),
+    transparent 65%
+  );
+  animation: rd-login-breathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes rd-login-breathe {
+  to {
+    transform: translate(calc(-1.5rem * var(--lg-x)), -1.5rem) scale(1.2);
+  }
+}
+
+.rd-login-grid {
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--rd-hero-fg) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--rd-hero-fg) 5%, transparent) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+  -webkit-mask-image: linear-gradient(180deg, black, transparent 75%);
+  mask-image: linear-gradient(180deg, black, transparent 75%);
+}
+
+/* Floating "live" cards (decorative). `translate`/`scale` for the entrance so
+   it composes with the `transform` bob. */
+.rd-login-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-self: flex-end;
+  width: 22rem;
+  max-width: 100%;
+}
+
+.rd-login-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--rd-hero-fg) 12%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--rd-hero-fg) 7%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 0.88rem;
+  animation:
+    rd-login-card-in 0.7s var(--lg-ease) both,
+    rd-login-bob 6s ease-in-out infinite alternate;
+}
+
+.rd-login-card:nth-child(2) {
+  margin-inline-start: 1.75rem;
+  animation-delay: 0.25s, -2s;
+}
+
+@keyframes rd-login-card-in {
+  from {
+    opacity: 0;
+    translate: 0 1.25rem;
+    scale: 0.96;
+  }
+}
+
+@keyframes rd-login-bob {
+  to {
+    transform: translateY(-0.45rem);
+  }
+}
+
+.rd-login-card-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--rd-accent) 16%, transparent);
+  color: var(--rd-accent);
+}
+
+.rd-login-card-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.rd-login-card-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rd-login-card-text b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.rd-login-card-text span {
+  color: color-mix(in srgb, var(--rd-hero-fg) 55%, transparent);
+  font-size: 0.8rem;
+}
+
+.rd-login-card-amt {
+  margin-inline-start: auto;
+  font-family: var(--rd-font-num);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rd-login-card-amt--ok {
+  color: var(--rd-hero-success);
+}
+
+/* Mobile-only hero pieces. */
+.rd-login-orb,
+.rd-login-rings,
+.rd-login-ticker {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Desktop: two halves                                                        */
+/* -------------------------------------------------------------------------- */
+@media (min-width: 992px) {
+  .rd-login-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rd-login-top {
+    top: 0;
+    inset-inline-start: 0;
+    width: 50%;
+    padding: 1.75rem 3rem;
+  }
+
+  .rd-login-form-side {
+    padding: 6.5rem 3rem 1.75rem;
+  }
+
+  .rd-login-body {
+    margin: auto;
+    animation: rd-login-rise 0.7s var(--lg-ease) both;
+  }
+
+  .rd-login-foot {
+    margin-top: 2rem;
+  }
+
+  .rd-login-brand {
+    min-height: 100vh;
+    padding: 2.5rem 3rem 2.75rem;
+  }
+
+  [data-bs-theme="dark"] .rd-login-brand {
+    border-inline-start: 1px solid var(--bs-border-color);
+  }
+
+  .rd-login-cards {
+    margin: clamp(2rem, 9vh, 6rem) 0 2rem;
+  }
+
+  .rd-login-headline {
+    margin-top: auto;
+    font-size: clamp(2.1rem, 1.2rem + 1.5vw, 3rem);
+  }
+
+  .rd-login-submit::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--rd-primary-fg) 14%, transparent) 50%,
+      transparent 70%
+    );
+    transform: translateX(calc(100% * var(--lg-x)));
+    animation: rd-login-sheen 3.5s 1.5s infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes rd-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.1rem);
+  }
+}
+
+@keyframes rd-login-sheen {
+  0% {
+    transform: translateX(calc(100% * var(--lg-x)));
+  }
+  40%,
+  100% {
+    transform: translateX(calc(-100% * var(--lg-x)));
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mobile / tablet: ink hero on top, form as a bottom sheet                   */
+/* -------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+  .rd-login {
+    --lg-sheet-radius: 2.35rem;
+    background: var(--rd-hero-bg);
+  }
+
+  [data-bs-theme="dark"] .rd-login {
+    --lg-sheet-bg: var(--rd-surface);
+    --lg-field-bg: var(--rd-surface-2);
+  }
+
+  .rd-login-split {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+
+  /* Controls float over the hero, aligned with the logo row. */
+  .rd-login-top {
+    top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
+    inset-inline: 1.5rem;
+    height: 3.2rem;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  .rd-login-controls {
+    pointer-events: auto;
+  }
+
+  .rd-login-mini {
+    display: none;
+  }
+
+  .rd-login-top .rd-theme-btn,
+  .rd-login-top .rd-login-lang {
+    border-color: color-mix(in srgb, var(--rd-hero-fg) 14%, transparent);
+    background: color-mix(in srgb, var(--rd-hero-fg) 10%, transparent);
+    color: var(--rd-hero-fg);
+  }
+
+  .rd-login-top .rd-theme-btn:hover,
+  .rd-login-top .rd-login-lang:hover {
+    background: color-mix(in srgb, var(--rd-hero-fg) 16%, transparent);
+    color: var(--rd-hero-fg);
+  }
+
+  .rd-login-top .rd-login-lang-icon {
+    color: color-mix(in srgb, var(--rd-hero-fg) 70%, transparent);
+  }
+
+  /* The mobile hero is ink in both themes: outline in its foreground. */
+  .rd-login-top .rd-theme-btn:focus-visible,
+  .rd-login-top .rd-login-lang:focus-within {
+    outline: 2px solid var(--rd-hero-fg);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-hero-fg) 18%, transparent);
+  }
+
+  /* Hero */
+  .rd-login-hero {
+    order: 1;
+    flex: none;
+    height: var(--lg-hero-h);
+    min-height: 15rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 1.25rem) 1.5rem
+      calc(var(--lg-sheet-radius) + 1.35rem);
+  }
+
+  .rd-login-glow,
+  .rd-login-grid,
+  .rd-login-cards,
+  .rd-login-copy,
+  .rd-login-pills,
+  .rd-login-brand-text small {
+    display: none;
+  }
+
+  .rd-login-brand-id {
+    max-width: calc(100% - 11rem);
+  }
+
+  .rd-login-brand-text b {
+    font-size: 1.05rem;
+  }
+
+  .rd-login-orb {
+    display: block;
+    top: 1.5rem;
+    inset-inline-end: -4.75rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 40% 40%,
+      color-mix(in srgb, var(--rd-accent) 78%, var(--rd-hero-fg)),
+      var(--rd-accent) 40%,
+      transparent 70%
+    );
+    filter: blur(8px);
+    opacity: 0.85;
+    animation: rd-login-orb 8s ease-in-out infinite alternate;
+  }
+
+  .rd-login-rings {
+    display: block;
+    top: 5.5rem;
+    left: 50%;
+    width: 11.7rem;
+    height: 11.7rem;
+    transform: translateX(-50%);
+  }
+
+  .rd-login-rings span {
+    position: absolute;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--rd-hero-fg) 18%, transparent);
+    border-radius: 50%;
+    animation: rd-login-ring 3.6s ease-out infinite;
+  }
+
+  .rd-login-rings span:nth-child(2) {
+    animation-delay: 1.2s;
+  }
+
+  .rd-login-rings span:nth-child(3) {
+    animation-delay: 2.4s;
+  }
+
+  .rd-login-headline {
+    margin-top: auto;
+    font-size: 1.85rem;
+    transition:
+      opacity 0.35s ease,
+      transform 0.5s var(--lg-ease);
+  }
+
+  .rd-login-ticker {
+    --lg-tick-h: 1.65rem;
+    display: block;
+    height: var(--lg-tick-h);
+    overflow: hidden;
+    color: color-mix(in srgb, var(--rd-hero-fg) 65%, transparent);
+    font-size: 0.95rem;
+    transition: opacity 0.35s ease;
+  }
+
+  .rd-login-ticker-track {
+    animation: rd-login-tick 7.5s infinite;
+  }
+
+  .rd-login-ticker p {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: var(--lg-tick-h);
+    margin: 0;
+  }
+
+  .rd-login-ticker p::before {
+    content: "";
+    flex: none;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--rd-accent);
+  }
+
+  /* Sheet */
+  .rd-login-form-side {
+    order: 2;
+    position: relative;
+    z-index: 1;
+    flex: 1 0 auto;
+    margin-top: calc(-1 * var(--lg-sheet-radius));
+    padding: 0.9rem 1.5rem calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+    border-radius: var(--lg-sheet-radius) var(--lg-sheet-radius) 0 0;
+    background: var(--lg-sheet-bg);
+    /* The first (top-most) shadow extends the sheet colour below it when it
+       rises while typing; shadows never add scrollable overflow. */
+    box-shadow:
+      0 40vh 0 0 var(--lg-sheet-bg),
+      0 -0.9rem 3rem color-mix(in srgb, var(--rd-hero-bg) 25%, transparent);
+    animation: rd-login-sheet-in 0.8s 0.2s var(--lg-ease) backwards;
+    transition: transform 0.5s var(--lg-ease);
+  }
+
+  .rd-login-grab {
+    display: block;
+    width: 2.95rem;
+    height: 0.4rem;
+    margin: 0 auto 1.1rem;
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, var(--rd-ink) 15%, transparent);
+  }
+
+  .rd-login-body,
+  .rd-login-foot {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 30rem;
+  }
+
+  .rd-login-eyebrow {
+    font-size: 0.82rem;
+  }
+
+  .rd-login-title {
+    margin: 0.35rem 0 0.15rem;
+    font-size: 1.75rem;
+  }
+
+  .rd-login-lead {
+    margin-bottom: 1.15rem;
+    font-size: 0.95rem;
+  }
+
+  /* Floating labels: the label sits inside the box and lifts on focus/fill. */
+  .rd-login-field {
+    margin-bottom: 0.8rem;
+  }
+
+  .rd-login-label {
+    grid-area: 2 / 2 / 3 / 3;
+    z-index: 1;
+    align-self: center;
+    margin: 0;
+    color: var(--rd-muted);
+    font-size: 1.05rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    transform-origin: right center;
+    transition:
+      transform 0.2s ease,
+      color 0.2s ease;
+  }
+
+  [dir="ltr"] .rd-login-label {
+    transform-origin: left center;
+  }
+
+  .rd-login-field.is-focused .rd-login-label,
+  .rd-login-field.is-filled .rd-login-label,
+  .rd-login-field:focus-within .rd-login-label {
+    color: var(--rd-ink);
+    font-weight: 600;
+    transform: translateY(-0.95rem) scale(0.8);
+  }
+
+  .rd-login-field:has(.rd-login-input:not(:placeholder-shown)) .rd-login-label {
+    color: var(--rd-ink);
+    font-weight: 600;
+    transform: translateY(-0.95rem) scale(0.8);
+  }
+
+  .rd-login-field:has(.rd-login-input:-webkit-autofill) .rd-login-label {
+    color: var(--rd-ink);
+    font-weight: 600;
+    transform: translateY(-0.95rem) scale(0.8);
+  }
+
+  .rd-login-input {
+    height: 4.2rem;
+    padding-top: 1.15rem;
+    border-width: 1.5px;
+    border-radius: 1.2rem;
+    /* 16px: below this iOS zooms the page on focus. */
+    font-size: 1.25rem;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .rd-login-icon {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  .rd-login-submit {
+    height: 4.2rem;
+    margin-top: 0.5rem;
+    border-radius: 1.25rem;
+    font-size: 1.15rem;
+  }
+
+  .rd-login-submit-arrow {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.8rem;
+  }
+
+  .rd-login-help {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .rd-login-foot {
+    margin-top: auto;
+    padding-top: 1.1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+  }
+
+  /* While typing: the sheet rises over the hero and the headline fades. */
+  .rd-login.is-typing .rd-login-form-side {
+    transform: translateY(calc(var(--lg-hero-min) - var(--lg-hero-h)));
+  }
+
+  .rd-login.is-typing .rd-login-headline {
+    opacity: 0;
+    transform: translateY(-0.8rem);
+  }
+
+  .rd-login.is-typing .rd-login-ticker {
+    opacity: 0;
+  }
+}
+
+@keyframes rd-login-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes rd-login-orb {
+  to {
+    transform: translate(calc(5.5rem * var(--lg-x)), 2.3rem) scale(1.15);
+  }
+}
+
+@keyframes rd-login-ring {
+  from {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes rd-login-tick {
+  0%,
+  28% {
+    transform: translateY(0);
+  }
+  33%,
+  61% {
+    transform: translateY(calc(-1 * var(--lg-tick-h)));
+  }
+  66%,
+  94% {
+    transform: translateY(calc(-2 * var(--lg-tick-h)));
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

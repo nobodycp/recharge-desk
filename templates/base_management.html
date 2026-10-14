@@ -7,9 +7,7 @@
   {% include "partials/favicon.html" %}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ title|default:_("Management") }}{% endblock %} · {{ site_name }}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  {% include "partials/fonts_head.html" %}
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
   <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
@@ -35,9 +33,9 @@
           <img class="rd-sidebar-brand-logo" src="{{ site_branding.logo.url }}" alt="{{ site_name }}">
         {% else %}
           <span class="rd-sidebar-brand-mark">{{ site_name|slice:":1" }}</span>
-          <span>
-            <div class="fw-bold lh-sm">{{ site_name }}</div>
-            <div class="rd-text-muted" style="font-size: 0.72rem;">{{ site_tagline }}</div>
+          <span class="rd-sidebar-brand-text">
+            <span class="rd-sidebar-brand-name">{{ site_name }}</span>
+            <span class="rd-sidebar-brand-tagline">{{ site_tagline }}</span>
           </span>
         {% endif %}
       </a>
@@ -46,7 +44,7 @@
 
     <div class="rd-main">
       <header class="rd-topbar">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="rd-topbar-start">
           <button
             type="button"
             class="rd-menu-btn"
@@ -57,6 +55,12 @@
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
+          {% now "G" as hour %}
+          {% get_current_language_bidi as is_bidi %}
+          <div class="rd-hello">
+            <span class="rd-hello__title">{% with h=hour|add:0 %}{% if h < 12 %}{% trans "Good morning" %}{% elif h < 18 %}{% trans "Good afternoon" %}{% else %}{% trans "Good evening" %}{% endif %}{% endwith %}{% if is_bidi %}،{% else %},{% endif %} {{ request.user.profile.display_name.split.0|default:request.user.username }}</span>
+            <span class="rd-hello__date">{% now "l j F" %}</span>
+          </div>
         </div>
         <div class="rd-topbar-meta">
           <div
@@ -70,10 +74,11 @@
               data-rd-search-toggle
               aria-expanded="false"
               aria-controls="rd-search-panel"
-              aria-label="{% trans 'Search' %}"
               title="{% trans 'Search (press /)' %}"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="rd-search-toggle__placeholder">{% trans "Search for a number, customer, operation…" %}</span>
+              <kbd class="rd-search-toggle__kbd" aria-hidden="true">/</kbd>
             </button>
             <form
               method="get"
@@ -111,21 +116,23 @@
               ></div>
             </form>
           </div>
-          <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0" hx-boost="false">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
-            <select name="language" id="rd-lang-mgmt" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
-              {% get_current_language as LANGUAGE_CODE %}
-              {% for code, label in languages %}
-                <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </form>
-          {% include "partials/theme_toggle.html" with variant="shell" %}
-          <a class="btn btn-sm btn-primary" href="{% url 'sales:employee_entry' %}" hx-boost="false">{% trans "Sales entry" %}</a>
           {% include "partials/nav_notifications.html" %}
-          {% include "partials/user_menu.html" %}
+          <div class="rd-topbar-cluster">
+            <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0" hx-boost="false">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
+              <select name="language" id="rd-lang-mgmt" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% for code, label in languages %}
+                  <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            {% include "partials/theme_toggle.html" with variant="shell" %}
+            <a class="btn btn-sm btn-primary rd-topbar-cta" href="{% url 'sales:employee_entry' %}" hx-boost="false">{% trans "Sales entry" %}</a>
+            {% include "partials/user_menu.html" with variant="ava" %}
+          </div>
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 {% load i18n %}
 {% with profile=request.user.profile %}
-<details class="rd-user-menu">
+<details class="rd-user-menu{% if variant == 'ava' %} rd-user-menu--ava{% endif %}">
   <summary
     class="rd-user-menu-trigger"
     aria-haspopup="menu"
@@ -9,12 +9,16 @@
     <span class="rd-avatar rd-avatar-sm" aria-hidden="true">
       {% if profile.avatar %}
         <img src="{{ profile.avatar.url }}" alt="">
+      {% elif variant == 'ava' %}
+        <span>{{ profile.initials|slice:":1" }}</span>
       {% else %}
         <span>{{ profile.initials }}</span>
       {% endif %}
     </span>
-    <span class="rd-user-menu-name d-none d-sm-inline">{{ profile.display_name }}</span>
-    <svg class="rd-user-menu-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    {% if variant != 'ava' %}
+      <span class="rd-user-menu-name d-none d-sm-inline">{{ profile.display_name }}</span>
+      <svg class="rd-user-menu-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    {% endif %}
   </summary>
 
   <div class="rd-user-menu-panel" role="menu">
