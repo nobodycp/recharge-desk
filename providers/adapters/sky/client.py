@@ -31,6 +31,9 @@ REQUEST_TIMEOUT_SECONDS = 90
 LOGIN_CONNECT_TIMEOUT_SECONDS = 5
 LOGIN_READ_TIMEOUT_SECONDS = 15
 LOGIN_DEADLINE_SECONDS = 100
+# The OTP retry (login + init2fa + confirm2fa) only starts if all three
+# requests fit before the deadline at their max duration.
+OTP_RETRY_REQUESTS = 3
 
 
 @dataclass
@@ -383,12 +386,27 @@ class SkySalesClient:
         creds = self.credentials
         return creds.totp_secret if creds else ""
 
+    def _otp_retry_fits_deadline(self) -> bool:
+        if self._login_deadline is None:
+            return True
+        needed = OTP_RETRY_REQUESTS * (
+            LOGIN_CONNECT_TIMEOUT_SECONDS + LOGIN_READ_TIMEOUT_SECONDS
+        )
+        return self._login_deadline - time.monotonic() >= needed
+
     def auto_login(self, username: str, password: str, otp_code: str = "") -> None:
-        # No internal retry: a rejected OTP fails the login (and starts the
-        # login cool-down) instead of stretching it past the lock timeout.
         code = resolve_otp_code(otp_code, self._totp_secret())
-        self.begin_login(username, password)
-        self.confirm_otp(code)
+        try:
+            self.begin_login(username, password)
+            self.confirm_otp(code)
+        except SkySalesError as exc:
+            if "OTP rejected:" not in str(exc) or not self._otp_retry_fits_deadline():
+                raise
+            _debug("OTP rejected — fresh login + retry once")
+            self._reset_http_session()
+            self.session = SkySalesSession(jwt_token="", user_name=username)
+            self.begin_login(username, password)
+            self.confirm_otp(resolve_otp_code(otp_code, self._totp_secret()))
 
     def _refresh_jwt(self) -> None:
         token = self._post("/ipa/apis/json/general/genJwtToken", {})

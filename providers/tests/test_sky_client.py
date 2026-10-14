@@ -74,15 +74,46 @@ class SkySalesClientTests(SimpleTestCase):
         self.assertEqual(len(code), 6)
         self.assertTrue(code.isdigit())
 
-    def test_auto_login_does_not_retry_after_otp_rejected(self):
+    def test_auto_login_retries_once_after_otp_rejected(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        with patch.object(client, "begin_login") as begin, patch.object(
+            client,
+            "confirm_otp",
+            side_effect=[SkySalesError("OTP rejected: {}"), None],
+        ) as confirm:
+            client.auto_login("user", "pass")
+        self.assertEqual(begin.call_count, 2)
+        self.assertEqual(confirm.call_count, 2)
+
+    def test_auto_login_retries_only_once(self):
         client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
         with patch.object(client, "begin_login") as begin, patch.object(
             client, "confirm_otp", side_effect=SkySalesError("OTP rejected: {}")
-        ) as confirm:
+        ):
+            with self.assertRaises(SkySalesError):
+                client.auto_login("user", "pass")
+        self.assertEqual(begin.call_count, 2)
+
+    def test_otp_retry_skipped_when_it_would_not_fit_the_deadline(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        client._login_deadline = time.monotonic() + 30
+        with patch.object(client, "begin_login") as begin, patch.object(
+            client,
+            "confirm_otp",
+            side_effect=[SkySalesError("OTP rejected: {}"), None],
+        ):
             with self.assertRaises(SkySalesError):
                 client.auto_login("user", "pass")
         self.assertEqual(begin.call_count, 1)
-        self.assertEqual(confirm.call_count, 1)
+
+        client._login_deadline = time.monotonic() + 61
+        with patch.object(client, "begin_login") as begin, patch.object(
+            client,
+            "confirm_otp",
+            side_effect=[SkySalesError("OTP rejected: {}"), None],
+        ):
+            client.auto_login("user", "pass")
+        self.assertEqual(begin.call_count, 2)
 
     def test_login_requests_use_short_timeouts_and_normal_requests_do_not(self):
         client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))

@@ -204,6 +204,34 @@ class SkySessionStoreTests(TestCase):
         self.assertEqual(data["eot_user_id"], 1550)
         self.assertFalse(data["pending_otp"])
 
+    def test_otp_rejected_once_then_accepted_is_one_successful_login(self):
+        confirms = iter(
+            [
+                {"result": "FAILED", "confirmed": False},
+                {"result": "SUCCESS", "confirmed": True},
+            ]
+        )
+        posts = []
+
+        def _post(client_self, path, payload):
+            posts.append(path)
+            if path == "/ipa/apis/json/factor/confirm2fa":
+                return next(confirms)
+            return SKY_LOGIN_RESPONSES[path]
+
+        result = {"success": True, "reason": "success", "phone": "0599000000", "message": "ok"}
+        with patch.object(SkySalesClient, "_post", _post), patch.object(
+            SkySalesClient, "refresh_sim", return_value=result
+        ), patch("providers.sessions.accounts.record_login") as record_login:
+            raw = service.refresh("sky", "0599000000")
+        self.assertEqual(raw.status_code, 200)
+        self.assertEqual(posts.count("/ipa/apis/json/general/login"), 2)
+        self.assertEqual(posts.count("/ipa/apis/json/factor/confirm2fa"), 2)
+        record_login.assert_called_once_with("sky", True)
+        self.assertEqual(SessionStore("sky").generation(), 1)
+        self.assertFalse(get_redis().exists("provider:login-cooldown:sky"))
+        self.assertEqual(SessionStore("sky").load()["jwt_token"], "jwt-2")
+
     def test_service_refresh_logs_in_then_refreshes(self):
         result = {"success": True, "reason": "success", "phone": "0599000000", "message": "ok"}
         with patch.object(
