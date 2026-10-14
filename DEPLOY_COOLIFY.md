@@ -225,8 +225,23 @@ periodic tasks. Without it the public refresh page will answer "processing".
    Deploy `web` first on a release that adds migrations, then the worker. The
    worker must be on the same release: the connection login test runs there
    as `providers.tasks.test_connection` (it is listed in the worker boot logs).
-   The `providers 0004` / `companies 0014` migrations are rename-only at the DB
-   level, so the web/worker overlap during the rollout is safe.
+   **The web/worker overlap during this rollout is not fully transparent.** The
+   table and column names do not change (`providers_provideraccount`,
+   `phone_refresh_provider`), so the old container keeps *reading* fine. But
+   `providers 0004` adds three NOT NULL boolean columns
+   (`refresh_enabled`, `charge_enabled`, `reconcile_enabled`) with **no
+   database default** (Django 4.2 applies the default only during the
+   migration), so an INSERT from the *old* container fails. Until the new
+   release is live on both `web` and `worker`:
+   - **Don't save provider accounts** in the old UI (that creates the row).
+   - **Don't click «اختبار تسجيل الدخول»** until the worker is on the new
+     release: an old worker drops the unregistered `test_connection` task, so
+     the tab shows "pending" for ~150 s and then falls back to the previous
+     result.
+   - **Rolling back the image without reversing the migrations**
+     (`migrate providers 0003` / `migrate companies 0013`) leaves the new
+     switches in the table, but old code ignores them and reads the frozen
+     `ProviderConfig` instead: switches changed in the new UI have no effect.
 
 ---
 
@@ -268,8 +283,9 @@ Roll the provider gateway out in this order (each step is reversible):
    that uses the same system (**نظام الشركة**).
 3. **Enable async**: set `REFRESH_ASYNC_ENABLED=1` and redeploy `web`. Watch
    the refresh logs for a day. Emergency rollback = set it back to `0`.
-4. **Charge button**: enable "Charge & record sale" for Sky once the Sky charge
-   capability ships (not available yet, see below).
+4. **Charge button**: once the Sky adapter declares the CHARGE capability (not
+   available yet, see below), turn on the «الشحن» switch in **Companies →
+   \<company\> → الربط مع المزوّد** (it applies to every company on that system).
 
 > **Keep step 1 short.** With `REFRESH_ASYNC_ENABLED=0` (and always for the
 > Sky reconcile screen) a Sky login runs *inside the web request*. A cold login
