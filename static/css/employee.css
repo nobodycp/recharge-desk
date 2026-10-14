@@ -580,8 +580,9 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 /* The dock itself is the sticky element (a child of the form), so it can move
    within the whole form. Its ::before is a solid page-coloured panel with a
    hairline on top that also fills the strip down to the tab bar. */
+/* --rd-entry-dock-offset / --rd-entry-dock-height come from html:has(.rd-entry-dock)
+   (see "Entry progress" below), so the scroll padding shares the dock's numbers. */
 .rd-entry-dock {
-  --rd-entry-dock-offset: calc(6.2rem + env(safe-area-inset-bottom));
   position: sticky;
   bottom: var(--rd-entry-dock-offset);
   z-index: var(--rd-z-sticky);
@@ -1332,4 +1333,152 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 
 .rd-entry-dock .employee-charge-sale-btn[hidden] {
   display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Entry progress: top-bar hairline, step dots, valid-number tick             */
+/* -------------------------------------------------------------------------- */
+/* Display only (static/js/employee-entry-progress.js). Nothing here adds
+   height: the hairline is absolute inside the sticky top bar, the dots live in
+   the existing block heads and the tick sits in the number field's label row. */
+
+/* Dock numbers, shared by the dock itself and the scroll padding. Scoped to
+   pages that have the dock. */
+html:has(.rd-entry-dock) {
+  --rd-entry-dock-offset: calc(6.2rem + env(safe-area-inset-bottom));
+  /* hairline + padding .35 + button 3.6 + padding .2 */
+  --rd-entry-dock-height: 4.25rem;
+  /* A keyboard-focused field scrolls to just above the sticky dock. */
+  scroll-padding-bottom: calc(var(--rd-entry-dock-offset) + var(--rd-entry-dock-height) + 0.5rem);
+}
+
+.rd-entry-progress {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 2px;
+  overflow: hidden;
+  background: var(--bs-border-color);
+  pointer-events: none;
+}
+
+.rd-entry-progress > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--rd-accent);
+  transform: scaleX(var(--rd-entry-progress, 0));
+  transform-origin: 0 50%;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[dir="rtl"] .rd-entry-progress > i {
+  transform-origin: 100% 50%;
+}
+
+/* Step dot: grey disc with the number; when done, an orange disc grows in
+   behind a check mark (transform and opacity only). */
+.rd-entry-step {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rd-entry-step::before,
+.rd-entry-step::after {
+  content: "";
+  position: absolute;
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+.rd-entry-step::before {
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--rd-accent);
+  transform: scale(0.4);
+}
+
+/* Check mark: a rotated corner, so no icon font or glyph fallback. */
+.rd-entry-step::after {
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  width: 0.28rem;
+  height: 0.52rem;
+  border: solid var(--rd-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -62%) rotate(45deg);
+}
+
+.rd-entry-step.is-done {
+  /* The digit gives way to the check (not colour alone). */
+  color: transparent;
+}
+
+.rd-entry-step.is-done::before {
+  opacity: 1;
+  transform: none;
+}
+
+.rd-entry-step.is-done::after {
+  opacity: 1;
+}
+
+/* Valid-number tick: grid cell 1/1 of the field, beside the label. The field
+   keeps its 3.45rem height; the label leaves room for the tick. */
+.rd-entry-valid {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-inline-end: 0.8rem;
+  color: var(--rd-success);
+  pointer-events: none;
+  animation: rd-entry-valid-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rd-entry-valid[hidden] {
+  display: none;
+}
+
+.rd-entry-field:has(> .rd-entry-valid:not([hidden])) > .rd-entry-field__label {
+  padding-inline-end: 2.4rem;
+}
+
+@keyframes rd-entry-valid-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-entry-progress > i,
+  .rd-entry-step::before,
+  .rd-entry-step::after {
+    transition: none;
+  }
+  .rd-entry-valid {
+    animation: none;
+  }
 }

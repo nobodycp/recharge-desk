@@ -240,6 +240,44 @@ class EmployeeEntryMarkupTests(TestCase):
         self.assertIn('notesDetails.addEventListener("toggle"', html)
         self.assertIn('getElementById("id_notes")', html)
 
+    def test_progress_markup_and_script(self):
+        html = self._html()
+        self.assertIn('class="rd-entry-progress"', html)
+        for step in ("pay", "co", "pk", "pr"):
+            with self.subTest(step=step):
+                self.assertIn(f'data-step="{step}"', html)
+        self.assertIn('class="rd-entry-valid"', html)
+        self.assertIn("js/employee-entry-progress.js", html)
+
+    def test_progress_hairline_sits_in_the_top_bar_and_tick_in_the_number_field(self):
+        html = self._html()
+        header = html.split("</header>")[0]
+        self.assertIn('class="rd-entry-progress"', header)
+        self.assertNotIn('class="rd-entry-progress"', html.split("</header>")[1])
+        ancestors = _ancestor_classes(html, ("id_reference_number",))
+        self.assertIn("rd-entry-field", ancestors["id_reference_number"])
+        field = html.split('for="id_reference_number"')[1].split("</button>")[0]
+        self.assertIn('class="rd-entry-valid"', field)
+        self.assertRegex(field, r'class="rd-entry-valid"[^>]*\bhidden\b')
+
+    def test_step_numbers_sit_in_the_block_heads(self):
+        html = self._html()
+        self.assertEqual(len(re.findall(r'<div class="rd-entry-blk__head">\s*<span class="rd-entry-step"', html)), 4)
+
+    def test_progress_script_is_display_only(self):
+        js = (Path(settings.BASE_DIR) / "static" / "js" / "employee-entry-progress.js").read_text(encoding="utf-8")
+        js = re.sub(r"/\*.*?\*/", "", js, flags=re.S)
+        self.assertIn("htmx.onLoad", js)
+        self.assertIn('"htmx:afterSwap"', js)
+        self.assertIn("is-done", js)
+        # Never writes a field value or touches submission.
+        self.assertNotRegex(js, r"\.value\s*=[^=]")
+        self.assertNotIn("preventDefault", js)
+        self.assertNotIn("submit", js)
+        # No document / window listeners (page-scope cleans them, but there is no need).
+        self.assertNotRegex(js, r"(document|window)\.addEventListener\(\s*[\"'](input|change|click|htmx)")
+        self.assertNotIn("window.__", js)
+
 
 class EmployeeIconMarkTests(TestCase):
     def _render(self, **ctx):
@@ -423,3 +461,41 @@ class EmployeeEntryCssTests(SimpleTestCase):
 
     def test_product_rows_share_a_line_when_they_fit(self):
         self._assert_decl(".employee-product-section", "flex-wrap: wrap")
+
+    def test_progress_hairline_takes_no_layout_space(self):
+        self._assert_decl(
+            ".rd-entry-progress", "position: absolute", "pointer-events: none"
+        )
+        self._assert_decl(".rd-entry-progress > i", "transform: scaleX(var(--rd-entry-progress, 0))")
+        self.assertIn("var(--rd-accent)", " ".join(_bodies(self.css, ".rd-entry-progress > i")))
+        self.assertNotRegex(
+            " ".join(_bodies(self.css, ".rd-entry-progress > i")),
+            r"transition:[^;]*\b(width|height|background)",
+        )
+
+    def test_step_dots_animate_transform_and_opacity_only(self):
+        self._assert_decl(".rd-entry-step.is-done::before", "opacity: 1")
+        for selector in (".rd-entry-step::before", ".rd-entry-step::after"):
+            joined = " ".join(_bodies(self.css, selector))
+            self.assertRegex(joined, r"transition:[^;]*(transform|opacity)", selector)
+            self.assertNotRegex(joined, r"transition:[^;]*\b(width|height|background|color)\b", selector)
+
+    def test_valid_tick_is_inside_the_field_grid_and_uses_success(self):
+        self._assert_decl(
+            ".rd-entry-valid", "grid-row: 1", "color: var(--rd-success)", "pointer-events: none"
+        )
+        self._assert_decl(".rd-entry-valid[hidden]", "display: none")
+        joined = " ".join(_bodies(self.css, ".rd-entry-valid"))
+        self.assertNotRegex(joined, r"\b(height|min-height):\s*[3-9]")
+
+    def test_progress_motion_respects_reduced_motion(self):
+        block = self.css.split("prefers-reduced-motion: reduce", 1)[1]
+        for needle in (".rd-entry-progress > i", ".rd-entry-valid", ".rd-entry-step::before"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, block)
+
+    def test_entry_page_scroll_padding_clears_the_dock(self):
+        self._assert_decl("html:has(.rd-entry-dock)", "scroll-padding-bottom")
+        joined = " ".join(_bodies(self.css, "html:has(.rd-entry-dock)"))
+        self.assertIn("--rd-entry-dock-offset", joined)
+        self.assertIn("--rd-entry-dock-height", joined)

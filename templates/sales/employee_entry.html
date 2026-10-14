@@ -3,6 +3,9 @@
 {% block employee_header %}
 <span>{% trans "Sales entry" %}</span>
 {% endblock %}
+{% block employee_progress %}
+<div class="rd-entry-progress" aria-hidden="true"><i></i></div>
+{% endblock %}
 {% block content %}
 <div class="rd-sale-form">
   <form
@@ -27,6 +30,7 @@
               <div class="rd-entry-field">
                 <label class="rd-entry-field__label" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
                 {{ form.reference_number }}
+                <svg class="rd-entry-valid" role="img" aria-label="{% trans 'Number looks valid' %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" hidden><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
                 <button
                   type="button"
                   class="employee-clipboard-paste-btn btn btn-sm"
@@ -81,6 +85,7 @@
 
           <div class="rd-entry-blk rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
             <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pay" aria-hidden="true">2</span>
               <span class="rd-entry-blk__title">{% trans "Where did you receive the money?" %}</span>
               <div class="rd-entry-blk__end">
                 {% if acting_employee and app_settings.sales_show_employee_payment %}
@@ -133,6 +138,7 @@
 
           <div class="rd-entry-blk rd-field-group{% if form.company.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="co" aria-hidden="true">3</span>
               <span class="rd-entry-blk__title">{% trans "Company" %}</span>
               <div class="rd-entry-blk__end">
                 <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm rd-entry-spinner" role="status" aria-hidden="true"></span>
@@ -162,6 +168,7 @@
 
           <div class="rd-entry-blk rd-field-group{% if form.product.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pk" aria-hidden="true">4</span>
               <span class="rd-entry-blk__title">{% trans "Product" %}</span>
             </div>
             {{ form.product }}
@@ -177,6 +184,7 @@
 
           <div class="rd-entry-blk rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pr" aria-hidden="true">5</span>
               <span class="rd-entry-blk__title">{% trans "Price" %}</span>
               <div class="rd-entry-blk__end">
                 <span class="rd-entry-est tabular-nums" id="rd-sale-preview" hidden>
@@ -907,6 +915,7 @@
 })();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>
+<script src="{% static 'js/employee-entry-progress.js' %}{{ static_cache_query }}"></script>
 {% if form.errors %}
 <script>
 (function () {

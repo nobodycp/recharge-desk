@@ -5881,6 +5881,10 @@ msgstr "إضافة ملاحظة (اختياري)"
 msgid "+ Note"
 msgstr "+ ملاحظة"
 
+#: templates/sales/employee_entry.html
+msgid "Number looks valid"
+msgstr "الرقم صحيح"
+
 #: templates/sales/employee_entry.html:248
 msgid "Save sale"
 msgstr "حفظ البيع"
