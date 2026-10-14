@@ -43,27 +43,31 @@
     return t === "dark" ? "dark" : "light";
   }
 
-  function onReady() {
-    document.querySelectorAll(".app-theme-toggle [data-app-theme]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        applyTheme(btn.getAttribute("data-app-theme"));
-      });
-    });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest) return;
+    var paired = e.target.closest(".app-theme-toggle [data-app-theme]");
+    if (paired) {
+      applyTheme(paired.getAttribute("data-app-theme"));
+      return;
+    }
+    if (e.target.closest("[data-app-theme-toggle]")) {
+      applyTheme(currentTheme() === "dark" ? "light" : "dark");
+    }
+  });
 
-    document.querySelectorAll("[data-app-theme-toggle]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        applyTheme(currentTheme() === "dark" ? "light" : "dark");
-      });
-    });
-
+  function sync() {
     applyTheme(currentTheme());
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", onReady);
+    document.addEventListener("DOMContentLoaded", sync);
   } else {
-    onReady();
+    sync();
   }
+  // Boosted navigation re-renders the toggles with server-side aria state.
+  document.addEventListener("htmx:afterSettle", function (e) {
+    if (e.target === document.body) sync();
+  });
 
   window.setAppTheme = applyTheme;
 })();

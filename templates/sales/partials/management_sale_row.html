@@ -30,7 +30,7 @@
     <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
     <td class="text-end text-nowrap">
       <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
         {% if s.status != "cancelled" and not s.charge_is_open %}
           <form
             method="post"

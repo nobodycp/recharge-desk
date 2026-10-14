@@ -26,22 +26,11 @@
     if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
   }
 
-  function init() {
-    var nav = document.querySelector("[data-rd-sidebar-nav]");
-    if (!nav) return;
-
-    nav.querySelectorAll("[data-rd-nav-group-toggle]").forEach(function (toggle) {
-      toggle.addEventListener("click", function () {
-        var group = toggle.closest("[data-rd-nav-group]");
-        if (!group) return;
-        setGroupOpen(group, !group.classList.contains("is-open"));
-      });
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  document.addEventListener("click", function (e) {
+    var toggle = e.target.closest && e.target.closest("[data-rd-sidebar-nav] [data-rd-nav-group-toggle]");
+    if (!toggle) return;
+    var group = toggle.closest("[data-rd-nav-group]");
+    if (!group) return;
+    setGroupOpen(group, !group.classList.contains("is-open"));
+  });
 })();

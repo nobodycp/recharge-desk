@@ -1,0 +1,44 @@
+---
+description: Boosted navigation and corner-toast conventions for every page and script
+alwaysApply: true
+---
+
+# Navigation and messages
+
+Both shells (`base_management.html`, `base_employee.html`) use htmx `hx-boost`: links and
+forms swap `<body>` without a full reload. Toasts sit in the top corner (left in Arabic,
+right in English). Most of this is automatic. `core/tests_ui_conventions.py` enforces the
+rest, so run it after UI changes.
+
+## Already automatic (no extra code needed)
+- Links and forms on new pages are boosted.
+- Download and export links (`download`, `.csv/.xlsx/.pdf/...`, `/export/`, `/media/`) do a real navigation.
+- `onsubmit="return confirm(...)"` and `onclick="return false"` cancel correctly.
+- `alert(...)` shows an error toast.
+- Unsaved-form prompts and server or network error toasts work.
+- Plain `{{ form.non_field_errors }}` becomes a toast.
+- `document`/`window`/`body` listeners and `setInterval` added by a page script are removed when you leave the page (`static/js/page-scope.js`).
+- Don't add "bind once" guards like `if (window.__x) return;`: they break re-binding.
+
+## Rules
+- Every page `{% extends %}` one of the two shells. Don't write a new `<body>`.
+- User feedback goes through Django messages in the view (`messages.success/error`).
+  Never loop over `messages` in a page, and never use `alert-success`/`alert-danger` boxes.
+- Form-wide errors:
+  `{% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}`.
+  Field errors stay under their fields.
+- Persistent state notes may use `alert-warning` / `alert-info`. A danger box that is real
+  page content (for example inside a modal) needs `data-rd-inline-alert`.
+- JS feedback: `window.rdToast(message, "success" | "error")`.
+  JS navigation: `window.rdNavigate(url)`. Not `location.href = ...`.
+- Page scripts must initialise on every visit. Use `htmx.onLoad(fn)` for element setup
+  (it also covers htmx partial swaps).
+- htmx partial endpoints: messages added in the view arrive as toasts automatically
+  (via an `HX-Trigger` header).
+
+```html
+<!-- ❌ -->
+{% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+<!-- ✅ nothing in the template; in the view: -->
+<!-- messages.success(request, _("Saved.")) -->
+```

@@ -13,15 +13,15 @@
   <link href="{{ bootstrap_css }}" rel="stylesheet">
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
   <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
-  <script src="{% static 'vendor/htmx.min.js' %}{{ static_cache_query }}"></script>
+  {% include "partials/nav_head.html" %}
   <script src="{% static 'js/nav-toggle.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/sidebar-nav.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/data-ui.js' %}{{ static_cache_query }}" defer></script>
   <script src="{% static 'js/admin-ui.js' %}{{ static_cache_query }}" defer></script>
-  <script src="{% static 'js/live-nav.js' %}{{ static_cache_query }}" defer></script>
 </head>
-<body class="rd-body app-shell" data-rd-nav>
+<body class="rd-body app-shell" data-rd-nav {% include "partials/nav_body_attrs.html" with shell="management" %}>
+  {% include "partials/toast_region.html" %}
   <div class="rd-app">
     <div
       class="rd-sidebar-backdrop"
@@ -111,7 +111,7 @@
               ></div>
             </form>
           </div>
-          <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0">
+          <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0" hx-boost="false">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
@@ -123,14 +123,13 @@
             </select>
           </form>
           {% include "partials/theme_toggle.html" with variant="shell" %}
-          <a class="btn btn-sm btn-primary" href="{% url 'sales:employee_entry' %}">{% trans "Sales entry" %}</a>
+          <a class="btn btn-sm btn-primary" href="{% url 'sales:employee_entry' %}" hx-boost="false">{% trans "Sales entry" %}</a>
           {% include "partials/nav_notifications.html" %}
           {% include "partials/user_menu.html" %}
         </div>
       </header>
 
       <main class="rd-content" data-rd-live>
-        {% include "partials/messages.html" %}
         {% block content %}{% endblock %}
       </main>
     </div>

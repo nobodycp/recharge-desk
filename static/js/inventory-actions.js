@@ -170,9 +170,9 @@
       html +=
         '<form method="post" action="' +
         d.invClearUrl +
-        '" onsubmit="return confirm(\'' +
-        (d.invConfirmClear || "") +
-        "');\">" +
+        '" hx-confirm="' +
+        escapeAttr(d.invConfirmClear || "") +
+        '">' +
         '<input type="hidden" name="csrfmiddlewaretoken" value="' +
         token +
         '">' +
@@ -188,9 +188,9 @@
       html +=
         '<form method="post" action="' +
         d.invDeleteUrl +
-        '" onsubmit="return confirm(\'' +
-        (d.invConfirmDelete || "") +
-        "');\">" +
+        '" hx-confirm="' +
+        escapeAttr(d.invConfirmDelete || "") +
+        '">' +
         '<input type="hidden" name="csrfmiddlewaretoken" value="' +
         token +
         '">' +
@@ -201,6 +201,11 @@
     }
 
     popoverPanel.innerHTML = html;
+    if (window.htmx) window.htmx.process(popoverPanel);
+  }
+
+  function escapeAttr(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
   function openPopover(toggle) {
@@ -243,7 +248,9 @@
         }
       });
     }
+  }
 
+  function bindDocument() {
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         if (dialog && !dialog.hidden) closeDialog();
@@ -285,6 +292,7 @@
     });
   }
 
+  bindDocument();
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

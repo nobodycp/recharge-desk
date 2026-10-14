@@ -23,7 +23,7 @@
       {% if company %}
         <div class="border-top pt-3 mt-3">
           {% if company.is_deletable %}
-            <form method="post" action="{% url 'companies:company_delete' company.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}');">
+            <form method="post" action="{% url 'companies:company_delete' company.pk %}" hx-confirm="{% filter force_escape %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-outline-danger">{% trans "Delete company" %}</button>
             </form>

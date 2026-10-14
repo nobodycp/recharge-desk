@@ -16,13 +16,10 @@
   >
           {% csrf_token %}
           <input type="hidden" name="form_token" value="{{ form_token }}">
-          {% if form.errors %}
-            <div class="rd-form-error-banner" role="alert">
-              <div class="rd-form-error-banner__title">{% trans "Please fix the highlighted fields." %}</div>
-              {% if form.non_field_errors %}
-                <div class="rd-form-error-banner__list">{{ form.non_field_errors }}</div>
-              {% endif %}
-            </div>
+          {% if form.non_field_errors %}
+            {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
+          {% elif form.errors %}
+            <div data-rd-flash hidden><p data-level="error">{% trans "Please fix the highlighted fields." %}</p></div>
           {% endif %}
 
           <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
@@ -728,11 +725,11 @@
         }
         if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
           navigator.clipboard.readText().then(applyText).catch(function () {
-            if (failMsg) window.alert(failMsg);
+            if (failMsg) window.rdToast(failMsg, "error");
             ref.focus();
           });
         } else {
-          if (failMsg) window.alert(failMsg);
+          if (failMsg) window.rdToast(failMsg, "error");
           ref.focus();
         }
       });
@@ -856,16 +853,12 @@
     updateSimStockPreview();
   };
 
-  /* Document listeners once — HTMX body swaps re-run this script without replacing document. */
-  if (!window.__rdEmployeeSaleDocBound) {
-    window.__rdEmployeeSaleDocBound = true;
-    document.addEventListener("click", function (e) {
-      if (typeof window.__rdEmployeeSaleOnClick === "function") window.__rdEmployeeSaleOnClick(e);
-    });
-    document.addEventListener("htmx:afterSwap", function (evt) {
-      if (typeof window.__rdEmployeeSaleOnSwap === "function") window.__rdEmployeeSaleOnSwap(evt);
-    });
-  }
+  document.addEventListener("click", function (e) {
+    if (typeof window.__rdEmployeeSaleOnClick === "function") window.__rdEmployeeSaleOnClick(e);
+  });
+  document.addEventListener("htmx:afterSwap", function (evt) {
+    if (typeof window.__rdEmployeeSaleOnSwap === "function") window.__rdEmployeeSaleOnSwap(evt);
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initSaleFormUi);
@@ -878,7 +871,7 @@
 {% if form.errors %}
 <script>
 (function () {
-  var first = document.querySelector(".rd-sale-form .has-error, .rd-sale-form .is-invalid, .rd-form-error-banner");
+  var first = document.querySelector(".rd-sale-form .has-error, .rd-sale-form .is-invalid");
   if (first && first.scrollIntoView) {
     window.setTimeout(function () {
       first.scrollIntoView({ block: "center", behavior: "smooth" });

@@ -19,11 +19,11 @@
     return parts.join("&");
   }
 
+  // The leave-page prompt itself lives in nav.js and keys off .is-dirty.
   function initDirtyForm(form) {
     var bar = form.querySelector("[data-rd-savebar]");
     if (!bar) return;
     var initial = snapshot(form);
-    var submitting = false;
     var forced = bar.hasAttribute("data-rd-savebar-force");
 
     function refresh() {
@@ -35,18 +35,13 @@
     form.addEventListener("input", refresh);
     form.addEventListener("change", refresh);
     form.addEventListener("submit", function () {
-      submitting = true;
+      form.setAttribute("data-rd-submitting", "");
     });
     form.addEventListener("reset", function () {
       setTimeout(function () {
         form.dispatchEvent(new CustomEvent("rd:reset"));
         refresh();
       }, 0);
-    });
-    window.addEventListener("beforeunload", function (e) {
-      if (submitting || snapshot(form) === initial) return;
-      e.preventDefault();
-      e.returnValue = "";
     });
   }
 
@@ -213,6 +208,8 @@
     if (!href) return;
     if (e.metaKey || e.ctrlKey) {
       window.open(href, "_blank");
+    } else if (window.rdNavigate) {
+      window.rdNavigate(href);
     } else {
       window.location.href = href;
     }
@@ -226,19 +223,28 @@
     });
   });
 
-  function init(root) {
-    root.querySelectorAll("form[data-rd-dirty-form]").forEach(initDirtyForm);
-    root.querySelectorAll("[data-rd-drop]").forEach(initDrop);
-    root.querySelectorAll("[data-rd-bind]").forEach(initBinding);
-    root.querySelectorAll("[data-rd-file-pick]").forEach(initFilePick);
-    root.querySelectorAll("form[data-rd-confirm-gate]").forEach(initConfirmGate);
+  function each(root, selector, fn) {
+    if (!root.querySelectorAll) return;
+    var found = Array.prototype.slice.call(root.querySelectorAll(selector));
+    if (root.matches && root.matches(selector)) found.unshift(root);
+    found.forEach(function (el) {
+      if (el.__rdAdminUi) return;
+      el.__rdAdminUi = true;
+      fn(el);
+    });
   }
 
-  document.addEventListener("rd:content-swapped", function (e) {
-    init(e.detail.root);
-  });
+  function init(root) {
+    each(root, "form[data-rd-dirty-form]", initDirtyForm);
+    each(root, "[data-rd-drop]", initDrop);
+    each(root, "[data-rd-bind]", initBinding);
+    each(root, "[data-rd-file-pick]", initFilePick);
+    each(root, "form[data-rd-confirm-gate]", initConfirmGate);
+  }
 
-  if (document.readyState === "loading") {
+  if (window.htmx) {
+    window.htmx.onLoad(init);
+  } else if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       init(document);
     });

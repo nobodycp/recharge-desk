@@ -251,7 +251,7 @@
     });
 
     document.addEventListener("click", function (ev) {
-      if (listEl.hidden) return;
+      if (!listEl.isConnected || listEl.hidden) return;
       if (listEl.contains(ev.target)) return;
       if (ev.target === searchInput || searchInput.contains(ev.target)) return;
       closeList();

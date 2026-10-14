@@ -1,0 +1,10 @@
+{% load i18n %}
+<div
+  id="rd-toast-region"
+  class="rd-toast-region"
+  hx-preserve="true"
+  aria-live="polite"
+  data-close-label="{% trans 'Close' %}"
+  data-action-failed="{% trans 'Could not complete the action.' %}"
+></div>
+{% include "partials/messages.html" %}

@@ -164,11 +164,11 @@
     if (phone.length === 9 && phone.charAt(0) === "5") phone = "0" + phone;
     phoneInp.value = phone;
     if (!phone) {
-      window.alert(root.getAttribute("data-msg-phone") || "");
+      window.rdToast(root.getAttribute("data-msg-phone") || "", "error");
       return;
     }
     if (!isValidRefreshPhone(phone)) {
-      window.alert(root.getAttribute("data-msg-invalid-phone") || "");
+      window.rdToast(root.getAttribute("data-msg-invalid-phone") || "", "error");
       return;
     }
     var runId = ++activeRun;

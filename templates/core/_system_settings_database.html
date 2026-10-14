@@ -22,7 +22,7 @@
       </div>
     </header>
     <div class="rd-set-section__body">
-      <a class="btn btn-primary" href="{% url 'core:database_export' %}">
+      <a hx-boost="false" class="btn btn-primary" href="{% url 'core:database_export' %}">
         {% trans "Download database" %}
       </a>
     </div>
@@ -42,7 +42,7 @@
       <input type="hidden" name="tab" value="{{ database_tab_id }}">
 
       {% if import_form.non_field_errors %}
-        <div class="alert alert-danger mb-0">{{ import_form.non_field_errors }}</div>
+        {% include "partials/form_errors_toast.html" with errors=import_form.non_field_errors %}
       {% endif %}
 
       {% with f=import_form.backup_file %}

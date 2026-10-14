@@ -6200,6 +6200,18 @@ msgstr ""
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
 
+#: templates/partials/nav_body_attrs.html
+msgid "You have unsaved changes. Leave this page?"
+msgstr "لديك تغييرات غير محفوظة. هل تريد مغادرة الصفحة؟"
+
+#: templates/partials/nav_body_attrs.html
+msgid "Something went wrong on the server. Please try again."
+msgstr "حدث خطأ في الخادم. حاول مرة أخرى."
+
+#: templates/partials/nav_body_attrs.html
+msgid "Could not reach the server. Check your connection."
+msgstr "تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت."
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."

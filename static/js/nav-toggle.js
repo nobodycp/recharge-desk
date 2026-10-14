@@ -19,53 +19,48 @@
  *   * `is-open` / `is-visible` classes are added/removed so the
  *     existing CSS keeps working untouched,
  *   * `aria-expanded` is kept in sync with the state.
+ *
+ * Listeners are delegated and the state lives on the panel's class, so the
+ * toggle keeps working after boosted navigation replaces the shell markup.
  */
 (function () {
   "use strict";
 
-  function init() {
+  function parts() {
     var body = document.querySelector("[data-rd-nav]");
-    if (!body) return;
-
+    if (!body) return null;
     var panel = body.querySelector("[data-rd-nav-panel]");
-    var backdrop = body.querySelector("[data-rd-nav-backdrop]");
-    var toggle = body.querySelector("[data-rd-nav-toggle]");
-    if (!panel || !toggle) return;
-
-    var open = false;
-
-    function apply() {
-      panel.classList.toggle("is-open", open);
-      if (backdrop) backdrop.classList.toggle("is-visible", open);
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-
-    function setOpen(next) {
-      if (next === open) return;
-      open = !!next;
-      apply();
-    }
-
-    toggle.addEventListener("click", function () {
-      setOpen(!open);
-    });
-
-    if (backdrop) {
-      backdrop.addEventListener("click", function () {
-        setOpen(false);
-      });
-    }
-
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" || e.key === "Esc") setOpen(false);
-    });
-
-    apply();
+    if (!panel) return null;
+    return {
+      panel: panel,
+      backdrop: body.querySelector("[data-rd-nav-backdrop]"),
+      toggle: body.querySelector("[data-rd-nav-toggle]"),
+    };
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  function setOpen(open) {
+    var p = parts();
+    if (!p) return;
+    p.panel.classList.toggle("is-open", open);
+    if (p.backdrop) p.backdrop.classList.toggle("is-visible", open);
+    if (p.toggle) p.toggle.setAttribute("aria-expanded", open ? "true" : "false");
   }
+
+  function isOpen() {
+    var p = parts();
+    return !!(p && p.panel.classList.contains("is-open"));
+  }
+
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest) return;
+    if (e.target.closest("[data-rd-nav-toggle]")) {
+      setOpen(!isOpen());
+    } else if (e.target.closest("[data-rd-nav-backdrop]")) {
+      setOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "Escape" || e.key === "Esc") && isOpen()) setOpen(false);
+  });
 })();

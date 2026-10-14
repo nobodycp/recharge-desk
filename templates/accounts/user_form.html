@@ -67,7 +67,7 @@
             method="post"
             action="{% url 'accounts:user_delete' target_profile.pk %}"
             class="m-0"
-            onsubmit="return confirm('{% trans "Delete this user permanently? This cannot be undone." %}');"
+            hx-confirm="{% filter force_escape %}{% trans "Delete this user permanently? This cannot be undone." %}{% endfilter %}"
           >
             {% csrf_token %}
             <button class="btn btn-outline-danger" type="submit">{% trans "Delete user permanently" %}</button>

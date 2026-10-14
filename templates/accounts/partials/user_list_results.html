@@ -25,7 +25,7 @@
                 <span class="rd-person-cell">
                   <span class="rd-avatar rd-avatar-md{% if p.role == 'management' %} rd-avatar--accent{% endif %}" aria-hidden="true">{{ p.initials }}</span>
                   <span class="rd-person__id">
-                    <a class="rd-person__name" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false">{{ p.full_name|default:p.user.username }}</a>
+                    <a class="rd-person__name" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page>{{ p.full_name|default:p.user.username }}</a>
                     <span class="rd-person__sub">@{{ p.user.username }}{% if p.user.pk == request.user.pk %} · {% trans "You" %}{% endif %}</span>
                   </span>
                 </span>
@@ -35,12 +35,12 @@
               <td class="small text-secondary text-nowrap">{% if p.user.last_login %}<span title="{{ p.user.last_login|date:'Y-m-d H:i' }}">{{ p.user.last_login|naturaltime }}</span>{% else %}{% trans "Never" %}{% endif %}</td>
               <td class="text-end">
                 <span class="rd-row-actions">
-                  <a class="rd-icon-btn" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" title="{% trans 'Edit' %}" aria-label="{% trans 'Edit' %}">
+                  <a class="rd-icon-btn" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page title="{% trans 'Edit' %}" aria-label="{% trans 'Edit' %}">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                   </a>
                   {% if p.user.pk != request.user.pk %}
                     <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
-                          onsubmit="return confirm('{% trans "Delete this user permanently? This cannot be undone." %}');">
+                          hx-confirm="{% filter force_escape %}{% trans "Delete this user permanently? This cannot be undone." %}{% endfilter %}">
                       {% csrf_token %}
                       <button type="submit" class="rd-icon-btn rd-icon-btn--danger" title="{% trans 'Delete user' %}" aria-label="{% trans 'Delete user' %}">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
@@ -63,7 +63,7 @@
         <div class="rd-person-cell">
           <span class="rd-avatar rd-avatar-md{% if p.role == 'management' %} rd-avatar--accent{% endif %}" aria-hidden="true">{{ p.initials }}</span>
           <span class="rd-person__id">
-            <a class="rd-person__name" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false">{{ p.full_name|default:p.user.username }}</a>
+            <a class="rd-person__name" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page>{{ p.full_name|default:p.user.username }}</a>
             <span class="rd-person__sub">@{{ p.user.username }}</span>
           </span>
         </div>
@@ -72,10 +72,10 @@
           <span class="rd-status{% if p.user.is_active and p.is_active_profile %} is-on{% endif %}">{% if p.user.is_active and p.is_active_profile %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</span>
         </div>
         <div class="mt-2 d-flex gap-1 flex-wrap">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false">{% trans "Edit" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
           {% if p.user.pk != request.user.pk %}
             <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
-                  onsubmit="return confirm('{% trans "Delete this user permanently? This cannot be undone." %}');">
+                  hx-confirm="{% filter force_escape %}{% trans "Delete this user permanently? This cannot be undone." %}{% endfilter %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
             </form>

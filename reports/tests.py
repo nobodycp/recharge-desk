@@ -1011,8 +1011,8 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertIn("table", body)
         self.assertNotIn("<h1", body)
 
-    def test_filters_use_live_nav_not_htmx_partial(self):
-        """Filter Apply / sort / pagination go through live-nav (full main swap).
+    def test_filters_use_boosted_page_nav_not_htmx_partial(self):
+        """Filter Apply / sort / pagination are boosted page loads (whole body).
 
         The old hx-get → #phone-lines-list-results path left the filter form
         out of sync with the URL after Apply/Back, so filters looked broken.
@@ -1025,8 +1025,7 @@ class PhoneLinesStatementTests(_ReportsBase):
         body = r.content.decode()
         self.assertIn('id="phone-lines-filter-form"', body)
         self.assertNotIn('hx-get=', body)
-        self.assertNotIn('hx-boost="true"', body)
-        self.assertIn('hx-boost="false"', body)
+        self.assertRegex(body, r'<body[^>]*hx-boost="true"')
         # Active filters keep the filter card open.
         self.assertIn('class="rd-card mb-3 position-relative rd-filter-card" open', body)
 

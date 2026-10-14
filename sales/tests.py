@@ -840,8 +840,8 @@ class EmployeeRecentSalesTests(TestCase):
     def test_entry_validation_errors_are_highlighted(self):
         resp = self.client.post(reverse("sales:employee_entry"), {})
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "rd-form-error-banner")
-        self.assertContains(resp, "Please fix the highlighted fields.")
+        self.assertNotContains(resp, "rd-form-error-banner")
+        self.assertContains(resp, '<p data-level="error">Please fix the highlighted fields.</p>')
         self.assertContains(resp, "has-error")
         self.assertContains(resp, "is-invalid")
 

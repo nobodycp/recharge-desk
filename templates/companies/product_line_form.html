@@ -23,7 +23,7 @@
       {% if line %}
         <div class="border-top pt-3 mt-3">
           {% if line.is_deletable %}
-            <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}');">
+            <form method="post" action="{% url 'companies:product_line_delete' line.pk %}" hx-confirm="{% filter force_escape %}{% trans "Delete this product line and all its packages? This cannot be undone." %}{% endfilter %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-outline-danger">{% trans "Delete product line" %}</button>
             </form>

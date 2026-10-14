@@ -270,7 +270,7 @@
                   {% if d.is_auto_paused or not d.is_active %}
                   <form method="post" action="{% url 'sms_gateway:device_reactivate' d.pk %}" class="d-inline m-0">{% csrf_token %}<button class="btn btn-sm btn-outline-primary" type="submit">إعادة تفعيل</button></form>
                   {% endif %}
-                  <form method="post" action="{% url 'sms_gateway:device_delete' d.pk %}" class="d-inline m-0" onsubmit="return confirm('حذف الجهاز؟');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form>
+                  <form method="post" action="{% url 'sms_gateway:device_delete' d.pk %}" class="d-inline m-0" hx-confirm="حذف الجهاز؟">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form>
                 </div>
               </td>
             </tr>
@@ -328,7 +328,7 @@
                 <td class="tabular-nums">{{ r.value }}</td>
                 <td>{% if r.mode == 'block' %}<span class="rd-badge rd-badge--cancelled">حظر</span>{% else %}<span class="rd-badge rd-badge--paid">سماح</span>{% endif %}</td>
                 <td class="small text-secondary">{{ r.note|default:"—" }}</td>
-                <td class="text-end"><form method="post" action="{% url 'sms_gateway:access_rule_delete' r.pk %}" class="d-inline m-0" onsubmit="return confirm('حذف القاعدة؟');">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form></td>
+                <td class="text-end"><form method="post" action="{% url 'sms_gateway:access_rule_delete' r.pk %}" class="d-inline m-0" hx-confirm="حذف القاعدة؟">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">حذف</button></form></td>
               </tr>
             {% empty %}
               <tr><td colspan="4" class="text-center py-3 text-secondary">لا توجد قواعد.</td></tr>

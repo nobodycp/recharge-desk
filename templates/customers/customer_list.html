@@ -7,11 +7,11 @@
     <p class="rd-text-muted mb-0">{% trans "Customers buying on account and their balances." %}</p>
   </div>
   <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customers_export_csv' %}?{{ request.GET.urlencode }}">
+    <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customers_export_csv' %}?{{ request.GET.urlencode }}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       {% trans "Export CSV" %}
     </a>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_payments_export_csv' %}">
+    <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_payments_export_csv' %}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       {% trans "Export payments CSV" %}
     </a>
@@ -83,13 +83,13 @@
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}" title="{% trans 'Edit customer' %}">{% trans "Edit" %}</a>
                     {% if c.current_balance > 0 %}
                       <form method="post" action="{% url 'customers:customer_write_off' c.pk %}" class="d-inline m-0"
-                            onsubmit="return confirm('{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}');">
+                            hx-confirm="{% filter force_escape %}{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}{% endfilter %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-warning" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
                       </form>
                     {% endif %}
                     <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline m-0"
-                          onsubmit="return confirm('{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}');">
+                          hx-confirm="{% filter force_escape %}{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}{% endfilter %}">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete customer' %}">{% trans "Delete" %}</button>
                     </form>

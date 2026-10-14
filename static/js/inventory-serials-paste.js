@@ -91,7 +91,7 @@
     }
 
     function isOpen() {
-      return dialog && !dialog.hidden;
+      return dialog && dialog.isConnected && !dialog.hidden;
     }
 
     trigger.addEventListener("click", function () {

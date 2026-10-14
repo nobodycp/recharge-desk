@@ -198,11 +198,7 @@
             {% endif %}
           </div>
 
-          {% if public_page_token_form.non_field_errors %}
-            <div class="text-danger small">
-              {{ public_page_token_form.non_field_errors|join:" " }}
-            </div>
-          {% endif %}
+          {% include "partials/form_errors_toast.html" with errors=public_page_token_form.non_field_errors %}
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-outline-primary btn-sm">تعيين التوكن</button>

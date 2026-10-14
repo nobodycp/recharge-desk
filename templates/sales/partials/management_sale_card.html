@@ -35,7 +35,7 @@
     <div class="mt-2">{% include "sales/partials/management_charge_details.html" with s=s row_layout="card" %}</div>
   {% endif %}
   <div class="d-flex flex-wrap gap-1 mt-2">
-    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
     {% if s.status != "cancelled" and not s.charge_is_open %}
       <form
         method="post"

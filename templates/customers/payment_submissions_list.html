@@ -43,7 +43,7 @@
               <tr>
                 <td class="small text-secondary text-nowrap">{{ row.created_at }}</td>
                 <td>
-                  <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false">{{ row.customer.name }}</a>
+                  <a href="{% url 'customers:customer_detail' row.customer_id %}" class="fw-semibold" hx-boost="false" data-rd-page>{{ row.customer.name }}</a>
                 </td>
                 <td class="tabular-nums text-end fw-semibold">{{ row.amount|intcomma }}</td>
                 <td>
@@ -88,7 +88,7 @@
             <span class="fw-bold tabular-nums">{{ row.amount|intcomma }}</span>
           </div>
           <div class="fw-semibold mt-1">
-            <a href="{% url 'customers:customer_detail' row.customer_id %}" hx-boost="false">{{ row.customer.name }}</a>
+            <a href="{% url 'customers:customer_detail' row.customer_id %}" hx-boost="false" data-rd-page>{{ row.customer.name }}</a>
           </div>
           <div class="mt-2">
             <span class="rd-mobile-k d-block">{% trans "Payment method" %}</span>

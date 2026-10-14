@@ -1,0 +1,5 @@
+{% if errors %}
+<div data-rd-flash hidden>
+  {% for error in errors %}<p data-level="error">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}

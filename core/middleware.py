@@ -31,12 +31,14 @@ are present.
 
 from __future__ import annotations
 
+import json
 from typing import Iterable
 from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.shortcuts import redirect
 from django.utils import translation
+from django.utils.cache import patch_vary_headers
 from django.utils.translation import get_language_from_path
 
 
@@ -238,6 +240,73 @@ class SecurityHeadersMiddleware:
         if "Permissions-Policy" not in response:
             response["Permissions-Policy"] = self.permissions_policy
         return response
+
+
+_HTMX_PARTIAL_HEADERS = (
+    "HTTP_HX_REQUEST",
+    "HTTP_HX_TARGET",
+    "HTTP_HX_TRIGGER",
+    "HTTP_HX_TRIGGER_NAME",
+)
+
+
+class HtmxNavigationMiddleware:
+    """Glue between ``hx-boost`` page navigation and views written for full loads.
+
+    * Boosted navigations and history restores swap the whole ``<body>``, so
+      they must get the full page. Views branch on ``HX-Request`` to return
+      partials; hiding the partial-request headers makes them render normally.
+      Boosted links inside a results grid carry ``HX-Target`` (the grid id —
+      ``<body>`` has none) and still get their partial.
+    * Partial htmx responses never render the base template, so pending
+      ``django.contrib.messages`` would otherwise wait for the next full page.
+      They are moved into ``HX-Trigger: {"rdToast": [...]}`` (static/js/toast.js).
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        meta = request.META
+        boosted_page = meta.get("HTTP_HX_BOOSTED") == "true" and not meta.get("HTTP_HX_TARGET")
+        full_page = boosted_page or meta.get("HTTP_HX_HISTORY_RESTORE_REQUEST") == "true"
+        if full_page:
+            for key in _HTMX_PARTIAL_HEADERS:
+                meta.pop(key, None)
+            request.__dict__.pop("headers", None)
+
+        response = self.get_response(request)
+
+        patch_vary_headers(response, ("HX-Request",))
+        if meta.get("HTTP_HX_REQUEST") == "true" and self._keeps_page(response):
+            self._attach_messages(request, response)
+        return response
+
+    @staticmethod
+    def _keeps_page(response) -> bool:
+        if 300 <= response.status_code < 400:
+            return False
+        return not any(h in response for h in ("HX-Redirect", "HX-Location", "HX-Refresh"))
+
+    @staticmethod
+    def _attach_messages(request, response) -> None:
+        from django.contrib.messages import get_messages
+
+        toasts = [{"message": str(m), "level": m.level_tag or "info"} for m in get_messages(request)]
+        if not toasts:
+            return
+        raw = response.get("HX-Trigger", "").strip()
+        if raw.startswith("{"):
+            triggers = json.loads(raw)
+        else:
+            triggers = {name.strip(): "" for name in raw.split(",") if name.strip()}
+        existing = triggers.get("rdToast")
+        if isinstance(existing, list):
+            toasts = existing + toasts
+        elif existing:
+            toasts = [existing] + toasts
+        triggers["rdToast"] = toasts
+        response["HX-Trigger"] = json.dumps(triggers)
 
 
 class AppDefaultLanguageMiddleware:

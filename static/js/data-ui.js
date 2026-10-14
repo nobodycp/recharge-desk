@@ -1,41 +1,21 @@
 /**
- * Data UI: copy-to-clipboard, HTMX grid loading, lightweight feedback.
+ * Data UI: copy-to-clipboard, HTMX grid loading, topbar search and bell.
+ *
+ * Loaded once per shell; boosted navigation swaps <body> content, so anything
+ * bound to an element is (re)bound from onContent().
  */
 (function () {
-  function showToast(message, level) {
-    var text = (message || "").toString().trim();
-    if (!text) return;
-    var el = document.createElement("div");
-    var kind = level === "error" || level === "success" || level === "warning" ? level : "info";
-    el.className = "rd-toast rd-toast--" + kind + " shadow-sm";
-    el.setAttribute("role", kind === "error" ? "alert" : "status");
-    el.textContent = text;
-    document.body.appendChild(el);
-    requestAnimationFrame(function () {
-      el.classList.add("is-visible");
-    });
-    setTimeout(function () {
-      el.classList.remove("is-visible");
-      setTimeout(function () {
-        el.remove();
-      }, 220);
-    }, kind === "error" ? 2800 : 1800);
+  function onContent(fn) {
+    if (window.htmx) {
+      window.htmx.onLoad(fn);
+    } else if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        fn(document.body);
+      });
+    } else {
+      fn(document.body);
+    }
   }
-
-  // HTMX only: HX-Trigger {"rdToast": {"message": "...", "level": "success"|"error"}}.
-  // Do not mirror Django flash alerts into toasts — that duplicates the top
-  // banner (e.g. تسوية الرصيد) and used to collapse into a narrow RTL strip.
-  document.body.addEventListener("rdToast", function (evt) {
-    var detail = (evt && evt.detail) || {};
-    var payload = detail.value !== undefined ? detail.value : detail;
-    if (typeof payload === "string") {
-      showToast(payload, "info");
-      return;
-    }
-    if (payload && typeof payload === "object") {
-      showToast(payload.message || payload.msg || "", payload.level || "info");
-    }
-  });
 
   document.body.addEventListener("click", function (e) {
     var btn = e.target.closest(".rd-copy-ref");
@@ -47,7 +27,7 @@
       navigator.clipboard.writeText(text).then(
         function () {
           var msg = btn.getAttribute("data-copy-done");
-          showToast(msg || "Copied", "success");
+          window.rdToast(msg || "Copied", "success");
         },
         function () {}
       );
@@ -268,8 +248,8 @@
     if (card) refreshFilterBadge(card);
   });
 
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
+  onContent(function (root) {
+    if (root.querySelectorAll) root.querySelectorAll(".rd-filter-card").forEach(refreshFilterBadge);
   });
 
   // ===== Notifications: live polling for the topbar bell ==============
@@ -283,19 +263,12 @@
   // the tab regains focus so management never sees stale numbers
   // when switching back from another tab.
   (function setupLiveNotifications() {
-    var root = document.querySelector("[data-rd-notifications]");
-    if (!root) return;
-    var url = root.getAttribute("data-poll-url");
+    var initialRoot = document.querySelector("[data-rd-notifications]");
+    if (!initialRoot) return;
+    var url = initialRoot.getAttribute("data-poll-url");
     if (!url) return;
 
     var POLL_INTERVAL = 15000; // ms — cheap two COUNTs per call
-    var badge = root.querySelector("[data-rd-notif-badge]");
-    var aria = root.querySelector("[data-rd-notif-aria]");
-    var awaitingEl = root.querySelector("[data-rd-notif-awaiting]");
-    var pendingEl = root.querySelector("[data-rd-notif-pending]");
-    var submissionsEl = root.querySelector("[data-rd-notif-submissions]");
-    var emptyEl = root.querySelector("[data-rd-notif-empty]");
-    var trigger = root.querySelector(".rd-notif-trigger");
 
     var timer = null;
     var inflight = null;
@@ -317,6 +290,15 @@
     }
 
     function applyPayload(p) {
+      var root = document.querySelector("[data-rd-notifications]");
+      if (!root) return;
+      var badge = root.querySelector("[data-rd-notif-badge]");
+      var aria = root.querySelector("[data-rd-notif-aria]");
+      var awaitingEl = root.querySelector("[data-rd-notif-awaiting]");
+      var pendingEl = root.querySelector("[data-rd-notif-pending]");
+      var submissionsEl = root.querySelector("[data-rd-notif-submissions]");
+      var emptyEl = root.querySelector("[data-rd-notif-empty]");
+      var trigger = root.querySelector(".rd-notif-trigger");
       var total = Number(p.total || 0);
       var awaiting = Number(p.awaiting || 0);
       var pending = Number(p.pending || 0);
@@ -439,203 +421,217 @@
   // the highlighted item (or submits to the full results page if
   // nothing is highlighted), Escape closes.
   (function setupGlobalSearch() {
-    var root = document.querySelector("[data-rd-search]");
-    if (!root) return;
-    var toggle = root.querySelector("[data-rd-search-toggle]");
-    var panel = root.querySelector("[data-rd-search-panel]");
-    var input = root.querySelector("#rd-global-search");
-    var results = root.querySelector("[data-rd-search-results]");
-    var suggestUrl = root.getAttribute("data-suggest-url");
-    if (!toggle || !panel || !input || !results || !suggestUrl) return;
-
-    var debounceTimer = null;
-    var lastQuery = null;
-    var inflight = null;
-    var selectedIndex = -1;
-    var renderedItems = [];
-
-    function open() {
-      root.setAttribute("data-rd-search-open", "true");
-      toggle.setAttribute("aria-expanded", "true");
-      panel.hidden = false;
-      setTimeout(function () {
-        input.focus();
-        input.select();
-      }, 0);
-      if (input.value.trim().length >= 2 && input.value.trim() !== lastQuery) {
-        fetchSuggestions(input.value.trim());
-      }
-    }
-
-    function close() {
-      root.removeAttribute("data-rd-search-open");
-      toggle.setAttribute("aria-expanded", "false");
-      panel.hidden = true;
-      hideResults();
-      selectedIndex = -1;
-    }
-
-    function hideResults() {
-      results.hidden = true;
-      results.innerHTML = "";
-      renderedItems = [];
-    }
-
-    function escapeHtml(s) {
-      return String(s == null ? "" : s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    function render(payload) {
-      results.innerHTML = "";
-      renderedItems = [];
-      var groups = (payload && payload.groups) || [];
-      if (!groups.length) {
-        var empty = document.createElement("div");
-        empty.className = "rd-search-empty";
-        empty.textContent = payload.empty_label || "No results";
-        results.appendChild(empty);
-      } else {
-        groups.forEach(function (group) {
-          var section = document.createElement("div");
-          section.className = "rd-search-group";
-          section.setAttribute("role", "group");
-
-          var label = document.createElement("div");
-          label.className = "rd-search-group-label";
-          label.textContent = group.label || group.key;
-          section.appendChild(label);
-
-          (group.items || []).forEach(function (item) {
-            var a = document.createElement("a");
-            a.className = "rd-search-item";
-            a.setAttribute("role", "option");
-            a.href = item.url;
-            a.innerHTML =
-              '<span class="rd-search-item-label">' +
-              escapeHtml(item.label) +
-              "</span>" +
-              (item.sublabel
-                ? '<span class="rd-search-item-sublabel">' +
-                  escapeHtml(item.sublabel) +
-                  "</span>"
-                : "");
-            section.appendChild(a);
-            renderedItems.push(a);
-          });
-          results.appendChild(section);
-        });
-      }
-      if (payload.more_url) {
-        var more = document.createElement("a");
-        more.className = "rd-search-more";
-        more.href = payload.more_url;
-        more.textContent = payload.more_label || "See all results";
-        results.appendChild(more);
-      }
-      results.hidden = false;
-      selectedIndex = -1;
-    }
-
-    function showHint(text) {
-      results.innerHTML =
-        '<div class="rd-search-hint">' + escapeHtml(text) + "</div>";
-      results.hidden = false;
-      renderedItems = [];
-      selectedIndex = -1;
-    }
-
-    function fetchSuggestions(q) {
-      lastQuery = q;
-      if (inflight && typeof inflight.abort === "function") {
-        try { inflight.abort(); } catch (_) {}
-      }
-      var url = suggestUrl + "?q=" + encodeURIComponent(q);
-      var ctrl = typeof AbortController === "function" ? new AbortController() : null;
-      inflight = ctrl;
-      fetch(url, {
-        credentials: "same-origin",
-        headers: { "X-Requested-With": "fetch" },
-        signal: ctrl ? ctrl.signal : undefined,
-      })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (payload) {
-          if (!payload || lastQuery !== q) return;
-          render(payload);
-        })
-        .catch(function () { /* ignore aborts / network blips */ });
-    }
-
-    function onInput() {
-      var q = input.value.trim();
-      if (q.length < 2) {
-        if (q.length === 0) {
-          hideResults();
-        } else {
-          showHint(input.getAttribute("data-hint") || "Type at least 2 characters…");
-        }
-        lastQuery = q;
-        return;
-      }
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(function () { fetchSuggestions(q); }, 180);
-    }
-
-    function highlight(idx) {
-      renderedItems.forEach(function (el, i) {
-        if (i === idx) {
-          el.setAttribute("aria-selected", "true");
-          el.scrollIntoView({ block: "nearest" });
-        } else {
-          el.removeAttribute("aria-selected");
-        }
-      });
-      selectedIndex = idx;
-    }
-
-    toggle.addEventListener("click", function () {
-      if (panel.hidden) open(); else close();
-    });
-    input.addEventListener("input", onInput);
-
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        close();
-        toggle.focus();
-      } else if (e.key === "ArrowDown") {
-        if (!renderedItems.length) return;
-        e.preventDefault();
-        highlight((selectedIndex + 1) % renderedItems.length);
-      } else if (e.key === "ArrowUp") {
-        if (!renderedItems.length) return;
-        e.preventDefault();
-        highlight(selectedIndex <= 0 ? renderedItems.length - 1 : selectedIndex - 1);
-      } else if (e.key === "Enter") {
-        if (selectedIndex >= 0 && renderedItems[selectedIndex]) {
-          e.preventDefault();
-          window.location.href = renderedItems[selectedIndex].href;
-        }
-        // otherwise fall through and submit the form (full results page)
-      }
-    });
+    var current = null;
 
     document.addEventListener("click", function (e) {
-      if (!panel.hidden && !root.contains(e.target)) close();
+      if (current && current.root.isConnected && !current.panel.hidden && !current.root.contains(e.target)) current.close();
     });
 
     document.addEventListener("keydown", function (e) {
       if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!current || !current.root.isConnected) return;
       var t = e.target;
       if (!t) return;
       var tag = (t.tagName || "").toUpperCase();
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t.isContentEditable) return;
       e.preventDefault();
-      open();
+      current.open();
     });
+
+    onContent(function (scope) {
+      if (!scope.querySelector) return;
+      var root = scope.matches && scope.matches("[data-rd-search]") ? scope : scope.querySelector("[data-rd-search]");
+      if (root && !root.__rdSearch) initSearch(root);
+    });
+
+    function initSearch(root) {
+      root.__rdSearch = true;
+      var toggle = root.querySelector("[data-rd-search-toggle]");
+      var panel = root.querySelector("[data-rd-search-panel]");
+      var input = root.querySelector("#rd-global-search");
+      var results = root.querySelector("[data-rd-search-results]");
+      var suggestUrl = root.getAttribute("data-suggest-url");
+      if (!toggle || !panel || !input || !results || !suggestUrl) return;
+
+      var debounceTimer = null;
+      var lastQuery = null;
+      var inflight = null;
+      var selectedIndex = -1;
+      var renderedItems = [];
+
+      function open() {
+        root.setAttribute("data-rd-search-open", "true");
+        toggle.setAttribute("aria-expanded", "true");
+        panel.hidden = false;
+        setTimeout(function () {
+          input.focus();
+          input.select();
+        }, 0);
+        if (input.value.trim().length >= 2 && input.value.trim() !== lastQuery) {
+          fetchSuggestions(input.value.trim());
+        }
+      }
+
+      function close() {
+        root.removeAttribute("data-rd-search-open");
+        toggle.setAttribute("aria-expanded", "false");
+        panel.hidden = true;
+        hideResults();
+        selectedIndex = -1;
+      }
+
+      function hideResults() {
+        results.hidden = true;
+        results.innerHTML = "";
+        renderedItems = [];
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function render(payload) {
+        results.innerHTML = "";
+        renderedItems = [];
+        var groups = (payload && payload.groups) || [];
+        if (!groups.length) {
+          var empty = document.createElement("div");
+          empty.className = "rd-search-empty";
+          empty.textContent = payload.empty_label || "No results";
+          results.appendChild(empty);
+        } else {
+          groups.forEach(function (group) {
+            var section = document.createElement("div");
+            section.className = "rd-search-group";
+            section.setAttribute("role", "group");
+
+            var label = document.createElement("div");
+            label.className = "rd-search-group-label";
+            label.textContent = group.label || group.key;
+            section.appendChild(label);
+
+            (group.items || []).forEach(function (item) {
+              var a = document.createElement("a");
+              a.className = "rd-search-item";
+              a.setAttribute("role", "option");
+              a.href = item.url;
+              a.innerHTML =
+                '<span class="rd-search-item-label">' +
+                escapeHtml(item.label) +
+                "</span>" +
+                (item.sublabel
+                  ? '<span class="rd-search-item-sublabel">' +
+                    escapeHtml(item.sublabel) +
+                    "</span>"
+                  : "");
+              section.appendChild(a);
+              renderedItems.push(a);
+            });
+            results.appendChild(section);
+          });
+        }
+        if (payload.more_url) {
+          var more = document.createElement("a");
+          more.className = "rd-search-more";
+          more.href = payload.more_url;
+          more.textContent = payload.more_label || "See all results";
+          results.appendChild(more);
+        }
+        results.hidden = false;
+        selectedIndex = -1;
+        if (window.htmx) window.htmx.process(results);
+      }
+
+      function showHint(text) {
+        results.innerHTML =
+          '<div class="rd-search-hint">' + escapeHtml(text) + "</div>";
+        results.hidden = false;
+        renderedItems = [];
+        selectedIndex = -1;
+      }
+
+      function fetchSuggestions(q) {
+        lastQuery = q;
+        if (inflight && typeof inflight.abort === "function") {
+          try { inflight.abort(); } catch (_) {}
+        }
+        var url = suggestUrl + "?q=" + encodeURIComponent(q);
+        var ctrl = typeof AbortController === "function" ? new AbortController() : null;
+        inflight = ctrl;
+        fetch(url, {
+          credentials: "same-origin",
+          headers: { "X-Requested-With": "fetch" },
+          signal: ctrl ? ctrl.signal : undefined,
+        })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (payload) {
+            if (!payload || lastQuery !== q) return;
+            render(payload);
+          })
+          .catch(function () { /* ignore aborts / network blips */ });
+      }
+
+      function onInput() {
+        var q = input.value.trim();
+        if (q.length < 2) {
+          if (q.length === 0) {
+            hideResults();
+          } else {
+            showHint(input.getAttribute("data-hint") || "Type at least 2 characters…");
+          }
+          lastQuery = q;
+          return;
+        }
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () { fetchSuggestions(q); }, 180);
+      }
+
+      function highlight(idx) {
+        renderedItems.forEach(function (el, i) {
+          if (i === idx) {
+            el.setAttribute("aria-selected", "true");
+            el.scrollIntoView({ block: "nearest" });
+          } else {
+            el.removeAttribute("aria-selected");
+          }
+        });
+        selectedIndex = idx;
+      }
+
+      toggle.addEventListener("click", function () {
+        if (panel.hidden) open(); else close();
+      });
+      input.addEventListener("input", onInput);
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          close();
+          toggle.focus();
+        } else if (e.key === "ArrowDown") {
+          if (!renderedItems.length) return;
+          e.preventDefault();
+          highlight((selectedIndex + 1) % renderedItems.length);
+        } else if (e.key === "ArrowUp") {
+          if (!renderedItems.length) return;
+          e.preventDefault();
+          highlight(selectedIndex <= 0 ? renderedItems.length - 1 : selectedIndex - 1);
+        } else if (e.key === "Enter") {
+          if (selectedIndex >= 0 && renderedItems[selectedIndex]) {
+            e.preventDefault();
+            if (window.rdNavigate) window.rdNavigate(renderedItems[selectedIndex].href);
+            else window.location.href = renderedItems[selectedIndex].href;
+          }
+          // otherwise fall through and submit the form (full results page)
+        }
+      });
+
+      current = { root: root, panel: panel, open: open, close: close };
+    }
   })();
 })();

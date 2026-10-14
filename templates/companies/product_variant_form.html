@@ -26,12 +26,12 @@
       {% if variant %}
         <div class="border-top pt-3 mt-3 d-flex flex-wrap gap-2">
           {% if variant.is_deletable %}
-            <form method="post" action="{% url 'companies:product_variant_delete' variant.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}');">
+            <form method="post" action="{% url 'companies:product_variant_delete' variant.pk %}" hx-confirm="{% filter force_escape %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-outline-danger">{% trans "Delete package" %}</button>
             </form>
           {% elif variant.is_active %}
-            <form method="post" action="{% url 'companies:product_variant_archive' variant.pk %}" onsubmit="return confirm('{% filter escapejs %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}');">
+            <form method="post" action="{% url 'companies:product_variant_archive' variant.pk %}" hx-confirm="{% filter force_escape %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-outline-warning">{% trans "Archive package" %}</button>
             </form>

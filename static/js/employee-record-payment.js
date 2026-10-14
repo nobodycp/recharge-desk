@@ -126,17 +126,17 @@
     subForm.addEventListener("submit", function (e) {
       if (!custHid || !String(custHid.value || "").trim()) {
         e.preventDefault();
-        window.alert(root.getAttribute("data-msg-customer") || "");
+        window.rdToast(root.getAttribute("data-msg-customer") || "", "error");
         return;
       }
       if (!isPaySubViaEmployee() && (!pmHid || !String(pmHid.value || "").trim())) {
         e.preventDefault();
-        window.alert(root.getAttribute("data-msg-payment") || "");
+        window.rdToast(root.getAttribute("data-msg-payment") || "", "error");
       }
     });
   }
   document.addEventListener("click", function (e) {
-    if (!acBox || acBox.hidden) return;
+    if (!acBox || !acBox.isConnected || acBox.hidden) return;
     if (root.contains(e.target)) return;
     acBox.hidden = true;
   });

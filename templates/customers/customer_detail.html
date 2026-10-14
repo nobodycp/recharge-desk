@@ -240,7 +240,7 @@
                 <span class="rd-badge rd-badge--neutral">{{ p.phone }}</span>
                 {% if p.label %}<span class="small text-secondary ms-2">{{ p.label }}</span>{% endif %}
               </span>
-              <form method="post" action="{% url 'customers:customer_remove_phone' customer.pk p.pk %}" onsubmit="return confirm('{% trans "Remove this phone?" %}');">
+              <form method="post" action="{% url 'customers:customer_remove_phone' customer.pk p.pk %}" hx-confirm="{% filter force_escape %}{% trans "Remove this phone?" %}{% endfilter %}">
                 {% csrf_token %}
                 <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Remove" %}</button>
               </form>

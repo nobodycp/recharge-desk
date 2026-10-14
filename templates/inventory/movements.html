@@ -78,7 +78,7 @@
                 {% if not read_only %}
                 <td class="text-end rd-inventory-stock-table__actions">
                   <form method="post" action="{% url 'inventory:movement_delete' m.pk %}" class="d-inline"
-                        onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this movement? This will reverse its effect on stock." %}{% endfilter %}');">
+                        hx-confirm="{% filter force_escape %}{% trans "Delete this movement? This will reverse its effect on stock." %}{% endfilter %}">
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
@@ -127,7 +127,7 @@
           {% if not read_only %}
             <div class="mt-2">
               <form method="post" action="{% url 'inventory:movement_delete' m.pk %}"
-                    onsubmit="return confirm('{% filter escapejs %}{% trans "Delete this movement? This will reverse its effect on stock." %}{% endfilter %}');">
+                    hx-confirm="{% filter force_escape %}{% trans "Delete this movement? This will reverse its effect on stock." %}{% endfilter %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>

@@ -5,7 +5,7 @@
   <h1 class="rd-heading-xl mb-3">{{ title }}</h1>
   <div class="rd-card">
     <div class="rd-card-body p-4">
-      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
       <form method="post" class="d-grid gap-3" novalidate>
         {% csrf_token %}
         {% for field in form %}

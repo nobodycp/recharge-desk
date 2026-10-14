@@ -12,8 +12,10 @@
   <link href="{% static 'css/design-system.css' %}{{ static_cache_query }}" rel="stylesheet">
   <link href="{% static 'css/app.css' %}{{ static_cache_query }}" rel="stylesheet">
   <script src="{% static 'js/theme.js' %}{{ static_cache_query }}" defer></script>
+  <script src="{% static 'js/toast.js' %}{{ static_cache_query }}" defer></script>
 </head>
 <body class="login-shell rd-body app-shell">
+  {% include "partials/toast_region.html" %}
   <div class="p-3 w-100 d-flex justify-content-center">
     <div class="card login-card">
       <div class="card-body p-4 p-md-5">
@@ -41,9 +43,7 @@
             </form>
           </div>
         </div>
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
+        {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
         <form method="post" novalidate>
           {% csrf_token %}
           <div class="mb-3">
@@ -57,7 +57,7 @@
             {{ form.password.errors }}
           </div>
           {% if form.errors and not form.non_field_errors %}
-            <div class="alert alert-danger">{% trans "Please correct the errors below." %}</div>
+            <div data-rd-flash hidden><p data-level="error">{% trans "Please correct the errors below." %}</p></div>
           {% endif %}
           <input type="hidden" name="next" value="{{ next }}">
           <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Sign in" %}</button>

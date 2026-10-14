@@ -64,6 +64,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Last: must see the request just before the view, and its response
+    # before MessageMiddleware persists unread messages.
+    "core.middleware.HtmxNavigationMiddleware",
 ]
 
 # --- Security defaults (refined per environment) ---------------------------

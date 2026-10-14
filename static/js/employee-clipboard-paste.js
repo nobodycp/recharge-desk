@@ -24,11 +24,11 @@
       }
       if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
         navigator.clipboard.readText().then(applyText).catch(function () {
-          if (failMsg) window.alert(failMsg);
+          if (failMsg) window.rdToast(failMsg, "error");
           ref.focus();
         });
       } else {
-        if (failMsg) window.alert(failMsg);
+        if (failMsg) window.rdToast(failMsg, "error");
         ref.focus();
       }
     });

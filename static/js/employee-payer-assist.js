@@ -340,7 +340,7 @@
     });
 
     document.addEventListener("click", function (ev) {
-      if (!listEl || listEl.hidden) return;
+      if (!listEl || !listEl.isConnected || listEl.hidden) return;
       if (listEl.contains(ev.target)) return;
       if (ev.target === payerInput || payerInput.contains(ev.target)) return;
       closeList();

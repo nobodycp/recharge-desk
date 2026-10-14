@@ -9,7 +9,7 @@
     hx-target="#phone-lines-list-results"
     hx-swap="innerHTML"
     hx-boost="false"
-    hx-confirm="{% filter escapejs %}{% trans "Remove this number from the line statement? Sale history stays; it will no longer appear in inventory or dashboard counts." %}{% endfilter %}"
+    hx-confirm="{% filter force_escape %}{% trans "Remove this number from the line statement? Sale history stays; it will no longer appear in inventory or dashboard counts." %}{% endfilter %}"
   >
     {% csrf_token %}
     <input type="hidden" name="next_query" value="{{ list_query }}">
@@ -24,7 +24,7 @@
       hx-target="#phone-lines-list-results"
       hx-swap="innerHTML"
       hx-boost="false"
-      hx-confirm="{% filter escapejs %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}"
+      hx-confirm="{% filter force_escape %}{% trans "Renew this overdue line as a 1-day charge (no sale created)? It will leave “left the agency” status for another period." %}{% endfilter %}"
     >
       {% csrf_token %}
       <input type="hidden" name="next_query" value="{{ list_query }}">
