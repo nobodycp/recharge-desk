@@ -5877,6 +5877,10 @@ msgstr "سعر البيع صفر: ستُسجَّل تكلفة المورّد ك�
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
 
+#: templates/sales/employee_entry.html
+msgid "+ Note"
+msgstr "+ ملاحظة"
+
 #: templates/sales/employee_entry.html:248
 msgid "Save sale"
 msgstr "حفظ البيع"
