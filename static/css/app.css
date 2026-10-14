@@ -914,13 +914,9 @@
   transition: opacity var(--rd-transition);
 }
 
+/* Dimming of the whole region lives in design-system.css (.is-live-loading). */
 [data-rd-live].is-live-loading {
   cursor: progress;
-}
-
-[data-rd-live].is-live-loading > :not(.rd-dash-head):not(.rd-page-header):not(.rd-filter-card) {
-  opacity: 0.5;
-  pointer-events: none;
 }
 
 .rd-dash-swap > :not(.rd-dash-head) {
