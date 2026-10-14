@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils import translation
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -26,9 +27,14 @@ from phone_refresh.services.refresh_jobs import (
     submit_refresh,
     wait_for_job,
 )
+from phone_refresh.services.refresh_service import status_payload
 
 SYNC_WAIT_SECONDS = 45
-STATUS_LIMIT_PER_MINUTE = 60
+# Status polling (every 2 s = 30/min per job): one counter per ip+job so
+# customers sharing an IP (CGNAT) don't starve each other, plus an IP-wide
+# ceiling against job-id enumeration.
+STATUS_LIMIT_PER_JOB_PER_MINUTE = 60
+STATUS_LIMIT_PER_IP_PER_MINUTE = 600
 
 _RATE_LIMITED_BODY = {
     "status": "error",
@@ -173,8 +179,8 @@ def public_refresh_api(request):
       ``allow_anonymous_test_page`` is ON, requests from the bundled
       public form (``client=web``) skip the token gate (not recommended
       for production).
-    * ``rate_limit_per_minute`` / ``rate_limit_per_hour`` → sliding
-      window per client IP (shared across workers via Redis).
+    * ``rate_limit_per_minute`` / ``rate_limit_per_hour`` → fixed-window
+      counters per client IP (shared across workers via Redis).
     * ``"async": true`` → answer ``202 {"status": "processing", "job": id}``
       and let the caller poll :func:`public_refresh_status`; otherwise
       wait up to 45 s for the final payload (previous behaviour).
@@ -249,6 +255,11 @@ def public_refresh_api(request):
         payload = {"status": "processing", "job": ticket.job_id}
     else:
         payload = wait_for_job(ticket.job_id, SYNC_WAIT_SECONDS)
+        if payload.get("status") == "processing" and not payload.get("final"):
+            # Still running after the sync wait: answer like any other
+            # final payload (status + message) instead of leaking the
+            # poll-only ``{"status": "processing", "job": id}`` shape.
+            payload = status_payload("processing", final=True)
 
     if token is not None:
         # Update audit field after the response logic settled so a slow
@@ -258,6 +269,7 @@ def public_refresh_api(request):
     return JsonResponse(payload, status=status_code)
 
 
+@never_cache
 @require_GET
 def public_refresh_status(request, job_id):
     """Poll a refresh job started with ``async: true``.
@@ -265,8 +277,16 @@ def public_refresh_status(request, job_id):
     Returns exactly what :func:`job_payload` returns (customer-safe). Job
     ids are random UUIDs, so unknown ids simply get the generic error
     payload instead of a 404.
+
+    Rate limits: ``refresh-status`` per ``ip:job_id`` and ``refresh-status-ip``
+    per IP, so shared-IP customers polling different jobs don't collide.
     """
     ip = get_client_ip(request) or ""
-    if not allow("refresh-status", ip, STATUS_LIMIT_PER_MINUTE, 60):
+    if not (
+        allow("refresh-status-ip", ip, STATUS_LIMIT_PER_IP_PER_MINUTE, 60)
+        and allow(
+            "refresh-status", f"{ip}:{job_id}", STATUS_LIMIT_PER_JOB_PER_MINUTE, 60
+        )
+    ):
         return JsonResponse(_RATE_LIMITED_BODY, status=429)
     return JsonResponse(job_payload(str(job_id)))

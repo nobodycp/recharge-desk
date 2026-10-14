@@ -1,13 +1,14 @@
 """Public refresh API auth gate tests."""
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 from unittest.mock import patch
 
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
-from django.utils import translation
+from django.utils import timezone, translation
 
 from kombu.exceptions import OperationalError
 
@@ -20,7 +21,11 @@ from phone_refresh.models import (
     SystemSettings,
 )
 from phone_refresh.services.refresh_jobs import RefreshTicket
-from phone_refresh.services.refresh_service import RefreshResult, result_payload
+from phone_refresh.services.refresh_service import (
+    RefreshResult,
+    result_payload,
+    status_payload,
+)
 from phone_refresh.tasks import run_refresh_job
 from phone_refresh.views.public import public_refresh_api
 from providers.contracts import RawResponse
@@ -275,13 +280,46 @@ class PublicRefreshAsyncApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 405)
 
-    def test_status_endpoint_rate_limited_per_ip(self):
-        key = "ratelimit:refresh-status:127.0.0.1"
-        get_redis().set(key, 60, ex=60)
+    def test_status_rate_limit_is_per_job_not_per_ip(self):
+        busy_job = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
+        other_job = "9b2e7c1d-3f4a-4b5c-8d6e-7f8091a2b3c4"
+        get_redis().set(f"ratelimit:refresh-status:127.0.0.1:{busy_job}", 60, ex=60)
+        self.assertEqual(self.client.get(self._status_url(busy_job)).status_code, 429)
+        # A second customer behind the same IP polling another job is fine.
+        self.assertEqual(self.client.get(self._status_url(other_job)).status_code, 200)
+
+    def test_status_job_bucket_counts_each_poll(self):
+        job = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
+        for _ in range(60):
+            self.assertEqual(self.client.get(self._status_url(job)).status_code, 200)
+        self.assertEqual(self.client.get(self._status_url(job)).status_code, 429)
+
+    def test_status_ip_wide_ceiling_blocks_enumeration(self):
+        get_redis().set("ratelimit:refresh-status-ip:127.0.0.1", 600, ex=60)
         response = self.client.get(
             self._status_url("5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11")
         )
         self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json()["status"], "error")
+
+    def test_status_response_is_never_cached(self):
+        response = self.client.get(
+            self._status_url("5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11")
+        )
+        self.assertIn("no-cache", response["Cache-Control"])
+        self.assertIn("no-store", response["Cache-Control"])
+
+    def test_status_for_job_older_than_wait_setting_is_final(self):
+        job_id = self._post(**{"async": True}).json()["job"]
+        wait = SystemSettings.get().refresh_wait_seconds
+        ProviderJob.objects.filter(pk=job_id).update(
+            created_at=timezone.now() - dt.timedelta(seconds=wait + 5)
+        )
+        payload = self.client.get(self._status_url(job_id)).json()
+        self.assertEqual(payload["status"], "processing")
+        self.assertIs(payload["final"], True)
+        self.assertNotIn("job", payload)
+        self.assertTrue(payload["message"]["body"])
 
     @patch(PROVIDER_REFRESH, return_value=_raw_success())
     def test_sync_client_gets_final_payload(self, refresh):
@@ -289,6 +327,21 @@ class PublicRefreshAsyncApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "refreshed")
         self.assertEqual(ProviderJob.objects.get().status, "done")
+
+    def test_sync_non_final_processing_becomes_final_processing_message(self):
+        stuck = {"status": "processing", "job": "whatever"}
+        with patch("phone_refresh.views.public.wait_for_job", return_value=stuck):
+            response = self._post()
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload, status_payload("processing", final=True))
+        self.assertNotIn("job", payload)
+
+    def test_sync_final_processing_payload_passes_through(self):
+        final = status_payload("processing", final=True)
+        with patch("phone_refresh.views.public.wait_for_job", return_value=final):
+            response = self._post()
+        self.assertEqual(response.json(), final)
 
     def test_sync_precheck_hit_returns_payload_without_job(self):
         response = self._post(phone="123")
@@ -338,6 +391,8 @@ class PublicRefreshAsyncApiTests(TestCase):
         ApiSettings.objects.filter(pk=1).update(rate_limit_per_hour=1)
         self.assertEqual(self._post(phone="123").status_code, 200)
         self.assertEqual(self._post(phone="123").status_code, 429)
+        self.assertEqual(int(get_redis().get("ratelimit:refresh-hour:127.0.0.1")), 2)
+        self.assertIsNone(get_redis().get("ratelimit:refresh-min:127.0.0.1"))
 
     def test_async_flag_in_form_post_is_honoured(self):
         response = self.client.post(

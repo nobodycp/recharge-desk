@@ -1,7 +1,7 @@
 """Redis-backed fixed-window rate limiter."""
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
@@ -49,5 +49,12 @@ class AllowTests(SimpleTestCase):
 
     def test_redis_error_fails_open(self):
         with patch("core.ratelimit.get_redis", side_effect=ConnectionError("down")):
+            with self.assertLogs("core.ratelimit", level="WARNING"):
+                self.assertTrue(allow("t", "1.2.3.4", 1, 60))
+
+    def test_pipeline_error_fails_open(self):
+        broken = MagicMock()
+        broken.pipeline.return_value.execute.side_effect = ConnectionError("mid-flight")
+        with patch("core.ratelimit.get_redis", return_value=broken):
             with self.assertLogs("core.ratelimit", level="WARNING"):
                 self.assertTrue(allow("t", "1.2.3.4", 1, 60))

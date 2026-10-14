@@ -298,9 +298,11 @@ function buildMessage(status, message, secondsSinceLastRefresh) {
     return body;
 }
 
-// Status polling: never faster than every 2 s, give up after 3 failed
-// requests in a row, and stop as soon as the user starts another request.
+// Status polling: never faster than every 2 s, back off (not a failure) on
+// HTTP 429, give up after 3 failed requests in a row, and stop as soon as the
+// user starts another request.
 const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_BACKOFF_MS = 10000;
 const POLL_MAX_FAILURES = 3;
 const POLL_GRACE_SECONDS = 10;
 let activeRun = 0;
@@ -317,23 +319,33 @@ function statusUrlFor(jobId) {
 async function pollJob(jobId, runId) {
     const deadline = Date.now() + (WAIT_SECONDS + POLL_GRACE_SECONDS) * 1000;
     let failures = 0;
+    let delay = POLL_INTERVAL_MS;
 
     while (Date.now() <= deadline) {
-        await sleep(POLL_INTERVAL_MS);
+        await sleep(delay);
         if (runId !== activeRun) return null;
 
         let data = null;
+        let throttled = false;
         try {
             const res = await fetch(statusUrlFor(jobId), {
                 method: "GET",
                 credentials: "same-origin",
                 headers: { "Accept": "application/json" },
             });
-            if (res.ok) data = await res.json();
+            if (res.status === 429) throttled = true;
+            else if (res.ok) data = await res.json();
         } catch (_) {
             data = null;
         }
         if (runId !== activeRun) return null;
+
+        if (throttled) {
+            // Rate limited: wait longer, but this is not a failure.
+            delay = Math.min(delay * 2, POLL_MAX_BACKOFF_MS);
+            continue;
+        }
+        delay = POLL_INTERVAL_MS;
 
         if (!data || typeof data !== "object") {
             failures += 1;
@@ -407,7 +419,12 @@ async function submitRefresh(number) {
             return;
         }
 
-        if (res.status === 202 && data && data.job && STATUS_URL_TEMPLATE) {
+        if (res.status === 202) {
+            // Without a job id or status URL we cannot poll: generic error.
+            if (!(data && data.job && STATUS_URL_TEMPLATE)) {
+                showPayload({ status: "error" });
+                return;
+            }
             // Keep the "sending" loader up while the worker (re)logs in.
             const final = await pollJob(data.job, runId);
             if (final === null) return;
