@@ -338,6 +338,7 @@ html[lang="ar"] h4 {
     bottom: auto;
     left: auto;
     right: auto;
+    width: auto;
     height: 100vh;
     transform: none !important;
     box-shadow: none;
@@ -386,7 +387,7 @@ html[lang="ar"] h4 {
 .rd-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
   padding: 0.35rem 0.5rem 0.85rem;
   text-decoration: none;
   color: inherit;
@@ -400,17 +401,50 @@ html[lang="ar"] h4 {
 }
 
 .rd-sidebar-brand-mark {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--rd-radius-sm);
+  flex: 0 0 auto;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
   background: var(--rd-primary-bg);
   display: grid;
   place-items: center;
   color: var(--rd-primary-fg);
   font-family: var(--rd-font-heading);
   font-weight: 700;
-  font-size: 0.95rem;
-  box-shadow: var(--rd-shadow-xs);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.rd-sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.rd-sidebar-brand-name {
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--rd-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[lang="ar"] .rd-sidebar-brand-name {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+.rd-sidebar-brand-tagline {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--rd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* When the admin has uploaded a SiteBranding logo we replace the
@@ -523,13 +557,14 @@ html[lang="ar"] h4 {
    silently resolved to an invalid value (and the sidebar fell back to a
    transparent background).
 
-   Items read muted; hover is a surface-2 wash; the active item is a raised
-   surface pill (hairline + soft shadow) with ink text and the only orange in
-   the sidebar: its icon. The bg is opaque so the mobile drawer never shows
-   the page through it. */
+   The sidebar sits on the page color (it reads as part of the canvas, split
+   off by a hairline). Items read muted; hover is a surface-2 wash; the
+   active item is a raised surface pill (hairline + soft shadow) with ink
+   text and the only orange in the sidebar: its icon. The page color is
+   opaque so the mobile drawer never shows the content through it. */
 .rd-sidebar:has(.rd-sidebar-nav--accordion),
 .rd-sidebar-nav--accordion {
-  --rd-nav-bw-bg: var(--rd-surface);
+  --rd-nav-bw-bg: var(--bs-body-bg);
   --rd-nav-bw-surface: var(--rd-surface-2);
   --rd-nav-bw-text: var(--rd-ink);
   --rd-nav-bw-muted: var(--rd-muted);
@@ -546,12 +581,8 @@ html[lang="ar"] h4 {
   gap: 0.2rem;
 }
 
-/* Dark mode: the sidebar is already --rd-surface, so the active pill steps
-   up to surface-2 instead of relying on a hairline. */
 [data-bs-theme="dark"] .rd-sidebar:has(.rd-sidebar-nav--accordion),
 [data-bs-theme="dark"] .rd-sidebar-nav--accordion {
-  --rd-nav-bw-active-bg: var(--rd-surface-2);
-  --rd-nav-bw-active-border: transparent;
   --rd-nav-bw-active-shadow: var(--rd-shadow-card);
 }
 
@@ -561,31 +592,30 @@ html[lang="ar"] h4 {
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group + .rd-nav-group {
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
+/* Group toggles read as quiet section labels (no fill), not as rows. */
 .rd-sidebar-nav--accordion .rd-nav-group-toggle {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.5rem;
   width: 100%;
-  padding: 0.62rem 0.75rem;
+  padding: 0.55rem 0.8rem 0.35rem;
   border: none;
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
   background: transparent;
   color: var(--rd-nav-bw-muted);
   font-family: inherit;
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-align: start;
   cursor: pointer;
-  transition:
-    background var(--rd-transition-fast),
-    color var(--rd-transition-fast);
+  transition: color var(--rd-transition-fast);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-toggle:hover {
-  background: var(--rd-nav-bw-hover);
+  background: transparent;
   color: var(--rd-nav-bw-text);
 }
 
@@ -597,17 +627,17 @@ html[lang="ar"] h4 {
 
 .rd-sidebar-nav--accordion .rd-nav-group-chevron {
   flex: 0 0 auto;
-  width: 1rem;
-  height: 1rem;
+  width: 0.85rem;
+  height: 0.85rem;
   display: grid;
   place-items: center;
-  color: var(--rd-nav-bw-muted);
+  color: var(--rd-faint);
   transition: transform var(--rd-transition-fast);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-chevron svg {
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.75rem;
+  height: 0.75rem;
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -621,7 +651,6 @@ html[lang="ar"] h4 {
 
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
   transform: rotate(90deg);
-  color: var(--rd-nav-bw-text);
 }
 
 [dir="rtl"] .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-chevron {
@@ -634,26 +663,9 @@ html[lang="ar"] h4 {
   color: var(--rd-nav-bw-text);
 }
 
-.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-icon {
-  opacity: 1;
-}
-
+/* Section labels carry no icon; the links below them do. */
 .rd-sidebar-nav--accordion .rd-nav-group-icon {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
-  color: inherit;
-  opacity: 0.8;
-}
-
-.rd-sidebar-nav--accordion .rd-nav-group-icon svg {
-  width: 1.15rem;
-  height: 1.15rem;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  display: none;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-label {
@@ -681,27 +693,23 @@ html[lang="ar"] h4 {
   flex-direction: column;
   gap: 0.12rem;
   min-height: 0;
-  /* No padding / border while collapsed — they would otherwise show
-     through the `grid-template-rows: 0fr` collapse and look like a stray
-     1px line under the group toggle. */
+  /* No vertical padding while collapsed — it would otherwise show through
+     the `grid-template-rows: 0fr` collapse. */
   padding-block: 0;
-  padding-inline-start: 0.55rem;
-  margin-inline-start: 0.85rem;
-  border-inline-start: 0 solid var(--rd-nav-bw-border);
+  padding-inline-start: 0.45rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-panel-inner {
-  padding-block: 0.15rem;
-  border-inline-start-width: 1px;
+  padding-block: 0.1rem 0.2rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.52rem 0.7rem;
-  border-radius: 0.7rem;
-  font-size: 0.84rem;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.6rem;
+  font-size: 0.92rem;
   font-weight: 500;
   color: var(--rd-nav-bw-muted);
   border-color: transparent;
@@ -746,25 +754,14 @@ html[lang="ar"] h4 {
   stroke-width: 2;
 }
 
-/* Pinned quick-access section: a flat list of links above the accordions.
-   Reuses .rd-nav-link styling for visual consistency but is slightly more
-   prominent than nested sub-links (a touch larger, no inset border/padding
-   from the panel-inner gutter) and is separated from the accordions below
-   by a hairline divider. */
+/* Pinned quick-access section: a flat list of links above the accordions,
+   same rows as the grouped links but without the group indent. The
+   section labels below separate it, so no divider. */
 .rd-sidebar-nav--accordion .rd-nav-pinned {
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.4rem;
-  border-bottom: 1px solid var(--rd-nav-bw-border);
-}
-
-.rd-sidebar-nav--accordion .rd-nav-link--pinned {
-  padding: 0.58rem 0.75rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--rd-nav-bw-muted);
+  padding-bottom: 0.35rem;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon {
@@ -821,13 +818,14 @@ html[lang="ar"] h4 {
   color: var(--rd-nav-bw-text);
   border: 0;
   border-radius: 0;
-  padding: 1rem 0.75rem;
+  padding: 1.4rem 0.9rem 1rem;
+  gap: 1rem;
   box-shadow: none;
 }
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand {
   color: var(--rd-nav-bw-text);
-  padding: 0.25rem 0.55rem 0.95rem;
+  padding: 0.3rem 0.5rem;
 }
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand:hover {
@@ -885,8 +883,7 @@ html[lang="ar"] h4 {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   /* Translucent page color: content scrolls under a frosted strip. */
   background: color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
@@ -896,15 +893,107 @@ html[lang="ar"] h4 {
 
 @media (min-width: 992px) {
   .rd-topbar {
-    padding-inline: 1.35rem;
+    padding: 0.95rem 1.5rem;
   }
 }
 
+/* Start: mobile menu button + greeting. Shrinks first (greeting ellipsis). */
+.rd-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rd-hello {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.rd-hello__title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--rd-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[lang="ar"] .rd-hello__title {
+  font-family: var(--rd-font-heading);
+  letter-spacing: 0;
+}
+
+.rd-hello__date {
+  font-size: 0.8rem;
+  color: var(--rd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .rd-hello {
+    display: none;
+  }
+}
+
+/* End: search, bell, then the compact cluster (language, theme, CTA, avatar). */
 .rd-topbar-meta {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  flex: 0 1 auto;
+  min-width: 0;
   flex-wrap: wrap;
+}
+
+.rd-topbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rd-topbar-cta {
+  min-height: 2.375rem;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 0.85rem;
+  border-radius: 0.75rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 992px) {
+  .rd-topbar-meta {
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .rd-topbar-meta,
+  .rd-topbar-cluster {
+    gap: 0.3rem;
+  }
+  .rd-topbar .rd-lang-select {
+    max-width: 6.25rem;
+    padding-inline: 0.5rem 1.75rem;
+    text-overflow: ellipsis;
+  }
+  .rd-topbar-cta {
+    padding-inline: 0.6rem;
+  }
+}
+
+.rd-topbar .rd-lang-select {
+  min-height: 2.375rem;
+  border-radius: 0.75rem;
+  background-color: var(--rd-surface);
 }
 
 /* Topbar search — collapses to an icon button matching the bell /
@@ -953,47 +1042,61 @@ html[lang="ar"] h4 {
   border-color: color-mix(in srgb, var(--rd-ink) 22%, var(--bs-border-color));
 }
 
-/* Desktop: the toggle reads as a search pill with the "/" shortcut hint. */
+.rd-search-toggle__placeholder,
+.rd-search-toggle__kbd {
+  display: none;
+}
+
+/* Desktop: the toggle reads as a wide search field with the "/" shortcut. */
 @media (min-width: 992px) {
   .rd-search-toggle {
-    width: auto;
-    min-width: 11rem;
+    width: clamp(13rem, 24vw, 21rem);
     justify-content: flex-start;
-    padding-inline: 0.75rem 0.4rem;
-    border-radius: 999px;
+    gap: 0.55rem;
+    padding-inline: 0.8rem 0.5rem;
     color: var(--rd-muted);
   }
 
   .rd-search-toggle svg {
     flex: 0 0 auto;
-    order: 1;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
-  .rd-search-toggle::before {
-    content: attr(aria-label);
-    order: 2;
-    font-size: 0.82rem;
+  .rd-search-toggle__placeholder {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: start;
+    font-size: 0.88rem;
     font-weight: 500;
   }
 
-  .rd-search-toggle::after {
-    content: "/";
-    order: 3;
-    margin-inline-start: auto;
-    min-width: 1.35rem;
-    padding: 0.1rem 0.35rem;
-    border-radius: 0.4rem;
+  .rd-search-toggle__kbd {
+    display: block;
+    flex: 0 0 auto;
+    min-width: 1.45rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 0.45rem;
     background: var(--rd-surface-2);
     color: var(--rd-muted);
     font-family: var(--rd-font-num);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
     line-height: 1.2;
     text-align: center;
+    box-shadow: none;
   }
 
   .rd-search-toggle:hover {
     color: var(--rd-ink);
+  }
+
+  .rd-search .rd-search-panel {
+    width: max(100%, 20rem);
   }
 }
 
@@ -2783,6 +2886,38 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 85%, var(--bs-secondary-bg));
 }
 
+/* Hero KPI: the one inverted card on a page (ink in light, pearl in dark).
+   Prefixed with .rd-stat so it outranks the dashboard rules in app.css. */
+.rd-stat.rd-stat--hero {
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  box-shadow: var(--rd-shadow-sm);
+}
+
+.rd-stat.rd-stat--hero .rd-stat-icon {
+  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
+  color: var(--rd-accent);
+}
+
+.rd-stat.rd-stat--hero .rd-stat-value,
+.rd-stat.rd-stat--hero .kpi-info {
+  color: var(--rd-primary-fg);
+}
+
+.rd-stat.rd-stat--hero .rd-label,
+.rd-stat.rd-stat--hero .rd-stat-footnote {
+  color: color-mix(in srgb, var(--rd-primary-fg) 66%, transparent);
+}
+
+.rd-stat.rd-stat--hero .text-secondary {
+  color: color-mix(in srgb, var(--rd-primary-fg) 62%, transparent) !important;
+}
+
+.rd-stat.rd-stat--hero .rd-stat-meta {
+  border-top-color: color-mix(in srgb, var(--rd-primary-fg) 16%, transparent);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Data tables — shell, density, zebra, sticky header                        */
 /* -------------------------------------------------------------------------- */
@@ -4223,6 +4358,37 @@ body.rd-inv-dialog-open {
 @media (max-width: 480px) {
   .rd-user-menu > summary { padding: 0.2rem; }
   .rd-user-menu-panel { min-width: 14rem; }
+}
+
+/* Management topbar: the trigger is just the ink avatar circle. */
+.rd-user-menu--ava > summary {
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.rd-user-menu--ava > summary:hover,
+.rd-user-menu--ava[open] > summary {
+  background: transparent;
+}
+
+.rd-user-menu--ava .rd-avatar {
+  width: 2.375rem;
+  height: 2.375rem;
+  font-size: 0.95rem;
+  transition: box-shadow var(--rd-transition-fast);
+}
+
+html[lang="ar"] .rd-user-menu--ava .rd-avatar {
+  font-family: var(--rd-font-heading);
+}
+
+.rd-user-menu--ava > summary:hover .rd-avatar,
+.rd-user-menu--ava[open] .rd-avatar {
+  box-shadow: 0 0 0 3px var(--bs-border-color);
 }
 
 /* ---------------- Topbar notification bell ---------------- */
@@ -5800,6 +5966,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
 .rd-user-menu-item:focus-visible,
 .rd-sidebar-nav--accordion .rd-nav-group-toggle:focus-visible,
 .rd-sidebar-nav--accordion .rd-nav-link:focus-visible,
+.rd-sidebar-brand:focus-visible,
 .rd-employee-wallet:focus-visible,
 .rd-employee-title__link:focus-visible,
 .rd-toast__close:focus-visible,
