@@ -22,6 +22,8 @@ SALE_ROW_TEMPLATES = {
     "row": "sales/partials/management_sale_row.html",
     "card": "sales/partials/management_sale_card.html",
 }
+# After "Recheck with provider" the row polls every 5 s for about a minute.
+RECHECK_POLLS = 12
 
 
 def is_htmx(request) -> bool:
@@ -58,8 +60,37 @@ def safe_return_url(request, url: str, fallback: str) -> str:
     return fallback
 
 
-def render_sale_row(request, sale: Sale, layout: str) -> HttpResponse:
+def charge_checked_marker(sale: Sale) -> str:
+    return sale.charge_checked_at.isoformat() if sale.charge_checked_at else ""
+
+
+def remaining_recheck_polls(request, sale: Sale) -> int:
+    """Polls left for a row waiting on a provider recheck (``?polls=N&since=…``).
+
+    The wait ends once the charge closes or its ``charge_checked_at`` moves.
+    """
+    try:
+        polls = min(int(request.GET.get("polls", 0)), RECHECK_POLLS)
+    except ValueError:
+        return 0
+    if polls <= 0 or not sale.charge_is_open:
+        return 0
+    if request.GET.get("since", "") != charge_checked_marker(sale):
+        return 0
+    return polls - 1
+
+
+def with_toast(response: HttpResponse, message, level: str = "success") -> HttpResponse:
+    """Attach a client toast via HX-Trigger (see static/js/data-ui.js ``rdToast``)."""
+    response["HX-Trigger"] = json.dumps({"rdToast": {"message": str(message), "level": level}})
+    return response
+
+
+def render_sale_row(request, sale: Sale, layout: str, *, recheck_polls: int = 0) -> HttpResponse:
     ctx = {"s": sale, "row_layout": layout}
+    if recheck_polls and layout != "employee" and sale.charge_is_open:
+        ctx["recheck_polls_left"] = recheck_polls
+        ctx["recheck_since"] = charge_checked_marker(sale)
     if layout == "employee":
         ctx["editable_sale_ids"] = (
             {sale.pk} if sale_is_employee_editable(sale, request.user) else set()

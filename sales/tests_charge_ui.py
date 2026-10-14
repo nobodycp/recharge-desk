@@ -2,15 +2,19 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.urls import reverse
 from django.utils import timezone
 
 from companies.models import Company
+from customers.models import Customer
 from sales.models import Sale
 from sales.services import create_sale
 from sales.tests_charging import START, ChargingTestBase
+from sales.views._shared import RECHECK_POLLS
 
 
 class ChargeUiTestBase(ChargingTestBase):
@@ -38,6 +42,15 @@ class ChargeUiTestBase(ChargingTestBase):
             Sale.objects.filter(pk=sale.pk).update(**charge_fields)
             sale.refresh_from_db()
         return sale
+
+    def assert_charge_chip(self, resp, status, label):
+        """The badge's state segment for ``status`` with its own label (not a substring elsewhere)."""
+        self.assertContains(resp, f"rd-charge-tag--{status}")
+        self.assertContains(resp, f"{label}</span>")
+
+    def assert_polls(self, resp):
+        self.assertContains(resp, 'hx-trigger="every 5s [')
+        self.assertContains(resp, "data-rd-poll")
 
 
 class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
@@ -87,6 +100,33 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         page = self.client.get(resp["Location"])
         self.assertContains(page, "This sale was already recorded")
 
+    def test_token_used_by_another_user_is_a_clear_error(self):
+        self.post_entry(action="charge")
+        first = Sale.objects.get()
+        self.client.force_login(self.manager)
+        resp = self.post_entry(action="charge")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "This form was already submitted.")
+        self.assertNotContains(resp, "This sale was already recorded")
+        self.assertEqual(list(Sale.objects.all()), [first])
+        self.assertEqual(len(self.fake.charges), 1)
+
+    def test_rejected_charge_does_not_create_customer(self):
+        payload = {"action": "charge", "on_account": "on", "payment_method": ""}
+        Company.objects.filter(pk=self.company.pk).update(phone_refresh_provider="")
+        resp = self.post_entry(**payload)
+        self.assertContains(resp, "This company cannot be charged through its provider.")
+        self.assertFalse(Customer.objects.exists())
+
+    def test_duplicate_charge_does_not_touch_customers(self):
+        self.post_entry(action="charge", on_account="on", payment_method="")
+        self.assertEqual(Customer.objects.count(), 1)
+        with patch("sales.views.employee.resolve_or_create_customer_for_sale") as resolve:
+            resp = self.post_entry(action="charge", on_account="on", payment_method="")
+        resolve.assert_not_called()
+        self.assertRedirects(resp, reverse("sales:employee_entry"), fetch_redirect_response=False)
+        self.assertEqual(Sale.objects.count(), 1)
+
     def test_charge_submit_rejected_when_company_cannot_charge(self):
         Company.objects.filter(pk=self.company.pk).update(phone_refresh_provider="")
         resp = self.post_entry(action="charge")
@@ -115,30 +155,31 @@ class EmployeeRecentChargeTests(ChargeUiTestBase):
         manual = self.manual_sale(reference="0599000003")
         resp = self.client.get(reverse("sales:employee_recent_sales"))
         self.assertContains(resp, "Auto charge", count=2)
-        self.assertContains(resp, "Charged")
-        self.assertContains(resp, "Charge failed")
+        self.assert_charge_chip(resp, "success", "Charged")
+        self.assert_charge_chip(resp, "failed", "Charge failed")
         self.assertNotContains(resp, "ok-secret-detail")
         self.assertContains(resp, f'id="sale-row-{charged.pk}"')
         self.assertContains(resp, f'id="sale-row-{failed.pk}"')
         self.assertContains(resp, f'id="sale-row-{manual.pk}"')
-        self.assertNotContains(resp, 'hx-trigger="every 5s"')
+        self.assertNotContains(resp, "every 5s")
 
     def test_processing_row_polls_until_settled(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.PROCESSING)
         row_url = reverse("sales:sale_charge_row", args=[sale.pk])
         page = self.client.get(reverse("sales:employee_recent_sales"))
-        self.assertContains(page, 'hx-trigger="every 5s"')
-        self.assertContains(page, row_url)
-        self.assertContains(page, "Charging")
+        self.assert_polls(page)
+        self.assertContains(page, f'hx-get="{row_url}"')
+        self.assert_charge_chip(page, "processing", "Charging")
 
         resp = self.client.get(row_url)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'hx-trigger="every 5s"')
+        self.assert_polls(resp)
         self.assertIn("no-cache", resp["Cache-Control"])
 
         Sale.objects.filter(pk=sale.pk).update(charge_status=Sale.ChargeStatus.SUCCESS)
         resp = self.client.get(row_url)
-        self.assertContains(resp, "Charged")
+        self.assert_charge_chip(resp, "success", "Charged")
+        self.assertNotContains(resp, "rd-charge-tag--processing")
         self.assertNotContains(resp, "hx-trigger")
 
     def test_employee_cannot_fetch_other_employees_row(self):
@@ -268,7 +309,82 @@ class ManagementChargeTests(ChargeUiTestBase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, f'id="sale-row-{sale.pk}"')
-        self.assertContains(resp, "Charged")
+        self.assert_charge_chip(resp, "success", "Charged")
+        self.assertNotContains(resp, "rd-charge-tag--unverified")
+        self.assertIn("rdToast", resp["HX-Trigger"])
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
+
+    def test_resolve_htmx_error_keeps_row(self):
+        sale = self.charge_without_worker()
+        resp = self.client.post(
+            reverse("sales:sale_charge_resolve", args=[sale.pk]) + "?layout=row",
+            {"result": "success"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["HX-Reswap"], "none")
+        self.assertIn("rdSaleActionError", resp["HX-Trigger"])
+        self.assertIn("never sent to the provider", resp["HX-Trigger"])
+        self.assertEqual(resp.content, b"")
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.PROCESSING)
+
+    def test_recheck_htmx_error_on_closed_charge(self):
+        sale = self.manual_sale(charge_status=Sale.ChargeStatus.SUCCESS)
+        with patch("sales.tasks.check_sale_charge.delay") as delay:
+            resp = self.client.post(
+                reverse("sales:sale_charge_recheck", args=[sale.pk]) + "?layout=card",
+                HTTP_HX_REQUEST="true",
+            )
+        delay.assert_not_called()
+        self.assertEqual(resp["HX-Reswap"], "none")
+        self.assertIn("Only charges in progress or unverified", resp["HX-Trigger"])
+
+    def test_recheck_htmx_shows_checking_state_and_polls(self):
+        sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
+        with patch("sales.tasks.check_sale_charge.delay") as delay:
+            resp = self.client.post(
+                reverse("sales:sale_charge_recheck", args=[sale.pk]) + "?layout=row",
+                HTTP_HX_REQUEST="true",
+            )
+        delay.assert_called_once_with(sale.pk)
+        self.assertEqual(resp.status_code, 200)
+        toast = json.loads(resp["HX-Trigger"])["rdToast"]
+        self.assertEqual(toast["level"], "success")
+        self.assertIn("Checking this charge with the provider", toast["message"])
+        self.assertContains(resp, f'id="sale-row-{sale.pk}"')
+        self.assertContains(resp, "Checking with the provider")
+        self.assert_polls(resp)
+        self.assertContains(resp, f"layout=row&amp;polls={RECHECK_POLLS}&amp;since=")
+        self.assertNotContains(resp, reverse("sales:sale_charge_recheck", args=[sale.pk]))
+
+    def test_recheck_poll_counts_down_and_stops(self):
+        sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
+        row_url = reverse("sales:sale_charge_row", args=[sale.pk])
+
+        resp = self.client.get(row_url, {"layout": "card", "polls": 3, "since": ""})
+        self.assertContains(resp, "polls=2&amp;since=")
+        self.assertContains(resp, "Checking with the provider")
+
+        resp = self.client.get(row_url, {"layout": "card", "polls": 1, "since": ""})
+        self.assertNotContains(resp, "hx-trigger")
+        self.assertNotContains(resp, "Checking with the provider")
+
+        # The check landed: charge_checked_at moved, so the wait ends early.
+        Sale.objects.filter(pk=sale.pk).update(charge_checked_at=timezone.now())
+        resp = self.client.get(row_url, {"layout": "card", "polls": 5, "since": ""})
+        self.assertNotContains(resp, "hx-trigger")
+        self.assertContains(resp, reverse("sales:sale_charge_recheck", args=[sale.pk]))
+
+    def test_provider_message_is_escaped_in_details(self):
+        self.manual_sale(
+            charge_status=Sale.ChargeStatus.UNVERIFIED,
+            charge_message='<script>alert("x")</script>',
+        )
+        resp = self.client.get(reverse("sales:management_sale_list"))
+        self.assertNotContains(resp, '<script>alert("x")</script>')
+        self.assertContains(resp, "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;")
 
     def test_recheck_queues_check(self):
         sale = self.unverified()
@@ -288,6 +404,17 @@ class ManagementChargeTests(ChargeUiTestBase):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.PROCESSING)
         resp = self.client.get(reverse("sales:sale_charge_row", args=[sale.pk]) + "?layout=row")
         self.assertContains(resp, f'id="sale-row-{sale.pk}"')
-        self.assertContains(resp, 'hx-trigger="every 5s"')
+        self.assert_polls(resp)
         resp = self.client.get(reverse("sales:sale_charge_row", args=[sale.pk]) + "?layout=card")
         self.assertContains(resp, f'id="sale-card-{sale.pk}"')
+        self.assertContains(resp, "?layout=card")
+
+    def test_employee_ignores_recheck_poll_params(self):
+        sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
+        self.client.force_login(self.user)
+        resp = self.client.get(
+            reverse("sales:sale_charge_row", args=[sale.pk]),
+            {"layout": "row", "polls": 5, "since": ""},
+        )
+        self.assertNotContains(resp, "hx-trigger")
+        self.assertNotContains(resp, "Checking with the provider")

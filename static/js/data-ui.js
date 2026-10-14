@@ -73,6 +73,32 @@
     if (t && t.classList && t.classList.contains("rd-datagrid")) {
       t.classList.remove("is-loading");
     }
+    // Self-polling rows (hx-trigger filter checks this flag): stop after a 4xx/5xx.
+    var src = evt.detail.elt;
+    if (src && src.hasAttribute && src.hasAttribute("data-rd-poll")) {
+      src.setAttribute("data-rd-poll-stop", "");
+    }
+  });
+
+  // Keep a <details data-rd-keep-open="key"> open/closed as the user left it
+  // when htmx swaps in a fresh copy (polled charge rows).
+  var keepOpenState = {};
+  document.body.addEventListener("htmx:beforeSwap", function (evt) {
+    var t = evt.detail.target;
+    if (!t || !t.querySelectorAll) return;
+    t.querySelectorAll("details[data-rd-keep-open]").forEach(function (d) {
+      keepOpenState[d.getAttribute("data-rd-keep-open")] = d.open;
+    });
+  });
+  document.body.addEventListener("htmx:load", function (evt) {
+    var root = evt.detail && evt.detail.elt;
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll("details[data-rd-keep-open]").forEach(function (d) {
+      var key = d.getAttribute("data-rd-keep-open");
+      if (!Object.prototype.hasOwnProperty.call(keepOpenState, key)) return;
+      d.open = keepOpenState[key];
+      delete keepOpenState[key];
+    });
   });
 
   /* Row actions <details> panel: fixed position so it is not clipped by scroll shells */

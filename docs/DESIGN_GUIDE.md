@@ -200,7 +200,8 @@ widget=forms.Select(attrs={"class": "form-select"})
 
 لا تستخدم `badge bg-*` من Bootstrap مباشرة في واجهات الإدارة الجديدة.
 
-مبيعات «شحن وتسجيل البيع»: `templates/sales/partials/charge_badge.html` (`rd-charge-tag` = جزء «شحن تلقائي» بلون `--rd-accent-2` + جزء الحالة بالألوان الدلالية، و`rd-badge--conflict` للتعارض)، والصف المشحون يأخذ `rd-charge-row` (حافة جانبية ملوّنة في «إدخالاتي» فقط، لأن حافة صفوف الإدارة محجوزة للمعلّق).
+مبيعات «شحن وتسجيل بيع»: `templates/sales/partials/charge_badge.html` (`rd-charge-tag` = جزء «شحن تلقائي» بلون `--rd-accent-2-ink` + جزء الحالة بالألوان الدلالية، و`rd-badge--conflict` للتعارض)، والصف المشحون يأخذ `rd-charge-row` (حافة جانبية ملوّنة في «إدخالاتي» فقط، لأن حافة صفوف الإدارة محجوزة للمعلّق).
+للنص فوق السماوي استخدم `--rd-accent-2-strong` (خلفية خلف نص أبيض) و`--rd-accent-2-ink` (نص صغير فوق تظليل سماوي)، وللأصفر `--rd-warning-ink`؛ كلها ≥ 4.5:1 في الوضع الفاتح.
 
 ---
 

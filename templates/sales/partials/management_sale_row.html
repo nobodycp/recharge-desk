@@ -3,11 +3,9 @@
 <tbody
   id="sale-row-{{ s.pk }}"
   class="rd-pending-group{% if s.entry_mode == 'auto_charge' %} rd-charge-row{% endif %}"
-  {% if s.charge_status == "processing" %}
-    hx-get="{% url 'sales:sale_charge_row' s.pk %}?layout=row"
-    hx-trigger="every 5s"
+  {% if s.charge_status == "processing" or recheck_polls_left %}
+    {% include "sales/partials/charge_row_poll_attrs.html" with layout="row" %}
     hx-target="this"
-    hx-swap="outerHTML"
     hx-push-url="false"
     hx-indicator="this"
   {% endif %}

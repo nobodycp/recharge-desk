@@ -37,18 +37,18 @@
   justify-content: center;
   gap: 0.4rem;
   --bs-btn-color: #fff;
-  --bs-btn-bg: var(--rd-accent-2);
-  --bs-btn-border-color: var(--rd-accent-2);
+  --bs-btn-bg: var(--rd-accent-2-strong);
+  --bs-btn-border-color: var(--rd-accent-2-strong);
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-accent-2) 86%, #000);
-  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-accent-2) 86%, #000);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-accent-2-strong) 86%, #000);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-accent-2-strong) 86%, #000);
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: color-mix(in srgb, var(--rd-accent-2) 76%, #000);
-  --bs-btn-active-border-color: color-mix(in srgb, var(--rd-accent-2) 76%, #000);
+  --bs-btn-active-bg: color-mix(in srgb, var(--rd-accent-2-strong) 76%, #000);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--rd-accent-2-strong) 76%, #000);
   --bs-btn-disabled-color: #fff;
-  --bs-btn-disabled-bg: var(--rd-accent-2);
-  --bs-btn-disabled-border-color: var(--rd-accent-2);
-  --bs-btn-focus-shadow-rgb: 8, 145, 178;
+  --bs-btn-disabled-bg: var(--rd-accent-2-strong);
+  --bs-btn-disabled-border-color: var(--rd-accent-2-strong);
+  --bs-btn-focus-shadow-rgb: var(--rd-accent-2-strong-rgb);
 }
 
 .employee-charge-sale-btn[hidden] {
@@ -58,11 +58,10 @@
 [data-bs-theme="dark"] .employee-charge-sale-btn {
   --bs-btn-color: var(--bs-body-bg);
   --bs-btn-hover-color: var(--bs-body-bg);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-accent-2) 84%, #fff);
-  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-accent-2) 84%, #fff);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-accent-2-strong) 84%, #fff);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-accent-2-strong) 84%, #fff);
   --bs-btn-active-color: var(--bs-body-bg);
   --bs-btn-disabled-color: var(--bs-body-bg);
-  --bs-btn-focus-shadow-rgb: 34, 211, 238;
 }
 
 .employee-notes-details {

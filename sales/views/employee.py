@@ -38,7 +38,12 @@ from sales.employee_editing import (
     payment_submission_is_employee_editable,
     sale_is_employee_editable,
 )
-from sales.charging import DUPLICATE_SUBMIT, can_charge, create_charged_sale
+from sales.charging import (
+    DUPLICATE_SUBMIT,
+    can_charge,
+    create_charged_sale,
+    find_duplicate_submit,
+)
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
 from inventory.forms import CustomerStockFilterForm
@@ -50,6 +55,7 @@ from sales.views._shared import (
     htmx_action_error,
     htmx_remove_target,
     is_htmx,
+    remaining_recheck_polls,
     render_sale_row,
     sale_row_layout,
     sale_row_queryset,
@@ -82,6 +88,15 @@ def _build_product_groups(company_id):
     return groups
 
 
+def _duplicate_charge_redirect(request, sale):
+    messages.info(
+        request,
+        _("This sale was already recorded (%(status)s). No new charge was made.")
+        % {"status": sale.get_charge_status_display()},
+    )
+    return redirect("sales:employee_entry")
+
+
 @employee_required
 def employee_entry(request):
     company_id = request.POST.get("company") or request.GET.get("company")
@@ -103,6 +118,12 @@ def employee_entry(request):
 
     if request.method == "POST" and form.is_valid():
         try:
+            if charge_requested:
+                duplicate = find_duplicate_submit(request.POST.get("form_token", ""), request.user)
+                if duplicate is not None:
+                    return _duplicate_charge_redirect(request, duplicate)
+                if not can_charge(form.cleaned_data["company"]):
+                    raise ValueError(_("This company cannot be charged through its provider."))
             on_account = bool(form.cleaned_data.get("on_account"))
             app_settings = AppSettings.load()
             paid_via_employee = (
@@ -155,12 +176,7 @@ def employee_entry(request):
                         paid_via_employee=paid_via_employee,
                     )
             if outcome == DUPLICATE_SUBMIT:
-                messages.info(
-                    request,
-                    _("This sale was already recorded (%(status)s). No new charge was made.")
-                    % {"status": sale.get_charge_status_display()},
-                )
-                return redirect("sales:employee_entry")
+                return _duplicate_charge_redirect(request, sale)
             if outcome == "posted_debt":
                 messages.success(request, _("Recorded on account and posted to the customer."))
             elif outcome in ("paid", "paid_employee"):
@@ -353,14 +369,18 @@ def sale_charge_row(request, pk):
     """One sale's row, re-fetched every few seconds while its charge is processing.
 
     Employees get their own "My entries" row only; management may fetch any
-    sale, including the management list row/card (``?layout=row|card``).
+    sale, including the management list row/card (``?layout=row|card``), and
+    keeps polling an open charge for a while after a recheck (``?polls=``).
     """
     management = is_management(request.user)
     qs = sale_row_queryset()
     if not management:
         qs = qs.filter(created_by=request.user)
     sale = get_object_or_404(qs, pk=pk)
-    return render_sale_row(request, sale, sale_row_layout(request, management=management))
+    layout = sale_row_layout(request, management=management)
+    return render_sale_row(
+        request, sale, layout, recheck_polls=remaining_recheck_polls(request, sale)
+    )
 
 
 @employee_required

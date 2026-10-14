@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 06:56+0300\n"
+"POT-Creation-Date: 2026-10-14 07:08+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -200,8 +200,8 @@ msgstr "تحديث"
 #: templates/reports/partials/phone_line_card_actions.html:16
 #: templates/sales/partials/employee_payment_actions.html:21
 #: templates/sales/partials/employee_recent_actions.html:17
-#: templates/sales/partials/management_sale_card.html:66
-#: templates/sales/partials/management_sale_row.html:61
+#: templates/sales/partials/management_sale_card.html:64
+#: templates/sales/partials/management_sale_row.html:59
 #: templates/sales/partials/pending_payments_results.html:80
 #: templates/sales/partials/pending_payments_results.html:150
 #: templates/sales/payment_method_list.html:34
@@ -231,8 +231,8 @@ msgstr "رفض"
 #: templates/reports/stale_phone_edit.html:41
 #: templates/sales/employee_payment_edit.html:91
 #: templates/sales/employee_sale_edit.html:74
-#: templates/sales/partials/management_sale_card.html:52
-#: templates/sales/partials/management_sale_row.html:47
+#: templates/sales/partials/management_sale_card.html:50
+#: templates/sales/partials/management_sale_row.html:45
 #: templates/sales/payment_method_form.html:27
 #: templates/sales/sale_edit.html:76
 msgid "Cancel"
@@ -241,7 +241,7 @@ msgstr "إلغاء"
 #: templates/sales/partials/pending_payments_results.html:138
 msgid "Mark paid"
 msgstr "تعليم كمدفوع"
-#: audit/models.py:29 sales/views/employee.py:258
+#: audit/models.py:29 sales/views/employee.py:274
 #: templates/customers/customer_detail.html:174
 #: templates/customers/customer_detail.html:181
 #: templates/sales/employee_record_payment.html:4
@@ -996,7 +996,7 @@ msgstr "يحتاج للاهتمام"
 msgid "All caught up."
 msgstr "كل شي تمام، لا يوجد طلبات معلّقة."
 
-#: core/views.py:213 sales/views/management.py:73
+#: core/views.py:213 sales/views/management.py:75
 #: templates/base_employee.html:9 templates/core/search.html:53
 #: templates/partials/_employee_bottom_nav_inner.html:41
 #: templates/partials/_employee_bottom_nav_inner.html:47
@@ -1240,7 +1240,7 @@ msgstr "دفعة زبون"
 msgid "customer payments"
 msgstr "دفعات الزبائن"
 
-#: customers/models.py:152 sales/models.py:39 sales/views/management.py:158
+#: customers/models.py:152 sales/models.py:39 sales/views/management.py:160
 #: templates/customers/customer_detail.html:35
 #: templates/partials/management_nav.html:17
 #: templates/sales/awaiting_approvals.html:6
@@ -2443,7 +2443,7 @@ msgstr "المبيعات آخر 14 يومًا"
 msgid "Avg per day"
 msgstr "متوسط يومي"
 
-#: reports/views.py:40 reports/views.py:49 sales/views/employee.py:632
+#: reports/views.py:40 reports/views.py:49 sales/views/employee.py:652
 msgid "Today"
 msgstr "اليوم"
 
@@ -2567,24 +2567,24 @@ msgstr "بنك فلسطين"
 msgid "Palpay"
 msgstr "بال باي"
 
-#: sales/charging.py:79
+#: sales/charging.py:80
 msgid "This form was already submitted."
 msgstr "تم إرسال هذا النموذج مسبقاً."
-#: sales/charging.py:136
+#: sales/charging.py:91
 msgid "This form has expired. Reload the page and try again."
 msgstr "انتهت صلاحية النموذج. أعد تحميل الصفحة وحاول مجدداً."
-#: sales/charging.py:141
+#: sales/charging.py:152 sales/views/employee.py:126
 msgid "This company cannot be charged through its provider."
 msgstr "لا يمكن الشحن لهذه الشركة عبر مزوّدها."
-#: sales/charging.py:269
+#: sales/charging.py:280
 msgid ""
 "This charge was never sent to the provider. Resolve it as failed instead."
 msgstr "لم يُرسل هذا الشحن إلى المزوّد إطلاقاً. احسمه كفاشل بدلاً من ذلك."
-#: sales/charging.py:279
+#: sales/charging.py:290
 msgid ""
 "The provider is still processing this charge. Try again in a few minutes."
 msgstr "ما زال المزوّد يعالج هذا الشحن. حاول مجدداً بعد بضع دقائق."
-#: sales/charging.py:293
+#: sales/charging.py:304
 msgid "Only charges in progress or unverified can be resolved."
 msgstr "يمكن حسم الشحنات الجارية أو غير المؤكدة فقط."
 #: sales/forms.py:22 sales/forms.py:236
@@ -2621,7 +2621,7 @@ msgstr "سعر البيع"
 #: sales/forms.py:93 templates/reports/partials/company_report_sales.html:90
 #: templates/reports/profit_report.html:163
 #: templates/sales/employee_sale_edit.html:36
-#: templates/sales/partials/employee_recent_sale_row.html:24
+#: templates/sales/partials/employee_recent_sale_row.html:22
 msgid "On account"
 msgstr "آجل"
 #: sales/forms.py:131 sales/models.py:154
@@ -2930,186 +2930,186 @@ msgstr "تعذّر تحديث %(n)s من المبيعات (إما مسدّدة �
 msgid "No pending sales were updated."
 msgstr "لم يُحدَّث أي بيع معلّق."
 
-#: sales/views/employee.py:160
+#: sales/views/employee.py:94
 #, python-format
 msgid "This sale was already recorded (%(status)s). No new charge was made."
 msgstr "هذا البيع مسجّل مسبقاً (%(status)s). لم يتم أي شحن جديد."
-#: sales/views/employee.py:165
+#: sales/views/employee.py:181
 msgid "Recorded on account and posted to the customer."
 msgstr "تم التسجيل على الحساب وإضافته للزبون مباشرة."
-#: sales/views/employee.py:170
+#: sales/views/employee.py:186
 msgid "Sale recorded; payment credited to employee ledger."
 msgstr "تم تسجيل البيع؛ أُضيفت الدفعة إلى كشف الموظف."
-#: sales/views/employee.py:173
+#: sales/views/employee.py:189
 msgid "Sale recorded and marked paid."
 msgstr "تم تسجيل البيع واعتباره مدفوعاً."
-#: sales/views/employee.py:175
+#: sales/views/employee.py:191
 msgid "Recorded as on-account; awaiting management approval."
 msgstr "تم تسجيلها كبيع آجل؛ بانتظار موافقة الإدارة."
 
-#: sales/views/employee.py:177
+#: sales/views/employee.py:193
 msgid "Sale recorded successfully."
 msgstr "تم تسجيل البيع بنجاح."
-#: sales/views/employee.py:180
+#: sales/views/employee.py:196
 msgid "Charge sent to the provider. Follow its status in My entries."
 msgstr "أُرسل الشحن إلى المزوّد. تابع حالته في إدخالاتي."
-#: sales/views/employee.py:203
+#: sales/views/employee.py:219
 msgid "New sale"
 msgstr "بيع جديد"
-#: sales/views/employee.py:225 sales/views/employee.py:321
+#: sales/views/employee.py:241 sales/views/employee.py:337
 msgid "Number refresh is disabled on the sales screen."
 msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
 
-#: sales/views/employee.py:231 templates/sales/employee_refresh_number.html:4
+#: sales/views/employee.py:247 templates/sales/employee_refresh_number.html:4
 msgid "Refresh number"
 msgstr "تحديث الرقم"
-#: sales/views/employee.py:241 sales/views/employee.py:273
-#: sales/views/employee.py:758
+#: sales/views/employee.py:257 sales/views/employee.py:289
+#: sales/views/employee.py:778
 msgid "Recording payments from the sales screen is disabled."
 msgstr "تسجيل الدفعات من شاشة المبيعات معطّل."
-#: sales/views/employee.py:302
+#: sales/views/employee.py:318
 msgid ""
 "Payment recorded on the customer account and credited to employee ledger."
 msgstr "تم تسجيل الدفعة على حساب الزبون وإضافتها لدفتر الموظف."
 
-#: sales/views/employee.py:305
+#: sales/views/employee.py:321
 msgid "Payment recorded on the customer account."
 msgstr "تم تسجيل الدفعة على حساب الزبون."
-#: sales/views/employee.py:307
+#: sales/views/employee.py:323
 msgid "Payment submitted for management approval."
 msgstr "تم إرسال الدفعة لموافقة الإدارة."
 
-#: sales/views/employee.py:320 sms_gateway/models.py:255
+#: sales/views/employee.py:336 sms_gateway/models.py:255
 #: templates/sales/employee_refresh_number.html:7
 msgid "Error"
 msgstr "خطأ"
-#: sales/views/employee.py:391
+#: sales/views/employee.py:411
 msgid "Inventory is disabled on the sales screen."
 msgstr "المخزون معطّل في شاشة المبيعات."
-#: sales/views/employee.py:395
+#: sales/views/employee.py:415
 msgid "Payer name and product are required."
 msgstr "اسم الدافع والمنتج مطلوبان."
-#: sales/views/employee.py:401
+#: sales/views/employee.py:421
 msgid "Product not found."
 msgstr "المنتج غير موجود."
-#: sales/views/employee.py:573 templates/sales/employee_stock_check.html:4
+#: sales/views/employee.py:593 templates/sales/employee_stock_check.html:4
 msgid "Check stock"
 msgstr "فحص مخزون"
-#: sales/views/employee.py:635
+#: sales/views/employee.py:655
 #, python-format
 msgid "%(start)s → %(end)s"
 msgstr "%(start)s → %(end)s"
 
-#: sales/views/employee.py:640
+#: sales/views/employee.py:660
 #, python-format
 msgid "From %(start)s"
 msgstr "من %(start)s"
 
-#: sales/views/employee.py:642
+#: sales/views/employee.py:662
 #, python-format
 msgid "Up to %(end)s"
 msgstr "حتى %(end)s"
 
-#: sales/views/employee.py:644 templates/sales/employee_record_payment.html:112
+#: sales/views/employee.py:664 templates/sales/employee_record_payment.html:112
 msgid "All entries"
 msgstr "كل الإدخالات"
-#: sales/views/employee.py:654 templates/sales/employee_recent.html:3
+#: sales/views/employee.py:674 templates/sales/employee_recent.html:3
 #: templates/sales/employee_recent.html:6
 msgid "My entries"
 msgstr "إدخالاتي"
-#: sales/views/employee.py:668
+#: sales/views/employee.py:688
 msgid ""
 "Sales charged through the provider can't be edited or deleted by employees. "
 "Ask management."
 msgstr ""
 "لا يمكن للموظفين تعديل أو حذف المبيعات المشحونة عبر المزوّد. راجع الإدار"
 "ة."
-#: sales/views/employee.py:671
+#: sales/views/employee.py:691
 #, python-format
 msgid "You can only edit or delete your last %(count)s entries."
 msgstr "يمكنك تعديل أو حذف آخر %(count)s إدخالات فقط."
-#: sales/views/employee.py:712 sales/views/management.py:263
+#: sales/views/employee.py:732 sales/views/management.py:265
 msgid "Sale updated."
 msgstr "تم تحديث البيع."
-#: sales/views/employee.py:723 templates/sales/employee_sale_edit.html:3
+#: sales/views/employee.py:743 templates/sales/employee_sale_edit.html:3
 #: templates/sales/employee_sale_edit.html:7
 msgid "Edit entry"
 msgstr "تعديل الإدخال"
-#: sales/views/employee.py:743
+#: sales/views/employee.py:763
 #, python-format
 msgid "Could not delete this entry: %(reason)s"
 msgstr "تعذّر حذف هذا الإدخال: %(reason)s"
 
-#: sales/views/employee.py:750
+#: sales/views/employee.py:770
 msgid "Entry was permanently removed."
 msgstr "أُزيل الإدخال نهائياً."
-#: sales/views/employee.py:770
+#: sales/views/employee.py:790
 #, python-format
 msgid "You can only edit awaiting payments among your last %(count)s payments."
 msgstr "تقدر تعدّل الدفعات بانتظار الموافقة ضمن آخر %(count)s دفعات فقط."
-#: sales/views/employee.py:801
+#: sales/views/employee.py:821
 msgid "Payment entry updated."
 msgstr "تم تحديث إدخال الدفعة."
-#: sales/views/employee.py:821 templates/sales/employee_payment_edit.html:4
+#: sales/views/employee.py:841 templates/sales/employee_payment_edit.html:4
 #: templates/sales/employee_payment_edit.html:8
 msgid "Edit payment"
 msgstr "تعديل الدفعة"
-#: sales/views/employee.py:839
+#: sales/views/employee.py:859
 #, python-format
 msgid "You can only edit or delete your last %(count)s payments."
 msgstr "تقدر تعدّل أو تحذف آخر %(count)s دفعات فقط."
-#: sales/views/employee.py:856
+#: sales/views/employee.py:876
 #, python-format
 msgid "Could not delete this payment: %(reason)s"
 msgstr "تعذّر حذف هذه الدفعة: %(reason)s"
-#: sales/views/employee.py:863
+#: sales/views/employee.py:883
 msgid "Payment entry was removed."
 msgstr "تم حذف إدخال الدفعة."
-#: sales/views/management.py:121 templates/partials/management_nav.html:31
+#: sales/views/management.py:123 templates/partials/management_nav.html:31
 #: templates/sales/management_sale_list.html:20
 #: templates/sales/pending_payments.html:6
 msgid "Pending payments"
 msgstr "المدفوعات المعلّقة"
-#: sales/views/management.py:203
+#: sales/views/management.py:205
 msgid "Sale approved and posted to the customer's account."
 msgstr "تمت الموافقة على البيع وقيدُه على حساب الزبون."
 
-#: sales/views/management.py:214
+#: sales/views/management.py:216
 msgid "Sale rejected and supplier balance restored."
 msgstr "تم رفض البيع واسترجاع رصيد المورّد."
 
-#: sales/views/management.py:225
+#: sales/views/management.py:227
 msgid "Marked as paid."
 msgstr "تم التعليم كمدفوع."
-#: sales/views/management.py:236
+#: sales/views/management.py:238
 msgid "Sale cancelled and supplier balance restored."
 msgstr "تم إلغاء البيع واسترجاع رصيد المورّد."
-#: sales/views/management.py:274
+#: sales/views/management.py:276
 msgid "Edit sale"
 msgstr "تعديل البيع"
 
-#: sales/views/management.py:288
+#: sales/views/management.py:290
 #, python-format
 msgid "Could not delete this sale: %(reason)s"
 msgstr "تعذّر حذف البيع: %(reason)s"
 
-#: sales/views/management.py:295
+#: sales/views/management.py:297
 msgid "Sale was permanently removed from the system."
 msgstr "تم حذف البيع نهائياً من النظام."
 
-#: sales/views/management.py:326
+#: sales/views/management.py:330
 msgid "Only charges in progress or unverified can be rechecked."
 msgstr "يمكن إعادة فحص الشحنات الجارية أو غير المؤكدة فقط."
-#: sales/views/management.py:337
-msgid "Checking this charge with the provider. Refresh in a moment."
-msgstr "جارٍ فحص هذا الشحن لدى المزوّد. حدّث الصفحة بعد لحظات."
-#: sales/views/management.py:348
+#: sales/views/management.py:341
+msgid "Checking this charge with the provider…"
+msgstr "جارٍ فحص هذا الشحن لدى المزوّد…"
+#: sales/views/management.py:353
 msgid "Choose whether the charge succeeded or failed."
 msgstr "اختر ما إذا كان الشحن قد نجح أو فشل."
-#: sales/views/management.py:355
+#: sales/views/management.py:360
 msgid "Charge marked as successful."
 msgstr "تم تأكيد نجاح الشحن."
-#: sales/views/management.py:357
+#: sales/views/management.py:362
 msgid "Charge marked as failed; the sale was reversed."
 msgstr "تم تأكيد فشل الشحن وإلغاء البيع."
 #: sales/views/payment_methods.py:22 templates/partials/management_nav.html:119
@@ -3489,8 +3489,8 @@ msgstr "لم يدخل بعد"
 #: templates/inventory/_balance_actions.html:15
 #: templates/sales/partials/employee_payment_actions.html:5
 #: templates/sales/partials/employee_recent_actions.html:4
-#: templates/sales/partials/management_sale_card.html:40
-#: templates/sales/partials/management_sale_row.html:35
+#: templates/sales/partials/management_sale_card.html:38
+#: templates/sales/partials/management_sale_row.html:33
 #: templates/sales/payment_method_list.html:26
 msgid "Edit"
 msgstr "تعديل"
@@ -4718,8 +4718,8 @@ msgid ""
 msgstr "حذف هذا البيع نهائياً وإلغاء أثره من رصيد الزبون والتقارير؟"
 
 #: templates/customers/customer_detail.html:91
-#: templates/sales/partials/management_sale_card.html:66
-#: templates/sales/partials/management_sale_row.html:61
+#: templates/sales/partials/management_sale_card.html:64
+#: templates/sales/partials/management_sale_row.html:59
 #: templates/sales/partials/pending_payments_results.html:80
 #: templates/sales/partials/pending_payments_results.html:150
 msgid "Delete permanently"
@@ -5844,7 +5844,7 @@ msgid "Record the sale and charge the line through the provider"
 msgstr "سجّل البيع واشحن الخط عبر المزوّد"
 #: templates/sales/employee_entry.html:259
 msgid "Charge & record sale"
-msgstr "شحن وتسجيل البيع"
+msgstr "شحن وتسجيل بيع"
 #: templates/sales/employee_entry.html:412
 msgid "Prorated from package base:"
 msgstr "محسوب من أساس الباقة:"
@@ -5992,7 +5992,7 @@ msgid "No sales awaiting approval."
 msgstr "لا توجد مبيعات بانتظار الموافقة."
 
 #: templates/sales/partials/awaiting_results.html:94
-#: templates/sales/partials/management_sale_card.html:26
+#: templates/sales/partials/management_sale_card.html:24
 #: templates/sales/partials/pending_payments_results.html:110
 msgid "Copy"
 msgstr "نسخ"
@@ -6065,31 +6065,34 @@ msgstr "آخر فحص"
 #: templates/sales/partials/management_charge_details.html:21
 msgid "Provider message"
 msgstr "رسالة المزوّد"
-#: templates/sales/partials/management_charge_details.html:36
+#: templates/sales/partials/management_charge_details.html:27
+msgid "Checking with the provider…"
+msgstr "جارٍ الفحص لدى المزوّد…"
+#: templates/sales/partials/management_charge_details.html:42
 msgid "Recheck with provider"
 msgstr "إعادة الفحص لدى المزوّد"
-#: templates/sales/partials/management_charge_details.html:46
+#: templates/sales/partials/management_charge_details.html:53
 msgid ""
 "Mark this charge as successful? Do this only after confirming at the "
 "provider that the line was charged."
 msgstr "تأكيد نجاح هذا الشحن؟ افعل ذلك فقط بعد التأكد لدى المزوّد من شحن الخط."
-#: templates/sales/partials/management_charge_details.html:50
+#: templates/sales/partials/management_charge_details.html:57
 msgid "Mark charged"
 msgstr "تأكيد الشحن"
-#: templates/sales/partials/management_charge_details.html:60
+#: templates/sales/partials/management_charge_details.html:67
 msgid ""
 "Mark this charge as failed? The sale will be reversed and the supplier "
 "balance restored."
 msgstr "تأكيد فشل هذا الشحن؟ سيُلغى البيع ويُعاد رصيد المورّد."
-#: templates/sales/partials/management_charge_details.html:64
+#: templates/sales/partials/management_charge_details.html:71
 msgid "Mark failed"
 msgstr "تأكيد الفشل"
-#: templates/sales/partials/management_sale_card.html:49
-#: templates/sales/partials/management_sale_row.html:44
+#: templates/sales/partials/management_sale_card.html:47
+#: templates/sales/partials/management_sale_row.html:42
 msgid "Cancel this sale?"
 msgstr "إلغاء هذا البيع؟"
-#: templates/sales/partials/management_sale_card.html:63
-#: templates/sales/partials/management_sale_row.html:58
+#: templates/sales/partials/management_sale_card.html:61
+#: templates/sales/partials/management_sale_row.html:56
 #: templates/sales/partials/pending_payments_results.html:77
 #: templates/sales/partials/pending_payments_results.html:147
 msgid ""
@@ -6098,7 +6101,7 @@ msgid ""
 msgstr ""
 "حذف هذا البيع نهائياً؟ ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
 
-#: templates/sales/partials/management_sale_row.html:26
+#: templates/sales/partials/management_sale_row.html:24
 #: templates/sales/partials/pending_payments_results.html:51
 msgid "Copy reference"
 msgstr "نسخ المرجع"

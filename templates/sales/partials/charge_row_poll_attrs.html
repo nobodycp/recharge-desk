@@ -1,0 +1,6 @@
+{# Attributes that make sale `s`'s row re-fetch itself; `layout` is the management row/card layout. #}
+{# Only a visible row in a visible tab polls; data-ui.js stops it on an error response. #}
+{% url 'sales:sale_charge_row' s.pk as row_url %}hx-get="{{ row_url }}{% if layout %}?layout={{ layout }}{% if recheck_polls_left %}&amp;polls={{ recheck_polls_left }}&amp;since={{ recheck_since|urlencode }}{% endif %}{% endif %}"
+    hx-trigger="every 5s [document.visibilityState === 'visible' &amp;&amp; this.getClientRects().length &gt; 0 &amp;&amp; !this.hasAttribute('data-rd-poll-stop')]"
+    hx-swap="outerHTML"
+    data-rd-poll

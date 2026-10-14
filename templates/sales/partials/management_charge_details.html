@@ -1,6 +1,6 @@
 {% load i18n humanize %}
 {# Provider-side facts and settle actions for an auto-charged sale `s` (management only). #}
-<details class="rd-charge-details"{% if s.charge_is_open or s.charge_conflict %} open{% endif %}>
+<details class="rd-charge-details" data-rd-keep-open="charge-{{ s.pk }}"{% if s.charge_is_open or s.charge_conflict %} open{% endif %}>
   <summary class="rd-charge-details__summary">{% trans "Charge details" %}</summary>
   <div class="rd-charge-details__body">
     {% if s.charge_conflict %}
@@ -22,7 +22,13 @@
       {% endif %}
     </dl>
     {% if s.charge_is_open %}
+      {% if recheck_polls_left %}
+        <p class="rd-charge-details__checking mb-0" role="status">
+          <span class="rd-charge-tag__pulse" aria-hidden="true"></span>{% trans "Checking with the provider…" %}
+        </p>
+      {% endif %}
       <div class="d-flex flex-wrap gap-1 rd-charge-details__actions">
+        {% if not recheck_polls_left %}
         <form
           method="post"
           action="{% url 'sales:sale_charge_recheck' s.pk %}"
@@ -35,6 +41,7 @@
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Recheck with provider" %}</button>
         </form>
+        {% endif %}
         <form
           method="post"
           action="{% url 'sales:sale_charge_resolve' s.pk %}"

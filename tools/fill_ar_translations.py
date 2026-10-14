@@ -771,7 +771,7 @@ AR: dict[str, str] = {
     "Sales charged through the provider can't be edited or deleted by employees. Ask management.": "لا يمكن للموظفين تعديل أو حذف المبيعات المشحونة عبر المزوّد. راجع الإدارة.",
     "This charge was never sent to the provider. Resolve it as failed instead.": "لم يُرسل هذا الشحن إلى المزوّد إطلاقاً. احسمه كفاشل بدلاً من ذلك.",
     "The provider reported a successful charge after the sale was reversed.": "أبلغ المزوّد عن شحن ناجح بعد إلغاء البيع.",
-    "Charge & record sale": "شحن وتسجيل البيع",
+    "Charge & record sale": "شحن وتسجيل بيع",
     "Record the sale and charge the line through the provider": "سجّل البيع واشحن الخط عبر المزوّد",
     "Auto charge": "شحن تلقائي",
     "Needs verification": "بحاجة تحقق",
@@ -805,7 +805,8 @@ AR: dict[str, str] = {
         "تأكيد فشل هذا الشحن؟ سيُلغى البيع ويُعاد رصيد المورّد."
     ),
     "Only charges in progress or unverified can be rechecked.": "يمكن إعادة فحص الشحنات الجارية أو غير المؤكدة فقط.",
-    "Checking this charge with the provider. Refresh in a moment.": "جارٍ فحص هذا الشحن لدى المزوّد. حدّث الصفحة بعد لحظات.",
+    "Checking this charge with the provider…": "جارٍ فحص هذا الشحن لدى المزوّد…",
+    "Checking with the provider…": "جارٍ الفحص لدى المزوّد…",
     "Choose whether the charge succeeded or failed.": "اختر ما إذا كان الشحن قد نجح أو فشل.",
     "Charge marked as successful.": "تم تأكيد نجاح الشحن.",
     "Charge marked as failed; the sale was reversed.": "تم تأكيد فشل الشحن وإلغاء البيع.",

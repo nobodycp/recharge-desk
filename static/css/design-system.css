@@ -67,10 +67,15 @@ html {
   --rd-accent-hover: #4338ca;
   --rd-accent-muted: rgba(79, 70, 229, 0.12);
   --rd-accent-2: #0891b2;
+  /* Text-safe cyan: fill behind white text / small text on a cyan tint (≥ 4.5:1). */
+  --rd-accent-2-strong: #0e7490;
+  --rd-accent-2-strong-rgb: 14, 116, 144;
+  --rd-accent-2-ink: #155e75;
   --rd-success: #059669;
   --rd-success-soft: rgba(5, 150, 105, 0.12);
   --rd-warning: #d97706;
   --rd-warning-soft: rgba(217, 119, 6, 0.14);
+  --rd-warning-ink: var(--rd-warning);
   --rd-danger: #dc2626;
   --rd-danger-soft: rgba(220, 38, 38, 0.1);
   --rd-info: #0284c7;
@@ -104,10 +109,14 @@ html {
   --rd-accent-hover: #a5b4fc;
   --rd-accent-muted: rgba(129, 140, 248, 0.15);
   --rd-accent-2: #22d3ee;
+  --rd-accent-2-strong: #22d3ee;
+  --rd-accent-2-strong-rgb: 34, 211, 238;
+  --rd-accent-2-ink: #22d3ee;
   --rd-success: #34d399;
   --rd-success-soft: rgba(52, 211, 153, 0.14);
   --rd-warning: #fbbf24;
   --rd-warning-soft: rgba(251, 191, 36, 0.14);
+  --rd-warning-ink: #fcd34d;
   --rd-danger: #f87171;
   --rd-danger-soft: rgba(248, 113, 113, 0.12);
   --rd-info: #38bdf8;
@@ -1275,11 +1284,7 @@ body.app-shell {
 
 .rd-badge--pending {
   background: var(--rd-warning-soft);
-  color: var(--rd-warning);
-}
-
-[data-bs-theme="dark"] .rd-badge--pending {
-  color: #fcd34d;
+  color: var(--rd-warning-ink);
 }
 
 .rd-badge--paid {
@@ -1343,7 +1348,7 @@ body.app-shell {
 
 .rd-charge-tag__mode {
   background: color-mix(in srgb, var(--rd-accent-2) 14%, transparent);
-  color: var(--rd-accent-2);
+  color: var(--rd-accent-2-ink);
 }
 
 .rd-charge-tag__state {
@@ -1367,11 +1372,7 @@ body.app-shell {
 
 .rd-charge-tag--unverified .rd-charge-tag__state {
   background: var(--rd-warning-soft);
-  color: var(--rd-warning);
-}
-
-[data-bs-theme="dark"] .rd-charge-tag--unverified .rd-charge-tag__state {
-  color: #fcd34d;
+  color: var(--rd-warning-ink);
 }
 
 .rd-charge-tag__pulse {
@@ -1457,6 +1458,15 @@ body.app-shell {
   background: var(--bs-tertiary-bg);
   border: 1px solid var(--bs-border-color);
   border-radius: var(--rd-radius-sm);
+}
+
+.rd-charge-details__checking {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rd-accent-2-ink);
 }
 
 .rd-charge-details__alert {

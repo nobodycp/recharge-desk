@@ -31,6 +31,7 @@ from sales.services import (
     update_sale_fields,
 )
 from sales.views._shared import (
+    RECHECK_POLLS,
     htmx_action_error,
     htmx_remove_target,
     is_htmx,
@@ -38,6 +39,7 @@ from sales.views._shared import (
     safe_return_url,
     sale_row_layout,
     sale_row_queryset,
+    with_toast,
 )
 
 
@@ -297,8 +299,8 @@ def sale_delete_permanent(request, pk):
 
 
 # ------------------------------------------------------ charge-and-record
-def _charge_action_response(request, pk, *, action, success_message):
-    """Run ``action(sale)``; htmx gets the refreshed row, others go back to the list."""
+def _charge_action_response(request, pk, *, action, success_message, recheck_polls=0):
+    """Run ``action(sale)``; htmx gets the refreshed row + a toast, others go back to the list."""
     sale = get_object_or_404(sale_row_queryset(), pk=pk)
     htmx = is_htmx(request)
     try:
@@ -310,7 +312,9 @@ def _charge_action_response(request, pk, *, action, success_message):
     else:
         if htmx:
             sale = sale_row_queryset().get(pk=sale.pk)
-            return render_sale_row(request, sale, sale_row_layout(request, management=True))
+            layout = sale_row_layout(request, management=True)
+            row = render_sale_row(request, sale, layout, recheck_polls=recheck_polls)
+            return with_toast(row, success_message)
         messages.success(request, success_message)
     return redirect(
         safe_return_url(
@@ -334,7 +338,8 @@ def sale_charge_recheck(request, pk):
         request,
         pk,
         action=_recheck,
-        success_message=_("Checking this charge with the provider. Refresh in a moment."),
+        success_message=_("Checking this charge with the provider…"),
+        recheck_polls=RECHECK_POLLS,
     )
 
 

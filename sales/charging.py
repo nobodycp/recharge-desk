@@ -73,11 +73,24 @@ def _job_for_token(form_token: str) -> ProviderJob | None:
     return ProviderJob.objects.filter(idempotency_key=form_token).first()
 
 
-def _sale_for_job(job: ProviderJob) -> Sale:
-    sale = Sale.objects.filter(charge_job_id=job.pk).first()
+def _sale_for_job(job: ProviderJob, user) -> Sale:
+    """The sale ``user`` recorded with this job's token; anyone else's is not revealed."""
+    sale = Sale.objects.filter(charge_job_id=job.pk, created_by=user).first()
     if sale is None:
         raise ValueError(_("This form was already submitted."))
     return sale
+
+
+def find_duplicate_submit(form_token: str, user) -> Sale | None:
+    """The sale ``user`` already recorded with ``form_token``, or ``None`` if it is unused.
+
+    Raises ``ValueError`` when the token is missing or was used by someone else.
+    """
+    form_token = (form_token or "").strip()
+    if not form_token:
+        raise ValueError(_("This form has expired. Reload the page and try again."))
+    existing = _job_for_token(form_token)
+    return _sale_for_job(existing, user) if existing is not None else None
 
 
 def _enqueue_charge(job_id) -> None:
@@ -131,12 +144,10 @@ def create_charged_sale(
     (also when two submits race) and ``sale`` is the original sale. Raises
     ``ValueError`` like ``create_sale``.
     """
-    form_token = (form_token or "").strip()
-    if not form_token:
-        raise ValueError(_("This form has expired. Reload the page and try again."))
-    existing = _job_for_token(form_token)
-    if existing is not None:
-        return _sale_for_job(existing), DUPLICATE_SUBMIT
+    duplicate = find_duplicate_submit(form_token, user)
+    if duplicate is not None:
+        return duplicate, DUPLICATE_SUBMIT
+    form_token = form_token.strip()
     if not can_charge(create_sale_kwargs["company"]):
         raise ValueError(_("This company cannot be charged through its provider."))
     try:
@@ -146,7 +157,7 @@ def create_charged_sale(
         existing = _job_for_token(form_token)
         if existing is None:
             raise
-        return _sale_for_job(existing), DUPLICATE_SUBMIT
+        return _sale_for_job(existing, user), DUPLICATE_SUBMIT
 
 
 def _conflict_extra(outcome: ChargeOutcome) -> dict:

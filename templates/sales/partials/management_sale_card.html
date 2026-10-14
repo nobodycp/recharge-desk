@@ -3,11 +3,9 @@
 <div
   id="sale-card-{{ s.pk }}"
   class="rd-mobile-row-card rd-pending-group {% if s.status == 'pending' %}is-pending{% endif %}{% if s.entry_mode == 'auto_charge' %} rd-charge-row{% endif %}"
-  {% if s.charge_status == "processing" %}
-    hx-get="{% url 'sales:sale_charge_row' s.pk %}?layout=card"
-    hx-trigger="every 5s"
+  {% if s.charge_status == "processing" or recheck_polls_left %}
+    {% include "sales/partials/charge_row_poll_attrs.html" with layout="card" %}
     hx-target="this"
-    hx-swap="outerHTML"
     hx-push-url="false"
     hx-indicator="this"
   {% endif %}
