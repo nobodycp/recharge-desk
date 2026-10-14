@@ -683,7 +683,7 @@ def employee_sale_delete(request, pk):
         return redirect("sales:employee_recent_sales")
     try:
         delete_sale_permanently(sale=sale, user=request.user)
-    except (IntegrityError, DatabaseError) as exc:
+    except (ValueError, IntegrityError, DatabaseError) as exc:
         msg = _("Could not delete this entry: %(reason)s") % {"reason": str(exc)}
         if htmx:
             return htmx_action_error(str(msg))

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -48,6 +49,7 @@ class ChargeContext:
     product_name: str
     is_esim: bool
     idempotency_key: str
+    requested_at: datetime | None = None
 
 
 @dataclass
@@ -87,6 +89,8 @@ class BaseAdapter:
     capabilities: frozenset = frozenset()
     timeout: int = 20
     needs_login: bool = False
+    # True if ``check_charge`` can find a charge by phone/idempotency key alone.
+    check_without_ref: bool = False
     reconcile_template: str = ""
 
     def refresh(self, phone: str) -> RawResponse:
@@ -104,6 +108,14 @@ class BaseAdapter:
         raise NotImplementedError
 
     def check_charge(self, ctx: ChargeContext, provider_ref: str) -> ChargeOutcome:
+        """Report what happened to an earlier charge (never charges).
+
+        ``FAILED`` only when the provider definitively shows no charge for
+        this phone / idempotency key since ``ctx.requested_at`` (the sale is
+        then reversed); ``SUCCESS`` when it shows the charge; anything
+        uncertain is ``UNVERIFIED``. ``provider_ref`` may be empty only for
+        adapters that set ``check_without_ref``.
+        """
         raise NotImplementedError
 
     def reconcile(self, company, period_from, period_to, **opts):

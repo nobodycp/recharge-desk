@@ -132,6 +132,8 @@ def check_charge(
     budget: float = SYNC_BUDGET_SECONDS,
 ) -> ChargeOutcome:
     adapter = get_adapter(provider_key)
+    if not provider_ref and not adapter.check_without_ref:
+        return ChargeOutcome(result=ChargeResult.UNVERIFIED, message="no_provider_ref")
     deadline = time.monotonic() + budget
     try:
         return run_authenticated(

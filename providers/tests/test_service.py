@@ -241,6 +241,22 @@ class ServiceTests(TestCase):
         self.assertEqual(len(fake.charges), 1)
         sleep.assert_not_called()
 
+    def test_check_charge_without_ref_needs_adapter_support(self):
+        fake = FakeChargeAdapter.configured(check_without_ref=False)
+        with patch.dict(ADAPTERS, {"fake": fake}):
+            outcome = service.check_charge("fake", _ctx(), "")
+        self.assertEqual(outcome.result, ChargeResult.UNVERIFIED)
+        self.assertEqual(outcome.message, "no_provider_ref")
+        self.assertEqual(fake.checks, [])
+
+        fake = FakeChargeAdapter.configured(
+            check_without_ref=True, check_result=ChargeResult.FAILED
+        )
+        with patch.dict(ADAPTERS, {"fake": fake}):
+            outcome = service.check_charge("fake", _ctx(), "")
+        self.assertEqual(outcome.result, ChargeResult.FAILED)
+        self.assertEqual(len(fake.checks), 1)
+
     def test_check_charge_errors_are_unverified(self):
         with _with_adapter(StubAdapter(PermanentError("x"))), self.assertLogs(
             "providers.service", level="WARNING"

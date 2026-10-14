@@ -2,18 +2,22 @@
 from __future__ import annotations
 
 import datetime as dt
+import itertools
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
-from audit.models import AuditLog
+from accounts.models import UserProfile
+from audit.models import AuditAction, AuditLog
 from companies.models import Company, Product, ProductLine
 from providers.contracts import (
     AuthRequired,
+    Capability,
     ChargeOutcome,
     ChargeResult,
     TransientError,
@@ -23,7 +27,9 @@ from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.tests.fakes import FakeChargeAdapter
 from sales import charging
+from sales.employee_editing import employee_editable_sale_ids, sale_is_employee_editable
 from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
+from sales.services import cancel_sale, delete_sale_permanently, update_sale_fields
 from sales.tasks import check_sale_charge, run_charge_job, verify_unverified_charges
 
 User = get_user_model()
@@ -35,7 +41,15 @@ class ChargingTestBase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user("cashier", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
         cls.manager = User.objects.create_user("boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.manager,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
         cls.company = Company.objects.create(
             name="FakeCo", phone_refresh_provider="fake", current_balance=START
         )
@@ -69,13 +83,21 @@ class ChargingTestBase(TestCase):
         kwargs.update(overrides)
         return kwargs
 
-    def charge(self, token="tok-1", **overrides) -> Sale:
+    def charge_with_outcome(self, token="tok-1", **overrides):
         with self.captureOnCommitCallbacks(execute=True):
-            sale = charging.create_charged_sale(
+            sale, outcome = charging.create_charged_sale(
                 form_token=token, user=self.user, **self.sale_kwargs(**overrides)
             )
         sale.refresh_from_db()
-        return sale
+        return sale, outcome
+
+    def charge(self, token="tok-1", **overrides) -> Sale:
+        return self.charge_with_outcome(token, **overrides)[0]
+
+    def unverified(self, **options) -> Sale:
+        self.use(raise_after_send=TransientError("timeout"), **options)
+        with self.assertLogs("providers.service", level="WARNING"):
+            return self.charge()
 
     def charge_without_worker(self, token="tok-1") -> Sale:
         """Create the sale while the broker is down: the job stays queued."""
@@ -84,6 +106,12 @@ class ChargingTestBase(TestCase):
         ), self.assertLogs("sales.charging", level="ERROR"):
             sale = self.charge(token)
         return sale
+
+    def set_job(self, sale, **fields) -> None:
+        ProviderJob.objects.filter(pk=sale.charge_job_id).update(**fields)
+
+    def job(self, sale) -> ProviderJob:
+        return ProviderJob.objects.get(pk=sale.charge_job_id)
 
     def balance(self) -> Decimal:
         self.company.refresh_from_db()
@@ -106,6 +134,11 @@ class ChargingTestBase(TestCase):
             created_at=timezone.now() - dt.timedelta(minutes=minutes)
         )
 
+    def checked_ago(self, sale, minutes: int) -> None:
+        Sale.objects.filter(pk=sale.pk).update(
+            charge_checked_at=timezone.now() - dt.timedelta(minutes=minutes)
+        )
+
 
 class ChargeFlowTests(ChargingTestBase):
     def test_success_sets_fields_and_keeps_deduction(self):
@@ -117,12 +150,13 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(sale.charge_plan_name, "Unlimited")
         self.assertEqual(sale.charge_provider_cost, COST)
         self.assertIsNotNone(sale.charge_checked_at)
+        self.assertFalse(sale.charge_conflict)
         self.assertEqual(sale.status, Sale.Status.PENDING)
         self.assertEqual(self.balance(), START - COST)
         self.assertEqual(self.deductions(sale), 1)
         self.assertEqual(self.reversals(sale), 0)
 
-        job = ProviderJob.objects.get(pk=sale.charge_job_id)
+        job = self.job(sale)
         self.assertEqual(job.kind, ProviderJob.KIND_CHARGE)
         self.assertEqual(job.status, ProviderJob.STATUS_DONE)
         self.assertEqual(job.idempotency_key, "tok-1")
@@ -135,11 +169,19 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(ctx.phone, "0599123456")
         self.assertEqual(ctx.expected_cost, COST)
         self.assertEqual(ctx.idempotency_key, "tok-1")
+        self.assertEqual(ctx.requested_at, sale.created_at)
         self.assertTrue(
             AuditLog.objects.filter(
                 object_id=str(sale.pk), changes___extra__charge_status="success"
             ).exists()
         )
+
+    def test_returns_finalize_outcome_token(self):
+        sale, outcome = self.charge_with_outcome("t-1")
+        self.assertEqual(outcome, "pending_payment")
+        again, outcome = self.charge_with_outcome("t-1")
+        self.assertEqual(again.pk, sale.pk)
+        self.assertEqual(outcome, "duplicate")
 
     def test_failed_cancels_sale_and_restores_balance_once(self):
         self.use(result=ChargeResult.FAILED, message="line not found")
@@ -157,10 +199,19 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.reversals(sale), 1)
         self.assertEqual(self.balance(), START)
 
+    def test_automatic_reversal_is_audited_as_system(self):
+        self.use(result=ChargeResult.FAILED)
+        sale = self.charge()
+        cancel = AuditLog.objects.get(object_id=str(sale.pk), action=AuditAction.CANCEL)
+        self.assertIsNone(cancel.actor)
+        self.assertEqual(cancel.changes["_extra"]["actor"], "system")
+        update = AuditLog.objects.get(
+            object_id=str(sale.pk), changes___extra__charge_status="failed"
+        )
+        self.assertEqual(update.changes["_extra"]["actor"], "system")
+
     def test_transient_after_send_is_unverified_without_reversal(self):
-        self.use(raise_after_send=TransientError("timeout"))
-        with self.assertLogs("providers.service", level="WARNING"):
-            sale = self.charge()
+        sale = self.unverified()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
         self.assertEqual(sale.status, Sale.Status.PENDING)
         self.assertEqual(self.balance(), START - COST)
@@ -221,6 +272,60 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.balance(), START)
 
 
+class RunChargeJobTests(ChargingTestBase):
+    def test_run_charge_job_twice_charges_once(self):
+        sale = self.charge()
+        with self.assertLogs("sales.tasks", level="INFO"):
+            run_charge_job(str(sale.charge_job_id))
+        self.assertEqual(len(self.fake.charges), 1)
+
+    def test_refuses_cancelled_sale_without_calling_provider(self):
+        sale = self.charge_without_worker()
+        Sale.objects.filter(pk=sale.pk).update(status=Sale.Status.CANCELLED)
+        with self.assertLogs("sales.tasks", level="WARNING"):
+            run_charge_job(str(sale.charge_job_id))
+        self.assertEqual(self.fake.charges, [])
+        job = self.job(sale)
+        self.assertEqual(job.status, ProviderJob.STATUS_FAILED)
+        self.assertEqual(job.result, {"error": "sale_cancelled"})
+
+    def test_unknown_provider_is_failed_not_sent_and_reverses(self):
+        sale = self.charge_without_worker()
+        self.set_job(sale, provider_key="nope")
+        run_charge_job(str(sale.charge_job_id))
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(sale.charge_message, "not_sent:unknown_provider")
+        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertEqual(self.balance(), START)
+        self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
+
+    def test_context_error_never_leaves_job_running(self):
+        sale = self.charge_without_worker()
+        with patch(
+            "sales.tasks.charging.charge_context", side_effect=RuntimeError("bad data")
+        ), self.assertLogs("sales.tasks", level="ERROR"):
+            run_charge_job(str(sale.charge_job_id))
+        self.assertEqual(self.fake.charges, [])
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(sale.charge_message, "not_sent:context_error")
+        self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
+
+    def test_apply_outcome_error_fails_job_and_leaves_sale_open(self):
+        sale = self.charge_without_worker()
+        with patch(
+            "sales.tasks.charging.apply_outcome", side_effect=RuntimeError("db gone")
+        ), self.assertLogs("sales.tasks", level="ERROR"):
+            run_charge_job(str(sale.charge_job_id))
+        self.assertEqual(len(self.fake.charges), 1)
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.PROCESSING)
+        job = self.job(sale)
+        self.assertEqual(job.status, ProviderJob.STATUS_FAILED)
+        self.assertEqual(job.result["result"], "success")
+
+
 class IdempotencyTests(ChargingTestBase):
     def test_duplicate_form_token_returns_existing_sale(self):
         first = self.charge("same")
@@ -242,19 +347,14 @@ class IdempotencyTests(ChargingTestBase):
             return None if len(calls) == 1 else real(token)
 
         with patch("sales.charging._job_for_token", side_effect=racing_lookup):
-            second = self.charge("race")
+            second, outcome = self.charge_with_outcome("race")
         self.assertEqual(len(calls), 2)
         self.assertEqual(second.pk, first.pk)
+        self.assertEqual(outcome, "duplicate")
         self.assertEqual(Sale.objects.count(), 1)
         self.assertEqual(ProviderJob.objects.count(), 1)
         self.assertEqual(CompanyBalanceTransaction.objects.count(), 1)
         self.assertEqual(self.balance(), START - COST)
-        self.assertEqual(len(self.fake.charges), 1)
-
-    def test_run_charge_job_twice_charges_once(self):
-        sale = self.charge()
-        with self.assertLogs("sales.tasks", level="INFO"):
-            run_charge_job(str(sale.charge_job_id))
         self.assertEqual(len(self.fake.charges), 1)
 
 
@@ -268,43 +368,162 @@ class ApplyOutcomeTests(ChargingTestBase):
         self.assertEqual(sale.status, Sale.Status.PENDING)
         self.assertEqual(self.reversals(sale), 0)
 
-    def test_failed_on_already_cancelled_sale_adds_no_reversal(self):
-        from sales.services import cancel_sale
+    def test_success_after_reversal_is_flagged_not_undone(self):
+        self.use(result=ChargeResult.FAILED)
+        sale = self.charge()
+        with self.assertLogs("sales.charging", level="ERROR"):
+            charging.apply_outcome(
+                sale.pk, ChargeOutcome(result=ChargeResult.SUCCESS, provider_ref="LATE-1")
+            )
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertTrue(sale.charge_conflict)
+        self.assertEqual(self.reversals(sale), 1)
+        self.assertEqual(self.balance(), START)
+        log = AuditLog.objects.get(
+            object_id=str(sale.pk), changes___extra__charge_conflict="success_after_reversal"
+        )
+        self.assertEqual(log.changes["_extra"]["provider_ref"], "LATE-1")
 
-        self.use(raise_after_send=TransientError("timeout"))
-        with self.assertLogs("providers.service", level="WARNING"):
-            sale = self.charge()
-        cancel_sale(sale=sale, user=self.manager)
+    def test_success_on_open_but_cancelled_sale_is_flagged(self):
+        sale = self.unverified()
+        Sale.objects.filter(pk=sale.pk).update(status=Sale.Status.CANCELLED)
+        with self.assertLogs("sales.charging", level="ERROR"):
+            charging.apply_outcome(sale.pk, ChargeOutcome(result=ChargeResult.SUCCESS))
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
+        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertTrue(sale.charge_conflict)
+        self.assertEqual(self.deductions(sale), 1)
+
+    def test_failed_on_already_cancelled_sale_adds_no_reversal(self):
+        sale = self.unverified()
+        Sale.objects.filter(pk=sale.pk).update(status=Sale.Status.CANCELLED)
         charging.apply_outcome(sale.pk, ChargeOutcome(result=ChargeResult.FAILED))
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(self.reversals(sale), 0)
+
+
+class GuardTests(ChargingTestBase):
+    """Existing cancel / edit / delete flows must not bypass the charge state."""
+
+    def edit(self, sale, **overrides):
+        kwargs = dict(
+            sale=sale,
+            payment_method=self.pm,
+            payer_name=sale.payer_name,
+            reference_number=sale.reference_number,
+            sell_price_actual=sale.sell_price_actual,
+            notes="",
+            user=self.manager,
+        )
+        kwargs.update(overrides)
+        return update_sale_fields(**kwargs)
+
+    def test_cancel_sale_rejects_open_charge(self):
+        sale = self.unverified()
+        with self.assertRaises(ValueError):
+            cancel_sale(sale=sale, user=self.manager)
+        sale.refresh_from_db()
+        self.assertEqual(sale.status, Sale.Status.PENDING)
+        self.assertEqual(self.reversals(sale), 0)
+
+    def test_cancel_allowed_once_charge_succeeded(self):
+        sale = self.charge()
+        cancel_sale(sale=sale, user=self.manager)
         self.assertEqual(self.reversals(sale), 1)
-        self.assertEqual(self.balance(), START)
+
+    def test_management_cancel_view_shows_error_for_open_charge(self):
+        sale = self.unverified()
+        self.client.force_login(self.manager)
+        response = self.client.post(reverse("sales:sale_cancel", args=[sale.pk]), follow=True)
+        self.assertContains(response, "still being charged")
+        sale.refresh_from_db()
+        self.assertEqual(sale.status, Sale.Status.PENDING)
+        self.assertEqual(self.reversals(sale), 0)
+
+    def test_update_rejects_number_or_price_change_on_open_charge(self):
+        sale = self.unverified()
+        with self.assertRaises(ValueError):
+            self.edit(sale, reference_number="0599000000")
+        with self.assertRaises(ValueError):
+            self.edit(sale, sell_price_actual=Decimal("25"))
+        sale.refresh_from_db()
+        self.assertEqual(sale.reference_number, "0599123456")
+        self.edit(sale, payer_name="Someone")
+        sale.refresh_from_db()
+        self.assertEqual(sale.payer_name, "Someone")
+
+    def test_management_edit_view_shows_error_for_number_change(self):
+        sale = self.unverified()
+        self.client.force_login(self.manager)
+        response = self.client.post(
+            reverse("sales:sale_edit", args=[sale.pk]),
+            {
+                "payment_method": self.pm.pk,
+                "payer_name": "Walk-in",
+                "reference_number": "0501234567",
+                "sell_price_actual": "20",
+                "notes": "",
+            },
+        )
+        self.assertContains(response, "still being charged")
+        sale.refresh_from_db()
+        self.assertEqual(sale.reference_number, "0599123456")
+
+    def test_delete_rejects_auto_charge_unless_failed(self):
+        sale = self.charge()
+        with self.assertRaises(ValueError):
+            delete_sale_permanently(sale=sale, user=self.manager)
+        self.assertTrue(Sale.objects.filter(pk=sale.pk).exists())
+
+        self.use(result=ChargeResult.FAILED)
+        failed = self.charge("t-failed")
+        delete_sale_permanently(sale=failed, user=self.manager)
+        self.assertFalse(Sale.objects.filter(pk=failed.pk).exists())
+
+    def test_management_delete_view_shows_error(self):
+        sale = self.unverified()
+        self.client.force_login(self.manager)
+        response = self.client.post(
+            reverse("sales:sale_delete_permanent", args=[sale.pk]), follow=True
+        )
+        self.assertContains(response, "Could not delete this sale")
+        self.assertTrue(Sale.objects.filter(pk=sale.pk).exists())
+        self.assertEqual(self.balance(), START - COST)
+
+    def test_employee_cannot_modify_auto_charge_sale(self):
+        sale = self.charge()
+        self.assertFalse(sale.is_employee_modifiable)
+        self.assertFalse(sale_is_employee_editable(sale, self.user))
+        self.assertNotIn(sale.pk, employee_editable_sale_ids(self.user))
+
+        self.client.force_login(self.user)
+        self.client.post(reverse("sales:employee_sale_delete", args=[sale.pk]))
+        self.assertTrue(Sale.objects.filter(pk=sale.pk).exists())
+        self.assertEqual(self.balance(), START - COST)
 
 
 class ManualResolveTests(ChargingTestBase):
-    def unverified_sale(self) -> Sale:
-        self.use(raise_after_send=TransientError("timeout"), provider_ref="R-9")
-        with self.assertLogs("providers.service", level="WARNING"):
-            return self.charge()
-
     def test_manual_success_keeps_ref_and_audits_user(self):
-        sale = self.unverified_sale()
+        sale = self.unverified(provider_ref="R-9")
+        self.assertEqual(sale.charge_provider_ref, "")
         Sale.objects.filter(pk=sale.pk).update(charge_provider_ref="R-9")
         sale = charging.manual_resolve(sale, success=True, user=self.manager)
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
         self.assertEqual(sale.charge_provider_ref, "R-9")
         self.assertEqual(self.balance(), START - COST)
-        self.assertTrue(
-            AuditLog.objects.filter(
-                object_id=str(sale.pk),
-                actor=self.manager,
-                changes___extra__charge_status="success",
-            ).exists()
+        log = AuditLog.objects.get(
+            object_id=str(sale.pk),
+            actor=self.manager,
+            changes___extra__charge_status="success",
         )
+        self.assertEqual(log.changes["_extra"]["previous_charge_message"], "timeout")
 
     def test_manual_failure_reverses_once(self):
-        sale = self.unverified_sale()
+        sale = self.unverified()
         sale = charging.manual_resolve(sale, success=False, user=self.manager)
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
         self.assertEqual(sale.status, Sale.Status.CANCELLED)
@@ -324,25 +543,48 @@ class ManualResolveTests(ChargingTestBase):
             charging.manual_resolve(sale, success=True, user=self.manager)
         self.assertEqual(self.reversals(sale), 0)
 
-    def test_job_skips_charge_when_sale_resolved_before_it_ran(self):
+    def test_manual_resolve_on_queued_job_stops_the_worker(self):
         sale = self.charge_without_worker()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.PROCESSING)
         charging.manual_resolve(sale, success=False, user=self.manager)
-        with self.assertLogs("sales.tasks", level="WARNING"):
+        self.assertEqual(self.job(sale).status, ProviderJob.STATUS_FAILED)
+        with self.assertLogs("sales.tasks", level="INFO"):
             run_charge_job(str(sale.charge_job_id))
         self.assertEqual(self.fake.charges, [])
-        job = ProviderJob.objects.get(pk=sale.charge_job_id)
-        self.assertEqual(job.status, ProviderJob.STATUS_FAILED)
+        self.assertEqual(self.reversals(sale), 1)
+
+    def test_manual_resolve_rejects_freshly_running_job(self):
+        sale = self.charge_without_worker()
+        self.set_job(
+            sale,
+            status=ProviderJob.STATUS_RUNNING,
+            started_at=timezone.now() - dt.timedelta(minutes=2),
+        )
+        with self.assertRaises(charging.ChargeInProgress):
+            charging.manual_resolve(sale, success=False, user=self.manager)
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.PROCESSING)
+        self.assertEqual(self.reversals(sale), 0)
+
+    def test_manual_resolve_allowed_on_stale_running_job(self):
+        sale = self.charge_without_worker()
+        self.set_job(
+            sale,
+            status=ProviderJob.STATUS_RUNNING,
+            started_at=timezone.now() - dt.timedelta(minutes=11),
+        )
+        sale = charging.manual_resolve(sale, success=True, user=self.manager)
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
 
 
 class VerifyTaskTests(ChargingTestBase):
-    def unverified_sale(self, **options) -> Sale:
-        self.use(raise_after_send=TransientError("timeout"), **options)
-        with self.assertLogs("providers.service", level="WARNING"):
-            return self.charge()
+    def unverified_due(self, **options) -> Sale:
+        """An unverified sale whose last check is old enough to re-check."""
+        sale = self.unverified(**options)
+        self.checked_ago(sale, 6)
+        return sale
 
     def test_verify_task_resolves_unverified_to_success(self):
-        sale = self.unverified_sale(check_result=ChargeResult.SUCCESS, provider_ref="R-5")
+        sale = self.unverified_due(check_result=ChargeResult.SUCCESS, provider_ref="R-5")
         verify_unverified_charges()
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
@@ -352,7 +594,7 @@ class VerifyTaskTests(ChargingTestBase):
         self.assertEqual(self.balance(), START - COST)
 
     def test_verify_task_failed_check_reverses_once(self):
-        sale = self.unverified_sale(check_result=ChargeResult.FAILED)
+        sale = self.unverified_due(check_result=ChargeResult.FAILED)
         verify_unverified_charges()
         verify_unverified_charges()
         sale.refresh_from_db()
@@ -362,13 +604,56 @@ class VerifyTaskTests(ChargingTestBase):
         self.assertEqual(len(self.fake.checks), 1)
 
     def test_verify_task_still_unverified_leaves_sale(self):
-        sale = self.unverified_sale(check_result=ChargeResult.UNVERIFIED)
+        sale = self.unverified_due(check_result=ChargeResult.UNVERIFIED)
         verify_unverified_charges()
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
         self.assertEqual(sale.status, Sale.Status.PENDING)
         self.assertEqual(self.reversals(sale), 0)
         self.assertEqual(len(self.fake.charges), 1)
+
+    def test_verify_task_skips_recently_checked_sale(self):
+        sale = self.unverified(check_result=ChargeResult.SUCCESS)
+        self.checked_ago(sale, 4)
+        verify_unverified_charges()
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
+        self.assertEqual(self.fake.checks, [])
+
+    def test_verify_task_skips_provider_without_check_capability(self):
+        sale = self.unverified_due(capabilities=frozenset({Capability.CHARGE}))
+        verify_unverified_charges()
+        self.assertEqual(self.fake.checks, [])
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
+
+    def test_verify_task_is_single_flight(self):
+        sale = self.unverified_due(check_result=ChargeResult.SUCCESS)
+        get_redis().set("sales:verify-charges:lock", "other", ex=60)
+        verify_unverified_charges()
+        self.assertEqual(self.fake.checks, [])
+        get_redis().delete("sales:verify-charges:lock")
+        verify_unverified_charges()
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
+        self.assertFalse(get_redis().exists("sales:verify-charges:lock"))
+
+    def test_verify_task_stops_when_run_budget_is_spent(self):
+        self.use(raise_after_send=TransientError("timeout"), check_result=ChargeResult.SUCCESS)
+        with self.assertLogs("providers.service", level="WARNING"):
+            first = self.charge("tok-1")
+            second = self.charge("tok-2")
+        self.age(first, 20)
+        self.checked_ago(first, 6)
+        self.checked_ago(second, 6)
+        clock = itertools.chain([0.0, 0.0], itertools.repeat(10_000.0))
+        with patch("sales.tasks.monotonic", side_effect=lambda: next(clock)):
+            verify_unverified_charges()
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.charge_status, Sale.ChargeStatus.SUCCESS)
+        self.assertEqual(second.charge_status, Sale.ChargeStatus.UNVERIFIED)
+        self.assertEqual(len(self.fake.checks), 1)
 
     def test_verify_task_requeues_never_run_job(self):
         sale = self.charge_without_worker()
@@ -385,7 +670,8 @@ class VerifyTaskTests(ChargingTestBase):
 
     def test_verify_task_skips_recently_started_job(self):
         sale = self.charge_without_worker()
-        ProviderJob.objects.filter(pk=sale.charge_job_id).update(
+        self.set_job(
+            sale,
             status=ProviderJob.STATUS_RUNNING,
             started_at=timezone.now() - dt.timedelta(minutes=9),
         )
@@ -399,7 +685,8 @@ class VerifyTaskTests(ChargingTestBase):
     def test_verify_task_checks_stale_running_job_without_charging(self):
         sale = self.charge_without_worker()
         self.use(check_result=ChargeResult.FAILED)
-        ProviderJob.objects.filter(pk=sale.charge_job_id).update(
+        self.set_job(
+            sale,
             status=ProviderJob.STATUS_RUNNING,
             started_at=timezone.now() - dt.timedelta(minutes=11),
         )
@@ -412,7 +699,7 @@ class VerifyTaskTests(ChargingTestBase):
         self.assertEqual(self.balance(), START)
 
     def test_recheck_runs_a_check_for_one_sale(self):
-        sale = self.unverified_sale(check_result=ChargeResult.SUCCESS)
+        sale = self.unverified(check_result=ChargeResult.SUCCESS)
         charging.recheck(sale)
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)

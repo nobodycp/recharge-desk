@@ -22,6 +22,7 @@ class FakeChargeAdapter(BaseAdapter):
     key = "fake"
     capabilities = frozenset({Capability.CHARGE, Capability.CHECK_CHARGE})
     needs_login = False
+    check_without_ref = True
 
     result = ChargeResult.SUCCESS
     provider_ref = "FAKE-REF-1"

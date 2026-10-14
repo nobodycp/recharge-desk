@@ -65,6 +65,20 @@ def mark_failed(job: ProviderJob, result: dict) -> None:
     _finish(job, ProviderJob.STATUS_FAILED, result)
 
 
+def fail_if_queued(job: ProviderJob, result: dict) -> bool:
+    """Atomically move ``queued`` → ``failed``; False if a worker already took it."""
+    now = timezone.now()
+    updated = ProviderJob.objects.filter(
+        pk=job.pk, status=ProviderJob.STATUS_QUEUED
+    ).update(status=ProviderJob.STATUS_FAILED, result=result, finished_at=now)
+    if updated != 1:
+        return False
+    job.status = ProviderJob.STATUS_FAILED
+    job.result = result
+    job.finished_at = now
+    return True
+
+
 def find_inflight(
     kind: str,
     phone: str,

@@ -6,6 +6,7 @@ definitely did not happen is reversed exactly once.
 """
 from __future__ import annotations
 
+import datetime as dt
 import logging
 
 from django.db import IntegrityError, transaction
@@ -27,6 +28,9 @@ from sales.services import _cancellation_ledger_exists, cancel_sale, create_sale
 log = logging.getLogger(__name__)
 
 OPEN_STATUSES = (Sale.ChargeStatus.PROCESSING, Sale.ChargeStatus.UNVERIFIED)
+DUPLICATE_SUBMIT = "duplicate"
+# A charge job running longer than this lost its worker (worker budget is 150 s).
+RUNNING_STALE_AFTER = dt.timedelta(minutes=10)
 
 _STATUS_FOR_RESULT = {
     ChargeResult.SUCCESS: Sale.ChargeStatus.SUCCESS,
@@ -61,6 +65,7 @@ def charge_context(sale: Sale, job: ProviderJob) -> ChargeContext:
         product_name=sale.product.display_name,
         is_esim=sale.is_esim,
         idempotency_key=job.idempotency_key or "",
+        requested_at=sale.created_at,
     )
 
 
@@ -88,7 +93,7 @@ def _enqueue_charge(job_id) -> None:
         )
 
 
-def _record_and_queue(form_token: str, user, create_sale_kwargs: dict) -> Sale:
+def _record_and_queue(form_token: str, user, create_sale_kwargs: dict) -> tuple[Sale, str]:
     company = create_sale_kwargs["company"]
     reference = (create_sale_kwargs.get("reference_number") or "").strip()
     # Job first: a concurrent duplicate fails on the unique key before any deduction.
@@ -100,7 +105,7 @@ def _record_and_queue(form_token: str, user, create_sale_kwargs: dict) -> Sale:
         idempotency_key=form_token,
     )
     sale = create_sale(user=user, **create_sale_kwargs)
-    finalize_sale_after_entry(
+    outcome = finalize_sale_after_entry(
         sale=sale,
         user=user,
         on_account=bool(create_sale_kwargs.get("on_account")),
@@ -113,21 +118,25 @@ def _record_and_queue(form_token: str, user, create_sale_kwargs: dict) -> Sale:
     sale.save(update_fields=["entry_mode", "charge_status", "charge_job_id", "updated_at"])
     transaction.on_commit(lambda: _enqueue_charge(job.pk))
     sale.refresh_from_db()
-    return sale
+    return sale, outcome
 
 
-def create_charged_sale(*, form_token: str, user, **create_sale_kwargs) -> Sale:
+def create_charged_sale(
+    *, form_token: str, user, **create_sale_kwargs
+) -> tuple[Sale, str]:
     """Record the sale (deducting cost as usual) and queue one provider charge.
 
-    Resubmitting the same ``form_token`` returns the original sale, also when
-    two submits race. Raises ``ValueError`` like ``create_sale``.
+    Returns ``(sale, outcome)``: ``outcome`` is the ``finalize_sale_after_entry``
+    token, or ``DUPLICATE_SUBMIT`` when this ``form_token`` was already used
+    (also when two submits race) and ``sale`` is the original sale. Raises
+    ``ValueError`` like ``create_sale``.
     """
     form_token = (form_token or "").strip()
     if not form_token:
         raise ValueError(_("This form has expired. Reload the page and try again."))
     existing = _job_for_token(form_token)
     if existing is not None:
-        return _sale_for_job(existing)
+        return _sale_for_job(existing), DUPLICATE_SUBMIT
     if not can_charge(create_sale_kwargs["company"]):
         raise ValueError(_("This company cannot be charged through its provider."))
     try:
@@ -137,18 +146,52 @@ def create_charged_sale(*, form_token: str, user, **create_sale_kwargs) -> Sale:
         existing = _job_for_token(form_token)
         if existing is None:
             raise
-        return _sale_for_job(existing)
+        return _sale_for_job(existing), DUPLICATE_SUBMIT
 
 
-def apply_outcome(sale_id: int, outcome: ChargeOutcome, *, actor=None) -> Sale:
+def _conflict_extra(outcome: ChargeOutcome) -> dict:
+    return {
+        "charge_conflict": "success_after_reversal",
+        "provider_ref": outcome.provider_ref[:100],
+        "plan_name": outcome.plan_name[:200],
+        "provider_cost": outcome.provider_cost,
+    }
+
+
+def _flag_success_after_failure(sale: Sale, outcome: ChargeOutcome, actor, who: dict) -> Sale:
+    log.error(
+        "sale %s: provider reports a successful charge after the sale was reversed",
+        sale.pk,
+    )
+    sale.charge_conflict = True
+    sale.charge_checked_at = timezone.now()
+    sale.save(update_fields=["charge_conflict", "charge_checked_at", "updated_at"])
+    audit_record(
+        AuditAction.UPDATE,
+        sale,
+        actor=actor,
+        extra={"charge_status": sale.charge_status, **_conflict_extra(outcome), **who},
+    )
+    return sale
+
+
+def apply_outcome(
+    sale_id: int, outcome: ChargeOutcome, *, actor=None, audit_extra: dict | None = None
+) -> Sale:
     """Record a charge outcome on an open sale; ``FAILED`` reverses it once.
 
-    Sales already ``success``/``failed`` (or never charged) are left untouched.
+    Sales already ``success``/``failed`` (or never charged) keep their status.
+    A ``SUCCESS`` arriving after the sale was reversed never undoes the
+    reversal: the sale gets ``charge_conflict`` for management to settle.
+    ``actor=None`` means the system (worker / verify task).
     """
+    who = {} if actor is not None else {"actor": "system"}
     with transaction.atomic():
         sale = Sale.objects.select_for_update().get(pk=sale_id)
         previous = sale.charge_status
         new_status = _STATUS_FOR_RESULT[outcome.result]
+        if previous == Sale.ChargeStatus.FAILED and new_status == Sale.ChargeStatus.SUCCESS:
+            return _flag_success_after_failure(sale, outcome, actor, who)
         if previous not in OPEN_STATUSES:
             level = logging.INFO if previous == new_status else logging.WARNING
             log.log(
@@ -169,6 +212,19 @@ def apply_outcome(sale_id: int, outcome: ChargeOutcome, *, actor=None) -> Sale:
             sale.charge_plan_name = outcome.plan_name[:200]
         if outcome.provider_cost is not None:
             sale.charge_provider_cost = outcome.provider_cost
+        extra = {
+            "charge_status": new_status,
+            "previous_charge_status": previous,
+            **who,
+            **(audit_extra or {}),
+        }
+        if new_status == Sale.ChargeStatus.SUCCESS and sale.status == Sale.Status.CANCELLED:
+            log.error(
+                "sale %s: provider reports a successful charge but the sale is cancelled",
+                sale.pk,
+            )
+            sale.charge_conflict = True
+            extra.update(_conflict_extra(outcome))
         sale.save(
             update_fields=[
                 "charge_status",
@@ -177,33 +233,65 @@ def apply_outcome(sale_id: int, outcome: ChargeOutcome, *, actor=None) -> Sale:
                 "charge_provider_ref",
                 "charge_plan_name",
                 "charge_provider_cost",
+                "charge_conflict",
                 "updated_at",
             ]
         )
-        audit_record(
-            AuditAction.UPDATE,
-            sale,
-            actor=actor,
-            extra={"charge_status": new_status, "previous_charge_status": previous},
-        )
+        audit_record(AuditAction.UPDATE, sale, actor=actor, extra=extra)
 
         if new_status == Sale.ChargeStatus.FAILED and sale.status != Sale.Status.CANCELLED:
             if _cancellation_ledger_exists(sale.pk):
                 log.warning("sale %s already has a cancellation reversal; not reversing", sale.pk)
             else:
-                sale = cancel_sale(sale=sale, user=actor)
+                sale = cancel_sale(sale=sale, user=actor, audit_extra=who or None)
         return sale
 
 
+class ChargeInProgress(ValueError):
+    """The provider is still working on the charge; it cannot be resolved by hand yet."""
+
+
+def _stop_pending_job(sale: Sale) -> None:
+    """Keep the worker from charging a sale that is being resolved by hand.
+
+    Caller holds the sale lock, which the worker also takes to claim the job.
+    """
+    job = ProviderJob.objects.filter(pk=sale.charge_job_id).first() if sale.charge_job_id else None
+    if job is None:
+        return
+    if job.status == ProviderJob.STATUS_QUEUED and not jobs.fail_if_queued(
+        job, {"error": "manually_resolved"}
+    ):
+        job.refresh_from_db()
+    if (
+        job.status == ProviderJob.STATUS_RUNNING
+        and job.started_at is not None
+        and job.started_at > timezone.now() - RUNNING_STALE_AFTER
+    ):
+        raise ChargeInProgress(
+            _("The provider is still processing this charge. Try again in a few minutes.")
+        )
+
+
 def manual_resolve(sale: Sale, *, success: bool, user) -> Sale:
-    """Management settles an open charge by hand (failure reverses the sale)."""
+    """Management settles an open charge by hand (failure reverses the sale).
+
+    Raises ``ChargeInProgress`` while a worker is (recently) charging it and
+    ``ValueError`` when the charge is not open.
+    """
     with transaction.atomic():
         locked = Sale.objects.select_for_update().get(pk=sale.pk)
-        if locked.charge_status not in OPEN_STATUSES:
+        if not locked.charge_is_open:
             raise ValueError(_("Only charges in progress or unverified can be resolved."))
+        _stop_pending_job(locked)
         result = ChargeResult.SUCCESS if success else ChargeResult.FAILED
         outcome = ChargeOutcome(result=result, message=f"manual:{result.value}")
-        return apply_outcome(locked.pk, outcome, actor=user)
+        return apply_outcome(
+            locked.pk,
+            outcome,
+            actor=user,
+            audit_extra={"previous_charge_message": locked.charge_message},
+        )
 
 
 def recheck(sale: Sale) -> None:

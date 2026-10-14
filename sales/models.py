@@ -244,6 +244,12 @@ class Sale(models.Model):
     )
     charge_checked_at = models.DateTimeField(_("charge checked at"), null=True, blank=True)
     charge_message = models.CharField(_("charge message"), max_length=255, blank=True)
+    charge_conflict = models.BooleanField(
+        _("charge conflict"),
+        default=False,
+        db_index=True,
+        help_text=_("The provider reported a successful charge after the sale was reversed."),
+    )
 
     class Meta:
         verbose_name = _("sale")
@@ -271,6 +277,14 @@ class Sale(models.Model):
         return f"{self.reference_number} — {self.product.display_name}"
 
     @property
+    def charge_is_open(self) -> bool:
+        """Auto-charged and still ``processing``/``unverified`` (only ``manual_resolve`` may settle it)."""
+        return self.entry_mode == self.EntryMode.AUTO_CHARGE and self.charge_status in (
+            self.ChargeStatus.PROCESSING,
+            self.ChargeStatus.UNVERIFIED,
+        )
+
+    @property
     def charge_cost_mismatch(self) -> bool:
         return (
             self.charge_provider_cost is not None
@@ -293,7 +307,10 @@ class Sale(models.Model):
         - PENDING + on_account=True (= management already approved it
           and the sale is now on a customer's ledger) → no.
         - PAID, CANCELLED, WRITTEN_OFF → no.
+        - Charged through a provider (``auto_charge``) → no.
         """
+        if self.entry_mode == self.EntryMode.AUTO_CHARGE:
+            return False
         if self.status == self.Status.AWAITING:
             return True
         if self.status == self.Status.PENDING and not self.on_account:

@@ -269,7 +269,7 @@ def sale_delete_permanent(request, pk):
     htmx = is_htmx(request)
     try:
         delete_sale_permanently(sale=sale, user=request.user)
-    except (IntegrityError, DatabaseError) as exc:
+    except (ValueError, IntegrityError, DatabaseError) as exc:
         msg = _("Could not delete this sale: %(reason)s") % {"reason": str(exc)}
         if htmx:
             return htmx_action_error(str(msg))

@@ -25,6 +25,12 @@ _SALE_AUDITED_FIELDS = (
 )
 
 
+def _open_charge_error() -> ValueError:
+    return ValueError(
+        _("This sale is still being charged by the provider; resolve the charge first.")
+    )
+
+
 def _apply_balance_delta(company: Company, delta: Decimal) -> None:
     Company.objects.filter(pk=company.pk).update(current_balance=F("current_balance") + delta)
     company.refresh_from_db(fields=["current_balance"])
@@ -158,6 +164,11 @@ def update_sale_fields(
     by cancelling and re-creating the sale.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    if sale_locked.charge_is_open and (
+        (reference_number or "").strip() != sale_locked.reference_number
+        or sell_price_actual != sale_locked.sell_price_actual
+    ):
+        raise _open_charge_error()
     before = snapshot(sale_locked, _SALE_AUDITED_FIELDS)
     cost = sale_locked.cost_price_snapshot
 
@@ -239,6 +250,13 @@ def delete_sale_permanently(*, sale: Sale, user=None) -> None:
       so the customer's running balance also lands net-zero.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
+    if (
+        sale_locked.entry_mode == Sale.EntryMode.AUTO_CHARGE
+        and sale_locked.charge_status != Sale.ChargeStatus.FAILED
+    ):
+        raise ValueError(
+            _("A sale charged through the provider can only be deleted after its charge failed.")
+        )
     audit_snapshot = snapshot(sale_locked, _SALE_AUDITED_FIELDS)
     audit_repr = str(sale_locked)
     audit_pk = sale_locked.pk
@@ -418,10 +436,12 @@ def cleanup_orphan_sale_balance_transactions(
 
 
 @transaction.atomic
-def cancel_sale(*, sale: Sale, user) -> Sale:
+def cancel_sale(*, sale: Sale, user, audit_extra: Optional[dict] = None) -> Sale:
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
     if sale_locked.status == Sale.Status.CANCELLED:
         raise ValueError(_("Sale is already cancelled."))
+    if sale_locked.charge_is_open:
+        raise _open_charge_error()
     if _cancellation_ledger_exists(sale_locked.pk):
         raise ValueError(_("Cancellation already recorded for this sale."))
 
@@ -484,6 +504,7 @@ def cancel_sale(*, sale: Sale, user) -> Sale:
         sale_locked,
         actor=user,
         changes={"previous_status": previous_status},
+        extra=audit_extra,
     )
     return sale_locked
 
