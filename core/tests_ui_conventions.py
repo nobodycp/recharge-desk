@@ -23,6 +23,8 @@ STANDALONE_PAGES = {
     "phone_refresh/templates/phone_refresh/public_refresh.html",
 }
 SHELLS = {"templates/base_management.html", "templates/base_employee.html"}
+FONT_PAGES = SHELLS | {"templates/accounts/login.html", "templates/core/forbidden.html"}
+OUT_OF_SCOPE = {"phone_refresh/templates/phone_refresh/public_refresh.html"}
 MESSAGES_PARTIAL = "templates/partials/messages.html"
 
 SEVERITY_ALERT = re.compile(r"<[a-z]+\b[^>]*\balert-(success|danger)\b[^>]*>", re.I | re.S)
@@ -119,3 +121,26 @@ class TemplateConventionTests(SimpleTestCase):
             offenders,
             "rd-form-error-banner was replaced by toasts; use partials/form_errors_toast.html:",
         )
+
+    def test_no_google_fonts(self):
+        offenders = [
+            name
+            for name, text in _template_files()
+            if "fonts.googleapis.com" in text and name not in OUT_OF_SCOPE
+        ]
+        self._assert_none(
+            offenders,
+            "Fonts are self-hosted; include partials/fonts_head.html instead:",
+        )
+
+    def test_pages_load_self_hosted_fonts(self):
+        files = dict(_template_files())
+        for name in FONT_PAGES:
+            self.assertIn('include "partials/fonts_head.html"', files[name], name)
+
+    def test_font_faces_point_at_shipped_files(self):
+        css = (BASE_DIR / "static/css/fonts.css").read_text(encoding="utf-8")
+        urls = re.findall(r"url\(\"?\.\./fonts/([^\")]+)\"?\)", css)
+        self.assertTrue(urls)
+        for url in urls:
+            self.assertTrue((BASE_DIR / "static/fonts" / url).is_file(), url)
