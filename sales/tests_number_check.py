@@ -452,6 +452,15 @@ class PollTests(_Base):
         jobs.mark_done(job, {})
         self.assertEqual(self.status(job.id).json(), {"status": "error", "message": EXPIRED})
 
+    def test_refresh_status_endpoint_never_returns_a_number_check_result(self):
+        job = self._job()
+        jobs.mark_done(job, {"status": "ok", "info": INFO.to_dict()})
+        resp = self.client.get(reverse("sales:employee_refresh_status", args=[job.id]))
+        body = resp.json()
+        self.assertEqual(body["status"], "error")
+        self.assertNotIn("info", body)
+        self.assertNotIn(b"plan_price", resp.content)
+
 
 class AccessTests(_Base):
     def test_employee_without_the_setting_gets_403(self):

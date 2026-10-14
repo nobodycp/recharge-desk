@@ -76,6 +76,11 @@ def test_connection(provider_key: str) -> None:
 
 
 NUMBER_INFO_BUDGET_SECONDS = 60
+# The budget is only checked between attempts and one Sky call may take 90 s
+# (plus a login), so cap the worker slot a check can hold; the soft limit is
+# caught inside the service and recorded as one ``internal`` row.
+NUMBER_INFO_TASK_TIME_LIMIT = 150
+NUMBER_INFO_TASK_SOFT_TIME_LIMIT = 120
 
 
 def _load_job(job_id: str) -> ProviderJob | None:
@@ -96,7 +101,7 @@ def _refresh_db_connection() -> None:
 
 
 @shared_task(
-    time_limit=jobs.JOB_TASK_TIME_LIMIT, soft_time_limit=jobs.JOB_TASK_SOFT_TIME_LIMIT
+    time_limit=NUMBER_INFO_TASK_TIME_LIMIT, soft_time_limit=NUMBER_INFO_TASK_SOFT_TIME_LIMIT
 )
 def run_number_info_job(job_id: str) -> None:
     """Run one queued number-info job to completion; never raises.

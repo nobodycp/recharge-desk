@@ -261,6 +261,11 @@ class RunNumberInfoJobTests(_Base):
         params.update(overrides)
         return jobs.create_job(**params)
 
+    def test_task_holds_a_worker_slot_for_at_most_two_minutes(self):
+        self.assertEqual(run_number_info_job.soft_time_limit, 120)
+        self.assertEqual(run_number_info_job.time_limit, 150)
+        self.assertLess(NUMBER_INFO_BUDGET_SECONDS, run_number_info_job.soft_time_limit)
+
     def _run_job(self, job, adapter_cls):
         with patch.dict(ADAPTERS, {"fakeinfo": adapter_cls}):
             run_number_info_job(str(job.pk))
