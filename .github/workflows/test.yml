@@ -66,6 +66,7 @@ jobs:
           POSTGRES_DB: ci
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
+          PROVIDER_SECRETS_KEY: TpuHV7OrT9MVaVTE5UMgGlv-ysyL5xLPfy-SHlJ6un0=
         run: python manage.py check
 
       - name: Run test suite

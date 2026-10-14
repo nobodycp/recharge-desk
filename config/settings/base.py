@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "audit",
     "phone_refresh",
     "sms_gateway",
+    "providers",
 ]
 
 MIDDLEWARE = [
@@ -154,3 +155,26 @@ CACHES = {
 LOGIN_URL = reverse_lazy("accounts:login")
 LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = reverse_lazy("accounts:login")
+
+# --- Redis / Celery (provider gateway) -------------------------------------
+# Empty REDIS_URL = dev/tests: in-process fakeredis + eager Celery tasks.
+REDIS_URL = os.environ.get("REDIS_URL", "").strip()
+
+if REDIS_URL:
+    CACHES["default"] = {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
+    }
+
+CELERY_BROKER_URL = REDIS_URL or "memory://"
+# Job results are persisted in ``providers.ProviderJob``; no result backend.
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_ALWAYS_EAGER = not REDIS_URL
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_TASK_ROUTES = {
+    "phone_refresh.tasks.*": {"queue": "refresh"},
+    "sales.tasks.*": {"queue": "charge"},
+    "providers.tasks.*": {"queue": "refresh"},
+}
+
+REFRESH_ASYNC_ENABLED = os.environ.get("REFRESH_ASYNC_ENABLED", "1").strip() != "0"

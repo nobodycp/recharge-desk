@@ -52,8 +52,12 @@ if _IS_DJANGO_TEST:
         "django.contrib.auth.hashers.MD5PasswordHasher",
     ]
     EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    # Fixed Fernet key so tests never need real provider secrets.
+    PROVIDER_SECRETS_KEY = "TpuHV7OrT9MVaVTE5UMgGlv-ysyL5xLPfy-SHlJ6un0="
 else:
     DEBUG = False
+
+    PROVIDER_SECRETS_KEY = _require("PROVIDER_SECRETS_KEY")
 
     SECRET_KEY = _require("DJANGO_SECRET_KEY")
 
