@@ -231,7 +231,7 @@ class ServiceTests(TestCase):
         ):
             outcome = service.charge("fake", _ctx(), budget=0.2)
         self.assertEqual(outcome.result, ChargeResult.FAILED)
-        self.assertEqual(outcome.message, "not_sent:login_busy")
+        self.assertEqual(outcome.message, "فشل الشحن — تسجيل الدخول قيد التنفيذ، حاول بعد قليل")
         self.assertEqual(fake.sent, 0)
         self.assertEqual(fake.logins, 0)
 
@@ -248,7 +248,7 @@ class ServiceTests(TestCase):
         ):
             outcome = service.charge("fake", _ctx())
         self.assertEqual(outcome.result, ChargeResult.FAILED)
-        self.assertEqual(outcome.message, "not_sent:login_failed")
+        self.assertEqual(outcome.message, "فشل الشحن — خطأ تسجيل الدخول")
         self.assertEqual(fake.sent, 0)
 
     def test_charge_auth_required_after_fresh_login_is_failed_not_sent(self):
@@ -260,7 +260,7 @@ class ServiceTests(TestCase):
         ), self.assertLogs("providers.service", level="WARNING"):
             outcome = service.charge("fake", _ctx())
         self.assertEqual(outcome.result, ChargeResult.FAILED)
-        self.assertEqual(outcome.message, "not_sent:auth_required")
+        self.assertEqual(outcome.message, "فشل الشحن — خطأ تسجيل الدخول")
         self.assertEqual(fake.logins, 1)
         self.assertEqual(len(fake.charges), 2)
         self.assertEqual(fake.sent, 0)

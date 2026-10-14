@@ -15,7 +15,7 @@ from providers.adapters.sky.adapter import SkyAdapter
 from providers.adapters.sky.reconcile import parse_sky_balance_rows, reconcile_sky_report
 from providers.contracts import AuthRequired, TransientError
 from providers.crypto import encrypt
-from providers.models import ProviderConnection
+from providers.models import ProviderConnection, ProviderOperation
 from providers.redis_conn import get_redis
 from sales.models import PaymentMethod, Sale
 
@@ -274,6 +274,9 @@ class SkyReconcileMatchTests(TestCase):
             )
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "0599999999")
+        row = ProviderOperation.objects.get(service="reconcile")
+        self.assertEqual((row.provider_key, row.outcome), ("sky", "success"))
+        self.assertEqual((row.source, row.user_id), ("management", self.user.pk))
 
     def test_view_shows_fetch_error_for_provider_errors(self):
         self.client.force_login(self.user)
@@ -292,6 +295,10 @@ class SkyReconcileMatchTests(TestCase):
                 follow=True,
             )
         self.assertContains(r, "login_failed")
+        row = ProviderOperation.objects.get(service="reconcile")
+        self.assertEqual((row.outcome, row.error_code), ("failed", "login_failed"))
+        self.assertEqual(row.message, "فشل المطابقة — خطأ تسجيل الدخول")
+        self.assertEqual(row.user_id, self.user.pk)
         msgs = [str(m) for m in r.context["messages"]]
         self.assertTrue(any("Sky" in m and "login_failed" in m for m in msgs), msgs)
 

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from time import monotonic as _clock
 
 from providers.contracts import (
     RECONCILE_NOT_SUPPORTED,
@@ -17,7 +18,7 @@ from providers.contracts import (
     RawResponse,
     TransientError,
 )
-from providers import accounts
+from providers import accounts, operations
 from providers.models import ProviderConnection
 from providers.registry import ADAPTERS, get_adapter
 from providers.sanitize import scrub
@@ -105,16 +106,81 @@ def _not_sent_code(exc: Exception) -> str:
     return exc.__class__.__name__
 
 
-def charge(
-    provider_key: str, ctx: ChargeContext, budget: float = SYNC_BUDGET_SECONDS
+def _elapsed_ms(started: float) -> int:
+    return max(0, int((_clock() - started) * 1000))
+
+
+def _record_charge_operation(
+    provider_key: str,
+    operation: str,
+    ctx: ChargeContext,
+    outcome: ChargeOutcome,
+    started: float,
+    *,
+    source: str,
+    user_id: int | None,
+    job_id,
 ) -> ChargeOutcome:
-    """Charge once; never retried.
+    """Log ``outcome`` as one operation row; return it with the Arabic message.
+
+    The provider's own message (raw code / text) goes to the row's ``detail``.
+    Recording can never change what the caller gets besides the message.
+    """
+    classified = operations.classify_charge(operation, outcome)
+    detail = " | ".join(part for part in (outcome.message, outcome.raw_excerpt) if part)
+    try:
+        operations.record(
+            provider_key,
+            operation,
+            classified,
+            phone=ctx.phone,
+            source=source,
+            user_id=user_id,
+            sale_id=ctx.sale_id,
+            job_id=job_id,
+            duration_ms=_elapsed_ms(started),
+            detail=detail,
+        )
+    except Exception as exc:  # noqa: BLE001 — recording must never break a charge
+        log.warning("provider %s %s not recorded: %s", provider_key, operation, _error_text(exc))
+    return replace(outcome, message=classified.message)
+
+
+def charge(
+    provider_key: str,
+    ctx: ChargeContext,
+    budget: float = SYNC_BUDGET_SECONDS,
+    *,
+    source: str = "employee",
+    user_id: int | None = None,
+    job_id=None,
+) -> ChargeOutcome:
+    """Charge once; never retried; one operation row is recorded.
 
     ``FAILED`` when the provider rejected the charge or no request ever reached
-    it (login busy/failed, ``AuthRequired`` that persists after a login: message
-    ``not_sent:<code>``); ``UNVERIFIED`` when a request may have been sent.
+    it (login busy/failed, ``AuthRequired`` that persists after a login);
+    ``UNVERIFIED`` when a request may have been sent. The returned ``message``
+    is the named Arabic message (the provider's own text is kept in the row's
+    ``detail``). Raises ``KeyError`` for an unknown ``provider_key``.
     """
     adapter = get_adapter(provider_key)
+    started = _clock()
+    outcome = _charge_once(adapter, provider_key, ctx, budget)
+    return _record_charge_operation(
+        provider_key,
+        "charge",
+        ctx,
+        outcome,
+        started,
+        source=source,
+        user_id=user_id,
+        job_id=job_id,
+    )
+
+
+def _charge_once(
+    adapter, provider_key: str, ctx: ChargeContext, budget: float
+) -> ChargeOutcome:
     deadline = time.monotonic() + budget
     may_have_sent = False
 
@@ -146,20 +212,40 @@ def check_charge(
     ctx: ChargeContext,
     provider_ref: str,
     budget: float = SYNC_BUDGET_SECONDS,
+    *,
+    source: str = "system",
+    job_id=None,
 ) -> ChargeOutcome:
+    """Ask the provider what happened to an earlier charge; never charges.
+
+    Records one operation row and returns the outcome with the named Arabic
+    message. Without a ref (and an adapter that needs one) no provider is
+    called, so nothing is recorded.
+    """
     adapter = get_adapter(provider_key)
     if not provider_ref and not adapter.check_without_ref:
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message="no_provider_ref")
+    started = _clock()
     deadline = time.monotonic() + budget
     try:
-        return run_authenticated(
+        outcome = run_authenticated(
             adapter,
             lambda: adapter.check_charge(ctx, provider_ref),
             lock_wait=_lock_wait(deadline, budget),
         )
     except Exception as exc:
         log.warning("provider %s check_charge failed: %s", provider_key, _error_text(exc))
-        return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
+        outcome = ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
+    return _record_charge_operation(
+        provider_key,
+        "check_charge",
+        ctx,
+        outcome,
+        started,
+        source=source,
+        user_id=None,
+        job_id=job_id,
+    )
 
 
 @dataclass(frozen=True)
@@ -240,12 +326,32 @@ def service_state(
     return ServiceState("active")
 
 
+def _record_reconcile(provider_key: str, classified, started: float, *, source, user_id, detail=""):
+    try:
+        operations.record(
+            provider_key,
+            "reconcile",
+            classified,
+            source=source,
+            user_id=user_id,
+            duration_ms=_elapsed_ms(started),
+            detail=detail,
+        )
+    except Exception as exc:  # noqa: BLE001 — recording must never break reconcile
+        log.warning("provider %s reconcile not recorded: %s", provider_key, _error_text(exc))
+
+
+_GATE_CODES = {"off": "provider_disabled", "not_configured": "not_configured"}
+
+
 def reconcile(
     company,
     period_from,
     period_to,
     *,
     budget: float = SYNC_BUDGET_SECONDS,
+    source: str = "management",
+    user_id: int | None = None,
     **opts,
 ) -> tuple[object, str]:
     """Run the company's provider reconciliation; returns ``(result, template)``.
@@ -255,19 +361,57 @@ def reconcile(
     Raises ``PermanentError(RECONCILE_NOT_SUPPORTED)`` unless the company's
     reconcile ``service_state`` is ``active`` (no provider, unsupported,
     switched off or not configured).
+
+    One operation row is recorded for the run (success or the classified
+    failure; exceptions still propagate unchanged). The gate only writes a row
+    when the company has a provider whose reconcile is switched off or not
+    configured; no provider / unsupported provider write nothing.
     """
-    if service_state(company, Capability.RECONCILE).code != "active":
+    started = _clock()
+    provider_key = (company.provider_key or "").strip().lower()
+    state = service_state(company, Capability.RECONCILE)
+    if state.code != "active":
+        code = _GATE_CODES.get(state.code)
+        if provider_key and code is not None:
+            _record_reconcile(
+                provider_key,
+                operations.classify_code("reconcile", code),
+                started,
+                source=source,
+                user_id=user_id,
+                detail=state.code,
+            )
         raise PermanentError(RECONCILE_NOT_SUPPORTED)
-    adapter = get_adapter((company.provider_key or "").strip().lower())
-    deadline = time.monotonic() + budget
+    try:
+        adapter = get_adapter(provider_key)
+        deadline = time.monotonic() + budget
 
-    def call():
-        return adapter.reconcile(company, period_from, period_to, **opts)
+        def call():
+            return adapter.reconcile(company, period_from, period_to, **opts)
 
-    if adapter.needs_login:
-        result = run_authenticated(adapter, call, lock_wait=_lock_wait(deadline, budget))
-    else:
-        result = call()
+        if adapter.needs_login:
+            result = run_authenticated(adapter, call, lock_wait=_lock_wait(deadline, budget))
+        else:
+            result = call()
+    except Exception as exc:
+        _record_reconcile(
+            provider_key,
+            operations.classify_exception("reconcile", exc),
+            started,
+            source=source,
+            user_id=user_id,
+            detail=f"{exc.__class__.__name__}: {_error_text(exc)}",
+        )
+        raise
+    row_count = getattr(result, "row_count", None)
+    _record_reconcile(
+        provider_key,
+        operations.success("reconcile"),
+        started,
+        source=source,
+        user_id=user_id,
+        detail=f"{row_count} rows" if row_count is not None else "",
+    )
     return result, adapter.reconcile_template
 
 
