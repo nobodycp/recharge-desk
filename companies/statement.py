@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from companies.connection import TAB_CONNECTION, build_connection_context
 from core.pagination import paginate_request
 from providers.contracts import Capability
 from providers.service import service_state
@@ -85,7 +86,7 @@ def company_statement_ledger_queryset(company, request, *, date_from=None, date_
 
 def active_company_statement_tab(request):
     tab = (request.GET.get("tab") or "").strip()
-    if tab in (TAB_GENERAL, TAB_SALES, TAB_LEDGER):
+    if tab in (TAB_GENERAL, TAB_SALES, TAB_LEDGER, TAB_CONNECTION):
         return tab
     return DEFAULT_TAB
 
@@ -277,6 +278,7 @@ def build_company_statement_context(request, company):
         "tab_general": TAB_GENERAL,
         "tab_sales": TAB_SALES,
         "tab_ledger": TAB_LEDGER,
+        "tab_connection": TAB_CONNECTION,
         "sales_table_full": active_tab == TAB_SALES,
         "ledger_table_full": active_tab == TAB_LEDGER,
     }
@@ -296,8 +298,15 @@ def render_company_statement(request, company):
         service_state(company, Capability.RECONCILE, provider="sky").code == "active"
     )
 
+    if ctx["active_tab"] == TAB_CONNECTION:
+        ctx.update(build_connection_context(company))
+
     if request.headers.get("HX-Request"):
         frag = (request.GET.get("partial") or "").strip()
+        if frag == TAB_CONNECTION:
+            return render(
+                request, "companies/partials/company_detail_connection.html", ctx
+            )
         if frag == TAB_SALES:
             return render(
                 request, "reports/partials/company_report_sales.html", ctx

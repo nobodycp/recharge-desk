@@ -1,0 +1,26 @@
+{# Login test status; swapped in place (outerHTML). Polls only while a test is pending. Context: company, login, unavailable. #}
+<div id="connection-login-status" class="small"
+     {% if login.pending %}hx-get="{% url 'companies:company_connection_status' company.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  {% if unavailable %}
+    <div class="text-danger mb-1">تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام.</div>
+  {% endif %}
+  {% if login.pending %}
+    <span class="rd-badge rd-badge--pending">جارٍ اختبار تسجيل الدخول…</span>
+  {% else %}
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if login.last_login_ok is True %}
+        <span class="rd-badge rd-badge--paid">آخر دخول: ناجح</span>
+      {% elif login.last_login_ok is False %}
+        <span class="rd-badge rd-badge--cancelled">آخر دخول: فشل</span>
+      {% else %}
+        <span class="rd-badge rd-badge--neutral">لم يُسجَّل دخول بعد</span>
+      {% endif %}
+      {% if login.last_login_at %}
+        <span class="rd-text-muted tabular-nums">{{ login.last_login_at|date:"Y-m-d H:i" }}</span>
+      {% endif %}
+    </div>
+    {% if login.last_login_ok is False and login.last_error %}
+      <div class="text-danger text-break mt-1" dir="auto">{{ login.last_error }}</div>
+    {% endif %}
+  {% endif %}
+</div>

@@ -1,0 +1,157 @@
+{# الربط مع المزوّد tab. Secrets are write-only: stored values are never rendered back. #}
+<div class="row g-3">
+
+  {# ── نظام الشركة ─────────────────────────────────────────────────────── #}
+  <div class="col-12">
+    <div class="rd-card">
+      <div class="rd-card-body">
+        <div class="mb-3">
+          <div class="fw-semibold">{{ system_form.provider_key.label }}</div>
+          <div class="rd-text-muted small">
+            النظام الذي يشغّل تحديث الأرقام والشحن ومطابقة الحسابات لهذه الشركة. إن تُرك فارغاً فلا تُنفَّذ أي عمليات مزوّد لها.
+          </div>
+        </div>
+        <form method="post" action="{% url 'companies:company_connection_system' company.pk %}"
+              class="row g-2 align-items-end">
+          {% csrf_token %}
+          <div class="col-12 col-md-6 col-lg-4">
+            <label class="visually-hidden" for="{{ system_form.provider_key.id_for_label }}">{{ system_form.provider_key.label }}</label>
+            {{ system_form.provider_key }}
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if connection_key %}
+    {# ── الخدمات ─────────────────────────────────────────────────────────── #}
+    <div class="col-12 col-xl-6">
+      <div class="rd-card h-100">
+        <div class="rd-card-body">
+          <div class="mb-3">
+            <div class="fw-semibold">الخدمات: <span class="text-uppercase">{{ connection_key }}</span></div>
+            <div class="rd-text-muted small">
+              المفاتيح تخصّ الربط مع هذا النظام وتسري على كل الشركات المرتبطة به.
+            </div>
+          </div>
+          <form method="post" action="{% url 'companies:company_connection_services' company.pk %}"
+                class="d-grid gap-2">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between align-items-center gap-2 py-2 px-2 rounded"
+                 style="background: var(--bs-body-bg);">
+              <label class="fw-semibold" for="{{ services_form.is_enabled.id_for_label }}">{{ services_form.is_enabled.label }}</label>
+              <div class="form-check form-switch m-0">{{ services_form.is_enabled }}</div>
+            </div>
+            {% for row in service_rows %}
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-2 rounded"
+                   style="background: var(--bs-body-bg);">
+                <div>
+                  {% if row.state.code == "unsupported" %}
+                    <div class="fw-semibold">{{ row.label }}</div>
+                  {% else %}
+                    <label class="fw-semibold" for="{{ row.field.id_for_label }}">{{ row.label }}</label>
+                  {% endif %}
+                  {% if row.state.reason %}
+                    <div class="rd-text-muted small">{{ row.state.reason }}</div>
+                  {% endif %}
+                  {% if row.reconcile_url %}
+                    <a class="small" href="{{ row.reconcile_url }}">فتح صفحة المطابقة</a>
+                  {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  {% if row.state.code == "active" %}
+                    <span class="rd-badge rd-badge--paid">تعمل</span>
+                  {% elif row.state.code == "not_configured" %}
+                    <span class="rd-badge rd-badge--pending">غير مهيّأة</span>
+                  {% elif row.state.code == "off" %}
+                    <span class="rd-badge rd-badge--neutral">موقوفة</span>
+                  {% else %}
+                    <span class="rd-badge rd-badge--neutral">غير متاحة</span>
+                  {% endif %}
+                  {% if row.state.code != "unsupported" %}
+                    <div class="form-check form-switch m-0">{{ row.field }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+            <div class="d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary">حفظ</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ── حساب المزوّد + اختبار تسجيل الدخول (للأنظمة التي تتطلب دخولاً فقط) ── #}
+    {% if account_form %}
+      <div class="col-12 col-xl-6">
+        <div class="rd-card h-100">
+          <div class="rd-card-body">
+            <div class="mb-3">
+              <div class="fw-semibold">حساب المزوّد: <span class="text-uppercase">{{ connection_key }}</span></div>
+              <div class="rd-text-muted small">
+                تُحفظ كلمة المرور ومفتاح TOTP والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة.
+              </div>
+            </div>
+            <form method="post" action="{% url 'companies:company_connection_account' company.pk %}"
+                  autocomplete="off" class="row g-3">
+              {% csrf_token %}
+              <div class="col-12 col-md-6">
+                {{ account_form.username.label_tag }}
+                {{ account_form.username }}
+              </div>
+              <div class="col-12 col-md-6">
+                {{ account_form.password.label_tag }}
+                {{ account_form.password }}
+              </div>
+              <div class="col-12 col-md-6">
+                {{ account_form.totp_secret.label_tag }}
+                {{ account_form.totp_secret }}
+              </div>
+              <div class="col-12 col-md-6">
+                {{ account_form.proxy_url.label_tag }}
+                {{ account_form.proxy_url }}
+                <div class="form-check mt-2">
+                  {{ account_form.clear_proxy }}
+                  <label class="form-check-label small" for="{{ account_form.clear_proxy.id_for_label }}">
+                    {{ account_form.clear_proxy.label }}
+                  </label>
+                </div>
+              </div>
+              <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">حفظ الحساب</button>
+              </div>
+            </form>
+
+            <hr class="my-3">
+            <div class="d-flex flex-wrap align-items-start gap-3">
+              <form method="post" action="{% url 'companies:company_connection_test' company.pk %}"
+                    class="m-0"
+                    hx-post="{% url 'companies:company_connection_test' company.pk %}"
+                    hx-target="#connection-login-status"
+                    hx-swap="outerHTML">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary">اختبار تسجيل الدخول</button>
+              </form>
+              {% include "companies/partials/connection_login_status.html" %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if shared_with %}
+      <div class="col-12">
+        <div class="rd-text-muted small">مشترك مع: {{ shared_with|join:"، " }}</div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  {# ── جاهزية البوابة ──────────────────────────────────────────────────── #}
+  <div class="col-12">
+    <div class="rd-text-muted small" dir="ltr">Redis {% if connection_health.redis_ok %}✔{% else %}✖{% endif %} — Worker {% if connection_health.worker_ok %}✔{% else %}✖{% endif %}</div>
+  </div>
+</div>

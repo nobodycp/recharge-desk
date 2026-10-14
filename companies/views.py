@@ -6,6 +6,7 @@ from django.db import models, transaction
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_GET, require_POST
 
 from accounts.permissions import management_required
 from companies.forms import (
@@ -25,6 +26,7 @@ from providers.contracts import (
     PermanentError,
     ProviderError,
 )
+from companies import connection
 from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
 
@@ -82,6 +84,36 @@ def company_create(request):
 def company_detail(request, pk):
     company = get_object_or_404(Company, pk=pk)
     return render_company_statement(request, company)
+
+
+@management_required
+@require_POST
+def company_connection_system(request, pk):
+    return connection.save_system(request, get_object_or_404(Company, pk=pk))
+
+
+@management_required
+@require_POST
+def company_connection_services(request, pk):
+    return connection.save_services(request, get_object_or_404(Company, pk=pk))
+
+
+@management_required
+@require_POST
+def company_connection_account(request, pk):
+    return connection.save_account(request, get_object_or_404(Company, pk=pk))
+
+
+@management_required
+@require_POST
+def company_connection_test(request, pk):
+    return connection.start_login_test(request, get_object_or_404(Company, pk=pk))
+
+
+@management_required
+@require_GET
+def company_connection_status(request, pk):
+    return connection.login_status(request, get_object_or_404(Company, pk=pk))
 
 
 def _supports_reconcile(company, provider_key: str) -> bool:

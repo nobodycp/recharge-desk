@@ -17,6 +17,31 @@ urlpatterns = [
         views.sky_reconcile,
         name="sky_reconcile",
     ),
+    path(
+        "management/companies/<int:pk>/connection/system/",
+        views.company_connection_system,
+        name="company_connection_system",
+    ),
+    path(
+        "management/companies/<int:pk>/connection/services/",
+        views.company_connection_services,
+        name="company_connection_services",
+    ),
+    path(
+        "management/companies/<int:pk>/connection/account/",
+        views.company_connection_account,
+        name="company_connection_account",
+    ),
+    path(
+        "management/companies/<int:pk>/connection/test-login/",
+        views.company_connection_test,
+        name="company_connection_test",
+    ),
+    path(
+        "management/companies/<int:pk>/connection/status/",
+        views.company_connection_status,
+        name="company_connection_status",
+    ),
     path("management/companies/new/", views.company_create, name="company_create"),
     path("management/companies/<int:pk>/edit/", views.company_edit, name="company_edit"),
     path("management/companies/<int:pk>/delete/", views.company_delete, name="company_delete"),
