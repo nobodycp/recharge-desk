@@ -114,8 +114,10 @@ No animation blocks input.
   notifications, theme, language, user menu. Same links and permissions as today.
 - **Employee**: compact top bar (avatar, title, wallet chip), orange hairline progress where
   a page has steps, glass bottom tab bar with the raised ink "+" button. Same tabs.
-- Both: thin orange top progress bar during htmx navigation; link prefetch on
-  hover/touchstart for boosted links (GET only, same-origin, not downloads/exports).
+- Both: thin orange top progress bar that starts the moment a boosted navigation is
+  issued, and the current content dims until the new page swaps in. (Link prefetch was
+  considered and dropped: htmx 1.9 has no safe way to reuse a prefetched response, and a
+  cached page could show stale balances.)
 
 ## 7. Key screens
 
@@ -157,7 +159,7 @@ inventory overview 29 queries. The rest of the felt slowness is client-side.
 Work items:
 
 1. Self-hosted, subset, preloaded fonts (removes third-party render blocking).
-2. Navigation feedback: top progress bar + prefetch on intent.
+2. Navigation feedback: immediate top progress bar + dimmed content while loading.
 3. Measure first-load (Lighthouse mobile) on login, employee entry, dashboard before/after.
    Concatenate shared CSS/JS only if it measurably helps (no new build toolchain;
    static files already have long cache + `?v=` busting).
@@ -180,7 +182,7 @@ and dark) → owner review.
 
 | Phase | Scope |
 |---|---|
-| 0 Foundation | tokens, fonts, components, motion, nav progress + prefetch, login, DESIGN.md, convention tests, speed baseline |
+| 0 Foundation | tokens, fonts, components, motion, nav feedback, login, DESIGN.md, convention tests, speed baseline |
 | 1 Employee (mobile) | employee shell, sale entry (one screen), recent entries, record payment, stock check, check/refresh number, sale/payment edit, my balance |
 | 2 Management shell | sidebar, top bar, search, notifications, user menu, dashboard |
 | 3 Operations | management sales + pending payments, customers (list/detail/statements/invoices), employees |
