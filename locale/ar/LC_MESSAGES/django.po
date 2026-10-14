@@ -6301,10 +6301,6 @@ msgid "Hide"
 msgstr "إخفاء"
 
 #: templates/accounts/login.html
-msgid "Show password"
-msgstr "إظهار كلمة المرور"
-
-#: templates/accounts/login.html
 msgid "Caps Lock is on"
 msgstr "زر الأحرف الكبيرة (Caps Lock) مفعّل"
 

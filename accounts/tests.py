@@ -14,6 +14,7 @@ Decorator behavior recap (accounts/permissions.py):
 """
 
 import io
+import re
 import tempfile
 from decimal import Decimal
 
@@ -683,7 +684,13 @@ class LoginPageTests(TestCase):
         r = self.client.get("/ar/login/")
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "أهلاً بعودتك")
-        self.assertContains(r, 'aria-label="إظهار كلمة المرور"')
+        # Accessible name is the visible text (WCAG 2.5.3); no aria-pressed/aria-label.
+        toggle = re.search(r"<button[^>]*data-rd-password-toggle[^>]*>([^<]*)</button>", r.content.decode())
+        self.assertIsNotNone(toggle)
+        self.assertEqual(toggle.group(1).strip(), "إظهار")
+        self.assertNotIn("aria-pressed", toggle.group(0))
+        self.assertNotIn("aria-label", toggle.group(0))
+        self.assertIn('data-hide-label="إخفاء"', toggle.group(0))
 
     def test_valid_login_redirects(self):
         User.objects.create_user("pearl", password="right-pass-123")

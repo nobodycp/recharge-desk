@@ -99,7 +99,7 @@
       toggle.addEventListener("click", function () {
         var show = password.type === "password";
         password.type = show ? "text" : "password";
-        toggle.setAttribute("aria-pressed", show ? "true" : "false");
+        toggle.classList.toggle("is-revealed", show);
         toggle.textContent = toggle.getAttribute(show ? "data-hide-label" : "data-show-label");
       });
     }

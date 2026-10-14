@@ -341,7 +341,7 @@
 }
 
 .rd-login-toggle:hover,
-.rd-login-toggle[aria-pressed="true"] {
+.rd-login-toggle.is-revealed {
   color: var(--rd-ink);
 }
 
