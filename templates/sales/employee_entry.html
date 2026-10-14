@@ -704,6 +704,14 @@
   };
 
   function initSaleFormUi() {
+    var notesDetails = document.querySelector(".rd-entry-notes");
+    if (notesDetails) {
+      /* Opening "+ Note" puts the cursor in the textarea. */
+      notesDetails.addEventListener("toggle", function () {
+        var ta = document.getElementById("id_notes");
+        if (notesDetails.open && ta) ta.focus({ preventScroll: true });
+      });
+    }
     var toggleBtn = document.getElementById("rd-on-account-toggle");
     if (toggleBtn) {
       toggleBtn.addEventListener("click", function () {

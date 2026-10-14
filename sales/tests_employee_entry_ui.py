@@ -235,6 +235,11 @@ class EmployeeEntryMarkupTests(TestCase):
         self.assertIn(".rd-entry-notes[open]", html)
         self.assertIn('"Escape"', html)
 
+    def test_notes_popover_focuses_the_textarea_on_open(self):
+        html = self._html()
+        self.assertIn('notesDetails.addEventListener("toggle"', html)
+        self.assertIn('getElementById("id_notes")', html)
+
 
 class EmployeeIconMarkTests(TestCase):
     def _render(self, **ctx):
@@ -305,7 +310,7 @@ class EmployeeEntryCssTests(SimpleTestCase):
             ".rd-entry-tiles .employee-chip",
             ".rd-entry-chips .employee-chip",
             ".rd-entry-pill",
-            ".employee-clipboard-paste-btn",
+            ".rd-entry-field .employee-clipboard-paste-btn",
         ):
             with self.subTest(selector=selector):
                 self._assert_decl(selector, "min-height: 3.45rem")
@@ -366,3 +371,55 @@ class EmployeeEntryCssTests(SimpleTestCase):
     def test_pay_tiles_dim_when_muted(self):
         self._assert_decl("#payment-tiles.is-muted", "opacity: 0.5")
 
+    def test_paste_button_rules_are_scoped_to_the_entry_field(self):
+        """The phone-refresh page has its own .employee-clipboard-paste-btn."""
+        for sels, _ in _rules(self.css):
+            for sel in sels:
+                if "employee-clipboard-paste-btn" in sel:
+                    self.assertTrue(
+                        sel.startswith(".rd-entry-field "), f"unscoped: {sel}"
+                    )
+
+    def test_dock_is_sticky_above_the_fab(self):
+        self._assert_decl(".rd-entry-dock", "position: sticky", "bottom: var(--rd-entry-dock-offset)")
+        self._assert_decl(".rd-entry-dock::before", "background: var(--bs-body-bg)", "border-top: 1px solid")
+        # The static .sticky-save inside no longer carries the sticky offset.
+        inner = " ".join(
+            _bodies(self.css, ".rd-employee-app.has-employee-tabbar .rd-entry-dock .sticky-save")
+        )
+        self.assertIn("position: static", inner)
+        # Dock offset (6.2rem) clears the FAB ring (6.075rem).
+        self.assertIn("--rd-entry-dock-offset: calc(6.2rem", self.css)
+
+    def test_tiles_and_price_row_sit_above_the_pill_hit_boxes(self):
+        self._assert_decl(".rd-entry-tiles", "z-index: 2")
+        self._assert_decl(".rd-entry-price-row", "z-index: 2")
+        for selector in (".rd-entry-pill", ".rd-entry-note-link"):
+            joined = " ".join(_bodies(self.css, selector))
+            self.assertNotRegex(joined, r"z-index:\s*[1-9]", selector)
+
+    def test_pill_is_readable(self):
+        joined = " ".join(" ".join(b.split()) for b in _bodies(self.css, ".rd-entry-pill"))
+        size = float(re.search(r"font-size:\s*([\d.]+)rem", joined).group(1))
+        self.assertGreaterEqual(size, 0.85)
+        # visible chip = 3.45rem box minus 2 x the negative margin, at least 1.9rem
+        margin = float(re.search(r"margin-block:\s*-([\d.]+)rem", joined).group(1))
+        self.assertGreaterEqual(3.45 - 2 * margin, 1.9)
+
+    def test_note_link_is_ink_not_accent_or_danger(self):
+        joined = " ".join(_bodies(self.css, ".rd-entry-note-link"))
+        self.assertIn("color: var(--rd-ink)", joined)
+        self.assertNotIn("accent", joined)
+        self.assertNotIn("danger", joined)
+
+    def test_note_popover_spans_the_card(self):
+        self._assert_decl(".rd-entry-blk__head", "position: relative")
+        self._assert_decl(".rd-entry-notes__body", "inset-inline: calc(-0.45rem - 1px)")
+
+    def test_pay_tiles_stay_on_one_row_at_320(self):
+        self._assert_decl(
+            ".rd-entry-tiles--pay", "minmax(3.4rem, 1fr)"
+        )
+
+    def test_product_rows_share_a_line_when_they_fit(self):
+        self._assert_decl(".employee-product-section", "flex-wrap: wrap")
