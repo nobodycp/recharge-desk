@@ -674,6 +674,17 @@ class LoginPageTests(TestCase):
         self.assertContains(r, 'value="pearl"')
         self.assertContains(r, "data-rd-flash")
 
+    def test_arabic_login_is_translated(self):
+        """Guards a stale or missing compiled .mo for the login copy."""
+        from django.utils import translation
+
+        self.addCleanup(translation.deactivate)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        r = self.client.get("/ar/login/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "أهلاً بعودتك")
+        self.assertContains(r, 'aria-label="إظهار كلمة المرور"')
+
     def test_valid_login_redirects(self):
         User.objects.create_user("pearl", password="right-pass-123")
         r = self.client.post(self.url, {"username": "pearl", "password": "right-pass-123"})

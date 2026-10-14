@@ -283,13 +283,24 @@
   color: var(--rd-ink);
   font: inherit;
   font-size: 1.1rem;
+  /* State rules set --lg-ring only, so the autofill mask below is never
+     replaced by a focus/invalid box-shadow. */
+  --lg-ring: 0 0 0 0 transparent;
+  box-shadow: var(--lg-ring);
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
+/* Separate rules: an unknown pseudo-class would drop a combined selector list. */
 .rd-login-input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 100rem var(--lg-field-bg) inset;
+  box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
+  -webkit-text-fill-color: var(--rd-ink);
+  caret-color: var(--rd-ink);
+}
+
+.rd-login-input:autofill {
+  box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
   -webkit-text-fill-color: var(--rd-ink);
   caret-color: var(--rd-ink);
 }
@@ -339,8 +350,12 @@
   outline-offset: 1px;
 }
 
+/* The live region stays in the DOM so the first reveal is announced. */
 .rd-login-caps {
   grid-area: 3 / 1 / 4 / -1;
+}
+
+.rd-login-caps-msg {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -350,7 +365,7 @@
   font-weight: 500;
 }
 
-.rd-login-caps[hidden] {
+.rd-login-caps-msg[hidden] {
   display: none;
 }
 
@@ -363,7 +378,7 @@
 .rd-login-input:focus,
 .rd-login-field.is-focused .rd-login-input {
   border-color: var(--rd-ink);
-  box-shadow: 0 0 0 0.3rem color-mix(in srgb, var(--rd-ink) 6%, transparent);
+  --lg-ring: 0 0 0 0.3rem color-mix(in srgb, var(--rd-ink) 6%, transparent);
 }
 
 .rd-login-field:focus-within .rd-login-icon,
@@ -377,7 +392,7 @@
 
 .rd-login-field.is-invalid .rd-login-input {
   border-color: var(--rd-danger);
-  box-shadow: 0 0 0 0.3rem var(--rd-danger-soft);
+  --lg-ring: 0 0 0 0.3rem var(--rd-danger-soft);
 }
 
 .rd-login-field.is-invalid .rd-login-icon {

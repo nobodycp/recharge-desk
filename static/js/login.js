@@ -12,6 +12,7 @@
 
   var MOBILE = "(max-width: 991.98px)";
   var BLUR_GRACE_MS = 120;
+  var LOADING_RESET_MS = 12000;
 
   function init() {
     var form = document.querySelector("form[data-rd-login]");
@@ -25,16 +26,22 @@
       return { el: field, input: field.querySelector("input") };
     }).filter(function (f) { return f.input; });
     var password = form.querySelector('input[name="password"]');
-    var isMobile = window.matchMedia ? window.matchMedia(MOBILE).matches : false;
+    var loadingTimer = null;
+
+    function isMobile() {
+      return window.matchMedia ? window.matchMedia(MOBILE).matches : false;
+    }
 
     // On phones the autofocused username would collapse the hero before the
     // user ever sees it. Autofocus can land after this runs, so drop any
     // focus that arrives before the first real interaction.
-    var armed = !isMobile;
+    var armed = false;
     function arm() { armed = true; }
     document.addEventListener("pointerdown", arm, true);
     document.addEventListener("keydown", arm, true);
-    if (!armed && fields.some(function (f) { return f.input === document.activeElement; })) {
+    // Assistive tech can activate without pointer or key events.
+    document.addEventListener("click", arm, true);
+    if (isMobile() && fields.some(function (f) { return f.input === document.activeElement; })) {
       document.activeElement.blur();
     }
 
@@ -47,12 +54,20 @@
       f.el.classList.toggle("is-filled", !!f.input.value);
     }
 
+    function syncFromActive() {
+      fields.forEach(function (f) {
+        f.el.classList.toggle("is-focused", f.input === document.activeElement);
+        syncFilled(f);
+      });
+      syncTyping();
+    }
+
     fields.forEach(function (f) {
       syncFilled(f);
       if (f.input === document.activeElement) f.el.classList.add("is-focused");
 
       f.input.addEventListener("focus", function () {
-        if (!armed) {
+        if (!armed && isMobile()) {
           f.input.blur();
           return;
         }
@@ -74,7 +89,7 @@
     syncTyping();
 
     // Re-render after a failed sign-in keeps the username: go straight to the password.
-    if (!isMobile && password && !password.value && fields[0] && fields[0].input !== password && fields[0].input.value) {
+    if (!isMobile() && password && !password.value && fields[0] && fields[0].input !== password && fields[0].input.value) {
       password.focus();
     }
 
@@ -107,11 +122,17 @@
 
     function setLoading(on) {
       if (!submit) return;
+      window.clearTimeout(loadingTimer);
+      // An aborted navigation (Stop, flaky network) never unloads the page.
+      if (on) loadingTimer = window.setTimeout(function () { setLoading(false); }, LOADING_RESET_MS);
       submit.classList.toggle("is-loading", on);
       submit.disabled = on;
       if (on) submit.setAttribute("aria-busy", "true");
       else submit.removeAttribute("aria-busy");
     }
+
+    // Some browsers restore the disabled state on reload.
+    setLoading(false);
 
     if (submit) {
       submit.addEventListener("pointerdown", function (e) {
@@ -146,9 +167,11 @@
       setLoading(true);
     });
 
-    // Back/forward cache restores the page with the spinner still on.
+    // Back/forward cache restores the page with the spinner still on and can
+    // leave the hero collapsed for a field that no longer has focus.
     window.addEventListener("pageshow", function (e) {
       if (e.persisted) setLoading(false);
+      syncFromActive();
     });
   }
 
