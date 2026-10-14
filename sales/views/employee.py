@@ -30,6 +30,7 @@ from phone_refresh.models import RefreshSource, SystemSettings
 from phone_refresh.services.refresh_jobs import job_payload, submit_refresh
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
+from sales.number_check import check_payload, submit_number_check
 from sales.employee_editing import (
     EMPLOYEE_RECENT_EDIT_LIMIT,
     employee_editable_payment_submission_ids,
@@ -360,6 +361,40 @@ def employee_refresh_status(request, job_id):
     Returns exactly what :func:`job_payload` returns (customer-safe).
     """
     return JsonResponse(job_payload(str(job_id)))
+
+
+def _number_check_disabled_response():
+    """403 JSON when the number tools are switched off on the sales screen."""
+    return JsonResponse(
+        {
+            "status": "error",
+            "message": str(_("Number refresh is disabled on the sales screen.")),
+        },
+        status=403,
+    )
+
+
+@employee_required
+@require_POST
+def employee_check_phone(request):
+    """Start a number check («فحص الرقم»): live provider data plus our sale price."""
+    if not AppSettings.load().sales_show_refresh_phone:
+        return _number_check_disabled_response()
+    ticket = submit_number_check(request.POST.get("phone") or "", user=request.user)
+    if ticket.job_id is None:
+        # Answered without a job (invalid, no sale, unsupported, gate, busy).
+        return JsonResponse(ticket.payload)
+    return JsonResponse({"status": "processing", "job": ticket.job_id}, status=202)
+
+
+@employee_required
+@never_cache
+@require_GET
+def employee_check_status(request, job_id):
+    """Poll a check started by :func:`employee_check_phone` (card HTML or a message)."""
+    if not AppSettings.load().sales_show_refresh_phone:
+        return _number_check_disabled_response()
+    return JsonResponse(check_payload(str(job_id)))
 
 
 @employee_required

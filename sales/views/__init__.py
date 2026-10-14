@@ -43,6 +43,8 @@ from sales.views.employee import (
     employee_submit_customer_payment_submission,
     employee_refresh_phone,
     employee_refresh_status,
+    employee_check_phone,
+    employee_check_status,
     sale_charge_row,
 )
 from sales.views.management import (
@@ -85,6 +87,8 @@ __all__ = [
     "employee_submit_customer_payment_submission",
     "employee_refresh_phone",
     "employee_refresh_status",
+    "employee_check_phone",
+    "employee_check_status",
     "sale_charge_row",
     "api_payer_by_number",
     "api_payer_name_suggestions",

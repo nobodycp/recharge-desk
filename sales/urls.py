@@ -32,6 +32,16 @@ urlpatterns = [
         name="employee_refresh_status",
     ),
     path(
+        "employee/sales/api/check-phone/",
+        views.employee_check_phone,
+        name="employee_check_phone",
+    ),
+    path(
+        "employee/check/status/<uuid:job_id>/",
+        views.employee_check_status,
+        name="employee_check_status",
+    ),
+    path(
         "employee/sales/api/sim-stock-preview/",
         views.api_sim_stock_preview,
         name="api_sim_stock_preview",
