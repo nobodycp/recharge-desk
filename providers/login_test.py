@@ -38,11 +38,15 @@ def start(provider_key: str) -> str:
     from providers import tasks
 
     key = _cache_key(provider_key)
-    account = _account(provider_key)
-    started_at = cache.get(key)
-    if _is_pending(started_at, account.last_login_at if account else None):
-        return "pending"
-    cache.set(key, timezone.now().timestamp(), TEST_TTL_SECONDS)
+    now = timezone.now().timestamp()
+    # Claim the slot atomically; only the winner enqueues.
+    if not cache.add(key, now, TEST_TTL_SECONDS):
+        account = _account(provider_key)
+        started_at = cache.get(key)
+        if _is_pending(started_at, account.last_login_at if account else None):
+            return "pending"
+        # Stale marker (a login was recorded since it, or it just expired): take over.
+        cache.set(key, now, TEST_TTL_SECONDS)
     try:
         tasks.test_connection.delay(provider_key)
     except Exception as exc:

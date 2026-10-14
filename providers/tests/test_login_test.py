@@ -73,6 +73,31 @@ class StartStatusTests(_Base):
             self.assertEqual(login_test.start(KEY), "started")
         self.assertEqual(delay.call_count, 2)
 
+    def test_start_pending_when_concurrent_claim_won(self):
+        _make_account()
+        # Another request already claimed the slot (marker present, no login since).
+        cache.set(CACHE_KEY, timezone.now().timestamp(), 150)
+        with patch.object(tasks.test_connection, "delay") as delay:
+            self.assertEqual(login_test.start(KEY), "pending")
+        delay.assert_not_called()
+
+    def test_start_takes_over_stale_marker_and_enqueues_once(self):
+        _make_account()
+        cache.set(CACHE_KEY, timezone.now().timestamp(), 150)
+        record_login(KEY, True)  # login recorded since the marker -> stale
+        with patch.object(tasks.test_connection, "delay") as delay:
+            self.assertEqual(login_test.start(KEY), "started")
+        delay.assert_called_once_with(KEY)
+
+    def test_start_uses_cache_add_to_claim(self):
+        _make_account()
+        with patch.object(tasks.test_connection, "delay"), patch(
+            "providers.login_test.cache.add", return_value=True
+        ) as add:
+            self.assertEqual(login_test.start(KEY), "started")
+        add.assert_called_once()
+        self.assertEqual(add.call_args[0][0], CACHE_KEY)
+
     def test_status_pending_until_login_recorded(self):
         _make_account()
         self.assertFalse(login_test.status(KEY)["pending"])
