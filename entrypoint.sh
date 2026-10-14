@@ -1,6 +1,11 @@
 #!/usr/bin/env sh
 set -e
 
+case "$1" in
+    worker|web|"") ;;
+    *) echo "[entrypoint] unknown mode: $1 (expected: web | worker)" >&2; exit 2 ;;
+esac
+
 echo "[entrypoint] Ensuring media directory exists..."
 mkdir -p "${DJANGO_MEDIA_ROOT:-/app/media}"
 

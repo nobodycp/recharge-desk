@@ -67,6 +67,8 @@ jobs:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
           PROVIDER_SECRETS_KEY: TpuHV7OrT9MVaVTE5UMgGlv-ysyL5xLPfy-SHlJ6un0=
+          # Production settings require REDIS_URL; `check` never connects to it.
+          REDIS_URL: redis://localhost:6379/0
         run: python manage.py check
 
       - name: Run test suite

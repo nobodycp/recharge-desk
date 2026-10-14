@@ -14,7 +14,6 @@ from django.test import SimpleTestCase
 from config.celery import app as celery_app
 
 BASE_DIR = Path(settings.BASE_DIR)
-PROJECT_PREFIXES = ("providers.", "phone_refresh.", "sales.", "sms_gateway.")
 
 
 def _routed_queue(task_name: str) -> str:
@@ -23,12 +22,9 @@ def _routed_queue(task_name: str) -> str:
 
 
 def _project_task_names() -> set:
+    """Every registered task except Celery's own built-ins (``celery.*``)."""
     celery_app.loader.import_default_modules()
-    return {
-        name
-        for name in celery_app.tasks
-        if name.startswith(PROJECT_PREFIXES)
-    }
+    return {name for name in celery_app.tasks if not name.startswith("celery.")}
 
 
 class CeleryRoutingTests(SimpleTestCase):

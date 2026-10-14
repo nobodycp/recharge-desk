@@ -115,9 +115,10 @@ REDIS_URL=redis://default:PASSWORD@HOST:6379/0
 # the stored provider passwords unreadable (re-enter them in the admin screen).
 PROVIDER_SECRETS_KEY=<run: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())">
 
-# 1 = queued/polled public refresh (default). Start with 0 on the first
-# rollout, see "Rollout" below.
-REFRESH_ASYNC_ENABLED=1
+# FIRST ROLLOUT: keep 0 (old synchronous refresh path) until the worker and the
+# Sky account are verified; flip to 1 in rollout step 3 below. (Default when
+# unset is 1.)
+REFRESH_ASYNC_ENABLED=0
 
 # Coolify terminates TLS; do not let gunicorn issue another 301.
 DJANGO_SECURE_SSL_REDIRECT=0
@@ -246,19 +247,28 @@ Subsequent deploys redo migrations idempotently — صفر downtime ضروري
 ### Pre-deploy check — قبل أول نشر
 
 Company → provider mapping is now only the explicit `phone_refresh_provider`
-field (the old name-substring guessing was removed; a data migration fills the
-field for companies whose names matched). Before the first deploy, run the
-read-only report with the new code against a **restored copy of the production
-database** (e.g. locally, `DATABASE_URL` pointing at the restored backup; the
-command exists only in this release):
+field (the old name-substring guessing was removed). Migration
+`companies 0012` fills the field for companies whose names matched; the
+read-only report below shows what it will fill and flags companies whose name
+suggests a different provider than the field. It changes nothing itself.
+
+The report asks "which companies still have an empty provider?", so it is only
+meaningful **before** `companies 0012` has run. Do it on a **restored copy of
+the pre-deploy production backup** (never on production itself, never a full
+`migrate`), with the new code checked out and `DATABASE_URL` pointing at the
+copy:
 
 ```bash
+python manage.py migrate companies 0011   # no-op if the backup is already at 0011; never go further
 python manage.py providers_mapping_report
 ```
 
-It lists companies with an empty provider and companies whose name suggests a
-different provider than the field. Fix anything unexpected in the company
-settings; it changes nothing itself.
+`migrate companies 0011` only applies the `companies` app (and its
+dependencies) up to 0011, which is all the report's queries need (the
+`phone_refresh_provider` column exists since 0006). Do **not** run it on a copy
+that already has 0012 applied: unapplying 0012 does not clear the filled
+values, so the report would show no empty companies. Fix anything unexpected in
+the company settings (in production, before deploying) and re-run.
 
 ### Rollout — خطوات الإطلاق
 

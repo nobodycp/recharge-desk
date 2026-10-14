@@ -142,8 +142,8 @@ MEDIA_ROOT = Path(os.environ.get("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media"))).
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Per-process cache for dashboard KPIs, nav badge counts, and singleton
-# rows. LocMemCache is fine on a single container; for multi-container
-# deploys point CACHE_URL at Redis so every worker shares invalidations.
+# rows. LocMemCache is the dev/test default; when REDIS_URL is set (see below)
+# the default cache switches to Redis so every worker shares invalidations.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

@@ -29,9 +29,9 @@ media/
 staticfiles/
 
 # DB dumps, exports and archives must never end up in an image
-*.dump
-*.json.gz
-*.tgz
+**/*.dump
+**/*.json.gz
+**/*.tgz
 reports/*.csv
 
 # JS node harness tests
