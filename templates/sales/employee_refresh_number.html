@@ -4,6 +4,7 @@
 <span>فحص الأرقام</span>
 {% endblock %}
 {% block content %}
+<link href="{% static 'css/number-check.css' %}{{ static_cache_query }}" rel="stylesheet">
 {% trans "Error" as msg_error_title %}
 {% trans "Something went wrong. Please try again." as msg_error_body %}
 <div
@@ -53,7 +54,7 @@
       >{% trans "Paste" %}</button>
     </div>
   </div>
-  <div class="row g-2 mb-3">
+  <div class="row g-2">
     <div class="col-6">
       <button type="button" class="btn btn-primary w-100" id="rd-refresh-submit">تحديث الرقم</button>
     </div>
@@ -61,12 +62,12 @@
       <button type="button" class="btn btn-outline-primary w-100" id="rd-check-submit">فحص الرقم</button>
     </div>
   </div>
-  <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none mb-3" id="rd-refresh-result" role="status" aria-live="polite">
+  <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none mt-3" id="rd-refresh-result" role="status" aria-live="polite">
     <div class="fw-semibold mb-1" id="rd-refresh-result-title"></div>
     <div class="mb-0 text-secondary" id="rd-refresh-result-body"></div>
   </div>
-  <div class="border rounded-2 px-3 py-2 small d-none" id="rd-check-result" role="status" aria-live="polite"></div>
 </div>
+<div class="rd-ncheck-slot mt-3 d-none" id="rd-check-result" role="status" aria-live="polite"></div>
 <script src="{% static 'js/employee-clipboard-paste.js' %}{{ static_cache_query }}"></script>
 <script src="{% static 'js/employee-refresh-number.js' %}{{ static_cache_query }}"></script>
 <script src="{% static 'js/employee-check-number.js' %}{{ static_cache_query }}"></script>

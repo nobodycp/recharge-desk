@@ -271,11 +271,11 @@ class HappyPathTests(_Base):
             "مفعل",
             "حملة رمضان 400 جيجا سلكوم",
             "13/11/2026",
-            "متبقي 30 يوم",
-            "6.08 من 400 جيجا",
-            "1.52%",
+            '<span class="rd-ncheck__count-num">30</span>',
+            "إنترنت: 6.08 من 400 جيجا",
+            "1.5%",
             ICCID,
-            "60 ₪",
+            "<bdi>60</bdi>",
             self.product.display_name,
             "14/10/2026",
         ):
@@ -319,7 +319,7 @@ class HappyPathTests(_Base):
         self.assertNotIn("plan_price", html)
         self.assertNotIn("₪29", html)
         self.assertNotIn("29 ₪", html)
-        self.assertIn("60 ₪", html)
+        self.assertIn("<bdi>60</bdi>", html)
         # The stored job result keeps it (phase 3), the response does not.
         self.assertEqual(ProviderJob.objects.get().result["info"]["plan_price"], "29")
 
@@ -329,8 +329,8 @@ class HappyPathTests(_Base):
             resp = self.post()
         Sale.objects.filter(pk=sale.pk).delete()
         html = self.status(resp.json()["job"]).json()["html"]
-        self.assertIn("—", html)
-        self.assertNotIn("60 ₪", html)
+        self.assertIn("لا توجد بيعة سابقة لهذا الرقم", html)
+        self.assertNotIn("<bdi>60</bdi>", html)
 
     def test_second_post_joins_the_inflight_job(self):
         self.make_sale()
@@ -463,6 +463,13 @@ class PollTests(_Base):
 
 
 class AccessTests(_Base):
+    def test_page_lives_at_check_number_and_the_old_path_redirects(self):
+        url = reverse("sales:employee_refresh_number")
+        self.assertTrue(url.endswith("/employee/sales/check-number/"), url)
+        old = url.replace("check-number", "refresh-number")
+        resp = self.client.get(old + "?x=1")
+        self.assertRedirects(resp, url + "?x=1", status_code=302, fetch_redirect_response=False)
+
     def test_employee_without_the_setting_gets_403(self):
         self.make_sale()
         disabled = type("S", (), {"sales_show_refresh_phone": False})()
@@ -507,110 +514,171 @@ class CardContextTests(_Base):
     def ctx(self, info=INFO, sale=None, today=TODAY):
         return card_context(info, sale, today)
 
-    def test_full_row_matches_the_spec_table(self):
+    def card(self, info=INFO, sale="default"):
+        sale = self.sale() if sale == "default" else sale
+        return render_to_string("sales/partials/number_check_card.html", self.ctx(info, sale))
+
+    def test_full_row_matches_the_spec(self):
         ctx = self.ctx(sale=self.sale())
         self.assertEqual(ctx["network"], "سلكوم")
+        self.assertEqual(ctx["network_tone"], "cellcom")
         self.assertEqual(ctx["sim_type"], "شريحة إلكترونية")
         self.assertEqual(ctx["status"], "مفعل")
+        self.assertEqual(ctx["status_tone"], "ok")
         self.assertEqual(ctx["plan_name"], "حملة رمضان 400 جيجا سلكوم")
-        self.assertEqual(ctx["expiry"], "13/11/2026 — متبقي 30 يوم")
         self.assertEqual(
-            ctx["usage"],
-            "إنترنت 6.08 من 400 جيجا · دقائق 0 من 5000 · رسائل 0 من 5000 · نسبة الاستخدام 1.52%",
+            ctx["expiry"],
+            {"date": "13/11/2026", "days": "30", "word": "يوم", "state": "", "tone": "ok"},
         )
+        self.assertEqual(ctx["utilization"], "1.5")
+        self.assertTrue(ctx["has_usage"])
         self.assertEqual(ctx["iccid"], ICCID)
+        self.assertEqual(ctx["iccid_groups"], "8997 2012 3456 7890 123")
         self.assertEqual(
-            ctx["sale_price"], "60 ₪ — سلكوم — رمضان (آخر بيعة 14/10/2026)"
+            ctx["sale"], {"price": "60", "product": "سلكوم — رمضان", "date": "14/10/2026"}
         )
+
+    def test_gauges_carry_used_total_percent_and_remaining(self):
+        data, minutes, sms = self.ctx()["usage"]
+        self.assertEqual(
+            data,
+            {
+                "key": "data", "label": "إنترنت", "unit": "جيجا",
+                "used": "6.08", "total": "400", "pct": "1.5", "offset": "98.48",
+                "remaining": "393.92", "tone": "ok", "included": True,
+            },
+        )
+        self.assertEqual((minutes["used"], minutes["total"], minutes["pct"]), ("0", "5000", "0"))
+        self.assertEqual(minutes["offset"], "")
+        self.assertEqual(minutes["remaining"], "5000")
+        self.assertEqual(sms["unit"], "رسالة")
+
+    def test_gauge_tone_follows_how_much_is_used(self):
+        def tone(used):
+            return self.ctx(NumberInfo(minutes_used=used, minutes_total=100))["usage"][1]["tone"]
+
+        self.assertEqual(tone(69), "ok")
+        self.assertEqual(tone(70), "warn")
+        self.assertEqual(tone(90), "danger")
+
+    def test_gauge_is_clamped_when_usage_exceeds_the_allowance(self):
+        gauge = self.ctx(NumberInfo(sms_used=150, sms_total=100))["usage"][2]
+        self.assertEqual((gauge["pct"], gauge["offset"], gauge["remaining"]), ("100", "0.00", "0"))
+
+    def test_zero_allowance_is_not_included(self):
+        gauge = self.ctx(NumberInfo(sms_used=0, sms_total=0))["usage"][2]
+        self.assertFalse(gauge["included"])
+        self.assertEqual(gauge["pct"], "")
+        self.assertIn("غير مشمولة بالحزمة", self.card(NumberInfo(sms_used=0, sms_total=0)))
+
+    def test_used_without_total_has_no_percent(self):
+        gauge = self.ctx(NumberInfo(data_used_gb=Decimal("1.50")))["usage"][0]
+        self.assertEqual((gauge["used"], gauge["total"], gauge["pct"]), ("1.5", "", ""))
+        self.assertTrue(gauge["included"])
 
     def test_physical_sim(self):
         self.assertEqual(self.ctx(NumberInfo(is_esim=False))["sim_type"], "شريحة عادية")
 
+    def test_status_tones(self):
+        self.assertEqual(self.ctx(NumberInfo(status="مفعل"))["status_tone"], "ok")
+        self.assertEqual(self.ctx(NumberInfo(status="غير مفعل"))["status_tone"], "warn")
+        self.assertEqual(self.ctx(NumberInfo(status="موقوف"))["status_tone"], "warn")
+        self.assertEqual(self.ctx(NumberInfo(status="شيء آخر"))["status_tone"], "muted")
+        self.assertEqual(self.ctx(NumberInfo())["status_tone"], "muted")
+
+    def test_network_tones(self):
+        for network, tone in (
+            ("سلكوم", "cellcom"),
+            ("بليفون", "pelephone"),
+            ("Partner", "partner"),
+            ("جوال", "jawwal"),
+            ("جولان تيليكوم", "golan"),
+            ("مزود جديد", "default"),
+        ):
+            self.assertEqual(self.ctx(NumberInfo(network=network))["network_tone"], tone, network)
+
     def test_price_formatting_has_no_trailing_zeros(self):
-        self.assertTrue(self.ctx(sale=self.sale("60.00"))["sale_price"].startswith("60 ₪ —"))
-        self.assertTrue(self.ctx(sale=self.sale("60.50"))["sale_price"].startswith("60.5 ₪ —"))
-        self.assertTrue(self.ctx(sale=self.sale("7.25"))["sale_price"].startswith("7.25 ₪ —"))
+        self.assertEqual(self.ctx(sale=self.sale("60.00"))["sale"]["price"], "60")
+        self.assertEqual(self.ctx(sale=self.sale("60.50"))["sale"]["price"], "60.5")
+        self.assertEqual(self.ctx(sale=self.sale("7.25"))["sale"]["price"], "7.25")
 
-    def test_none_fields_show_a_dash(self):
+    def test_empty_info_renders_dashes_and_no_usage(self):
         ctx = self.ctx(NumberInfo())
-        for key in ("network", "status", "plan_name", "expiry", "usage", "iccid", "sale_price"):
-            self.assertEqual(ctx[key], "—", key)
+        self.assertIsNone(ctx["expiry"])
+        self.assertIsNone(ctx["sale"])
+        self.assertFalse(ctx["has_usage"])
+        html = self.card(NumberInfo(), sale=None)
+        self.assertIn("لا تتوفر بيانات استهلاك لهذا الرقم", html)
+        self.assertIn("لا توجد بيعة سابقة لهذا الرقم", html)
+        self.assertNotIn("data-copy", html)
 
-    def test_partial_usage_shows_dashes_only_where_missing(self):
-        info = NumberInfo(data_used_gb=Decimal("1.50"), data_total_gb=None, minutes_total=100)
-        usage = self.ctx(info)["usage"]
-        self.assertIn("إنترنت 1.5 جيجا", usage)
-        self.assertIn("دقائق — من 100", usage)
-        self.assertIn("رسائل —", usage)
-        self.assertIn("نسبة الاستخدام —", usage)
+    def test_expiry_countdown_tones(self):
+        def expiry(day):
+            ends = dt.datetime(2026, 10, day, 12, 0, tzinfo=TZ_PLUS_2)
+            return self.ctx(NumberInfo(ends_at=ends))["expiry"]
+
+        self.assertEqual((expiry(15)["days"], expiry(15)["tone"]), ("1", "danger"))
+        self.assertEqual((expiry(19)["days"], expiry(19)["word"], expiry(19)["tone"]), ("5", "أيام", "warn"))
+        self.assertEqual(expiry(25)["tone"], "ok")
 
     def test_expiry_today(self):
         ends = dt.datetime(2026, 10, 14, 12, 0, tzinfo=TZ_PLUS_2)
-        ctx = self.ctx(NumberInfo(ends_at=ends))
-        self.assertEqual(ctx["expiry"], "14/10/2026 — تنتهي اليوم")
+        expiry = self.ctx(NumberInfo(ends_at=ends))["expiry"]
+        self.assertEqual((expiry["date"], expiry["days"], expiry["state"]), ("14/10/2026", "", "تنتهي اليوم"))
 
     def test_expiry_past(self):
         ends = dt.datetime(2026, 10, 1, 12, 0, tzinfo=TZ_PLUS_2)
-        self.assertEqual(self.ctx(NumberInfo(ends_at=ends))["expiry"], "01/10/2026 — منتهية")
+        expiry = self.ctx(NumberInfo(ends_at=ends))["expiry"]
+        self.assertEqual((expiry["date"], expiry["state"], expiry["tone"]), ("01/10/2026", "منتهية", "danger"))
 
     def test_expiry_uses_the_local_date_of_the_end_time(self):
         # 22:30 UTC on the 13th is already the 14th in Asia/Jerusalem (UTC+3 in
         # summer / +2 in winter): the local date decides, not the offset in the data.
         ends = dt.datetime(2026, 11, 13, 22, 30, tzinfo=dt.timezone.utc)
-        ctx = self.ctx(NumberInfo(ends_at=ends))
-        self.assertEqual(ctx["expiry"], "14/11/2026 — متبقي 31 يوم")
-
-    def test_no_sale_shows_a_dash(self):
-        self.assertEqual(self.ctx(sale=None)["sale_price"], "—")
+        expiry = self.ctx(NumberInfo(ends_at=ends))["expiry"]
+        self.assertEqual((expiry["date"], expiry["days"]), ("14/11/2026", "31"))
 
     def test_sale_date_is_the_local_date(self):
         created = dt.datetime(2026, 10, 13, 22, 30, tzinfo=dt.timezone.utc)
-        ctx = self.ctx(sale=self.sale(created=created))
-        self.assertIn("(آخر بيعة 14/10/2026)", ctx["sale_price"])
+        self.assertEqual(self.ctx(sale=self.sale(created=created))["sale"]["date"], "14/10/2026")
 
     def test_provider_strings_are_escaped_in_the_card(self):
-        info = NumberInfo(network="<b>x</b>", plan_name="<script>alert(1)</script>")
-        html = render_to_string(
-            "sales/partials/number_check_card.html", self.ctx(info, self.sale())
-        )
+        html = self.card(NumberInfo(network="<b>x</b>", plan_name="<script>alert(1)</script>"))
         self.assertIn("&lt;b&gt;x&lt;/b&gt;", html)
         self.assertNotIn("<b>x</b>", html)
         self.assertNotIn("<script>alert(1)</script>", html)
         self.assertIn("&lt;script&gt;", html)
 
-    def test_card_lists_every_field_as_a_labelled_row_in_spec_order(self):
-        html = render_to_string(
-            "sales/partials/number_check_card.html", self.ctx(INFO, self.sale())
-        )
-        labels = [
-            "الشركة",
-            "نوع الشريحة",
-            "الحالة",
-            "اسم الحزمة",
-            "تاريخ الانتهاء",
+    def test_card_shows_every_field(self):
+        html = self.card()
+        for text in (
+            "سلكوم",
+            "rd-ncheck--cellcom",
+            "شريحة إلكترونية",
+            "مفعل",
+            "حملة رمضان 400 جيجا سلكوم",
+            "13/11/2026",
+            "متبقي",
             "الاستهلاك",
-            "رقم الشريحة",
+            "إنترنت",
+            "دقائق",
+            "رسائل",
             "سعر البيع",
-        ]
-        positions = []
-        for label in labels:
-            match = re.search(r"<dt[^>]*>\s*%s\s*</dt>" % label, html)
-            self.assertIsNotNone(match, label)
-            positions.append(match.start())
-        self.assertEqual(positions, sorted(positions))
-        self.assertEqual(html.count("<dt"), len(labels))
-        self.assertEqual(html.count("<dd"), len(labels))
-        # Company and SIM type are values of their own rows now (no unlabelled header).
-        self.assertRegex(html, r"<dd[^>]*>\s*سلكوم\s*</dd>")
-        self.assertRegex(html, r"<dd[^>]*>\s*شريحة إلكترونية\s*</dd>")
-        self.assertNotIn("rd-badge", html)
+            "سلكوم — رمضان",
+            "آخر بيعة 14/10/2026",
+            "رقم الشريحة",
+            "8997 2012 3456 7890 123",
+            f'data-copy="{ICCID}"',
+        ):
+            self.assertIn(text, html, text)
+        self.assertRegex(html, r'class="rd-ncheck__count-num">\s*30\s*<')
+        self.assertRegex(html, r"<bdi>60</bdi>")
+        self.assertEqual(html.count('class="rd-ncheck__gauge '), 3)
+        self.assertIn('stroke-dashoffset="98.48"', html)
+        self.assertEqual(html.count("rd-ncheck__ring-fill"), 1)
 
-    def test_card_has_no_dead_hook_class_or_inline_style(self):
-        html = render_to_string(
-            "sales/partials/number_check_card.html", self.ctx(INFO, self.sale())
-        )
-        self.assertNotIn("rd-number-card", html)
-        self.assertNotIn("style=", html)
+    def test_card_has_no_inline_style(self):
+        self.assertNotIn("style=", self.card())
 
     def test_card_never_mentions_the_provider_price(self):
         html = render_to_string(

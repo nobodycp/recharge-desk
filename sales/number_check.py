@@ -227,6 +227,25 @@ def check_payload(job_id: str) -> dict:
 
 # --- card -----------------------------------------------------------------
 
+# Keyword (lower-case) -> brand tone class of the card header.
+_NETWORK_TONES = (
+    (("سلكوم", "سيلكوم", "cellcom"), "cellcom"),
+    (("بليفون", "بلفون", "pelephone"), "pelephone"),
+    (("بارتنر", "partner", "اورنج", "أورنج", "orange"), "partner"),
+    (("هوت", "hot"), "hot"),
+    (("جولان", "golan"), "golan"),
+    (("جوال", "jawwal"), "jawwal"),
+    (("وطنية", "اوريدو", "أوريدو", "ooredoo"), "ooredoo"),
+)
+_INACTIVE_WORDS = ("غير", "موقوف", "معلق", "ملغ", "inactive", "suspend", "blocked")
+_ACTIVE_WORDS = ("مفعل", "فعال", "نشط", "active")
+_GAUGES = (
+    ("data", "إنترنت", "جيجا"),
+    ("minutes", "دقائق", "دقيقة"),
+    ("sms", "رسائل", "رسالة"),
+)
+_HUNDRED = Decimal(100)
+
 
 def _num(value) -> str:
     """``6.08``, ``400``, ``0``: no exponent, no trailing zeros; «—» for ``None``."""
@@ -240,77 +259,127 @@ def _num(value) -> str:
     return str(value)
 
 
-def _text(value) -> str:
-    return (value or "").strip() or DASH
-
-
 def _date_text(value: date) -> str:
     return value.strftime("%d/%m/%Y")
 
 
-def _expiry(info: NumberInfo, today: date) -> str:
+def _pct_text(value: Decimal | None) -> str:
+    """Whole percent from 10 up, one decimal below: ``1.5``, ``0``, ``73``."""
+    if value is None:
+        return ""
+    step = Decimal("1") if value >= 10 else Decimal("0.1")
+    return _num(value.quantize(step))
+
+
+def _network_tone(network: str) -> str:
+    text = network.lower()
+    for words, tone in _NETWORK_TONES:
+        if any(word in text for word in words):
+            return tone
+    return "default"
+
+
+def _status_tone(status: str) -> str:
+    text = status.lower()
+    if not text:
+        return "muted"
+    if any(word in text for word in _INACTIVE_WORDS):
+        return "warn"
+    if any(word in text for word in _ACTIVE_WORDS):
+        return "ok"
+    return "muted"
+
+
+def _days_word(days: int) -> str:
+    return "أيام" if 3 <= days <= 10 else "يوم"
+
+
+def _expiry(info: NumberInfo, today: date) -> dict | None:
     if info.ends_at is None:
-        return DASH
+        return None
     ends_on = timezone.localtime(info.ends_at).date()
     days = (ends_on - today).days
+    expiry = {"date": _date_text(ends_on), "days": "", "word": "", "state": ""}
     if days < 0:
-        tail = "منتهية"
-    elif days == 0:
-        tail = "تنتهي اليوم"
-    else:
-        tail = f"متبقي {days} يوم"
-    return f"{_date_text(ends_on)} — {tail}"
+        return {**expiry, "state": "منتهية", "tone": "danger"}
+    if days == 0:
+        return {**expiry, "state": "تنتهي اليوم", "tone": "danger"}
+    tone = "danger" if days <= 3 else "warn" if days <= 7 else "ok"
+    return {**expiry, "days": str(days), "word": _days_word(days), "tone": tone}
 
 
-def _used_of(label: str, used, total, unit: str = "") -> str:
-    text = f"{label} {_num(used)}"
-    if total is not None:
-        text += f" من {_num(total)}"
-    return f"{text} {unit}".strip()
-
-
-def _usage(info: NumberInfo) -> str:
-    parts = (
-        info.data_used_gb,
-        info.data_total_gb,
-        info.minutes_used,
-        info.minutes_total,
-        info.sms_used,
-        info.sms_total,
-        info.utilization_pct,
+def _gauge(key: str, label: str, unit: str, used, total) -> dict:
+    gauge = {
+        "key": key,
+        "label": label,
+        "unit": unit,
+        "used": _num(used),
+        "total": "" if total is None else _num(total),
+        "pct": "",
+        "offset": "",
+        "remaining": "",
+        "tone": "ok",
+        "included": total != 0,
+    }
+    if used is None or not total:
+        return gauge
+    used, total = Decimal(used), Decimal(total)
+    pct = min(max(used / total * _HUNDRED, Decimal(0)), _HUNDRED)
+    gauge.update(
+        pct=_pct_text(pct),
+        # A zero-length arc still paints its round cap, so nothing is drawn at 0.
+        offset=f"{_HUNDRED - pct:.2f}" if pct > 0 else "",
+        remaining=_num(max(total - used, Decimal(0))),
+        tone="danger" if pct >= 90 else "warn" if pct >= 70 else "ok",
     )
-    if all(part is None for part in parts):
-        return DASH
-    pct = DASH if info.utilization_pct is None else f"{_num(info.utilization_pct)}%"
-    return " · ".join(
-        (
-            _used_of("إنترنت", info.data_used_gb, info.data_total_gb, "جيجا"),
-            _used_of("دقائق", info.minutes_used, info.minutes_total),
-            _used_of("رسائل", info.sms_used, info.sms_total),
-            f"نسبة الاستخدام {pct}",
-        )
-    )
+    return gauge
 
 
-def _sale_price(sale: Sale | None) -> str:
+def _usage(info: NumberInfo) -> list[dict]:
+    values = {
+        "data": (info.data_used_gb, info.data_total_gb),
+        "minutes": (info.minutes_used, info.minutes_total),
+        "sms": (info.sms_used, info.sms_total),
+    }
+    return [_gauge(key, label, unit, *values[key]) for key, label, unit in _GAUGES]
+
+
+def _iccid_groups(iccid: str) -> str:
+    return " ".join(iccid[i : i + 4] for i in range(0, len(iccid), 4))
+
+
+def _sale(sale: Sale | None) -> dict | None:
     if sale is None or sale.product is None:
-        return DASH
-    product = sale.product
-    when = _date_text(timezone.localtime(sale.created_at).date())
-    return (
-        f"{_num(product.default_sell_price)} ₪ — {product.display_name} (آخر بيعة {when})"
-    )
+        return None
+    return {
+        "price": _num(sale.product.default_sell_price),
+        "product": sale.product.display_name,
+        "date": _date_text(timezone.localtime(sale.created_at).date()),
+    }
 
 
 def card_context(info: NumberInfo, sale: Sale | None, today: date) -> dict:
-    """Display strings for the card partial (pure; never includes ``plan_price``)."""
+    """Display values for the card partial (pure; never includes ``plan_price``)."""
+    network = (info.network or "").strip()
+    status = (info.status or "").strip()
+    iccid = (info.iccid or "").strip()
+    usage = _usage(info)
     return {
-        "network": _text(info.network),
+        "network": network,
+        "network_tone": _network_tone(network),
+        "is_esim": info.is_esim,
         "sim_type": "شريحة إلكترونية" if info.is_esim else "شريحة عادية",
-        "status": _text(info.status),
-        "plan_name": _text(info.plan_name),
+        "status": status,
+        "status_tone": _status_tone(status),
+        "plan_name": (info.plan_name or "").strip(),
         "expiry": _expiry(info, today),
-        "usage": _usage(info),
-        "iccid": _text(info.iccid),
-        "sale_price": _sale_price(sale),
+        "usage": usage,
+        "has_usage": info.utilization_pct is not None
+        or any(g["used"] != DASH or g["total"] for g in usage),
+        "utilization": _pct_text(info.utilization_pct),
+        "iccid": iccid,
+        "iccid_groups": _iccid_groups(iccid),
+        "sale": _sale(sale),
     }
+
+

@@ -42,23 +42,49 @@
     });
   }
 
-  function clearResult() {
+  var SKELETON =
+    '<div class="rd-ncheck-skel" aria-hidden="true"><div class="rd-ncheck-skel__hero"></div>' +
+    '<div class="rd-ncheck-skel__row"><span></span><span></span><span></span></div>' +
+    '<div class="rd-ncheck-skel__row rd-ncheck-skel__row--2"><span></span><span></span></div></div>' +
+    '<span class="visually-hidden">' + WORKING_LABEL + "</span>";
+  var COPY_FEEDBACK_MS = 1500;
+
+  // Static markup only; the result itself replaces it.
+  function showLoading() {
     if (!resultBox) return;
-    resultBox.textContent = "";
-    resultBox.classList.add("d-none");
+    resultBox.classList.remove("is-error");
+    resultBox.innerHTML = SKELETON;
+    resultBox.classList.remove("d-none");
   }
 
   // Only the server-rendered (auto-escaped) card is ever treated as HTML.
   function showCard(html) {
     if (!resultBox) return;
+    resultBox.classList.remove("is-error");
     resultBox.innerHTML = html;
     resultBox.classList.remove("d-none");
   }
 
   function showText(message) {
     if (!resultBox) return;
+    resultBox.classList.add("is-error");
     resultBox.textContent = typeof message === "string" && message ? message : GENERIC_ERROR;
     resultBox.classList.remove("d-none");
+  }
+
+  function copyIccid(btn) {
+    var clipboard = window.navigator && window.navigator.clipboard;
+    if (!clipboard || btn.classList.contains("is-done")) return;
+    var label = btn.querySelector("span");
+    clipboard.writeText(btn.getAttribute("data-copy") || "").then(function () {
+      var original = label ? label.textContent : "";
+      btn.classList.add("is-done");
+      if (label) label.textContent = btn.getAttribute("data-done-label") || original;
+      setTimeout(function () {
+        btn.classList.remove("is-done");
+        if (label) label.textContent = original;
+      }, COPY_FEEDBACK_MS);
+    });
   }
 
   function showPayload(data) {
@@ -130,7 +156,7 @@
     var runId = ++activeRun;
     checkBtn.disabled = true;
     checkBtn.textContent = WORKING_LABEL;
-    clearResult();
+    showLoading();
 
     var body = new URLSearchParams();
     body.set("phone", phone);
@@ -172,4 +198,11 @@
   }
 
   checkBtn.addEventListener("click", runCheck);
+  if (resultBox) {
+    resultBox.addEventListener("click", function (event) {
+      var target = event.target;
+      var btn = target && target.closest ? target.closest("[data-copy]") : null;
+      if (btn) copyIccid(btn);
+    });
+  }
 })();

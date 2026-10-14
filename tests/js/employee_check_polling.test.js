@@ -23,9 +23,11 @@ function makeEnv({ fetchImpl, withRoot = true }) {
   const els = {};
   const el = (id) => (els[id] = els[id] || {
     id, value: "", disabled: false, _text: "", innerHTML: "", attrs: {}, hidden: true,
+    classes: new Set(),
     classList: {
-      add(c) { if (c === "d-none") els[id].hidden = true; },
-      remove(c) { if (c === "d-none") els[id].hidden = false; },
+      add(c) { els[id].classes.add(c); if (c === "d-none") els[id].hidden = true; },
+      remove(c) { els[id].classes.delete(c); if (c === "d-none") els[id].hidden = false; },
+      contains(c) { return els[id].classes.has(c); },
     },
     set textContent(v) { this._text = v; this.innerHTML = ""; this.textSet = true; },
     get textContent() { return this._text; },
@@ -151,13 +153,23 @@ const post = (o) => o.method === "POST";
   e.click("972529000000"); await e.settle();
   check("972 prefix normalised to 0…", e.fetchCalls[0].body === "phone=0529000000", e.fetchCalls[0]);
 
-  // 11. result area is hidden again nowhere: a new run clears the old card while working
+  // 11. a new run replaces the old card with the loading skeleton while working
   let n = 0;
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "j" }) : (++n === 1 ? resp(200, { status: "ok", html: "<p>one</p>" }) : resp(200, { status: "processing" })) });
   e.click(); await e.settle();
   e.click(); await new Promise((r) => setImmediate(r));
-  check("previous card cleared when a new check starts", e.box.innerHTML === "" && e.box.textContent === "", [e.box.innerHTML, e.box.textContent]);
+  check("previous card replaced by the skeleton when a new check starts",
+    e.box.innerHTML.includes("rd-ncheck-skel") && !e.box.innerHTML.includes("one") && e.box.hidden === false, [e.box.innerHTML]);
   await e.settle();
+
+  // 12. errors are styled as errors; a later card drops the error style
+  let m = 0;
+  e = makeEnv({ fetchImpl: () => (++m === 1 ? resp(200, { status: "error", message: "x" }) : resp(200, { status: "ok", html: "<p>card</p>" })) });
+  e.click(); await e.settle();
+  check("error result carries the error style", e.box.classes.has("is-error"), [...e.box.classes]);
+  e.click(); await e.settle();
+  check("card result drops the error style", !e.box.classes.has("is-error") && e.box.innerHTML === "<p>card</p>", [...e.box.classes, e.box.innerHTML]);
+  check("result box has a delegated click handler for the copy button", (e.listeners["rd-check-result:click"] || []).length === 1, Object.keys(e.listeners));
 
   console.log(fail ? "FAILED" : "ALL OK"); process.exit(fail ? 1 : 0);
 })();

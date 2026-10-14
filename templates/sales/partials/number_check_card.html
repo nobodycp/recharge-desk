@@ -1,19 +1,109 @@
 {# Server-rendered number check card. Every value is auto-escaped; never add |safe here. #}
-<dl class="row gx-2 gy-1 mb-0 small" dir="rtl">
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">الشركة</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ network }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">نوع الشريحة</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ sim_type }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">الحالة</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ status }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">اسم الحزمة</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ plan_name }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">تاريخ الانتهاء</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ expiry }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">الاستهلاك</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ usage }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">رقم الشريحة</dt>
-  <dd class="col-8 col-sm-9 mb-0">{{ iccid }}</dd>
-  <dt class="col-4 col-sm-3 fw-normal text-secondary">سعر البيع</dt>
-  <dd class="col-8 col-sm-9 mb-0 fw-semibold">{{ sale_price }}</dd>
-</dl>
+<article class="rd-ncheck rd-ncheck--{{ network_tone }}" dir="rtl" aria-label="نتيجة فحص الرقم">
+  <header class="rd-ncheck__hero">
+    <div class="rd-ncheck__hero-top">
+      <div class="rd-ncheck__tags">
+        <span class="rd-ncheck__tag" title="نوع الشريحة">
+          {% if is_esim %}
+          <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5"/><path d="M9 1.5v3.5M15 1.5v3.5M9 19v3.5M15 19v3.5M1.5 9H5M1.5 15H5M19 9h3.5M19 15h3.5"/></svg>
+          {% else %}
+          <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2.5h7.5l4 4V20a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 20V4A1.5 1.5 0 0 1 8 2.5z"/><rect x="9.5" y="10.5" width="6" height="7" rx="1"/></svg>
+          {% endif %}
+          {{ sim_type }}
+        </span>
+        <span class="rd-ncheck__tag rd-ncheck__status is-{{ status_tone }}" title="الحالة">
+          <span class="rd-ncheck__dot" aria-hidden="true"></span>{{ status|default:"—" }}
+        </span>
+      </div>
+      <span class="rd-ncheck__chip" aria-hidden="true"></span>
+    </div>
+
+    <div class="rd-ncheck__hero-main">
+      <div class="rd-ncheck__ident">
+        <div class="rd-ncheck__eyebrow">الشركة</div>
+        <div class="rd-ncheck__network">{{ network|default:"—" }}</div>
+        <div class="rd-ncheck__plan" title="اسم الحزمة">{{ plan_name|default:"—" }}</div>
+      </div>
+      {% if expiry %}
+      <div class="rd-ncheck__count is-{{ expiry.tone }}" title="تاريخ الانتهاء">
+        {% if expiry.days %}
+        <span class="rd-ncheck__count-cap">متبقي</span>
+        <span class="rd-ncheck__count-num">{{ expiry.days }}</span>
+        <span class="rd-ncheck__count-cap">{{ expiry.word }}</span>
+        {% else %}
+        <span class="rd-ncheck__count-state">{{ expiry.state }}</span>
+        {% endif %}
+        <span class="rd-ncheck__count-date">{{ expiry.date }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="rd-ncheck__body">
+    <section class="rd-ncheck__usage" aria-label="الاستهلاك">
+      <div class="rd-ncheck__section-head">
+        <h3 class="rd-ncheck__section-title">الاستهلاك</h3>
+        {% if utilization %}
+        <span class="rd-ncheck__util">نسبة الاستخدام <bdi dir="ltr">{{ utilization }}%</bdi></span>
+        {% endif %}
+      </div>
+      {% if has_usage %}
+      <ul class="rd-ncheck__gauges">
+        {% for g in usage %}
+        <li class="rd-ncheck__gauge rd-ncheck__gauge--{{ g.key }} is-{{ g.tone }}">
+          <div class="rd-ncheck__ring-wrap">
+            <svg class="rd-ncheck__ring" viewBox="0 0 36 36" role="img" aria-label="{{ g.label }}: {{ g.used }}{% if g.total %} من {{ g.total }}{% endif %} {{ g.unit }}">
+              <circle class="rd-ncheck__ring-track" cx="18" cy="18" r="15.5" pathLength="100"/>
+              {% if g.offset %}<circle class="rd-ncheck__ring-fill" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="{{ g.offset }}"/>{% endif %}
+            </svg>
+            <span class="rd-ncheck__ring-center" dir="ltr"><span>{% if g.pct %}{{ g.pct }}<small>%</small>{% else %}—{% endif %}</span></span>
+          </div>
+          <div class="rd-ncheck__gauge-label">
+            {% if g.key == "data" %}
+            <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19v-3M10 19v-7M15 19V8M20 19V4"/></svg>
+            {% elif g.key == "minutes" %}
+            <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 1.1 4.2 2 2 0 0 1 3.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L7.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+            {% else %}
+            <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            {% endif %}
+            {{ g.label }}
+          </div>
+          {% if not g.included %}
+          <div class="rd-ncheck__gauge-left">غير مشمولة بالحزمة</div>
+          {% else %}
+          <div class="rd-ncheck__gauge-value"><bdi>{{ g.used }}</bdi>{% if g.total %} <span class="rd-ncheck__gauge-total">/ <bdi>{{ g.total }}</bdi></span>{% endif %} <span class="rd-ncheck__gauge-unit">{{ g.unit }}</span></div>
+          {% if g.remaining %}<div class="rd-ncheck__gauge-left">متبقي <bdi>{{ g.remaining }}</bdi></div>{% endif %}
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="rd-ncheck__empty">لا تتوفر بيانات استهلاك لهذا الرقم</p>
+      {% endif %}
+    </section>
+
+    <div class="rd-ncheck__tiles">
+      <div class="rd-ncheck__tile rd-ncheck__tile--price">
+        <div class="rd-ncheck__tile-label">سعر البيع</div>
+        {% if sale %}
+        <div class="rd-ncheck__price"><bdi>{{ sale.price }}</bdi><span class="rd-ncheck__currency">₪</span></div>
+        <div class="rd-ncheck__tile-meta">{{ sale.product }}</div>
+        <div class="rd-ncheck__tile-meta">آخر بيعة {{ sale.date }}</div>
+        {% else %}
+        <div class="rd-ncheck__price is-empty">—</div>
+        <div class="rd-ncheck__tile-meta">لا توجد بيعة سابقة لهذا الرقم</div>
+        {% endif %}
+      </div>
+      <div class="rd-ncheck__tile">
+        <div class="rd-ncheck__tile-label">رقم الشريحة</div>
+        <div class="rd-ncheck__iccid" dir="ltr">{{ iccid_groups|default:"—" }}</div>
+        {% if iccid %}
+        <button type="button" class="rd-ncheck__copy" data-copy="{{ iccid }}" data-done-label="تم النسخ">
+          <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+          <span>نسخ</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</article>
