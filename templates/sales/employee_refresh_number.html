@@ -1,7 +1,7 @@
 {% extends "base_employee.html" %}
 {% load i18n static %}
 {% block employee_header %}
-<span>{% trans "Refresh number" %}</span>
+<span>فحص الأرقام</span>
 {% endblock %}
 {% block content %}
 {% trans "Error" as msg_error_title %}
@@ -11,6 +11,8 @@
   id="rd-refresh-page"
   data-refresh-url="{% url 'sales:employee_refresh_phone' %}"
   data-status-url="{% url 'sales:employee_refresh_status' '00000000-0000-0000-0000-000000000000' %}"
+  data-check-url="{% url 'sales:employee_check_phone' %}"
+  data-check-status-url="{% url 'sales:employee_check_status' '00000000-0000-0000-0000-000000000000' %}"
   data-wait-seconds="{{ refresh_wait_seconds }}"
   data-msg-error-title="{{ msg_error_title }}"
   data-msg-error-body="{{ msg_error_body }}"
@@ -28,7 +30,6 @@
   data-msg-time-and="{{ _('and')|escapejs }}"
 >
   {% csrf_token %}
-  <p class="small text-secondary mb-3">{% trans "Same routing and messages as the public refresh page, without rate limits." %}</p>
   <div class="mb-3">
     <label class="rd-field-label d-block" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
     <div class="input-group input-group-sm">
@@ -52,12 +53,21 @@
       >{% trans "Paste" %}</button>
     </div>
   </div>
+  <div class="row g-2 mb-3">
+    <div class="col-6">
+      <button type="button" class="btn btn-primary w-100" id="rd-refresh-submit">تحديث الرقم</button>
+    </div>
+    <div class="col-6">
+      <button type="button" class="btn btn-outline-primary w-100" id="rd-check-submit">فحص الرقم</button>
+    </div>
+  </div>
   <div class="rd-refresh-result border rounded-2 px-3 py-2 small d-none mb-3" id="rd-refresh-result" role="status" aria-live="polite">
     <div class="fw-semibold mb-1" id="rd-refresh-result-title"></div>
     <div class="mb-0 text-secondary" id="rd-refresh-result-body"></div>
   </div>
-  <button type="button" class="btn btn-primary w-100" id="rd-refresh-submit">{% trans "Refresh" %}</button>
+  <div class="border rounded-2 px-3 py-2 small d-none" id="rd-check-result" role="status" aria-live="polite"></div>
 </div>
 <script src="{% static 'js/employee-clipboard-paste.js' %}{{ static_cache_query }}"></script>
 <script src="{% static 'js/employee-refresh-number.js' %}{{ static_cache_query }}"></script>
+<script src="{% static 'js/employee-check-number.js' %}{{ static_cache_query }}"></script>
 {% endblock %}

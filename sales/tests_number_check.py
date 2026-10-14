@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import re
 import uuid
 from decimal import Decimal
 from unittest.mock import patch
@@ -567,6 +568,40 @@ class CardContextTests(_Base):
         self.assertNotIn("<b>x</b>", html)
         self.assertNotIn("<script>alert(1)</script>", html)
         self.assertIn("&lt;script&gt;", html)
+
+    def test_card_lists_every_field_as_a_labelled_row_in_spec_order(self):
+        html = render_to_string(
+            "sales/partials/number_check_card.html", self.ctx(INFO, self.sale())
+        )
+        labels = [
+            "الشركة",
+            "نوع الشريحة",
+            "الحالة",
+            "اسم الحزمة",
+            "تاريخ الانتهاء",
+            "الاستهلاك",
+            "رقم الشريحة",
+            "سعر البيع",
+        ]
+        positions = []
+        for label in labels:
+            match = re.search(r"<dt[^>]*>\s*%s\s*</dt>" % label, html)
+            self.assertIsNotNone(match, label)
+            positions.append(match.start())
+        self.assertEqual(positions, sorted(positions))
+        self.assertEqual(html.count("<dt"), len(labels))
+        self.assertEqual(html.count("<dd"), len(labels))
+        # Company and SIM type are values of their own rows now (no unlabelled header).
+        self.assertRegex(html, r"<dd[^>]*>\s*سلكوم\s*</dd>")
+        self.assertRegex(html, r"<dd[^>]*>\s*شريحة إلكترونية\s*</dd>")
+        self.assertNotIn("rd-badge", html)
+
+    def test_card_has_no_dead_hook_class_or_inline_style(self):
+        html = render_to_string(
+            "sales/partials/number_check_card.html", self.ctx(INFO, self.sale())
+        )
+        self.assertNotIn("rd-number-card", html)
+        self.assertNotIn("style=", html)
 
     def test_card_never_mentions_the_provider_price(self):
         html = render_to_string(

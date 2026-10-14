@@ -1,21 +1,19 @@
 {# Server-rendered number check card. Every value is auto-escaped; never add |safe here. #}
-<div class="rd-number-card" dir="rtl">
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-    <span class="fw-semibold">{{ network }}</span>
-    <span class="rd-badge rd-badge--neutral">{{ sim_type }}</span>
-  </div>
-  <dl class="row gx-2 gy-1 mb-0 small">
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">الحالة</dt>
-    <dd class="col-8 col-sm-9 mb-0">{{ status }}</dd>
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">اسم الحزمة</dt>
-    <dd class="col-8 col-sm-9 mb-0">{{ plan_name }}</dd>
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">تاريخ الانتهاء</dt>
-    <dd class="col-8 col-sm-9 mb-0">{{ expiry }}</dd>
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">الاستهلاك</dt>
-    <dd class="col-8 col-sm-9 mb-0">{{ usage }}</dd>
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">رقم الشريحة</dt>
-    <dd class="col-8 col-sm-9 mb-0" dir="ltr" style="text-align: right">{{ iccid }}</dd>
-    <dt class="col-4 col-sm-3 fw-normal text-secondary">سعر البيع</dt>
-    <dd class="col-8 col-sm-9 mb-0 fw-semibold">{{ sale_price }}</dd>
-  </dl>
-</div>
+<dl class="row gx-2 gy-1 mb-0 small" dir="rtl">
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">الشركة</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ network }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">نوع الشريحة</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ sim_type }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">الحالة</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ status }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">اسم الحزمة</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ plan_name }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">تاريخ الانتهاء</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ expiry }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">الاستهلاك</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ usage }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">رقم الشريحة</dt>
+  <dd class="col-8 col-sm-9 mb-0">{{ iccid }}</dd>
+  <dt class="col-4 col-sm-3 fw-normal text-secondary">سعر البيع</dt>
+  <dd class="col-8 col-sm-9 mb-0 fw-semibold">{{ sale_price }}</dd>
+</dl>

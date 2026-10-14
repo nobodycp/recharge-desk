@@ -1671,6 +1671,46 @@ class EmployeeRefreshPhoneTests(TestCase):
         )
         self.assertContains(resp, "data-wait-seconds=")
 
+    def test_number_check_page_has_both_buttons_and_urls(self):
+        resp = self.client.get(reverse("sales:employee_refresh_number"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context["title"], "فحص الأرقام")
+        self.assertContains(resp, "فحص الأرقام")
+        # Refresh button keeps its id and behaviour, only the label changes.
+        self.assertContains(resp, 'id="rd-refresh-submit"')
+        self.assertContains(resp, "تحديث الرقم")
+        self.assertContains(resp, 'id="rd-check-submit"')
+        self.assertContains(resp, "btn-outline-primary")
+        self.assertContains(resp, "فحص الرقم")
+        self.assertContains(resp, 'id="rd-check-result"')
+        self.assertContains(
+            resp, 'data-check-url="%s"' % reverse("sales:employee_check_phone")
+        )
+        self.assertContains(
+            resp,
+            'data-check-status-url="/employee/check/status/'
+            '00000000-0000-0000-0000-000000000000/"',
+        )
+        self.assertContains(resp, "js/employee-check-number.js")
+        self.assertContains(resp, "js/employee-refresh-number.js")
+        self.assertNotContains(resp, "Same routing and messages")
+        # The refresh page contract is untouched.
+        self.assertContains(resp, reverse("sales:employee_refresh_phone"))
+
+    def test_number_check_page_check_result_is_below_refresh_result_and_hidden(self):
+        html = self.client.get(reverse("sales:employee_refresh_number")).content.decode()
+        refresh_at = html.index('id="rd-refresh-result"')
+        check_at = html.index('id="rd-check-result"')
+        self.assertLess(refresh_at, check_at)
+        tag = html[html.rindex("<div", 0, check_at) : html.index(">", check_at)]
+        self.assertIn("d-none", tag)
+
+    def test_bottom_nav_label_is_number_check(self):
+        resp = self.client.get(reverse("sales:employee_entry"))
+        self.assertContains(
+            resp, '<span class="rd-mobile-tabbar__label">فحص الأرقام</span>', html=True
+        )
+
 
 class SalePhonePrefixValidationTests(TestCase):
     @classmethod

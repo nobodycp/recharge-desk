@@ -237,7 +237,7 @@ def employee_entry(request):
 
 @employee_required
 def employee_refresh_number(request):
-    """Full-page phone refresh for cashiers."""
+    """Full-page number check («فحص الأرقام»): refresh or check a number."""
     if not AppSettings.load().sales_show_refresh_phone:
         messages.error(request, _("Number refresh is disabled on the sales screen."))
         return redirect("sales:employee_entry")
@@ -245,7 +245,7 @@ def employee_refresh_number(request):
         request,
         "sales/employee_refresh_number.html",
         {
-            "title": _("Refresh number"),
+            "title": "فحص الأرقام",
             "refresh_wait_seconds": SystemSettings.get().refresh_wait_seconds,
         },
     )
