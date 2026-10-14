@@ -323,6 +323,39 @@ field for existing companies whose names currently match.
 3. Enable `REFRESH_ASYNC_ENABLED=1`; watch refresh logs for a day.
 4. Enable the charge button for Sky.
 
+## Revisions after codebase review (2026-10-14, supersede earlier sections)
+
+1. `adapter.refresh(phone)` returns the existing `RawResponse` envelope (no new `RefreshOutcome`
+   type); status mapping stays in `ProviderResponseRule` matching.
+2. `ChargeContext` carries `phone`; signatures are `charge(ctx)` and `check_charge(ctx, provider_ref)`.
+3. Reconcile: each adapter returns its **own** result object plus the template that renders it
+   (existing `sky_reconcile.html` / `layan_reconcile.html` unchanged). It runs synchronously in the
+   management request through the session lock (as today); no generic `ReconcileReport`, no queue,
+   in this sub-project.
+4. `/api/v1/` in this sub-project exposes refresh only (`POST /api/v1/refresh/`,
+   `GET /api/v1/refresh/<job>/`) and adds `scopes` to `ApiToken`. The charge API ships with the
+   store sub-project, which owns the order model it needs.
+5. Backward compatibility: the public JSON endpoint returns `202 + job` only when the client sends
+   `"async": true` (the bundled page does). Other clients (curl, external SMS URL mode) keep a
+   synchronous response: the server enqueues the job and waits for it up to 45 s, then returns the
+   final payload or the `processing` payload with the job id. No provider login ever runs inside
+   the web request.
+6. SMS gateway (Android client read timeout is 20 s): in-process mode enqueues the job and returns
+   immediately; inbound gets new state `refreshing`; the job completion hook builds the reply and
+   queues the `OutboundSms`. Simulate mode stays synchronous.
+7. Dev/tests without `REDIS_URL`: Celery runs eager and Redis calls use an in-process `fakeredis`
+   client, so `runserver` and the test suite need no Redis.
+8. A refresh job already queued/running for the same phone (younger than `refresh_wait_seconds`)
+   is reused instead of enqueueing a second provider call.
+9. `ProviderJob` has no FK to `Sale`; `Sale.charge_job_id` (UUID) links the sale to its job, so
+   `providers` never imports `sales`. Refresh/charge tasks live in the consuming apps
+   (`phone_refresh/tasks.py`, `sales/tasks.py`) and call `providers.service` for provider work.
+10. Sky **charge** and **check_charge** have no documented Sky API yet (only `change-status`
+    refresh is documented). Everything else ships first; the Sky charge adapter is implemented
+    once a capture of a charge operation (and of looking up a task's status) from the Sky Sales
+    portal is provided. Until then Sky does not declare the `charge` capability and the button is
+    hidden.
+
 ## Roadmap (other sub-projects, each with its own spec)
 
 2. System reorganisation & dead-code removal (clear sections: number refresh, sales & accounts,
