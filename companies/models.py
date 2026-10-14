@@ -44,8 +44,9 @@ class Company(models.Model):
             ("aloha", "Aloha"),
         ],
         help_text=_(
-            "Which upstream API runs phone refresh for this company."
-            " Leave empty to match from the company name (legacy)."
+            "Which upstream API runs phone refresh and reconciliation for this company."
+            " Choose it explicitly: if left empty, this company has no phone refresh"
+            " routing and no provider operations."
         ),
     )
     is_active = models.BooleanField(_("active"), default=True)

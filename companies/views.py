@@ -19,7 +19,12 @@ from companies.models import Company, Product, ProductLine
 from companies.query_utils import apply_company_list_ordering
 from core.pagination import paginate_request
 from providers import service as provider_service
-from providers.contracts import Capability, PermanentError, ProviderError
+from providers.contracts import (
+    RECONCILE_NOT_SUPPORTED,
+    Capability,
+    PermanentError,
+    ProviderError,
+)
 from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
 
@@ -81,9 +86,8 @@ def company_detail(request, pk):
 
 def _supports_reconcile(company, provider_key: str) -> bool:
     """Each reconcile page serves only its own provider's companies."""
-    return (
-        (company.phone_refresh_provider or "").strip().lower() == provider_key
-        and provider_service.company_supports(company, Capability.RECONCILE)
+    return provider_service.company_supports(
+        company, Capability.RECONCILE, provider=provider_key
     )
 
 
@@ -120,7 +124,7 @@ def layan_reconcile(request, pk):
                 _("Excel support is not installed (openpyxl). Contact your administrator."),
             )
         except Exception as exc:
-            if isinstance(exc, PermanentError) and str(exc) == "reconcile_not_supported":
+            if isinstance(exc, PermanentError) and str(exc) == RECONCILE_NOT_SUPPORTED:
                 messages.error(
                     request, _("Layan report matching is only available for Layan.")
                 )
@@ -170,7 +174,7 @@ def sky_reconcile(request, pk):
                 _("Sky report processed (%(rows)s rows).") % {"rows": result.row_count},
             )
         except Exception as exc:
-            if isinstance(exc, PermanentError) and str(exc) == "reconcile_not_supported":
+            if isinstance(exc, PermanentError) and str(exc) == RECONCILE_NOT_SUPPORTED:
                 messages.error(request, _("Sky report matching is only available for Sky."))
                 return redirect("companies:company_detail", pk=pk)
             if isinstance(exc, ProviderError):

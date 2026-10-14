@@ -12,6 +12,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from core.pagination import paginate_request
+from providers.contracts import Capability
+from providers.service import company_supports
 from sales.forms import BalanceAdjustmentForm, ManualDepositForm
 from sales.ledger_query_utils import apply_ledger_list_ordering, filter_ledger_queryset
 from sales.models import CompanyBalanceTransaction, Sale
@@ -287,6 +289,12 @@ def render_company_statement(request, company):
             return redirect_resp
 
     ctx = build_company_statement_context(request, company)
+    ctx["supports_layan_reconcile"] = company_supports(
+        company, Capability.RECONCILE, provider="layan"
+    )
+    ctx["supports_sky_reconcile"] = company_supports(
+        company, Capability.RECONCILE, provider="sky"
+    )
 
     if request.headers.get("HX-Request"):
         frag = (request.GET.get("partial") or "").strip()

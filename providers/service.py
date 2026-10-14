@@ -5,6 +5,7 @@ import logging
 import time
 
 from providers.contracts import (
+    RECONCILE_NOT_SUPPORTED,
     Capability,
     ChargeContext,
     ChargeOutcome,
@@ -114,12 +115,18 @@ def check_charge(
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
 
 
-def company_supports(company, capability: Capability) -> bool:
+def company_supports(
+    company, capability: Capability, provider: str | None = None
+) -> bool:
     """True when the company's explicit ``phone_refresh_provider`` has ``capability``.
 
-    Never inspects the company name: routing comes from the field only.
+    ``provider`` additionally requires that exact provider key. Never inspects
+    the company name: routing comes from the field only.
     """
-    adapter_cls = ADAPTERS.get((company.phone_refresh_provider or "").strip().lower())
+    key = (company.phone_refresh_provider or "").strip().lower()
+    if provider is not None and key != provider:
+        return False
+    adapter_cls = ADAPTERS.get(key)
     return adapter_cls is not None and capability in adapter_cls.capabilities
 
 
@@ -135,11 +142,11 @@ def reconcile(
 
     Runs synchronously in the web request (admin-only), so lock waits stay within
     ``budget`` seconds; a Sky ``AuthRequired`` triggers one login and a retry.
-    Raises ``PermanentError("reconcile_not_supported")`` when the company has no
+    Raises ``PermanentError(RECONCILE_NOT_SUPPORTED)`` when the company has no
     provider or its provider cannot reconcile.
     """
     if not company_supports(company, Capability.RECONCILE):
-        raise PermanentError("reconcile_not_supported")
+        raise PermanentError(RECONCILE_NOT_SUPPORTED)
     adapter = get_adapter((company.phone_refresh_provider or "").strip().lower())
     deadline = time.monotonic() + budget
 

@@ -964,8 +964,8 @@ AR: dict[str, str] = {
     "Only phone or shipment numbers already saved in sales can be refreshed. No public-site rate limits apply here.": (
         "يمكن تحديث أرقام الهاتف أو الشحنة المسجّلة في المبيعات فقط. لا تُطبَّق حدود الموقع العام هنا."
     ),
-    "Which upstream API runs phone refresh for this company. Leave empty to match from the company name (legacy).": (
-        "مزوّد API الذي ينفّذ التحديث لهذه الشركة. اتركه فارغاً للمطابقة من اسم الشركة (قديم)."
+    "Which upstream API runs phone refresh and reconciliation for this company. Choose it explicitly: if left empty, this company has no phone refresh routing and no provider operations.": (
+        "مزوّد API الذي ينفّذ تحديث الهاتف والمطابقة لهذه الشركة. اختره صراحةً: إذا تُرك فارغاً فلن يكون لهذه الشركة توجيه لتحديث الهاتف ولا عمليات مزوّد."
     ),
     "English slug used in API responses, e.g. 'refreshed', 'queued'. Lowercase letters, digits, dashes and underscores only.": (
         "رمز إنجليزي في ردود API، مثل refreshed أو queued. أحرف لاتينية صغيرة وأرقام وشرطات وشرطة سفلية فقط."

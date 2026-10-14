@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 05:49+0300\n"
+"POT-Creation-Date: 2026-10-14 06:05+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -392,70 +392,6 @@ msgstr "اتركها شهرياً إلا إذا كانت الباقة عرض ث�
 msgid "e.g. 100 GB"
 msgstr "مثلاً 100 جيجا"
 
-#: companies/layan_reconcile.py:508
-msgid "Pending credit (manual)"
-msgstr "رصيد معلّق (يدوي)"
-
-#: companies/layan_reconcile.py:575
-#: templates/companies/layan_reconcile.html:150
-msgid "In system, not in Layan"
-msgstr "مسجّل بالنظام وغير مسجّل بليان"
-
-#: companies/layan_reconcile.py:597 companies/sky_reconcile.py:541
-msgid "Settlement on disconnected number"
-msgstr "تسوية على رقم مفصول"
-
-#: companies/layan_reconcile.py:636 companies/sky_reconcile.py:576
-#: templates/companies/layan_reconcile.html:159
-#: templates/companies/sky_reconcile.html:145
-msgid "Logged under another supplier"
-msgstr "مسجّل تحت مورد آخر"
-
-#: companies/layan_reconcile.py:656
-#: templates/companies/layan_reconcile.html:139
-msgid "In Layan, not in system"
-msgstr "مسجّل بليان وغير مسجّل بالنظام"
-
-#: companies/layan_reconcile.py:680 companies/layan_reconcile.py:729
-#: companies/sky_reconcile.py:618 companies/sky_reconcile.py:658
-#: templates/companies/layan_reconcile.html:129
-#: templates/companies/sky_reconcile.html:115
-msgid "Matched"
-msgstr "متطابق"
-
-#: companies/layan_reconcile.py:707
-msgid "Sales difference (Layan vs system)"
-msgstr "اختلاف مبيعات (ليان مقابل النظام)"
-
-#: companies/layan_reconcile.py:821
-#, python-format
-msgid ""
-"In Layan for %(amount)s — no matching sale in the system for this period."
-msgstr "في ليان بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
-#: companies/layan_reconcile.py:826
-#, python-format
-msgid "In the system for %(amount)s — not found on the uploaded Layan report."
-msgstr "في النظام بمبلغ %(amount)s — غير موجود في كشف ليان المرفوع."
-#: companies/layan_reconcile.py:831
-#, python-format
-msgid "Charged on Layan (%(layan)s) but logged under %(suppliers)s."
-msgstr "مخصوم في ليان (%(layan)s) لكنه مسجّل تحت %(suppliers)s."
-#: companies/layan_reconcile.py:837
-msgid ""
-"Charge + disconnect settlement on Layan. Review retained amount; it is "
-"included in estimated deficit."
-msgstr "تسوية شحن+فصل في ليان. راجع المبلغ المحفوظ؛ وهو داخل العجز المقدّر."
-#: companies/layan_reconcile.py:844
-#, python-format
-msgid "Layan cost %(layan)s is higher than system %(rd)s by %(gap)s."
-msgstr "تكلفة ليان %(layan)s أعلى من النظام %(rd)s بمقدار %(gap)s."
-#: companies/layan_reconcile.py:852
-#, python-format
-msgid "System cost %(rd)s is higher than Layan %(layan)s by %(gap)s."
-msgstr "تكلفة النظام %(rd)s أعلى من ليان %(layan)s بمقدار %(gap)s."
-#: companies/layan_reconcile.py:860
-msgid "Layan and system costs match within the minimum difference."
-msgstr "تكاليف ليان والنظام متطابقة ضمن الحد الأدنى للفرق."
 #: companies/models.py:13 customers/models.py:15 sales/models.py:12
 #: sms_gateway/models.py:142
 msgid "name"
@@ -488,58 +424,60 @@ msgid "Not set"
 msgstr "غير محدّد"
 #: companies/models.py:47
 msgid ""
-"Which upstream API runs phone refresh for this company. Leave empty to match "
-"from the company name (legacy)."
+"Which upstream API runs phone refresh and reconciliation for this company. "
+"Choose it explicitly: if left empty, this company has no phone refresh "
+"routing and no provider operations."
 msgstr ""
-"مزوّد API الذي ينفّذ التحديث لهذه الشركة. اتركه فارغاً للمطابقة من اسم ا"
-"لشركة (قديم)."
-#: companies/models.py:51 companies/models.py:120 companies/models.py:209
+"مزوّد API الذي ينفّذ تحديث الهاتف والمطابقة لهذه الشركة. اختره صراحةً: إ"
+"ذا تُرك فارغاً فلن يكون لهذه الشركة توجيه لتحديث الهاتف ولا عمليات مزوّد"
+"."
+#: companies/models.py:52 companies/models.py:121 companies/models.py:210
 #: customers/models.py:27 employees/models.py:36 sales/models.py:22
 #: sms_gateway/models.py:151
 msgid "active"
 msgstr "نشط"
-#: companies/models.py:56 companies/models.py:86 sales/models.py:49
+#: companies/models.py:57 companies/models.py:87 sales/models.py:49
 #: sales/models.py:279
 msgid "company"
 msgstr "الشركة"
-#: companies/models.py:57
+#: companies/models.py:58
 msgid "companies"
 msgstr "الشركات"
-#: companies/models.py:88 companies/models.py:136 companies/models.py:173
+#: companies/models.py:89 companies/models.py:137 companies/models.py:174
 #: inventory/models.py:29 inventory/models.py:83 inventory/models.py:160
 msgid "product line"
 msgstr "خط المنتج"
 
-#: companies/models.py:90
+#: companies/models.py:91
 msgid "line icon"
 msgstr "أيقونة الخط"
 
-#: companies/models.py:95
+#: companies/models.py:96
 msgid ""
 "Optional shared icon for this line on the sales screen. If empty, the full "
 "line name is shown."
 msgstr ""
 "أيقونة مشتركة اختيارية لهذا الخط في شاشة المبيعات. إذا تُركت فارغة، يظهر"
 " اسم الخط كاملاً."
-#: companies/models.py:99
+#: companies/models.py:100
 msgid "sort order"
 msgstr "ترتيب العرض"
 
-#: companies/models.py:101
+#: companies/models.py:102
 msgid "estimated unit cost (SIM)"
 msgstr "تكلفة الوحدة التقديرية (شريحة)"
-#: companies/models.py:108
+#: companies/models.py:109
 msgid ""
 "Optional. Added to cost and deducted from profit on New SIM sales; also used "
 "for SIM inventory valuation."
 msgstr ""
 "اختياري. تُضاف إلى التكلفة وتُخصم من الربح عند بيع شريحة جديدة؛ وتُستخدم"
 " أيضاً لحساب قيمة مخزون الشرائح."
-#: companies/models.py:113
+#: companies/models.py:114
 msgid "allow partial-day sales"
 msgstr "السماح ببيع أيام جزئية"
 
-#: companies/models.py:116
+#: companies/models.py:117
 msgid ""
 "If enabled, employees can enter fewer days than the package period for "
 "monthly (30-day) packages on this line. 3-month packages stay fixed."
@@ -547,11 +485,11 @@ msgstr ""
 "إن فُعّل، يمكن للموظف إدخال أيام أقل من مدة الباقة للباقات الشهرية (30 يوماً) "
 "ضمن هذا الخط. باقات الثلاثة أشهر تبقى ثابتة."
 
-#: companies/models.py:127
+#: companies/models.py:128
 msgid "default package for sales"
 msgstr "الباقة الافتراضية للمبيعات"
 
-#: companies/models.py:129
+#: companies/models.py:130
 msgid ""
 "If this line has several packages, employees see this one selected first; "
 "they can still pick another."
@@ -559,42 +497,42 @@ msgstr ""
 "إذا كان لهذا الخط أكثر من باقة، يرى الموظف هذه الباقة محدّدة أولاً، ويستطيع "
 "اختيار غيرها."
 
-#: companies/models.py:137
+#: companies/models.py:138
 msgid "product lines"
 msgstr "خطوط المنتجات"
 
-#: companies/models.py:154
+#: companies/models.py:155
 msgid "The default package must belong to this product line."
 msgstr "يجب أن تنتمي الباقة الافتراضية لخط المنتج هذا."
 
-#: companies/models.py:176
+#: companies/models.py:177
 msgid "package"
 msgstr "باقة"
 
-#: companies/models.py:179
+#: companies/models.py:180
 msgid ""
 "Examples: \"100 GB\", \"200 GB\". Leave empty if the line has only one "
 "package."
 msgstr ""
 "أمثلة: «100 جيجا»، «200 جيجا». اتركه فارغاً إذا كان للخط باقة واحدة فقط."
 
-#: companies/models.py:182
+#: companies/models.py:183
 msgid "package icon"
 msgstr "أيقونة الباقة"
 
-#: companies/models.py:186
+#: companies/models.py:187
 msgid "Unused. The product-line icon is shown for all packages."
 msgstr "غير مستخدمة. تُعرض أيقونة خط المنتج لكل الباقات."
-#: companies/models.py:189
+#: companies/models.py:190
 msgid "cost price"
 msgstr "سعر التكلفة"
-#: companies/models.py:195
+#: companies/models.py:196
 msgid "default sell price"
 msgstr "سعر البيع الافتراضي"
-#: companies/models.py:201
+#: companies/models.py:202
 msgid "base days"
 msgstr "أيام الأساس"
-#: companies/models.py:205
+#: companies/models.py:206
 msgid ""
 "Defaults to monthly (30 days). Set 90 only for 3-month offers. Partial-day "
 "sales (if enabled on the line) apply only to monthly packages."
@@ -602,181 +540,136 @@ msgstr ""
 "الافتراضي شهري (30 يوماً). اختر 90 فقط لعروض الثلاثة أشهر. بيع الأيام الجزئية "
 "(إن فُعّل على الخط) ينطبق فقط على الباقات الشهرية."
 
-#: companies/models.py:214
+#: companies/models.py:215
 msgid "product package"
 msgstr "باقة المنتج"
 
-#: companies/models.py:215
+#: companies/models.py:216
 msgid "product packages"
 msgstr "باقات المنتجات"
 
-#: companies/sky_reconcile.py:256
-msgid "before + delta ≠ after"
-msgstr ""
-
-#: companies/sky_reconcile.py:336
-#, python-format
-msgid "In Sky for %(amount)s — no matching sale in the system for this period."
-msgstr "في سكاي بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
-#: companies/sky_reconcile.py:341
-#, python-format
-msgid "In the system for %(amount)s — not found on the Sky balance report."
-msgstr "في النظام بمبلغ %(amount)s — غير موجود في تقرير رصيد سكاي."
-#: companies/sky_reconcile.py:346
-#, python-format
-msgid "Charged on Sky (%(sky)s) but logged under %(suppliers)s."
-msgstr "مخصوم في سكاي (%(sky)s) لكنه مسجّل تحت %(suppliers)s."
-#: companies/sky_reconcile.py:352
-msgid ""
-"Charge + disconnect settlement on Sky. Informational only — not included in "
-"estimated deficit."
-msgstr "تسوية شحن+فصل في سكاي. للمعلومة فقط — لا تدخل في العجز المقدّر."
-#: companies/sky_reconcile.py:359
-#, python-format
-msgid "Sky cost %(sky)s is higher than system %(rd)s by %(gap)s."
-msgstr "تكلفة سكاي %(sky)s أعلى من النظام %(rd)s بمقدار %(gap)s."
-#: companies/sky_reconcile.py:368
-#, python-format
-msgid "System cost %(rd)s is higher than Sky %(sky)s by %(gap)s."
-msgstr "تكلفة النظام %(rd)s أعلى من سكاي %(sky)s بمقدار %(gap)s."
-#: companies/sky_reconcile.py:377
-msgid "Often eSIM fee or package cost mismatch — compare lines below."
-msgstr "غالباً فرق رسوم eSIM أو سعر الباقة — قارن الأسطر بالأسفل."
-#: companies/sky_reconcile.py:381
-msgid "Sky and system costs match within the minimum difference."
-msgstr "تكاليف سكاي والنظام متطابقة ضمن الحد الأدنى للفرق."
-#: companies/sky_reconcile.py:520 templates/companies/sky_reconcile.html:136
-msgid "In system, not in Sky"
-msgstr "في النظام وغير موجود في سكاي"
-#: companies/sky_reconcile.py:596 templates/companies/sky_reconcile.html:125
-msgid "In Sky, not in system"
-msgstr "في سكاي وغير موجود في النظام"
-#: companies/sky_reconcile.py:638
-msgid "Amount mismatch"
-msgstr ""
-
-#: companies/statement.py:170
+#: companies/statement.py:172
 msgid "Deposit recorded."
 msgstr "تم تسجيل الإيداع."
-#: companies/statement.py:179 customers/views/actions.py:79
+#: companies/statement.py:181 customers/views/actions.py:79
 #: employees/views.py:243
 msgid "Adjustment recorded."
 msgstr "تم تسجيل التسوية."
-#: companies/views.py:60 templates/companies/company_list.html:6
+#: companies/views.py:57 templates/companies/company_list.html:6
 #: templates/partials/management_nav.html:111
 msgid "Companies"
 msgstr "الشركات"
-#: companies/views.py:75
+#: companies/views.py:72
 msgid "Company saved."
 msgstr "تم حفظ الشركة."
-#: companies/views.py:80 templates/companies/company_list.html:9
+#: companies/views.py:77 templates/companies/company_list.html:9
 msgid "New company"
 msgstr "شركة جديدة"
-#: companies/views.py:94
+#: companies/views.py:98 companies/views.py:129
 msgid "Layan report matching is only available for Layan."
 msgstr "مطابقة كشف ليان متاحة لمورد ليان فقط."
 
-#: companies/views.py:116
+#: companies/views.py:119
 #, python-format
 msgid "Report processed (%(rows)s rows)."
 msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
 
-#: companies/views.py:121
+#: companies/views.py:124
 msgid "Excel support is not installed (openpyxl). Contact your administrator."
 msgstr "دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
 
-#: companies/views.py:126
+#: companies/views.py:134
 #, python-format
 msgid "Could not read the report: %(error)s"
 msgstr "تعذّر قراءة الكشف: %(error)s"
 
-#: companies/views.py:136 templates/companies/company_detail.html:12
+#: companies/views.py:144 templates/companies/company_detail.html:12
 #: templates/companies/layan_reconcile.html:6
 msgid "Layan report matching"
 msgstr "مطابقة كشف ليان"
 
-#: companies/views.py:145
+#: companies/views.py:153 companies/views.py:178
 msgid "Sky report matching is only available for Sky."
 msgstr "مطابقة كشف سكاي متاحة لشركة سكاي فقط."
-#: companies/views.py:167
+#: companies/views.py:174
 #, python-format
 msgid "Sky report processed (%(rows)s rows)."
 msgstr "تمت معالجة تقرير سكاي (%(rows)s صف)."
-#: companies/views.py:175
+#: companies/views.py:183
 #, python-format
 msgid "Could not fetch Sky report: %(error)s"
 msgstr "تعذّر جلب تقرير سكاي: %(error)s"
-#: companies/views.py:180
+#: companies/views.py:188
 #, python-format
 msgid "Could not run Sky matching: %(error)s"
 msgstr "تعذّر تشغيل مطابقة سكاي: %(error)s"
-#: companies/views.py:190 templates/companies/company_detail.html:15
+#: companies/views.py:198 templates/companies/company_detail.html:15
 #: templates/companies/sky_reconcile.html:6
 msgid "Sky report matching"
 msgstr "مطابقة كشف سكاي"
-#: companies/views.py:201
+#: companies/views.py:209
 msgid "Company updated."
 msgstr "تم تحديث الشركة."
-#: companies/views.py:206
+#: companies/views.py:214
 msgid "Edit company"
 msgstr "تعديل الشركة"
-#: companies/views.py:219
+#: companies/views.py:227
 msgid "Cannot delete a company that has sales. Cancel or archive sales first."
 msgstr "لا يمكن حذف شركة لها مبيعات. ألغِ المبيعات أو أرشفها أولاً."
 
-#: companies/views.py:224
+#: companies/views.py:232
 #, python-format
 msgid "Company “%(name)s” was deleted."
 msgstr "تم حذف الشركة «%(name)s»."
 
-#: companies/views.py:295 templates/companies/product_list.html:6
+#: companies/views.py:303 templates/companies/product_list.html:6
 #: templates/partials/management_nav.html:115
 msgid "Products"
 msgstr "المنتجات"
-#: companies/views.py:305
+#: companies/views.py:313
 msgid "Product line saved. Add one or more packages below."
 msgstr "تم حفظ خط المنتج. أضف باقة أو أكثر بالأسفل."
 
-#: companies/views.py:310 templates/companies/product_list.html:9
+#: companies/views.py:318 templates/companies/product_list.html:9
 msgid "New product line"
 msgstr "خط منتج جديد"
 
-#: companies/views.py:320
+#: companies/views.py:328
 msgid "Product line updated."
 msgstr "تم تحديث خط المنتج."
 
-#: companies/views.py:325
+#: companies/views.py:333
 msgid "Edit product line"
 msgstr "تعديل خط المنتج"
 
-#: companies/views.py:337
+#: companies/views.py:345
 msgid "Package saved."
 msgstr "تم حفظ الباقة."
 
-#: companies/views.py:342
+#: companies/views.py:350
 msgid "New package"
 msgstr "باقة جديدة"
 
-#: companies/views.py:352
+#: companies/views.py:360
 msgid "Package updated."
 msgstr "تم تحديث الباقة."
 
-#: companies/views.py:357
+#: companies/views.py:365
 msgid "Edit package"
 msgstr "تعديل الباقة"
 
-#: companies/views.py:370
+#: companies/views.py:378
 msgid ""
 "Cannot delete this product line because it has sales recorded for one or "
 "more packages."
 msgstr "لا يمكن حذف خط المنتج هذا لوجود مبيعات مسجّلة على باقة أو أكثر منه."
 
-#: companies/views.py:375
+#: companies/views.py:383
 #, python-format
 msgid "Product line was deleted: %(label)s"
 msgstr "تم حذف خط المنتج: %(label)s"
 
-#: companies/views.py:389
+#: companies/views.py:397
 msgid ""
 "Cannot delete this package because it has sales recorded. Archive it instead "
 "to hide it from new sales."
@@ -784,16 +677,16 @@ msgstr ""
 "لا يمكن حذف هذه الباقة لأن لها مبيعات مسجّلة. أرشفها بدلاً من ذلك لإخفائها من "
 "المبيعات الجديدة."
 
-#: companies/views.py:396
+#: companies/views.py:404
 #, python-format
 msgid "Package was deleted: %(label)s"
 msgstr "تم حذف الباقة: %(label)s"
 
-#: companies/views.py:412
+#: companies/views.py:420
 msgid "This package is already archived."
 msgstr "هذه الباقة مؤرشفة مسبقاً."
 
-#: companies/views.py:420
+#: companies/views.py:428
 #, python-format
 msgid ""
 "Package archived: %(label)s. It is hidden from new sales; past sales are "
@@ -802,11 +695,11 @@ msgstr ""
 "تم أرشفة الباقة: %(label)s. أصبحت مخفية من المبيعات الجديدة؛ المبيعات "
 "السابقة دون تغيير."
 
-#: companies/views.py:435
+#: companies/views.py:443
 msgid "This package is already active."
 msgstr "هذه الباقة نشطة مسبقاً."
 
-#: companies/views.py:441
+#: companies/views.py:449
 #, python-format
 msgid "Package restored: %(label)s"
 msgstr "تمت استعادة الباقة: %(label)s"
@@ -2262,6 +2155,121 @@ msgstr "sha256 للرمز الخام؛ تُعرض القيمة الأصلية م
 #: phone_refresh/models.py:397
 msgid "First 8 chars of the raw token, for identification in lists."
 msgstr "أول 8 أحرف من الرمز الخام للتعرّف في القوائم."
+#: providers/adapters/layan/reconcile.py:319
+msgid "Pending credit (manual)"
+msgstr "رصيد معلّق (يدوي)"
+
+#: providers/adapters/layan/reconcile.py:386
+#: templates/companies/layan_reconcile.html:150
+msgid "In system, not in Layan"
+msgstr "مسجّل بالنظام وغير مسجّل بليان"
+
+#: providers/adapters/layan/reconcile.py:408
+#: providers/adapters/sky/reconcile.py:534
+msgid "Settlement on disconnected number"
+msgstr "تسوية على رقم مفصول"
+
+#: providers/adapters/layan/reconcile.py:447
+#: providers/adapters/sky/reconcile.py:569
+#: templates/companies/layan_reconcile.html:159
+#: templates/companies/sky_reconcile.html:145
+msgid "Logged under another supplier"
+msgstr "مسجّل تحت مورد آخر"
+
+#: providers/adapters/layan/reconcile.py:467
+#: templates/companies/layan_reconcile.html:139
+msgid "In Layan, not in system"
+msgstr "مسجّل بليان وغير مسجّل بالنظام"
+
+#: providers/adapters/layan/reconcile.py:491
+#: providers/adapters/layan/reconcile.py:540
+#: providers/adapters/sky/reconcile.py:611
+#: providers/adapters/sky/reconcile.py:651
+#: templates/companies/layan_reconcile.html:129
+#: templates/companies/sky_reconcile.html:115
+msgid "Matched"
+msgstr "متطابق"
+
+#: providers/adapters/layan/reconcile.py:518
+msgid "Sales difference (Layan vs system)"
+msgstr "اختلاف مبيعات (ليان مقابل النظام)"
+
+#: providers/adapters/layan/reconcile.py:632
+#, python-format
+msgid ""
+"In Layan for %(amount)s — no matching sale in the system for this period."
+msgstr "في ليان بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
+#: providers/adapters/layan/reconcile.py:637
+#, python-format
+msgid "In the system for %(amount)s — not found on the uploaded Layan report."
+msgstr "في النظام بمبلغ %(amount)s — غير موجود في كشف ليان المرفوع."
+#: providers/adapters/layan/reconcile.py:642
+#, python-format
+msgid "Charged on Layan (%(layan)s) but logged under %(suppliers)s."
+msgstr "مخصوم في ليان (%(layan)s) لكنه مسجّل تحت %(suppliers)s."
+#: providers/adapters/layan/reconcile.py:648
+msgid ""
+"Charge + disconnect settlement on Layan. Review retained amount; it is "
+"included in estimated deficit."
+msgstr "تسوية شحن+فصل في ليان. راجع المبلغ المحفوظ؛ وهو داخل العجز المقدّر."
+#: providers/adapters/layan/reconcile.py:655
+#, python-format
+msgid "Layan cost %(layan)s is higher than system %(rd)s by %(gap)s."
+msgstr "تكلفة ليان %(layan)s أعلى من النظام %(rd)s بمقدار %(gap)s."
+#: providers/adapters/layan/reconcile.py:663
+#, python-format
+msgid "System cost %(rd)s is higher than Layan %(layan)s by %(gap)s."
+msgstr "تكلفة النظام %(rd)s أعلى من ليان %(layan)s بمقدار %(gap)s."
+#: providers/adapters/layan/reconcile.py:671
+msgid "Layan and system costs match within the minimum difference."
+msgstr "تكاليف ليان والنظام متطابقة ضمن الحد الأدنى للفرق."
+#: providers/adapters/sky/reconcile.py:249
+msgid "before + delta ≠ after"
+msgstr ""
+
+#: providers/adapters/sky/reconcile.py:329
+#, python-format
+msgid "In Sky for %(amount)s — no matching sale in the system for this period."
+msgstr "في سكاي بمبلغ %(amount)s — لا مبيع مطابق في النظام لهذه الفترة."
+#: providers/adapters/sky/reconcile.py:334
+#, python-format
+msgid "In the system for %(amount)s — not found on the Sky balance report."
+msgstr "في النظام بمبلغ %(amount)s — غير موجود في تقرير رصيد سكاي."
+#: providers/adapters/sky/reconcile.py:339
+#, python-format
+msgid "Charged on Sky (%(sky)s) but logged under %(suppliers)s."
+msgstr "مخصوم في سكاي (%(sky)s) لكنه مسجّل تحت %(suppliers)s."
+#: providers/adapters/sky/reconcile.py:345
+msgid ""
+"Charge + disconnect settlement on Sky. Informational only — not included in "
+"estimated deficit."
+msgstr "تسوية شحن+فصل في سكاي. للمعلومة فقط — لا تدخل في العجز المقدّر."
+#: providers/adapters/sky/reconcile.py:352
+#, python-format
+msgid "Sky cost %(sky)s is higher than system %(rd)s by %(gap)s."
+msgstr "تكلفة سكاي %(sky)s أعلى من النظام %(rd)s بمقدار %(gap)s."
+#: providers/adapters/sky/reconcile.py:361
+#, python-format
+msgid "System cost %(rd)s is higher than Sky %(sky)s by %(gap)s."
+msgstr "تكلفة النظام %(rd)s أعلى من سكاي %(sky)s بمقدار %(gap)s."
+#: providers/adapters/sky/reconcile.py:370
+msgid "Often eSIM fee or package cost mismatch — compare lines below."
+msgstr "غالباً فرق رسوم eSIM أو سعر الباقة — قارن الأسطر بالأسفل."
+#: providers/adapters/sky/reconcile.py:374
+msgid "Sky and system costs match within the minimum difference."
+msgstr "تكاليف سكاي والنظام متطابقة ضمن الحد الأدنى للفرق."
+#: providers/adapters/sky/reconcile.py:513
+#: templates/companies/sky_reconcile.html:136
+msgid "In system, not in Sky"
+msgstr "في النظام وغير موجود في سكاي"
+#: providers/adapters/sky/reconcile.py:589
+#: templates/companies/sky_reconcile.html:125
+msgid "In Sky, not in system"
+msgstr "في سكاي وغير موجود في النظام"
+#: providers/adapters/sky/reconcile.py:631
+msgid "Amount mismatch"
+msgstr ""
+
 #: reports/forms.py:13 templates/reports/partials/stale_phone_sim_cell.html:31
 #: templates/reports/partials/stale_phone_sim_cell.html:34
 msgid "ICCID / SIM"
@@ -5970,6 +5978,13 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid ""
+#~ "Which upstream API runs phone refresh for this company. Leave empty to "
+#~ "match from the company name (legacy)."
+#~ msgstr ""
+#~ "مزوّد API الذي ينفّذ التحديث لهذه الشركة. اتركه فارغاً للمطابقة من اسم "
+#~ "الشركة (قديم)."
 
 #~ msgid "Edit number"
 #~ msgstr "تعديل الرقم"

@@ -23,6 +23,10 @@ class RawResponse:
     html_form_detected: bool = False
 
 
+# ``PermanentError`` message when a company's provider cannot reconcile.
+RECONCILE_NOT_SUPPORTED = "reconcile_not_supported"
+
+
 class Capability(str, Enum):
     REFRESH = "refresh"
     CHARGE = "charge"
