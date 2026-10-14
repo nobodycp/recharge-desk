@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 06:36+0300\n"
+"POT-Creation-Date: 2026-10-14 06:39+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2287,7 +2287,7 @@ msgstr "ملاحظة…"
 #: templates/reports/partials/stale_phone_sim_cell.html:24
 msgid "Number / reference"
 msgstr "الرقم / المرجع"
-#: reports/forms.py:62 reports/stale_phones.py:376
+#: reports/forms.py:62 reports/stale_phones.py:372
 msgid "Enter a phone number or reference."
 msgstr "أدخل رقم هاتف أو مرجعاً."
 #: reports/forms.py:76
@@ -2415,16 +2415,15 @@ msgstr "متابعة خط الهاتف"
 #: reports/stale_phones.py:339
 msgid "Invalid phone number."
 msgstr "رقم الهاتف غير صالح."
-#: reports/stale_phones.py:385
+#: reports/stale_phones.py:381
 msgid "No sales found for this number."
 msgstr "لا توجد مبيعات لهذا الرقم."
-#: reports/stale_phones.py:396
+#: reports/stale_phones.py:392
 msgid "Another line already uses this number."
 msgstr "رقم آخر يستخدم هذا الرقم مسبقاً."
-#: reports/stale_phones.py:408
-msgid ""
-"This number's sales are still being charged by the provider; try again later."
-msgstr "ما زال المزوّد يشحن مبيعات هذا الرقم؛ حاول لاحقاً."
+#: reports/stale_phones.py:405
+msgid "This number has a charge still in progress; try again after it settles."
+msgstr "لهذا الرقم شحن ما زال قيد التنفيذ؛ حاول مجدداً بعد حسمه."
 #: reports/views.py:35
 msgid "Today's sales"
 msgstr "مبيعات اليوم"
@@ -2524,38 +2523,34 @@ msgstr "أداء الموظفين"
 #: templates/reports/sales_report.html:5
 msgid "Sales report"
 msgstr "تقرير المبيعات"
-#: reports/views_stale_phones.py:34
-msgid ""
-"Sales still being charged by the provider kept the old number: %(count)s."
-msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
-#: reports/views_stale_phones.py:183 templates/partials/management_nav.html:90
+#: reports/views_stale_phones.py:177 templates/partials/management_nav.html:90
 #: templates/reports/phone_lines_report.html:5
 msgid "Line statement"
 msgstr "بيان الأرقام"
-#: reports/views_stale_phones.py:265 reports/views_stale_phones.py:348
+#: reports/views_stale_phones.py:259 reports/views_stale_phones.py:340
 msgid ""
 "Line updated. Disconnect countdown restarted from today (virtual 1-day "
 "renew)."
 msgstr ""
 "تم تحديث الخط. أُعيد عد أيام الخروج من الوكالة من اليوم (تجديد يوم افترا"
 "ضي)."
-#: reports/views_stale_phones.py:273 templates/accounts/login.html:60
+#: reports/views_stale_phones.py:265 templates/accounts/login.html:60
 msgid "Please correct the errors below."
 msgstr "يرجى تصحيح الأخطاء أدناه."
-#: reports/views_stale_phones.py:289 templates/companies/product_list.html:173
+#: reports/views_stale_phones.py:281 templates/companies/product_list.html:173
 #: templates/reports/stale_phone_edit.html:5
 msgid "Edit line"
 msgstr "تعديل الخط"
-#: reports/views_stale_phones.py:318
+#: reports/views_stale_phones.py:310
 msgid "Could not save."
 msgstr "تعذّر الحفظ."
-#: reports/views_stale_phones.py:352
+#: reports/views_stale_phones.py:344
 msgid "Saved."
 msgstr "تم الحفظ."
-#: reports/views_stale_phones.py:384
+#: reports/views_stale_phones.py:369
 msgid "Number removed from the line statement. Sale history is kept."
 msgstr "أُزيل الرقم من بيان الأرقام. سجل المبيعات محفوظ."
-#: reports/views_stale_phones.py:421
+#: reports/views_stale_phones.py:406
 msgid ""
 "Renewed as a 1-day charge — the line is no longer marked as left the agency."
 msgstr "تم التجديد كشحن يوم — الرقم لم يعد معلماً كخارج من الوكالة."
@@ -6070,6 +6065,10 @@ msgstr ""
 #: templates/sales/sale_edit.html:57
 msgid "Cost snapshot:"
 msgstr "لقطة التكلفة:"
+
+#~ msgid ""
+#~ "Sales still being charged by the provider kept the old number: %(count)s."
+#~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
 
 #~ msgid ""
 #~ "Which upstream API runs phone refresh for this company. Leave empty to "

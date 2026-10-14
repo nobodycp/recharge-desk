@@ -514,28 +514,35 @@ class GuardTests(ChargingTestBase):
         )
         self.assertContains(response, "charged through the provider")
 
-    def test_phone_line_rename_skips_open_charge_sales(self):
+    def test_phone_line_rename_refused_while_any_charge_is_open(self):
+        from reports.models import PhoneLineTracking
         from reports.stale_phones import rename_phone_line
 
         open_sale = self.unverified()
         self.use()
         done_sale = self.charge("t-done")
-        result = rename_phone_line(old_key="0599123456", new_reference="0501234567")
+        PhoneLineTracking.objects.create(reference_key="0599123456", notes="old")
+        with self.assertRaisesMessage(ValueError, "charge still in progress"):
+            rename_phone_line(old_key="0599123456", new_reference="0501234567", notes="new")
         open_sale.refresh_from_db()
         done_sale.refresh_from_db()
         self.assertEqual(open_sale.reference_number, "0599123456")
-        self.assertEqual(done_sale.reference_number, "0501234567")
-        self.assertEqual(result.ref_key, "0501234567")
-        self.assertEqual(result.skipped_open_charges, 1)
+        self.assertEqual(done_sale.reference_number, "0599123456")
+        self.assertEqual(
+            list(PhoneLineTracking.objects.values_list("reference_key", "notes")),
+            [("0599123456", "old")],
+        )
 
-    def test_phone_line_rename_of_only_open_charge_sales_is_rejected(self):
+    def test_phone_line_rename_allowed_once_charge_settled(self):
         from reports.stale_phones import rename_phone_line
 
-        sale = self.unverified()
-        with self.assertRaises(ValueError):
-            rename_phone_line(old_key="0599123456", new_reference="0501234567")
+        sale = self.charge()
+        self.assertEqual(
+            rename_phone_line(old_key="0599123456", new_reference="0501234567"),
+            "0501234567",
+        )
         sale.refresh_from_db()
-        self.assertEqual(sale.reference_number, "0599123456")
+        self.assertEqual(sale.reference_number, "0501234567")
 
 
 class ManualResolveTests(ChargingTestBase):

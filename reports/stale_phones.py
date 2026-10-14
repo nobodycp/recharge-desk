@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any, NamedTuple
+from typing import Any
 
 from django.db import transaction
 from django.db.models import Max
@@ -350,11 +350,6 @@ def dismiss_phone_line(*, ref_key: str, display_reference: str = "") -> PhoneLin
     return meta
 
 
-class RenameResult(NamedTuple):
-    ref_key: str
-    skipped_open_charges: int
-
-
 @transaction.atomic
 def rename_phone_line(
     *,
@@ -363,11 +358,12 @@ def rename_phone_line(
     sim_identifier: str = "",
     notes: str = "",
     reset_countdown: bool = True,
-) -> RenameResult:
+) -> str:
     """Rename a tracked phone across sales + tracking; optionally reset disconnect clock.
 
-    Sales whose provider charge is still open keep their number (it is what
-    was sent to the provider); ``skipped_open_charges`` counts them.
+    Refused (``ValueError``) while any of the number's sales has an open
+    provider charge, since the charge was sent for the current number.
+    Returns the new normalized ``ref_key``.
     """
     old = normalize_reference_key(old_key)
     new_display = (new_reference or "").strip()
@@ -395,19 +391,21 @@ def rename_phone_line(
         if conflict:
             raise ValueError(_("Another line already uses this number."))
 
-    open_charge_ids = set(
+    open_charge = (
         Sale.objects.filter(
             pk__in=sale_ids,
             entry_mode=Sale.EntryMode.AUTO_CHARGE,
             charge_status__in=(Sale.ChargeStatus.PROCESSING, Sale.ChargeStatus.UNVERIFIED),
-        ).values_list("pk", flat=True)
-    )
-    renamable_ids = [pk for pk in sale_ids if pk not in open_charge_ids]
-    if not renamable_ids and new != old:
-        raise ValueError(
-            _("This number's sales are still being charged by the provider; try again later.")
         )
-    Sale.objects.filter(pk__in=renamable_ids).update(reference_number=new_display)
+        .exclude(reference_number=new_display)
+        .exists()
+    )
+    if open_charge:
+        raise ValueError(
+            _("This number has a charge still in progress; try again after it settles.")
+        )
+
+    Sale.objects.filter(pk__in=sale_ids).update(reference_number=new_display)
 
     now = timezone.now() if reset_countdown else None
     old_meta = PhoneLineTracking.objects.filter(reference_key=old).first()
@@ -434,7 +432,7 @@ def rename_phone_line(
         PhoneLineTracking.objects.update_or_create(
             reference_key=new, defaults=defaults
         )
-    return RenameResult(ref_key=new, skipped_open_charges=len(open_charge_ids))
+    return new
 
 
 _STATUS_SORT_ORDER = {
