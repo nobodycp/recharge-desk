@@ -4,9 +4,9 @@ from pathlib import Path
 from django.conf import settings
 from django.test import SimpleTestCase
 
-CSS = (Path(settings.BASE_DIR) / "static" / "css" / "design-system.css").read_text(
-    encoding="utf-8"
-)
+CSS_DIR = Path(settings.BASE_DIR) / "static" / "css"
+CSS = (CSS_DIR / "design-system.css").read_text(encoding="utf-8")
+HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 
 
 def _block(css, selector):
@@ -61,3 +61,16 @@ class PearlTokenTests(SimpleTestCase):
     def test_old_font_families_gone(self):
         self.assertNotIn('"Cairo"', CSS)
         self.assertNotRegex(CSS, r'"Inter"')
+
+    def test_no_hex_outside_token_blocks(self):
+        self.assertIn("/* @end-tokens */", CSS)
+        body = CSS.split("/* @end-tokens */", 1)[1]
+        offenders = [l for l in body.splitlines() if HEX.search(l)]
+        self.assertEqual(
+            offenders, [], "Use Pearl tokens, not raw hex, below the token blocks"
+        )
+
+    def test_page_css_has_no_hex(self):
+        for f in ("app.css", "number-check.css"):
+            text = (CSS_DIR / f).read_text(encoding="utf-8")
+            self.assertEqual([l for l in text.splitlines() if HEX.search(l)], [], f)

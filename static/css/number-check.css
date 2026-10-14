@@ -24,17 +24,22 @@
   height: 1.5rem;
   border-radius: 50%;
   background: var(--rd-danger);
-  color: #fff;
+  color: var(--rd-on-danger);
   font-weight: 700;
   line-height: 1;
 }
 
 /* ---- card ---------------------------------------------------------------- */
 
+/* The hero is a dark plate in both themes: ink in light, surface-2 in dark.
+   Status tones on it therefore use the "on dark" variant of each theme. */
 .rd-ncheck {
-  --nc-a: #312e81;
-  --nc-b: #0e7490;
-  --nc-glow: rgba(56, 189, 248, 0.35);
+  --nc-hero-bg: var(--rd-primary-bg);
+  --nc-hero-fg: var(--rd-primary-fg);
+  --nc-glow: color-mix(in srgb, var(--rd-accent) 30%, transparent);
+  --nc-ok: var(--rd-success-on-ink);
+  --nc-warn: var(--rd-warning-on-ink);
+  --nc-danger: var(--rd-danger-on-ink);
   position: relative;
   overflow: hidden;
   border-radius: var(--rd-radius-xl);
@@ -46,13 +51,13 @@
   animation: rd-ncheck-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.rd-ncheck--cellcom { --nc-a: #3b0764; --nc-b: #7c3aed; --nc-glow: rgba(196, 181, 253, 0.4); }
-.rd-ncheck--pelephone { --nc-a: #172554; --nc-b: #2563eb; --nc-glow: rgba(147, 197, 253, 0.4); }
-.rd-ncheck--partner { --nc-a: #042f2e; --nc-b: #0d9488; --nc-glow: rgba(94, 234, 212, 0.35); }
-.rd-ncheck--hot { --nc-a: #4c0519; --nc-b: #e11d48; --nc-glow: rgba(253, 164, 175, 0.4); }
-.rd-ncheck--golan { --nc-a: #431407; --nc-b: #ea580c; --nc-glow: rgba(253, 186, 116, 0.4); }
-.rd-ncheck--jawwal { --nc-a: #052e16; --nc-b: #16a34a; --nc-glow: rgba(134, 239, 172, 0.35); }
-.rd-ncheck--ooredoo { --nc-a: #450a0a; --nc-b: #dc2626; --nc-glow: rgba(252, 165, 165, 0.4); }
+[data-bs-theme="dark"] .rd-ncheck {
+  --nc-hero-bg: var(--rd-surface-2);
+  --nc-hero-fg: var(--rd-ink);
+  --nc-ok: var(--rd-success);
+  --nc-warn: var(--rd-warning);
+  --nc-danger: var(--rd-danger);
+}
 
 .rd-ncheck__icon {
   flex: none;
@@ -71,11 +76,11 @@
   position: relative;
   isolation: isolate;
   padding: 1rem 1.1rem 1.15rem;
-  color: #fff;
+  color: var(--nc-hero-fg);
   background:
     radial-gradient(110% 130% at 0% 0%, var(--nc-glow) 0%, transparent 55%),
-    radial-gradient(80% 120% at 100% 100%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
-    linear-gradient(135deg, var(--nc-a) 0%, var(--nc-b) 100%);
+    radial-gradient(80% 120% at 100% 100%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
+    var(--nc-hero-bg);
 }
 
 .rd-ncheck__hero::after {
@@ -89,7 +94,7 @@
     rgba(255, 255, 255, 0.045) 0 1px,
     transparent 1px 13px
   );
-  mask-image: linear-gradient(to left, #000, transparent 75%);
+  mask-image: linear-gradient(to left, black, transparent 75%);
 }
 
 .rd-ncheck__hero-top {
@@ -128,12 +133,12 @@
 }
 
 .rd-ncheck__status.is-ok .rd-ncheck__dot {
-  background: #4ade80;
-  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+  background: var(--nc-ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--nc-ok) 70%, transparent);
   animation: rd-ncheck-pulse 2s ease-out infinite;
 }
 
-.rd-ncheck__status.is-warn .rd-ncheck__dot { background: #fbbf24; }
+.rd-ncheck__status.is-warn .rd-ncheck__dot { background: var(--nc-warn); }
 
 /* SIM contact plate, purely decorative. */
 .rd-ncheck__chip {
@@ -142,20 +147,27 @@
   width: 2.4rem;
   height: 1.8rem;
   border-radius: 0.4rem;
-  background: linear-gradient(135deg, #fef3c7 0%, #e0b84a 45%, #f8d77a 70%, #c9971f 100%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--nc-hero-fg) 92%, var(--nc-hero-bg)) 0%,
+    color-mix(in srgb, var(--nc-hero-fg) 62%, var(--nc-hero-bg)) 45%,
+    color-mix(in srgb, var(--nc-hero-fg) 82%, var(--nc-hero-bg)) 70%,
+    color-mix(in srgb, var(--nc-hero-fg) 52%, var(--nc-hero-bg)) 100%
+  );
   box-shadow:
-    inset 0 0 0 1px rgba(120, 80, 0, 0.35),
+    inset 0 0 0 1px color-mix(in srgb, var(--nc-hero-bg) 35%, transparent),
     0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .rd-ncheck__chip::before {
+  --nc-chip-line: color-mix(in srgb, var(--nc-hero-bg) 40%, transparent);
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, transparent 31%, rgba(110, 70, 0, 0.4) 31% 34%, transparent 34% 66%, rgba(110, 70, 0, 0.4) 66% 69%, transparent 69%),
-    linear-gradient(0deg, transparent 46%, rgba(110, 70, 0, 0.4) 46% 54%, transparent 54%);
+    linear-gradient(90deg, transparent 31%, var(--nc-chip-line) 31% 34%, transparent 34% 66%, var(--nc-chip-line) 66% 69%, transparent 69%),
+    linear-gradient(0deg, transparent 46%, var(--nc-chip-line) 46% 54%, transparent 54%);
 }
 
 .rd-ncheck__hero-main {
@@ -234,11 +246,11 @@
   direction: ltr;
 }
 
-.rd-ncheck__count.is-warn .rd-ncheck__count-num { color: #fde68a; }
+.rd-ncheck__count.is-warn .rd-ncheck__count-num { color: var(--nc-warn); }
 
 .rd-ncheck__count.is-danger {
-  border-color: rgba(254, 202, 202, 0.55);
-  background: rgba(239, 68, 68, 0.35);
+  border-color: color-mix(in srgb, var(--nc-danger) 55%, transparent);
+  background: color-mix(in srgb, var(--nc-danger) 30%, transparent);
 }
 
 /* ---- body ---------------------------------------------------------------- */
@@ -263,7 +275,7 @@
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
   background: var(--rd-accent-muted);
-  color: var(--rd-accent);
+  color: var(--rd-accent-ink);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -299,10 +311,9 @@
   text-align: center;
 }
 
-.rd-ncheck__gauge--data { --nc-g: var(--rd-accent-2); }
+.rd-ncheck__gauge--data { --nc-g: var(--rd-ink); }
 .rd-ncheck__gauge--minutes { --nc-g: var(--rd-accent); }
-.rd-ncheck__gauge--sms { --nc-g: #c026d3; }
-[data-bs-theme="dark"] .rd-ncheck__gauge--sms { --nc-g: #e879f9; }
+.rd-ncheck__gauge--sms { --nc-g: var(--rd-muted); }
 .rd-ncheck__gauge.is-warn { --nc-g: var(--rd-warning); }
 .rd-ncheck__gauge.is-danger { --nc-g: var(--rd-danger); }
 
@@ -459,7 +470,7 @@
 .rd-ncheck__copy:hover,
 .rd-ncheck__copy:focus-visible {
   border-color: var(--rd-accent);
-  color: var(--rd-accent);
+  color: var(--rd-accent-ink);
 }
 
 .rd-ncheck__copy.is-done {
@@ -517,8 +528,8 @@
 }
 
 @keyframes rd-ncheck-pulse {
-  70% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 @keyframes rd-ncheck-shimmer {

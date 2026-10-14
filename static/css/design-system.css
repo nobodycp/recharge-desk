@@ -47,6 +47,12 @@ html {
 
   --rd-transition-fast: 0.14s ease;
   --rd-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Print: paper is white in either theme. */
+  --rd-print-paper: #ffffff;
+  --rd-print-ink: #000000;
+  --rd-print-rule: #888888;
+  --rd-print-rule-soft: #cccccc;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,6 +105,7 @@ html {
   /* Text-safe orange: fill behind white text / small text on an orange tint (>= 4.5:1). */
   --rd-accent-2-strong: #c2410c;
   --rd-accent-2-strong-rgb: 194, 65, 12;
+  --rd-on-accent-strong: #ffffff;
   --rd-accent-2-ink: #9a3412;
 
   --rd-success: #0a7a3e;
@@ -163,6 +170,7 @@ html {
   --rd-accent-2: #ff6a33;
   --rd-accent-2-strong: #ff8a5c;
   --rd-accent-2-strong-rgb: 255, 138, 92;
+  --rd-on-accent-strong: #0a0a0a;
   --rd-accent-2-ink: #ff8a5c;
 
   --rd-success: #4ade80;
@@ -180,6 +188,9 @@ html {
   --bs-link-color: var(--rd-ink);
   --bs-link-hover-color: var(--rd-accent-ink);
 }
+
+/* @end-tokens */
+/* Below this line: tokens only — no raw hex (core/tests_design_tokens.py). */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -4508,6 +4519,9 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   gap: 0.5rem;
   min-height: 220px;
   padding-top: 0.25rem;
+  /* Hidden tooltips still count for scroll width; keep them from widening
+     the page on phones. `clip` (unlike `hidden`) leaves the y axis visible. */
+  overflow-x: clip;
 }
 
 /* Subtle horizontal grid lines (4 levels) sitting behind the bars. */
@@ -4570,8 +4584,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-mini-chart-bar-cell.is-today .rd-mini-chart-bar {
   background: linear-gradient(
     180deg,
-    var(--rd-success, #16a34a) 0%,
-    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+    var(--rd-accent) 0%,
+    color-mix(in srgb, var(--rd-accent) 45%, transparent) 100%
   );
 }
 
@@ -4631,9 +4645,11 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Edge cells: nudge the tooltip inward so it doesn't clip outside the chart. */
+/* Edge cells: nudge the tooltip inward so it doesn't clip outside the chart.
+   Logical insets so the first (start) cell works in RTL as well. */
 .rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip {
-  left: 0;
+  left: auto;
+  inset-inline-start: 0;
   transform: translateY(4px);
 }
 
@@ -4643,13 +4659,14 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip::after {
-  left: 12px;
+  left: auto;
+  inset-inline-start: 12px;
   transform: none;
 }
 
 .rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip {
   left: auto;
-  right: 0;
+  inset-inline-end: 0;
   transform: translateY(4px);
 }
 
@@ -4660,7 +4677,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 
 .rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip::after {
   left: auto;
-  right: 12px;
+  inset-inline-end: 12px;
   transform: none;
 }
 
@@ -4756,7 +4773,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
 }
 
-/* Rank chip — gold/silver/bronze for top 3, neutral for the rest. */
+/* Rank chip — ink / accent / faint for the top 3, neutral for the rest. */
 .rd-top-rank {
   display: inline-flex;
   align-items: center;
@@ -4773,28 +4790,29 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   flex: 0 0 auto;
 }
 
-.rd-top-item--rank-1 .rd-top-rank {
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  color: #78350f;
-  border-color: color-mix(in srgb, #f59e0b 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #f59e0b 35%, transparent);
+.rd-top-item--rank-1 .rd-top-rank,
+.rd-profit-rank__item:nth-child(1) .rd-profit-rank__idx {
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  border-color: var(--rd-primary-bg);
 }
 
-.rd-top-item--rank-2 .rd-top-rank {
-  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
-  color: #1f2937;
-  border-color: color-mix(in srgb, #9ca3af 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #6b7280 35%, transparent);
+.rd-top-item--rank-2 .rd-top-rank,
+.rd-profit-rank__item:nth-child(2) .rd-profit-rank__idx {
+  background: var(--rd-accent);
+  color: var(--rd-on-accent);
+  border-color: var(--rd-accent);
 }
 
-.rd-top-item--rank-3 .rd-top-rank {
-  background: linear-gradient(135deg, #fed7aa, #c2410c);
-  color: #fff;
-  border-color: color-mix(in srgb, #c2410c 50%, transparent);
-  box-shadow: 0 1px 3px color-mix(in srgb, #c2410c 35%, transparent);
+.rd-top-item--rank-3 .rd-top-rank,
+.rd-profit-rank__item:nth-child(3) .rd-profit-rank__idx {
+  background: var(--rd-faint);
+  color: var(--rd-ink);
+  border-color: var(--rd-faint);
 }
 
-/* Letter avatar — color rotates per rank to mirror the supplier list look. */
+/* Letter avatar — neutral chip; every second one takes the accent tint,
+   matching the supplier list. */
 .rd-top-avatar {
   display: inline-flex;
   align-items: center;
@@ -4806,48 +4824,17 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   font-size: 0.92rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background: color-mix(in srgb, #6366f1 14%, transparent);
-  color: #6366f1;
-  border: 1px solid color-mix(in srgb, #6366f1 22%, transparent);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
   flex: 0 0 auto;
 }
 
-.rd-top-item:nth-child(6n+2) .rd-top-avatar {
-  background: color-mix(in srgb, #10b981 14%, transparent);
-  color: #059669;
-  border-color: color-mix(in srgb, #10b981 22%, transparent);
+.rd-top-item:nth-child(2n) .rd-top-avatar {
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent-ink);
+  border-color: color-mix(in srgb, var(--rd-accent) 22%, transparent);
 }
-
-.rd-top-item:nth-child(6n+3) .rd-top-avatar {
-  background: color-mix(in srgb, #f59e0b 16%, transparent);
-  color: #b45309;
-  border-color: color-mix(in srgb, #f59e0b 24%, transparent);
-}
-
-.rd-top-item:nth-child(6n+4) .rd-top-avatar {
-  background: color-mix(in srgb, #ec4899 14%, transparent);
-  color: #be185d;
-  border-color: color-mix(in srgb, #ec4899 22%, transparent);
-}
-
-.rd-top-item:nth-child(6n+5) .rd-top-avatar {
-  background: color-mix(in srgb, #06b6d4 14%, transparent);
-  color: #0e7490;
-  border-color: color-mix(in srgb, #06b6d4 22%, transparent);
-}
-
-.rd-top-item:nth-child(6n) .rd-top-avatar {
-  background: color-mix(in srgb, #8b5cf6 14%, transparent);
-  color: #7c3aed;
-  border-color: color-mix(in srgb, #8b5cf6 22%, transparent);
-}
-
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+1) .rd-top-avatar { color: #a5b4fc; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+2) .rd-top-avatar { color: #6ee7b7; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+3) .rd-top-avatar { color: #fcd34d; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+4) .rd-top-avatar { color: #f9a8d4; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n+5) .rd-top-avatar { color: #67e8f9; }
-[data-bs-theme="dark"] .rd-top-item:nth-child(6n)   .rd-top-avatar { color: #c4b5fd; }
 
 .rd-top-body {
   display: flex;
@@ -4894,8 +4881,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   height: 100%;
   background: linear-gradient(
     90deg,
-    var(--rd-success, #198754) 0%,
-    color-mix(in srgb, var(--rd-success, #198754) 55%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 55%, transparent) 100%
   );
   border-radius: inherit;
 }
@@ -5027,24 +5014,6 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   flex: 0 0 auto;
 }
 
-.rd-profit-rank__item:nth-child(1) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  color: #78350f;
-  border-color: color-mix(in srgb, #f59e0b 45%, transparent);
-}
-
-.rd-profit-rank__item:nth-child(2) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
-  color: #1f2937;
-  border-color: color-mix(in srgb, #9ca3af 45%, transparent);
-}
-
-.rd-profit-rank__item:nth-child(3) .rd-profit-rank__idx {
-  background: linear-gradient(135deg, #fed7aa, #c2410c);
-  color: #fff;
-  border-color: color-mix(in srgb, #c2410c 45%, transparent);
-}
-
 .rd-profit-rank__name--stack {
   align-items: flex-start;
   white-space: normal;
@@ -5093,8 +5062,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   border-radius: inherit;
   background: linear-gradient(
     90deg,
-    var(--rd-success, #198754) 0%,
-    color-mix(in srgb, var(--rd-success, #198754) 50%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 50%, transparent) 100%
   );
   transition: width 0.35s ease;
 }
@@ -5102,8 +5071,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-profit-rank__fill.is-neg {
   background: linear-gradient(
     90deg,
-    var(--rd-danger, #dc2626) 0%,
-    color-mix(in srgb, var(--rd-danger, #dc2626) 50%, transparent) 100%
+    var(--rd-danger) 0%,
+    color-mix(in srgb, var(--rd-danger) 50%, transparent) 100%
   );
 }
 
@@ -5167,8 +5136,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-profit-rank--expense .rd-profit-rank__fill {
   background: linear-gradient(
     90deg,
-    var(--rd-danger, #dc2626) 0%,
-    color-mix(in srgb, var(--rd-danger, #dc2626) 45%, transparent) 100%
+    var(--rd-danger) 0%,
+    color-mix(in srgb, var(--rd-danger) 45%, transparent) 100%
   );
 }
 
@@ -5288,13 +5257,13 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-mini-chart--profit .rd-mini-chart-bar {
   background: linear-gradient(
     180deg,
-    var(--rd-success, #16a34a) 0%,
-    color-mix(in srgb, var(--rd-success, #16a34a) 45%, transparent) 100%
+    var(--rd-success) 0%,
+    color-mix(in srgb, var(--rd-success) 45%, transparent) 100%
   );
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success, #16a34a) 32%, transparent);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success) 32%, transparent);
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
@@ -5379,12 +5348,16 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   gap: 1.25rem 1.75rem;
 }
 
+.rd-phone-lifecycle,
 .rd-phone-donut {
-  --donut-active: #198754;
-  --donut-due: #d97706;
-  --donut-grace: #0d6efd;
-  --donut-overdue: #dc3545;
-  --donut-empty: color-mix(in srgb, var(--bs-border-color) 55%, var(--bs-tertiary-bg));
+  --donut-active: var(--rd-ink);
+  --donut-due: var(--rd-accent);
+  --donut-grace: var(--rd-faint);
+  --donut-overdue: var(--rd-danger);
+}
+
+.rd-phone-donut {
+  --donut-empty: var(--bs-border-color);
   --donut-active-end: 0%;
   --donut-due-end: 0%;
   --donut-grace-end: 0%;
@@ -5406,8 +5379,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     var(--donut-grace) var(--donut-due-end) var(--donut-grace-end),
     var(--donut-overdue) var(--donut-grace-end) 100%
   );
-  -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
-  mask: radial-gradient(circle at center, transparent 56%, #000 57.5%);
+  -webkit-mask: radial-gradient(circle at center, transparent 56%, black 57.5%);
+  mask: radial-gradient(circle at center, transparent 56%, black 57.5%);
   animation: rd-phone-donut-in 520ms ease-out both;
 }
 
@@ -5532,20 +5505,20 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-phone-lifecycle__item--active .rd-phone-lifecycle__swatch {
-  background: #198754;
-  color: #198754;
+  background: var(--donut-active);
+  color: var(--donut-active);
 }
 .rd-phone-lifecycle__item--due .rd-phone-lifecycle__swatch {
-  background: #d97706;
-  color: #d97706;
+  background: var(--donut-due);
+  color: var(--donut-due);
 }
 .rd-phone-lifecycle__item--grace .rd-phone-lifecycle__swatch {
-  background: #0d6efd;
-  color: #0d6efd;
+  background: var(--donut-grace);
+  color: var(--donut-grace);
 }
 .rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__swatch {
-  background: #dc3545;
-  color: #dc3545;
+  background: var(--donut-overdue);
+  color: var(--donut-overdue);
 }
 
 .rd-phone-lifecycle__body {
@@ -5573,7 +5546,7 @@ a.rd-phone-lifecycle__hint--link {
 }
 a.rd-phone-lifecycle__hint--link:hover,
 a.rd-phone-lifecycle__hint--link:focus-visible {
-  color: #4b5563;
+  color: var(--rd-ink);
   text-decoration: underline;
 }
 
@@ -5612,24 +5585,24 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   margin-inline-start: 0.25rem;
 }
 .rd-phone-status--active {
-  background: color-mix(in srgb, #198754 14%, transparent);
-  color: #146c43;
-  border: 1px solid color-mix(in srgb, #198754 28%, transparent);
+  background: var(--rd-success-soft);
+  color: var(--rd-success);
+  border: 1px solid color-mix(in srgb, var(--rd-success) 28%, transparent);
 }
 .rd-phone-status--due {
-  background: color-mix(in srgb, #d97706 16%, transparent);
-  color: #9a3412;
-  border: 1px solid color-mix(in srgb, #d97706 30%, transparent);
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning-ink);
+  border: 1px solid color-mix(in srgb, var(--rd-warning) 30%, transparent);
 }
 .rd-phone-status--grace {
-  background: color-mix(in srgb, #0d6efd 12%, transparent);
-  color: #0a58ca;
-  border: 1px solid color-mix(in srgb, #0d6efd 26%, transparent);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
 }
 .rd-phone-status--overdue {
-  background: color-mix(in srgb, #dc3545 14%, transparent);
-  color: #b02a37;
-  border: 1px solid color-mix(in srgb, #dc3545 28%, transparent);
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
+  border: 1px solid color-mix(in srgb, var(--rd-danger) 28%, transparent);
 }
 .rd-phone-status--esim {
   background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);
@@ -5862,8 +5835,8 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     margin: 0;
   }
   html, body {
-    background: #fff !important;
-    color: #000 !important;
+    background: var(--rd-print-paper) !important;
+    color: var(--rd-print-ink) !important;
   }
   /* Trimmed from 1.5cm/1.2cm. The previous values were chosen to look
    * "safe" but they reserved nearly 2cm of dead space above the
@@ -5882,12 +5855,12 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     display: none !important;
   }
   .rd-main, .rd-page, .rd-content {
-    background: #fff !important;
+    background: var(--rd-print-paper) !important;
     margin: 0 !important;
     padding: 0 !important;
   }
   .rd-card {
-    border: 1px solid #999 !important;
+    border: 1px solid var(--rd-print-rule) !important;
     box-shadow: none !important;
     break-inside: avoid;
   }
@@ -5910,7 +5883,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-card.rd-print-flow tr {
     break-inside: avoid;
   }
-  .table { color: #000 !important; }
+  .table { color: var(--rd-print-ink) !important; }
   a { color: inherit !important; text-decoration: none !important; }
 
   /* Legacy print-only logo header. The current customer statement /
@@ -5921,7 +5894,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     text-align: center;
     margin-bottom: 0.6rem;
     padding-bottom: 0.4rem;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--rd-print-rule-soft);
   }
   .rd-print-brand-logo {
     max-height: 64px;
@@ -5932,8 +5905,8 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   /* Tighter borders + ink-friendly background for invoice bands. */
   .rd-invoice-head,
   .rd-invoice-summary {
-    border: 1px solid #888 !important;
-    background: #fff !important;
+    border: 1px solid var(--rd-print-rule) !important;
+    background: var(--rd-print-paper) !important;
     padding: 0.55rem 0.75rem !important;
     break-inside: avoid;
   }
@@ -5941,7 +5914,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   .rd-invoice-summary { margin-bottom: 0.5rem !important; }
 
   .rd-invoice-summary-item--total {
-    border-inline-start-color: #888 !important;
+    border-inline-start-color: var(--rd-print-rule) !important;
   }
 
   .rd-invoice-sig {
@@ -5949,7 +5922,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
     break-inside: avoid;
   }
   .rd-invoice-sig-rule {
-    border-bottom-color: #000 !important;
+    border-bottom-color: var(--rd-print-ink) !important;
   }
 }
 
