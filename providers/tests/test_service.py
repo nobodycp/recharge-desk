@@ -541,26 +541,3 @@ class HealthTests(TestCase):
         with patch.object(type(get_redis()), "ping", side_effect=ConnectionError("x")):
             with self.assertLogs("providers.health", level="WARNING"):
                 self.assertIs(health.status()["redis_ok"], False)
-
-    def test_health_card_on_providers_general_tab(self):
-        from django.contrib.auth import get_user_model
-        from django.urls import reverse
-
-        from accounts.models import UserProfile
-        from providers.models import ProviderConnection
-
-        user = get_user_model().objects.create_user("mgr", password="x")
-        UserProfile.objects.update_or_create(
-            user=user,
-            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
-        )
-        ProviderConnection.objects.create(provider_key="sky", last_login_ok=False)
-        self.client.force_login(user)
-
-        page = self.client.get(reverse("phone_refresh:providers_index") + "?tab=general")
-        self.assertContains(page, 'id="provider-health-card"')
-        self.assertContains(page, "Redis: يعمل")
-        self.assertContains(page, "آخر دخول: فشل")
-
-        other = self.client.get(reverse("phone_refresh:providers_index") + "?tab=sky")
-        self.assertNotContains(other, 'id="provider-health-card"')

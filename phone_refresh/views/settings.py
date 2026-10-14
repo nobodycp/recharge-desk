@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
+from companies.models import Company
 from core.pagination import paginate_request
 from phone_refresh.forms import (
     CustomerMessageForm,
@@ -29,7 +30,6 @@ from phone_refresh.models import (
     ApiToken,
     CustomerMessage,
     PhoneProvider,
-    ProviderConfig,
     ProviderResponseRule,
     RefreshLog,
     RefreshSource,
@@ -39,18 +39,12 @@ from phone_refresh.models import (
 )
 from phone_refresh.services.refresh_jobs import run_internal_test
 from phone_refresh.views.general import GENERAL_TAB_ID
-from providers import health as provider_health
-from providers.forms import ProviderAccountForm
-from providers.models import ProviderConnection
-from providers.registry import ADAPTERS
 
 PROVIDER_TABS = [(p.value, p.label) for p in PhoneProvider]
 STATUSES_TAB_ID = "statuses"
 MESSAGES_TAB_ID = "messages"
 SITE_MANAGEMENT_TAB_ID = "site_management"
 PROVIDERS_GENERAL_TAB_ID = "general"
-# Providers that log in with a stored account (card shown on their tab).
-PROVIDERS_WITH_ACCOUNTS = {key for key, cls in ADAPTERS.items() if cls.needs_login}
 
 
 def _ensure_provider(provider: str) -> str:
@@ -189,26 +183,13 @@ def settings_index(request):
     return render(request, "phone_refresh/settings_index.html", ctx)
 
 
-def _provider_configs_ordered() -> list[ProviderConfig]:
-    """Return one ``ProviderConfig`` per ``PhoneProvider``, in tab order.
-
-    Missing rows are materialized on the fly (default ``is_enabled=True``)
-    so the General tab always renders the full set of 4 toggles even if
-    a row was deleted from the admin.
-    """
-    rows = {cfg.provider: cfg for cfg in ProviderConfig.objects.all()}
-    ordered: list[ProviderConfig] = []
-    for value, _label in PROVIDER_TABS:
-        cfg = rows.get(value)
-        if cfg is None:
-            cfg = ProviderConfig.objects.create(provider=value, is_enabled=True)
-        ordered.append(cfg)
-    return ordered
-
-
 @management_required
 def providers_index(request):
-    """Tabbed providers page: General (toggles + test) + one tab per provider."""
+    """Refresh-rules page: General (number test) + one rules tab per provider.
+
+    Provider connection (credentials, switches, login test) lives on the
+    company page; the General tab only links to it.
+    """
     provider_keys = {p.value for p in PhoneProvider}
     valid_tabs = provider_keys | {PROVIDERS_GENERAL_TAB_ID}
     default_tab = PROVIDERS_GENERAL_TAB_ID
@@ -224,64 +205,24 @@ def providers_index(request):
             .order_by("order", "id")
         )
 
-    provider_configs = _provider_configs_ordered()
-    provider_test_form = ProviderTestForm()
-
-    account_form = None
-    provider_account = None
-    if active_tab in PROVIDERS_WITH_ACCOUNTS:
-        provider_account = ProviderConnection.objects.filter(provider_key=active_tab).first()
-        account_form = ProviderAccountForm(provider_key=active_tab)
+    provider_companies = []
+    if active_tab == PROVIDERS_GENERAL_TAB_ID:
+        provider_companies = list(
+            Company.objects.exclude(provider_key="").order_by("name", "id")
+        )
 
     ctx = {
-        "title": "مزوّدو تحديث الأرقام",
+        "title": "قواعد مزوّدي التحديث",
         "active_tab": active_tab,
         "general_tab_id": PROVIDERS_GENERAL_TAB_ID,
         "provider_tabs": PROVIDER_TABS,
         "current_rules": current_rules,
         "match_types": ProviderResponseRule._meta.get_field("match_type").choices,
-        "provider_configs": provider_configs,
         "provider_labels": dict(PROVIDER_TABS),
-        "provider_test_form": provider_test_form,
-        "account_form": account_form,
-        "provider_account": provider_account,
-        "provider_health": (
-            provider_health.status() if active_tab == PROVIDERS_GENERAL_TAB_ID else None
-        ),
+        "provider_test_form": ProviderTestForm(),
+        "provider_companies": provider_companies,
     }
     return render(request, "phone_refresh/providers_index.html", ctx)
-
-
-@management_required
-@require_POST
-def provider_account_save(request, provider_key: str):
-    """POST-only: save the provider login account (secrets are write-only)."""
-    if provider_key not in PROVIDERS_WITH_ACCOUNTS:
-        raise Http404("Unknown provider")
-    form = ProviderAccountForm(request.POST, provider_key=provider_key)
-    if form.is_valid():
-        form.save()
-        messages.success(request, "تم حفظ حساب المزوّد.")
-    else:
-        for errors in form.errors.values():
-            for error in errors:
-                messages.error(request, error)
-    return redirect(_providers_url(provider_key))
-
-
-@management_required
-@require_POST
-def providers_general_save(request):
-    """POST-only: persist the on/off toggles for all 4 providers in one go."""
-    rows = _provider_configs_ordered()
-    for cfg in rows:
-        field = f"is_enabled_{cfg.provider}"
-        new_value = field in request.POST
-        if cfg.is_enabled != new_value:
-            cfg.is_enabled = new_value
-            cfg.save(update_fields=["is_enabled", "updated_at"])
-    messages.success(request, "تم حفظ إعدادات المزوّدين.")
-    return redirect(f"{reverse('phone_refresh:providers_index')}?tab={PROVIDERS_GENERAL_TAB_ID}")
 
 
 @management_required

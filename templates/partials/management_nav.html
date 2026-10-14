@@ -137,7 +137,7 @@
         </a>
         <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'providers_index' %}is-active{% elif ns == 'phone_refresh' and un == 'rule_create' %}is-active{% elif ns == 'phone_refresh' and un == 'rule_edit' %}is-active{% endif %}" href="{% url 'phone_refresh:providers_index' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
-          <span>المزودين</span>
+          <span>قواعد المزودين</span>
         </a>
         <a class="rd-nav-link {% if ns == 'phone_refresh' and un|slice:':4' == 'api_' %}is-active{% endif %}" href="{% url 'phone_refresh:api_index' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg></span>

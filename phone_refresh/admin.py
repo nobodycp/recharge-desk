@@ -4,7 +4,6 @@ from phone_refresh.models import (
     ApiSettings,
     ApiToken,
     CustomerMessage,
-    ProviderConfig,
     ProviderResponseRule,
     RefreshLog,
     RefreshStatus,
@@ -94,14 +93,6 @@ class ApiTokenAdmin(admin.ModelAdmin):
     list_filter = ("revoked_at",)
     search_fields = ("name", "prefix")
     readonly_fields = ("token_hash", "prefix", "created_at", "last_used_at", "created_by")
-
-
-@admin.register(ProviderConfig)
-class ProviderConfigAdmin(admin.ModelAdmin):
-    list_display = ("provider", "is_enabled", "updated_at")
-    list_filter = ("is_enabled",)
-    list_editable = ("is_enabled",)
-    ordering = ("provider",)
 
 
 @admin.register(RefreshLog)

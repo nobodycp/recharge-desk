@@ -7,9 +7,9 @@ import pyotp
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
-from django.utils import timezone
 
 from accounts.models import UserProfile
+from companies.models import Company
 from providers.accounts import Credentials, get_credentials, record_login
 from providers.contracts import PermanentError
 from providers.crypto import decrypt, encrypt
@@ -81,9 +81,13 @@ class UndecryptableSecretsTests(TestCase):
         self.client = Client()
         self.client.force_login(self.manager)
 
-    def test_admin_tab_renders_and_credentials_fail_closed_then_recover(self):
+    def test_connection_tab_renders_and_credentials_fail_closed_then_recover(self):
         with override_settings(PROVIDER_SECRETS_KEY=OTHER_KEY):
-            page = self.client.get(reverse("phone_refresh:providers_index") + "?tab=sky")
+            company = Company.objects.create(name="Sky Co", provider_key="sky")
+            page = self.client.get(
+                reverse("companies:company_detail", kwargs={"pk": company.pk})
+                + "?tab=connection"
+            )
             self.assertEqual(page.status_code, 200)
 
             # No silent fallback to env when the DB row is unreadable.
@@ -388,93 +392,3 @@ class ProviderAccountFormTests(TestCase):
         self.assertNotIn("first-pass", html)
         self.assertNotIn(TOTP_SECRET, html)
         self.assertNotIn("pw@p", html)
-
-
-class AccountCardViewTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.manager = User.objects.create_user("mgr", password="x")
-        UserProfile.objects.update_or_create(
-            user=cls.manager,
-            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
-        )
-        cls.employee = User.objects.create_user("emp", password="x")
-        UserProfile.objects.update_or_create(
-            user=cls.employee,
-            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
-        )
-
-    def setUp(self):
-        ProviderConnection.objects.all().delete()
-        self.client = Client(enforce_csrf_checks=True)
-        self.client.force_login(self.manager)
-        self.index_url = reverse("phone_refresh:providers_index") + "?tab=sky"
-        self.save_url = reverse("phone_refresh:provider_account_save", args=["sky"])
-
-    def _post(self, data, client=None):
-        client = client or self.client
-        token = str(client.get(self.index_url).context["csrf_token"])
-        return client.post(self.save_url, {**data, "csrfmiddlewaretoken": token})
-
-    def test_account_card_never_renders_secret(self):
-        response = self._post(
-            {
-                "username": "sky_user",
-                "password": "PlainPassw0rd!",
-                "totp_secret": TOTP_SECRET,
-                "proxy_url": "http://px:secretproxypw@host:1",
-            }
-        )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response["Location"], self.index_url)
-
-        page = self.client.get(self.index_url)
-        self.assertEqual(page.status_code, 200)
-        body = page.content.decode()
-        self.assertIn("sky_user", body)
-        self.assertNotIn("PlainPassw0rd!", body)
-        self.assertNotIn(TOTP_SECRET, body)
-        self.assertNotIn("secretproxypw", body)
-        self.assertIn('autocomplete="new-password"', body)
-
-    def test_card_shows_last_login_state_and_escapes_error(self):
-        self._post({"username": "u", "password": "p"})
-        account = ProviderConnection.objects.get(provider_key="sky")
-        account.last_login_ok = False
-        account.last_login_at = timezone.now()
-        account.last_error = "<script>alert(1)</script>"
-        account.save()
-        body = self.client.get(self.index_url).content.decode()
-        self.assertNotIn("<script>alert(1)</script>", body)
-        self.assertIn("&lt;script&gt;", body)
-
-    def test_card_only_on_sky_tab(self):
-        other = self.client.get(reverse("phone_refresh:providers_index") + "?tab=layan")
-        self.assertEqual(other.status_code, 200)
-        self.assertNotIn(self.save_url, other.content.decode())
-        self.assertIn(self.save_url, self.client.get(self.index_url).content.decode())
-
-    def test_invalid_post_does_not_create_account(self):
-        response = self._post({"username": "u", "password": ""})
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(ProviderConnection.objects.exists())
-
-    def test_save_rejects_unknown_provider(self):
-        token = str(self.client.get(self.index_url).context["csrf_token"])
-        url = reverse("phone_refresh:provider_account_save", args=["nope"])
-        response = self.client.post(url, {"username": "u", "password": "p", "csrfmiddlewaretoken": token})
-        self.assertEqual(response.status_code, 404)
-
-    def test_save_requires_management(self):
-        emp = Client()  # CSRF not enforced: isolate the permission check
-        emp.force_login(self.employee)
-        response = emp.post(self.save_url, {"username": "u", "password": "p"})
-        self.assertEqual(response.status_code, 302)
-        self.assertFalse(ProviderConnection.objects.exists())
-
-    def test_save_requires_csrf(self):
-        response = self.client.post(self.save_url, {"username": "u", "password": "p"})
-        self.assertEqual(response.status_code, 403)
-
-    def test_save_is_post_only(self):
-        self.assertEqual(self.client.get(self.save_url).status_code, 405)

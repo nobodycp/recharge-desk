@@ -1,92 +1,32 @@
-{# General tab on the Providers page: on/off toggles + per-provider test. #}
+{# General tab on the Providers page: connection note + per-provider number test. #}
 
 <div class="row g-3">
-  {# ── Section 0: حالة البوابة ─────────────────────────────────────────── #}
-  {% if provider_health %}
-  <div class="col-12">
-    <div class="rd-card" id="provider-health-card">
-      <div class="rd-card-body">
-        <div class="mb-2">
-          <div class="fw-semibold">حالة البوابة</div>
-          <div class="rd-text-muted small">
-            جاهزية Redis وعامل المهام الخلفية، وآخر تسجيل دخول لكل حساب مزوّد.
-          </div>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-          {% if provider_health.redis_ok %}
-            <span class="rd-badge rd-badge--paid">Redis: يعمل</span>
-          {% else %}
-            <span class="rd-badge rd-badge--cancelled">Redis: لا يستجيب</span>
-          {% endif %}
-          {% if provider_health.worker_ok %}
-            <span class="rd-badge rd-badge--paid">عامل المهام: يعمل</span>
-          {% else %}
-            <span class="rd-badge rd-badge--cancelled">عامل المهام: لا يستجيب</span>
-          {% endif %}
-        </div>
-
-        {% for account in provider_health.accounts %}
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-2 rounded"
-               style="background: var(--bs-body-bg);">
-            <div class="fw-semibold text-uppercase">{{ account.key }}</div>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-              {% if account.last_login_at %}
-                <span class="rd-text-muted small tabular-nums">{{ account.last_login_at|date:"Y-m-d H:i" }}</span>
-              {% endif %}
-              {% if account.last_login_ok is True %}
-                <span class="rd-badge rd-badge--paid">آخر دخول: ناجح</span>
-              {% elif account.last_login_ok is False %}
-                <span class="rd-badge rd-badge--cancelled">آخر دخول: فشل</span>
-              {% else %}
-                <span class="rd-badge rd-badge--neutral">لم يُسجَّل دخول بعد</span>
-              {% endif %}
-            </div>
-          </div>
-        {% empty %}
-          <div class="rd-text-muted small">لا توجد حسابات مزوّدين محفوظة.</div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  {# ── Section 1: تفعيل المزودين ───────────────────────────────────────── #}
+  {# ── Section 1: الربط مع المزوّد (moved to the company page) ─────────── #}
   <div class="col-12 col-xl-6">
-    <div class="rd-card h-100">
+    <div class="rd-card h-100" id="provider-connection-note">
       <div class="rd-card-body">
         <div class="mb-2">
-          <div class="fw-semibold">تفعيل المزودين</div>
+          <div class="fw-semibold">الربط مع المزوّد</div>
           <div class="rd-text-muted small">
-            عند إيقاف مزوّد لن يتم تنفيذ التحديث عبره وستظهر للعميل رسالة «المزوّد متوقف».
+            بيانات الدخول وتفعيل الخدمات واختبار تسجيل الدخول أصبحت من صفحة كل شركة، تبويب «الربط مع المزوّد». هذه الصفحة تحتفظ بقواعد التعرّف على ردود المزوّدين واختبار الأرقام فقط.
           </div>
         </div>
 
-        <form method="post" action="{% url 'phone_refresh:providers_general_save' %}" class="d-grid gap-2">
-          {% csrf_token %}
-          {% for cfg in provider_configs %}
-            <div class="d-flex justify-content-between align-items-center py-2 px-2 rounded"
+        <div class="d-grid gap-2">
+          {% for company in provider_companies %}
+            <div class="d-flex justify-content-between align-items-center gap-2 py-2 px-2 rounded"
                  style="background: var(--bs-body-bg);">
               <div>
-                <div class="fw-semibold">{{ cfg.get_provider_display }}</div>
-                <div class="rd-text-muted small"><code>{{ cfg.provider }}</code></div>
+                <div class="fw-semibold">{{ company.name }}</div>
+                <div class="rd-text-muted small">{{ company.get_provider_key_display }} · <code>{{ company.provider_key }}</code></div>
               </div>
-              <div class="form-check form-switch m-0">
-                <input type="checkbox"
-                       class="form-check-input"
-                       role="switch"
-                       name="is_enabled_{{ cfg.provider }}"
-                       id="prv-toggle-{{ cfg.provider }}"
-                       {% if cfg.is_enabled %}checked{% endif %}>
-                <label class="visually-hidden" for="prv-toggle-{{ cfg.provider }}">{{ cfg.provider }}</label>
-              </div>
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{% url 'companies:company_detail' pk=company.pk %}?tab=connection">إدارة الربط</a>
             </div>
+          {% empty %}
+            <div class="rd-text-muted small">لا توجد شركة مرتبطة بنظام مزوّد بعد. اختر «نظام الشركة» من تبويب الربط في صفحة الشركة.</div>
           {% endfor %}
-
-          <div class="d-flex gap-2 mt-2">
-            <button type="submit" class="btn btn-primary">حفظ</button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>

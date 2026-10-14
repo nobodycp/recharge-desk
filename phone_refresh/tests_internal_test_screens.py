@@ -6,9 +6,10 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from accounts.models import UserProfile
+from companies.models import Company
 from phone_refresh.models import (
     MatchType,
     PhoneProvider,
@@ -350,3 +351,64 @@ class RunInternalTestHelperTests(_ScreenTestCase):
         self.assertEqual(outcome.payload["status"], "not_found")
         self.assertEqual(outcome.raw_excerpt, "")
         self.assertEqual(ProviderJob.objects.count(), 0)
+
+
+class ProvidersRulesPageTests(_ScreenTestCase):
+    """The providers page keeps refresh rules + number test; connection moved."""
+
+    def _general(self):
+        return self.client.get(reverse("phone_refresh:providers_index") + "?tab=general")
+
+    def test_title_is_rules_page_title(self):
+        page = self._general()
+        self.assertEqual(page.context["title"], "قواعد مزوّدي التحديث")
+        self.assertNotContains(page, "مزوّدو تحديث الأرقام")
+
+    def test_general_tab_links_each_company_with_a_system_to_its_connection_tab(self):
+        sky = Company.objects.create(name="Sky Co", provider_key="sky")
+        layan = Company.objects.create(name="Layan Co", provider_key="layan")
+        plain = Company.objects.create(name="No System Co")
+        page = self._general()
+        for company in (sky, layan):
+            url = reverse("companies:company_detail", kwargs={"pk": company.pk})
+            self.assertContains(page, f'href="{url}?tab=connection"')
+            self.assertContains(page, company.name)
+        self.assertNotContains(
+            page, reverse("companies:company_detail", kwargs={"pk": plain.pk})
+        )
+
+    def test_general_tab_has_no_toggles_password_or_health_card(self):
+        Company.objects.create(name="Sky Co", provider_key="sky")
+        page = self._general()
+        self.assertNotContains(page, "is_enabled_")
+        self.assertNotContains(page, 'type="password"')
+        self.assertNotContains(page, 'id="provider-health-card"')
+        self.assertContains(page, 'id="provider-test-form"')
+
+    def test_general_tab_without_companies_still_renders(self):
+        page = self._general()
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'id="provider-test-form"')
+
+    def test_removed_connection_routes_no_longer_exist(self):
+        with self.assertRaises(NoReverseMatch):
+            reverse("phone_refresh:provider_account_save", args=["sky"])
+        with self.assertRaises(NoReverseMatch):
+            reverse("phone_refresh:providers_general_save")
+
+    def test_provider_tab_renders_rules_without_account_card(self):
+        ProviderResponseRule.objects.all().delete()
+        status = RefreshStatus.objects.first()
+        ProviderResponseRule.objects.create(
+            provider="sky",
+            match_type=MatchType.CONTAINS,
+            pattern="needle-pattern",
+            target_status=status,
+        )
+        page = self.client.get(reverse("phone_refresh:providers_index") + "?tab=sky")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "قواعد المزوّد")
+        self.assertContains(page, "needle-pattern")
+        self.assertContains(page, reverse("phone_refresh:rule_create", args=["sky"]))
+        self.assertNotContains(page, 'type="password"')
+        self.assertNotContains(page, "حساب المزوّد")

@@ -12,7 +12,6 @@ from phone_refresh.models import (
     ApiToken,
     CustomerMessage,
     PhoneProvider,
-    ProviderConfig,
     ProviderResponseRule,
     RefreshStatus,
     SiteSettings,
@@ -446,19 +445,6 @@ class ApiTokenForm(forms.ModelForm):
         chosen = set(self.cleaned_data["scopes"])
         # Registry order, so the stored string is stable.
         return ",".join(code for code, _label in API_SCOPES if code in chosen)
-
-
-class ProviderConfigForm(forms.ModelForm):
-    """Single-row form used by the providers General tab for the on/off toggle."""
-
-    class Meta:
-        model = ProviderConfig
-        fields = ["is_enabled"]
-        widgets = {
-            "is_enabled": forms.CheckboxInput(
-                attrs={"class": "form-check-input", "role": "switch"}
-            ),
-        }
 
 
 class ProviderTestForm(forms.Form):

@@ -80,16 +80,6 @@ urlpatterns = [
         name="providers_index",
     ),
     path(
-        "management/phone-refresh/providers/general/save/",
-        views.providers_general_save,
-        name="providers_general_save",
-    ),
-    path(
-        "management/phone-refresh/providers/<str:provider_key>/account/",
-        views.provider_account_save,
-        name="provider_account_save",
-    ),
-    path(
         "management/phone-refresh/providers/test/",
         views.providers_test,
         name="providers_test",

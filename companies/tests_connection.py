@@ -263,6 +263,30 @@ class AccountTests(_Base):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(ProviderConnection.objects.get(provider_key="sky").username, "")
 
+    def test_account_post_requires_management(self):
+        company = self.company(provider_key="sky")
+        client = Client()  # CSRF not enforced: isolate the permission check
+        client.force_login(self.employee)
+        response = client.post(
+            self.url("company_connection_account", company),
+            {"username": "u", "password": "p"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ProviderConnection.objects.filter(username="u").exists())
+
+    def test_account_post_requires_csrf(self):
+        company = self.company(provider_key="sky")
+        response = self.client.post(
+            self.url("company_connection_account", company),
+            {"username": "u", "password": "p"},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_account_endpoint_is_post_only(self):
+        company = self.company(provider_key="sky")
+        response = self.client.get(self.url("company_connection_account", company))
+        self.assertEqual(response.status_code, 405)
+
     def test_aloha_tab_has_no_password_field(self):
         company = self.company(provider_key="aloha")
         response = self.tab(company)

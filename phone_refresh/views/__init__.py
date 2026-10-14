@@ -24,8 +24,6 @@ from phone_refresh.views.settings import (
     message_create,
     message_delete,
     message_edit,
-    provider_account_save,
-    providers_general_save,
     providers_index,
     providers_test,
     report_log_detail,
@@ -43,8 +41,6 @@ from phone_refresh.views.settings import (
 __all__ = [
     "settings_index",
     "providers_index",
-    "providers_general_save",
-    "provider_account_save",
     "providers_test",
     "settings_general_save",
     "settings_internal_test",
