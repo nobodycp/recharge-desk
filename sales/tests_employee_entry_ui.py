@@ -692,6 +692,24 @@ class EmployeePaymentPagesTests(TestCase):
         for legacy in ("btn-info", "btn-outline-info", "opacity-50"):
             self.assertNotIn(legacy, js)
 
+    def test_script_treats_false_zero_and_empty_as_off(self):
+        js = (Path(settings.BASE_DIR) / "static/js/employee-record-payment.js").read_text()
+        body = js.split("function isPaySubViaEmployee()", 1)[1].split("}", 1)[0]
+        self.assertIn(".toLowerCase()", body)
+        for off in ('""', '"false"', '"0"'):
+            self.assertIn(f"!== {off}", body)
+
+    def test_hidden_field_renders_false_for_a_stored_false_and_the_pill_is_off(self):
+        """The server value is "False"; the script maps it to off, the markup agrees."""
+        html = self._edit()
+        self.assertRegex(
+            html, r'<input[^>]*type="hidden"[^>]*id="id_pay_sub_paid_via_employee"[^>]*value="False"'
+            r'|<input[^>]*value="False"[^>]*id="id_pay_sub_paid_via_employee"'
+        )
+        tag = re.search(r'<button[^>]*id="rd-pay-sub-employee-toggle"[^>]*>', html).group(0)
+        self.assertIn('aria-pressed="false"', tag)
+        self.assertNotIn("is-on", tag)
+
     def test_script_inits_immediately_without_bind_once_guard(self):
         js = (Path(settings.BASE_DIR) / "static/js/employee-record-payment.js").read_text()
         # Runs on script execution (boosted visits re-insert the tag after htmx:load).
@@ -718,11 +736,22 @@ class EmployeePaymentCssTests(SimpleTestCase):
         for needle in needles:
             self.assertIn(needle, joined, f"{selector}: {needle}")
 
-    def test_payment_tiles_are_roomy_44px_targets_in_a_wrapping_grid(self):
-        self._assert_decl("#rd-pay-sub-payment-tiles", "display: grid", "repeat(auto-fill")
-        joined = " ".join(_bodies(self.css, "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile"))
-        size = float(re.search(r"min-height:\s*([\d.]+)rem", joined).group(1))
-        self.assertGreaterEqual(size, 3.45)
+    def test_payment_tiles_share_the_entry_compact_grid(self):
+        """<=6 methods on one row at 375 and 320: no page-specific grid or tile size."""
+        self._assert_decl(".rd-entry-tiles--pay", "minmax(3.4rem, 1fr)")
+        for sels, body in _rules(self.css):
+            for sel in sels:
+                if sel.startswith("#rd-pay-sub-payment-tiles") and "is-muted" not in sel:
+                    self.assertNotIn("grid-template-columns", body, sel)
+                    self.assertNotIn("min-height", body, sel)
+                    self.assertNotIn("font-size", body, sel)
+        joined = " ".join(_bodies(self.css, ".rd-entry-tiles .employee-chip"))
+        self.assertIn("min-height: 3.45rem", " ".join(joined.split()))
+
+    def test_balance_value_sits_next_to_its_label(self):
+        joined = " ".join(" ".join(b.split()) for b in _bodies(self.css, ".rd-pay-sub-balance"))
+        self.assertIn("justify-content: flex-start", joined)
+        self.assertNotIn("space-between", joined)
 
     def test_payment_tiles_dim_when_muted(self):
         self._assert_decl("#rd-pay-sub-payment-tiles.is-muted", "opacity: 0.5")

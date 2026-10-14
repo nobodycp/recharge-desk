@@ -1543,12 +1543,13 @@ html:has(.rd-entry-dock) {
   outline-offset: -3px;
 }
 
-/* Balance of the picked customer: label at the start, figure at the end. */
+/* Balance of the picked customer: the figure sits right next to its label. */
 .rd-pay-sub-balance {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
+  justify-content: flex-start;
+  gap: 0.15rem 0.4rem;
   padding-inline: 0.15rem;
   font-size: 0.8rem;
   line-height: 1.35;
@@ -1566,25 +1567,6 @@ html:has(.rd-entry-dock) {
   color: var(--rd-ink);
   font-size: 0.95rem;
   font-weight: 700;
-}
-
-/* Payment tiles: the page has room, so they are bigger than the entry's
-   (names stay on one line; 4 per row at 375px, wrapping for more methods). */
-#rd-pay-sub-payment-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr));
-  gap: 0.4rem;
-}
-
-#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile {
-  min-height: 3.9rem;
-  padding-inline: 0.45rem;
-  font-size: 0.8rem;
-}
-
-#rd-pay-sub-payment-tiles .employee-chip-icon {
-  width: 1.75rem;
-  height: 1.75rem;
 }
 
 /* "Add note" block: a 44px summary that opens the textarea in place. */
