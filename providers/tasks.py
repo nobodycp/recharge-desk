@@ -5,9 +5,11 @@ import logging
 
 from celery import shared_task
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import close_old_connections
 from django.utils import timezone
 
-from providers import service
+from providers import jobs, operations, service
 from providers.accounts import get_credentials, record_login
 from providers.contracts import PermanentError
 from providers.models import ProviderConnection, ProviderJob, ProviderOperation
@@ -73,18 +75,93 @@ def test_connection(provider_key: str) -> None:
         )
 
 
+NUMBER_INFO_BUDGET_SECONDS = 60
+
+
+def _load_job(job_id: str) -> ProviderJob | None:
+    try:
+        return ProviderJob.objects.filter(pk=job_id).first()
+    except (ValidationError, ValueError):
+        return None
+
+
+def _refresh_db_connection() -> None:
+    """Drop a connection that went stale during the long provider call.
+
+    Skipped in eager mode, where the task shares the caller's connection
+    (and possibly its transaction).
+    """
+    if not settings.CELERY_TASK_ALWAYS_EAGER:
+        close_old_connections()
+
+
+@shared_task(
+    time_limit=jobs.JOB_TASK_TIME_LIMIT, soft_time_limit=jobs.JOB_TASK_SOFT_TIME_LIMIT
+)
+def run_number_info_job(job_id: str) -> None:
+    """Run one queued number-info job to completion; never raises.
+
+    The service records the operation row itself, so a crash here only fails the
+    job with the generic internal message (no second row). Only classified
+    Arabic text is stored in the result, never raw provider text.
+    """
+    job = _load_job(job_id)
+    if job is None:
+        log.warning("number info job %s not found; ignoring", job_id)
+        return
+    if job.kind != ProviderJob.KIND_NUMBER_INFO:
+        log.warning("job %s is a %s job, not a number info; ignoring", job.pk, job.kind)
+        return
+    if not jobs.mark_running(job):
+        log.info("number info job %s already taken; skipping", job.pk)
+        return
+
+    try:
+        payload = job.payload or {}
+        result = service.number_info(
+            job.provider_key,
+            job.phone,
+            NUMBER_INFO_BUDGET_SECONDS,
+            source=job.source,
+            user_id=payload.get("user_id"),
+            sale_id=payload.get("sale_id"),
+            job_id=job.pk,
+        )
+        if result.ok:
+            outcome, ok = {"status": "ok", "info": result.info.to_dict()}, True
+        else:
+            outcome, ok = {
+                "status": "error",
+                "message": result.classified.message,
+                "error_code": result.classified.error_code,
+            }, False
+    except Exception as exc:  # noqa: BLE001 — the worker task must never raise
+        log.error("number info job %s failed: %s", job.pk, scrub(str(exc)), exc_info=True)
+        classified = operations.classify_exception("number_info", exc)
+        outcome = {
+            "status": "error",
+            "message": classified.message,
+            "error_code": classified.error_code,
+        }
+        ok = False
+    _refresh_db_connection()
+    finished = jobs.mark_done(job, outcome) if ok else jobs.mark_failed(job, outcome)
+    if not finished:
+        log.info("number info job %s already finished elsewhere; result dropped", job.pk)
+
+
 REFRESH_JOB_RETENTION_DAYS = 30
 
 
 @shared_task
 def purge_old_jobs() -> int:
-    """Delete refresh jobs and provider operations past retention (beat, daily).
+    """Delete refresh and number-info jobs and provider operations past retention (beat, daily).
 
-    Returns the number of refresh jobs deleted; operations are logged.
+    Returns the number of jobs deleted; operations are logged.
     """
     now = timezone.now()
     deleted, _ = ProviderJob.objects.filter(
-        kind=ProviderJob.KIND_REFRESH,
+        kind__in=[ProviderJob.KIND_REFRESH, ProviderJob.KIND_NUMBER_INFO],
         created_at__lt=now - dt.timedelta(days=REFRESH_JOB_RETENTION_DAYS),
     ).delete()
     ops_deleted, _ = ProviderOperation.objects.filter(

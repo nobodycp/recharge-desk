@@ -56,10 +56,12 @@ class ProviderJob(models.Model):
     KIND_REFRESH = "refresh"
     KIND_CHARGE = "charge"
     KIND_CHECK_CHARGE = "check_charge"
+    KIND_NUMBER_INFO = "number_info"
     KIND_CHOICES = [
         (KIND_REFRESH, "refresh"),
         (KIND_CHARGE, "charge"),
         (KIND_CHECK_CHARGE, "check_charge"),
+        (KIND_NUMBER_INFO, "number_info"),
     ]
 
     STATUS_QUEUED = "queued"

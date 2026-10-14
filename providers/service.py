@@ -13,6 +13,7 @@ from providers.contracts import (
     ChargeContext,
     ChargeOutcome,
     ChargeResult,
+    NumberInfo,
     PermanentError,
     ProviderError,
     RawResponse,
@@ -99,6 +100,107 @@ def refresh(
         except ProviderError as exc:
             return _error_response(_error_text(exc), made)
     return _error_response(error, made)
+
+
+@dataclass(frozen=True)
+class NumberInfoResult:
+    """Outcome of a number check: the live ``info`` or the classified failure."""
+
+    info: NumberInfo | None
+    classified: operations.Classified
+
+    @property
+    def ok(self) -> bool:
+        return self.info is not None
+
+
+def _number_info_attempts(
+    adapter, provider_key: str, phone: str, budget: float
+) -> tuple[NumberInfo | None, operations.Classified, int, str]:
+    """Run the attempt loop; returns ``(info, classified, attempts_started, detail)``."""
+    deadline = time.monotonic() + budget
+    made = 0
+    classified = operations.classify_code("number_info", "sync_budget_exceeded")
+    detail = "sync_budget_exceeded"
+    for attempt in range(REFRESH_ATTEMPTS):
+        if time.monotonic() >= deadline:
+            break
+        made += 1
+        try:
+            info = run_authenticated(
+                adapter,
+                lambda: adapter.number_info(phone),
+                lock_wait=_lock_wait(deadline, budget),
+            )
+        except TransientError as exc:
+            detail = _error_text(exc)
+            classified = operations.classify_exception("number_info", exc)
+            log.warning(
+                "provider %s number_info attempt %s failed: %s",
+                provider_key,
+                attempt + 1,
+                detail,
+            )
+            if str(exc) in NO_RETRY_TRANSIENT_CODES or attempt >= len(REFRESH_RETRY_DELAYS):
+                break
+            delay = REFRESH_RETRY_DELAYS[attempt]
+            if time.monotonic() + delay >= deadline:
+                break
+            time.sleep(delay)
+        except ProviderError as exc:
+            detail = _error_text(exc)
+            if isinstance(exc, PermanentError) and str(exc) == "not_found":
+                classified = operations.not_found("number_info")
+            else:
+                classified = operations.classify_exception("number_info", exc)
+            return None, classified, made, detail
+        except Exception as exc:  # noqa: BLE001 — a check must never raise
+            log.warning(
+                "provider %s number_info crashed: %s", provider_key, exc.__class__.__name__
+            )
+            detail = f"{exc.__class__.__name__}: {_error_text(exc)}"
+            return None, operations.classify_exception("number_info", exc), made, detail
+        else:
+            return info, operations.success("number_info"), made, ""
+    return None, classified, made, detail
+
+
+def number_info(
+    provider_key: str,
+    phone: str,
+    budget: float = SYNC_BUDGET_SECONDS,
+    *,
+    source: str = "employee",
+    user_id: int | None = None,
+    sale_id: int | None = None,
+    job_id=None,
+) -> NumberInfoResult:
+    """Read the live data of ``phone`` from the provider; one operation row is recorded.
+
+    Transient failures are retried like ``refresh`` (within ``budget``); a missing
+    line is the named ``not_found`` failure. Never raises, except ``KeyError``
+    for an unknown ``provider_key``.
+    """
+    adapter = get_adapter(provider_key)
+    started = _clock()
+    info, classified, made, detail = _number_info_attempts(adapter, provider_key, phone, budget)
+    try:
+        operations.record(
+            provider_key,
+            "number_info",
+            classified,
+            phone=phone,
+            source=source,
+            user_id=user_id,
+            sale_id=sale_id,
+            job_id=job_id,
+            attempts=made,
+            duration_ms=_elapsed_ms(started),
+            detail=detail,
+        )
+    except Exception as exc:  # noqa: BLE001 — recording must never break a check
+        log.warning("provider %s number_info not recorded: %s", provider_key, _error_text(exc))
+    return NumberInfoResult(info=info, classified=classified)
 
 
 def _not_sent_code(exc: Exception) -> str:
