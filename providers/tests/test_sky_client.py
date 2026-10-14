@@ -4,14 +4,32 @@ from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
 
+from providers.accounts import Credentials
 from providers.adapters.sky.client import (
     SkySalesClient,
+    SkySalesError,
     SkySalesSession,
     client_from_env,
+    generate_totp_code,
+    has_auto_totp,
 )
+from providers.contracts import PermanentError
+
+GET_CREDS = "providers.adapters.sky.client.get_credentials"
+
+
+def _creds(proxy: str = "", totp: str = "") -> Credentials:
+    extra = {"proxy_url": proxy} if proxy else {}
+    return Credentials("user", "pass", totp, extra)
 
 
 class SkySalesSessionFileTests(SimpleTestCase):
+    def setUp(self):
+        # Hermetic default: no DB / env lookups; tests override as needed.
+        patcher = patch(GET_CREDS, return_value=_creds())
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_load_session_file_ignores_legacy_pending_otp(self):
         path = Path("/tmp/test_sky_pending_session.json")
         path.write_text(
@@ -36,25 +54,31 @@ class SkySalesSessionFileTests(SimpleTestCase):
             self.assertFalse(path.exists())
 
     @patch("providers.adapters.sky.client.SkySalesClient.ensure_authenticated")
-    @patch("providers.adapters.sky.client.load_dotenv_sky")
-    def test_client_from_env_skips_pending_otp_resume(
-        self, _load_env, ensure_authenticated
-    ):
-        with patch.dict(
-            "os.environ",
-            {
-                "SKY_SALES_USER": "user",
-                "SKY_SALES_PASSWORD": "pass",
-                "SKY_SALES_SESSION_FILE": "/tmp/nonexistent_sky_session.json",
-            },
-            clear=False,
-        ):
+    def test_client_from_env_skips_pending_otp_resume(self, ensure_authenticated):
+        with patch(GET_CREDS, return_value=_creds()):
             with patch(
                 "providers.adapters.sky.client.SkySalesClient.load_session_file",
                 return_value=None,
             ):
                 client_from_env()
-        ensure_authenticated.assert_called_once()
+        ensure_authenticated.assert_called_once_with("user", "pass", "")
+
+    def test_client_from_env_without_credentials_raises_config_error(self):
+        with patch(GET_CREDS, side_effect=PermanentError("config_error")):
+            with self.assertRaises(SkySalesError) as ctx:
+                client_from_env()
+        self.assertIn("SKY_SALES_USER", str(ctx.exception))
+
+    def test_totp_code_comes_from_account_secret(self):
+        with patch(GET_CREDS, return_value=_creds(totp="JBSWY3DPEHPK3PXP")):
+            self.assertTrue(has_auto_totp())
+            self.assertEqual(len(generate_totp_code()), 6)
+        with patch(GET_CREDS, return_value=_creds()):
+            self.assertFalse(has_auto_totp())
+            with self.assertRaises(SkySalesError):
+                generate_totp_code()
+        with patch(GET_CREDS, side_effect=PermanentError("config_error")):
+            self.assertFalse(has_auto_totp())
 
     def test_begin_login_does_not_persist_pending_otp(self):
         client = SkySalesClient()
@@ -90,26 +114,22 @@ class SkySalesSessionFileTests(SimpleTestCase):
         with self.assertRaises(SkySalesError):
             client.fetch_balance_report(date(2026, 8, 1), date(2026, 8, 31))
 
-    def test_http_ignores_env_proxy_unless_sky_sales_proxy(self):
+    def test_http_ignores_env_proxy_unless_account_proxy(self):
         with patch.dict(
             "os.environ",
             {
                 "HTTPS_PROXY": "http://127.0.0.1:9",
                 "HTTP_PROXY": "http://127.0.0.1:9",
                 "ALL_PROXY": "http://127.0.0.1:9",
-                "SKY_SALES_PROXY": "",
             },
             clear=False,
         ):
-            client = SkySalesClient()
+            with patch(GET_CREDS, return_value=_creds()):
+                client = SkySalesClient()
         self.assertFalse(client.http.trust_env)
         self.assertEqual(client.http.proxies, {})
 
-        with patch.dict(
-            "os.environ",
-            {"SKY_SALES_PROXY": "http://127.0.0.1:8888"},
-            clear=False,
-        ):
+        with patch(GET_CREDS, return_value=_creds(proxy="http://127.0.0.1:8888")):
             client2 = SkySalesClient()
         self.assertEqual(
             client2.http.proxies.get("https"),
@@ -125,24 +145,21 @@ class SkySalesSessionFileTests(SimpleTestCase):
                 user_name="u",
             )
         )
-        with patch.dict("os.environ", {"SKY_SALES_PROXY": ""}, clear=False):
+        with patch(GET_CREDS, return_value=_creds()):
             with patch.object(client, "detect_egress_ip") as detect:
                 self.assertEqual(client.current_egress_ip(), "")
                 detect.assert_not_called()
 
+        with patch(GET_CREDS, return_value=_creds(proxy="http://127.0.0.1:8888")):
             with patch.object(client, "detect_egress_ip", return_value="1.2.3.4") as detect:
-                with patch.dict(
-                    "os.environ",
-                    {"SKY_SALES_PROXY": "http://127.0.0.1:8888"},
-                    clear=False,
-                ):
-                    self.assertEqual(client.current_egress_ip(), "1.2.3.4")
+                self.assertEqual(client.current_egress_ip(), "1.2.3.4")
                 detect.assert_called_once()
 
-        with patch.object(client, "current_egress_ip", return_value=""):
-            with patch.object(client, "_probe_session") as probe:
-                with patch.object(client, "save_session_file"):
-                    client.ensure_authenticated("u", "p")
-            probe.assert_called_once()
-            # Must not fall through to force_new_session / ipify.
-            self.assertEqual(client.session.jwt_token, "jwt")
+        with patch(GET_CREDS, return_value=_creds()):
+            with patch.object(client, "current_egress_ip", return_value=""):
+                with patch.object(client, "_probe_session") as probe:
+                    with patch.object(client, "save_session_file"):
+                        client.ensure_authenticated("u", "p")
+                probe.assert_called_once()
+                # Must not fall through to force_new_session / ipify.
+                self.assertEqual(client.session.jwt_token, "jwt")

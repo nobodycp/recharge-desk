@@ -39,12 +39,16 @@ from phone_refresh.models import (
 )
 from phone_refresh.services.refresh_service import refresh_phone
 from phone_refresh.views.general import GENERAL_TAB_ID
+from providers.forms import ProviderAccountForm
+from providers.models import ProviderAccount
 
 PROVIDER_TABS = [(p.value, p.label) for p in PhoneProvider]
 STATUSES_TAB_ID = "statuses"
 MESSAGES_TAB_ID = "messages"
 SITE_MANAGEMENT_TAB_ID = "site_management"
 PROVIDERS_GENERAL_TAB_ID = "general"
+# Providers that log in with a stored account (card shown on their tab).
+PROVIDERS_WITH_ACCOUNTS = {"sky"}
 
 
 def _ensure_provider(provider: str) -> str:
@@ -221,6 +225,12 @@ def providers_index(request):
     provider_configs = _provider_configs_ordered()
     provider_test_form = ProviderTestForm()
 
+    account_form = None
+    provider_account = None
+    if active_tab in PROVIDERS_WITH_ACCOUNTS:
+        provider_account = ProviderAccount.objects.filter(provider_key=active_tab).first()
+        account_form = ProviderAccountForm(provider_key=active_tab)
+
     ctx = {
         "title": "مزوّدو تحديث الأرقام",
         "active_tab": active_tab,
@@ -231,8 +241,27 @@ def providers_index(request):
         "provider_configs": provider_configs,
         "provider_labels": dict(PROVIDER_TABS),
         "provider_test_form": provider_test_form,
+        "account_form": account_form,
+        "provider_account": provider_account,
     }
     return render(request, "phone_refresh/providers_index.html", ctx)
+
+
+@management_required
+@require_POST
+def provider_account_save(request, provider_key: str):
+    """POST-only: save the provider login account (secrets are write-only)."""
+    if provider_key not in PROVIDERS_WITH_ACCOUNTS:
+        raise Http404("Unknown provider")
+    form = ProviderAccountForm(request.POST, provider_key=provider_key)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "تم حفظ حساب المزوّد.")
+    else:
+        for errors in form.errors.values():
+            for error in errors:
+                messages.error(request, error)
+    return redirect(_providers_url(provider_key))
 
 
 @management_required

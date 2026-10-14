@@ -13,6 +13,9 @@ from typing import Any
 
 import requests
 
+from providers.accounts import get_credentials
+from providers.contracts import PermanentError
+
 try:
     import pyotp
 except ImportError:  # pragma: no cover
@@ -51,7 +54,11 @@ class SkySalesSessionError(SkySalesError):
 
 
 def sky_sales_proxy_url() -> str:
-    return os.environ.get("SKY_SALES_PROXY", "").strip()
+    """Proxy from the Sky account (``Credentials.extra['proxy_url']``), or ``""``."""
+    try:
+        return str(get_credentials("sky").extra.get("proxy_url", "") or "").strip()
+    except PermanentError:
+        return ""
 
 
 def proxy_fingerprint(proxy_url: str) -> str:
@@ -200,7 +207,7 @@ class SkySalesClient:
         """Build headers/proxy for Sky calls.
 
         ``trust_env=False`` so HTTP(S)_PROXY from the shell/IDE does not
-        hijack ipify or the Sky portal — only explicit ``SKY_SALES_PROXY``.
+        hijack ipify or the Sky portal — only the Sky account's proxy.
         """
         self.http.trust_env = False
         self.http.headers.update(
@@ -231,7 +238,7 @@ class SkySalesClient:
     def current_egress_ip(self) -> str:
         """Egress IP used to invalidate sessions when the proxy path changes.
 
-        Direct (no ``SKY_SALES_PROXY``): skip ipify entirely — local/Django
+        Direct (no Sky account proxy): skip ipify entirely — local/Django
         processes often cannot resolve it, and Sky login does not need it.
         """
         if not sky_sales_proxy_url():
@@ -718,17 +725,16 @@ class SkySalesClient:
         try:
             return self._refresh_sim_once(phone)
         except SkySalesSessionError:
-            load_dotenv_sky()
-            user = os.environ.get("SKY_SALES_USER", self.session.user_name)
-            password = os.environ.get("SKY_SALES_PASSWORD", "")
-            otp = os.environ.get("SKY_SALES_OTP", "")
-            if not user or not password:
+            try:
+                creds = get_credentials("sky")
+            except PermanentError:
                 return refresh_system_error(
                     phone,
                     "config_error",
                     "إعدادات تسجيل الدخول ناقصة",
                     error="SKY_SALES_USER/SKY_SALES_PASSWORD missing",
                 )
+            user, password, otp = creds.username, creds.password, ""
             _debug("refresh failed (session) — new login + retry")
             try:
                 self.force_new_session(user, password, otp)
@@ -748,51 +754,20 @@ def execute_refresh(phone: str) -> dict[str, Any]:
         return error_response(phone, exc)
 
 
-def _sky_env_paths() -> list[Path]:
-    paths: list[Path] = []
-    custom = os.environ.get("SKY_SALES_ENV_FILE", "").strip()
-    if custom:
-        paths.append(Path(custom))
-    repo_root = Path(__file__).resolve().parents[3]
-    paths.append(repo_root / "sky_lab" / ".env")
-    return paths
-
-
-def load_dotenv_sky() -> None:
-    if os.environ.get("SKY_SALES_USER") and os.environ.get("SKY_SALES_PASSWORD"):
-        return
-    for env_path in _sky_env_paths():
-        if not env_path.is_file():
-            continue
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
-        return
-
-
-def _totp_secret_from_env() -> str:
-    secret = os.environ.get("SKY_SALES_TOTP_SECRET", "").strip().replace(" ", "")
-    uri = os.environ.get("SKY_SALES_OTP_AUTH_URI", "").strip()
-    if uri:
-        if pyotp is None:
-            raise SkySalesError("ثبّت pyotp: pip install pyotp")
-        return pyotp.parse_uri(uri).secret
-    if secret:
-        return secret.upper()
-    return ""
-
-
 def generate_totp_code() -> str:
-    secret = _totp_secret_from_env()
+    secret = _account_totp_secret()
     if not secret:
         raise SkySalesError("OTP_REQUIRED")
     if pyotp is None:
         raise SkySalesError("ثبّت pyotp: pip install pyotp")
-    totp = pyotp.TOTP(secret)
-    return totp.now()
+    return pyotp.TOTP(secret).now()
+
+
+def _account_totp_secret() -> str:
+    try:
+        return get_credentials("sky").totp_secret
+    except PermanentError:
+        return ""
 
 
 def resolve_otp_code(manual_otp: str = "") -> str:
@@ -802,22 +777,24 @@ def resolve_otp_code(manual_otp: str = "") -> str:
 
 
 def has_auto_totp() -> bool:
-    return bool(_totp_secret_from_env())
+    return bool(_account_totp_secret())
 
 
 def client_from_env() -> SkySalesClient:
-    load_dotenv_sky()
-    user = os.environ.get("SKY_SALES_USER", "")
-    password = os.environ.get("SKY_SALES_PASSWORD", "")
-    otp = os.environ.get("SKY_SALES_OTP", "")
-
-    if not user or not password:
+    """Build a client from the Sky account (DB, with env fallback)."""
+    try:
+        creds = get_credentials("sky")
+    except PermanentError as exc:
         raise SkySalesError(
-            "عيّن SKY_SALES_USER و SKY_SALES_PASSWORD في متغيرات البيئة"
-        )
+            "بيانات دخول Sky غير مكتملة (SKY_SALES_USER / SKY_SALES_PASSWORD)"
+        ) from exc
 
     saved = SkySalesClient.load_session_file()
-    client = saved if saved else SkySalesClient(SkySalesSession(jwt_token="", user_name=user))
+    client = (
+        saved
+        if saved
+        else SkySalesClient(SkySalesSession(jwt_token="", user_name=creds.username))
+    )
 
-    client.ensure_authenticated(user, password, otp)
+    client.ensure_authenticated(creds.username, creds.password, "")
     return client
