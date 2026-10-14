@@ -40,8 +40,8 @@ def _error_text(exc: Exception) -> str:
     return scrub(str(exc)) or exc.__class__.__name__
 
 
-def _error_response(error: str) -> RawResponse:
-    return RawResponse(text="", json=None, status_code=0, error=error)
+def _error_response(error: str, attempts: int = 1) -> RawResponse:
+    return RawResponse(text="", json=None, status_code=0, error=error, attempts=attempts)
 
 
 def _lock_wait(deadline: float, budget: float) -> float:
@@ -70,15 +70,18 @@ def refresh(
     adapter = get_adapter(provider_key)
     deadline = time.monotonic() + budget
     error = "sync_budget_exceeded"
+    made = 0  # attempts actually started (recorded on every returned response)
     for attempt in range(REFRESH_ATTEMPTS):
         if time.monotonic() >= deadline:
             break
+        made += 1
         try:
-            return run_authenticated(
+            raw = run_authenticated(
                 adapter,
                 lambda: adapter.refresh(phone),
                 lock_wait=_lock_wait(deadline, budget),
             )
+            return replace(raw, attempts=made)
         except TransientError as exc:
             error = _error_text(exc)
             log.warning(
@@ -94,8 +97,8 @@ def refresh(
                 break
             time.sleep(delay)
         except ProviderError as exc:
-            return _error_response(_error_text(exc))
-    return _error_response(error)
+            return _error_response(_error_text(exc), made)
+    return _error_response(error, made)
 
 
 def _not_sent_code(exc: Exception) -> str:

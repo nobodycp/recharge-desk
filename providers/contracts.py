@@ -22,6 +22,8 @@ class RawResponse:
     status_code: int
     error: str | None = None
     html_form_detected: bool = False
+    # How many provider attempts ``providers.service.refresh`` made (diagnostics).
+    attempts: int = 1
 
 
 # ``PermanentError`` message when a company's provider cannot reconcile.

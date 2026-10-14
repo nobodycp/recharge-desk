@@ -103,6 +103,7 @@ def _execute(job: ProviderJob) -> dict:
         source=job.source,
         started=started,
         internal_test=bool(ctx.get("internal_test")),
+        job_id=job.pk,
     )
     internal_test = common["internal_test"]
     try:

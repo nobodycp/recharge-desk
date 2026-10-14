@@ -21,6 +21,7 @@ from phone_refresh.models import (
     RefreshStatus,
     SystemSettings,
 )
+from providers import operations
 from providers import service as provider_service
 from providers.contracts import Capability, RawResponse
 from providers.registry import ADAPTERS
@@ -61,6 +62,8 @@ class RefreshResult:
     # just the truncated excerpt that goes into RefreshLog.
     raw_body_full: str = ""
     html_form_detected: bool = False
+    # What went into ``RefreshLog.duration_ms`` (shared with the operations row).
+    duration_ms: int | None = None
 
 
 def _lookup_provider_for_phone(phone: str) -> str | None:
@@ -377,6 +380,59 @@ def _scrubbed(raw: RawResponse) -> RawResponse:
     )
 
 
+_OPERATION_SOURCES = {
+    RefreshSource.WEB: "web",
+    RefreshSource.SMS: "sms",
+    RefreshSource.API: "api",
+    RefreshSource.EMPLOYEE: "employee",
+    RefreshSource.INTERNAL_TEST: "management",
+}
+
+
+def operation_source(source: str) -> str:
+    """``RefreshSource`` → provider-operations source (anything else is ``system``)."""
+    return _OPERATION_SOURCES.get(source, "system")
+
+
+def _task_id(raw: RawResponse) -> str:
+    if isinstance(raw.json, dict):
+        task_id = raw.json.get("task_id")
+        if task_id not in (None, ""):
+            return str(task_id)
+    return ""
+
+
+def _record_operation(
+    result: RefreshResult,
+    classified,
+    *,
+    phone: str,
+    provider_key: str,
+    source: str,
+    job_id,
+    attempts: int,
+    detail: str,
+) -> None:
+    """One provider-operations row for a refresh that reached the provider.
+
+    Never raises: the customer answer must not depend on the operations log.
+    """
+    try:
+        operations.record(
+            provider_key,
+            "refresh",
+            classified,
+            phone=phone[:20],
+            source=operation_source(source),
+            job_id=job_id,
+            attempts=attempts,
+            duration_ms=result.duration_ms,
+            detail=detail,
+        )
+    except Exception:  # noqa: BLE001 — logging must never break the response
+        log.exception("provider operation write failed for phone %s", phone)
+
+
 def complete(
     *,
     phone: str,
@@ -386,8 +442,13 @@ def complete(
     source: str,
     started: float,
     internal_test: bool = False,
+    job_id=None,
 ) -> RefreshResult:
-    """Turn a provider response into a logged, customer-facing result."""
+    """Turn a provider response into a logged, customer-facing result.
+
+    Also writes the one provider-operations row of this refresh (``job_id`` is
+    the queue job when it ran asynchronously).
+    """
     phone = (phone or "").strip()
     settings = SystemSettings.get()
     source = normalize_source(source)
@@ -398,7 +459,7 @@ def complete(
         error = scrub(raw.error)
         if not safe_raw.text:
             safe_raw = dataclasses.replace(safe_raw, text=f"error: {error}")
-        return _record_and_return(
+        result = _record_and_return(
             phone=phone,
             provider_key=provider_key,
             status=_S("busy" if raw.error in BUSY_ERROR_CODES else "error"),
@@ -412,6 +473,17 @@ def complete(
             internal_test=internal_test,
             source=source,
         )
+        _record_operation(
+            result,
+            operations.classify_code("refresh", raw.error),
+            phone=phone,
+            provider_key=provider_key,
+            source=source,
+            job_id=job_id,
+            attempts=raw.attempts,
+            detail=result.raw_excerpt,
+        )
+        return result
 
     # NOTE: Previously, we short-circuited here when ``raw.html_form_detected``
     # was true, assuming the HTML body meant the reCAPTCHA was rejected.
@@ -428,7 +500,7 @@ def complete(
     if status is None:
         status = _S("error")
 
-    return _record_and_return(
+    result = _record_and_return(
         phone=phone,
         provider_key=provider_key,
         status=status,
@@ -441,6 +513,21 @@ def complete(
         internal_test=internal_test,
         source=source,
     )
+    if status.code == "refreshed":
+        classified = operations.success("refresh", _task_id(raw))
+    else:
+        classified = operations.rejected("refresh", status.label)
+    _record_operation(
+        result,
+        classified,
+        phone=phone,
+        provider_key=provider_key,
+        source=source,
+        job_id=job_id,
+        attempts=raw.attempts,
+        detail=result.raw_excerpt,
+    )
+    return result
 
 
 def complete_failure(
@@ -453,14 +540,19 @@ def complete_failure(
     started: float,
     internal_test: bool = False,
     status_code: str = "error",
+    job_id=None,
 ) -> RefreshResult:
     """Log + answer a call that never produced a provider response.
 
     Defaults to the generic ``error`` status (provider crashed); the queue
-    uses ``status_code="busy"`` when a job cannot even be enqueued.
+    uses ``status_code="busy"`` when a job cannot even be enqueued. Also
+    writes the refresh's provider-operations row (internal error for a crash,
+    ``login_busy`` for a busy answer).
     """
     phone = (phone or "").strip()
-    return _record_and_return(
+    source = normalize_source(source)
+    safe_error = scrub(error)
+    result = _record_and_return(
         phone=phone,
         provider_key=provider_key,
         status=_S(status_code),
@@ -468,12 +560,26 @@ def complete_failure(
         matched_rule=None,
         ip=ip,
         started=started,
-        error=scrub(error),
+        error=safe_error,
         last_log=_last_successful_refresh(phone),
         settings=SystemSettings.get(),
         internal_test=internal_test,
-        source=normalize_source(source),
+        source=source,
     )
+    _record_operation(
+        result,
+        operations.classify_code(
+            "refresh", "login_busy" if status_code == "busy" else "context_error"
+        ),
+        phone=phone,
+        provider_key=provider_key,
+        source=source,
+        job_id=job_id,
+        attempts=1,
+        # No provider body exists; the scrubbed failure text is the diagnostic.
+        detail=safe_error,
+    )
+    return result
 
 
 def refresh_phone(
@@ -650,4 +756,5 @@ def _record_and_return(
         seconds_since_last_refresh=seconds_since,
         raw_body_full=full_body,
         html_form_detected=bool(raw.html_form_detected) if raw else False,
+        duration_ms=duration_ms,
     )
