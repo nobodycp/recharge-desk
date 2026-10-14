@@ -1,8 +1,25 @@
 """Shared queryset helpers for sale listings."""
 
+import datetime as dt
 from typing import Any, Dict, Optional
 
+from django.db.models import Q
+from django.utils import timezone
+
 from sales.models import Sale
+
+# ``charge_status`` filter value for open charges management must look at.
+NEEDS_VERIFICATION = "needs_verification"
+CHARGE_ESCALATE_AFTER = dt.timedelta(minutes=30)
+
+
+def needs_charge_verification_q() -> Q:
+    """Charges still open after the escalation window, or flagged as a conflict."""
+    cutoff = timezone.now() - CHARGE_ESCALATE_AFTER
+    return Q(
+        charge_status__in=(Sale.ChargeStatus.PROCESSING, Sale.ChargeStatus.UNVERIFIED),
+        created_at__lt=cutoff,
+    ) | Q(charge_conflict=True)
 
 
 # Statuses that must NOT contribute to volume / profit / KPI aggregates.
@@ -75,6 +92,13 @@ def apply_management_sale_filter_data(qs, data: Optional[Dict[str, Any]], *, omi
         qs = qs.filter(is_esim=True)
     elif esim == "no":
         qs = qs.filter(is_esim=False)
+    if data.get("entry_mode"):
+        qs = qs.filter(entry_mode=data["entry_mode"])
+    charge_status = data.get("charge_status")
+    if charge_status == NEEDS_VERIFICATION:
+        qs = qs.filter(needs_charge_verification_q())
+    elif charge_status:
+        qs = qs.filter(charge_status=charge_status)
     return qs
 
 

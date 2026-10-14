@@ -36,53 +36,7 @@
           </tr>
         </thead>
         {% for s in page_obj %}
-          <tbody id="sale-row-{{ s.pk }}" class="rd-pending-group">
-            <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
-              <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
-              <td class="fw-medium">{{ s.company.name }}</td>
-              <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
-              <td class="tabular-nums text-nowrap">
-                {{ s.reference_number }}
-                <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
-              </td>
-              <td class="text-truncate" style="max-width: 12rem;" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
-              <td class="small text-secondary">{{ s.created_by.username }}</td>
-              <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
-              <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
-              <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
-              <td class="text-end text-nowrap">
-                <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
-                  {% if s.status != "cancelled" %}
-                    <form
-                      method="post"
-                      action="{% url 'sales:sale_cancel' s.pk %}"
-                      class="d-inline-block m-0"
-                      hx-post="{% url 'sales:sale_cancel' s.pk %}"
-                      hx-target="#sale-row-{{ s.pk }}"
-                      hx-swap="outerHTML swap:200ms"
-                      hx-confirm="{% trans 'Cancel this sale?' %}"
-                    >
-                      {% csrf_token %}
-                      <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
-                    </form>
-                  {% endif %}
-                  <form
-                    method="post"
-                    action="{% url 'sales:sale_delete_permanent' s.pk %}"
-                    class="d-inline-block m-0"
-                    hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
-                    hx-target="#sale-row-{{ s.pk }}"
-                    hx-swap="outerHTML swap:200ms"
-                    hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
-                  >
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          </tbody>
+          {% include "sales/partials/management_sale_row.html" with s=s %}
         {% empty %}
           <tbody>
             <tr><td colspan="10" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No sales." %}</div></td></tr>
@@ -94,55 +48,7 @@
 
   <div class="d-md-none d-flex flex-column gap-2 p-2">
     {% for s in page_obj %}
-      <div id="sale-card-{{ s.pk }}" class="rd-mobile-row-card rd-pending-group {% if s.status == 'pending' %}is-pending{% endif %}">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <div class="small text-secondary">{{ s.created_at }}</div>
-          {% include "partials/sale_status_badge.html" with sale=s %}
-        </div>
-        <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
-        {% if s.payer_name %}<div class="small">{{ s.payer_name }}</div>{% endif %}
-        <div class="d-flex align-items-center gap-2 mt-1">
-          <span class="tabular-nums font-monospace">{{ s.reference_number }}</span>
-          <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
-        </div>
-        <div class="d-flex justify-content-between mt-2 small">
-          <span class="text-secondary">{{ s.created_by.username }}</span>
-          <span>
-            <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>
-            ·
-            <span class="{% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-bold">{{ s.profit_snapshot|intcomma }}</span>
-          </span>
-        </div>
-        <div class="d-flex flex-wrap gap-1 mt-2">
-          <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ request.get_full_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
-          {% if s.status != "cancelled" %}
-            <form
-              method="post"
-              action="{% url 'sales:sale_cancel' s.pk %}"
-              class="d-inline m-0"
-              hx-post="{% url 'sales:sale_cancel' s.pk %}"
-              hx-target="#sale-card-{{ s.pk }}"
-              hx-swap="outerHTML swap:200ms"
-              hx-confirm="{% trans 'Cancel this sale?' %}"
-            >
-              {% csrf_token %}
-              <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Cancel" %}</button>
-            </form>
-          {% endif %}
-          <form
-            method="post"
-            action="{% url 'sales:sale_delete_permanent' s.pk %}"
-            class="d-inline m-0"
-            hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
-            hx-target="#sale-card-{{ s.pk }}"
-            hx-swap="outerHTML swap:200ms"
-            hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
-          >
-            {% csrf_token %}
-            <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
-          </form>
-        </div>
-      </div>
+      {% include "sales/partials/management_sale_card.html" with s=s %}
     {% empty %}
       <div class="empty-state">{% trans "No sales." %}</div>
     {% endfor %}

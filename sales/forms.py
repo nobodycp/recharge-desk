@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from companies.models import Company, Product
 from sales.models import PaymentMethod, Sale
 from sales.phone_validation import validate_sale_phone_prefix
+from sales.query_utils import NEEDS_VERIFICATION
 
 User = get_user_model()
 
@@ -272,6 +273,20 @@ class ManagementSaleFilterForm(forms.Form):
             ("yes", _("eSIM only")),
             ("no", _("Non-eSIM")),
         ],
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    entry_mode = forms.ChoiceField(
+        label=_("Entry mode"),
+        choices=[("", _("All"))] + list(Sale.EntryMode.choices),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    charge_status = forms.ChoiceField(
+        label=_("Charge status"),
+        choices=[("", _("All"))]
+        + [(value, label) for value, label in Sale.ChargeStatus.choices if value]
+        + [(NEEDS_VERIFICATION, _("Needs attention (30+ min or conflict)"))],
         required=False,
         widget=forms.Select(attrs={"class": "form-select"}),
     )

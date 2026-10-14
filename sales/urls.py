@@ -55,6 +55,7 @@ urlpatterns = [
     ),
     path("employee/sales/<int:pk>/edit/", views.employee_sale_edit, name="employee_sale_edit"),
     path("employee/sales/<int:pk>/delete/", views.employee_sale_delete, name="employee_sale_delete"),
+    path("employee/sales/<int:pk>/charge-row/", views.sale_charge_row, name="sale_charge_row"),
     path(
         "employee/sales/payments/<int:pk>/edit/",
         views.employee_payment_edit,
@@ -86,6 +87,16 @@ urlpatterns = [
     path("management/sales/<int:pk>/edit/", views.sale_edit, name="sale_edit"),
     path("management/sales/<int:pk>/cancel/", views.sale_cancel, name="sale_cancel"),
     path("management/sales/<int:pk>/delete/", views.sale_delete_permanent, name="sale_delete_permanent"),
+    path(
+        "management/sales/<int:pk>/charge/recheck/",
+        views.sale_charge_recheck,
+        name="sale_charge_recheck",
+    ),
+    path(
+        "management/sales/<int:pk>/charge/resolve/",
+        views.sale_charge_resolve,
+        name="sale_charge_resolve",
+    ),
     path("management/payment-methods/", views.payment_method_list, name="payment_method_list"),
     path("management/payment-methods/new/", views.payment_method_create, name="payment_method_create"),
     path("management/payment-methods/<int:pk>/edit/", views.payment_method_edit, name="payment_method_edit"),

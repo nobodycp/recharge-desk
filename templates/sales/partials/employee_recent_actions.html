@@ -17,4 +17,6 @@
       <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
     </form>
   </div>
+{% elif s.entry_mode == "auto_charge" %}
+  <div class="small rd-text-muted text-end">{% trans "Charged through the provider — only management can change it." %}</div>
 {% endif %}

@@ -15,6 +15,7 @@
     data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
   >
           {% csrf_token %}
+          <input type="hidden" name="form_token" value="{{ form_token }}">
           {% if form.errors %}
             <div class="rd-form-error-banner" role="alert">
               <div class="rd-form-error-banner__title">{% trans "Please fix the highlighted fields." %}</div>
@@ -145,6 +146,7 @@
                     type="button"
                     class="btn btn-sm btn-outline-primary w-100 py-2 px-1 rounded-2 employee-chip employee-company-tile d-flex flex-column align-items-center justify-content-center {% if selected_company_id == c.pk|stringformat:'s' %}is-active{% endif %}"
                     data-company-id="{{ c.pk }}"
+                    {% if chargeable_company_ids %}data-can-charge="{% if c.pk in chargeable_company_ids %}1{% else %}0{% endif %}"{% endif %}
                     hx-get="{% url 'sales:employee_product_fragment' %}?company={{ c.pk }}"
                     hx-target="#product-tiles-container"
                     hx-swap="innerHTML"
@@ -241,9 +243,23 @@
             </div>
           </details>
           <div class="sticky-save">
-            <button class="btn btn-primary w-100 employee-save-sale-btn" type="submit">
-              {% trans "Save sale" %}
-            </button>
+            <div class="sticky-save__actions">
+              <button class="btn btn-primary w-100 employee-save-sale-btn" type="submit" name="action" value="save">
+                {% trans "Save sale" %}
+              </button>
+              {% if chargeable_company_ids %}
+                <button
+                  class="btn w-100 employee-save-sale-btn employee-charge-sale-btn"
+                  type="submit" name="action" value="charge"
+                  id="rd-charge-sale-btn"
+                  title="{% trans 'Record the sale and charge the line through the provider' %}"
+                  {% if not charge_available %}hidden{% endif %}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg>
+                  {% trans "Charge & record sale" %}
+                </button>
+              {% endif %}
+            </div>
           </div>
         </form>
 </div>
@@ -638,9 +654,27 @@
     }
   }
 
+  function syncChargeButton() {
+    var chargeBtn = document.getElementById("rd-charge-sale-btn");
+    if (!chargeBtn) return;
+    var company = document.querySelector(".employee-company-tile.is-active");
+    chargeBtn.hidden = !(company && company.getAttribute("data-can-charge") === "1");
+  }
+
+  function setSubmitButtonsDisabled(form, disabled) {
+    form.querySelectorAll('button[type="submit"]').forEach(function (b) {
+      b.disabled = disabled;
+    });
+  }
+
   window.__rdEmployeeSaleOnClick = function (e) {
     var form = document.getElementById("employee-sale-form");
     if (!form) return;
+    var companyBtn = e.target.closest(".employee-company-tile");
+    if (companyBtn && form.contains(companyBtn)) {
+      syncChargeButton();
+      return;
+    }
     var lineBtn = e.target.closest(".employee-product-line-tile");
     if (lineBtn && form.contains(lineBtn)) {
       e.preventDefault();
@@ -727,6 +761,25 @@
         }
       });
     }
+    if (saleForm) {
+      /* One submit per render: a second click would otherwise record (and charge) twice. */
+      saleForm.addEventListener("submit", function (e) {
+        if (e.defaultPrevented) return;
+        if (saleForm.getAttribute("data-submitting") === "1") {
+          e.preventDefault();
+          return;
+        }
+        saleForm.setAttribute("data-submitting", "1");
+        /* Disable after the browser has captured the clicked button's name/value. */
+        window.setTimeout(function () { setSubmitButtonsDisabled(saleForm, true); }, 0);
+      });
+      window.addEventListener("pageshow", function (evt) {
+        if (!evt.persisted) return;
+        saleForm.removeAttribute("data-submitting");
+        setSubmitButtonsDisabled(saleForm, false);
+      });
+    }
+    syncChargeButton();
 
     var ph = document.getElementById("id_product");
     if (ph && ph.value) {

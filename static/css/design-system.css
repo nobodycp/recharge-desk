@@ -1298,6 +1298,196 @@ body.app-shell {
   border: 1px solid var(--bs-border-color);
 }
 
+/* Solid danger: needs a human, louder than a cancelled/failed chip. */
+.rd-badge--conflict {
+  background: var(--rd-danger);
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .rd-badge--conflict {
+  color: var(--bs-body-bg);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Charge-and-record sales: "auto charge" mode segment + charge state segment  */
+/* -------------------------------------------------------------------------- */
+.rd-charge-cluster {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  vertical-align: middle;
+}
+
+.rd-charge-tag {
+  --rd-charge-edge: color-mix(in srgb, var(--rd-accent-2) 42%, transparent);
+  display: inline-flex;
+  align-items: stretch;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid var(--rd-charge-edge);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.rd-charge-tag__mode,
+.rd-charge-tag__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.rd-charge-tag__mode {
+  background: color-mix(in srgb, var(--rd-accent-2) 14%, transparent);
+  color: var(--rd-accent-2);
+}
+
+.rd-charge-tag__state {
+  border-inline-start: 1px solid var(--rd-charge-edge);
+}
+
+.rd-charge-tag--processing .rd-charge-tag__state {
+  background: var(--rd-info-soft);
+  color: var(--rd-info);
+}
+
+.rd-charge-tag--success .rd-charge-tag__state {
+  background: var(--rd-success-soft);
+  color: var(--rd-success);
+}
+
+.rd-charge-tag--failed .rd-charge-tag__state {
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
+}
+
+.rd-charge-tag--unverified .rd-charge-tag__state {
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning);
+}
+
+[data-bs-theme="dark"] .rd-charge-tag--unverified .rd-charge-tag__state {
+  color: #fcd34d;
+}
+
+.rd-charge-tag__pulse {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+  animation: rd-charge-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rd-charge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.65);
+  }
+}
+
+/* Employee "My entries": auto-charged rows carry an accent edge on the leading side.
+   Management rows skip it — their leading edge already marks pending sales. */
+.rd-list-flush > .list-group-item.rd-charge-row {
+  border-inline-start: 3px solid var(--rd-accent-2);
+}
+
+.rd-table-modern > .rd-charge-row > tr.rd-charge-detail-row > td {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.rd-charge-details {
+  font-size: 0.8rem;
+}
+
+.rd-charge-details__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--rd-accent-2);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.rd-charge-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.rd-charge-details__summary::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-inline-end: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--rd-transition-fast);
+}
+
+[dir="rtl"] .rd-charge-details__summary::before {
+  transform: rotate(45deg);
+}
+
+.rd-charge-details[open] > .rd-charge-details__summary::before {
+  transform: rotate(45deg);
+}
+
+[dir="rtl"] .rd-charge-details[open] > .rd-charge-details__summary::before {
+  transform: rotate(-45deg);
+}
+
+.rd-charge-details__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-sm);
+}
+
+.rd-charge-details__alert {
+  flex-basis: 100%;
+  color: var(--rd-danger);
+  font-weight: 600;
+}
+
+.rd-charge-details__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  min-width: 0;
+}
+
+.rd-charge-details__facts dt {
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+  font-size: 0.72rem;
+}
+
+.rd-charge-details__facts dd {
+  margin: 0;
+}
+
+.rd-charge-details__message dd {
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 /* Buttons */
 .rd-btn-icon {
   width: 2.375rem;

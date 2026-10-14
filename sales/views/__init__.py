@@ -43,6 +43,7 @@ from sales.views.employee import (
     employee_submit_customer_payment_submission,
     employee_refresh_phone,
     employee_refresh_status,
+    sale_charge_row,
 )
 from sales.views.management import (
     awaiting_approvals,
@@ -50,6 +51,8 @@ from sales.views.management import (
     pending_payments,
     sale_approve,
     sale_cancel,
+    sale_charge_recheck,
+    sale_charge_resolve,
     sale_delete_permanent,
     sale_edit,
     sale_mark_paid,
@@ -82,6 +85,7 @@ __all__ = [
     "employee_submit_customer_payment_submission",
     "employee_refresh_phone",
     "employee_refresh_status",
+    "sale_charge_row",
     "api_payer_by_number",
     "api_payer_name_suggestions",
     "api_sim_stock_preview",
@@ -95,6 +99,8 @@ __all__ = [
     "sale_cancel",
     "sale_edit",
     "sale_delete_permanent",
+    "sale_charge_recheck",
+    "sale_charge_resolve",
     # payment methods
     "payment_method_list",
     "payment_method_create",

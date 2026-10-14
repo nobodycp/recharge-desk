@@ -4,20 +4,25 @@ from django.contrib import messages
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
 from core.pagination import paginate_request
 from customers.services import approve_sale as approve_on_account_sale
 from customers.services import reject_sale as reject_on_account_sale
+from sales import charging
 from sales.forms import (
     ManagementSaleEditForm,
     ManagementSaleFilterForm,
 )
 from sales.models import Sale
 from sales.query_utils import (
+    NEEDS_VERIFICATION,
     apply_management_sale_filter_data,
     apply_sale_list_ordering,
+    needs_charge_verification_q,
 )
 from sales.services import (
     cancel_sale,
@@ -25,7 +30,15 @@ from sales.services import (
     mark_sale_paid,
     update_sale_fields,
 )
-from sales.views._shared import htmx_action_error, htmx_remove_target, is_htmx
+from sales.views._shared import (
+    htmx_action_error,
+    htmx_remove_target,
+    is_htmx,
+    render_sale_row,
+    safe_return_url,
+    sale_row_layout,
+    sale_row_queryset,
+)
 
 
 # --------------------------------------------------------------- list views
@@ -63,6 +76,8 @@ def management_sale_list(request):
     }
     if request.headers.get("HX-Request"):
         return render(request, "sales/partials/management_sale_list_results.html", ctx)
+    ctx["needs_verification_count"] = Sale.objects.filter(needs_charge_verification_q()).count()
+    ctx["needs_verification_value"] = NEEDS_VERIFICATION
     return render(request, "sales/management_sale_list.html", ctx)
 
 
@@ -279,3 +294,65 @@ def sale_delete_permanent(request, pk):
         return htmx_remove_target()
     messages.success(request, _("Sale was permanently removed from the system."))
     return redirect(request.META.get("HTTP_REFERER") or "sales:management_sale_list")
+
+
+# ------------------------------------------------------ charge-and-record
+def _charge_action_response(request, pk, *, action, success_message):
+    """Run ``action(sale)``; htmx gets the refreshed row, others go back to the list."""
+    sale = get_object_or_404(sale_row_queryset(), pk=pk)
+    htmx = is_htmx(request)
+    try:
+        action(sale)
+    except ValueError as exc:
+        if htmx:
+            return htmx_action_error(str(exc))
+        messages.error(request, str(exc))
+    else:
+        if htmx:
+            sale = sale_row_queryset().get(pk=sale.pk)
+            return render_sale_row(request, sale, sale_row_layout(request, management=True))
+        messages.success(request, success_message)
+    return redirect(
+        safe_return_url(
+            request,
+            request.META.get("HTTP_REFERER", ""),
+            reverse("sales:management_sale_list"),
+        )
+    )
+
+
+def _recheck(sale: Sale) -> None:
+    if not sale.charge_is_open:
+        raise ValueError(_("Only charges in progress or unverified can be rechecked."))
+    charging.recheck(sale)
+
+
+@management_required
+@require_POST
+def sale_charge_recheck(request, pk):
+    return _charge_action_response(
+        request,
+        pk,
+        action=_recheck,
+        success_message=_("Checking this charge with the provider. Refresh in a moment."),
+    )
+
+
+@management_required
+@require_POST
+def sale_charge_resolve(request, pk):
+    result = request.POST.get("result")
+
+    def resolve(sale: Sale) -> None:
+        if result not in ("success", "failed"):
+            raise ValueError(_("Choose whether the charge succeeded or failed."))
+        charging.manual_resolve(sale, success=result == "success", user=request.user)
+
+    return _charge_action_response(
+        request,
+        pk,
+        action=resolve,
+        success_message=_("Charge marked as successful.")
+        if result == "success"
+        else _("Charge marked as failed; the sale was reversed."),
+    )

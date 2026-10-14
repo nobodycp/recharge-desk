@@ -1,0 +1,71 @@
+{% load i18n humanize %}
+{% with return_path=list_path|default:request.get_full_path %}
+<div
+  id="sale-card-{{ s.pk }}"
+  class="rd-mobile-row-card rd-pending-group {% if s.status == 'pending' %}is-pending{% endif %}{% if s.entry_mode == 'auto_charge' %} rd-charge-row{% endif %}"
+  {% if s.charge_status == "processing" %}
+    hx-get="{% url 'sales:sale_charge_row' s.pk %}?layout=card"
+    hx-trigger="every 5s"
+    hx-target="this"
+    hx-swap="outerHTML"
+    hx-push-url="false"
+    hx-indicator="this"
+  {% endif %}
+>
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <div class="small text-secondary">{{ s.created_at }}</div>
+    {% include "partials/sale_status_badge.html" with sale=s %}
+  </div>
+  <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
+  {% if s.entry_mode == "auto_charge" %}
+    <div class="mt-1">{% include "sales/partials/charge_badge.html" with sale=s management=True %}</div>
+  {% endif %}
+  {% if s.payer_name %}<div class="small">{{ s.payer_name }}</div>{% endif %}
+  <div class="d-flex align-items-center gap-2 mt-1">
+    <span class="tabular-nums font-monospace">{{ s.reference_number }}</span>
+    <button type="button" class="btn btn-sm btn-outline-secondary py-0 rd-copy-ref" data-copy="{{ s.reference_number }}">{% trans "Copy" %}</button>
+  </div>
+  <div class="d-flex justify-content-between mt-2 small">
+    <span class="text-secondary">{{ s.created_by.username }}</span>
+    <span>
+      <span class="kpi-info fw-bold">{{ s.sell_price_actual|intcomma }}</span>
+      ·
+      <span class="{% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %} fw-bold">{{ s.profit_snapshot|intcomma }}</span>
+    </span>
+  </div>
+  {% if s.entry_mode == "auto_charge" %}
+    <div class="mt-2">{% include "sales/partials/management_charge_details.html" with s=s row_layout="card" %}</div>
+  {% endif %}
+  <div class="d-flex flex-wrap gap-1 mt-2">
+    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false">{% trans "Edit" %}</a>
+    {% if s.status != "cancelled" and not s.charge_is_open %}
+      <form
+        method="post"
+        action="{% url 'sales:sale_cancel' s.pk %}"
+        class="d-inline m-0"
+        hx-post="{% url 'sales:sale_cancel' s.pk %}"
+        hx-target="#sale-card-{{ s.pk }}"
+        hx-swap="outerHTML swap:200ms"
+        hx-confirm="{% trans 'Cancel this sale?' %}"
+      >
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Cancel" %}</button>
+      </form>
+    {% endif %}
+    {% if s.entry_mode != "auto_charge" or s.charge_status == "failed" %}
+      <form
+        method="post"
+        action="{% url 'sales:sale_delete_permanent' s.pk %}"
+        class="d-inline m-0"
+        hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
+        hx-target="#sale-card-{{ s.pk }}"
+        hx-swap="outerHTML swap:200ms"
+        hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
+      >
+        {% csrf_token %}
+        <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}

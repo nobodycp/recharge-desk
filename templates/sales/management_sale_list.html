@@ -7,6 +7,12 @@
     <p class="rd-text-muted mb-0">{% trans "Review and manage recorded sales." %}</p>
   </div>
   <div class="d-flex flex-wrap gap-2">
+    {% if needs_verification_count %}
+      <a class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2" href="{% url 'sales:management_sale_list' %}?charge_status={{ needs_verification_value }}">
+        {% trans "Charges needing attention" %}
+        <span class="rd-badge rd-badge--pending tabular-nums">{{ needs_verification_count }}</span>
+      </a>
+    {% endif %}
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:sales_export_csv' %}?{{ request.GET.urlencode }}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       {% trans "Export CSV" %}
@@ -38,6 +44,8 @@
       <div class="col-md-4 col-lg-3">{{ filter_form.payment_method.label_tag }}{{ filter_form.payment_method }}</div>
       <div class="col-md-4 col-lg-3">{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
       <div class="col-md-4 col-lg-3">{{ filter_form.esim.label_tag }}{{ filter_form.esim }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.entry_mode.label_tag }}{{ filter_form.entry_mode }}</div>
+      <div class="col-md-4 col-lg-3">{{ filter_form.charge_status.label_tag }}{{ filter_form.charge_status }}</div>
       <div class="col-md-4 col-lg-3">{{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}</div>
       <div class="col-md-4 col-lg-3">{{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}</div>
       <div class="col-12 d-flex flex-wrap gap-2">

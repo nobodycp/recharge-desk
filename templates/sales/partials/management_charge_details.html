@@ -1,0 +1,69 @@
+{% load i18n humanize %}
+{# Provider-side facts and settle actions for an auto-charged sale `s` (management only). #}
+<details class="rd-charge-details"{% if s.charge_is_open or s.charge_conflict %} open{% endif %}>
+  <summary class="rd-charge-details__summary">{% trans "Charge details" %}</summary>
+  <div class="rd-charge-details__body">
+    {% if s.charge_conflict %}
+      <p class="rd-charge-details__alert mb-0">{% trans "The provider reported a successful charge after the sale was reversed. Check the line at the provider and settle it by hand." %}</p>
+    {% endif %}
+    <dl class="rd-charge-details__facts mb-0">
+      <div><dt>{% trans "Provider reference" %}</dt><dd class="tabular-nums">{{ s.charge_provider_ref|default:"—" }}</dd></div>
+      <div><dt>{% trans "Provider plan" %}</dt><dd>{{ s.charge_plan_name|default:"—" }}</dd></div>
+      <div>
+        <dt>{% trans "Provider cost" %}</dt>
+        <dd class="tabular-nums{% if s.charge_cost_mismatch %} kpi-warning fw-semibold{% endif %}">
+          {% if s.charge_provider_cost is not None %}{{ s.charge_provider_cost|intcomma }}{% else %}—{% endif %}
+          <span class="rd-text-muted fw-normal">/ {% trans "ours" %} {{ s.cost_price_snapshot|intcomma }}</span>
+        </dd>
+      </div>
+      <div><dt>{% trans "Last checked" %}</dt><dd class="tabular-nums">{% if s.charge_checked_at %}{{ s.charge_checked_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</dd></div>
+      {% if s.charge_message %}
+        <div class="rd-charge-details__message"><dt>{% trans "Provider message" %}</dt><dd>{{ s.charge_message }}</dd></div>
+      {% endif %}
+    </dl>
+    {% if s.charge_is_open %}
+      <div class="d-flex flex-wrap gap-1 rd-charge-details__actions">
+        <form
+          method="post"
+          action="{% url 'sales:sale_charge_recheck' s.pk %}"
+          class="d-inline m-0"
+          hx-post="{% url 'sales:sale_charge_recheck' s.pk %}?layout={{ row_layout|default:'row' }}"
+          hx-target="closest .rd-pending-group"
+          hx-swap="outerHTML"
+          hx-push-url="false"
+        >
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Recheck with provider" %}</button>
+        </form>
+        <form
+          method="post"
+          action="{% url 'sales:sale_charge_resolve' s.pk %}"
+          class="d-inline m-0"
+          hx-post="{% url 'sales:sale_charge_resolve' s.pk %}?layout={{ row_layout|default:'row' }}"
+          hx-target="closest .rd-pending-group"
+          hx-swap="outerHTML"
+          hx-push-url="false"
+          hx-confirm="{% trans 'Mark this charge as successful? Do this only after confirming at the provider that the line was charged.' %}"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="result" value="success">
+          <button type="submit" class="btn btn-sm btn-outline-success">{% trans "Mark charged" %}</button>
+        </form>
+        <form
+          method="post"
+          action="{% url 'sales:sale_charge_resolve' s.pk %}"
+          class="d-inline m-0"
+          hx-post="{% url 'sales:sale_charge_resolve' s.pk %}?layout={{ row_layout|default:'row' }}"
+          hx-target="closest .rd-pending-group"
+          hx-swap="outerHTML"
+          hx-push-url="false"
+          hx-confirm="{% trans 'Mark this charge as failed? The sale will be reversed and the supplier balance restored.' %}"
+        >
+          {% csrf_token %}
+          <input type="hidden" name="result" value="failed">
+          <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Mark failed" %}</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</details>

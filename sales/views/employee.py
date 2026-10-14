@@ -1,5 +1,7 @@
 """Employee-facing sales views: entry form, JSON helpers, product fragment."""
 
+import uuid
+
 from django.contrib import messages
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import Prefetch
@@ -10,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
-from accounts.permissions import employee_required
+from accounts.permissions import employee_required, is_management
 from companies.models import Company, Product, ProductLine
 from core.http_utils import get_client_ip
 from core.models import AppSettings
@@ -36,6 +38,7 @@ from sales.employee_editing import (
     payment_submission_is_employee_editable,
     sale_is_employee_editable,
 )
+from sales.charging import DUPLICATE_SUBMIT, can_charge, create_charged_sale
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
 from inventory.forms import CustomerStockFilterForm
@@ -43,7 +46,14 @@ from inventory.models import SimStockBalance
 from inventory.services import preview_sim_stock_deduction
 from employees.services import get_acting_employee_profile
 from sales.services import create_sale, delete_sale_permanently, update_sale_fields
-from sales.views._shared import htmx_action_error, htmx_remove_target, is_htmx
+from sales.views._shared import (
+    htmx_action_error,
+    htmx_remove_target,
+    is_htmx,
+    render_sale_row,
+    sale_row_layout,
+    sale_row_queryset,
+)
 
 
 def _build_product_groups(company_id):
@@ -85,9 +95,11 @@ def employee_entry(request):
         user=request.user,
     )
     companies = list(Company.objects.filter(is_active=True).order_by("name"))
+    chargeable_company_ids = {c.pk for c in companies if can_charge(c)}
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
     acting_employee = get_acting_employee_profile(request.user)
     product_groups = _build_product_groups(company_id) if company_id else []
+    charge_requested = request.POST.get("action") == "charge"
 
     if request.method == "POST" and form.is_valid():
         try:
@@ -108,33 +120,47 @@ def employee_entry(request):
                 form.cleaned_data.get("employee_recipient") if paid_via_employee else None
             )
             is_new_sim = bool(form.cleaned_data.get("is_new_sim")) and app_settings.sales_inventory_enabled
-            with transaction.atomic():
-                sale = create_sale(
-                    company=form.cleaned_data["company"],
-                    product=form.cleaned_data["product"],
-                    reference_number=form.cleaned_data["reference_number"],
-                    payer_name=form.cleaned_data["payer_name"],
-                    payment_method=form.cleaned_data["payment_method"]
-                    if not on_account and not paid_via_employee
-                    else None,
-                    sell_price_actual=form.cleaned_data["sell_price_actual"],
-                    notes=form.cleaned_data.get("notes") or "",
+            sale_kwargs = dict(
+                company=form.cleaned_data["company"],
+                product=form.cleaned_data["product"],
+                reference_number=form.cleaned_data["reference_number"],
+                payer_name=form.cleaned_data["payer_name"],
+                payment_method=form.cleaned_data["payment_method"]
+                if not on_account and not paid_via_employee
+                else None,
+                sell_price_actual=form.cleaned_data["sell_price_actual"],
+                notes=form.cleaned_data.get("notes") or "",
+                is_esim=bool(form.cleaned_data.get("is_esim")),
+                is_new_sim=is_new_sim,
+                sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
+                duration_days=form.cleaned_data.get("duration_days"),
+                on_account=on_account,
+                customer=customer,
+                paid_via_employee=paid_via_employee,
+                employee_recipient=employee_recipient,
+            )
+            if charge_requested:
+                sale, outcome = create_charged_sale(
+                    form_token=request.POST.get("form_token", ""),
                     user=request.user,
-                    is_esim=bool(form.cleaned_data.get("is_esim")),
-                    is_new_sim=is_new_sim,
-                    sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
-                    duration_days=form.cleaned_data.get("duration_days"),
-                    on_account=on_account,
-                    customer=customer,
-                    paid_via_employee=paid_via_employee,
-                    employee_recipient=employee_recipient,
+                    **sale_kwargs,
                 )
-                outcome = finalize_sale_after_entry(
-                    sale=sale,
-                    user=request.user,
-                    on_account=on_account,
-                    paid_via_employee=paid_via_employee,
+            else:
+                with transaction.atomic():
+                    sale = create_sale(user=request.user, **sale_kwargs)
+                    outcome = finalize_sale_after_entry(
+                        sale=sale,
+                        user=request.user,
+                        on_account=on_account,
+                        paid_via_employee=paid_via_employee,
+                    )
+            if outcome == DUPLICATE_SUBMIT:
+                messages.info(
+                    request,
+                    _("This sale was already recorded (%(status)s). No new charge was made.")
+                    % {"status": sale.get_charge_status_display()},
                 )
+                return redirect("sales:employee_entry")
             if outcome == "posted_debt":
                 messages.success(request, _("Recorded on account and posted to the customer."))
             elif outcome in ("paid", "paid_employee"):
@@ -149,6 +175,10 @@ def employee_entry(request):
                 messages.success(request, _("Recorded as on-account; awaiting management approval."))
             else:
                 messages.success(request, _("Sale recorded successfully."))
+            if charge_requested:
+                messages.info(
+                    request, _("Charge sent to the provider. Follow its status in My entries.")
+                )
             return redirect("sales:employee_entry")
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -180,6 +210,10 @@ def employee_entry(request):
             "selected_product_id": selected_product_id,
             "selected_payment_id": str(request.POST.get("payment_method", "") or ""),
             "esim_extra": ESIM_EXTRA_COST,
+            "form_token": str(uuid.uuid4()),
+            "chargeable_company_ids": chargeable_company_ids,
+            "charge_available": str(company_id or "")
+            in {str(pk) for pk in chargeable_company_ids},
         },
     )
 
@@ -310,6 +344,23 @@ def employee_refresh_status(request, job_id):
     Returns exactly what :func:`job_payload` returns (customer-safe).
     """
     return JsonResponse(job_payload(str(job_id)))
+
+
+@employee_required
+@never_cache
+@require_GET
+def sale_charge_row(request, pk):
+    """One sale's row, re-fetched every few seconds while its charge is processing.
+
+    Employees get their own "My entries" row only; management may fetch any
+    sale, including the management list row/card (``?layout=row|card``).
+    """
+    management = is_management(request.user)
+    qs = sale_row_queryset()
+    if not management:
+        qs = qs.filter(created_by=request.user)
+    sale = get_object_or_404(qs, pk=pk)
+    return render_sale_row(request, sale, sale_row_layout(request, management=management))
 
 
 @employee_required

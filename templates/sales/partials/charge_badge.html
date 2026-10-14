@@ -1,0 +1,30 @@
+{% load i18n %}
+{# Charge-and-record marker + charge status for `sale`. Conflict / cost chips only when `management`. #}
+{% if sale.entry_mode == "auto_charge" %}
+<span class="rd-charge-cluster">
+  <span class="rd-charge-tag{% if sale.charge_status %} rd-charge-tag--{{ sale.charge_status }}{% endif %}">
+    <span class="rd-charge-tag__mode" title="{% trans 'Charged via provider' %}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg>
+      {% trans "Auto charge" %}
+    </span>
+    {% if sale.charge_status == "processing" %}
+      <span class="rd-charge-tag__state" role="status"><span class="rd-charge-tag__pulse" aria-hidden="true"></span>{% trans "Charging" %}</span>
+    {% elif sale.charge_status == "success" %}
+      <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>{% trans "Charged" %}</span>
+    {% elif sale.charge_status == "failed" %}
+      <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>{% trans "Charge failed" %}</span>
+    {% elif sale.charge_status == "unverified" %}
+      <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 7v6M12 17.5v.01"/></svg>{% trans "Needs verification" %}</span>
+    {% endif %}
+  </span>
+  {% if management and sale.charge_conflict %}
+    <span class="rd-badge rd-badge--conflict" title="{% trans 'The provider reported a successful charge after the sale was reversed.' %}">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      {% trans "Charge conflict" %}
+    </span>
+  {% endif %}
+  {% if management and sale.charge_cost_mismatch %}
+    <span class="rd-badge rd-badge--pending tabular-nums" title="{% blocktrans with provider=sale.charge_provider_cost ours=sale.cost_price_snapshot %}Provider cost {{ provider }} vs our cost {{ ours }}{% endblocktrans %}">{% trans "Cost difference" %}</span>
+  {% endif %}
+</span>
+{% endif %}

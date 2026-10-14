@@ -5,12 +5,73 @@ so that each individual view stays focused on the business action.
 """
 
 import json
+from urllib.parse import urlsplit
 
 from django.http import HttpResponse
+from django.shortcuts import render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+
+from sales.employee_editing import sale_is_employee_editable
+from sales.models import Sale
+
+# One sale rendered alone: the employee "My entries" row, or the management
+# list's desktop row / mobile card (``?layout=row|card``).
+SALE_ROW_TEMPLATES = {
+    "employee": "sales/partials/employee_recent_sale_row.html",
+    "row": "sales/partials/management_sale_row.html",
+    "card": "sales/partials/management_sale_card.html",
+}
 
 
 def is_htmx(request) -> bool:
     return request.headers.get("HX-Request") == "true"
+
+
+def sale_row_queryset():
+    return Sale.objects.select_related(
+        "company",
+        "product",
+        "product__line",
+        "payment_method",
+        "customer",
+        "created_by",
+        "employee_recipient",
+        "employee_recipient__user",
+        "employee_recipient__user__profile",
+    )
+
+
+def sale_row_layout(request, *, management: bool) -> str:
+    layout = request.GET.get("layout") or "employee"
+    if layout not in SALE_ROW_TEMPLATES or not management:
+        return "employee"
+    return layout
+
+
+def safe_return_url(request, url: str, fallback: str) -> str:
+    """``url`` when it points back at this site, else ``fallback``."""
+    if url and url_has_allowed_host_and_scheme(
+        url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return url
+    return fallback
+
+
+def render_sale_row(request, sale: Sale, layout: str) -> HttpResponse:
+    ctx = {"s": sale, "row_layout": layout}
+    if layout == "employee":
+        ctx["editable_sale_ids"] = (
+            {sale.pk} if sale_is_employee_editable(sale, request.user) else set()
+        )
+    else:
+        # Row actions link back to the list page the row sits in, not this endpoint.
+        current = urlsplit(request.headers.get("HX-Current-URL", ""))
+        current_path = current.path + (f"?{current.query}" if current.query else "")
+        ctx["list_path"] = safe_return_url(
+            request, current_path, reverse("sales:management_sale_list")
+        )
+    return render(request, SALE_ROW_TEMPLATES[layout], ctx)
 
 
 def htmx_remove_target() -> HttpResponse:
