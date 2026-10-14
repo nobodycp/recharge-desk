@@ -1118,6 +1118,11 @@ AR: dict[str, str] = {
     "Pick a payment method.": "اختر طريقة الدفع.",
     "eSIM: extra cost applied to this sale": "eSIM: تكلفة إضافية على هذه المبيعة",
     "Refreshing": "قيد التحديث",
+    "Refresh numbers": "تحديث الأرقام",
+    "Scopes": "الصلاحيات",
+    "What this token is allowed to do.": "ما يُسمح لهذا التوكن بفعله.",
+    "Select at least one scope.": "اختر صلاحية واحدة على الأقل.",
+    "Comma-separated scopes this token may use (e.g. refresh).": "الصلاحيات المسموحة لهذا التوكن مفصولة بفواصل (مثل refresh).",
 }
 
 

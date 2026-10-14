@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-14 07:08+0300\n"
+"POT-Creation-Date: 2026-10-14 07:15+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2064,6 +2064,15 @@ msgstr "تم تسجيل البيع اليدوي."
 #: inventory/views.py:722
 msgid "Movement deleted."
 msgstr "تم حذف الحركة."
+#: phone_refresh/forms.py:407
+msgid "Scopes"
+msgstr "الصلاحيات"
+#: phone_refresh/forms.py:410
+msgid "What this token is allowed to do."
+msgstr "ما يُسمح لهذا التوكن بفعله."
+#: phone_refresh/forms.py:411
+msgid "Select at least one scope."
+msgstr "اختر صلاحية واحدة على الأقل."
 #: phone_refresh/models.py:43
 msgid ""
 "English slug used in API responses, e.g. 'refreshed', 'queued'. Lowercase "
@@ -2147,15 +2156,21 @@ msgstr ""
 #: phone_refresh/models.py:344
 msgid "One origin per line. Empty = allow any origin."
 msgstr "أصل واحد في كل سطر. فارغ = السماح بأي أصل."
-#: phone_refresh/models.py:388
+#: phone_refresh/models.py:379
+msgid "Refresh numbers"
+msgstr "تحديث الأرقام"
+#: phone_refresh/models.py:396
 msgid "Friendly label for this token (e.g. where it's used)."
 msgstr "وصف مختصر للرمز (مثلاً أين يُستخدم)."
-#: phone_refresh/models.py:393
+#: phone_refresh/models.py:401
 msgid "sha256 of the raw token; raw value is shown only once on creation."
 msgstr "sha256 للرمز الخام؛ تُعرض القيمة الأصلية مرة واحدة عند الإنشاء."
-#: phone_refresh/models.py:397
+#: phone_refresh/models.py:405
 msgid "First 8 chars of the raw token, for identification in lists."
 msgstr "أول 8 أحرف من الرمز الخام للتعرّف في القوائم."
+#: phone_refresh/models.py:421
+msgid "Comma-separated scopes this token may use (e.g. refresh)."
+msgstr "الصلاحيات المسموحة لهذا التوكن مفصولة بفواصل (مثل refresh)."
 #: providers/adapters/layan/reconcile.py:319
 msgid "Pending credit (manual)"
 msgstr "رصيد معلّق (يدوي)"
@@ -6353,9 +6368,6 @@ msgstr "لقطة التكلفة:"
 
 #~ msgid "No recent entries yet."
 #~ msgstr "لا توجد إدخالات حديثة بعد."
-
-#~ msgid "Refresh numbers"
-#~ msgstr "تحديث الأرقام"
 
 #~ msgid "Record customer payment"
 #~ msgstr "تسجيل دفعة زبون"

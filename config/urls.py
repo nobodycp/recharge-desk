@@ -27,6 +27,8 @@ urlpatterns = [
     # Device-facing SMS gateway API: kept OUTSIDE i18n_patterns so machine
     # clients hit stable, locale-free URLs (no /ar/ 302 that would break POST).
     path("", include("sms_gateway.api_urls")),
+    # Versioned bearer-token API (refresh today, charge later): also locale-free.
+    path("api/v1/", include("providers.api.urls")),
 ]
 
 urlpatterns += i18n_patterns(

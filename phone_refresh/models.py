@@ -373,6 +373,14 @@ class ApiSettings(models.Model):
         ]
 
 
+# Scopes an ``ApiToken`` can carry. Add ``("charge", ...)`` here when the
+# charge API is exposed; tokens store the granted codes as a comma list.
+API_SCOPES = [
+    ("refresh", _("Refresh numbers")),
+]
+DEFAULT_API_SCOPES = "refresh"
+
+
 class ApiToken(models.Model):
     """Bearer token for the public refresh API.
 
@@ -406,6 +414,12 @@ class ApiToken(models.Model):
     )
     last_used_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
+    scopes = models.CharField(
+        max_length=200,
+        default=DEFAULT_API_SCOPES,
+        blank=True,
+        help_text=_("Comma-separated scopes this token may use (e.g. refresh)."),
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -419,6 +433,14 @@ class ApiToken(models.Model):
     @property
     def is_active(self) -> bool:
         return self.revoked_at is None
+
+    @property
+    def scope_list(self) -> list[str]:
+        return [p for p in (s.strip().lower() for s in self.scopes.split(",")) if p]
+
+    def has_scope(self, scope: str) -> bool:
+        wanted = (scope or "").strip().lower()
+        return bool(wanted) and wanted in self.scope_list
 
 
 class ProviderConfig(models.Model):

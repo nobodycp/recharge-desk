@@ -69,7 +69,14 @@ def submit_refresh(
     forced_provider: str | None = None,
     bypass_provider_off: bool = False,
     notify: dict | None = None,
+    api_token_id: int | None = None,
 ) -> RefreshTicket:
+    """Start (or join) a refresh for ``phone``.
+
+    ``api_token_id`` marks the job as owned by that ``/api/v1`` token: it is
+    stored in the job payload and such a job is only ever shared with
+    submits carrying the same id (and token-less submits never join it).
+    """
     if not settings.REFRESH_ASYNC_ENABLED:
         result = refresh_phone(
             phone,
@@ -101,10 +108,22 @@ def submit_refresh(
     shareable = not (notify or forced_provider or internal_test or bypass_provider_off)
 
     job = None
+    job_payload_ctx = {
+        "ip": ip,
+        "internal_test": internal_test,
+        "forced_provider": forced_provider,
+        "bypass_provider_off": bypass_provider_off,
+        "notify": notify,
+    }
+    if api_token_id is not None:
+        job_payload_ctx["api_token_id"] = api_token_id
     with _submit_lock(phone):
         if shareable:
             existing = jobs.find_inflight(
-                ProviderJob.KIND_REFRESH, phone, wait, accept=_is_plain_job
+                ProviderJob.KIND_REFRESH,
+                phone,
+                wait,
+                accept=lambda job: _is_plain_job(job, api_token_id),
             )
             if existing is not None:
                 return RefreshTicket(str(existing.id), None)
@@ -113,13 +132,7 @@ def submit_refresh(
             provider_key=provider_key,
             phone=phone,
             source=source,
-            payload={
-                "ip": ip,
-                "internal_test": internal_test,
-                "forced_provider": forced_provider,
-                "bypass_provider_off": bypass_provider_off,
-                "notify": notify,
-            },
+            payload=job_payload_ctx,
         )
     enqueue_failure: dict = {}
 
@@ -149,8 +162,12 @@ def submit_refresh(
     return RefreshTicket(str(job.id), None)
 
 
-def _is_plain_job(job: ProviderJob) -> bool:
+def _is_plain_job(job: ProviderJob, api_token_id: int | None = None) -> bool:
     ctx = job.payload or {}
+    if ctx.get("api_token_id") != api_token_id:
+        # Token jobs are private to their token; token-less submits never
+        # join them, and a token never joins someone else's job.
+        return False
     return not (
         ctx.get("notify")
         or ctx.get("forced_provider")
@@ -201,6 +218,24 @@ def _busy_payload(*, phone, provider_key, ip, source, internal_test) -> dict:
     except Exception:  # noqa: BLE001 — the fallback path must not raise
         log.exception("could not log enqueue failure for %s", phone)
         return dict(_FALLBACK_BUSY_PAYLOAD)
+
+
+def unknown_job_payload() -> dict:
+    """Generic "unknown or expired" answer (same as :func:`job_payload` gives)."""
+    return dict(_EXPIRED_PAYLOAD)
+
+
+def job_owned_by_token(job_id: str, api_token_id: int) -> bool:
+    """Whether ``job_id`` is a refresh job submitted with ``api_token_id``."""
+    try:
+        job = ProviderJob.objects.filter(pk=job_id).first()
+    except (ValidationError, ValueError):
+        return False
+    return (
+        job is not None
+        and job.kind == ProviderJob.KIND_REFRESH
+        and (job.payload or {}).get("api_token_id") == api_token_id
+    )
 
 
 def job_payload(job_id: str) -> dict:

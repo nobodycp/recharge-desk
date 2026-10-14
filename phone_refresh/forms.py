@@ -3,8 +3,11 @@ import hashlib
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from phone_refresh.models import (
+    API_SCOPES,
+    DEFAULT_API_SCOPES,
     ApiSettings,
     ApiToken,
     CustomerMessage,
@@ -394,15 +397,23 @@ class ApiSettingsForm(forms.ModelForm):
 
 
 class ApiTokenForm(forms.ModelForm):
-    """Create-only form for ``ApiToken``: just collects a friendly name.
+    """Create-only form for ``ApiToken``: a friendly name plus its scopes.
 
     The raw token, hash and prefix are generated server-side in the view
     so the form never has to touch them.
     """
 
+    scopes = forms.MultipleChoiceField(
+        label=_("Scopes"),
+        choices=API_SCOPES,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+        help_text=_("What this token is allowed to do."),
+        error_messages={"required": _("Select at least one scope.")},
+    )
+
     class Meta:
         model = ApiToken
-        fields = ["name"]
+        fields = ["name", "scopes"]
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -414,11 +425,21 @@ class ApiTokenForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # ``initial`` from the (new) instance would be the raw comma string.
+        self.initial["scopes"] = DEFAULT_API_SCOPES.split(",")
+
     def clean_name(self) -> str:
         value = (self.cleaned_data.get("name") or "").strip()
         if not value:
             raise forms.ValidationError("الاسم مطلوب.")
         return value
+
+    def clean_scopes(self) -> str:
+        chosen = set(self.cleaned_data["scopes"])
+        # Registry order, so the stored string is stable.
+        return ",".join(code for code, _label in API_SCOPES if code in chosen)
 
 
 class ProviderConfigForm(forms.ModelForm):

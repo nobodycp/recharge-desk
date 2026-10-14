@@ -1,13 +1,11 @@
 """Public-facing refresh page + JSON API endpoint (no auth, rate-limited)."""
 from __future__ import annotations
 
-import hashlib
 import json
 
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils import translation
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -28,6 +26,7 @@ from phone_refresh.services.refresh_jobs import (
     wait_for_job,
 )
 from phone_refresh.services.refresh_service import status_payload
+from phone_refresh.token_auth import extract_bearer_token, resolve_token, touch_token
 
 SYNC_WAIT_SECONDS = 45
 # Status polling (every 2 s = 30/min per job): one counter per ip+job so
@@ -58,22 +57,6 @@ def _check_origin(request, api_settings: ApiSettings) -> bool:
     if not origin:
         return True
     return origin in allowed
-
-
-def _extract_bearer_token(request) -> str | None:
-    header = request.META.get("HTTP_AUTHORIZATION") or ""
-    if not header.lower().startswith("bearer "):
-        return None
-    return header[7:].strip() or None
-
-
-def _resolve_token(raw_token: str) -> ApiToken | None:
-    digest = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
-    try:
-        token = ApiToken.objects.get(token_hash=digest)
-    except ApiToken.DoesNotExist:
-        return None
-    return token if token.is_active else None
 
 
 def _truthy(value) -> bool:
@@ -207,12 +190,14 @@ def public_refresh_api(request):
 
     token: ApiToken | None = None
     if _token_required(api_settings, client_hint):
-        raw_token = _extract_bearer_token(request)
+        raw_token = extract_bearer_token(request)
         if not raw_token:
             return JsonResponse({"error": "missing_token"}, status=401)
-        token = _resolve_token(raw_token)
+        token = resolve_token(raw_token)
         if token is None:
             return JsonResponse({"error": "invalid_token"}, status=401)
+        if not token.has_scope("refresh"):
+            return JsonResponse({"error": "insufficient_scope"}, status=403)
 
     # Honeypot: legitimate browser users never see/fill the hidden
     # ``website`` field. If it's populated, short-circuit with a benign
@@ -264,7 +249,7 @@ def public_refresh_api(request):
     if token is not None:
         # Update audit field after the response logic settled so a slow
         # save can't delay/error out the actual refresh result.
-        ApiToken.objects.filter(pk=token.pk).update(last_used_at=timezone.now())
+        touch_token(token)
 
     return JsonResponse(payload, status=status_code)
 
