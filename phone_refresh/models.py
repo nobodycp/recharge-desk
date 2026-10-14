@@ -32,6 +32,8 @@ class RefreshStatus(models.Model):
         "error",
         "service_off",
         "provider_off",
+        "processing",
+        "busy",
     }
 
     code = models.SlugField(
@@ -277,6 +279,12 @@ class SystemSettings(models.Model):
         choices=PhoneProvider.choices,
         blank=True,
         help_text=_("Used when DB precheck is disabled. Empty → return ERROR."),
+    )
+    refresh_wait_seconds = models.PositiveIntegerField(
+        default=90,
+        help_text=_(
+            "Longest a customer waits for a refresh before being told it is still processing (in seconds)."
+        ),
     )
     updated_at = models.DateTimeField(auto_now=True)
 

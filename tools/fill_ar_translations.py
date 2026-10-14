@@ -858,6 +858,9 @@ AR: dict[str, str] = {
     "Per-phone cooldown between successful refreshes (in seconds).": (
         "مهلة بين التحديثات الناجحة لكل رقم (بالثواني)."
     ),
+    "Longest a customer waits for a refresh before being told it is still processing (in seconds).": (
+        "أقصى مدة ينتظرها العميل للتحديث قبل إبلاغه بأن الطلب قيد المعالجة (بالثواني)."
+    ),
     "Used when DB precheck is disabled. Empty → return ERROR.": (
         "يُستخدم عند تعطيل الفحص المسبق في قاعدة البيانات. فارغ → خطأ."
     ),

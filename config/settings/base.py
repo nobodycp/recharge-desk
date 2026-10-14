@@ -181,6 +181,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "providers.tasks.keepalive_sessions",
         "schedule": 300.0,
     },
+    "providers-purge-old-jobs": {
+        "task": "providers.tasks.purge_old_jobs",
+        "schedule": 86400.0,
+    },
 }
 
 REFRESH_ASYNC_ENABLED = os.environ.get("REFRESH_ASYNC_ENABLED", "1").strip() != "0"

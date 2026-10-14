@@ -1410,6 +1410,13 @@ msgstr "الأقل أولوية يُنفَّذ أولاً؛ أول تطابق ي
 msgid "Message shown to the customer (Arabic)."
 msgstr "المحل يدين للزبون (دفعة زائدة)."
 
+#: phone_refresh/models.py
+msgid ""
+"Longest a customer waits for a refresh before being told it is still "
+"processing (in seconds)."
+msgstr ""
+"أقصى مدة ينتظرها العميل للتحديث قبل إبلاغه بأن الطلب قيد المعالجة (بالثواني)."
+
 msgid "Where the refresh attempt was triggered from."
 msgstr "مصدر محاولة التحديث."
 msgid "First ~500 chars of the raw upstream response (for debugging)."

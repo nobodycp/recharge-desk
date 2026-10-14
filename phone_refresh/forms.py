@@ -164,6 +164,7 @@ class SystemSettingsForm(forms.ModelForm):
             "db_precheck_enabled",
             "show_last_refresh",
             "cooldown_seconds",
+            "refresh_wait_seconds",
             "default_provider",
         ]
         widgets = {
@@ -179,8 +180,17 @@ class SystemSettingsForm(forms.ModelForm):
             "cooldown_seconds": forms.NumberInput(
                 attrs={"class": "form-control", "min": "0", "step": "60"}
             ),
+            "refresh_wait_seconds": forms.NumberInput(
+                attrs={"class": "form-control", "min": "10", "step": "5"}
+            ),
             "default_provider": forms.Select(attrs={"class": "form-select"}),
         }
+
+    def clean_refresh_wait_seconds(self):
+        value = self.cleaned_data["refresh_wait_seconds"]
+        if value < 10:
+            raise ValidationError("الحد الأدنى لمدة الانتظار 10 ثوانٍ.")
+        return value
 
 
 class SiteSettingsForm(forms.ModelForm):

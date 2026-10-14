@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import datetime as dt
 import logging
 
 from celery import shared_task
+from django.utils import timezone
 
 from providers import service
 from providers.accounts import get_credentials
 from providers.contracts import PermanentError
-from providers.models import ProviderAccount
+from providers.models import ProviderAccount, ProviderJob
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 
@@ -38,3 +40,16 @@ def keepalive_sessions() -> None:
             log.info("provider %s keep-alive ok", key)
         except Exception as exc:
             log.warning("provider %s keep-alive failed: %s", key, scrub(str(exc)))
+
+
+REFRESH_JOB_RETENTION_DAYS = 30
+
+
+@shared_task
+def purge_old_jobs() -> int:
+    """Delete refresh jobs past retention (beat, daily); returns rows deleted."""
+    cutoff = timezone.now() - dt.timedelta(days=REFRESH_JOB_RETENTION_DAYS)
+    deleted, _ = ProviderJob.objects.filter(
+        kind=ProviderJob.KIND_REFRESH, created_at__lt=cutoff
+    ).delete()
+    return deleted

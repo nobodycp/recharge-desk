@@ -23,8 +23,8 @@ from customers.services import (
     update_awaiting_customer_payment_submission,
 )
 from customers.views._shared import flash_form_errors
-from phone_refresh.models import RefreshSource, SystemSettings
-from phone_refresh.services.refresh_service import refresh_phone
+from phone_refresh.models import RefreshSource
+from phone_refresh.services.refresh_service import refresh_phone, result_payload
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
 from sales.employee_editing import (
@@ -72,18 +72,7 @@ def _build_product_groups(company_id):
 
 
 def _refresh_json_payload(result) -> dict:
-    payload = {
-        "status": result.status.code,
-        "message": {"title": result.message_title, "body": result.message_body},
-    }
-    if SystemSettings.get().show_last_refresh:
-        payload["last_refresh_at"] = (
-            result.last_refresh_at.isoformat()
-            if result.last_refresh_at is not None
-            else None
-        )
-        payload["seconds_since_last_refresh"] = result.seconds_since_last_refresh
-    return payload
+    return result_payload(result)
 
 
 @employee_required

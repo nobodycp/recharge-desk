@@ -5,6 +5,7 @@ HTTP endpoint and the internal-test admin tool should call.
 """
 from __future__ import annotations
 
+import dataclasses
 import datetime as _dt
 import logging
 import time
@@ -25,6 +26,7 @@ from phone_refresh.models import (
 from providers import service as provider_service
 from providers.contracts import RawResponse
 from providers.registry import ADAPTERS
+from providers.sanitize import scrub
 from phone_refresh.services.pattern_matcher import match_response
 
 log = logging.getLogger(__name__)
@@ -182,16 +184,42 @@ def _interpolate_body(body: str, *, elapsed: str | None) -> str:
     return _WAIT_FALLBACK_BODY
 
 
-def refresh_phone(
+_KNOWN_SOURCES = frozenset(
+    {
+        RefreshSource.API,
+        RefreshSource.WEB,
+        RefreshSource.EMPLOYEE,
+        RefreshSource.SMS,
+        RefreshSource.INTERNAL_TEST,
+    }
+)
+
+
+def _normalize_source(source: str) -> str:
+    """Callers may pass an unknown string but we must never persist anything
+    outside the known choices. Unknown values fall back to ``web`` (the
+    safest "real traffic" bucket) and ``legacy`` is explicitly rejected for
+    new rows.
+    """
+    if source == RefreshSource.LEGACY or source not in _KNOWN_SOURCES:
+        return RefreshSource.WEB
+    return source
+
+
+def precheck(
     phone: str,
-    ip: str | None = None,
     *,
+    ip: str | None,
     internal_test: bool = False,
     forced_provider: str | None = None,
     bypass_provider_off: bool = False,
     source: str = RefreshSource.WEB,
-) -> RefreshResult:
-    """End-to-end orchestrator: validate, route, call, match, log, respond.
+) -> tuple[RefreshResult | None, str]:
+    """Everything that can be decided without calling the provider.
+
+    Returns ``(result, "")`` when the request is answered immediately (the
+    result is already logged), or ``(None, provider_key)`` when the caller
+    must go on to call the provider.
 
     When ``internal_test`` is ``True`` (admin-only path), the service-off
     toggle and the per-phone cooldown are both bypassed so admins can
@@ -205,50 +233,44 @@ def refresh_phone(
     started = time.monotonic()
     phone = (phone or "").strip()
     settings = SystemSettings.get()
-    # Normalize the source: callers may pass an unknown string but we must
-    # never persist anything outside the known choices. Unknown values fall
-    # back to ``web`` (the safest "real traffic" bucket) and ``legacy`` is
-    # explicitly rejected for new rows.
-    if source == RefreshSource.LEGACY or source not in {
-        RefreshSource.API,
-        RefreshSource.WEB,
-        RefreshSource.EMPLOYEE,
-        RefreshSource.SMS,
-        RefreshSource.INTERNAL_TEST,
-    }:
-        source = RefreshSource.WEB
-
+    source = _normalize_source(source)
     skip_cooldown = internal_test
 
     # 1. Service-off short-circuit (skipped during internal test only).
     if not settings.service_enabled and not internal_test:
-        return _record_and_return(
-            phone=phone,
-            provider_key="",
-            status=_S("service_off"),
-            raw=None,
-            matched_rule=None,
-            ip=ip,
-            started=started,
-            settings=settings,
-            internal_test=internal_test,
-            source=source,
+        return (
+            _record_and_return(
+                phone=phone,
+                provider_key="",
+                status=_S("service_off"),
+                raw=None,
+                matched_rule=None,
+                ip=ip,
+                started=started,
+                settings=settings,
+                internal_test=internal_test,
+                source=source,
+            ),
+            "",
         )
 
     # 2. Phone validation.
     if not PHONE_RE.match(phone):
-        return _record_and_return(
-            phone=phone,
-            provider_key="",
-            status=_S("not_found"),
-            raw=None,
-            matched_rule=None,
-            ip=ip,
-            started=started,
-            error="invalid_phone",
-            settings=settings,
-            internal_test=internal_test,
-            source=source,
+        return (
+            _record_and_return(
+                phone=phone,
+                provider_key="",
+                status=_S("not_found"),
+                raw=None,
+                matched_rule=None,
+                ip=ip,
+                started=started,
+                error="invalid_phone",
+                settings=settings,
+                internal_test=internal_test,
+                source=source,
+            ),
+            "",
         )
 
     # 3. Cooldown (skipped during internal test only).
@@ -256,19 +278,22 @@ def refresh_phone(
     if not skip_cooldown and last_log:
         elapsed_sec = (timezone.now() - last_log.created_at).total_seconds()
         if elapsed_sec < settings.cooldown_seconds:
-            return _record_and_return(
-                phone=phone,
-                provider_key="",
-                status=_S("wait"),
-                raw=None,
-                matched_rule=None,
-                ip=ip,
-                started=started,
-                elapsed_sec=elapsed_sec,
-                last_log=last_log,
-                settings=settings,
-                internal_test=internal_test,
-                source=source,
+            return (
+                _record_and_return(
+                    phone=phone,
+                    provider_key="",
+                    status=_S("wait"),
+                    raw=None,
+                    matched_rule=None,
+                    ip=ip,
+                    started=started,
+                    elapsed_sec=elapsed_sec,
+                    last_log=last_log,
+                    settings=settings,
+                    internal_test=internal_test,
+                    source=source,
+                ),
+                "",
             )
 
     # 4. Provider routing.
@@ -277,97 +302,117 @@ def refresh_phone(
     elif settings.db_precheck_enabled:
         provider_key = _lookup_provider_for_phone(phone)
         if not provider_key:
-            return _record_and_return(
-                phone=phone,
-                provider_key="",
-                status=_S("not_found"),
-                raw=None,
-                matched_rule=None,
-                ip=ip,
-                started=started,
-                error="no_company_match",
-                last_log=last_log,
-                settings=settings,
-                internal_test=internal_test,
-                source=source,
+            return (
+                _record_and_return(
+                    phone=phone,
+                    provider_key="",
+                    status=_S("not_found"),
+                    raw=None,
+                    matched_rule=None,
+                    ip=ip,
+                    started=started,
+                    error="no_company_match",
+                    last_log=last_log,
+                    settings=settings,
+                    internal_test=internal_test,
+                    source=source,
+                ),
+                "",
             )
     else:
         provider_key = settings.default_provider or ""
         if not provider_key:
-            return _record_and_return(
+            return (
+                _record_and_return(
+                    phone=phone,
+                    provider_key="",
+                    status=_S("error"),
+                    raw=None,
+                    matched_rule=None,
+                    ip=ip,
+                    started=started,
+                    error="db_precheck_off_and_no_default_provider",
+                    last_log=last_log,
+                    settings=settings,
+                    internal_test=internal_test,
+                    source=source,
+                ),
+                "",
+            )
+
+    # 4b. Per-provider on/off toggle (skipped on admin bypass).
+    if not bypass_provider_off and not ProviderConfig.is_provider_enabled(provider_key):
+        return (
+            _record_and_return(
                 phone=phone,
-                provider_key="",
+                provider_key=provider_key,
+                status=_S("provider_off"),
+                raw=None,
+                matched_rule=None,
+                ip=ip,
+                started=started,
+                error="provider_disabled",
+                last_log=last_log,
+                settings=settings,
+                internal_test=internal_test,
+                source=source,
+            ),
+            "",
+        )
+
+    # 4c. Unknown provider key (checked here so a job is never queued for it).
+    if provider_key not in ADAPTERS:
+        return (
+            _record_and_return(
+                phone=phone,
+                provider_key=provider_key,
                 status=_S("error"),
                 raw=None,
                 matched_rule=None,
                 ip=ip,
                 started=started,
-                error="db_precheck_off_and_no_default_provider",
+                error=f"no_provider:{provider_key}",
                 last_log=last_log,
                 settings=settings,
                 internal_test=internal_test,
                 source=source,
-            )
-
-    # 4b. Per-provider on/off toggle (skipped on admin bypass).
-    if not bypass_provider_off and not ProviderConfig.is_provider_enabled(provider_key):
-        return _record_and_return(
-            phone=phone,
-            provider_key=provider_key,
-            status=_S("provider_off"),
-            raw=None,
-            matched_rule=None,
-            ip=ip,
-            started=started,
-            error="provider_disabled",
-            last_log=last_log,
-            settings=settings,
-            internal_test=internal_test,
-            source=source,
+            ),
+            "",
         )
 
-    # 5. Provider call.
-    if provider_key not in ADAPTERS:
-        return _record_and_return(
-            phone=phone,
-            provider_key=provider_key,
-            status=_S("error"),
-            raw=None,
-            matched_rule=None,
-            ip=ip,
-            started=started,
-            error=f"no_provider:{provider_key}",
-            last_log=last_log,
-            settings=settings,
-            internal_test=internal_test,
-            source=source,
-        )
+    return None, provider_key
 
-    try:
-        raw = provider_service.refresh(provider_key, phone)
-    except Exception as exc:  # noqa: BLE001 — provider errors must not bubble up
-        log.exception("provider %s crashed for phone %s", provider_key, phone)
-        return _record_and_return(
-            phone=phone,
-            provider_key=provider_key,
-            status=_S("error"),
-            raw=None,
-            matched_rule=None,
-            ip=ip,
-            started=started,
-            error=str(exc),
-            last_log=last_log,
-            settings=settings,
-            internal_test=internal_test,
-            source=source,
-        )
+
+def _scrubbed(raw: RawResponse) -> RawResponse:
+    """Copy of ``raw`` that is safe to persist or show (secrets masked)."""
+    return dataclasses.replace(
+        raw, text=scrub(_normalize_raw_text(raw)), json=None
+    )
+
+
+def complete(
+    *,
+    phone: str,
+    provider_key: str,
+    raw: RawResponse,
+    ip: str | None,
+    source: str,
+    started: float,
+    internal_test: bool = False,
+) -> RefreshResult:
+    """Turn a provider response into a logged, customer-facing result."""
+    phone = (phone or "").strip()
+    settings = SystemSettings.get()
+    source = _normalize_source(source)
+    last_log = _last_successful_refresh(phone)
+    safe_raw = _scrubbed(raw)
 
     if raw.error:
         return _record_and_return(
             phone=phone,
             provider_key=provider_key,
             status=_S("error"),
-            raw=raw,
+            raw=safe_raw,
             matched_rule=None,
             ip=ip,
             started=started,
@@ -388,6 +433,7 @@ def refresh_phone(
     # as a diagnostic signal (surfaced via admin/logs) but no longer has any
     # behavioural effect.
 
+    # Match on the original response; only the persisted copy is scrubbed.
     status, matched_rule = match_response(provider_key, raw)
     if status is None:
         status = _S("error")
@@ -396,7 +442,7 @@ def refresh_phone(
         phone=phone,
         provider_key=provider_key,
         status=status,
-        raw=raw,
+        raw=safe_raw,
         matched_rule=matched_rule,
         ip=ip,
         started=started,
@@ -405,6 +451,112 @@ def refresh_phone(
         internal_test=internal_test,
         source=source,
     )
+
+
+def complete_failure(
+    *,
+    phone: str,
+    provider_key: str,
+    error: str,
+    ip: str | None,
+    source: str,
+    started: float,
+    internal_test: bool = False,
+    status_code: str = "error",
+) -> RefreshResult:
+    """Log + answer a call that never produced a provider response.
+
+    Defaults to the generic ``error`` status (provider crashed); the queue
+    uses ``status_code="busy"`` when a job cannot even be enqueued.
+    """
+    phone = (phone or "").strip()
+    return _record_and_return(
+        phone=phone,
+        provider_key=provider_key,
+        status=_S(status_code),
+        raw=None,
+        matched_rule=None,
+        ip=ip,
+        started=started,
+        error=scrub(error),
+        last_log=_last_successful_refresh(phone),
+        settings=SystemSettings.get(),
+        internal_test=internal_test,
+        source=_normalize_source(source),
+    )
+
+
+def refresh_phone(
+    phone: str,
+    ip: str | None = None,
+    *,
+    internal_test: bool = False,
+    forced_provider: str | None = None,
+    bypass_provider_off: bool = False,
+    source: str = RefreshSource.WEB,
+) -> RefreshResult:
+    """End-to-end synchronous orchestrator: validate, route, call, match, log, respond."""
+    started = time.monotonic()
+    phone = (phone or "").strip()
+    immediate, provider_key = precheck(
+        phone,
+        ip=ip,
+        internal_test=internal_test,
+        forced_provider=forced_provider,
+        bypass_provider_off=bypass_provider_off,
+        source=source,
+    )
+    if immediate is not None:
+        return immediate
+
+    try:
+        raw = provider_service.refresh(provider_key, phone)
+    except Exception as exc:  # noqa: BLE001 — provider errors must not bubble up
+        log.exception("provider %s crashed for phone %s", provider_key, phone)
+        return complete_failure(
+            phone=phone,
+            provider_key=provider_key,
+            error=str(exc),
+            ip=ip,
+            source=source,
+            started=started,
+            internal_test=internal_test,
+        )
+
+    return complete(
+        phone=phone,
+        provider_key=provider_key,
+        raw=raw,
+        ip=ip,
+        source=source,
+        started=started,
+        internal_test=internal_test,
+    )
+
+
+def status_payload(status_code: str, **extra) -> dict:
+    """Payload carrying just the seeded customer message of ``status_code``."""
+    title, body = _lookup_message(_S(status_code))
+    return {"status": status_code, "message": {"title": title, "body": body}, **extra}
+
+
+def result_payload(result: RefreshResult) -> dict:
+    """JSON body returned to web/API/employee/SMS callers for ``result``."""
+    payload = {
+        "status": result.status.code,
+        "message": {"title": result.message_title, "body": result.message_body},
+    }
+    # Only expose last_refresh fields when the admin toggle is on. The
+    # service already nulls them out when off, but we double-check here so
+    # the response shape is unambiguous.
+    if SystemSettings.get().show_last_refresh:
+        payload["last_refresh_at"] = (
+            result.last_refresh_at.isoformat()
+            if result.last_refresh_at is not None
+            else None
+        )
+        payload["seconds_since_last_refresh"] = result.seconds_since_last_refresh
+    return payload
 
 
 def _record_and_return(

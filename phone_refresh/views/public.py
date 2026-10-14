@@ -19,10 +19,9 @@ from phone_refresh.models import (
     ApiToken,
     RefreshSource,
     SiteSettings,
-    SystemSettings,
 )
 from core.http_utils import get_client_ip
-from phone_refresh.services.refresh_service import refresh_phone
+from phone_refresh.services.refresh_service import refresh_phone, result_payload
 
 # --- Lightweight in-process rate limiter ------------------------------------
 # Sliding-window cap of N requests per IP per window. Two windows now (per
@@ -256,21 +255,7 @@ def public_refresh_api(request):
         source = RefreshSource.API
     result = refresh_phone(str(phone), ip=ip or None, source=source)
 
-    payload = {
-        "status": result.status.code,
-        "message": {"title": result.message_title, "body": result.message_body},
-    }
-
-    # Only expose last_refresh fields when the admin toggle is on. The
-    # service already nulls them out when off, but we double-check here so
-    # the response shape is unambiguous.
-    if SystemSettings.get().show_last_refresh:
-        payload["last_refresh_at"] = (
-            result.last_refresh_at.isoformat()
-            if result.last_refresh_at is not None
-            else None
-        )
-        payload["seconds_since_last_refresh"] = result.seconds_since_last_refresh
+    payload = result_payload(result)
 
     if token is not None:
         # Update audit field after the response logic settled so a slow

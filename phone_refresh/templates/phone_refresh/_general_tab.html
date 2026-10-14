@@ -122,6 +122,16 @@
             </div>
           </div>
 
+          <div>
+            <label class="form-label fw-semibold" for="{{ settings_form.refresh_wait_seconds.id_for_label }}">
+              أقصى مدة انتظار العميل للتحديث (بالثواني)
+            </label>
+            {{ settings_form.refresh_wait_seconds }}
+            <div class="form-text">
+              القيمة الافتراضية: 90. بعدها تظهر للعميل رسالة «قيد المعالجة» ويستمر التحديث في الخلفية.
+            </div>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">حفظ الإعدادات</button>
           </div>
