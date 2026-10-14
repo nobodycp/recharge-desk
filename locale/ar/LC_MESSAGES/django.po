@@ -5472,16 +5472,6 @@ msgstr "كشف المورّد وسجل الرصيد الداخلي"
 #: templates/reports/dashboard.html:7
 msgid "Statistics period"
 msgstr "فترة الإحصائيات"
-
-#: templates/reports/dashboard.html:17
-msgid "Number refreshes have waited in the queue for over 2 minutes."
-msgstr "طلبات تحديث الأرقام تنتظر في الطابور منذ أكثر من دقيقتين."
-#: templates/reports/dashboard.html:17
-msgid "The background worker may be down."
-msgstr "قد يكون عامل المهام الخلفية متوقفاً."
-#: templates/reports/dashboard.html:18
-msgid "Providers → General health"
-msgstr "المزوّدون ← حالة البوابة"
 #: templates/reports/dashboard.html:35
 #: templates/reports/employee_report.html:28
 #: templates/reports/employee_report.html:49

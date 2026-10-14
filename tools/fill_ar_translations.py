@@ -1123,11 +1123,6 @@ AR: dict[str, str] = {
     "What this token is allowed to do.": "ما يُسمح لهذا التوكن بفعله.",
     "Select at least one scope.": "اختر صلاحية واحدة على الأقل.",
     "Comma-separated scopes this token may use (e.g. refresh).": "الصلاحيات المسموحة لهذا التوكن مفصولة بفواصل (مثل refresh).",
-    "Number refreshes have waited in the queue for over 2 minutes.": (
-        "طلبات تحديث الأرقام تنتظر في الطابور منذ أكثر من دقيقتين."
-    ),
-    "The background worker may be down.": "قد يكون عامل المهام الخلفية متوقفاً.",
-    "Providers → General health": "المزوّدون ← حالة البوابة",
     "The service is busy right now, please try again shortly.": "الخدمة مشغولة حالياً، حاول بعد قليل.",
     "Your request is still being processed, please try again in a minute.": (
         "طلبك قيد المعالجة، أعد المحاولة بعد دقيقة."

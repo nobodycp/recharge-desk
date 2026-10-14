@@ -20,7 +20,7 @@ from sales.query_utils import (
 )
 from companies.models import Company
 from expenses.models import Expense
-from providers.health import refresh_queue_stalled
+from providers.health import alerts as health_alerts
 from sales.models import Sale
 
 
@@ -341,7 +341,7 @@ def dashboard(request):
             "chart_max_company_profit": chart_max_company_profit,
             "chart_total_volume": chart_total_volume,
             "chart_avg_volume": chart_avg_volume,
-            "refresh_queue_stalled": refresh_queue_stalled(),
+            "health_alerts": health_alerts(),
         },
     )
 

@@ -126,20 +126,63 @@ class DashboardSmokeTests(_ReportsBase):
         )
         return job
 
-    def test_refresh_queue_alert_hidden_when_queue_is_healthy(self):
+    def test_connection_health_block_hidden_when_queue_is_healthy(self):
         self._queued_refresh_job(60)
         stale_done = self._queued_refresh_job(600)
         type(stale_done).objects.filter(pk=stale_done.pk).update(status="done")
         r = self.client.get(reverse("reports:dashboard"))
-        self.assertNotContains(r, 'id="refresh-queue-alert"')
+        self.assertNotContains(r, 'id="connection-health-alert"')
+        self.assertNotContains(r, "حالة الربط")
 
-    def test_refresh_queue_alert_shown_when_jobs_wait_over_two_minutes(self):
+    def test_connection_health_block_shown_when_jobs_wait_over_two_minutes(self):
+        self.company.provider_key = "sky"
+        self.company.save(update_fields=["provider_key"])
         self._queued_refresh_job(180)
         r = self.client.get(reverse("reports:dashboard"))
-        self.assertContains(r, 'id="refresh-queue-alert"')
+        self.assertContains(r, 'id="connection-health-alert"')
+        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "الـ worker متوقف أو الطلبات عالقة")
         self.assertContains(
+            r,
+            reverse("companies:company_detail", args=[self.company.pk])
+            + "?tab=connection",
+        )
+        self.assertNotContains(
             r, reverse("phone_refresh:providers_index") + "?tab=general"
         )
+
+    def test_connection_health_block_renders_without_link_when_no_provider_company(self):
+        self._queued_refresh_job(180)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertContains(r, "الـ worker متوقف أو الطلبات عالقة")
+        self.assertNotContains(r, "tab=connection")
+
+    def test_connection_health_block_renders_each_alert_text(self):
+        from unittest import mock
+
+        items = [
+            {"text": "Redis لا يستجيب", "url": "/x/?tab=connection"},
+            {"text": "فشل تسجيل الدخول: شركة", "url": ""},
+        ]
+        with mock.patch("reports.views.health_alerts", return_value=items):
+            r = self.client.get(reverse("reports:dashboard"))
+        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "Redis لا يستجيب")
+        self.assertContains(r, 'href="/x/?tab=connection"')
+        self.assertContains(r, "فشل تسجيل الدخول: شركة")
+
+    def test_dashboard_does_not_ping_health_outside_cached_alerts(self):
+        from unittest import mock
+
+        from providers import health
+
+        cache.delete(health.ALERTS_CACHE_KEY)
+        with mock.patch.object(health, "_redis_ok", return_value=True) as redis_ok, \
+                mock.patch.object(health, "_worker_ok", return_value=True) as worker_ok:
+            self.client.get(reverse("reports:dashboard"))
+            self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(redis_ok.call_count, 1)
+        self.assertEqual(worker_ok.call_count, 1)
 
     def test_refresh_queue_check_is_cached_briefly(self):
         from providers import health

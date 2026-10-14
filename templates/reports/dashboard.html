@@ -12,10 +12,17 @@
   </nav>
 </div>
 
-{% if refresh_queue_stalled %}
-<div id="refresh-queue-alert" class="alert alert-warning py-2 px-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
-  <span>{% trans "Number refreshes have waited in the queue for over 2 minutes." %} {% trans "The background worker may be down." %}</span>
-  <a class="btn btn-sm btn-outline-secondary" href="{% url 'phone_refresh:providers_index' %}?tab=general">{% trans "Providers → General health" %}</a>
+{% if health_alerts %}
+<div id="connection-health-alert" class="alert alert-warning py-2 px-3 mb-3" role="alert">
+  <div class="fw-semibold mb-1">حالة الربط</div>
+  <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
+    {% for item in health_alerts %}
+    <li class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <span>{{ item.text }}</span>
+      {% if item.url %}<a class="btn btn-sm btn-outline-secondary" href="{{ item.url }}">عرض الربط</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
 </div>
 {% endif %}
 
