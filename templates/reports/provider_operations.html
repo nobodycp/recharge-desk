@@ -1,0 +1,181 @@
+{% extends "base_management.html" %}
+{% load i18n humanize ui_tags %}
+{% block content %}
+<div class="rd-dash-head mb-3">
+  <h1 class="rd-heading-xl mb-0">تقارير المزودين</h1>
+</div>
+
+<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
+  {% for t in providers %}
+    <li class="nav-item" role="presentation">
+      <a class="nav-link {% if t.active %}active{% endif %}" role="tab" href="{% querystring provider=t.key page=1 %}">
+        {{ t.name }} <span class="rd-badge rd-badge--neutral ms-1 tabular-nums">{{ t.count|intcomma }}</span>
+      </a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% active_filter_count as report_active %}
+{% include "partials/filter_card_open.html" with active_count=report_active %}
+    <form method="get" class="row g-3 align-items-end">
+      <input type="hidden" name="provider" value="{{ provider }}">
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-period">الفترة</label>
+        <select class="form-select form-select-sm" id="po-period" name="period">
+          {% for value, label in period_choices %}
+            <option value="{{ value }}"{% if value == period %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-from">من</label>
+        <input type="date" class="form-control form-control-sm" id="po-from" name="from" value="{{ date_from }}">
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-to">إلى</label>
+        <input type="date" class="form-control form-control-sm" id="po-to" name="to" value="{{ date_to }}">
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-service">الخدمة</label>
+        <select class="form-select form-select-sm" id="po-service" name="service">
+          <option value="">الكل</option>
+          {% for value, label in service_choices %}
+            <option value="{{ value }}"{% if value == service %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-outcome">النتيجة</label>
+        <select class="form-select form-select-sm" id="po-outcome" name="outcome">
+          <option value="">الكل</option>
+          {% for value, label in outcome_choices %}
+            <option value="{{ value }}"{% if value == outcome %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label class="form-label" for="po-source">المصدر</label>
+        <select class="form-select form-select-sm" id="po-source" name="source">
+          <option value="">الكل</option>
+          {% for value, label in source_choices %}
+            <option value="{{ value }}"{% if value == source %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label" for="po-phone">رقم الهاتف</label>
+        <input type="search" class="form-control form-control-sm" id="po-phone" name="phone" value="{{ phone }}" placeholder="جزء من الرقم">
+      </div>
+      <div class="col-12 d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">تطبيق</button>
+        <a class="btn btn-outline-secondary" href="{% url 'reports:provider_operations' %}?provider={{ provider }}">إعادة ضبط</a>
+      </div>
+    </form>
+{% include "partials/filter_card_close.html" %}
+
+<section class="rd-card rd-stat-strip mb-3">
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">الإجمالي</span>
+    <span class="rd-stat-strip__val tabular-nums">{{ summary.total|intcomma }}</span>
+  </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">نجحت</span>
+    <span class="rd-stat-strip__val tabular-nums {% if summary.success %}kpi-success{% else %}kpi-muted{% endif %}">{{ summary.success|intcomma }}</span>
+  </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">فشلت</span>
+    <span class="rd-stat-strip__val tabular-nums {% if summary.failed %}kpi-danger{% else %}kpi-muted{% endif %}">{{ summary.failed|intcomma }}</span>
+  </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">قيد المتابعة</span>
+    <span class="rd-stat-strip__val tabular-nums {% if summary.pending %}kpi-info{% else %}kpi-muted{% endif %}">{{ summary.pending|intcomma }}</span>
+  </div>
+</section>
+
+{% if per_service or top_causes %}
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-6">
+    <section class="rd-card h-100">
+      <div class="rd-card-body">
+        <h2 class="h6 fw-semibold mb-3">حسب الخدمة</h2>
+        {% for label, count, rate in per_service %}
+          <div class="d-flex justify-content-between align-items-center py-1 small">
+            <span class="fw-medium">{{ label }}</span>
+            <span class="text-secondary tabular-nums">{{ count|intcomma }} · نسبة النجاح {{ rate }}%</span>
+          </div>
+        {% empty %}
+          <div class="small text-secondary">—</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+  <div class="col-12 col-lg-6">
+    <section class="rd-card h-100">
+      <div class="rd-card-body">
+        <h2 class="h6 fw-semibold mb-3">أكثر أسباب الفشل</h2>
+        {% for cause, count in top_causes %}
+          <div class="d-flex justify-content-between align-items-center py-1 small">
+            <span>{{ cause }}</span>
+            <span class="rd-badge rd-badge--cancelled tabular-nums">{{ count|intcomma }}</span>
+          </div>
+        {% empty %}
+          <div class="small text-secondary">لا توجد حالات فشل</div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endif %}
+
+<div class="rd-card overflow-hidden">
+  <div class="rd-table-dual rd-datagrid-body">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>الوقت</th>
+            <th>الخدمة</th>
+            <th>الرقم</th>
+            <th>النتيجة</th>
+            <th>الرسالة</th>
+            <th>المصدر</th>
+            <th>المدة</th>
+            <th>البيع</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in page_obj %}
+            <tr>
+              <td class="small text-secondary text-nowrap">{{ op.created_at|date:"Y-m-d H:i:s" }}</td>
+              <td class="fw-medium">{{ op.service_label }}</td>
+              <td class="tabular-nums text-nowrap">{{ op.phone|default:"—" }}</td>
+              <td>
+                <span class="rd-badge {% if op.outcome == 'success' %}rd-badge--paid{% elif op.outcome == 'failed' %}rd-badge--cancelled{% else %}rd-badge--pending{% endif %}">{{ op.outcome_label }}</span>
+              </td>
+              <td>
+                <details>
+                  <summary class="small">{{ op.message }}</summary>
+                  <pre class="small text-secondary mb-0 mt-1 text-wrap" dir="ltr">{{ op.detail|default:"—" }}</pre>
+                </details>
+              </td>
+              <td class="small">
+                {{ op.source_label }}{% if op.user_name %} <span class="text-secondary">· {{ op.user_name }}</span>{% endif %}
+              </td>
+              <td class="small tabular-nums text-nowrap">
+                {% if op.duration_text %}{{ op.duration_text }}{% else %}—{% endif %}
+                {% if op.show_attempts %}<div class="text-secondary">محاولات: {{ op.attempts }}</div>{% endif %}
+              </td>
+              <td>
+                {% if op.sale_id %}<a data-sale-link href="{% url 'sales:sale_edit' op.sale_id %}">#{{ op.sale_id }}</a>{% else %}—{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="text-center py-5"><div class="empty-state border-0 mb-0">لا توجد عمليات في هذه الفترة</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
+{% endblock %}
