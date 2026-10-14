@@ -709,8 +709,11 @@ def reconcile_sky_report(
 
 
 def fetch_sky_rows_for_reconcile(date_from: date, date_to: date) -> list[dict[str, Any]]:
-    """Live pull of template 22 using env Sky credentials."""
-    from providers.adapters.sky.client import client_from_env
+    """Live pull of template 22 through the shared Sky session (logs in if needed)."""
+    from providers.registry import get_adapter
+    from providers.sessions import run_authenticated
 
-    client = client_from_env()
-    return client.fetch_balance_report(date_from, date_to)
+    adapter = get_adapter("sky")
+    return run_authenticated(
+        adapter, lambda: adapter.fetch_balance_rows(date_from, date_to)
+    )

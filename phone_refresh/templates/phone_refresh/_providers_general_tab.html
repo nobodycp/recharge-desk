@@ -1,6 +1,56 @@
 {# General tab on the Providers page: on/off toggles + per-provider test. #}
 
 <div class="row g-3">
+  {# ── Section 0: حالة البوابة ─────────────────────────────────────────── #}
+  {% if provider_health %}
+  <div class="col-12">
+    <div class="rd-card" id="provider-health-card">
+      <div class="rd-card-body">
+        <div class="mb-2">
+          <div class="fw-semibold">حالة البوابة</div>
+          <div class="rd-text-muted small">
+            جاهزية Redis وعامل المهام الخلفية، وآخر تسجيل دخول لكل حساب مزوّد.
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          {% if provider_health.redis_ok %}
+            <span class="rd-badge rd-badge--paid">Redis: يعمل</span>
+          {% else %}
+            <span class="rd-badge rd-badge--cancelled">Redis: لا يستجيب</span>
+          {% endif %}
+          {% if provider_health.worker_ok %}
+            <span class="rd-badge rd-badge--paid">عامل المهام: يعمل</span>
+          {% else %}
+            <span class="rd-badge rd-badge--cancelled">عامل المهام: لا يستجيب</span>
+          {% endif %}
+        </div>
+
+        {% for account in provider_health.accounts %}
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-2 px-2 rounded"
+               style="background: var(--bs-body-bg);">
+            <div class="fw-semibold text-uppercase">{{ account.key }}</div>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              {% if account.last_login_at %}
+                <span class="rd-text-muted small tabular-nums">{{ account.last_login_at|date:"Y-m-d H:i" }}</span>
+              {% endif %}
+              {% if account.last_login_ok is True %}
+                <span class="rd-badge rd-badge--paid">آخر دخول: ناجح</span>
+              {% elif account.last_login_ok is False %}
+                <span class="rd-badge rd-badge--cancelled">آخر دخول: فشل</span>
+              {% else %}
+                <span class="rd-badge rd-badge--neutral">لم يُسجَّل دخول بعد</span>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="rd-text-muted small">لا توجد حسابات مزوّدين محفوظة.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── Section 1: تفعيل المزودين ───────────────────────────────────────── #}
   <div class="col-12 col-xl-6">
     <div class="rd-card h-100">

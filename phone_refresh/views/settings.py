@@ -39,8 +39,10 @@ from phone_refresh.models import (
 )
 from phone_refresh.services.refresh_service import refresh_phone
 from phone_refresh.views.general import GENERAL_TAB_ID
+from providers import health as provider_health
 from providers.forms import ProviderAccountForm
 from providers.models import ProviderAccount
+from providers.registry import ADAPTERS
 
 PROVIDER_TABS = [(p.value, p.label) for p in PhoneProvider]
 STATUSES_TAB_ID = "statuses"
@@ -48,7 +50,7 @@ MESSAGES_TAB_ID = "messages"
 SITE_MANAGEMENT_TAB_ID = "site_management"
 PROVIDERS_GENERAL_TAB_ID = "general"
 # Providers that log in with a stored account (card shown on their tab).
-PROVIDERS_WITH_ACCOUNTS = {"sky"}
+PROVIDERS_WITH_ACCOUNTS = {key for key, cls in ADAPTERS.items() if cls.needs_login}
 
 
 def _ensure_provider(provider: str) -> str:
@@ -243,6 +245,9 @@ def providers_index(request):
         "provider_test_form": provider_test_form,
         "account_form": account_form,
         "provider_account": provider_account,
+        "provider_health": (
+            provider_health.status() if active_tab == PROVIDERS_GENERAL_TAB_ID else None
+        ),
     }
     return render(request, "phone_refresh/providers_index.html", ctx)
 

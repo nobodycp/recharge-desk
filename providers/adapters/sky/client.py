@@ -8,13 +8,13 @@ import os
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import date
-from pathlib import Path
 from typing import Any
 
 import requests
 
-from providers.accounts import get_credentials
+from providers.accounts import Credentials, get_credentials
 from providers.contracts import PermanentError
+from providers.sessions import SessionStore
 
 try:
     import pyotp
@@ -23,13 +23,7 @@ except ImportError:  # pragma: no cover
 
 BASE = "https://sales-ps.sky5g.ps:8888"
 HOST = "sales-ps.sky5g.ps"
-
-
-def session_file_path() -> Path:
-    custom = os.environ.get("SKY_SALES_SESSION_FILE", "").strip()
-    if custom:
-        return Path(custom)
-    return Path("/tmp") / ".sky_sales_session.json"
+PROVIDER_KEY = "sky"
 
 
 @dataclass
@@ -51,14 +45,6 @@ class SkySalesError(Exception):
 
 class SkySalesSessionError(SkySalesError):
     """Auth/session rejected — safe to re-login and retry once."""
-
-
-def sky_sales_proxy_url() -> str:
-    """Proxy from the Sky account (``Credentials.extra['proxy_url']``), or ``""``."""
-    try:
-        return str(get_credentials("sky").extra.get("proxy_url", "") or "").strip()
-    except PermanentError:
-        return ""
 
 
 def proxy_fingerprint(proxy_url: str) -> str:
@@ -196,12 +182,38 @@ class SkySalesClient:
                 return str(val)
         return default
 
-    def __init__(self, session: SkySalesSession | None = None):
+    def __init__(
+        self,
+        session: SkySalesSession | None = None,
+        credentials: Credentials | None = None,
+    ):
+        self._credentials = credentials
+        self._credentials_loaded = credentials is not None
+        self._logging_in = False
         self.http = requests.Session()
         self._configure_http()
         self.session = session or SkySalesSession(jwt_token="")
         for name, value in self.session.cookies.items():
             self.http.cookies.set(name, value)
+
+    @property
+    def credentials(self) -> Credentials | None:
+        """Sky account credentials, looked up at most once per client."""
+        if not self._credentials_loaded:
+            try:
+                self._credentials = get_credentials(PROVIDER_KEY)
+            except PermanentError:
+                self._credentials = None
+            self._credentials_loaded = True
+        return self._credentials
+
+    @property
+    def proxy_url(self) -> str:
+        """Proxy from the Sky account (``Credentials.extra['proxy_url']``), or ``""``."""
+        creds = self.credentials
+        if creds is None:
+            return ""
+        return str(creds.extra.get("proxy_url", "") or "").strip()
 
     def _configure_http(self) -> None:
         """Build headers/proxy for Sky calls.
@@ -220,7 +232,7 @@ class SkySalesClient:
         self._apply_proxy()
 
     def _apply_proxy(self) -> None:
-        proxy = sky_sales_proxy_url()
+        proxy = self.proxy_url
         if proxy:
             self.http.proxies.update({"http": proxy, "https": proxy})
         else:
@@ -241,7 +253,7 @@ class SkySalesClient:
         Direct (no Sky account proxy): skip ipify entirely — local/Django
         processes often cannot resolve it, and Sky login does not need it.
         """
-        if not sky_sales_proxy_url():
+        if not self.proxy_url:
             return ""
         return self.detect_egress_ip()
 
@@ -257,7 +269,7 @@ class SkySalesClient:
         if current_ip and self.session.bound_ip and self.session.bound_ip != current_ip:
             _debug(f"IP changed {self.session.bound_ip} -> {current_ip}")
             return True
-        current_fp = proxy_fingerprint(sky_sales_proxy_url())
+        current_fp = proxy_fingerprint(self.proxy_url)
         if (
             self.session.proxy_fingerprint
             and self.session.proxy_fingerprint != current_fp
@@ -288,61 +300,42 @@ class SkySalesClient:
         _debug(f"new session login via IP {current_ip or 'direct'}")
         self._reset_http_session()
         self.session = SkySalesSession(jwt_token="", user_name=username)
-        self.auto_login(username, password, otp_code)
+        self._logging_in = True
+        try:
+            self.auto_login(username, password, otp_code)
+        finally:
+            self._logging_in = False
         self.session.bound_ip = current_ip
-        self.session.proxy_fingerprint = proxy_fingerprint(sky_sales_proxy_url())
+        self.session.proxy_fingerprint = proxy_fingerprint(self.proxy_url)
         self.session.logged_in_at = time.time()
-        self.save_session_file()
+        self.save_session()
         return current_ip
 
-    def ensure_authenticated(
-        self,
-        username: str,
-        password: str,
-        otp_code: str = "",
-        *,
-        force: bool = False,
-    ) -> None:
-        current_ip = self.current_egress_ip()
-
-        if force or not self._is_session_ready() or self._ip_or_proxy_changed(current_ip):
-            self.force_new_session(username, password, otp_code)
-            return
-
-        try:
-            self._probe_session()
-            if current_ip:
-                self.session.bound_ip = current_ip
-            self.save_session_file()
-            _debug(f"reusing session on IP {current_ip or 'direct'}")
-        except (SkySalesSessionError, requests.RequestException) as exc:
-            _debug(f"session invalid ({exc}), re-login")
-            self.force_new_session(username, password, otp_code)
-
-    def save_session_file(self) -> None:
-        path = session_file_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        payload = asdict(self.session)
-        payload["cookies"] = self.http.cookies.get_dict()
-        path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
+    def is_session_usable(self) -> bool:
+        """Ready session still bound to the current egress IP / proxy."""
+        return self._is_session_ready() and not self._ip_or_proxy_changed(
+            self.current_egress_ip()
         )
 
-    @classmethod
-    def delete_session_file(cls) -> None:
-        path = session_file_path()
-        try:
-            path.unlink(missing_ok=True)
-        except OSError:
-            pass
+    def save_session(self) -> None:
+        """Persist the session to ``SessionStore("sky")`` (never mid-login)."""
+        if self._logging_in:
+            return
+        store = SessionStore(PROVIDER_KEY)
+        stored = store.load() or {}
+        if float(stored.get("logged_in_at") or 0) > self.session.logged_in_at:
+            _debug("session superseded by a newer login — not saving")
+            return
+        payload = asdict(self.session)
+        payload["cookies"] = self.http.cookies.get_dict()
+        store.save(payload)
 
     @classmethod
-    def load_session_file(cls) -> SkySalesClient | None:
-        path = session_file_path()
-        if not path.exists():
+    def from_store(cls, credentials: Credentials | None = None) -> SkySalesClient | None:
+        store = SessionStore(PROVIDER_KEY)
+        data = store.load()
+        if not data:
             return None
-        data = json.loads(path.read_text(encoding="utf-8"))
         sky = SkySalesSession(
             jwt_token=data.get("jwt_token", ""),
             session_id=data.get("session_id", ""),
@@ -355,12 +348,10 @@ class SkySalesClient:
             logged_in_at=float(data.get("logged_in_at") or 0),
         )
         if sky.pending_otp:
-            # Legacy half-login files from older builds — never resume them.
-            cls.delete_session_file()
+            # Half-login sessions can never be resumed (Sky needs a fresh init2fa).
+            store.clear()
             return None
-        client = cls(sky)
-        client._apply_proxy()
-        return client
+        return cls(sky, credentials=credentials)
 
     def begin_login(self, username: str, password: str) -> None:
         self.session.user_name = username
@@ -369,8 +360,12 @@ class SkySalesClient:
         # Do not persist half-login: a saved pending_otp file makes the next
         # request call confirm2fa without a fresh init2fa and Sky rejects it.
 
+    def _totp_secret(self) -> str:
+        creds = self.credentials
+        return creds.totp_secret if creds else ""
+
     def auto_login(self, username: str, password: str, otp_code: str = "") -> None:
-        code = resolve_otp_code(otp_code)
+        code = resolve_otp_code(otp_code, self._totp_secret())
         try:
             self.begin_login(username, password)
             self.confirm_otp(code)
@@ -381,13 +376,13 @@ class SkySalesClient:
             self._reset_http_session()
             self.session = SkySalesSession(jwt_token="", user_name=username)
             self.begin_login(username, password)
-            self.confirm_otp(resolve_otp_code(otp_code))
+            self.confirm_otp(resolve_otp_code(otp_code, self._totp_secret()))
 
     def _refresh_jwt(self) -> None:
         token = self._post("/ipa/apis/json/general/genJwtToken", {})
         if token.get("result") == "SUCCESS" and token.get("jwtToken"):
             self.session.jwt_token = token["jwtToken"]
-            self.save_session_file()
+            self.save_session()
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         body = dict(payload)
@@ -397,10 +392,10 @@ class SkySalesClient:
             body["sessionId"] = self.session.session_id
 
         url = f"{BASE}{path}"
+        resp = self.http.post(url, json=body, timeout=90)
         try:
-            resp = self.http.post(url, json=body, timeout=90)
             resp.raise_for_status()
-        except requests.RequestException as exc:
+        except requests.HTTPError as exc:
             raise SkySalesSessionError(f"HTTP error on {path}: {exc}") from exc
 
         data = resp.json()
@@ -460,7 +455,6 @@ class SkySalesClient:
         self.session.user_name = info.get("userName", self.session.user_name)
         self.session.pending_otp = False
         self._refresh_jwt()
-        self.save_session_file()
 
     def load_global_sub_customer_id(self) -> str:
         if not self.session.user_name:
@@ -722,40 +716,16 @@ class SkySalesClient:
         )
 
     def refresh_sim(self, phone: str) -> dict[str, Any]:
+        """Business outcome dict; session errors (and transport errors) propagate."""
         try:
             return self._refresh_sim_once(phone)
         except SkySalesSessionError:
-            try:
-                creds = get_credentials("sky")
-            except PermanentError:
-                return refresh_system_error(
-                    phone,
-                    "config_error",
-                    "إعدادات تسجيل الدخول ناقصة",
-                    error="SKY_SALES_USER/SKY_SALES_PASSWORD missing",
-                )
-            user, password, otp = creds.username, creds.password, ""
-            _debug("refresh failed (session) — new login + retry")
-            try:
-                self.force_new_session(user, password, otp)
-                return self._refresh_sim_once(phone)
-            except SkySalesError as exc:
-                return error_response(phone, exc)
+            raise
         except SkySalesError as exc:
             return error_response(phone, exc)
 
 
-def execute_refresh(phone: str) -> dict[str, Any]:
-    phone = phone.strip()
-    try:
-        client = client_from_env()
-        return client.refresh_sim(phone)
-    except SkySalesError as exc:
-        return error_response(phone, exc)
-
-
-def generate_totp_code() -> str:
-    secret = _account_totp_secret()
+def generate_totp_code(secret: str) -> str:
     if not secret:
         raise SkySalesError("OTP_REQUIRED")
     if pyotp is None:
@@ -763,38 +733,7 @@ def generate_totp_code() -> str:
     return pyotp.TOTP(secret).now()
 
 
-def _account_totp_secret() -> str:
-    try:
-        return get_credentials("sky").totp_secret
-    except PermanentError:
-        return ""
-
-
-def resolve_otp_code(manual_otp: str = "") -> str:
+def resolve_otp_code(manual_otp: str = "", secret: str = "") -> str:
     if manual_otp.strip():
         return manual_otp.strip()
-    return generate_totp_code()
-
-
-def has_auto_totp() -> bool:
-    return bool(_account_totp_secret())
-
-
-def client_from_env() -> SkySalesClient:
-    """Build a client from the Sky account (DB, with env fallback)."""
-    try:
-        creds = get_credentials("sky")
-    except PermanentError as exc:
-        raise SkySalesError(
-            "بيانات دخول Sky غير مكتملة (SKY_SALES_USER / SKY_SALES_PASSWORD)"
-        ) from exc
-
-    saved = SkySalesClient.load_session_file()
-    client = (
-        saved
-        if saved
-        else SkySalesClient(SkySalesSession(jwt_token="", user_name=creds.username))
-    )
-
-    client.ensure_authenticated(creds.username, creds.password, "")
-    return client
+    return generate_totp_code(secret)

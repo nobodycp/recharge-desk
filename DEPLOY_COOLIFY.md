@@ -101,15 +101,14 @@ SKY_SALES_USER=your_username
 SKY_SALES_PASSWORD=your_password
 SKY_SALES_TOTP_SECRET=XXXXXXXXXXXXXXXX
 SKY_SALES_PROXY=http://LOGIN_s_skysales:PASSWORD@res.geonix.com:10000
-SKY_SALES_SESSION_FILE=/app/data/.sky_sales_session.json
 ```
 
 Use a **sticky session** in the Geonix username (e.g. `LOGIN_s_skysales`) so
 login and refresh share the same exit IP. Optional geo: `LOGIN_c_IL_s_skysales`.
 
 Set **`SKY_SALES_PROXY`** from your Geonix residential list. Use **Runtime
-only** in Coolify (never bake into the Docker image). Mount a persistent volume
-at `/app/data` so `SKY_SALES_SESSION_FILE` survives redeploys.
+only** in Coolify (never bake into the Docker image). The Sky session lives in
+Redis (`REDIS_URL`), shared by all workers; a Celery beat job keeps it warm.
 
 > **Sky provider**: HTTP login + TOTP to `sales-ps.sky5g.ps:8888` — no browser
 > required. Residential proxy required — datacenter IPs are rejected by Sky.

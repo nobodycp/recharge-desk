@@ -176,5 +176,11 @@ CELERY_TASK_ROUTES = {
     "sales.tasks.*": {"queue": "charge"},
     "providers.tasks.*": {"queue": "refresh"},
 }
+CELERY_BEAT_SCHEDULE = {
+    "providers-keepalive": {
+        "task": "providers.tasks.keepalive_sessions",
+        "schedule": 300.0,
+    },
+}
 
 REFRESH_ASYNC_ENABLED = os.environ.get("REFRESH_ASYNC_ENABLED", "1").strip() != "0"

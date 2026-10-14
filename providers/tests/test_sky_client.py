@@ -1,7 +1,8 @@
-import json
-from pathlib import Path
+import time
+from datetime import date
 from unittest.mock import MagicMock, patch
 
+import requests
 from django.test import SimpleTestCase
 
 from providers.accounts import Credentials
@@ -9,13 +10,16 @@ from providers.adapters.sky.client import (
     SkySalesClient,
     SkySalesError,
     SkySalesSession,
-    client_from_env,
+    SkySalesSessionError,
     generate_totp_code,
-    has_auto_totp,
+    resolve_otp_code,
 )
 from providers.contracts import PermanentError
+from providers.redis_conn import get_redis
+from providers.sessions import SessionStore
 
 GET_CREDS = "providers.adapters.sky.client.get_credentials"
+TOTP_SECRET = "JBSWY3DPEHPK3PXP"
 
 
 def _creds(proxy: str = "", totp: str = "") -> Credentials:
@@ -23,80 +27,139 @@ def _creds(proxy: str = "", totp: str = "") -> Credentials:
     return Credentials("user", "pass", totp, extra)
 
 
-class SkySalesSessionFileTests(SimpleTestCase):
+def _ready_client(**kwargs) -> SkySalesClient:
+    return SkySalesClient(
+        session=SkySalesSession(
+            jwt_token="jwt", session_id="sid", eot_user_id=1550, user_name="u"
+        ),
+        **kwargs,
+    )
+
+
+class SkySalesClientTests(SimpleTestCase):
     def setUp(self):
+        get_redis().flushall()
         # Hermetic default: no DB / env lookups; tests override as needed.
         patcher = patch(GET_CREDS, return_value=_creds())
-        patcher.start()
+        self.get_creds = patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_load_session_file_ignores_legacy_pending_otp(self):
-        path = Path("/tmp/test_sky_pending_session.json")
-        path.write_text(
-            json.dumps(
-                {
-                    "jwt_token": "jwt",
-                    "session_id": "sid",
-                    "pending_otp": True,
-                    "user_name": "u",
-                    "cookies": {},
-                }
-            ),
-            encoding="utf-8",
-        )
-        self.addCleanup(lambda: path.unlink(missing_ok=True))
+    def test_credentials_looked_up_once_per_client(self):
+        client = SkySalesClient()
+        client.proxy_url
+        client.current_egress_ip()
+        client._totp_secret()
+        self.assertEqual(self.get_creds.call_count, 1)
 
-        with patch(
-            "providers.adapters.sky.client.session_file_path",
-            return_value=path,
-        ):
-            self.assertIsNone(SkySalesClient.load_session_file())
-            self.assertFalse(path.exists())
-
-    @patch("providers.adapters.sky.client.SkySalesClient.ensure_authenticated")
-    def test_client_from_env_skips_pending_otp_resume(self, ensure_authenticated):
-        with patch(GET_CREDS, return_value=_creds()):
-            with patch(
-                "providers.adapters.sky.client.SkySalesClient.load_session_file",
-                return_value=None,
-            ):
-                client_from_env()
-        ensure_authenticated.assert_called_once_with("user", "pass", "")
-
-    def test_client_from_env_without_credentials_raises_config_error(self):
-        with patch(GET_CREDS, side_effect=PermanentError("config_error")):
-            with self.assertRaises(SkySalesError) as ctx:
-                client_from_env()
-        self.assertIn("SKY_SALES_USER", str(ctx.exception))
+    def test_missing_credentials_mean_direct_mode(self):
+        self.get_creds.side_effect = PermanentError("config_error")
+        client = SkySalesClient()
+        self.assertEqual(client.proxy_url, "")
+        self.assertEqual(client._totp_secret(), "")
 
     def test_totp_code_comes_from_account_secret(self):
-        with patch(GET_CREDS, return_value=_creds(totp="JBSWY3DPEHPK3PXP")):
-            self.assertTrue(has_auto_totp())
-            self.assertEqual(len(generate_totp_code()), 6)
-        with patch(GET_CREDS, return_value=_creds()):
-            self.assertFalse(has_auto_totp())
-            with self.assertRaises(SkySalesError):
-                generate_totp_code()
-        with patch(GET_CREDS, side_effect=PermanentError("config_error")):
-            self.assertFalse(has_auto_totp())
+        self.assertEqual(len(generate_totp_code(TOTP_SECRET)), 6)
+        with self.assertRaises(SkySalesError) as ctx:
+            generate_totp_code("")
+        self.assertEqual(str(ctx.exception), "OTP_REQUIRED")
+        self.assertEqual(resolve_otp_code(" 123456 ", ""), "123456")
+
+    def test_auto_login_uses_client_totp_secret(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        with patch.object(client, "begin_login"), patch.object(
+            client, "confirm_otp"
+        ) as confirm:
+            client.auto_login("user", "pass")
+        code = confirm.call_args.args[0]
+        self.assertEqual(len(code), 6)
+        self.assertTrue(code.isdigit())
+
+    def test_auto_login_retries_once_after_otp_rejected(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        with patch.object(client, "begin_login") as begin, patch.object(
+            client,
+            "confirm_otp",
+            side_effect=[SkySalesError("OTP rejected: {}"), None],
+        ) as confirm:
+            client.auto_login("user", "pass")
+        self.assertEqual(begin.call_count, 2)
+        self.assertEqual(confirm.call_count, 2)
 
     def test_begin_login_does_not_persist_pending_otp(self):
         client = SkySalesClient()
-        with patch.object(client, "login", return_value={}), patch.object(
-            client, "save_session_file"
-        ) as save_mock:
+        with patch.object(client, "login", return_value={}):
             client.begin_login("user", "pass")
         self.assertTrue(client.session.pending_otp)
-        save_mock.assert_not_called()
+        self.assertIsNone(SessionStore("sky").load())
+
+    def test_force_new_session_saves_only_complete_session(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        saved_during_login = []
+
+        def fake_auto_login(username, password, otp_code=""):
+            client.session.jwt_token = "jwt"
+            client.session.eot_user_id = 1
+            client.save_session()
+            saved_during_login.append(SessionStore("sky").load())
+
+        with patch.object(client, "auto_login", side_effect=fake_auto_login):
+            client.force_new_session("user", "pass")
+        self.assertEqual(saved_during_login, [None])
+        data = SessionStore("sky").load()
+        self.assertEqual(data["jwt_token"], "jwt")
+        self.assertGreater(data["logged_in_at"], 0)
+
+    def test_stale_client_does_not_overwrite_newer_login(self):
+        stale = _ready_client()
+        stale.session.logged_in_at = time.time() - 600
+        SessionStore("sky").save({"jwt_token": "fresh", "logged_in_at": time.time()})
+        stale.save_session()
+        self.assertEqual(SessionStore("sky").load()["jwt_token"], "fresh")
+
+    def test_from_store_roundtrip(self):
+        client = _ready_client()
+        client.session.logged_in_at = time.time()
+        client.http.cookies.set("JSESSIONID", "abc")
+        client.save_session()
+        loaded = SkySalesClient.from_store(_creds())
+        self.assertEqual(loaded.session.jwt_token, "jwt")
+        self.assertEqual(loaded.session.eot_user_id, 1550)
+        self.assertEqual(loaded.http.cookies.get("JSESSIONID"), "abc")
+        self.assertTrue(loaded.is_session_usable())
+
+    def test_refresh_sim_session_error_propagates(self):
+        client = _ready_client()
+        with patch.object(
+            client, "_refresh_sim_once", side_effect=SkySalesSessionError("REJECTED on /x")
+        ):
+            with self.assertRaises(SkySalesSessionError):
+                client.refresh_sim("0599000000")
+
+    def test_refresh_sim_maps_other_errors_to_reasons(self):
+        client = _ready_client()
+        cases = {
+            "CreateNewTaskWithBalanceCheck failed: Task not created ERROR": "not_eligible",
+            "GetSubscriberCosts failed: {}": "api_error",
+        }
+        for message, reason in cases.items():
+            with patch.object(
+                client, "_refresh_sim_once", side_effect=SkySalesError(message)
+            ):
+                self.assertEqual(client.refresh_sim("0599000000")["reason"], reason)
+
+    def test_post_http_status_error_is_session_error_and_transport_error_propagates(self):
+        client = _ready_client()
+        bad = MagicMock()
+        bad.raise_for_status.side_effect = requests.HTTPError("401")
+        with patch.object(client.http, "post", return_value=bad):
+            with self.assertRaises(SkySalesSessionError):
+                client.generic_api("X", [])
+        with patch.object(client.http, "post", side_effect=requests.ConnectionError("down")):
+            with self.assertRaises(requests.ConnectionError):
+                client.generic_api("X", [])
 
     def test_fetch_balance_report_calls_template_22(self):
-        from datetime import date
-
-        from providers.adapters.sky.client import SkySalesError
-
-        client = SkySalesClient(
-            session=SkySalesSession(jwt_token="jwt", session_id="sid", eot_user_id=1550)
-        )
+        client = _ready_client()
         rows = [{"ext_return_value_6": "0528819116"}]
         with patch.object(
             client,
@@ -124,42 +187,24 @@ class SkySalesSessionFileTests(SimpleTestCase):
             },
             clear=False,
         ):
-            with patch(GET_CREDS, return_value=_creds()):
-                client = SkySalesClient()
+            client = SkySalesClient()
         self.assertFalse(client.http.trust_env)
         self.assertEqual(client.http.proxies, {})
 
-        with patch(GET_CREDS, return_value=_creds(proxy="http://127.0.0.1:8888")):
-            client2 = SkySalesClient()
+        client2 = SkySalesClient(credentials=_creds(proxy="http://127.0.0.1:8888"))
         self.assertEqual(
             client2.http.proxies.get("https"),
             "http://127.0.0.1:8888",
         )
 
     def test_direct_mode_skips_ipify(self):
-        client = SkySalesClient(
-            session=SkySalesSession(
-                jwt_token="jwt",
-                session_id="sid",
-                eot_user_id=1,
-                user_name="u",
-            )
-        )
-        with patch(GET_CREDS, return_value=_creds()):
-            with patch.object(client, "detect_egress_ip") as detect:
-                self.assertEqual(client.current_egress_ip(), "")
-                detect.assert_not_called()
+        client = _ready_client(credentials=_creds())
+        with patch.object(client, "detect_egress_ip") as detect:
+            self.assertEqual(client.current_egress_ip(), "")
+            self.assertTrue(client.is_session_usable())
+            detect.assert_not_called()
 
-        with patch(GET_CREDS, return_value=_creds(proxy="http://127.0.0.1:8888")):
-            with patch.object(client, "detect_egress_ip", return_value="1.2.3.4") as detect:
-                self.assertEqual(client.current_egress_ip(), "1.2.3.4")
-                detect.assert_called_once()
-
-        with patch(GET_CREDS, return_value=_creds()):
-            with patch.object(client, "current_egress_ip", return_value=""):
-                with patch.object(client, "_probe_session") as probe:
-                    with patch.object(client, "save_session_file"):
-                        client.ensure_authenticated("u", "p")
-                probe.assert_called_once()
-                # Must not fall through to force_new_session / ipify.
-                self.assertEqual(client.session.jwt_token, "jwt")
+        proxied = _ready_client(credentials=_creds(proxy="http://127.0.0.1:8888"))
+        with patch.object(proxied, "detect_egress_ip", return_value="1.2.3.4") as detect:
+            self.assertEqual(proxied.current_egress_ip(), "1.2.3.4")
+            detect.assert_called_once()

@@ -22,7 +22,9 @@ def get_redis() -> redis.Redis:
     with _lock:
         if _client is None or _client_url != url:
             if url:
-                _client = redis.Redis.from_url(url)
+                _client = redis.Redis.from_url(
+                    url, socket_connect_timeout=5, socket_timeout=10
+                )
             else:
                 import fakeredis
 

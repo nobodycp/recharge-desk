@@ -11,9 +11,12 @@ from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
 from companies.sky_reconcile import (
     company_supports_sky_reconcile,
+    fetch_sky_rows_for_reconcile,
     parse_sky_balance_rows,
     reconcile_sky_report,
 )
+from providers.contracts import AuthRequired, BaseAdapter, TransientError
+from providers.redis_conn import get_redis
 from sales.models import PaymentMethod, Sale
 
 User = get_user_model()
@@ -262,3 +265,55 @@ class SkyReconcileMatchTests(TestCase):
             )
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "0599999999")
+
+    def test_view_shows_fetch_error_for_provider_errors(self):
+        self.client.force_login(self.user)
+        with patch(
+            "companies.views.fetch_sky_rows_for_reconcile",
+            side_effect=TransientError("login_failed"),
+        ):
+            r = self.client.post(
+                reverse("companies:sky_reconcile", args=[self.company.pk]),
+                {
+                    "period_from": "2026-08-01",
+                    "period_to": "2026-08-31",
+                    "min_amount_diff": "3",
+                },
+                follow=True,
+            )
+        self.assertContains(r, "login_failed")
+        msgs = [str(m) for m in r.context["messages"]]
+        self.assertTrue(any("Sky" in m and "login_failed" in m for m in msgs), msgs)
+
+
+class _FakeSkyAdapter(BaseAdapter):
+    key = "sky"
+    needs_login = True
+
+    def __init__(self):
+        self.login_calls = 0
+        self.fetch_calls = []
+
+    def login(self):
+        self.login_calls += 1
+
+    def fetch_balance_rows(self, date_from, date_to):
+        self.fetch_calls.append((date_from, date_to))
+        if self.login_calls == 0:
+            raise AuthRequired("session not ready")
+        return [_row(phone="0599999999")]
+
+
+class FetchSkyRowsTests(TestCase):
+    def setUp(self):
+        get_redis().flushall()
+
+    def test_logs_in_once_then_fetches(self):
+        adapter = _FakeSkyAdapter()
+        with patch("providers.registry.get_adapter", return_value=adapter):
+            rows = fetch_sky_rows_for_reconcile(date(2026, 8, 1), date(2026, 8, 31))
+        self.assertEqual(rows[0]["ext_return_value_6"], "0599999999")
+        self.assertEqual(adapter.login_calls, 1)
+        self.assertEqual(
+            adapter.fetch_calls, [(date(2026, 8, 1), date(2026, 8, 31))] * 2
+        )
