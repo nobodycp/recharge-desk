@@ -2021,7 +2021,7 @@
 
 .rd-people .rd-avatar,
 .rd-table-people .rd-avatar {
-  background: color-mix(in srgb, var(--rd-accent) 14%, var(--bs-secondary-bg));
+  background: color-mix(in srgb, var(--rd-accent) 10%, var(--bs-secondary-bg));
   color: var(--rd-accent-ink);
   box-shadow: none;
 }
