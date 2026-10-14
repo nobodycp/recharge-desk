@@ -30,7 +30,7 @@
         {{ pay_sub_form.customer }}
         <div class="rd-pay-sub-balance" id="rd-pay-sub-balance-line">
           <span class="rd-pay-sub-balance__k">{% trans "Current balance (owed to shop)" %}:</span>
-          <span class="rd-pay-sub-balance__v tabular-nums" id="rd-pay-sub-balance-val">{{ submission.customer.current_balance|intcomma }}</span>
+          <span class="rd-pay-sub-balance__v tabular-nums" dir="ltr" id="rd-pay-sub-balance-val">{{ submission.customer.current_balance|intcomma }}</span>
         </div>
       </div>
       <div class="rd-field-group{% if pay_sub_form.amount.errors %} has-error{% endif %}">

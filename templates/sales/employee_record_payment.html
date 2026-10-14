@@ -30,7 +30,7 @@
         {{ pay_sub_form.customer }}
         <div class="rd-pay-sub-balance" id="rd-pay-sub-balance-line" hidden>
           <span class="rd-pay-sub-balance__k">{% trans "Current balance (owed to shop)" %}:</span>
-          <span class="rd-pay-sub-balance__v tabular-nums" id="rd-pay-sub-balance-val">—</span>
+          <span class="rd-pay-sub-balance__v tabular-nums" dir="ltr" id="rd-pay-sub-balance-val">—</span>
         </div>
       </div>
       <div class="rd-field-group{% if pay_sub_form.amount.errors %} has-error{% endif %}">
@@ -67,7 +67,7 @@
           {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
         </span>
         <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
-          {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
+          {% trans "Your balance:" %} <span dir="ltr">{{ acting_employee.current_balance|intcomma }}</span>
         </span>
       </div>
       {% endif %}

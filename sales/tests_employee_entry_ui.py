@@ -1171,7 +1171,7 @@ class EmployeeSecondaryPagesTests(TestCase):
         self.assertIn("rd-stat rd-stat--hero", html)
         hero = html.split("rd-stat--hero", 1)[1].split("rd-stat-salary", 1)[0]
         self.assertIn("Current balance", hero)
-        self.assertRegex(hero, r'rd-stat-value tabular-nums[^>]*>\s*1,200')
+        self.assertRegex(hero, r'rd-stat-value tabular-nums[^>]*>\s*<span dir="ltr">1,200')
         self.assertIn("rd-stat-salary", html)
         salary = html.split("rd-stat-salary", 1)[1].split("Movement statement", 1)[0]
         self.assertIn("Monthly salary", salary)
@@ -1250,10 +1250,10 @@ class EmployeeSecondaryPagesTests(TestCase):
         from employees.models import EmployeeProfile
 
         html = self._get("employees:my_balance")
-        self.assertRegex(html, r'rd-stat-value tabular-nums is-pos">\s*1,200')
+        self.assertRegex(html, r'rd-stat-value tabular-nums is-pos"><span dir="ltr">1,200')
         EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("-35"))
         html = self._get("employees:my_balance")
-        self.assertRegex(html, r'rd-stat-value tabular-nums is-neg">\s*-35')
+        self.assertRegex(html, r'rd-stat-value tabular-nums is-neg"><span dir="ltr">-35')
         EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("0"))
         html = self._get("employees:my_balance")
         self.assertNotRegex(html, r'rd-stat-value tabular-nums is-(pos|neg)')
@@ -1285,6 +1285,48 @@ class EmployeeSecondaryPagesTests(TestCase):
         self.assertRegex(nav, r'class="page-item rd-pager__edge">\s*<a class="page-link" href="\?ledger_page=2" title="Last" aria-label="Last">')
         self.assertRegex(nav, r'class="rd-datagrid-per-page__link is-active" aria-current="true" href="\?per_page=25&amp;ledger_page=1"')
         self.assertRegex(nav, r'class="rd-datagrid-per-page__link " href="\?per_page=10&amp;ledger_page=1"')
+
+    # -- fix round 2: signed amounts read left to right in RTL ---------------
+    def _negative(self):
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+
+        EmployeeProfile.objects.filter(pk=self.profile.pk).update(current_balance=Decimal("-35"))
+        return EmployeeLedgerEntry.objects.create(
+            employee=self.profile,
+            entry_type=EmployeeLedgerEntry.EntryType.ADJUSTMENT,
+            amount=Decimal("-50"),
+            created_by=self.emp,
+        )
+
+    def test_my_balance_hero_and_ledger_amounts_are_ltr_isolated(self):
+        self._negative()
+        html = self._get("employees:my_balance")
+        self.assertRegex(html, r'rd-stat-value tabular-nums is-neg"><span dir="ltr">-35')
+        # table cell (desktop branch) and mobile card (shared partial)
+        self.assertRegex(html, r'<td class="text-end tabular-nums[^"]*kpi-expense">\s*<span dir="ltr">-50')
+        self.assertRegex(html, r'<span dir="ltr" class="rd-ledger-card__amount tabular-nums[^"]*kpi-expense">-50')
+        # the positive row is isolated the same way
+        self.assertRegex(html, r'<span dir="ltr">2,500')
+
+    def test_management_ledger_amounts_keep_their_cell_alignment(self):
+        self._negative()
+        self.client.force_login(self.mgmt)
+        resp = self.client.get(reverse("employees:employee_detail", args=[self.profile.pk]) + "?tab=ledger")
+        html = resp.content.decode()
+        self.assertRegex(html, r'<td class="text-end tabular-nums[^"]*kpi-expense">\s*<span dir="ltr">-50')
+
+    def test_balance_lines_on_entry_and_payment_pages_are_isolated(self):
+        self._negative()
+        row = AppSettings.load()
+        row.sales_show_employee_payment = True
+        row.sales_show_record_payment = True
+        row.save()
+        cache.clear()
+        for name in ("sales:employee_entry", "sales:employee_record_payment"):
+            html = self._get(name)
+            self.assertRegex(html, r'Your balance: <span dir="ltr">-35', name)
+        record = self._get("sales:employee_record_payment")
+        self.assertIn('class="rd-pay-sub-balance__v tabular-nums" dir="ltr"', record)
 
 
 class EmployeeSecondaryCssTests(SimpleTestCase):

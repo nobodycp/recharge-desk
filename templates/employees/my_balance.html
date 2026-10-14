@@ -13,7 +13,7 @@
     <div class="rd-card rd-stat rd-stat--hero">
       <div class="rd-card-body">
         <div class="rd-label">{% trans "Current balance" %}</div>
-        <div class="rd-stat-value tabular-nums{% if employee.current_balance < 0 %} is-neg{% elif employee.current_balance > 0 %} is-pos{% endif %}">{{ employee.current_balance|intcomma }}</div>
+        <div class="rd-stat-value tabular-nums{% if employee.current_balance < 0 %} is-neg{% elif employee.current_balance > 0 %} is-pos{% endif %}"><span dir="ltr">{{ employee.current_balance|intcomma }}</span></div>
       </div>
     </div>
     <div class="rd-card rd-stat rd-stat-salary">
