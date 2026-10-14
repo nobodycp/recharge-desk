@@ -333,6 +333,14 @@ Roll the provider gateway out in this order (each step is reversible):
   adds the table (additive; the old container is unaffected). Rows are purged
   after `PROVIDER_OPERATIONS_RETENTION_DAYS` (default 90) by the daily
   `purge_old_jobs` task on the worker.
+- **Number check («فحص الأرقام»)**: the employee refresh page is renamed and
+  gains a «فحص الرقم» button next to «تحديث الرقم». It reads the line's live
+  data from Sky (network, SIM type, status, package, expiry, usage, ICCID) and
+  shows the sale price of the number's last sale in our system. The Sky call
+  runs on the **worker** (`providers.tasks.run_number_info_job`), so deploy the
+  worker too; until it is updated, checks stay "processing" and time out.
+  Migration `providers 0006` only changes `ProviderJob.kind` choices (no schema
+  change). Each check is one row in تقارير المزودين (service «فحص الرقم»).
 - **"Charge & record sale"** appears in sales entry only for providers that
   declare the CHARGE capability. **None today**: Sky charge/check-charge are
   blocked until a capture of the Sky Sales charge flow is provided, so the
