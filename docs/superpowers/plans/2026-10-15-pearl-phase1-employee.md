@@ -173,6 +173,7 @@
 
 | Page | Measure | Before | After |
 |---|---|---|---|
-| Employee entry 375×667 | `scrollHeight` / visible height | 682 / 590 above tab bar (fresh); 820 with company + product | |
-| Employee entry 375×667 | Save visible without scroll | yes fresh (save bottom 577); with company + product the save bottom is 591 and overlaps the tab bar (top 590) | |
-| Other pages 375×667 | `scrollHeight` | recent 667, record payment 667, number check 667, stock check 2731, my balance 2797 | |
+| Employee entry 375×667 | `scrollHeight` / visible height | 682 / 590 above tab bar (fresh); 820 with company + product | 667 / 595 above tab bar (fresh); 667 with company + product + package (no scroll) |
+| Employee entry 375×667 | Save visible without scroll | yes fresh (save bottom 577); with company + product the save bottom is 591 and overlaps the tab bar (top 590) | yes in both: save bottom 537 fresh, 560 selected (tab bar top 595); dock is sticky, so it stays reachable when optional rows open |
+| Other pages 375×667 | `scrollHeight` | recent 667, record payment 667, number check 667, stock check 2731, my balance 2797 | recent 667 (today), record payment 667, number check 667, stock check 2427, my balance 2668, sale edit 667 |
+| All Phase 1 pages, 375 / 430 / 1280 | `scrollWidth − innerWidth` | — | 0 everywhere, light and dark |
