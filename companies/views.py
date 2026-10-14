@@ -164,6 +164,7 @@ def layan_reconcile(request, pk):
                 workbook=form.cleaned_data["report_file"],
                 min_amount_diff=min_settle,
                 pending_credits_text=form.cleaned_data.get("pending_credits") or "",
+                user_id=request.user.pk,
             )
             messages.success(
                 request,
@@ -222,6 +223,7 @@ def sky_reconcile(request, pk):
                 period_from,
                 period_to,
                 min_amount_diff=min_diff,
+                user_id=request.user.pk,
             )
             messages.success(
                 request,

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+from dataclasses import replace
 from time import monotonic
 
 from celery import shared_task
@@ -16,6 +17,7 @@ from providers import jobs
 from providers import service as provider_service
 from providers.contracts import Capability, ChargeOutcome, ChargeResult
 from providers.models import ProviderJob
+from providers.operations import classify_charge
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
@@ -101,20 +103,40 @@ def _claim(job: ProviderJob) -> Sale | None:
         return sale
 
 
+def _named(outcome: ChargeOutcome) -> ChargeOutcome:
+    """``outcome`` with the employee-facing Arabic message instead of a raw code.
+
+    Used for outcomes built here without calling the provider: no provider
+    operation happened, so nothing is recorded in the operations log.
+    """
+    return replace(outcome, message=classify_charge("charge", outcome).message)
+
+
+def _named_not_sent(code: str) -> ChargeOutcome:
+    return _named(ChargeOutcome(result=ChargeResult.FAILED, message=code))
+
+
 def _charge(job: ProviderJob, sale: Sale) -> ChargeOutcome:
     try:
         ctx = charging.charge_context(sale, job)
     except Exception as exc:  # noqa: BLE001 — nothing was sent
         log.error("charge job %s: could not build the charge request: %s", job.pk, _error_text(exc))
-        return ChargeOutcome(result=ChargeResult.FAILED, message="not_sent:context_error")
+        return _named_not_sent("not_sent:context_error")
     try:
-        return provider_service.charge(job.provider_key, ctx, budget=WORKER_CHARGE_BUDGET_SECONDS)
+        return provider_service.charge(
+            job.provider_key,
+            ctx,
+            budget=WORKER_CHARGE_BUDGET_SECONDS,
+            source="employee",
+            user_id=sale.created_by_id,
+            job_id=job.pk,
+        )
     except KeyError:
-        return ChargeOutcome(result=ChargeResult.FAILED, message="not_sent:unknown_provider")
+        return _named_not_sent("not_sent:unknown_provider")
     except Exception as exc:  # noqa: BLE001 — the request may have gone out
         error = _error_text(exc)
         log.error("charge job %s crashed: %s", job.pk, error)
-        return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=error)
+        return _named(ChargeOutcome(result=ChargeResult.UNVERIFIED, message=error))
 
 
 @shared_task(
@@ -178,6 +200,7 @@ def _settle(sale_id: int) -> None:
         charging.charge_context(sale, job),
         sale.charge_provider_ref,
         budget=WORKER_CHECK_BUDGET_SECONDS,
+        job_id=job.pk,
     )
     _refresh_db_connection()
     if outcome.result == ChargeResult.UNVERIFIED:

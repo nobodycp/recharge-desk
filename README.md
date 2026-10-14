@@ -132,6 +132,8 @@ Runtime: `web` (gunicorn) + `worker` (Celery with embedded beat, **one replica**
 
 **Where to manage a provider:** *Companies → \<company\> → الربط مع المزوّد* — system select, service switches, account credentials (write-only secrets), **اختبار تسجيل الدخول**, Redis / worker status. The dashboard "حالة الربط" block surfaces Redis / worker / failed-login problems. `SKY_SALES_*` env vars are only a fallback when the stored connection has no credentials.
 
+**Operations log and report:** every business operation (refresh, charge, check_charge, reconcile; logins and keep-alives are not logged) is recorded as one `providers.ProviderOperation` row by `providers/operations.py` (`record()` never raises and uses a savepoint; the failure `message` reads `فشل <الخدمة> — <السبب>` and `detail` is scrubbed, ≤ 500 chars). `providers/service.py` records charge / check_charge / reconcile, and `phone_refresh` records refresh when a result completes (`complete()` / `complete_failure()`); customer-facing refresh messages and `RefreshLog` are unchanged. Management users read it on **تقارير المزودين** (`/ar/management/reports/providers/`, `reports:provider_operations`, in the reports group of the management nav): per-provider tabs, period / service / outcome / source / phone filters, summary, per-service success rate, top failure causes. Rows older than `PROVIDER_OPERATIONS_RETENTION_DAYS` (default 90) are deleted by the daily `purge_old_jobs` task.
+
 Run the worker locally against a real Redis:
 
 ```bash

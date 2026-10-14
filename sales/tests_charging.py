@@ -23,7 +23,7 @@ from providers.contracts import (
     TransientError,
 )
 from providers.crypto import encrypt
-from providers.models import ProviderConnection, ProviderJob
+from providers.models import ProviderConnection, ProviderJob, ProviderOperation
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
 from providers.tests.fakes import FakeChargeAdapter
@@ -200,7 +200,7 @@ class ChargeFlowTests(ChargingTestBase):
         sale = self.charge()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
         self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(sale.charge_message, "line not found")
+        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ في عملية الشحن")
         self.assertEqual(self.balance(), START)
         self.assertEqual(self.reversals(sale), 1)
 
@@ -242,10 +242,17 @@ class ChargeFlowTests(ChargingTestBase):
         ):
             sale = self.charge()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "not_sent:login_failed")
+        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ تسجيل الدخول")
         self.assertEqual(sale.status, Sale.Status.CANCELLED)
         self.assertEqual(self.balance(), START)
         self.assertEqual(self.fake.sent, 0)
+        row = ProviderOperation.objects.get()
+        self.assertEqual((row.service, row.outcome, row.error_code), ("charge", "failed", "login_failed"))
+        self.assertEqual(row.detail, "not_sent:login_failed")
+        self.assertEqual(row.sale_id, sale.pk)
+        self.assertEqual(row.user_id, self.user.pk)
+        self.assertEqual(row.job_id, sale.charge_job_id)
+        self.assertEqual(row.source, "employee")
 
     def test_charge_message_is_scrubbed_and_capped(self):
         self.use(result=ChargeResult.FAILED, message="rejected token=abc123 " + "x" * 400)
@@ -307,7 +314,8 @@ class RunChargeJobTests(ChargingTestBase):
         run_charge_job(str(sale.charge_job_id))
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "not_sent:unknown_provider")
+        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ داخلي")
+        self.assertFalse(ProviderOperation.objects.exists())
         self.assertEqual(sale.status, Sale.Status.CANCELLED)
         self.assertEqual(self.balance(), START)
         self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
@@ -321,7 +329,8 @@ class RunChargeJobTests(ChargingTestBase):
         self.assertEqual(self.fake.charges, [])
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "not_sent:context_error")
+        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ داخلي")
+        self.assertFalse(ProviderOperation.objects.exists())
         self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
 
     def test_apply_outcome_error_fails_job_and_leaves_sale_open(self):
@@ -571,7 +580,7 @@ class ManualResolveTests(ChargingTestBase):
             actor=self.manager,
             changes___extra__charge_status="success",
         )
-        self.assertEqual(log.changes["_extra"]["previous_charge_message"], "timeout")
+        self.assertEqual(log.changes["_extra"]["previous_charge_message"], "الشحن قيد المتابعة")
 
     def test_manual_failure_reverses_once(self):
         sale = self.unverified()
@@ -780,6 +789,11 @@ class VerifyTaskTests(ChargingTestBase):
         sale.refresh_from_db()
         self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
         self.assertEqual(len(self.fake.charges), 1)
+        self.assertEqual(sale.charge_message, "تمّت متابعة الشحن — رقم العملية FAKE-REF-1")
+        rows = ProviderOperation.objects.filter(service="check_charge")
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.get().job_id, sale.charge_job_id)
+        self.assertEqual(rows.get().source, "system")
 
     def test_check_sale_charge_ignores_final_sale(self):
         sale = self.charge()

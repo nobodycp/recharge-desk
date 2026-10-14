@@ -1,6 +1,7 @@
 from django.urls import path
 
 from reports import views
+from reports import views_provider_ops
 from reports import views_stale_phones
 
 app_name = "reports"
@@ -11,6 +12,11 @@ urlpatterns = [
     path("management/reports/sales/", views.sales_report, name="sales_report"),
     path("management/reports/employees/", views.employee_report, name="employee_report"),
     path("management/reports/company/<int:pk>/", views.company_report, name="company_report"),
+    path(
+        "management/reports/providers/",
+        views_provider_ops.provider_operations,
+        name="provider_operations",
+    ),
     path(
         # ``str`` (not ``slug``): reference can be Arabic digits/text or shipment ids.
         "management/reports/phone-lines/edit/<str:ref_key>/",

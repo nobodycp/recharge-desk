@@ -142,6 +142,9 @@ DJANGO_LOG_LEVEL=INFO
 
 # worker service only
 CELERY_CONCURRENCY=4
+
+# days to keep provider operation rows (تقارير المزودين); default 90
+PROVIDER_OPERATIONS_RETENTION_DAYS=90
 ```
 
 The `web` and `worker` services need the **same** environment (same
@@ -322,6 +325,14 @@ Roll the provider gateway out in this order (each step is reversible):
   requests no longer start parallel logins; the `/tmp` session file is gone.
 - **Provider tests** (the number test on the rules page and the connection
   login test) show a scrubbed excerpt (max 500 chars) of the provider response; passwords, OTPs, tokens and cookies are stripped.
+- **Provider operations log**: refresh / charge / check-charge / reconcile
+  results are recorded (one row each, no login or keep-alive rows) and shown in
+  **Management → Reports → تقارير المزودين** (`/ar/management/reports/providers/`):
+  per provider, filterable by period, service, outcome, source and phone, with
+  Arabic failure reasons ("فشل <الخدمة> — <السبب>"). Migration `providers 0005`
+  adds the table (additive; the old container is unaffected). Rows are purged
+  after `PROVIDER_OPERATIONS_RETENTION_DAYS` (default 90) by the daily
+  `purge_old_jobs` task on the worker.
 - **"Charge & record sale"** appears in sales entry only for providers that
   declare the CHARGE capability. **None today**: Sky charge/check-charge are
   blocked until a capture of the Sky Sales charge flow is provided, so the

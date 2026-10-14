@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 from providers.contracts import Capability
@@ -100,3 +101,41 @@ class ProviderJob(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind}:{self.provider_key}:{self.status}"
+
+
+class ProviderOperation(models.Model):
+    """One provider business operation (refresh, charge, ...) with a named Arabic error."""
+
+    provider_key = models.CharField(max_length=32, db_index=True)
+    service = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, db_index=True, blank=True)
+    outcome = models.CharField(max_length=12)
+    error_code = models.CharField(max_length=24, blank=True)
+    message = models.CharField(max_length=255)
+    source = models.CharField(max_length=20)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    # No FK: ``providers`` never imports ``sales``.
+    sale_id = models.IntegerField(null=True, blank=True)
+    job_id = models.UUIDField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=1)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    detail = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["provider_key", "-created_at"],
+                name="providerop_key_created_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider_key}:{self.service}:{self.outcome}"
