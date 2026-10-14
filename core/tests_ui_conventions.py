@@ -144,3 +144,18 @@ class TemplateConventionTests(SimpleTestCase):
         self.assertTrue(urls)
         for url in urls:
             self.assertTrue((BASE_DIR / "static/fonts" / url).is_file(), url)
+
+    def test_font_preloads_match_fonts_css_urls(self):
+        head = (BASE_DIR / "templates/partials/fonts_head.html").read_text(encoding="utf-8")
+        css = (BASE_DIR / "static/css/fonts.css").read_text(encoding="utf-8")
+        preloads = re.findall(r"<link\b[^>]*\brel=\"preload\"[^>]*>", head)
+        self.assertTrue(preloads)
+        for tag in preloads:
+            href = re.search(r"href=\"([^\"]+)\"", tag).group(1)
+            self.assertNotIn(
+                "static_cache_query",
+                href,
+                "Preload URLs must match the un-versioned url() in fonts.css exactly",
+            )
+            name = re.search(r"fonts/([\w.-]+\.woff2)", href).group(1)
+            self.assertIn('url("../fonts/%s")' % name, css, name)
