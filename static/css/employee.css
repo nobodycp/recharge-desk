@@ -91,9 +91,14 @@
   width: 17rem;
 }
 
+/* An <h1> (the page's only heading): reset Bootstrap's heading margin, colour and
+   family so it looks like the plain title it replaced. */
 .rd-employee-title {
   flex: 0 1 auto;
   min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-family: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

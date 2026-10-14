@@ -679,6 +679,42 @@ class EmployeePaymentPagesTests(TestCase):
         self.assertIn(reverse("sales:employee_payment_edit", args=[self.sub.pk]), html)
         self.assertIn("hx-target=\"#payment-row-%d\"" % self.sub.pk, html)
 
+    def test_payment_pages_have_exactly_one_h1(self):
+        for name, html in (("record", self._record()), ("edit", self._edit())):
+            with self.subTest(page=name):
+                self.assertEqual(html.count("<h1"), 1)
+                self.assertIn('<h1 class="rd-employee-title">', html)
+
+    def test_actions_wrapper_only_renders_when_an_action_exists(self):
+        from types import SimpleNamespace
+
+        from django.template.loader import render_to_string
+
+        def render(**kw):
+            p = SimpleNamespace(pk=7, resulting_payment_id=None, **kw)
+            return render_to_string(
+                "sales/partials/employee_payment_actions.html",
+                {"p": p, "editable_payment_ids": {7}, "use_htmx": True},
+            )
+
+        self.assertEqual(render(status="approved").strip(), "")
+        awaiting = render(status="awaiting")
+        self.assertIn('class="rd-pay-actions"', awaiting)
+        self.assertIn(reverse("sales:employee_payment_edit", args=[7]), awaiting)
+        self.assertIn('hx-target="#payment-row-7"', awaiting)
+        rejected = render(status="rejected")
+        self.assertIn('class="rd-pay-actions"', rejected)
+        self.assertNotIn(reverse("sales:employee_payment_edit", args=[7]), rejected)
+        undo = render_to_string(
+            "sales/partials/employee_payment_actions.html",
+            {
+                "p": SimpleNamespace(pk=7, status="approved", resulting_payment_id=3),
+                "editable_payment_ids": {7},
+            },
+        )
+        self.assertIn("rd-pay-actions", undo)
+        self.assertIn("Undo", undo)
+
     def test_payment_actions_partial_has_no_legacy_button_colours(self):
         from pathlib import Path as _P
 

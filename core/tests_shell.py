@@ -161,6 +161,29 @@ class EmployeeShellTests(TestCase):
         self.assertLess(menu, title)
         self.assertLess(title, wallet)
 
+    def test_topbar_title_is_the_pages_h1(self):
+        header = self._header(self._page())
+        self.assertRegex(header, r'<h1 class="rd-employee-title">\s*<span>')
+        self.assertEqual(header.count("<h1"), 1)
+
+    def test_recent_page_has_exactly_one_h1(self):
+        html = self.client.get(reverse("sales:employee_recent_sales")).content.decode()
+        self.assertEqual(html.count("<h1"), 1)
+        self.assertIn('<h1 class="rd-employee-title">', html)
+
+    def test_title_h1_resets_bootstrap_heading_styles(self):
+        css = (settings.BASE_DIR / "static/css/employee.css").read_text(encoding="utf-8")
+        body = re.search(r"\n\.rd-employee-title \{([^}]*)\}", css).group(1)
+        for decl in (
+            "margin: 0;",
+            "color: inherit;",
+            "font-family: inherit;",
+            "font-size: 1.1rem;",
+            "font-weight: 700;",
+            "line-height: 1.2;",
+        ):
+            self.assertIn(decl, body)
+
     def test_prefs_inside_user_menu(self):
         header = self._header(self._page())
         start = header.index('class="rd-user-menu-panel"')
