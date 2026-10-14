@@ -158,7 +158,6 @@
   }
 
   function stopProgress() {
-    inflight = [];
     if (progress.classList.contains("is-active")) {
       progress.classList.remove("is-active");
       progress.classList.add("is-done");
@@ -181,6 +180,17 @@
       return xhr.readyState > 0 && xhr.readyState < 4;
     });
     if (!inflight.length) stopProgress();
+  }
+
+  // Safety net: `loadend` fires for load, error, abort and timeout, after
+  // htmx's own handlers, even when one of them threw or (history fetch) was
+  // never set. stopIfIdle() is idempotent and only stops once no tracked
+  // request is still in flight, so an older request ending never cuts short
+  // a newer one.
+  function trackRequest(xhr) {
+    if (!xhr) return;
+    inflight.push(xhr);
+    xhr.addEventListener("loadend", stopIfIdle);
   }
 
   function targetsBody(detail) {
@@ -225,7 +235,7 @@
         return c.open;
       }),
     };
-    if (d.xhr) inflight.push(d.xhr);
+    trackRequest(d.xhr);
     startProgress();
     if (elt && elt.tagName === "FORM") {
       setTimeout(function () {
@@ -355,7 +365,10 @@
 
   // Back/forward: htmx restores a cached snapshot or fetches it itself
   // (no htmx:beforeRequest), so the history events drive the bar here.
-  document.addEventListener("htmx:historyCacheMiss", startProgress);
+  document.addEventListener("htmx:historyCacheMiss", function (evt) {
+    trackRequest(evt.detail && evt.detail.xhr);
+    startProgress();
+  });
   ["htmx:historyRestore", "htmx:historyCacheMissError", "htmx:historyCacheMissLoadError"].forEach(function (name) {
     document.addEventListener(name, stopProgress);
   });
@@ -371,7 +384,9 @@
   // Restored from the browser's back/forward cache: the frozen DOM may still
   // carry a running bar / dimmed content.
   window.addEventListener("pageshow", function (e) {
-    if (e.persisted) stopProgress();
+    if (!e.persisted) return;
+    inflight = [];
+    stopProgress();
   });
 
   window.addEventListener("beforeunload", function (e) {

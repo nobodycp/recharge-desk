@@ -910,15 +910,6 @@
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
 }
 
-[data-rd-live] > * {
-  transition: opacity var(--rd-transition);
-}
-
-/* Dimming of the whole region lives in design-system.css (.is-live-loading). */
-[data-rd-live].is-live-loading {
-  cursor: progress;
-}
-
 .rd-dash-swap > :not(.rd-dash-head) {
   transition: opacity var(--rd-transition);
 }
