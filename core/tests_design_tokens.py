@@ -70,6 +70,14 @@ class PearlTokenTests(SimpleTestCase):
             offenders, [], "Use Pearl tokens, not raw hex, below the token blocks"
         )
 
+    def test_end_tokens_marker_follows_dark_block(self):
+        dark = _block(CSS, '[data-bs-theme="dark"]')
+        dark_end = CSS.index(dark) + len(dark)
+        marker = CSS.find("/* @end-tokens */")
+        self.assertGreater(
+            marker, dark_end, "/* @end-tokens */ must come after the dark token block"
+        )
+
     def test_page_css_has_no_hex(self):
         for f in ("app.css", "number-check.css"):
             text = (CSS_DIR / f).read_text(encoding="utf-8")
