@@ -1,10 +1,12 @@
 """Employee sale entry: Pearl one-screen markup (hooks, field groups, no legacy colours)."""
 import re
 from decimal import Decimal
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.test import Client, SimpleTestCase, TestCase
 from django.urls import reverse
 
 from accounts.models import UserProfile
@@ -214,6 +216,26 @@ class EmployeeEntryMarkupTests(TestCase):
                 )
 
 
+    def test_blk_end_is_a_div(self):
+        html = self._html()
+        self.assertIn('<div class="rd-entry-blk__end">', html)
+        self.assertNotIn('<span class="rd-entry-blk__end">', html)
+
+    def test_payer_hint_is_not_inside_the_label(self):
+        html = self._html()
+        ancestors = _ancestor_classes(html, ("rd-payer-prefill-hint",))
+        self.assertIn("rd-entry-field__top", ancestors["rd-payer-prefill-hint"])
+        self.assertRegex(
+            html,
+            r'<label class="rd-entry-field__label" for="id_payer_name">\s*Payer name\s*</label>',
+        )
+
+    def test_notes_popover_closes_on_escape_and_outside_click(self):
+        html = self._html()
+        self.assertIn(".rd-entry-notes[open]", html)
+        self.assertIn('"Escape"', html)
+
+
 class EmployeeIconMarkTests(TestCase):
     def _render(self, **ctx):
         from django.template.loader import render_to_string
@@ -236,3 +258,111 @@ class EmployeeIconMarkTests(TestCase):
         html = self._render(icon=Icon(), title="Cash Box")
         self.assertIn('alt="Cash Box"', html)
         self.assertNotIn("employee-chip-label", html)
+
+
+CSS_DIR = Path(settings.BASE_DIR) / "static" / "css"
+_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+
+
+def _rules(css):
+    """[(selector list, declaration text)] for every flat rule (media bodies included)."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    return [
+        ([s.strip() for s in sel.split(",")], body)
+        for sel, body in _RULE.findall(css)
+    ]
+
+
+def _bodies(css, selector):
+    """Declaration text of every rule that lists exactly `selector`."""
+    return [body for sels, body in _rules(css) if selector in sels]
+
+
+class EmployeeEntryCssTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.css = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+        cls.app_css = (CSS_DIR / "app.css").read_text(encoding="utf-8")
+
+    def _assert_decl(self, selector, *needles):
+        bodies = _bodies(self.css, selector)
+        self.assertTrue(bodies, f"no rule for {selector} in employee.css")
+        joined = " ".join(" ".join(b.split()) for b in bodies)
+        for needle in needles:
+            self.assertIn(needle, joined, f"{selector}: {needle}")
+
+    def test_entry_css_ellipsizes_tile_names(self):
+        self._assert_decl(
+            ".rd-entry-tiles .employee-chip-label",
+            "text-overflow: ellipsis",
+            "white-space: nowrap",
+        )
+        self._assert_decl(".rd-entry-tiles > *", "min-width: 0")
+
+    def test_touch_targets(self):
+        for selector in (
+            ".rd-entry-tiles .employee-chip",
+            ".rd-entry-chips .employee-chip",
+            ".rd-entry-pill",
+            ".employee-clipboard-paste-btn",
+        ):
+            with self.subTest(selector=selector):
+                self._assert_decl(selector, "min-height: 3.45rem")
+
+    def test_app_css_has_no_entry_rules(self):
+        for gone in (
+            ".employee-package-chip",
+            "#rdCustomerPaySubModal",
+            "#rdEmployeeRefreshModal",
+            ".rd-esim-switch",
+            ".rd-sim-options",
+            ".rd-sale-preview",
+            ".employee-charge-sale-btn",
+            ".sticky-save",
+            ".employee-company-tile",
+            ".employee-payment-tile",
+            ".employee-product-line-tile",
+            ".employee-packages-panel",
+        ):
+            with self.subTest(selector=gone):
+                self.assertNotIn(gone, self.app_css)
+
+    def test_record_payment_page_keeps_its_styling(self):
+        """Ruling 1: rules still matching a live selector moved to employee.css."""
+        for selector in (
+            "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile",
+            "#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile.is-active",
+            ".employee-chip",
+            ".employee-chip-icon",
+            ".employee-chip-label",
+            ".employee-notes-details",
+            ".employee-notes-summary",
+        ):
+            with self.subTest(selector=selector):
+                self.assertTrue(_bodies(self.css, selector), selector)
+
+    def test_hidden_guards(self):
+        for selector in (
+            ".rd-entry-note[hidden]",
+            ".rd-entry-est[hidden]",
+            ".rd-entry-hint[hidden]",
+        ):
+            with self.subTest(selector=selector):
+                self._assert_decl(selector, "display: none")
+        self.assertIn(":has(> :not([hidden]))", self.css)
+
+    def test_charge_button_uses_accent_tokens_only(self):
+        bodies = " ".join(_bodies(self.css, ".employee-charge-sale-btn"))
+        self.assertNotIn("--bs-btn-", bodies)
+
+    def test_notes_popover_does_not_push_layout(self):
+        self._assert_decl(".rd-entry-notes__body", "position: absolute")
+
+    def test_price_row_is_a_grid_with_days_column(self):
+        self._assert_decl(".rd-entry-price-row", "display: grid")
+        self.assertTrue(_bodies(self.css, ".rd-entry-price-row.has-days"))
+
+    def test_pay_tiles_dim_when_muted(self):
+        self._assert_decl("#payment-tiles.is-muted", "opacity: 0.5")
+

@@ -1,7 +1,8 @@
 /**
  * Employee area (Pearl, phase 1) — load after design-system.css and app.css.
  * Shell: top bar (avatar menu · title · wallet chip) and the bottom tab bar.
- * Later phase-1 tasks add the entry form, payment, stock and history rules here.
+ * Sale entry: one-screen blocks, tiles, chips, price row and the dock.
+ * Later phase-1 tasks add payment, stock and history rules here.
  * Colours come from --rd-* tokens only; logical properties keep RTL first.
  *
  * Sizing note: html { font-size: 80% } so 1rem = 12.8px and a 44px touch
@@ -430,4 +431,838 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   opacity: 0.55;
   transition: opacity 0.15s ease;
   pointer-events: none;
+}
+
+/* ========================================================================== */
+/* Record payment pages: legacy tile + note styling                           */
+/* Moved verbatim from app.css (Task 5 restyles these pages). Only the        */
+/* rules that still match a live selector are kept; the focus-ring reset is   */
+/* dropped so the ink focus ring shows.                                       */
+/* ========================================================================== */
+.employee-chip {
+  font-size: 0.78rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.employee-chip-icon {
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  margin-inline: auto;
+}
+
+.employee-chip-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 0.45rem;
+  margin-inline: auto;
+}
+
+.employee-chip-label {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.15rem 0.2rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile {
+  white-space: normal;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  min-height: clamp(1.9rem, 9vw, 2.85rem);
+  padding-block: 0.15rem !important;
+  padding-inline: 0.1rem !important;
+}
+
+#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile .employee-chip-icon {
+  width: 100%;
+  max-width: 100%;
+  height: clamp(1.35rem, 5.5vw, 2.1rem);
+  max-height: 2.1rem;
+  object-fit: contain;
+}
+
+#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile .employee-chip-label {
+  width: 100%;
+  min-height: clamp(1.35rem, 5.5vw, 2.1rem);
+  font-size: clamp(0.58rem, 2.7vw, 0.78rem);
+  font-weight: 650;
+  background-color: transparent;
+  color: var(--bs-body-color);
+  border: none;
+}
+
+#rd-pay-sub-payment-tiles .rd-pay-sub-pm-tile.is-active {
+  border: 2px solid var(--bs-primary) !important;
+  border-radius: 0.375rem;
+  background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--bs-primary-rgb), 0.22),
+    0 0 0 2px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.employee-notes-details {
+  border: 0;
+}
+
+.employee-notes-summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+  user-select: none;
+}
+
+.employee-notes-summary::-webkit-details-marker {
+  display: none;
+}
+
+.employee-notes-details[open] .employee-notes-summary {
+  margin-bottom: 0.15rem;
+}
+
+.employee-notes-summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1.05em;
+  text-align: center;
+  font-weight: 600;
+  margin-inline-end: 0.28em;
+  opacity: 0.88;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: -0.05em;
+}
+
+.employee-notes-details[open] .employee-notes-summary::before {
+  content: "\2212";
+}
+
+/* ========================================================================== */
+/* Sale entry (Pearl, one screen at 375x667)                                  */
+/* ========================================================================== */
+
+/* The blocks are the cards, so the old page-level form card goes. */
+.rd-sale-form {
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rd-sale-form .rd-sale-form__stack {
+  gap: 0.45rem;
+}
+
+/* Dock and page padding: the dock ends 0.25rem above the tab rail (4.05rem). */
+.rd-employee-app.has-employee-tabbar .rd-employee-main:has(.rd-entry-dock) {
+  padding-top: 0.5rem;
+  padding-bottom: calc(4.3rem + env(safe-area-inset-bottom));
+}
+
+.rd-employee-app.has-employee-tabbar .rd-entry-dock .sticky-save {
+  bottom: calc(4.3rem + env(safe-area-inset-bottom));
+  margin-top: 0;
+  padding: 0.3rem 0 0.2rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Blocks                                                                      */
+/* -------------------------------------------------------------------------- */
+.rd-entry-blk {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.55rem;
+  background: var(--rd-surface);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1.2rem;
+}
+
+.rd-entry-blk.has-error {
+  border-color: color-mix(in srgb, var(--rd-danger) 55%, var(--bs-border-color));
+}
+
+.rd-entry-blk__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.2rem;
+  padding-inline: 0.15rem;
+}
+
+.rd-entry-blk__title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rd-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rd-entry-blk__end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+}
+
+.rd-entry-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.3rem 0.15rem;
+  color: var(--rd-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.rd-entry-spinner {
+  width: 1rem;
+  height: 1rem;
+  color: var(--rd-accent-ink);
+  border-width: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* In-input label fields                                                       */
+/* -------------------------------------------------------------------------- */
+/* label (row 1) above the value (row 2); the paste button spans both rows. */
+.rd-entry-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 3.45rem;
+  overflow: hidden;
+  background: var(--rd-surface);
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 0.85rem;
+}
+
+.rd-entry-field:focus-within {
+  border-color: var(--rd-ink);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
+}
+
+.rd-field-group.has-error .rd-entry-field,
+.rd-entry-field:has(.is-invalid) {
+  border-color: var(--rd-danger);
+}
+
+.rd-entry-field__label,
+.rd-entry-field__top {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: end;
+  min-width: 0;
+  margin: 0;
+  padding-inline: 0.8rem 0.4rem;
+  color: var(--rd-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.rd-entry-field__top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.rd-entry-field__top > .rd-entry-field__label {
+  padding: 0;
+  grid-area: auto;
+}
+
+/* Previous-sale hint sits in the label row (JS toggles hidden / is-visible). */
+.rd-entry-field__top .rd-payer-prefill-hint {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rd-success);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.rd-entry-field__top .rd-payer-prefill-hint.is-visible {
+  color: var(--rd-success);
+}
+
+.rd-entry-field__top .rd-payer-prefill-hint:not([hidden])::before {
+  content: "\00b7\00a0";
+}
+
+.rd-sale-form .rd-entry-field .form-control {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0.05rem 0.8rem 0.2rem;
+  color: var(--rd-ink);
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rd-sale-form .rd-entry-field .form-control:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.rd-sale-form .rd-entry-field .form-control::placeholder {
+  color: var(--rd-faint);
+  font-weight: 500;
+}
+
+/* Numbers read left to right in every language. */
+#id_reference_number,
+#id_sell_price_actual,
+#id_duration_days {
+  direction: ltr;
+  text-align: start;
+  font-family: var(--rd-font-num);
+}
+
+[dir="rtl"] #id_reference_number,
+[dir="rtl"] #id_sell_price_actual,
+[dir="rtl"] #id_duration_days {
+  text-align: end;
+}
+
+#id_sell_price_actual {
+  font-size: 1.25rem;
+}
+
+.employee-clipboard-paste-btn {
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: var(--rd-surface-2);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-ink) 8%, var(--rd-surface-2));
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: color-mix(in srgb, var(--rd-ink) 12%, var(--rd-surface-2));
+  --bs-btn-active-border-color: transparent;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  /* 44px tap target; the -1.5px margins cancel the field border so the
+     button fills the field exactly. */
+  min-height: 3.45rem;
+  margin-block: -1.5px;
+  padding-inline: 1rem;
+  border: 0;
+  border-inline-start: 1px solid var(--bs-border-color);
+  border-radius: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* The field clips the button, so draw the keyboard ring inside it. */
+.employee-clipboard-paste-btn:focus-visible {
+  outline-offset: -3px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tiles (payment, company) and chip rows (product line, package)              */
+/* -------------------------------------------------------------------------- */
+.rd-entry-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.4rem, 1fr));
+  gap: 0.35rem;
+}
+
+.rd-entry-tiles > * {
+  min-width: 0;
+}
+
+#payment-tiles {
+  transition: opacity 0.2s ease;
+}
+
+#payment-tiles.is-muted {
+  opacity: 0.5;
+}
+
+.rd-entry-chips {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rd-entry-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.employee-product-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rd-entry-tiles .employee-chip,
+.rd-entry-chips .employee-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  /* 44px at the 80% root */
+  min-height: 3.45rem;
+  padding: 0.25rem 0.35rem;
+  color: var(--rd-muted);
+  background: var(--rd-surface);
+  border: 1.5px solid var(--bs-border-color);
+  border-radius: 0.85rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.15;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease;
+}
+
+.rd-entry-tiles .employee-chip:active,
+.rd-entry-chips .employee-chip:active {
+  transform: scale(0.95);
+}
+
+.rd-entry-tiles .employee-chip:hover,
+.rd-entry-chips .employee-chip:hover {
+  border-color: color-mix(in srgb, var(--rd-ink) 35%, var(--bs-border-color));
+}
+
+.rd-entry-tiles .employee-chip:focus-visible,
+.rd-entry-chips .employee-chip:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -3px;
+}
+
+/* Payment tiles stack icon over name; company tiles sit side by side. */
+.rd-entry-tiles--pay .employee-chip {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rd-entry-tiles .employee-chip.is-active {
+  color: var(--rd-ink);
+  border-color: var(--rd-ink);
+  font-weight: 600;
+}
+
+/* Orange dot on the selected tile. */
+.rd-entry-tiles .employee-chip::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0.3rem;
+  inset-inline-start: 0.3rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--rd-accent);
+  opacity: 0;
+  transform: scale(0);
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s ease;
+}
+
+.rd-entry-tiles .employee-chip.is-active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Chips scroll sideways; the active one is the ink pill. */
+.rd-entry-chips .employee-chip {
+  flex: none;
+  flex-direction: column;
+  min-width: 5.4rem;
+  padding-inline: 0.75rem;
+  color: var(--rd-ink);
+  scroll-snap-align: start;
+}
+
+.rd-entry-chips .employee-product-line-tile {
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+.rd-entry-chips .employee-chip.is-active {
+  color: var(--rd-primary-fg);
+  background: var(--rd-primary-bg);
+  border-color: var(--rd-primary-bg);
+}
+
+.rd-entry-chips .employee-chip.is-active:focus-visible {
+  outline-color: var(--rd-primary-fg);
+}
+
+.rd-entry-chip__name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rd-entry-chip__price {
+  font-family: var(--rd-font-num);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Names ellipsize instead of wrapping so a tile never grows. */
+.rd-entry-tiles .employee-chip-label,
+.rd-entry-chips .employee-chip-label {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+  font-weight: inherit;
+  line-height: 1.15;
+  border-radius: 0;
+  hyphens: manual;
+  word-break: normal;
+  overflow-wrap: normal;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+}
+
+.rd-entry-tiles .employee-chip-icon,
+.rd-entry-chips .employee-chip-icon {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0.15rem;
+  border-radius: 0.45rem;
+  background: var(--rd-surface-2);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pills ("on account", "payment to employee") and the "+ Note" link           */
+/* -------------------------------------------------------------------------- */
+/* The hit box is 44px but only the 1.2rem header row is spent on it; the
+   dashed outline is drawn by ::before. Pills sit above the neighbouring tiles
+   so the whole 44px stays tappable. */
+.rd-entry-pill {
+  --bs-btn-color: var(--rd-muted);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-border-color: transparent;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 3.45rem;
+  margin-block: -1.125rem;
+  padding: 0 0.6rem;
+  border: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.rd-entry-pill::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block: 1rem;
+  z-index: -1;
+  border: 1px dashed var(--rd-faint);
+  border-radius: 0.6rem;
+}
+
+.rd-entry-pill.is-on {
+  --bs-btn-color: var(--rd-accent-ink);
+  --bs-btn-hover-color: var(--rd-accent-ink);
+  --bs-btn-active-color: var(--rd-accent-ink);
+}
+
+.rd-entry-pill.is-on::before {
+  background: var(--rd-accent-soft);
+  border: 1px solid var(--rd-accent);
+}
+
+.rd-entry-notes {
+  position: relative;
+}
+
+.rd-entry-note-link {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 3.45rem;
+  margin-block: -1.125rem;
+  padding-inline: 0.35rem;
+  color: var(--rd-accent-ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rd-entry-note-link:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -3px;
+}
+
+/* The legacy "+" / "-" glyph would double the "+" in the label. */
+.rd-entry-notes .employee-notes-summary::before,
+.rd-entry-notes[open] .employee-notes-summary::before {
+  content: none;
+}
+
+.rd-entry-notes[open] .employee-notes-summary {
+  margin-bottom: -1.125rem;
+}
+
+/* The note opens over the price block; it never pushes the layout. */
+.rd-entry-notes__body {
+  position: absolute;
+  inset-block-start: calc(100% + 0.35rem);
+  inset-inline-end: 0;
+  z-index: calc(var(--rd-z-sticky) + 1);
+  width: min(20rem, calc(100vw - 3rem));
+  padding: 0.5rem;
+  background: var(--rd-surface);
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  box-shadow: var(--rd-shadow-md);
+}
+
+.rd-entry-notes__body .form-control {
+  font-size: 1rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Price row: price (+ days) and the eSIM / new SIM switches                   */
+/* -------------------------------------------------------------------------- */
+.rd-entry-price-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.35rem;
+}
+
+.rd-entry-price-row:not(:has(.rd-entry-switch + .rd-entry-switch)) {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+.rd-entry-price-row.has-days {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+}
+
+.rd-entry-price-row.has-days:not(:has(.rd-entry-switch + .rd-entry-switch)) {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+#rd-duration-days-wrap,
+#rd-sell-price-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+#rd-duration-days-wrap[hidden] {
+  display: none;
+}
+
+.rd-entry-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  min-height: 3.45rem;
+  padding-inline: 0.6rem;
+  background: var(--rd-surface-2);
+  border-radius: 0.85rem;
+}
+
+.rd-entry-switch__label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.rd-entry-switch__label small {
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* The label covers the whole switch, so the full 44px is the tap target. */
+.rd-entry-switch__label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.rd-entry-switch__toggle.form-check.form-switch {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.rd-entry-switch__toggle .form-check-input {
+  float: none;
+  margin: 0;
+}
+
+.rd-entry-switch__toggle .form-check-input:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Notes under the price row (optional rows may exceed one screen, R5)         */
+/* -------------------------------------------------------------------------- */
+.rd-entry-note {
+  margin: 0;
+  padding-inline: 0.15rem;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.rd-entry-note[hidden],
+.rd-entry-est[hidden],
+.rd-entry-hint[hidden],
+#rd-employee-payment-hint[hidden] {
+  display: none !important;
+}
+
+.rd-entry-note--muted {
+  color: var(--rd-muted);
+}
+
+.rd-entry-note--info {
+  color: var(--rd-info);
+}
+
+.rd-entry-note--danger {
+  color: var(--rd-danger);
+}
+
+/* Employee-payment hint: a flex row, so [hidden] needs the guard above. */
+.rd-entry-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--rd-surface-2);
+  border-radius: 0.7rem;
+}
+
+.rd-entry-notes-line,
+.rd-entry-sim-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Wrappers have no [hidden] of their own: collapse them when every child is hidden. */
+.rd-entry-notes-line:not(:has(> :not([hidden]))),
+.rd-entry-sim-extra:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+/* Estimate (cost · profit) in the price header; profit colour comes from kpi-*. */
+.rd-entry-est {
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dock: Save (ink) and Charge (accent) above the tab bar                      */
+/* -------------------------------------------------------------------------- */
+.rd-entry-dock .sticky-save__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+/* Charge is hidden for companies that cannot charge: Save takes the full width. */
+.rd-entry-dock .sticky-save__actions:not(:has(.employee-charge-sale-btn:not([hidden]))) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.rd-entry-dock .employee-save-sale-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 3.6rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 1.1rem;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: normal;
+}
+
+.rd-entry-dock .employee-charge-sale-btn[hidden] {
+  display: none;
 }

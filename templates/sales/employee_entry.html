@@ -54,10 +54,10 @@
             >
               <div class="rd-payer-ac-anchor">
                 <div class="rd-entry-field">
-                  <label class="rd-entry-field__label" for="id_payer_name">
-                    {% trans "Payer name" %}
+                  <div class="rd-entry-field__top">
+                    <label class="rd-entry-field__label" for="id_payer_name">{% trans "Payer name" %}</label>
                     <span class="rd-payer-prefill-hint" id="rd-payer-prefill-hint" hidden aria-live="polite"></span>
-                  </label>
+                  </div>
                   {{ form.payer_name }}
                   <button
                     type="button"
@@ -82,7 +82,7 @@
           <div class="rd-entry-blk rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
             <div class="rd-entry-blk__head">
               <span class="rd-entry-blk__title">{% trans "Where did you receive the money?" %}</span>
-              <span class="rd-entry-blk__end">
+              <div class="rd-entry-blk__end">
                 {% if acting_employee and app_settings.sales_show_employee_payment %}
                 <button
                   type="button"
@@ -101,7 +101,7 @@
                   data-on-label="{% trans 'On account: ON' %}"
                   data-off-label="{% trans 'Mark as on account' %}"
                 >{% trans "Mark as on account" %}</button>
-              </span>
+              </div>
             </div>
             {{ form.payment_method }}
             {{ form.on_account }}
@@ -134,9 +134,9 @@
           <div class="rd-entry-blk rd-field-group{% if form.company.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
               <span class="rd-entry-blk__title">{% trans "Company" %}</span>
-              <span class="rd-entry-blk__end">
+              <div class="rd-entry-blk__end">
                 <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm rd-entry-spinner" role="status" aria-hidden="true"></span>
-              </span>
+              </div>
             </div>
             {{ form.company }}
             {% if form.company.errors %}<div class="rd-field-error">{{ form.company.errors }}</div>{% endif %}
@@ -178,7 +178,7 @@
           <div class="rd-entry-blk rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
               <span class="rd-entry-blk__title">{% trans "Price" %}</span>
-              <span class="rd-entry-blk__end">
+              <div class="rd-entry-blk__end">
                 <span class="rd-entry-est tabular-nums" id="rd-sale-preview" hidden>
                   {% trans "Supplier cost" %} <span id="rd-preview-cost">—</span>
                   &middot;
@@ -192,7 +192,7 @@
                     {{ form.notes }}
                   </div>
                 </details>
-              </span>
+              </div>
             </div>
             <div class="rd-entry-price-row">
               <div id="rd-duration-days-wrap" hidden>
@@ -867,6 +867,25 @@
 
   document.addEventListener("click", function (e) {
     if (typeof window.__rdEmployeeSaleOnClick === "function") window.__rdEmployeeSaleOnClick(e);
+  });
+
+  /* "+ Note" opens as a popover over the price block: close it on Escape (focus
+     returns to the summary) or on a tap outside. Server-side note errors keep it open. */
+  function openNotesPopover() {
+    return document.querySelector(".rd-entry-notes[open]");
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var d = openNotesPopover();
+    if (!d) return;
+    d.open = false;
+    var sum = d.querySelector("summary");
+    if (sum) sum.focus();
+  });
+  document.addEventListener("click", function (e) {
+    var d = openNotesPopover();
+    if (!d || d.contains(e.target) || d.querySelector(".errorlist")) return;
+    d.open = false;
   });
   document.addEventListener("htmx:afterSwap", function (evt) {
     if (typeof window.__rdEmployeeSaleOnSwap === "function") window.__rdEmployeeSaleOnSwap(evt);
