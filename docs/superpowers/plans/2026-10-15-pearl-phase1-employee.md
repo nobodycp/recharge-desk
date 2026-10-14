@@ -173,5 +173,6 @@
 
 | Page | Measure | Before | After |
 |---|---|---|---|
-| Employee entry 375×667 | `scrollHeight` / visible height | | |
-| Employee entry 375×667 | Save visible without scroll | | |
+| Employee entry 375×667 | `scrollHeight` / visible height | 682 / 590 above tab bar (fresh); 820 with company + product | |
+| Employee entry 375×667 | Save visible without scroll | yes fresh (save bottom 577); with company + product the save bottom is 591 and overlaps the tab bar (top 590) | |
+| Other pages 375×667 | `scrollHeight` | recent 667, record payment 667, number check 667, stock check 2731, my balance 2797 | |
