@@ -80,7 +80,7 @@ REFRESH_JOB_RETENTION_DAYS = 30
 def purge_old_jobs() -> int:
     """Delete refresh jobs and provider operations past retention (beat, daily).
 
-    Returns the number of rows deleted.
+    Returns the number of refresh jobs deleted; operations are logged.
     """
     now = timezone.now()
     deleted, _ = ProviderJob.objects.filter(
@@ -91,4 +91,5 @@ def purge_old_jobs() -> int:
         created_at__lt=now
         - dt.timedelta(days=settings.PROVIDER_OPERATIONS_RETENTION_DAYS)
     ).delete()
-    return deleted + ops_deleted
+    log.info("purged %d provider operation rows past retention", ops_deleted)
+    return deleted

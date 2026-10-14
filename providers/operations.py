@@ -61,6 +61,14 @@ CAUSE_LABELS = {
     "internal": "خطأ داخلي",
 }
 
+SUCCESS_LABELS = {
+    "refresh": "تمّ التحديث",
+    "number_info": "تمّت قراءة بيانات الرقم",
+    "charge": "تمّ الشحن",
+    "check_charge": "تمّت متابعة الشحن",
+    "reconcile": "تمّت المطابقة",
+}
+
 PENDING_MESSAGE = "الشحن قيد المتابعة"
 NOT_SENT_PREFIX = "not_sent:"
 
@@ -108,7 +116,7 @@ def _failed(service: str, error_code: str, cause: str) -> Classified:
 
 
 def success(service: str, ref: str = "") -> Classified:
-    message = f"تم {_label(service)}"
+    message = SUCCESS_LABELS.get(service) or f"تم {_label(service)}"
     if ref:
         message += f" — رقم العملية {ref}"
     return Classified(OUTCOME_SUCCESS, "", message)
@@ -165,13 +173,30 @@ def record(
     """Write one operation row; never raises and never poisons the caller's transaction."""
     from providers.models import ProviderOperation
 
+    outcome = classified.outcome
+    if source not in SOURCES:
+        log.warning(
+            "provider operation %s/%s: unknown source %r, storing 'system'",
+            provider_key,
+            service,
+            source,
+        )
+        source = "system"
+    if outcome not in OUTCOME_LABELS:
+        log.warning(
+            "provider operation %s/%s: unknown outcome %r, storing 'failed'",
+            provider_key,
+            service,
+            outcome,
+        )
+        outcome = OUTCOME_FAILED
     try:
         with transaction.atomic():
             ProviderOperation.objects.create(
                 provider_key=provider_key,
                 service=service,
                 phone=phone or "",
-                outcome=classified.outcome,
+                outcome=outcome,
                 error_code=classified.error_code,
                 message=classified.message[:MESSAGE_MAX],
                 source=source,

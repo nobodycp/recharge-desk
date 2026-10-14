@@ -16,7 +16,7 @@ from providers.contracts import (
     PermanentError,
     TransientError,
 )
-from providers.models import ProviderOperation
+from providers.models import ProviderJob, ProviderOperation
 from providers.operations import Classified
 from providers.tasks import purge_old_jobs
 
@@ -116,15 +116,27 @@ class SuccessTests(TestCase):
     def test_success_with_ref(self):
         self.assertEqual(
             operations.success("charge", "123"),
-            Classified("success", "", "تم الشحن — رقم العملية 123"),
-        )
-        self.assertEqual(
-            operations.success("charge", "123").message,
-            "تم الشحن — رقم العملية 123",
+            Classified("success", "", "تمّ الشحن — رقم العملية 123"),
         )
 
-    def test_success_without_ref(self):
-        self.assertEqual(operations.success("reconcile").message, "تم المطابقة")
+    def test_success_phrase_per_service(self):
+        for service, phrase in (
+            ("refresh", "تمّ التحديث"),
+            ("number_info", "تمّت قراءة بيانات الرقم"),
+            ("charge", "تمّ الشحن"),
+            ("check_charge", "تمّت متابعة الشحن"),
+            ("reconcile", "تمّت المطابقة"),
+        ):
+            with self.subTest(service=service):
+                self.assertEqual(operations.success(service).message, phrase)
+                self.assertEqual(
+                    operations.success(service, "9").message,
+                    f"{phrase} — رقم العملية 9",
+                )
+        self.assertEqual(set(operations.SUCCESS_LABELS), set(operations.SERVICE_LABELS))
+
+    def test_success_unknown_service_falls_back(self):
+        self.assertEqual(operations.success("other").message, "تم other")
 
     def test_rejected_helper(self):
         self.assertEqual(
@@ -168,7 +180,7 @@ class ClassifyChargeTests(TestCase):
         outcome = ChargeOutcome(ChargeResult.SUCCESS, provider_ref="R9")
         self.assertEqual(
             operations.classify_charge("charge", outcome),
-            Classified("success", "", "تم الشحن — رقم العملية R9"),
+            Classified("success", "", "تمّ الشحن — رقم العملية R9"),
         )
 
     def test_unverified_is_pending(self):
@@ -258,7 +270,7 @@ class RecordTests(TestCase):
         self.assertEqual(row.phone, "0599000000")
         self.assertEqual(row.outcome, "success")
         self.assertEqual(row.error_code, "")
-        self.assertEqual(row.message, "تم الشحن — رقم العملية 55")
+        self.assertEqual(row.message, "تمّ الشحن — رقم العملية 55")
         self.assertEqual(row.source, "employee")
         self.assertEqual(row.user_id, user.id)
         self.assertEqual(row.sale_id, 7)
@@ -290,6 +302,50 @@ class RecordTests(TestCase):
         self.assertNotIn("hunter2", row.detail)
         self.assertIn("password=***", row.detail)
         self.assertLessEqual(len(row.detail), 500)
+
+    def test_secret_straddling_the_limit_is_scrubbed_before_truncating(self):
+        operations.record(
+            "sky",
+            "refresh",
+            operations.classify_code("refresh", "login_failed"),
+            detail="x" * 490 + " password=hunter2",
+        )
+        detail = ProviderOperation.objects.get().detail
+        self.assertNotIn("hunter2", detail)
+        self.assertLessEqual(len(detail), 500)
+
+    def test_invalid_job_id_or_user_id_never_raises(self):
+        for kwargs in ({"job_id": "not-a-uuid"}, {"user_id": "abc"}):
+            with self.subTest(kwargs=kwargs):
+                with self.assertLogs("providers.operations", level="WARNING"):
+                    result = operations.record(
+                        "sky", "charge", operations.success("charge"), **kwargs
+                    )
+                self.assertIsNone(result)
+                self.assertEqual(ProviderOperation.objects.count(), 0)
+
+    def test_unknown_source_is_stored_as_system_with_warning(self):
+        with self.assertLogs("providers.operations", level="WARNING"):
+            operations.record(
+                "sky", "charge", operations.success("charge"), source="bogus"
+            )
+        self.assertEqual(ProviderOperation.objects.get().source, "system")
+
+    def test_unknown_outcome_is_stored_as_failed_with_warning(self):
+        with self.assertLogs("providers.operations", level="WARNING"):
+            operations.record(
+                "sky", "charge", Classified("weird", "internal", "فشل الشحن — خطأ داخلي")
+            )
+        self.assertEqual(ProviderOperation.objects.get().outcome, "failed")
+
+    def test_known_source_and_outcome_do_not_warn(self):
+        with mock.patch.object(operations.log, "warning") as warn:
+            operations.record(
+                "sky", "charge", operations.success("charge"), source="api"
+            )
+        warn.assert_not_called()
+        row = ProviderOperation.objects.get()
+        self.assertEqual((row.source, row.outcome), ("api", "success"))
 
     def test_message_is_truncated_to_255(self):
         operations.record(
@@ -349,7 +405,23 @@ class PurgeTests(TestCase):
         ProviderOperation.objects.filter(pk=new.pk).update(
             created_at=now - dt.timedelta(days=89)
         )
-        purge_old_jobs()
+        old_job = ProviderJob.objects.create(
+            kind="refresh", provider_key="sky", phone="0529000000"
+        )
+        new_job = ProviderJob.objects.create(
+            kind="refresh", provider_key="sky", phone="0529000001"
+        )
+        ProviderJob.objects.filter(pk=old_job.pk).update(
+            created_at=now - dt.timedelta(days=31)
+        )
+        with self.assertLogs("providers.tasks", level="INFO") as logs:
+            deleted = purge_old_jobs()
+        # The return value keeps its old contract: refresh jobs only.
+        self.assertEqual(deleted, 1)
+        self.assertTrue(any("1" in line and "operation" in line for line in logs.output))
         self.assertEqual(
             list(ProviderOperation.objects.values_list("pk", flat=True)), [new.pk]
+        )
+        self.assertEqual(
+            list(ProviderJob.objects.values_list("pk", flat=True)), [new_job.pk]
         )
