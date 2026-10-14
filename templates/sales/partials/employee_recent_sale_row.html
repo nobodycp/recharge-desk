@@ -1,31 +1,31 @@
 {% load i18n ui_tags %}
 <div
   id="sale-row-{{ s.pk }}"
-  class="list-group-item d-flex flex-column gap-2 py-3{% if s.entry_mode == 'auto_charge' %} rd-charge-row{% endif %}"
+  class="rd-mobile-row-card rd-pay-row rd-recent-row{% if s.entry_mode == 'auto_charge' %} rd-charge-row{% endif %}"
   {% if s.charge_status == "processing" %}
     {% include "sales/partials/charge_row_poll_attrs.html" with layout="" %}
   {% endif %}
 >
-  <div class="d-flex justify-content-between gap-3">
-    <div class="min-w-0">
-      <div class="fw-semibold text-truncate">
-        {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
+  <div class="rd-pay-row__main">
+    <div class="rd-pay-row__who">
+      <div class="rd-recent-row__title">
+        <span class="rd-recent-row__name">{{ s.product.display_name }}</span>{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
       </div>
       {% if s.entry_mode == "auto_charge" %}
-        <div class="mt-1">{% include "sales/partials/charge_badge.html" with sale=s management=False %}</div>
+        <div class="rd-recent-row__charge">{% include "sales/partials/charge_badge.html" with sale=s management=False %}</div>
       {% endif %}
       {% if s.payer_name %}
         <div class="rd-recent-payer text-truncate">{{ s.payer_name }}</div>
       {% endif %}
-      <div class="small text-secondary text-truncate">
-        {{ s.reference_number }}
+      <div class="rd-pay-row__sub">
+        <bdi class="tabular-nums">{{ s.reference_number }}</bdi>
         {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% elif s.on_account %} · {% trans "On account" %}{% endif %}
       </div>
-      <div class="small text-secondary">{{ s.created_at|date:"Y-m-d H:i" }}</div>
+      <div class="rd-pay-row__sub tabular-nums">{{ s.created_at|date:"Y-m-d H:i" }}</div>
     </div>
-    <div class="text-end flex-shrink-0 small">
-      <div class="fw-semibold tabular-nums">{{ s.sell_price_actual }}</div>
-      <div class="mt-1">{% include "partials/sale_status_badge.html" with sale=s %}</div>
+    <div class="rd-pay-row__end">
+      <div class="rd-pay-row__amount tabular-nums">{{ s.sell_price_actual }}</div>
+      {% include "partials/sale_status_badge.html" with sale=s %}
     </div>
   </div>
   {% include "sales/partials/employee_recent_actions.html" with s=s editable_sale_ids=editable_sale_ids use_htmx=True %}

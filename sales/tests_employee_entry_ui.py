@@ -773,3 +773,201 @@ class EmployeePaymentCssTests(SimpleTestCase):
 
     def test_balance_row_has_a_hidden_guard(self):
         self._assert_decl(".rd-pay-sub-balance[hidden]", "display: none")
+
+
+class EmployeeRecentEntriesTests(TestCase):
+    """My entries: Pearl rows, filter grid and the shared sale badge partials."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from customers.models import Customer
+        from customers.services import submit_customer_payment_submission
+        from employees.models import EmployeeProfile
+        from sales.services import create_sale
+
+        cls.company = Company.objects.create(
+            name="Recent Co", opening_balance=Decimal("1000"), current_balance=Decimal("1000")
+        )
+        line = ProductLine.objects.create(company=cls.company, name="Line")
+        cls.product = Product.objects.create(
+            line=line, variant_label="Pkg", cost_price=Decimal("5"), default_sell_price=Decimal("10")
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash Box")
+        cls.emp = User.objects.create_user("emp_recent_ui", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        EmployeeProfile.objects.create(user=cls.emp, monthly_salary=Decimal("0"))
+
+        def sale(ref, price, **kw):
+            return create_sale(
+                company=cls.company, product=cls.product, reference_number=ref,
+                payer_name="Payer " + ref, payment_method=cls.pm,
+                sell_price_actual=Decimal(price), notes="", user=cls.emp, **kw
+            )
+
+        cls.plain = sale("0590000001", "10")
+        cls.flagged = sale("0590000002", "10", is_esim=True, is_new_sim=True)
+        cls.loss = sale("0590000003", "0")
+        cls.customer = Customer.objects.create(name="Recent Cust", created_by=cls.emp)
+        cls.sub = submit_customer_payment_submission(
+            customer=cls.customer, amount=Decimal("12.00"), payment_method=cls.pm, notes="", user=cls.emp
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def _page(self):
+        resp = self.client.get(reverse("sales:employee_recent_sales"))
+        self.assertEqual(resp.status_code, 200)
+        return resp.content.decode()
+
+    def _row(self, html, row_id):
+        return re.search(r'<div[^>]*id="%s"[^>]*>' % row_id, html).group(0)
+
+    def test_rows_keep_their_ids_and_become_row_cards(self):
+        html = self._page()
+        for sale in (self.plain, self.flagged, self.loss):
+            tag = self._row(html, "sale-row-%d" % sale.pk)
+            self.assertIn("rd-mobile-row-card", tag)
+        self.assertIn("rd-mobile-row-card", self._row(html, "payment-row-%d" % self.sub.pk))
+        self.assertNotIn("list-group-item", html.split('class="rd-recent"', 1)[1])
+
+    def test_rows_use_pearl_badges_and_tabular_numbers(self):
+        html = self._page()
+        self.assertIn("rd-badge rd-badge--pending", html)
+        self.assertRegex(html, r'class="rd-pay-row__amount tabular-nums"')
+        self.assertRegex(html, r'<bdi class="tabular-nums">0590000001</bdi>')
+        for legacy in ("badge bg-", "text-bg-", "btn-outline-primary", "table-light", "alert-"):
+            self.assertNotIn(legacy, html.split('class="rd-recent"', 1)[1])
+
+    def test_sale_chips_render_with_their_pearl_variants(self):
+        html = self._page()
+        self.assertRegex(html, r'class="rd-badge rd-badge--neutral rd-sale-esim-badge ms-1"[^>]*>eSIM<')
+        self.assertRegex(html, r'class="rd-badge rd-badge--neutral rd-sale-new-sim-badge ms-1"')
+        self.assertRegex(html, r'class="rd-badge rd-badge--cancelled rd-sale-loss-badge ms-1"[^>]*>Loss<')
+
+    def test_edit_and_delete_keep_their_hx_attributes(self):
+        html = self._page()
+        self.assertRegex(
+            html, r'class="btn btn-sm btn-outline-secondary" href="%s"'
+            % reverse("sales:employee_sale_edit", args=[self.plain.pk])
+        )
+        self.assertIn('hx-target="#sale-row-%d"' % self.plain.pk, html)
+        self.assertIn('hx-post="%s"' % reverse("sales:employee_sale_delete", args=[self.plain.pk]), html)
+        self.assertIn("hx-confirm=", html)
+        self.assertIn('hx-target="#payment-row-%d"' % self.sub.pk, html)
+        self.assertIn('class="rd-pay-actions"', html)
+
+    def test_filter_form_keeps_every_field_and_hook(self):
+        html = self._page()
+        for name in ("q", "company", "payment_method", "status", "date_from", "date_to"):
+            with self.subTest(field=name):
+                self.assertIn('id="id_%s"' % name, html)
+                self.assertIn('name="%s"' % name, html)
+        self.assertIn("data-rd-filter-count", html)
+        self.assertIn('id="recent-htmx-indicator"', html)
+        self.assertIn('class="rd-recent-filter"', html)
+        self.assertNotIn("row g-3", html)
+        self.assertRegex(html, r'<button class="btn btn-primary btn-sm" type="submit">')
+
+    def test_scope_label_is_a_neutral_pearl_chip(self):
+        html = self._page()
+        self.assertRegex(html, r'<span class="rd-badge rd-badge--neutral">[^<]+</span>\s*</header>')
+
+    def test_auto_charge_row_keeps_its_charge_class(self):
+        from sales.models import Sale
+
+        Sale.objects.filter(pk=self.plain.pk).update(entry_mode="auto_charge", charge_status="success")
+        html = self._page()
+        tag = self._row(html, "sale-row-%d" % self.plain.pk)
+        self.assertIn("rd-charge-row", tag)
+        self.assertIn("rd-recent-row", tag)
+
+    def test_empty_state_is_unchanged(self):
+        from sales.models import Sale
+
+        Sale.objects.all().delete()
+        type(self.sub).objects.all().delete()
+        self.assertIn("empty-state", self._page())
+
+
+class SaleBadgePartialsTests(SimpleTestCase):
+    """The badge partials are shared with management pages: they render the Pearl chip anywhere."""
+
+    def _render(self, name, **sale):
+        from types import SimpleNamespace
+
+        from django.template.loader import render_to_string
+
+        return render_to_string("partials/%s.html" % name, {"sale": SimpleNamespace(**sale)})
+
+    def test_each_partial_renders_a_pearl_badge_with_text(self):
+        cases = (
+            ("sale_esim_badge", {"is_esim": True}, "rd-badge--neutral", "eSIM"),
+            ("sale_new_sim_badge", {"is_new_sim": True}, "rd-badge--neutral", "New SIM"),
+            ("sale_loss_badge", {"loss_snapshot": Decimal("3")}, "rd-badge--cancelled", "Loss"),
+            (
+                "sale_employee_payment_badge",
+                {"paid_via_employee": True, "employee_recipient": None},
+                "rd-badge--neutral",
+                "Payment to employee",
+            ),
+        )
+        for name, sale, variant, text in cases:
+            with self.subTest(partial=name):
+                out = self._render(name, **sale)
+                self.assertIn("rd-badge " + variant, out)
+                self.assertIn(">%s<" % text, out)
+                self.assertNotIn("text-bg-", out)
+                self.assertNotIn('class="badge', out)
+
+    def test_each_partial_renders_nothing_when_it_does_not_apply(self):
+        self.assertEqual(self._render("sale_esim_badge", is_esim=False).strip(), "")
+        self.assertEqual(self._render("sale_new_sim_badge", is_new_sim=False).strip(), "")
+        self.assertEqual(self._render("sale_loss_badge", loss_snapshot=Decimal("0")).strip(), "")
+        self.assertEqual(
+            self._render("sale_employee_payment_badge", paid_via_employee=False).strip(), ""
+        )
+
+
+class EmployeeRecentCssTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.css = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+
+    def _assert_decl(self, selector, *needles):
+        bodies = _bodies(self.css, selector)
+        self.assertTrue(bodies, f"no rule for {selector} in employee.css")
+        joined = " ".join(" ".join(b.split()) for b in bodies)
+        for needle in needles:
+            self.assertIn(needle, joined, f"{selector}: {needle}")
+
+    def test_filter_grid_is_stacked_then_three_columns(self):
+        self._assert_decl(".rd-recent-filter", "grid-template-columns: minmax(0, 1fr)")
+        self.assertRegex(
+            self.css,
+            r"@media \(min-width: 768px\) \{\s*\.rd-recent-filter \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)",
+        )
+
+    def test_controls_and_buttons_are_touch_sized(self):
+        for sels, body in _rules(self.css):
+            if ".rd-recent-filter .form-control" in sels:
+                self.assertIn("min-height: 3.45rem", " ".join(body.split()))
+                self.assertIn(".rd-recent-filter .form-select", sels)
+                break
+        else:
+            self.fail("no .rd-recent-filter .form-control rule")
+        self._assert_decl(".rd-recent-filter__actions .btn", "min-height: 3.45rem")
+        self._assert_decl(".rd-recent .rd-filter-card > summary", "min-height: 3.45rem")
+
+    def test_charge_edge_uses_logical_properties_and_a_token(self):
+        self._assert_decl(".rd-recent-row.rd-charge-row", "border-inline-start: 3px solid var(--rd-accent-2)")
+
+    def test_recent_section_has_no_raw_colour_or_physical_sides(self):
+        section = self.css.split("Recent entries (\"My entries\")", 1)[1]
+        self.assertNotRegex(section, r"#[0-9a-fA-F]{3,8}\b")
+        self.assertNotRegex(section, r"\b(margin|padding|border)-(left|right)\b|\b(left|right):")

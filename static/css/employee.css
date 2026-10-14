@@ -1720,3 +1720,114 @@ html:has(.rd-entry-dock) {
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Recent entries ("My entries")                                              */
+/* Rows reuse the payment row card (.rd-pay-row); the rules below add the     */
+/* title line with its badges, the auto-charge edge and the filter grid.      */
+/* -------------------------------------------------------------------------- */
+.rd-recent-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  margin-block-end: 0.75rem;
+}
+
+.rd-recent-intro__text {
+  flex: 1 1 14rem;
+  margin: 0;
+  color: var(--rd-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* Filter card: stacked fields on mobile, three columns from 768px. */
+.rd-recent .rd-filter-card > summary {
+  min-height: 3.45rem;
+}
+
+.rd-recent-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.rd-recent-filter__field {
+  min-width: 0;
+}
+
+.rd-recent-filter .form-control,
+.rd-recent-filter .form-select {
+  min-height: 3.45rem;
+  font-size: 0.9rem;
+}
+
+.rd-recent-filter__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rd-recent-filter__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.45rem;
+  padding-inline: 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .rd-recent-filter {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rd-recent-filter__actions {
+    grid-column: 1 / -1;
+  }
+}
+
+.rd-recent-filter .btn:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+/* Row: product / payment title with its eSIM, new SIM, loss and employee chips. */
+.rd-recent-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0;
+}
+
+.rd-recent-row__title > .rd-badge {
+  margin-inline-start: 0.3rem;
+}
+
+.rd-recent-row__name {
+  color: var(--rd-ink);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rd-recent-row__charge {
+  margin-block-start: 0.25rem;
+}
+
+.rd-recent-row .rd-recent-payer {
+  color: var(--rd-ink);
+}
+
+.rd-recent-row__note {
+  color: var(--rd-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Auto-charged rows keep the accent edge on the leading side. */
+.rd-recent-row.rd-charge-row {
+  border-inline-start: 3px solid var(--rd-accent-2);
+}

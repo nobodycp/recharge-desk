@@ -45,7 +45,7 @@ _BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
 BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
 TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 
-LEGACY_BADGES = {  # 14 files
+LEGACY_BADGES = {  # 9 files
     "templates/companies/layan_reconcile.html",
     "templates/companies/partials/layan_reconcile_review_table.html",
     "templates/companies/partials/layan_reconcile_settlements.html",
@@ -55,11 +55,6 @@ LEGACY_BADGES = {  # 14 files
     "templates/companies/sky_reconcile.html",
     "templates/core/search.html",
     "templates/inventory/_serials_paste_field.html",
-    "templates/partials/sale_employee_payment_badge.html",
-    "templates/partials/sale_esim_badge.html",
-    "templates/partials/sale_loss_badge.html",
-    "templates/partials/sale_new_sim_badge.html",
-    "templates/sales/employee_recent.html",
 }
 LEGACY_TABLE_LIGHT = {  # 3 files
     "templates/core/search.html",
