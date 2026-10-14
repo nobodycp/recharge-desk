@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest import mock
 
 from django.core.cache import cache
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -90,6 +90,7 @@ class DeviceApiAuthTests(SmsBaseTest):
         self.assertEqual(resp.status_code, 401)
 
 
+@override_settings(REFRESH_ASYNC_ENABLED=False)  # these mock the synchronous refresh call
 class EndToEndTests(SmsBaseTest):
     def setUp(self):
         super().setUp()
@@ -294,3 +295,259 @@ class PurgeCommandTests(SmsBaseTest):
         InboundSms.objects.create(from_number="0555544072", raw_text="y")
         call_command("sms_purge_logs")
         self.assertEqual(InboundSms.objects.count(), 1)
+
+
+PROVIDER_REFRESH = "providers.service.refresh"
+SENDER = "0595108208"
+REFRESHED_NUMBER = "0555544071"
+
+
+class AsyncInboundTests(SmsBaseTest):
+    """In-process refresh runs as a job; the reply is queued on completion."""
+
+    def setUp(self):
+        super().setUp()
+        from phone_refresh.models import SystemSettings
+
+        s = SystemSettings.get()
+        s.db_precheck_enabled = False
+        s.default_provider = "sky"
+        s.show_last_refresh = False
+        s.save()
+        self.device = _make_device()
+
+    def _inbound(self, **kwargs):
+        from sms_gateway.services.processing import process_inbound
+
+        return process_inbound(
+            from_number=SENDER, raw_text=REFRESHED_NUMBER, device=self.device, **kwargs
+        )
+
+    def _refreshing_inbound(self):
+        return InboundSms.objects.create(
+            device=self.device,
+            from_number=SENDER,
+            raw_text=REFRESHED_NUMBER,
+            extracted_number=REFRESHED_NUMBER,
+            state=InboundSms.State.REFRESHING,
+        )
+
+    @mock.patch(PROVIDER_REFRESH)
+    def test_inbound_enqueues_and_reply_created_on_completion(self, refresh):
+        from providers.contracts import RawResponse
+        from providers.models import ProviderJob
+
+        refresh.return_value = RawResponse(
+            text="", json={"reason": "success"}, status_code=200
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            result = self._inbound(device_msg_id="m1")
+            # Returned before the job ran: the gateway's HTTP call is not held.
+            self.assertEqual(result.state, InboundSms.State.REFRESHING)
+            self.assertEqual(result.extracted_number, REFRESHED_NUMBER)
+            self.assertIsNone(result.outbound_id)
+            self.assertEqual(OutboundSms.objects.count(), 0)
+
+        job = ProviderJob.objects.get()
+        self.assertEqual(job.payload["notify"], {"sms_inbound_id": result.inbound_id})
+        self.assertEqual(job.status, "done")
+        message = job.result["message"]
+        outbound = OutboundSms.objects.get()
+        self.assertEqual(outbound.to_number, SENDER)  # reply goes to the SENDER
+        self.assertEqual(outbound.related_inbound_id, result.inbound_id)
+        self.assertEqual(outbound.body, "\n".join([message["title"], message["body"]]))
+        self.assertEqual(job.result["status"], "refreshed")
+        inbound = InboundSms.objects.get(pk=result.inbound_id)
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertEqual(inbound.extracted_number, REFRESHED_NUMBER)
+        self.assertEqual(inbound.reply_text, outbound.body)
+        self.assertTrue(inbound.delete_requested)
+        self.assertIsNotNone(inbound.processed_at)
+
+    @mock.patch(PROVIDER_REFRESH)
+    def test_inbound_http_returns_refreshing_and_reply_is_polled_from_outbox(self, refresh):
+        from providers.contracts import RawResponse
+
+        refresh.return_value = RawResponse(
+            text="", json={"reason": "success"}, status_code=200
+        )
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {RAW_TOKEN}"}
+        with self.captureOnCommitCallbacks(execute=True):
+            resp = self.client.post(
+                reverse("sms_gateway_api:api_inbound"),
+                data='{"from":"%s","text":"%s","device_msg_id":"m9"}'
+                % (SENDER, REFRESHED_NUMBER),
+                content_type="application/json",
+                **auth,
+            )
+        self.assertEqual(resp.json()["state"], InboundSms.State.REFRESHING)
+        self.assertFalse(resp.json()["queued_reply"])
+        out = self.client.get(reverse("sms_gateway_api:api_outbox"), **auth).json()
+        self.assertEqual(len(out["messages"]), 1)
+        self.assertEqual(out["messages"][0]["to"], SENDER)
+
+    def test_complete_inbound_is_idempotent(self):
+        from sms_gateway.services.processing import complete_inbound
+
+        inbound = self._refreshing_inbound()
+        complete_inbound(inbound.pk, "refreshed", "تم", "تم التحديث")
+        complete_inbound(inbound.pk, "error", "خطأ", "فشل")
+        outbound = OutboundSms.objects.get()
+        self.assertEqual(outbound.body, "تم\nتم التحديث")
+        inbound.refresh_from_db()
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertEqual(inbound.reply_text, "تم\nتم التحديث")
+
+    def test_complete_inbound_ignores_inbound_not_refreshing(self):
+        from sms_gateway.services.processing import complete_inbound
+
+        inbound = self._refreshing_inbound()
+        InboundSms.objects.filter(pk=inbound.pk).update(state=InboundSms.State.IGNORED)
+        complete_inbound(inbound.pk, "refreshed", "تم", "تم التحديث")
+        complete_inbound(999999, "refreshed", "تم", "تم التحديث")  # unknown id
+        self.assertEqual(OutboundSms.objects.count(), 0)
+        inbound.refresh_from_db()
+        self.assertEqual(inbound.state, InboundSms.State.IGNORED)
+
+    def test_complete_inbound_race_loser_sends_nothing(self):
+        """A completer that lost the claim to a concurrent one queues no reply."""
+        from sms_gateway.services import processing
+
+        inbound = self._refreshing_inbound()
+        real_reply_for = processing._reply_for
+
+        def reply_after_rival_claims(*args, **kwargs):
+            # The reaper / a late worker finishes the inbound while we build ours.
+            InboundSms.objects.filter(pk=inbound.pk).update(
+                state=InboundSms.State.PROCESSED
+            )
+            return real_reply_for(*args, **kwargs)
+
+        with mock.patch.object(processing, "_reply_for", side_effect=reply_after_rival_claims):
+            processing.complete_inbound(inbound.pk, "refreshed", "تم", "تم التحديث")
+        self.assertEqual(OutboundSms.objects.count(), 0)
+
+    def test_complete_inbound_respects_policy_and_daily_cap(self):
+        from sms_gateway.services.processing import complete_inbound
+
+        s = SmsGatewaySettings.load()
+        s.global_daily_cap = 1
+        s.save()
+        cache.clear()
+        OutboundSms.objects.create(to_number="0550000000", body="earlier")
+        inbound = self._refreshing_inbound()
+        complete_inbound(inbound.pk, "refreshed", "تم", "تم التحديث")
+        self.assertEqual(OutboundSms.objects.count(), 1)  # cap reached: no new reply
+        inbound.refresh_from_db()
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertEqual(inbound.reply_text, "")
+
+    @mock.patch("phone_refresh.services.refresh_jobs.submit_refresh")
+    def test_immediate_payload_finishes_inbound_now(self, submit):
+        from phone_refresh.services.refresh_jobs import RefreshTicket
+
+        submit.return_value = RefreshTicket(
+            None, {"status": "busy", "message": {"title": "مشغول", "body": "حاول لاحقاً"}}
+        )
+        result = self._inbound()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        self.assertEqual(result.reply_text, "مشغول\nحاول لاحقاً")
+        self.assertIsNotNone(result.outbound_id)
+        self.assertEqual(
+            InboundSms.objects.get().state, InboundSms.State.PROCESSED
+        )
+        self.assertEqual(OutboundSms.objects.get().body, "مشغول\nحاول لاحقاً")
+
+    @mock.patch("phone_refresh.services.refresh_jobs.submit_refresh")
+    def test_immediate_payload_with_job_id_is_still_immediate(self, submit):
+        from phone_refresh.services.refresh_jobs import RefreshTicket
+
+        submit.return_value = RefreshTicket(
+            "some-failed-job",
+            {"status": "busy", "message": {"title": "مشغول", "body": "حاول لاحقاً"}},
+        )
+        result = self._inbound()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        self.assertEqual(OutboundSms.objects.get().body, "مشغول\nحاول لاحقاً")
+
+    @mock.patch("phone_refresh.services.refresh_jobs.submit_refresh", side_effect=RuntimeError("boom"))
+    def test_submit_crash_does_not_leave_inbound_refreshing(self, submit):
+        with self.assertLogs("sms_gateway.services.processing", level="ERROR"):
+            result = self._inbound()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        inbound = InboundSms.objects.get()
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertNotIn("boom", OutboundSms.objects.get().body)
+
+    @mock.patch(PROVIDER_REFRESH)
+    def test_enqueue_failure_finishes_inbound_with_busy_reply(self, refresh):
+        from phone_refresh.tasks import run_refresh_job
+
+        # The inbound view runs in autocommit, where on_commit fires at once
+        # (TestCase's wrapping transaction would defer it).
+        with mock.patch.object(run_refresh_job, "delay", side_effect=RuntimeError("redis down")), \
+                mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()):
+            with self.assertLogs("phone_refresh.services.refresh_jobs", level="ERROR"):
+                result = self._inbound()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        refresh.assert_not_called()
+        inbound = InboundSms.objects.get(pk=result.inbound_id)
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertEqual(OutboundSms.objects.count(), 1)
+
+    def test_reaper_completes_stuck_inbound_with_error_reply(self):
+        from phone_refresh.tasks import reap_stuck_jobs
+        from providers.models import ProviderJob
+
+        with mock.patch(PROVIDER_REFRESH) as refresh:
+            result = self._inbound()  # on_commit never runs: the job stays queued
+        refresh.assert_not_called()
+        job = ProviderJob.objects.get()
+        ProviderJob.objects.filter(pk=job.pk).update(
+            created_at=timezone.now() - timedelta(hours=1)
+        )
+        with self.assertLogs("phone_refresh.tasks", level="WARNING"):
+            self.assertEqual(reap_stuck_jobs(), 1)
+        inbound = InboundSms.objects.get(pk=result.inbound_id)
+        self.assertEqual(inbound.state, InboundSms.State.PROCESSED)
+        self.assertEqual(OutboundSms.objects.count(), 1)
+        # A late worker finishing afterwards cannot send a second reply.
+        from sms_gateway.services.processing import complete_inbound
+
+        complete_inbound(result.inbound_id, "refreshed", "تم", "تم التحديث")
+        self.assertEqual(OutboundSms.objects.count(), 1)
+
+    @mock.patch("sms_gateway.services.processing.call_refresh_api", side_effect=_ok_outcome)
+    def test_simulate_stays_synchronous(self, call_api):
+        from sms_gateway.services.processing import process_inbound
+
+        with mock.patch("phone_refresh.services.refresh_jobs.submit_refresh") as submit:
+            result = process_inbound(from_number=SENDER, raw_text=REFRESHED_NUMBER, simulate=True)
+        submit.assert_not_called()
+        call_api.assert_called_once()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        self.assertEqual(result.reply_text, "تم\nتم التحديث")
+        self.assertEqual(InboundSms.objects.count(), 0)
+
+    @mock.patch("sms_gateway.services.processing.call_refresh_api", side_effect=_ok_outcome)
+    def test_external_api_url_stays_synchronous(self, call_api):
+        s = SmsGatewaySettings.load()
+        s.refresh_api_url = "https://gateway.example/refresh"
+        s.save()
+        cache.clear()
+        with mock.patch("phone_refresh.services.refresh_jobs.submit_refresh") as submit:
+            result = self._inbound()
+        submit.assert_not_called()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+        self.assertEqual(OutboundSms.objects.count(), 1)
+
+    @override_settings(REFRESH_ASYNC_ENABLED=False)
+    @mock.patch("sms_gateway.services.processing.call_refresh_api", side_effect=_ok_outcome)
+    def test_async_kill_switch_keeps_synchronous_flow(self, call_api):
+        result = self._inbound()
+        call_api.assert_called_once()
+        self.assertEqual(result.state, InboundSms.State.PROCESSED)
+
+    def test_refreshing_state_has_a_label(self):
+        self.assertEqual(InboundSms.State.REFRESHING.value, "refreshing")
+        self.assertIn(("refreshing", InboundSms.State.REFRESHING.label), InboundSms.State.choices)

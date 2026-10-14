@@ -1052,6 +1052,7 @@ AR: dict[str, str] = {
     ),
     "Pick a payment method.": "اختر طريقة الدفع.",
     "eSIM: extra cost applied to this sale": "eSIM: تكلفة إضافية على هذه المبيعة",
+    "Refreshing": "قيد التحديث",
 }
 
 

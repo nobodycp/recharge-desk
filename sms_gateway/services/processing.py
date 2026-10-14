@@ -1,9 +1,12 @@
 """Inbound SMS processing: guards, number extraction, refresh, reply queueing."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 
 from sms_gateway.models import (
@@ -13,8 +16,10 @@ from sms_gateway.models import (
     SmsGatewaySettings,
     SmsReplyPolicy,
 )
-from sms_gateway.services.refresh_client import call_refresh_api
+from sms_gateway.services.refresh_client import call_refresh_api, uses_in_process_engine
 from sms_gateway.validation import extract_number
+
+log = logging.getLogger(__name__)
 
 # Refresh status codes that are not real outcomes but still may want a reply.
 INVALID_NUMBER_STATUS = "not_found"
@@ -97,6 +102,102 @@ def _reply_for(status_code: str, default_title: str, default_body: str,
     return text or None
 
 
+_ERROR_TITLE = "خطأ"
+_ERROR_BODY = "تعذّر تنفيذ التحديث حالياً. يرجى المحاولة لاحقاً."
+
+
+def _queue_reply(inbound: InboundSms, reply: str | None, s: SmsGatewaySettings) -> int | None:
+    """Create the single reply ``OutboundSms`` for ``inbound``; returns its id."""
+    if not reply:
+        return None
+    return OutboundSms.objects.create(
+        to_number=inbound.from_number,
+        body=reply,
+        related_inbound=inbound,
+        max_attempts=s.max_send_attempts or 3,
+    ).pk
+
+
+def complete_inbound(inbound_id: int, status_code: str, title: str, body: str) -> None:
+    """Finish an inbound SMS whose refresh job just completed.
+
+    Called from the refresh task's completion hook (and for immediate
+    payloads). Idempotent and race-safe: the inbound is claimed with a
+    conditional ``refreshing`` → ``processed`` update, so only one caller
+    (worker, reaper, or a late duplicate) ever creates the reply.
+    """
+    s = SmsGatewaySettings.load()
+    reply = _reply_for(status_code or "error", title or "", body or "", s)
+    # Global daily cap: if reached, do not queue a new reply.
+    if reply and _global_cap_reached(s):
+        reply = None
+
+    with transaction.atomic():
+        claimed = InboundSms.objects.filter(
+            pk=inbound_id, state=InboundSms.State.REFRESHING
+        ).update(
+            state=InboundSms.State.PROCESSED,
+            reply_text=reply or "",
+            processed_at=timezone.now(),
+            delete_requested=True,
+        )
+        if claimed != 1:
+            return
+        _queue_reply(InboundSms.objects.get(pk=inbound_id), reply, s)
+
+
+def _refresh_async(inbound: InboundSms, number: str) -> ProcessResult:
+    """Submit the refresh as a job; the reply is queued when it completes."""
+    from phone_refresh.models import RefreshSource
+    from phone_refresh.services import refresh_jobs
+
+    # Mark the inbound first: with an eager/fast worker the completion hook
+    # can fire before ``submit_refresh`` even returns.
+    InboundSms.objects.filter(pk=inbound.pk).update(
+        state=InboundSms.State.REFRESHING, extracted_number=number
+    )
+    payload = None
+    try:
+        ticket = refresh_jobs.submit_refresh(
+            number,
+            ip=None,
+            source=RefreshSource.SMS,
+            notify={"sms_inbound_id": inbound.pk},
+        )
+        # A ticket carrying a payload is always immediate (validation,
+        # cooldown, enqueue failure, ...), whether or not it has a job id.
+        payload = ticket.payload
+    except Exception:  # noqa: BLE001 — never leave the inbound stuck in refreshing
+        log.exception("could not submit refresh for inbound SMS %s", inbound.pk)
+        payload = {
+            "status": "error",
+            "message": {"title": _ERROR_TITLE, "body": _ERROR_BODY},
+        }
+
+    status_code = None
+    if payload is not None:
+        message = payload.get("message") or {}
+        status_code = payload.get("status") or "error"
+        complete_inbound(
+            inbound.pk, status_code, message.get("title") or "", message.get("body") or ""
+        )
+
+    inbound.refresh_from_db()
+    outbound_id = (
+        OutboundSms.objects.filter(related_inbound=inbound)
+        .values_list("pk", flat=True)
+        .first()
+    )
+    return ProcessResult(
+        state=inbound.state,
+        reply_text=inbound.reply_text or None,
+        extracted_number=number,
+        refresh_status=status_code,
+        inbound_id=inbound.pk,
+        outbound_id=outbound_id,
+    )
+
+
 def process_inbound(
     *,
     from_number: str,
@@ -142,14 +243,7 @@ def process_inbound(
             if state in {InboundSms.State.PROCESSED, InboundSms.State.TEST}:
                 inbound.delete_requested = True
             inbound.save()
-            if reply:
-                ob = OutboundSms.objects.create(
-                    to_number=from_number,
-                    body=reply,
-                    related_inbound=inbound,
-                    max_attempts=s.max_send_attempts or 3,
-                )
-                outbound_id = ob.pk
+            outbound_id = _queue_reply(inbound, reply, s)
         return ProcessResult(
             state=state,
             reply_text=reply,
@@ -184,6 +278,15 @@ def process_inbound(
     if not number:
         reply = _reply_for(INVALID_NUMBER_STATUS, "", "الرجاء إرسال رقم صحيح يبدأ بـ 050-055.", s)
         return finish(InboundSms.State.IGNORED, reply)
+
+    # Internal engine: run as a job so the gateway's HTTP call returns at once.
+    if (
+        not simulate
+        and inbound is not None
+        and settings.REFRESH_ASYNC_ENABLED
+        and uses_in_process_engine(s)
+    ):
+        return _refresh_async(inbound, number)
 
     # Refresh via configured API gateway.
     outcome = call_refresh_api(number, settings_obj=s, request=request)

@@ -43,11 +43,21 @@ def _error_payload() -> dict:
 
 
 def _notify(job: ProviderJob, result: dict) -> None:
-    """Completion hook for callers that asked to be told (e.g. inbound SMS).
+    """Completion hook for callers that asked to be told (inbound SMS)."""
+    inbound_id = ((job.payload or {}).get("notify") or {}).get("sms_inbound_id")
+    if not inbound_id:
+        return
+    # Lazy: the SMS gateway is optional and imports phone_refresh itself.
+    from sms_gateway.services.processing import complete_inbound
 
-    Intentionally a no-op until the SMS gateway wires it up; ``job.payload``
-    already carries the ``notify`` context.
-    """
+    result = result or {}
+    message = result.get("message") or {}
+    complete_inbound(
+        inbound_id,
+        result.get("status") or "error",
+        message.get("title") or "",
+        message.get("body") or "",
+    )
 
 
 def _safe_notify(job: ProviderJob, result: dict) -> None:

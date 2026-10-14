@@ -29,6 +29,11 @@ Response:
 { "ok": true, "state": "processed", "extracted_number": "0555544071", "queued_reply": true }
 ```
 
+With the internal refresh engine the call returns at once with
+`"state": "refreshing"` and `"queued_reply": false`: the refresh runs as a
+background job and the reply is queued in the outbox (section 2) when the
+job completes, so the device must not expect the reply in this response.
+
 ## 2. Outbox poll (device → server), every few seconds
 
 `GET /sms-gateway/api/outbox/?limit=10`

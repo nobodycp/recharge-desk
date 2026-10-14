@@ -70,6 +70,11 @@ def _call_in_process(phone: str) -> SmsRefreshOutcome:
     )
 
 
+def uses_in_process_engine(settings_obj: SmsGatewaySettings) -> bool:
+    """True when no external gateway URL is configured (internal engine)."""
+    return not (settings_obj.refresh_api_url or "").strip()
+
+
 def call_refresh_api(
     phone: str,
     *,
@@ -82,9 +87,9 @@ def call_refresh_api(
     in-process; otherwise the configured external HTTP gateway is used.
     """
     s = settings_obj or SmsGatewaySettings.load()
-    url = (s.refresh_api_url or "").strip()
-    if not url:
+    if uses_in_process_engine(s):
         return _call_in_process(phone)
+    url = s.refresh_api_url.strip()
 
     payload = {s.refresh_api_phone_field or "phone_number": phone, "client": "sms"}
     headers = {"Content-Type": "application/json"}

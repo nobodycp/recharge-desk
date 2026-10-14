@@ -245,6 +245,7 @@ class InboundSms(models.Model):
 
     class State(models.TextChoices):
         RECEIVED = "received", _("Received")
+        REFRESHING = "refreshing", _("Refreshing")
         PROCESSED = "processed", _("Processed")
         IGNORED = "ignored", _("Ignored (no valid number)")
         TEST = "test", _("Test")
