@@ -48,3 +48,6 @@ pip-log.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Agent plan workspaces (scratch)
+.superpowers/
