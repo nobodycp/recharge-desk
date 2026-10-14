@@ -4,12 +4,13 @@ import datetime as dt
 import logging
 
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
 from providers import service
 from providers.accounts import get_credentials, record_login
 from providers.contracts import PermanentError
-from providers.models import ProviderConnection, ProviderJob
+from providers.models import ProviderConnection, ProviderJob, ProviderOperation
 from providers.registry import ADAPTERS
 from providers.sanitize import scrub
 from providers.sessions import reset_session
@@ -77,9 +78,17 @@ REFRESH_JOB_RETENTION_DAYS = 30
 
 @shared_task
 def purge_old_jobs() -> int:
-    """Delete refresh jobs past retention (beat, daily); returns rows deleted."""
-    cutoff = timezone.now() - dt.timedelta(days=REFRESH_JOB_RETENTION_DAYS)
+    """Delete refresh jobs and provider operations past retention (beat, daily).
+
+    Returns the number of rows deleted.
+    """
+    now = timezone.now()
     deleted, _ = ProviderJob.objects.filter(
-        kind=ProviderJob.KIND_REFRESH, created_at__lt=cutoff
+        kind=ProviderJob.KIND_REFRESH,
+        created_at__lt=now - dt.timedelta(days=REFRESH_JOB_RETENTION_DAYS),
     ).delete()
-    return deleted
+    ops_deleted, _ = ProviderOperation.objects.filter(
+        created_at__lt=now
+        - dt.timedelta(days=settings.PROVIDER_OPERATIONS_RETENTION_DAYS)
+    ).delete()
+    return deleted + ops_deleted
