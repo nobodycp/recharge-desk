@@ -262,8 +262,13 @@ Measured at 375×667, warm second load, no throttling. "Payload" = sum of encode
 
 | Page | FCP before | FCP after | Requests before | Requests after | Payload before | Payload after |
 |---|---|---|---|---|---|---|
-| login | 108 ms | | 7 | | 484 KB | |
-| employee entry | 96 ms | | 22 | | 604 KB | |
-| dashboard | 88 ms | | 18 | | 647 KB | |
+| login | 108 ms | 88 ms (76–108) | 7 | 16 | 484 KB | 730 KB |
+| employee entry | 96 ms | 368 ms (124–492) | 22 | 32 | 604 KB | 1347 KB |
+| dashboard | 88 ms | 256 ms (128–2244) | 18 | 28 | 647 KB | 831 KB |
 
 Observed at baseline: dashboard overflows horizontally by ~15px at 375px width; company and payment logos render broken on employee entry (probe DB copy).
+
+After (Task 8): median of 3 reloads, range in brackets. Google font requests after: 0 on all three pages. Horizontal overflow: 0 on every page at 375 / 430 / 1280. Reading the numbers:
+- The payload rise is not page weight added by the redesign. ~400 KB is the 11 self-hosted font files (IBM Plex Sans Arabic 400–700, Noto Kufi Arabic 600, Inter Tight 500), which before came from Google and mostly fell outside the measurement; ~265 KB on employee entry is company and payment logos that were broken (0 bytes) at baseline and now load after the probe DB was rebuilt and migrated. Fonts are woff2 and production serves static files with a 30-day cache, so this is a first-visit cost only.
+- Production CSS is gzip-compressed by WhiteNoise; `runserver` sends it uncompressed, so CSS bytes here are ~5× what a phone downloads.
+- FCP on the dev server is noisy (first runs hit a cold server after the DB rebuild); the best warm runs (124 ms entry, 128 ms dashboard) are within ~35 ms of baseline, and a controller re-check of employee entry gave DOMContentLoaded 37 ms on a warm reload (TTFB 22 ms). Real-world speed gains in this phase come from no third-party font round trips, instant navigation feedback (Task 4) and the query budgets (Task 7).
