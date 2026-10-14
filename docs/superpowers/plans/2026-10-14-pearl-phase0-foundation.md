@@ -258,8 +258,12 @@ def assert_max_queries(self, url, user, budget): ...  # force_login, warm GET, t
 
 ## Baseline (filled by Task 0 / Task 8)
 
-| Page | FCP before | FCP after | Requests before | Requests after | Transfer before | Transfer after |
+Measured at 375×667, warm second load, no throttling. "Payload" = sum of encoded body sizes (transfer size is near zero on a warm cache). Google font requests before: login 1, employee entry 3, dashboard 3.
+
+| Page | FCP before | FCP after | Requests before | Requests after | Payload before | Payload after |
 |---|---|---|---|---|---|---|
-| login | | | | | | |
-| employee entry | | | | | | |
-| dashboard | | | | | | |
+| login | 108 ms | | 7 | | 484 KB | |
+| employee entry | 96 ms | | 22 | | 604 KB | |
+| dashboard | 88 ms | | 18 | | 647 KB | |
+
+Observed at baseline: dashboard overflows horizontally by ~15px at 375px width; company and payment logos render broken on employee entry (probe DB copy).
