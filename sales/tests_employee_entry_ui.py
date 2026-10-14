@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import Client, SimpleTestCase, TestCase
+from django.utils import timezone
 from django.urls import reverse
 
 from accounts.models import UserProfile
@@ -1007,3 +1008,261 @@ class EmployeeRecentCssTests(SimpleTestCase):
         section = self.css.split("Recent entries (\"My entries\")", 1)[1]
         self.assertNotRegex(section, r"#[0-9a-fA-F]{3,8}\b")
         self.assertNotRegex(section, r"\b(margin|padding|border)-(left|right)\b|\b(left|right):")
+
+
+class EmployeeSecondaryPagesTests(TestCase):
+    """Sale edit, stock check and my balance on the Pearl building blocks."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from customers.models import Customer
+        from employees.models import EmployeeLedgerEntry, EmployeeProfile
+        from inventory.services import allocate_to_customer, receive_main_stock
+        from sales.services import create_sale
+
+        cls.company = Company.objects.create(
+            name="Second Co", opening_balance=Decimal("1000"), current_balance=Decimal("1000")
+        )
+        cls.line = ProductLine.objects.create(company=cls.company, name="HotLine")
+        cls.product = Product.objects.create(
+            line=cls.line, variant_label="Pkg", cost_price=Decimal("5"), default_sell_price=Decimal("10")
+        )
+        cls.pm = PaymentMethod.objects.create(name="Cash Box")
+        cls.mgmt = User.objects.create_user("mgmt_secondary_ui", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.mgmt, defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True}
+        )
+        cls.emp = User.objects.create_user("emp_secondary_ui", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.emp,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        cls.profile = EmployeeProfile.objects.create(
+            user=cls.emp, monthly_salary=Decimal("2500"), current_balance=Decimal("1200")
+        )
+        cls.sale = create_sale(
+            company=cls.company, product=cls.product, reference_number="0590000009",
+            payer_name="Edit Payer", payment_method=cls.pm,
+            sell_price_actual=Decimal("10"), notes="", user=cls.emp,
+        )
+        cls.entry = EmployeeLedgerEntry.objects.create(
+            employee=cls.profile,
+            entry_type=EmployeeLedgerEntry.EntryType.SALARY_ACCRUAL,
+            amount=Decimal("2500"),
+            salary_month=timezone.localdate().replace(day=1),
+            notes="ledger note",
+            created_by=cls.emp,
+        )
+        receive_main_stock(product_line=cls.line, qty=10, notes="", user=cls.mgmt)
+        cls.customer = Customer.objects.create(name="Dealer Pearl", created_by=cls.mgmt)
+        allocate_to_customer(
+            customer=cls.customer, product_line=cls.line, qty=3, notes="", user=cls.mgmt
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.emp)
+
+    def _get(self, name, *args):
+        resp = self.client.get(reverse(name, args=args))
+        self.assertEqual(resp.status_code, 200)
+        return resp.content.decode()
+
+    def _edit(self):
+        return self._get("sales:employee_sale_edit", self.sale.pk)
+
+    # -- sale edit ---------------------------------------------------------
+    def test_sale_edit_uses_entry_blocks_and_field_groups(self):
+        html = self._edit()
+        self.assertIn("rd-entry-blk", html)
+        self.assertNotIn("row g-3", html)
+        self.assertNotIn("col-md-6", html)
+        for name in ("payer_name", "reference_number", "sell_price_actual", "notes", "payment_method"):
+            m = re.search(r'<(?:input|textarea|select)[^>]*name="%s"' % name, html)
+            self.assertIsNotNone(m, name)
+            before = html[: m.start()]
+            self.assertGreater(before.rfind('class="rd-field-group'), before.rfind("</form>"), name)
+            self.assertGreater(before.rfind('class="rd-entry-field'), before.rfind('class="rd-field-group'), name)
+
+    def test_sale_edit_labels_sit_inside_their_fields(self):
+        html = self._edit()
+        for fid in ("id_payer_name", "id_reference_number", "id_sell_price_actual", "id_notes", "id_payment_method"):
+            self.assertRegex(html, r'<label class="rd-entry-field__label" for="%s"' % fid)
+
+    def test_sale_edit_has_one_h1_and_a_non_heading_subtitle(self):
+        html = self._edit()
+        self.assertEqual(html.count("<h1"), 1)
+        self.assertIn('class="rd-employee-title"', html)
+        self.assertIn("rd-entry-subtitle", html)
+        self.assertIn("Second Co · HotLine", html)
+        self.assertIn("0590000009", html.split("rd-entry-subtitle", 1)[1][:400])
+
+    def test_sale_edit_keeps_the_info_note_and_puts_actions_in_the_dock(self):
+        html = self._edit()
+        self.assertIn('class="alert alert-info', html)
+        self.assertIn('role="status"', html)
+        self.assertIn("rd-entry-dock", html)
+        dock = html.split('class="rd-entry-dock', 1)[1]
+        self.assertRegex(dock, r'<button[^>]*class="btn btn-primary[^"]*"[^>]*type="submit"|<button[^>]*type="submit"[^>]*class="btn btn-primary')
+        self.assertIn("Save changes", dock)
+        self.assertRegex(
+            dock, r'<a class="btn btn-outline-secondary[^"]*" href="%s"' % reverse("sales:employee_recent_sales")
+        )
+        self.assertIn("Cancel", dock)
+        self.assertIn('id="employee-sale-edit-form"', html)
+        self.assertIn('form="employee-sale-edit-form"', dock)
+
+    def test_sale_edit_shows_a_pearl_status_badge_and_no_legacy_classes(self):
+        html = self._edit()
+        self.assertIn("rd-badge rd-badge--pending", html)
+        self.assertRegex(html, r'<span class="tabular-nums">\d\d:\d\d</span>')
+        for legacy in ("badge bg-", "text-bg-", "table-light", "btn-outline-primary", "form-label"):
+            self.assertNotIn(legacy, html)
+
+    def test_sale_edit_post_error_keeps_field_errors_under_the_field(self):
+        resp = self.client.post(
+            reverse("sales:employee_sale_edit", args=[self.sale.pk]),
+            {"payment_method": self.pm.pk, "payer_name": "x", "reference_number": "123",
+             "sell_price_actual": "10", "notes": ""},
+        )
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn("rd-field-group has-error", html)
+        self.assertEqual(html.count("<h1"), 1)
+
+    # -- stock check -------------------------------------------------------
+    def test_stock_check_search_is_an_entry_field_with_its_htmx_hooks(self):
+        html = self._get("sales:employee_stock_check")
+        self.assertEqual(html.count("<h1"), 1)
+        self.assertIn("rd-entry-field", html)
+        self.assertRegex(html, r'<label class="rd-entry-field__label" for="id_inv_customer_q"')
+        tag = re.search(r'<input[^>]*name="q"[^>]*>', html).group(0)
+        for needle in (
+            'type="search"', 'id="id_inv_customer_q"', "autofocus", 'hx-target="#rd-stock-check-results"',
+            'hx-select="#rd-stock-check-results"', 'hx-swap="outerHTML"', 'hx-push-url="true"',
+            'hx-indicator="#rd-stock-check-indicator"', 'hx-trigger="keyup changed delay:180ms, search, clear"',
+            'hx-get="%s"' % reverse("sales:employee_stock_check"),
+        ):
+            self.assertIn(needle, tag)
+        self.assertNotIn("form-control-sm", tag)
+        self.assertIn('id="rd-stock-check-indicator"', html)
+        self.assertRegex(html, r'class="[^"]*rd-entry-field__action[^"]*"[^>]*\n?[^>]*href="%s"' % reverse("sales:employee_stock_check"))
+
+    def test_stock_check_reset_keeps_its_hx_and_onclick(self):
+        html = self._get("sales:employee_stock_check")
+        tag = re.search(r'<a\b[^>]*rd-entry-field__action[^>]*>', html, re.S).group(0)
+        self.assertIn('hx-get="%s"' % reverse("sales:employee_stock_check"), tag)
+        self.assertIn('hx-target="#rd-stock-check-results"', tag)
+        self.assertIn("onclick=", tag)
+        self.assertNotIn("btn-sm", tag)
+
+    def test_stock_check_results_are_compact_pearl_cards(self):
+        html = self._get("sales:employee_stock_check")
+        self.assertIn('id="rd-stock-check-results"', html)
+        self.assertIn("rd-stock-check-card", html)
+        self.assertIn("Dealer Pearl", html)
+        self.assertRegex(html, r'class="rd-stock-check-card__total tabular-nums"[^>]*>3<')
+        self.assertRegex(html, r'rd-stock-check-lines__qty tabular-nums')
+
+    # -- my balance --------------------------------------------------------
+    def test_my_balance_has_a_hero_balance_and_a_plain_salary_stat(self):
+        html = self._get("employees:my_balance")
+        self.assertEqual(html.count("<h1"), 1)
+        self.assertIn("rd-stat rd-stat--hero", html)
+        hero = html.split("rd-stat--hero", 1)[1].split("rd-stat-salary", 1)[0]
+        self.assertIn("Current balance", hero)
+        self.assertRegex(hero, r'rd-stat-value tabular-nums[^>]*>\s*1,200')
+        self.assertIn("rd-stat-salary", html)
+        salary = html.split("rd-stat-salary", 1)[1].split("Movement statement", 1)[0]
+        self.assertIn("Monthly salary", salary)
+        self.assertRegex(salary, r'tabular-nums[^>]*>\s*2,500')
+        self.assertNotIn("rd-stat--hero", salary)
+        self.assertEqual(html.count("rd-stat--hero"), 1)
+
+    def test_my_balance_keeps_its_hooks_and_headings(self):
+        html = self._get("employees:my_balance")
+        self.assertIn("rd-employee-wallet", html)
+        self.assertIn("Wallet details", html)
+        self.assertRegex(html, r'<h2 class="rd-heading-lg[^"]*"[^>]*>\s*Movement statement')
+        for legacy in ("badge bg-", "text-bg-", "table-light", "text-success", "h3 mb-2"):
+            self.assertNotIn(legacy, html.split("Wallet details", 1)[1].split("rd-mobile-tabbar", 1)[0])
+
+    def test_ledger_rows_keep_their_hooks_and_get_card_classes(self):
+        html = self._get("employees:my_balance")
+        self.assertIn('id="employee-ledger-row-%d"' % self.entry.pk, html)
+        self.assertIn("rd-ledger-card", html)
+        self.assertRegex(html, r'rd-ledger-card__amount tabular-nums')
+        self.assertIn("rd-badge rd-badge--neutral", html)
+        self.assertIn("ledger note", html)
+        self.assertNotIn(reverse("employees:employee_ledger_delete", args=[self.profile.pk, self.entry.pk]), html)
+
+    def test_management_ledger_still_renders_the_shared_partial(self):
+        self.client.force_login(self.mgmt)
+        resp = self.client.get(reverse("employees:employee_detail", args=[self.profile.pk]) + "?tab=ledger")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('id="employee-ledger-row-%d"' % self.entry.pk, html)
+        self.assertIn("rd-mobile-row-card", html)
+        self.assertIn(reverse("employees:employee_ledger_delete", args=[self.profile.pk, self.entry.pk]), html)
+        self.assertIn("rd-datagrid-sort", html)
+
+
+class EmployeeSecondaryCssTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.css = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+
+    def _assert_decl(self, selector, *needles):
+        bodies = _bodies(self.css, selector)
+        self.assertTrue(bodies, f"no rule for {selector} in employee.css")
+        joined = " ".join(" ".join(b.split()) for b in bodies)
+        for needle in needles:
+            self.assertIn(needle, joined, f"{selector}: {needle}")
+
+    def _section(self):
+        return self.css.split("Sale edit, stock check, my balance", 1)[1]
+
+    def test_sale_edit_shares_the_payment_page_column_and_dock(self):
+        for sels, _body in _rules(self.css):
+            if ".rd-employee-main:has(.rd-pay-sub)" in sels:
+                self.assertIn(".rd-employee-main:has(.rd-sale-edit)", sels)
+                break
+        else:
+            self.fail("no page column rule")
+
+    def test_select_and_textarea_sit_in_the_entry_field(self):
+        self._assert_decl(".rd-sale-form .rd-entry-field .form-select", "grid-row: 2")
+        self._assert_decl(".rd-sale-form .rd-entry-field--area", "grid-template-rows: auto")
+
+    def test_stock_check_reset_is_a_touch_sized_field_segment(self):
+        self._assert_decl(".rd-entry-field .rd-entry-field__action", "min-height: 3.45rem", "grid-row: 1 / span 2")
+        self._assert_decl(".rd-entry-field .rd-entry-field__action:focus-visible", "outline-offset: -3px")
+
+    def test_stock_check_overrides_are_scoped_to_the_employee_card(self):
+        for sel in (
+            ".rd-stock-check-card .rd-stock-check-lines__row",
+            ".rd-stock-check-card .rd-stock-check-lines__qty",
+        ):
+            self._assert_decl(sel)
+        for sels, _body in _rules(self._section()):
+            for s in sels:
+                if "rd-stock-check-lines" in s:
+                    self.assertIn(".rd-stock-check-card", s)
+
+    def test_ledger_overrides_are_scoped_to_the_employee_shell(self):
+        for sels, _body in _rules(self._section()):
+            for s in sels:
+                if "rd-ledger-card" in s or "rd-table-dual" in s:
+                    self.assertTrue(s.startswith(".rd-employee-app "), s)
+        self._assert_decl(".rd-employee-app .rd-ledger-card__amount", "font-weight: 700")
+
+    def test_balance_hero_and_salary_stat(self):
+        self._assert_decl(".rd-balance-stats", "display: flex")
+        self._assert_decl(".rd-stat-salary .rd-stat-value", "font-size")
+
+    def test_section_has_no_raw_colour_or_physical_sides(self):
+        section = self._section()
+        self.assertNotRegex(section, r"#[0-9a-fA-F]{3,8}\b")
+        self.assertNotRegex(section, r"\b(margin|padding|border)-(left|right)\b|\b(left|right):")
+        self.assertNotIn("outline: none", section)

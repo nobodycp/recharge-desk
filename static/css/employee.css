@@ -759,8 +759,10 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   font-size: 1.25rem;
 }
 
-/* Scoped to the entry field: the phone-refresh page has its own paste button. */
-.rd-entry-field .employee-clipboard-paste-btn {
+/* Scoped to the entry field: the phone-refresh page has its own paste button.
+   The stock-check Reset link is the same end segment. */
+.rd-entry-field .employee-clipboard-paste-btn,
+.rd-entry-field .rd-entry-field__action {
   --bs-btn-color: var(--rd-ink);
   --bs-btn-bg: var(--rd-surface-2);
   --bs-btn-border-color: transparent;
@@ -782,10 +784,14 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   border-radius: 0;
   font-size: 0.78rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* The field clips the button, so draw the keyboard ring inside it. */
-.rd-entry-field .employee-clipboard-paste-btn:focus-visible {
+.rd-entry-field .employee-clipboard-paste-btn:focus-visible,
+.rd-entry-field .rd-entry-field__action:focus-visible {
   outline-offset: -3px;
 }
 
@@ -1463,12 +1469,14 @@ html:has(.rd-entry-dock) {
 
 /* The page column fills the screen, so the dock (its last child) rests on the
    bottom edge even when the form is short; on a long page it sticks there. */
-.rd-employee-main:has(.rd-pay-sub) {
+.rd-employee-main:has(.rd-pay-sub),
+.rd-employee-main:has(.rd-sale-edit) {
   display: flex;
   flex-direction: column;
 }
 
 .rd-pay-sub,
+.rd-sale-edit,
 .rd-pay-sub-recent,
 .rd-pay-sub-dock {
   width: 100%;
@@ -1835,4 +1843,221 @@ html:has(.rd-entry-dock) {
 /* Auto-charged rows keep the accent edge on the leading side. */
 .rd-recent-row.rd-charge-row {
   border-inline-start: 3px solid var(--rd-accent-2);
+}
+
+/* ========================================================================== */
+/* Sale edit, stock check, my balance                                         */
+/* Sale edit and stock check reuse the entry blocks and in-input fields; the  */
+/* edit page's dock is the record-payment dock. Ledger rules are scoped to    */
+/* the employee shell because the ledger partial is shared with management.   */
+/* ========================================================================== */
+
+/* Page context line under the top-bar title (the title is the page h1). */
+.rd-entry-subtitle {
+  margin: 0 0 0.5rem;
+  padding-inline: 0.15rem;
+  color: var(--rd-muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.rd-sale-edit > .alert {
+  margin-block-end: 0.5rem;
+}
+
+/* A select or a textarea in the in-input field behaves like the text input. */
+.rd-sale-form .rd-entry-field .form-select {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding-block: 0.05rem 0.2rem;
+  padding-inline: 0.8rem 2.2rem;
+  color: var(--rd-ink);
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.rd-sale-form .rd-entry-field .form-select:focus {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.rd-sale-form .rd-entry-field--area {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.rd-sale-form .rd-entry-field--area .rd-entry-field__label {
+  padding-block-start: 0.4rem;
+}
+
+.rd-sale-form .rd-entry-field--area .form-control {
+  min-height: 4.5rem;
+  padding-block-end: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+/* Status and time of the entry (read-only). */
+.rd-sale-edit__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.45rem;
+  padding-inline: 0.15rem;
+  color: var(--rd-muted);
+  font-size: 0.85rem;
+}
+
+/* Stock check ------------------------------------------------------------- */
+/* "Searching…" rides in the label row of the field (htmx toggles its child). */
+.rd-stock-check__indicator {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: end;
+  justify-self: end;
+  padding-inline: 0.4rem 0.8rem;
+  color: var(--rd-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.rd-stock-check > .rd-mobile-stack {
+  margin-block-start: 0.6rem;
+  gap: 0.45rem;
+}
+
+.rd-stock-check-card {
+  padding: 0.6rem 0.8rem;
+}
+
+.rd-stock-check-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 0.35rem;
+}
+
+.rd-stock-check-card__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rd-ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Total SIMs held: a quiet pill, the number is the content. */
+.rd-stock-check-card__total {
+  flex: none;
+  min-width: 2rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Lines are hairline-separated rows instead of tinted pills. */
+.rd-stock-check-card .rd-stock-check-lines {
+  gap: 0;
+}
+
+.rd-stock-check-card .rd-stock-check-lines__row {
+  min-height: 2.2rem;
+  padding: 0.25rem 0;
+  border-radius: 0;
+  background: none;
+  border-block-start: 1px solid var(--bs-border-color);
+}
+
+.rd-stock-check-card .rd-stock-check-lines__name {
+  color: var(--rd-muted);
+  font-size: 0.88rem;
+}
+
+.rd-stock-check-card .rd-stock-check-lines__qty {
+  color: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* My balance -------------------------------------------------------------- */
+.rd-balance-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rd-balance-stats .rd-card-body {
+  padding: 0.9rem 1rem;
+}
+
+.rd-balance-stats .rd-label {
+  margin-block-end: 0.25rem;
+}
+
+.rd-balance-stats .rd-stat--hero .rd-stat-value {
+  font-size: 2.2rem;
+}
+
+/* Salary is a plain stat: label at the start, figure at the end. */
+.rd-stat-salary .rd-card-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-block: 0.7rem;
+}
+
+.rd-stat-salary .rd-label {
+  margin-block-end: 0;
+}
+
+.rd-stat-salary .rd-stat-value {
+  font-size: 1.3rem;
+}
+
+.rd-balance-title {
+  margin-block: 1rem 0.5rem;
+  padding-inline: 0.15rem;
+}
+
+/* Ledger (shared partial): compact rows, only inside the employee shell.
+   The negative margin cancels the partial's own p-2 so cards line up with the
+   other pages. */
+.rd-employee-app .rd-table-dual .rd-mobile-stack {
+  margin: -0.5rem;
+  gap: 0.4rem;
+}
+
+.rd-employee-app .rd-ledger-card {
+  padding: 0.55rem 0.8rem;
+}
+
+.rd-employee-app .rd-ledger-card__amount {
+  font-family: var(--rd-font-num);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.rd-employee-app .rd-ledger-card__detail {
+  color: var(--rd-ink);
 }

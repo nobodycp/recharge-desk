@@ -9,18 +9,22 @@
     {% trans "No employee payroll profile is linked to your account yet." %}
   </div>
 {% else %}
-  <div class="rd-card p-3 mb-3">
-    <div class="small text-secondary">{% trans "Current balance" %}</div>
-    <div class="h3 mb-2 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
-      {{ employee.current_balance|intcomma }}
+  <div class="rd-balance-stats">
+    <div class="rd-card rd-stat rd-stat--hero">
+      <div class="rd-card-body">
+        <div class="rd-label">{% trans "Current balance" %}</div>
+        <div class="rd-stat-value tabular-nums">{{ employee.current_balance|intcomma }}</div>
+      </div>
     </div>
-    <div class="border-top pt-2 mt-1">
-      <div class="small text-secondary">{% trans "Monthly salary" %}</div>
-      <div class="h6 mb-0 tabular-nums fw-semibold">{{ employee.monthly_salary|intcomma }}</div>
+    <div class="rd-card rd-stat rd-stat-salary">
+      <div class="rd-card-body">
+        <div class="rd-label">{% trans "Monthly salary" %}</div>
+        <div class="rd-stat-value tabular-nums">{{ employee.monthly_salary|intcomma }}</div>
+      </div>
     </div>
   </div>
 
-  <h2 class="rd-heading-lg mb-2">{% trans "Movement statement" %}</h2>
+  <h2 class="rd-heading-lg rd-balance-title">{% trans "Movement statement" %}</h2>
   {% include "employees/partials/employee_ledger_table.html" %}
 {% endif %}
 {% endblock %}
