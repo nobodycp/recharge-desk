@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 SERVICE_LABELS = {
     "refresh": "التحديث",
-    "number_info": "بيانات الرقم",
+    "number_info": "فحص الرقم",
     "charge": "الشحن",
     "check_charge": "متابعة الشحن",
     "reconcile": "المطابقة",
@@ -58,12 +58,13 @@ CAUSE_LABELS = {
     "rejected": "رفض المزوّد",
     "provider_error": "خطأ في العملية",
     "price_mismatch": "السعر غير مطابق",
+    "not_found": "الرقم غير موجود لدى المزوّد",
     "internal": "خطأ داخلي",
 }
 
 SUCCESS_LABELS = {
     "refresh": "تمّ التحديث",
-    "number_info": "تمّت قراءة بيانات الرقم",
+    "number_info": "تمّ فحص الرقم",
     "charge": "تمّ الشحن",
     "check_charge": "تمّت متابعة الشحن",
     "reconcile": "تمّت المطابقة",
@@ -127,6 +128,11 @@ def success(service: str, ref: str = "") -> Classified:
 
 def rejected(service: str, reason: str) -> Classified:
     return _failed(service, "rejected", f"{CAUSE_LABELS['rejected']}: {reason}")
+
+
+def not_found(service: str) -> Classified:
+    """The provider has no such line (number check). Refresh keeps its reject reason."""
+    return _failed(service, "not_found", CAUSE_LABELS["not_found"])
 
 
 def classify_code(service: str, code: str) -> Classified:

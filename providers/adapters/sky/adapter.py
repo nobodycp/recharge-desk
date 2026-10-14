@@ -15,11 +15,13 @@ from providers.adapters.sky.client import (
     SkySalesError,
     SkySalesSessionError,
 )
+from providers.adapters.sky.number_info import matches_phone, parse_number_info
 from providers.adapters.sky.reconcile import SkyReconcileResult, reconcile_sky_report
 from providers.contracts import (
     AuthRequired,
     BaseAdapter,
     Capability,
+    NumberInfo,
     PermanentError,
     RawResponse,
     TransientError,
@@ -56,7 +58,9 @@ class SkyAdapter(BaseAdapter):
     """Sky Sales Portal refresh via HTTP (sales-ps.sky5g.ps)."""
 
     key = PROVIDER_KEY
-    capabilities = frozenset({Capability.REFRESH, Capability.RECONCILE})
+    capabilities = frozenset(
+        {Capability.REFRESH, Capability.RECONCILE, Capability.NUMBER_INFO}
+    )
     timeout: int = 120
     needs_login = True
     reconcile_template = "companies/sky_reconcile.html"
@@ -98,6 +102,17 @@ class SkyAdapter(BaseAdapter):
             json=result,
             status_code=status_code,
         )
+
+    def number_info(self, phone: str) -> NumberInfo:
+        phone = phone.strip()
+        client = self._stored_client()
+        with _sky_errors():
+            row = client.search_subscriber(phone)
+        # ``search_subscriber`` falls back to the first row when nothing matches
+        # exactly; a number check must not report another line's data.
+        if not row or not matches_phone(row, phone):
+            raise PermanentError("not_found")
+        return parse_number_info(row)
 
     def fetch_balance_rows(self, date_from: date, date_to: date) -> list[dict[str, Any]]:
         """Sky template-22 balance rows for the logged-in account."""

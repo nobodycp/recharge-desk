@@ -87,7 +87,7 @@ class ClassifyCodeTests(TestCase):
                     Classified(
                         "failed",
                         "connection",
-                        "فشل بيانات الرقم — تعذّر الاتصال بالمزوّد",
+                        "فشل فحص الرقم — تعذّر الاتصال بالمزوّد",
                     ),
                 )
 
@@ -133,7 +133,7 @@ class SuccessTests(TestCase):
     def test_success_phrase_per_service(self):
         for service, phrase in (
             ("refresh", "تمّ التحديث"),
-            ("number_info", "تمّت قراءة بيانات الرقم"),
+            ("number_info", "تمّ فحص الرقم"),
             ("charge", "تمّ الشحن"),
             ("check_charge", "تمّت متابعة الشحن"),
             ("reconcile", "تمّت المطابقة"),
