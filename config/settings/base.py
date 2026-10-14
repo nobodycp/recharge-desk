@@ -160,11 +160,19 @@ LOGOUT_REDIRECT_URL = reverse_lazy("accounts:login")
 # Empty REDIS_URL = dev/tests: in-process fakeredis + eager Celery tasks.
 REDIS_URL = os.environ.get("REDIS_URL", "").strip()
 
-if REDIS_URL:
-    CACHES["default"] = {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_URL,
+
+def redis_cache_settings(url: str) -> dict:
+    # Fail-soft + short socket timeouts: a Redis outage must not block sales
+    # (cache-version bumps run on every save) or hang pages.
+    return {
+        "BACKEND": "core.cache.FailSoftRedisCache",
+        "LOCATION": url,
+        "OPTIONS": {"socket_connect_timeout": 2, "socket_timeout": 2},
     }
+
+
+if REDIS_URL:
+    CACHES["default"] = redis_cache_settings(REDIS_URL)
 
 CELERY_BROKER_URL = REDIS_URL or "memory://"
 # Job results are persisted in ``providers.ProviderJob``; no result backend.
