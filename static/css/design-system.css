@@ -42,7 +42,9 @@ html {
 
   --rd-z-sidebar: 1040;
   --rd-z-topbar: 1030;
-  --rd-z-backdrop: 1025;
+  /* Above the topbar (and the employee tabbar at topbar + 1) so the drawer
+     scrim dims them too; below the sidebar it belongs to. */
+  --rd-z-backdrop: 1035;
   --rd-z-sticky: 1020;
 
   --rd-transition-fast: 0.14s ease;
@@ -118,10 +120,37 @@ html {
   --rd-info: var(--rd-ink);
   --rd-info-soft: var(--rd-surface-2);
 
+  /* Bootstrap 5.3 theme colors -> Pearl (utilities, badges, alerts, links
+     read these; `-rgb` triplets feed rgba(var(...), opacity)). */
   --bs-primary: var(--rd-ink);
   --bs-primary-rgb: 10, 10, 10;
+  --bs-primary-text-emphasis: var(--rd-ink);
+  --bs-primary-bg-subtle: var(--rd-surface-2);
+  --bs-primary-border-subtle: var(--bs-border-color);
+  --bs-success: var(--rd-success);
+  --bs-success-rgb: 10, 122, 62;
+  --bs-success-text-emphasis: var(--rd-success);
+  --bs-success-bg-subtle: var(--rd-success-soft);
+  --bs-success-border-subtle: rgba(10, 122, 62, 0.25);
+  --bs-warning: var(--rd-warning);
+  --bs-warning-rgb: 194, 65, 12;
+  --bs-warning-text-emphasis: var(--rd-warning-ink);
+  --bs-warning-bg-subtle: var(--rd-warning-soft);
+  --bs-warning-border-subtle: rgba(194, 65, 12, 0.25);
+  --bs-danger: var(--rd-danger);
+  --bs-danger-rgb: 185, 28, 28;
+  --bs-danger-text-emphasis: var(--rd-danger);
+  --bs-danger-bg-subtle: var(--rd-danger-soft);
+  --bs-danger-border-subtle: rgba(185, 28, 28, 0.25);
+  --bs-info: var(--rd-ink);
+  --bs-info-rgb: 10, 10, 10;
+  --bs-info-text-emphasis: var(--rd-ink);
+  --bs-info-bg-subtle: var(--rd-surface-2);
+  --bs-info-border-subtle: var(--bs-border-color);
   --bs-link-color: var(--rd-ink);
+  --bs-link-color-rgb: 10, 10, 10;
   --bs-link-hover-color: var(--rd-accent-ink);
+  --bs-link-hover-color-rgb: 194, 65, 12;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -185,8 +214,33 @@ html {
 
   --bs-primary: var(--rd-ink);
   --bs-primary-rgb: 245, 245, 242;
+  --bs-primary-text-emphasis: var(--rd-ink);
+  --bs-primary-bg-subtle: var(--rd-surface-2);
+  --bs-primary-border-subtle: var(--bs-border-color);
+  --bs-success: var(--rd-success);
+  --bs-success-rgb: 74, 222, 128;
+  --bs-success-text-emphasis: var(--rd-success);
+  --bs-success-bg-subtle: var(--rd-success-soft);
+  --bs-success-border-subtle: rgba(74, 222, 128, 0.25);
+  --bs-warning: var(--rd-warning);
+  --bs-warning-rgb: 251, 191, 36;
+  --bs-warning-text-emphasis: var(--rd-warning-ink);
+  --bs-warning-bg-subtle: var(--rd-warning-soft);
+  --bs-warning-border-subtle: rgba(251, 191, 36, 0.25);
+  --bs-danger: var(--rd-danger);
+  --bs-danger-rgb: 248, 113, 113;
+  --bs-danger-text-emphasis: var(--rd-danger);
+  --bs-danger-bg-subtle: var(--rd-danger-soft);
+  --bs-danger-border-subtle: rgba(248, 113, 113, 0.25);
+  --bs-info: var(--rd-ink);
+  --bs-info-rgb: 245, 245, 242;
+  --bs-info-text-emphasis: var(--rd-ink);
+  --bs-info-bg-subtle: var(--rd-surface-2);
+  --bs-info-border-subtle: var(--bs-border-color);
   --bs-link-color: var(--rd-ink);
+  --bs-link-color-rgb: 245, 245, 242;
   --bs-link-hover-color: var(--rd-accent-ink);
+  --bs-link-hover-color-rgb: 255, 138, 92;
 }
 
 /* @end-tokens */
@@ -305,6 +359,29 @@ html[lang="ar"] h4 {
     grid-template-columns: minmax(14rem, 16.75rem) 1fr;
     grid-template-rows: 1fr;
   }
+}
+
+/* Pearl page glow: soft orange at the top inline-end, faint ink at the
+   bottom inline-start. Sits behind opaque cards, so text contrast holds. */
+.rd-app {
+  --rd-glow-accent: color-mix(in srgb, var(--rd-accent) 10%, transparent);
+  --rd-glow-ink: color-mix(in srgb, var(--rd-ink) 3.5%, transparent);
+  --rd-glow-end-x: 85%;
+  --rd-glow-start-x: 0%;
+  background-image:
+    radial-gradient(52rem 26rem at var(--rd-glow-end-x) -8%, var(--rd-glow-accent), transparent 70%),
+    radial-gradient(50rem 30rem at var(--rd-glow-start-x) 105%, var(--rd-glow-ink), transparent 70%);
+  background-attachment: fixed;
+}
+
+[dir="rtl"] .rd-app {
+  --rd-glow-end-x: 15%;
+  --rd-glow-start-x: 100%;
+}
+
+[data-bs-theme="dark"] .rd-app {
+  --rd-glow-accent: color-mix(in srgb, var(--rd-accent) 6%, transparent);
+  --rd-glow-ink: color-mix(in srgb, var(--rd-ink) 2%, transparent);
 }
 
 .rd-sidebar {
@@ -474,6 +551,16 @@ html[lang="ar"] .rd-sidebar-brand-name {
   max-height: 3rem;
   height: auto;
   object-fit: contain;
+}
+
+/* Brand logos are drawn for light paper; in dark give them a soft light
+   plate instead of recolouring the image. */
+[data-bs-theme="dark"] .rd-sidebar-brand-logo {
+  box-sizing: border-box;
+  max-height: 3.6rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--rd-radius-sm);
+  background: color-mix(in srgb, var(--rd-ink) 90%, var(--rd-surface));
 }
 
 /* Tighten the surrounding chrome when the brand is just a logo so the
@@ -1368,7 +1455,15 @@ html[lang="ar"] .rd-hello__title {
   gap: 0.35rem;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-inline: 0.25rem;
+  scroll-padding-inline: 0.25rem;
+}
+
+.rd-section-tabs.nav-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .rd-section-tabs .nav-link {
@@ -1685,6 +1780,44 @@ a.rd-card:hover {
 .rd-badge--conflict {
   background: var(--rd-danger);
   color: var(--rd-surface);
+}
+
+/* Bootstrap contextual badges -> Pearl soft pills. Bootstrap's utilities are
+   !important (and some templates add .text-dark), so these must be too. */
+.badge:is(.bg-success, .text-bg-success, .bg-warning, .text-bg-warning, .bg-danger, .text-bg-danger, .bg-info, .text-bg-info, .bg-secondary, .text-bg-secondary) {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.badge:is(.bg-success, .text-bg-success) {
+  background-color: var(--rd-success-soft) !important;
+  color: var(--rd-success) !important;
+}
+
+.badge:is(.bg-warning, .text-bg-warning) {
+  background-color: var(--rd-warning-soft) !important;
+  color: var(--rd-warning-ink) !important;
+}
+
+.badge:is(.bg-danger, .text-bg-danger) {
+  background-color: var(--rd-danger-soft) !important;
+  color: var(--rd-danger) !important;
+}
+
+.badge:is(.bg-info, .text-bg-info) {
+  background-color: var(--rd-surface-2) !important;
+  color: var(--rd-ink) !important;
+}
+
+.badge:is(.bg-secondary, .text-bg-secondary) {
+  background-color: var(--rd-surface-2) !important;
+  color: var(--rd-muted) !important;
+}
+
+/* .text-bg-primary hard-codes white text; follow the ink primary pair. */
+.badge.text-bg-primary {
+  background-color: var(--rd-primary-bg) !important;
+  color: var(--rd-primary-fg) !important;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2004,6 +2137,58 @@ a.rd-card:hover {
   --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-success) 35%, transparent);
 }
 
+/* Warning = soft burnt-orange family, never Bootstrap's bright yellow. */
+.btn-warning,
+.btn-outline-warning {
+  --bs-btn-color: var(--rd-warning-ink);
+  --bs-btn-hover-color: var(--rd-warning-ink);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-warning) 18%, transparent);
+  --bs-btn-hover-border-color: var(--rd-warning-ink);
+  --bs-btn-active-color: var(--rd-warning-ink);
+  --bs-btn-active-bg: color-mix(in srgb, var(--rd-warning) 24%, transparent);
+  --bs-btn-active-border-color: var(--rd-warning-ink);
+  --bs-btn-disabled-color: var(--rd-warning-ink);
+  --bs-btn-disabled-border-color: color-mix(in srgb, var(--rd-warning) 35%, transparent);
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-warning) 18%, transparent);
+}
+
+.btn-warning {
+  --bs-btn-bg: var(--rd-warning-soft);
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-warning) 35%, transparent);
+  --bs-btn-disabled-bg: var(--rd-warning-soft);
+}
+
+.btn-outline-warning {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--rd-warning) 45%, transparent);
+  --bs-btn-hover-bg: var(--rd-warning-soft);
+  --bs-btn-disabled-bg: transparent;
+}
+
+/* Info = neutral (surface + hairline + ink), not cyan. */
+.btn-info,
+.btn-outline-info {
+  --bs-btn-color: var(--rd-ink);
+  --bs-btn-bg: var(--rd-surface);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-color: var(--rd-ink);
+  --bs-btn-hover-bg: var(--rd-surface-2);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+  --bs-btn-active-color: var(--rd-ink);
+  --bs-btn-active-bg: var(--rd-surface-2);
+  --bs-btn-active-border-color: var(--rd-ink);
+  --bs-btn-disabled-color: var(--rd-muted);
+  --bs-btn-disabled-bg: var(--rd-surface);
+  --bs-btn-disabled-border-color: var(--bs-border-color);
+}
+
+/* Solid info is the "pressed" state of toggles: an ink hairline marks it. */
+.btn-info {
+  --bs-btn-bg: var(--rd-surface-2);
+  --bs-btn-border-color: var(--rd-ink);
+  --bs-btn-hover-border-color: var(--rd-ink);
+}
+
 .btn-success,
 .btn-danger {
   --bs-btn-color: var(--rd-surface);
@@ -2032,6 +2217,21 @@ a.rd-card:hover {
   --bs-btn-active-border-color: var(--rd-danger);
   --bs-btn-disabled-bg: var(--rd-danger);
   --bs-btn-disabled-border-color: var(--rd-danger);
+}
+
+/* Links in tables and lists (customer names, product lines): ink, no
+   underline at rest; text-safe orange + underline on hover. The underline
+   is !important to beat .text-decoration-none on the same anchors. */
+.table a:not(.btn):not(.badge),
+a.fw-semibold:not(.btn) {
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+
+.table a:not(.btn):not(.badge):hover,
+a.fw-semibold:not(.btn):hover {
+  color: var(--rd-accent-ink);
+  text-decoration: underline !important;
 }
 
 /* Forms */
@@ -2642,6 +2842,16 @@ html[lang="ar"] .rd-employee-title {
   border: 0;
   box-shadow: none;
   pointer-events: none;
+}
+
+/* Wider screens: keep the bar over the employee column (.rd-employee-main
+   max-width + inline padding), not stretched across the viewport. */
+@media (min-width: 768px) {
+  .rd-mobile-tabbar {
+    --rd-tab-pad-inline: 1rem;
+    max-width: 40rem;
+    margin-inline: auto;
+  }
 }
 
 .rd-mobile-tabbar__rail {
@@ -3503,7 +3713,7 @@ tr.rd-row-pending {
   --bs-pagination-active-color: var(--rd-primary-fg);
   --bs-pagination-active-bg: var(--rd-primary-bg);
   --bs-pagination-active-border-color: var(--rd-primary-bg);
-  --bs-pagination-disabled-color: var(--rd-faint);
+  --bs-pagination-disabled-color: var(--rd-muted);
   --bs-pagination-disabled-bg: transparent;
   --bs-pagination-disabled-border-color: transparent;
   gap: 0.25rem;
@@ -4645,37 +4855,38 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Edge cells: nudge the tooltip inward so it doesn't clip outside the chart.
+/* Edge cells (and their neighbours, which clip at 375px): nudge the tooltip
+   inward so it does not clip outside the chart.
    Logical insets so the first (start) cell works in RTL as well. */
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)) .rd-mini-chart-tip {
   left: auto;
   inset-inline-start: 0;
   transform: translateY(4px);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:hover .rd-mini-chart-tip,
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child:focus-within .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)):hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)):focus-within .rd-mini-chart-tip {
   transform: translateY(0);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:first-child .rd-mini-chart-tip::after {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:first-child, :nth-child(2)) .rd-mini-chart-tip::after {
   left: auto;
   inset-inline-start: 12px;
   transform: none;
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)) .rd-mini-chart-tip {
   left: auto;
   inset-inline-end: 0;
   transform: translateY(4px);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:hover .rd-mini-chart-tip,
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child:focus-within .rd-mini-chart-tip {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)):hover .rd-mini-chart-tip,
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)):focus-within .rd-mini-chart-tip {
   transform: translateY(0);
 }
 
-.rd-mini-chart-bars > .rd-mini-chart-bar-cell:last-child .rd-mini-chart-tip::after {
+.rd-mini-chart-bars > .rd-mini-chart-bar-cell:is(:last-child, :nth-last-child(2)) .rd-mini-chart-tip::after {
   left: auto;
   inset-inline-end: 12px;
   transform: none;
@@ -5366,6 +5577,11 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   height: 9.5rem;
   flex: 0 0 auto;
   margin-inline: auto;
+}
+
+/* The dark hairline border is ~1.3:1 on surface; the empty ring needs more. */
+[data-bs-theme="dark"] .rd-phone-donut {
+  --donut-empty: color-mix(in srgb, var(--rd-ink) 18%, var(--rd-surface));
 }
 
 .rd-phone-donut__ring {

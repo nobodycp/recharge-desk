@@ -51,6 +51,13 @@
   --bs-btn-focus-shadow-rgb: var(--rd-accent-2-strong-rgb);
 }
 
+/* Dark ink is light, so mixing toward it only lightens: press toward the
+   surface instead so active reads clearly darker than hover. */
+[data-bs-theme="dark"] .employee-charge-sale-btn {
+  --bs-btn-active-bg: color-mix(in srgb, var(--rd-accent-2-strong) 72%, var(--rd-surface));
+  --bs-btn-active-border-color: color-mix(in srgb, var(--rd-accent-2-strong) 72%, var(--rd-surface));
+}
+
 .employee-charge-sale-btn[hidden] {
   display: none;
 }
@@ -897,8 +904,9 @@
 }
 
 .rd-period-switch__opt.is-active {
-  background: var(--bs-secondary-bg);
-  color: var(--rd-accent);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  font-weight: 600;
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
 }
 
@@ -1206,8 +1214,8 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: var(--rd-radius-sm);
-  background: var(--rd-accent-muted);
-  color: var(--rd-accent);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
 }
 
 .rd-set-icon svg,
@@ -2014,7 +2022,7 @@
 .rd-people .rd-avatar,
 .rd-table-people .rd-avatar {
   background: color-mix(in srgb, var(--rd-accent) 14%, var(--bs-secondary-bg));
-  color: var(--rd-accent);
+  color: var(--rd-accent-ink);
   box-shadow: none;
 }
 

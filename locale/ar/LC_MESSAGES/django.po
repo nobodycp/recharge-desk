@@ -6228,6 +6228,14 @@ msgstr "حدث خطأ في الخادم. حاول مرة أخرى."
 msgid "Could not reach the server. Check your connection."
 msgstr "تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت."
 
+#: templates/partials/management_nav.html
+msgid "Update link"
+msgstr "رابط التحديث"
+
+#: templates/partials/management_nav.html
+msgid "Messages update"
+msgstr "تحديث الرسائل"
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
