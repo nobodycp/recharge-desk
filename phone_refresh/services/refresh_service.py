@@ -24,6 +24,7 @@ from phone_refresh.models import (
 )
 from providers import service as provider_service
 from providers.contracts import RawResponse
+from providers.registry import ADAPTERS
 from phone_refresh.services.pattern_matcher import match_response
 
 log = logging.getLogger(__name__)
@@ -326,9 +327,7 @@ def refresh_phone(
         )
 
     # 5. Provider call.
-    try:
-        raw = provider_service.refresh(provider_key, phone)
-    except KeyError:
+    if provider_key not in ADAPTERS:
         return _record_and_return(
             phone=phone,
             provider_key=provider_key,
@@ -343,6 +342,9 @@ def refresh_phone(
             internal_test=internal_test,
             source=source,
         )
+
+    try:
+        raw = provider_service.refresh(provider_key, phone)
     except Exception as exc:  # noqa: BLE001 — provider errors must not bubble up
         log.exception("provider %s crashed for phone %s", provider_key, phone)
         return _record_and_return(

@@ -18,6 +18,9 @@ _BARE_PAIR = re.compile(
     re.IGNORECASE,
 )
 
+# URL userinfo: scheme://user:pass@host
+_URL_USERINFO = re.compile(r"(?P<scheme>[a-z][a-z0-9+.-]*://)[^/\s@]+@", re.IGNORECASE)
+
 
 def _mask_quoted(match: re.Match) -> str:
     val = match.group("val")
@@ -26,8 +29,9 @@ def _mask_quoted(match: re.Match) -> str:
 
 
 def scrub(text: str) -> str:
-    """Replace the values of secret-looking keys with ``***``."""
+    """Mask secret-looking key values and URL credentials with ``***``."""
     if not text:
         return text or ""
+    text = _URL_USERINFO.sub(r"\g<scheme>***@", text)
     text = _QUOTED_PAIR.sub(_mask_quoted, text)
     return _BARE_PAIR.sub(lambda m: f"{m.group('pre')}***", text)

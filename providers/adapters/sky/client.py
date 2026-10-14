@@ -24,6 +24,13 @@ except ImportError:  # pragma: no cover
 BASE = "https://sales-ps.sky5g.ps:8888"
 HOST = "sales-ps.sky5g.ps"
 PROVIDER_KEY = "sky"
+REQUEST_TIMEOUT_SECONDS = 90
+# Login is bounded so it always finishes inside the Redis login lock
+# (providers.sessions.LOGIN_LOCK_TIMEOUT_SECONDS = 180): no request starts after
+# the deadline and each takes at most connect + read = 20 s → worst case ~120 s.
+LOGIN_CONNECT_TIMEOUT_SECONDS = 5
+LOGIN_READ_TIMEOUT_SECONDS = 15
+LOGIN_DEADLINE_SECONDS = 100
 
 
 @dataclass
@@ -190,6 +197,7 @@ class SkySalesClient:
         self._credentials = credentials
         self._credentials_loaded = credentials is not None
         self._logging_in = False
+        self._login_deadline: float | None = None
         self.http = requests.Session()
         self._configure_http()
         self.session = session or SkySalesSession(jwt_token="")
@@ -241,7 +249,8 @@ class SkySalesClient:
 
     def detect_egress_ip(self) -> str:
         try:
-            resp = self.http.get("https://api.ipify.org", timeout=20)
+            timeout = self._request_timeout() if self._login_deadline else 20
+            resp = self.http.get("https://api.ipify.org", timeout=timeout)
             resp.raise_for_status()
             return resp.text.strip()
         except requests.RequestException as exc:
@@ -294,17 +303,27 @@ class SkySalesClient:
         self.http = requests.Session()
         self._configure_http()
 
+    def _request_timeout(self) -> float | tuple[float, float]:
+        if self._login_deadline is None:
+            return REQUEST_TIMEOUT_SECONDS
+        remaining = self._login_deadline - time.monotonic()
+        if remaining <= 0:
+            raise SkySalesError("Login failed: deadline exceeded")
+        return (LOGIN_CONNECT_TIMEOUT_SECONDS, min(LOGIN_READ_TIMEOUT_SECONDS, remaining))
+
     def force_new_session(self, username: str, password: str, otp_code: str = "") -> str:
-        """Login + TOTP; optionally bind session to egress IP when using a proxy."""
-        current_ip = self.current_egress_ip()
-        _debug(f"new session login via IP {current_ip or 'direct'}")
-        self._reset_http_session()
-        self.session = SkySalesSession(jwt_token="", user_name=username)
+        """Login + TOTP (bounded); optionally bind session to egress IP when using a proxy."""
+        self._login_deadline = time.monotonic() + LOGIN_DEADLINE_SECONDS
         self._logging_in = True
         try:
+            current_ip = self.current_egress_ip()
+            _debug(f"new session login via IP {current_ip or 'direct'}")
+            self._reset_http_session()
+            self.session = SkySalesSession(jwt_token="", user_name=username)
             self.auto_login(username, password, otp_code)
         finally:
             self._logging_in = False
+            self._login_deadline = None
         self.session.bound_ip = current_ip
         self.session.proxy_fingerprint = proxy_fingerprint(self.proxy_url)
         self.session.logged_in_at = time.time()
@@ -365,18 +384,11 @@ class SkySalesClient:
         return creds.totp_secret if creds else ""
 
     def auto_login(self, username: str, password: str, otp_code: str = "") -> None:
+        # No internal retry: a rejected OTP fails the login (and starts the
+        # login cool-down) instead of stretching it past the lock timeout.
         code = resolve_otp_code(otp_code, self._totp_secret())
-        try:
-            self.begin_login(username, password)
-            self.confirm_otp(code)
-        except SkySalesError as exc:
-            if "OTP rejected:" not in str(exc):
-                raise
-            _debug("OTP rejected — fresh login + retry once")
-            self._reset_http_session()
-            self.session = SkySalesSession(jwt_token="", user_name=username)
-            self.begin_login(username, password)
-            self.confirm_otp(resolve_otp_code(otp_code, self._totp_secret()))
+        self.begin_login(username, password)
+        self.confirm_otp(code)
 
     def _refresh_jwt(self) -> None:
         token = self._post("/ipa/apis/json/general/genJwtToken", {})
@@ -392,7 +404,7 @@ class SkySalesClient:
             body["sessionId"] = self.session.session_id
 
         url = f"{BASE}{path}"
-        resp = self.http.post(url, json=body, timeout=90)
+        resp = self.http.post(url, json=body, timeout=self._request_timeout())
         try:
             resp.raise_for_status()
         except requests.HTTPError as exc:

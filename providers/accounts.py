@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from providers.contracts import PermanentError
 from providers.crypto import decrypt_or_empty
+from providers.sanitize import scrub
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ def get_credentials(provider_key: str) -> Credentials:
 
 
 def _scrub(text: str, secrets: list[str]) -> str:
+    text = scrub(text)
     for secret in secrets:
         if secret:
             text = text.replace(secret, "***")

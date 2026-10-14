@@ -18,8 +18,15 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 SESSION_TTL_SECONDS = 12 * 3600
+# Invariant: an adapter's worst-case login duration < LOGIN_LOCK_TIMEOUT_SECONDS.
 LOGIN_LOCK_TIMEOUT_SECONDS = 180
-LOGIN_LOCK_WAIT_SECONDS = 150
+# Default lock wait for in-request callers (must stay below gunicorn's timeout).
+LOGIN_LOCK_WAIT_SECONDS = 40
+LOGIN_COOLDOWN_SECONDS = 60
+
+
+def _as_bytes(value) -> bytes | None:
+    return value.encode() if isinstance(value, str) else value
 
 
 class _LoginLock(Lock):
@@ -29,7 +36,7 @@ class _LoginLock(Lock):
         with self.redis.pipeline() as pipe:
             try:
                 pipe.watch(self.name)
-                if pipe.get(self.name) != expected_token:
+                if _as_bytes(pipe.get(self.name)) != _as_bytes(expected_token):
                     pipe.unwatch()
                     raise LockNotOwnedError(
                         "Cannot release a lock that's no longer owned",
@@ -79,11 +86,21 @@ class SessionStore:
         return int(get_redis().incr(self.generation_key))
 
 
-def run_authenticated(adapter: BaseAdapter, fn: Callable[[], T]) -> T:
+def _cooldown_key(provider_key: str) -> str:
+    return f"provider:login-cooldown:{provider_key}"
+
+
+def run_authenticated(
+    adapter: BaseAdapter,
+    fn: Callable[[], T],
+    lock_wait: float | None = None,
+) -> T:
     """Call ``fn``; on ``AuthRequired`` log in once (cluster-wide) and retry once.
 
     The generation counter lets callers that waited on the lock skip the
-    login another worker already performed while they were blocked.
+    login another worker already performed while they were blocked. After a
+    failed login no one retries until the cool-down expires. ``lock_wait``
+    defaults to ``LOGIN_LOCK_WAIT_SECONDS`` (sized for web requests).
     """
     store = SessionStore(adapter.key)
     gen = store.generation()
@@ -91,31 +108,42 @@ def run_authenticated(adapter: BaseAdapter, fn: Callable[[], T]) -> T:
         return fn()
     except AuthRequired:
         pass
-    _login_once(adapter, store, gen)
+    if lock_wait is None:
+        lock_wait = LOGIN_LOCK_WAIT_SECONDS
+    _login_once(adapter, store, gen, lock_wait)
     return fn()
 
 
-def _login_once(adapter: BaseAdapter, store: SessionStore, seen_generation: int) -> None:
+def _login_once(
+    adapter: BaseAdapter, store: SessionStore, seen_generation: int, lock_wait: float
+) -> None:
     key = adapter.key
-    lock = get_redis().lock(
+    redis_client = get_redis()
+    if redis_client.exists(_cooldown_key(key)):
+        raise TransientError("login_failed")
+    lock = redis_client.lock(
         f"provider:login-lock:{key}",
         timeout=LOGIN_LOCK_TIMEOUT_SECONDS,
-        blocking_timeout=LOGIN_LOCK_WAIT_SECONDS,
+        blocking_timeout=lock_wait,
         lock_class=_LoginLock,
     )
     if not lock.acquire():
-        raise TransientError("login_lock_timeout")
+        raise TransientError("login_busy")
     try:
         if store.generation() != seen_generation:
             return
+        if redis_client.exists(_cooldown_key(key)):
+            raise TransientError("login_failed")
         try:
             adapter.login()
         except Exception as exc:
+            redis_client.set(_cooldown_key(key), "1", ex=LOGIN_COOLDOWN_SECONDS)
             error = scrub(str(exc)) or exc.__class__.__name__
             log.warning("provider %s login failed: %s", key, error)
             accounts.record_login(key, False, error)
             raise TransientError("login_failed") from exc
         store.bump_generation()
+        redis_client.delete(_cooldown_key(key))
         accounts.record_login(key, True)
     finally:
         try:

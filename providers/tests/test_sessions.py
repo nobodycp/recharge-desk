@@ -184,8 +184,79 @@ class RunAuthenticatedTests(TestCase):
         def fn():
             raise AuthRequired("expired")
 
-        with patch("providers.sessions.LOGIN_LOCK_WAIT_SECONDS", 0.2):
-            with self.assertRaises(TransientError) as ctx:
-                run_authenticated(adapter, fn)
-        self.assertEqual(str(ctx.exception), "login_lock_timeout")
+        started = time.monotonic()
+        with self.assertRaises(TransientError) as ctx:
+            run_authenticated(adapter, fn, lock_wait=0.2)
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertEqual(str(ctx.exception), "login_busy")
         self.assertEqual(adapter.login_calls, 0)
+
+    def test_default_lock_wait_fits_inside_a_web_request(self):
+        from providers import sessions
+
+        self.assertLessEqual(sessions.LOGIN_LOCK_WAIT_SECONDS, 40)
+        self.assertLess(sessions.LOGIN_LOCK_WAIT_SECONDS, sessions.LOGIN_LOCK_TIMEOUT_SECONDS)
+
+    def test_concurrent_failing_login_is_attempted_once(self):
+        adapter = FakeAdapter(login_delay=0.2, login_error=Exception("Sky down"))
+
+        def fn():
+            raise AuthRequired("expired")
+
+        errors: list = []
+        barrier = threading.Barrier(5)
+
+        def worker():
+            try:
+                barrier.wait(timeout=5)
+                run_authenticated(adapter, fn)
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker) for _ in range(5)]
+        with self.assertLogs("providers.sessions", level="WARNING"):
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=10)
+        self.assertFalse(any(t.is_alive() for t in threads))
+        self.assertEqual(adapter.login_calls, 1)
+        self.assertEqual(len(errors), 5)
+        for exc in errors:
+            self.assertIsInstance(exc, TransientError)
+            self.assertEqual(str(exc), "login_failed")
+        ttl = get_redis().ttl("provider:login-cooldown:sky")
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 60)
+
+    def test_cooldown_blocks_login_until_it_expires(self):
+        get_redis().set("provider:login-cooldown:sky", "1", ex=60)
+        adapter = FakeAdapter()
+        calls = {"n": 0}
+
+        def fn():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise AuthRequired("expired")
+            return "ok"
+
+        with self.assertRaises(TransientError) as ctx:
+            run_authenticated(adapter, fn)
+        self.assertEqual(str(ctx.exception), "login_failed")
+        self.assertEqual(adapter.login_calls, 0)
+
+        get_redis().delete("provider:login-cooldown:sky")
+        calls["n"] = 0
+        self.assertEqual(run_authenticated(adapter, fn), "ok")
+        self.assertEqual(adapter.login_calls, 1)
+        self.assertFalse(get_redis().exists("provider:login-cooldown:sky"))
+
+    def test_lock_release_handles_str_tokens(self):
+        from providers.sessions import _LoginLock
+
+        lock = _LoginLock(get_redis(), "provider:login-lock:test", timeout=10)
+        self.assertTrue(lock.acquire(blocking=False))
+        lock.do_release(lock.local.token.decode())
+        self.assertIsNone(get_redis().get("provider:login-lock:test"))

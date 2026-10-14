@@ -129,6 +129,28 @@ class ServiceTests(TestCase):
         self.assertIn("user=u", text)
         self.assertIn("password=***", text)
 
+    def test_scrub_masks_url_credentials(self):
+        text = scrub(
+            "ProxyError: HTTPSConnectionPool via http://LOGIN_s_sky:Pr0xyPass@res.geonix.com:10000 failed"
+        )
+        self.assertNotIn("Pr0xyPass", text)
+        self.assertNotIn("LOGIN_s_sky", text)
+        self.assertIn("http://***@res.geonix.com:10000", text)
+        self.assertEqual(scrub("https://api.ipify.org/x"), "https://api.ipify.org/x")
+
+    def test_record_login_masks_url_credentials(self):
+        from providers.accounts import record_login
+        from providers.crypto import encrypt
+        from providers.models import ProviderAccount
+
+        ProviderAccount.objects.create(
+            provider_key="sky", username="u", secret_encrypted=encrypt("pw")
+        )
+        record_login("sky", False, "Failed via socks5://other:S3cret@1.2.3.4:1080")
+        error = ProviderAccount.objects.get(provider_key="sky").last_error
+        self.assertNotIn("S3cret", error)
+        self.assertIn("socks5://***@1.2.3.4:1080", error)
+
 
 def _fake_sky_post(responses: dict):
     def _post(self, path, payload):
@@ -199,24 +221,48 @@ class KeepaliveTaskTests(TestCase):
     def setUp(self):
         get_redis().flushall()
 
-    def test_keepalive_pings_enabled_login_providers_only_and_never_raises(self):
-        from providers.models import ProviderAccount
+    def test_keepalive_pings_login_providers_only_and_never_raises(self):
         from providers.tasks import keepalive_sessions
 
-        ProviderAccount.objects.create(provider_key="sky", is_enabled=True)
-        ProviderAccount.objects.create(provider_key="aloha", is_enabled=True)
-        with patch("providers.tasks.service.keepalive") as keepalive:
+        creds = Credentials("user", "pass", "", {})
+        with patch("providers.tasks.get_credentials", return_value=creds), patch(
+            "providers.tasks.service.keepalive"
+        ) as keepalive:
             keepalive_sessions()
         keepalive.assert_called_once_with("sky")
 
-        with patch(
+        with patch("providers.tasks.get_credentials", return_value=creds), patch(
             "providers.tasks.service.keepalive", side_effect=TransientError("login_failed")
         ), self.assertLogs("providers.tasks", level="WARNING") as logs:
             keepalive_sessions()
         self.assertIn("login_failed", logs.output[0])
 
-        ProviderAccount.objects.filter(provider_key="sky").update(is_enabled=False)
-        with patch("providers.tasks.service.keepalive") as keepalive:
+    def test_keepalive_covers_env_only_credentials(self):
+        from providers.models import ProviderAccount
+        from providers.tasks import keepalive_sessions
+
+        self.assertFalse(ProviderAccount.objects.exists())
+        env = {"SKY_SALES_USER": "user", "SKY_SALES_PASSWORD": "pass"}
+        with patch.dict("os.environ", env), patch(
+            "providers.tasks.service.keepalive"
+        ) as keepalive:
+            keepalive_sessions()
+        keepalive.assert_called_once_with("sky")
+
+    def test_keepalive_skips_missing_credentials_and_disabled_accounts(self):
+        from providers.models import ProviderAccount
+        from providers.tasks import keepalive_sessions
+
+        with patch(
+            "providers.tasks.get_credentials", side_effect=PermanentError("config_error")
+        ), patch("providers.tasks.service.keepalive") as keepalive:
+            keepalive_sessions()
+        keepalive.assert_not_called()
+
+        ProviderAccount.objects.create(provider_key="sky", is_enabled=False)
+        with patch(
+            "providers.tasks.get_credentials", return_value=Credentials("u", "p")
+        ), patch("providers.tasks.service.keepalive") as keepalive:
             keepalive_sessions()
         keepalive.assert_not_called()
 

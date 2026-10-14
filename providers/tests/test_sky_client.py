@@ -74,16 +74,65 @@ class SkySalesClientTests(SimpleTestCase):
         self.assertEqual(len(code), 6)
         self.assertTrue(code.isdigit())
 
-    def test_auto_login_retries_once_after_otp_rejected(self):
+    def test_auto_login_does_not_retry_after_otp_rejected(self):
         client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
         with patch.object(client, "begin_login") as begin, patch.object(
-            client,
-            "confirm_otp",
-            side_effect=[SkySalesError("OTP rejected: {}"), None],
+            client, "confirm_otp", side_effect=SkySalesError("OTP rejected: {}")
         ) as confirm:
-            client.auto_login("user", "pass")
-        self.assertEqual(begin.call_count, 2)
-        self.assertEqual(confirm.call_count, 2)
+            with self.assertRaises(SkySalesError):
+                client.auto_login("user", "pass")
+        self.assertEqual(begin.call_count, 1)
+        self.assertEqual(confirm.call_count, 1)
+
+    def test_login_requests_use_short_timeouts_and_normal_requests_do_not(self):
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        timeouts = []
+
+        def fake_post(url, json, timeout):
+            timeouts.append(timeout)
+            resp = MagicMock()
+            path = url.split(":8888", 1)[1]
+            resp.json.return_value = {
+                "/ipa/apis/json/general/login": {"result": "SUCCESS", "jwtToken": "j", "sessionId": "s"},
+                "/ipa/apis/json/factor/init2fa": {"result": "SUCCESS"},
+                "/ipa/apis/json/factor/confirm2fa": {"result": "SUCCESS", "confirmed": True},
+                "/ipa/apis/json/general/getLoginInfo": {"result": "SUCCESS", "userId": 1},
+                "/ipa/apis/json/general/genJwtToken": {"result": "SUCCESS", "jwtToken": "j2"},
+            }[path]
+            return resp
+
+        with patch("requests.Session.post", side_effect=fake_post):
+            client.force_new_session("user", "pass")
+        self.assertEqual(len(timeouts), 5)
+        for connect, read in timeouts:
+            self.assertEqual(connect, 5)
+            self.assertLessEqual(read, 15)
+
+        with patch.object(client.http, "post", side_effect=fake_post):
+            client._refresh_jwt()
+        self.assertEqual(timeouts[-1], 90)
+
+    def test_login_deadline_stops_further_requests(self):
+        from providers.adapters.sky import client as client_module
+
+        # Worst case = deadline + one request (connect + read) must fit the lock.
+        from providers.sessions import LOGIN_LOCK_TIMEOUT_SECONDS
+
+        self.assertLess(
+            client_module.LOGIN_DEADLINE_SECONDS
+            + client_module.LOGIN_CONNECT_TIMEOUT_SECONDS
+            + client_module.LOGIN_READ_TIMEOUT_SECONDS,
+            LOGIN_LOCK_TIMEOUT_SECONDS,
+        )
+        client = SkySalesClient(credentials=_creds(totp=TOTP_SECRET))
+        with patch.object(client_module, "LOGIN_DEADLINE_SECONDS", -1), patch(
+            "requests.Session.post"
+        ) as post:
+            with self.assertRaises(SkySalesError) as ctx:
+                client.force_new_session("user", "pass")
+        self.assertIn("deadline", str(ctx.exception))
+        post.assert_not_called()
+        self.assertIsNone(client._login_deadline)
 
     def test_begin_login_does_not_persist_pending_otp(self):
         client = SkySalesClient()
