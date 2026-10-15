@@ -162,12 +162,14 @@
 
 | Page | Measure | Before | After |
 |---|---|---|---|
-| Dashboard 1280×800 | `scrollHeight` / DCL | 852 / 97 ms | |
-| Dashboard 375×667 | `scrollHeight` / hOverflow | 1575 / 0 (430: 1575 / 0) | |
-| Bell panel 375 | right edge vs viewport | 490 px in a 375 px viewport (overflows ~115 px) | |
-| Search panel 1280 | width / clipped | as narrow as the toggle; bottom clipped | |
-| Top-bar targets 375 | size | 8 controls, 30–32 px | |
-| Mobile drawer | Esc / inert / row height | Esc no-op / not inert / ~33 px | |
-| Chart, no sales | bars | 3 px stubs, Arabic-only letters in English | |
+| Dashboard 1280×800 | `scrollHeight` / DCL | 852 / 97 ms | 800 (fits the viewport) / 48 ms |
+| Dashboard 375×667 | `scrollHeight` / hOverflow | 1575 / 0 (430: 1575 / 0) | 1561 / 0 |
+| Bell panel 375 | right edge vs viewport | 490 px in a 375 px viewport (overflows ~115 px) | 369 px (sheet under the bar, ~6 px side gaps) |
+| Search panel 1280 | width / clipped | as narrow as the toggle; bottom clipped | 333 px (toggle 269 px); not clipped |
+| Top-bar targets 375 | size | 8 controls, 30–32 px | 5 visible controls, all 44 px; AR/EN and search rows ≥ 44 px |
+| Mobile drawer | Esc / inert / row height | Esc no-op / not inert / ~33 px | Esc closes / inert when closed / 44 px |
+| Chart, no sales | bars | 3 px stubs, Arabic-only letters in English | light empty state, no bars; weekday initials translated |
+
+After screenshots (same folder): 1280 light `14-18-33-520Z`, 1280 dark `14-18-43-409Z`, 375 light `14-18-58-441Z`, 375 dark `14-18-50-697Z`.
 
 Baseline screenshots (`/var/folders/bs/8n9gkjm97sl0g9gdp10k91_w0000gn/T/cursor/screenshots/page-2026-10-15T…`): 1280 light `11-51-26-408Z`, 1280 dark `12-16-53-300Z`, 375 light `12-17-16-942Z`, 375 dark `12-18-43-348Z`.
