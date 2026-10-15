@@ -343,3 +343,86 @@ class CompanyKitPagesTests(TestCase):
         self.assertContains(bad, "keep these notes")
         self.assertContains(bad, "abc")
         self.assertContains(bad, "rd-field__error")
+
+
+class ProductKitPagesTests(TestCase):
+    """Product list on the page kit; Delete only for deletable product lines."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+        from sales.models import PaymentMethod, Sale
+
+        cls.user = User.objects.create_user("prodkitmgr", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.company = Company.objects.create(
+            name="ProdKitCo", opening_balance=_decimal(0), current_balance=_decimal(0)
+        )
+        cls.sold_line = ProductLine.objects.create(company=cls.company, name="SoldKitLine")
+        cls.sold_product = Product.objects.create(
+            line=cls.sold_line,
+            variant_label="SoldKitPkg",
+            cost_price=_decimal(5),
+            default_sell_price=_decimal(50),
+        )
+        cls.sold_line.default_package = cls.sold_product
+        cls.sold_line.save(update_fields=["default_package"])
+        cls.free_line = ProductLine.objects.create(company=cls.company, name="FreeKitLine")
+        Product.objects.create(
+            line=cls.free_line,
+            variant_label="FreeKitPkg",
+            cost_price=_decimal(5),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="CashProdKit")
+        Sale.objects.create(
+            company=cls.company,
+            product=cls.sold_product,
+            reference_number="0599000333",
+            payer_name="Prod Kit Test",
+            payment_method=pm,
+            sell_price_actual=_decimal(50),
+            cost_price_snapshot=_decimal(5),
+            profit_snapshot=_decimal(45),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=cls.user,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_product_list_uses_kit(self):
+        r = self.client.get("/management/products/")
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, "rd-filter-card")
+        self.assertContains(r, 'name="q"')
+        self.assertContains(r, 'name="company"')
+        self.assertContains(r, 'name="show_archived"')
+        self.assertContains(r, "New product line")
+
+    def test_sales_default_is_rd_badge(self):
+        html = self.client.get("/management/products/").content.decode()
+        self.assertNotIn("badge text-bg-secondary", html)
+        self.assertIn("rd-badge rd-badge--neutral", html)
+        self.assertIn("Sales default", html)
+
+    def test_archive_not_outline_warning(self):
+        html = self.client.get("/management/products/").content.decode()
+        self.assertNotIn("btn-outline-warning", html)
+        self.assertIn("Archive", html)
+
+    def test_list_hides_delete_for_lines_with_sales(self):
+        html = self.client.get("/management/products/").content.decode()
+        sold_delete = reverse("companies:product_line_delete", args=[self.sold_line.pk])
+        free_delete = reverse("companies:product_line_delete", args=[self.free_line.pk])
+        self.assertNotIn(sold_delete, html)
+        self.assertNotRegex(html, r"disabled[^>]*>\s*Delete line")
+        self.assertNotIn("Cannot delete: this line has sales.", html)
+        self.assertIn(free_delete, html)
+        self.assertIn(
+            "Delete this product line and all its packages? This cannot be undone.", html
+        )

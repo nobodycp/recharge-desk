@@ -35,6 +35,27 @@ class CompanyForm(forms.ModelForm):
         return instance
 
 
+class ProductSearchForm(forms.Form):
+    """Render-only filter form for the product list (the view reads ``request.GET``)."""
+
+    q = forms.CharField(
+        required=False,
+        label=_("Search"),
+        widget=forms.TextInput(
+            attrs={"type": "search", "placeholder": _("Company, line, or package…"), "autocomplete": "off"}
+        ),
+    )
+    company = forms.ChoiceField(required=False, label=_("Company"))
+    show_archived = forms.BooleanField(required=False, label=_("Show archived packages"))
+
+    def __init__(self, *args, companies=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["company"].choices = [
+            ("", _("All companies")),
+            *((str(c.pk), c.name) for c in companies),
+        ]
+
+
 class ProductLineForm(forms.ModelForm):
     class Meta:
         model = ProductLine

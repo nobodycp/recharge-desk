@@ -15,6 +15,7 @@ from companies.forms import (
     CompanySearchForm,
     LayanReportReconcileForm,
     ProductLineForm,
+    ProductSearchForm,
     ProductVariantForm,
     SkyReportReconcileForm,
 )
@@ -396,6 +397,7 @@ def product_list(request):
             "show_archived": show_archived,
             "expand_packages": bool(q),
             "title": _("Products"),
+            "card_form": ProductSearchForm(initial=request.GET.dict(), companies=companies),
         },
     )
 

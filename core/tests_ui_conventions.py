@@ -45,8 +45,7 @@ _BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
 BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
 TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 
-LEGACY_BADGES = {  # 2 files
-    "templates/companies/product_list.html",
+LEGACY_BADGES = {  # 1 file
     "templates/inventory/_serials_paste_field.html",
 }
 LEGACY_TABLE_LIGHT = {  # 2 files
@@ -80,7 +79,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 45 files
+LEGACY_PAGE_HEAD = {  # 44 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -91,7 +90,6 @@ LEGACY_PAGE_HEAD = {  # 45 files
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/companies/company_detail.html",
-    "templates/companies/product_list.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_form.html",

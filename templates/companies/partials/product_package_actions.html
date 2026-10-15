@@ -9,7 +9,7 @@
 {% elif v.is_active %}
   <form method="post" action="{% url 'companies:product_variant_archive' v.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}">
     {% csrf_token %}
-    <button type="submit" class="btn btn-sm btn-outline-warning" title="{% trans 'Hide from new sales; keep past sales' %}">{% trans "Archive" %}</button>
+    <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% trans 'Hide from new sales; keep past sales' %}">{% trans "Archive" %}</button>
   </form>
 {% else %}
   <form method="post" action="{% url 'companies:product_variant_unarchive' v.pk %}" class="d-inline">
