@@ -1,51 +1,38 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ employee.display_name }}</h1>
-    <p class="rd-text-muted mb-0">{{ employee.user.username }}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a class="btn btn-outline-primary btn-sm" href="{% url 'employees:employee_edit' employee.pk %}">{% trans "Edit" %}</a>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_list' %}">{% trans "Back" %}</a>
-  </div>
-</div>
+<div class="rd-page">
+{% url 'employees:employee_list' as list_url %}
+{% url 'employees:employee_detail' employee.pk as detail_url %}
+{% trans "Employees" as employees_label %}
+{% with username_sub="@"|add:employee.user.username %}
+{% rd_page_header employee.display_name subtitle=username_sub back_url=list_url back_label=employees_label %}
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_edit' employee.pk %}">{% trans "Edit" %}</a>
+{% end_rd_page_header %}
+{% endwith %}
 
-<div class="row g-3 mb-4 align-items-stretch">
-  <div class="col-12 col-md-4">
-    <div class="rd-card p-3 h-100">
-      <div class="small text-secondary">{% trans "Current balance" %}</div>
-      <div class="h4 mb-2 tabular-nums fw-bold {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}text-success{% endif %}">
-        {{ employee.current_balance|intcomma }}
-      </div>
-      <div class="border-top pt-2 mt-2">
-        <div class="small text-secondary">{% trans "Monthly salary" %}</div>
-        <div class="h6 mb-0 tabular-nums fw-semibold">{{ employee.monthly_salary|intcomma }}</div>
-      </div>
-    </div>
+<section class="rd-card rd-stat-strip mb-3">
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Current balance" %}</span>
+    <span class="rd-stat-strip__val tabular-nums {% if employee.current_balance < 0 %}kpi-expense{% elif employee.current_balance > 0 %}kpi-success{% endif %}">{{ employee.current_balance|intcomma }}</span>
   </div>
-  <div class="col-12 col-md-4">
-    <div class="rd-card p-3 h-100">
-      <div class="small fw-semibold mb-2">{% trans "Manual adjustment" %}</div>
-      <form method="post" novalidate class="row g-2 align-items-end">
-        {% csrf_token %}
-        <input type="hidden" name="form_kind" value="adjustment">
-        <div class="col-5">
-          <label class="form-label small mb-1" for="{{ adj_form.amount.id_for_label }}">{{ adj_form.amount.label }}</label>
-          {{ adj_form.amount }}
-          {{ adj_form.amount.errors }}
-        </div>
-        <div class="col-7">
-          <label class="form-label small mb-1" for="{{ adj_form.notes.id_for_label }}">{{ adj_form.notes.label }}</label>
-          {{ adj_form.notes }}
-          {{ adj_form.notes.errors }}
-        </div>
-        <div class="col-12">
-          <button type="submit" class="btn btn-primary btn-sm w-100">{% trans "Record adjustment" %}</button>
-        </div>
-      </form>
-    </div>
+  <div class="rd-stat-strip__cell">
+    <span class="rd-stat-strip__lbl">{% trans "Monthly salary" %}</span>
+    <span class="rd-stat-strip__val tabular-nums">{{ employee.monthly_salary|intcomma }}</span>
+  </div>
+</section>
+
+<div class="rd-card mb-3">
+  <div class="rd-card-body">
+    <h2 class="rd-heading-lg mb-3">{% trans "Manual adjustment" %}</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="form_kind" value="adjustment">
+      {% rd_fields adj_form size="sm" %}
+      <div class="rd-form-actions">
+        <button type="submit" class="btn btn-primary btn-sm">{% trans "Record adjustment" %}</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -65,102 +52,43 @@
 </ul>
 
 {% if active_tab == tab_payments %}
-  {% include "partials/filter_card_open.html" with active_count=payments_filter_active indicator_id="employee-payments-htmx" %}
-  <form
-    method="get"
-    class="row g-3 align-items-end"
-    hx-get="{% url 'employees:employee_detail' employee.pk %}"
+  {% with payments_reset=detail_url|add:"?tab=payments" %}
+  <div hx-vals='{"partial": "payments"}'>
+    {% rd_filter_card payments_filter_form reset_url=payments_reset hx_target="#employee-payments-grid" indicator_id="employee-payments-htmx" keep="tab payments_sort payments_order" %}
+  </div>
+  {% endwith %}
+
+  <div
+    id="employee-payments-grid"
+    class="rd-card overflow-hidden rd-datagrid"
+    hx-boost="true"
     hx-target="#employee-payments-grid"
+    hx-swap="innerHTML"
     hx-push-url="true"
     hx-indicator="#employee-payments-htmx"
+    hx-vals='{"partial": "payments", "tab": "payments"}'
   >
-    <input type="hidden" name="partial" value="payments">
-    <input type="hidden" name="tab" value="{{ tab_payments }}">
-    <input type="hidden" name="payments_sort" value="{{ payments_sort }}">
-    <input type="hidden" name="payments_order" value="{{ payments_order }}">
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="{{ payments_filter_form.payments_q.id_for_label }}">{{ payments_filter_form.payments_q.label }}</label>
-      {{ payments_filter_form.payments_q }}
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label" for="{{ payments_filter_form.payments_date_from.id_for_label }}">{{ payments_filter_form.payments_date_from.label }}</label>
-      {{ payments_filter_form.payments_date_from }}
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label" for="{{ payments_filter_form.payments_date_to.id_for_label }}">{{ payments_filter_form.payments_date_to.label }}</label>
-      {{ payments_filter_form.payments_date_to }}
-    </div>
-    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2">
-      <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_payments }}">{% trans "Reset" %}</a>
-    </div>
-  </form>
-  {% include "partials/filter_card_close.html" %}
-
-  <div class="position-relative">
-    <div
-      id="employee-payments-grid"
-      class="rd-card overflow-hidden rd-datagrid"
-      hx-boost="true"
-      hx-target="#employee-payments-grid"
-      hx-swap="innerHTML"
-      hx-push-url="true"
-      hx-indicator="#employee-payments-htmx"
-      hx-vals='{"partial": "payments", "tab": "payments"}'
-    >
-      {% include "employees/partials/employee_payments_results.html" %}
-    </div>
+    {% include "employees/partials/employee_payments_results.html" %}
   </div>
 {% else %}
-  {% include "partials/filter_card_open.html" with active_count=ledger_filter_active indicator_id="employee-ledger-htmx" %}
-  <form
-    method="get"
-    class="row g-3 align-items-end"
-    hx-get="{% url 'employees:employee_detail' employee.pk %}"
+  {% with ledger_reset=detail_url|add:"?tab=ledger" %}
+  <div hx-vals='{"partial": "ledger"}'>
+    {% rd_filter_card ledger_filter_form reset_url=ledger_reset hx_target="#employee-ledger-grid" indicator_id="employee-ledger-htmx" keep="tab ledger_sort ledger_order" %}
+  </div>
+  {% endwith %}
+
+  <div
+    id="employee-ledger-grid"
+    class="rd-card overflow-hidden rd-datagrid"
+    hx-boost="true"
     hx-target="#employee-ledger-grid"
+    hx-swap="innerHTML"
     hx-push-url="true"
     hx-indicator="#employee-ledger-htmx"
+    hx-vals='{"partial": "ledger", "tab": "ledger"}'
   >
-    <input type="hidden" name="partial" value="ledger">
-    <input type="hidden" name="tab" value="{{ tab_ledger }}">
-    <input type="hidden" name="ledger_sort" value="{{ ledger_sort }}">
-    <input type="hidden" name="ledger_order" value="{{ ledger_order }}">
-    <div class="col-12 col-lg-3">
-      <label class="form-label" for="{{ ledger_filter_form.ledger_q.id_for_label }}">{{ ledger_filter_form.ledger_q.label }}</label>
-      {{ ledger_filter_form.ledger_q }}
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label" for="{{ ledger_filter_form.ledger_entry_type.id_for_label }}">{{ ledger_filter_form.ledger_entry_type.label }}</label>
-      {{ ledger_filter_form.ledger_entry_type }}
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label" for="{{ ledger_filter_form.ledger_date_from.id_for_label }}">{{ ledger_filter_form.ledger_date_from.label }}</label>
-      {{ ledger_filter_form.ledger_date_from }}
-    </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label" for="{{ ledger_filter_form.ledger_date_to.id_for_label }}">{{ ledger_filter_form.ledger_date_to.label }}</label>
-      {{ ledger_filter_form.ledger_date_to }}
-    </div>
-    <div class="col-6 col-lg-3 d-flex flex-wrap gap-2">
-      <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'employees:employee_detail' employee.pk %}?tab={{ tab_ledger }}">{% trans "Reset" %}</a>
-    </div>
-  </form>
-  {% include "partials/filter_card_close.html" %}
-
-  <div class="position-relative">
-    <div
-      id="employee-ledger-grid"
-      class="rd-card overflow-hidden rd-datagrid"
-      hx-boost="true"
-      hx-target="#employee-ledger-grid"
-      hx-swap="innerHTML"
-      hx-push-url="true"
-      hx-indicator="#employee-ledger-htmx"
-      hx-vals='{"partial": "ledger", "tab": "ledger"}'
-    >
-      {% include "employees/partials/employee_ledger_results.html" %}
-    </div>
+    {% include "employees/partials/employee_ledger_results.html" %}
   </div>
 {% endif %}
+</div>
 {% endblock %}

@@ -138,9 +138,6 @@ def employee_detail(request, pk):
     ledger_filter_data = (
         ledger_filter_form.cleaned_data if ledger_filter_form.is_valid() else {}
     )
-    ledger_filter_active = sum(
-        1 for name in ledger_filter_form.fields if ledger_filter_data.get(name)
-    )
     ledger_q = (ledger_filter_data.get("ledger_q") or "").strip()
     if ledger_q:
         ledger_qs = ledger_qs.filter(
@@ -189,9 +186,6 @@ def employee_detail(request, pk):
     payments_filter_form = EmployeeSalesPaymentFilterForm(request.GET or None)
     payments_filter_data = (
         payments_filter_form.cleaned_data if payments_filter_form.is_valid() else {}
-    )
-    payments_filter_active = sum(
-        1 for name in payments_filter_form.fields if payments_filter_data.get(name)
     )
     payments_q = (payments_filter_data.get("payments_q") or "").strip()
     if payments_q:
@@ -252,12 +246,10 @@ def employee_detail(request, pk):
         "ledger_sort": ledger_sort,
         "ledger_order": ledger_order,
         "ledger_filter_form": ledger_filter_form,
-        "ledger_filter_active": ledger_filter_active,
         "sales_payments_page": sales_payments_page,
         "payments_sort": payments_sort,
         "payments_order": payments_order,
         "payments_filter_form": payments_filter_form,
-        "payments_filter_active": payments_filter_active,
         "adj_form": adj_form,
         "title": employee.display_name,
     }

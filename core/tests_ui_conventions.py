@@ -88,7 +88,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 64 files
+LEGACY_PAGE_HEAD = {  # 61 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -116,9 +116,6 @@ LEGACY_PAGE_HEAD = {  # 64 files
     "templates/customers/customer_list.html",
     "templates/customers/customer_statement.html",
     "templates/customers/payment_submissions_list.html",
-    "templates/employees/employee_detail.html",
-    "templates/employees/employee_form.html",
-    "templates/employees/employee_list.html",
     "templates/employees/my_balance.html",
     "templates/expenses/expense_form.html",
     "templates/expenses/expense_list.html",

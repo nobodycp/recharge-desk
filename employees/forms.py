@@ -14,6 +14,7 @@ class EmployeeProfileForm(forms.ModelForm):
     user = forms.ModelChoiceField(
         label=_("User"),
         queryset=User.objects.none(),
+        empty_label=_("Choose…"),
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 

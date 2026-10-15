@@ -5085,6 +5085,12 @@ msgstr "استحقاق رواتب الشهر"
 #: templates/employees/employee_list.html:35
 msgid "Run salary accrual"
 msgstr "تشغيل استحقاق الرواتب"
+#: templates/employees/employee_list.html:31
+msgid "Run salary accrual for the selected month?"
+msgstr "تشغيل استحقاق الرواتب للشهر المحدد؟"
+#: employees/forms.py:17
+msgid "Choose…"
+msgstr "اختر…"
 #: templates/employees/employee_list.html:64
 msgid "No employees match your search."
 msgstr "لا يوجد موظفون مطابقون للبحث."

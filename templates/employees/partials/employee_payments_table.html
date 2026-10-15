@@ -1,4 +1,4 @@
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
@@ -6,25 +6,25 @@
         <thead>
           <tr>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'created_at' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'created_at' and payments_order == 'desc' %}{% querystring payments_sort='created_at' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='created_at' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Date" %}</a>
+              {% rd_sort_link "created_at" _("Date") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'ref' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'ref' and payments_order == 'desc' %}{% querystring payments_sort='ref' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='ref' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Number / reference" %}</a>
+              {% rd_sort_link "ref" _("Number / reference") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'payer' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'payer' and payments_order == 'desc' %}{% querystring payments_sort='payer' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='payer' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Payer" %}</a>
+              {% rd_sort_link "payer" _("Payer") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'amount' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'amount' and payments_order == 'desc' %}{% querystring payments_sort='amount' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='amount' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Amount" %}</a>
+              {% rd_sort_link "amount" _("Amount") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'company' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'company' and payments_order == 'desc' %}{% querystring payments_sort='company' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='company' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Company" %}</a>
+              {% rd_sort_link "company" _("Company") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if payments_sort == 'product' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'product' and payments_order == 'desc' %}{% querystring payments_sort='product' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='product' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Product" %}</a>
+              {% rd_sort_link "product" _("Product") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
             <th class="text-end">
-              <a class="rd-datagrid-sort {% if payments_sort == 'notes' %}is-active is-{{ payments_order }}{% endif %}" href="{% if payments_sort == 'notes' and payments_order == 'desc' %}{% querystring payments_sort='notes' payments_order='asc' payments_page=1 %}{% else %}{% querystring payments_sort='notes' payments_order='desc' payments_page=1 %}{% endif %}">{% trans "Notes" %}</a>
+              {% rd_sort_link "notes" _("Notes") payments_sort payments_order page_key="payments_page" sort_param="payments_sort" order_param="payments_order" %}
             </th>
           </tr>
         </thead>
@@ -52,7 +52,7 @@
               <td class="small text-secondary text-end">{% if row.notes %}{{ row.notes }}{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No sales payments yet." %}</div></td></tr>
+            {% trans "No sales payments yet." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=7 title=empty_title icon="list" %}
           {% endfor %}
         </tbody>
       </table>
@@ -79,7 +79,7 @@
         {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
       </div>
     {% empty %}
-      <div class="text-center text-secondary py-4">{% trans "No sales payments yet." %}</div>
+      {% trans "No sales payments yet." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
     {% endfor %}
   </div>
 </div>

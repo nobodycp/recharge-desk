@@ -1,37 +1,21 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-  </div>
-  <a class="btn btn-outline-secondary" href="{% url 'employees:employee_list' %}">{% trans "Back" %}</a>
-</div>
+<div class="rd-page rd-page--form">
+  {% if employee %}{% url 'employees:employee_detail' employee.pk as back_url %}{% else %}{% url 'employees:employee_list' as back_url %}{% endif %}
+  {% rd_page_header title back_url=back_url %}{% end_rd_page_header %}
 
-<div class="rd-card">
-  <div class="rd-card-body">
-    <form method="post" novalidate>
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
-      {% endif %}
-      <div class="mb-3">
-        <label class="form-label" for="{{ form.user.id_for_label }}">{{ form.user.label }}</label>
-        {{ form.user }}
-        {{ form.user.errors }}
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="{{ form.monthly_salary.id_for_label }}">{{ form.monthly_salary.label }}</label>
-        {{ form.monthly_salary }}
-        {{ form.monthly_salary.errors }}
-      </div>
-      <div class="mb-3 form-check">
-        {{ form.is_active }}
-        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
-        {{ form.is_active.errors }}
-      </div>
-      <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
-    </form>
+  <div class="rd-card">
+    <div class="rd-card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% rd_fields form full="is_active" %}
+        <div class="rd-form-actions">
+          <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+          <a class="btn btn-outline-secondary" href="{{ back_url }}">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

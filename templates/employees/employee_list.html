@@ -1,11 +1,11 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-admin-page rd-admin-page--wide">
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Employees" %}</h1>
+<div class="rd-page">
+{% trans "Employees" as employees_title %}
+{% rd_page_header employees_title %}
   <a class="btn btn-primary" href="{% url 'employees:employee_create' %}">{% trans "Add employee" %}</a>
-</div>
+{% end_rd_page_header %}
 
 <section class="rd-card rd-stat-strip mb-3">
   <div class="rd-stat-strip__cell">
@@ -28,11 +28,11 @@
     <input type="search" class="form-control" name="q" value="{{ q }}" placeholder="{% trans 'Username or name…' %}" aria-label="{% trans 'Search' %}">
     {% if q %}<a class="rd-filter-search__clear" href="{% url 'employees:employee_list' %}" aria-label="{% trans 'Reset' %}">×</a>{% endif %}
   </form>
-  <form method="post" action="{% url 'employees:employee_run_salary_accrual' %}" class="rd-toolbar__action">
+  <form method="post" action="{% url 'employees:employee_run_salary_accrual' %}" class="rd-toolbar__action" hx-confirm="{% filter force_escape %}{% trans "Run salary accrual for the selected month?" %}{% endfilter %}">
     {% csrf_token %}
     <label class="rd-toolbar__lbl" for="salary-month">{% trans "Accrue salaries for month" %}</label>
     <input type="month" class="form-control form-control-sm" id="salary-month" name="salary_month" value="{{ accrual_month|date:'Y-m' }}">
-    <button type="submit" class="btn btn-outline-primary btn-sm">{% trans "Run salary accrual" %}</button>
+    <button type="submit" class="btn btn-outline-secondary btn-sm">{% trans "Run salary accrual" %}</button>
   </form>
 </div>
 
@@ -61,7 +61,8 @@
       {% endfor %}
     </ul>
   {% else %}
-    <div class="empty-state border-0 m-3">{% if q %}{% trans "No employees match your search." %}{% else %}{% trans "No employees yet." %}{% endif %}</div>
+    {% if q %}{% trans "No employees match your search." as empty_title %}{% else %}{% trans "No employees yet." as empty_title %}{% endif %}
+    {% include "partials/empty_state.html" with title=empty_title icon="list" %}
   {% endif %}
   {% include "partials/pagination.html" with page_obj=page_obj %}
 </div>

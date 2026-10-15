@@ -1,10 +1,11 @@
+import re
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
@@ -455,3 +456,232 @@ class EmployeeMyBalanceTests(TestCase):
         resp = self.client.get(reverse("employees:my_balance"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "No employee payroll profile is linked to your account yet.")
+
+
+class EmployeePagesKitTests(TestCase):
+    """Employees list, detail and form on the shared page kit."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.mgmt = User.objects.create_user(username="kit_mgmt", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.mgmt,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "full_name": "Kit Manager"},
+        )
+        cls.worker_user = User.objects.create_user(username="kit_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker_user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "full_name": "Kit Worker"},
+        )
+        cls.employee = EmployeeProfile.objects.create(
+            user=cls.worker_user,
+            monthly_salary=Decimal("3000"),
+        )
+        cls.free_user = User.objects.create_user(username="kit_free", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.free_user,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "full_name": "Kit Free"},
+        )
+
+    def setUp(self):
+        self.client.login(username="kit_mgmt", password="x")
+        self.detail_url = reverse("employees:employee_detail", args=[self.employee.pk])
+
+    def _badge(self, html):
+        match = re.search(r"data-rd-filter-count[^>]*>\s*(\d*)\s*<", html)
+        self.assertIsNotNone(match, "filter badge missing")
+        return match.group(1)
+
+    def test_list_on_kit_with_accrual_label_and_confirm(self):
+        resp = self.client.get(reverse("employees:employee_list"))
+        self.assertContains(resp, 'class="rd-page"')
+        self.assertContains(resp, "rd-page-head")
+        self.assertContains(resp, reverse("employees:employee_create"))
+        self.assertContains(resp, "rd-stat-strip")
+        self.assertContains(resp, "Kit Worker")
+
+    def test_accrual_has_confirm(self):
+        resp = self.client.get(reverse("employees:employee_list"))
+        html = resp.content.decode()
+        form = re.search(
+            r'<form[^>]*action="%s"[^>]*>' % re.escape(reverse("employees:employee_run_salary_accrual")),
+            html,
+        )
+        self.assertIsNotNone(form)
+        self.assertIn('hx-confirm="Run salary accrual for the selected month?"', form.group(0))
+        self.assertIn('method="post"', form.group(0))
+        self.assertContains(resp, 'for="salary-month"')
+        self.assertContains(resp, 'name="salary_month"')
+        self.assertContains(resp, "btn btn-outline-secondary btn-sm")
+        self.assertNotContains(resp, "btn-outline-primary")
+
+    def test_detail_on_kit(self):
+        self.employee.current_balance = Decimal("120")
+        self.employee.save()
+        resp = self.client.get(self.detail_url)
+        self.assertContains(resp, 'class="rd-page"')
+        self.assertContains(resp, "rd-page-head")
+        self.assertContains(resp, "@kit_worker")
+        self.assertContains(resp, reverse("employees:employee_edit", args=[self.employee.pk]))
+        self.assertContains(resp, "rd-stat-strip")
+        self.assertContains(resp, "kpi-success")
+        self.assertNotContains(resp, "text-success")
+        self.assertContains(resp, "Current balance")
+        self.assertContains(resp, "Monthly salary")
+        self.assertContains(resp, "rd-section-tabs")
+        # adjustment: help text is visible and Save is not full width.
+        self.assertContains(resp, "Positive credits the employee; negative debits them.")
+        self.assertNotContains(resp, "w-100")
+
+    def test_detail_filter_badge_counts_only_filters(self):
+        for tab in ("ledger", "payments"):
+            resp = self.client.get(self.detail_url, {"tab": tab})
+            self.assertEqual(self._badge(resp.content.decode()), "0", tab)
+        resp = self.client.get(self.detail_url, {"tab": "ledger", "ledger_q": "bonus", "ledger_sort": "amount"})
+        self.assertEqual(self._badge(resp.content.decode()), "1")
+        resp = self.client.get(self.detail_url, {"tab": "payments", "payments_q": "x", "payments_sort": "payer"})
+        self.assertEqual(self._badge(resp.content.decode()), "1")
+
+    def test_detail_filter_keeps_tab_sort_and_targets_grid(self):
+        resp = self.client.get(
+            self.detail_url, {"tab": "ledger", "ledger_sort": "amount", "ledger_order": "asc"}
+        )
+        html = resp.content.decode()
+        for name, value in (("tab", "ledger"), ("ledger_sort", "amount"), ("ledger_order", "asc")):
+            self.assertRegex(html, r'<input type="hidden" name="%s" value="%s" data-rd-filter-keep>' % (name, value))
+        self.assertContains(resp, 'hx-target="#employee-ledger-grid"')
+        # The htmx submit must ask for the grid fragment, not the whole page.
+        self.assertRegex(html, r"hx-vals='\{[^']*&quot;partial&quot;: *&quot;ledger&quot;|hx-vals='\{[^']*\"partial\": *\"ledger\"")
+
+    def test_detail_date_range_error_visible(self):
+        reversed_range = {"ledger_date_from": "2026-02-10", "ledger_date_to": "2026-02-01"}
+        resp = self.client.get(self.detail_url, {"tab": "ledger", **reversed_range})
+        self.assertContains(resp, "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;.")
+        self.assertContains(resp, 'role="alert"')
+        reversed_range = {"payments_date_from": "2026-02-10", "payments_date_to": "2026-02-01"}
+        resp = self.client.get(self.detail_url, {"tab": "payments", **reversed_range})
+        self.assertContains(resp, "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;.")
+
+    def test_detail_invalid_range_still_drops_filters(self):
+        create_adjustment(employee=self.employee, amount=Decimal("10"), notes="keep-me", user=self.mgmt)
+        resp = self.client.get(
+            self.detail_url,
+            {"tab": "ledger", "ledger_q": "nomatch", "ledger_date_from": "2026-02-10", "ledger_date_to": "2026-02-01"},
+        )
+        self.assertContains(resp, "keep-me")
+
+    def test_detail_partials_render_for_htmx(self):
+        create_adjustment(employee=self.employee, amount=Decimal("10"), notes="ledger-note", user=self.mgmt)
+        EmployeeLedgerEntry.objects.create(
+            employee=self.employee,
+            entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED,
+            amount=Decimal("-20"),
+            phone="0555",
+            payer_name="Pay Er",
+            created_by=self.mgmt,
+        )
+        ledger = self.client.get(self.detail_url, {"partial": "ledger", "tab": "ledger"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(ledger.status_code, 200)
+        self.assertTemplateUsed(ledger, "employees/partials/employee_ledger_results.html")
+        self.assertTemplateNotUsed(ledger, "employees/employee_detail.html")
+        self.assertContains(ledger, "ledger-note")
+        self.assertContains(ledger, "rd-datagrid-sort")
+        self.assertContains(ledger, "ledger_sort=amount")
+        self.assertContains(ledger, "ledger_page=1")
+        self.assertNotContains(ledger, "<html")
+
+        payments = self.client.get(self.detail_url, {"partial": "payments", "tab": "payments"}, HTTP_HX_REQUEST="true")
+        self.assertEqual(payments.status_code, 200)
+        self.assertTemplateUsed(payments, "employees/partials/employee_payments_results.html")
+        self.assertTemplateNotUsed(payments, "employees/employee_detail.html")
+        self.assertContains(payments, "Pay Er")
+        self.assertContains(payments, "payments_sort=payer")
+        self.assertNotContains(payments, "<html")
+
+    def test_detail_sort_links_keep_tab_and_reset_page(self):
+        resp = self.client.get(
+            self.detail_url,
+            {"tab": "payments", "payments_page": "2", "payments_sort": "payer", "payments_order": "desc"},
+        )
+        html = resp.content.decode()
+        self.assertRegex(html, r'class="rd-datagrid-sort is-active is-desc" href="[^"]*payments_order=asc[^"]*"')
+        for href in re.findall(r'class="rd-datagrid-sort[^"]*" href="([^"]*)"', html):
+            self.assertIn("payments_page=1", href)
+            self.assertIn("tab=payments", href)
+
+    def test_payments_pagination_uses_payments_page_key(self):
+        for i in range(30):
+            EmployeeLedgerEntry.objects.create(
+                employee=self.employee,
+                entry_type=EmployeeLedgerEntry.EntryType.SALES_PAYMENT_RECEIVED,
+                amount=Decimal("-1"),
+                phone=f"05{i:08d}",
+                created_by=self.mgmt,
+            )
+        resp = self.client.get(self.detail_url, {"tab": "payments", "payments_page": "2"})
+        self.assertContains(resp, "payments_page=1")
+        self.assertNotContains(resp, "?page=")
+        self.assertNotContains(resp, "&amp;page=")
+
+    def test_ledger_delete_uses_row_actions_with_confirm(self):
+        entry = create_adjustment(employee=self.employee, amount=Decimal("15"), notes="manual", user=self.mgmt)
+        resp = self.client.get(self.detail_url, {"tab": "ledger"})
+        delete_url = reverse("employees:employee_ledger_delete", args=[self.employee.pk, entry.pk])
+        html = resp.content.decode()
+        self.assertEqual(html.count('hx-post="%s"' % delete_url), 2)  # desktop row + mobile card
+        self.assertContains(resp, "rd-icon-btn rd-icon-btn--danger")
+        self.assertContains(resp, 'hx-target="body"')
+        self.assertContains(resp, 'hx-swap="outerHTML"')
+        self.assertContains(
+            resp,
+            'hx-confirm="Delete this employee ledger entry? The employee balance will be corrected. This cannot be undone."',
+            count=2,
+        )
+
+    def test_empty_states_use_kit_rows(self):
+        resp = self.client.get(self.detail_url, {"tab": "ledger"})
+        self.assertContains(resp, "rd-empty-row")
+        self.assertContains(resp, "No ledger entries.")
+        resp = self.client.get(self.detail_url, {"tab": "payments"})
+        self.assertContains(resp, "rd-empty-row")
+        self.assertContains(resp, "No sales payments yet.")
+
+    def test_adjustment_post_still_works(self):
+        resp = self.client.post(
+            self.detail_url, {"form_kind": "adjustment", "amount": "25", "notes": "kit adj"}
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.current_balance, Decimal("25"))
+        bad = self.client.post(self.detail_url, {"form_kind": "adjustment", "amount": "0"})
+        self.assertContains(bad, "Amount cannot be zero.")
+        self.assertContains(bad, "is-invalid")
+
+    def test_employee_form_on_kit(self):
+        resp = self.client.get(reverse("employees:employee_create"))
+        self.assertContains(resp, "rd-page rd-page--form")
+        self.assertContains(resp, "rd-page-head")
+        self.assertContains(resp, "rd-form-actions")
+        self.assertContains(resp, "rd-form-grid")
+        self.assertContains(resp, ">Choose…<")
+        self.assertNotContains(resp, "---------")
+        self.assertContains(resp, 'href="%s"' % reverse("employees:employee_list"), count=3)  # back, cancel, sidebar
+
+    def test_employee_form_edit_backs_to_detail_and_shows_errors(self):
+        url = reverse("employees:employee_edit", args=[self.employee.pk])
+        resp = self.client.get(url)
+        self.assertContains(resp, "rd-page--form")
+        self.assertContains(resp, 'href="%s"' % self.detail_url)
+        self.assertContains(resp, 'name="is_active"')
+        bad = self.client.post(url, {"user": self.worker_user.pk, "monthly_salary": "-5"})
+        self.assertContains(bad, "is-invalid")
+        self.assertContains(bad, 'aria-invalid="true"')
+        self.assertContains(bad, 'value="-5"')
+
+    def test_new_strings_translated_to_arabic(self):
+        self.addCleanup(translation.activate, "en")  # the request leaves "ar" active in this thread
+        self.client.cookies["django_language"] = "ar"
+        resp = self.client.get(reverse("employees:employee_list"), follow=True)
+        self.assertContains(resp, 'hx-confirm="تشغيل استحقاق الرواتب للشهر المحدد؟"')
+        resp = self.client.get(reverse("employees:employee_create"), follow=True)
+        self.assertContains(resp, ">اختر…<")
