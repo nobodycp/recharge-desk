@@ -251,6 +251,69 @@ def _already_optimized(storage, name: str, max_size: int = DEFAULT_MAX_SIZE) -> 
     return max(width, height) <= max_size
 
 
+DARK_LOGO_SUFFIX = ".dark" + WEBP_EXTENSION
+
+
+def dark_logo_variant(img):
+    """
+    Return a copy of *img* readable on the dark theme with no backing plate.
+
+    Neutral pixels (black / grey / white ink) are lifted into a silver
+    range that keeps their order, so glossy black lettering turns to
+    chrome with its highlights still brightest. Coloured pixels (brand
+    reds, golds, …) and alpha are left exactly as uploaded.
+    """
+    from PIL import Image
+
+    img = img.convert("RGBA")
+    out = []
+    for r, g, b, a in img.getdata():
+        if a:
+            high, low = max(r, g, b), min(r, g, b)
+            chroma = high - low
+            # Very dark pixels with only a faint tint are anti-aliased ink
+            # edges; leaving them dark would fringe the lifted lettering.
+            if chroma < 0.3 * high or (high < 50 and chroma < 18):
+                tone = min(255, int(150 + (r + g + b) / 3 * 0.42))
+                r = g = b = tone
+        out.append((r, g, b, a))
+    result = Image.new("RGBA", img.size)
+    result.putdata(out)
+    return result
+
+
+def dark_logo_name(name: str) -> str:
+    stem, _ = os.path.splitext(name)
+    return stem + DARK_LOGO_SUFFIX
+
+
+def ensure_dark_logo(field_file) -> Optional[str]:
+    """
+    URL of the dark-theme copy of *field_file*, building it on first use.
+
+    The copy lives next to the logo (``<stem>.dark.webp``) so a new upload
+    gets a fresh copy. Returns ``None`` when the logo can't be read; the
+    caller then shows the original.
+    """
+    if not field_file or not getattr(field_file, "name", ""):
+        return None
+    storage = field_file.storage
+    target = dark_logo_name(field_file.name)
+    if not storage.exists(target):
+        try:
+            from PIL import Image
+
+            with storage.open(field_file.name, "rb") as src, Image.open(src) as img:
+                dark = dark_logo_variant(img)
+            buffer = io.BytesIO()
+            dark.save(buffer, format="WEBP", quality=DEFAULT_QUALITY, method=6)
+        except Exception as exc:  # noqa: BLE001 — Pillow raises a wide variety
+            logger.warning("Could not build dark logo for %r: %s", field_file.name, exc)
+            return None
+        storage.save(target, ContentFile(buffer.getvalue()))
+    return storage.url(target)
+
+
 def maybe_optimize_image_field(
     instance,
     field_name: str = "icon",

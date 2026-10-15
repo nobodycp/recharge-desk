@@ -2,7 +2,7 @@ from django.core.cache import cache
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from core.image_utils import maybe_optimize_image_field
+from core.image_utils import ensure_dark_logo, maybe_optimize_image_field
 
 SITE_BRANDING_CACHE_KEY = "core:site_branding:singleton"
 # Short TTL keeps the public login page off the DB while accepting that
@@ -99,11 +99,20 @@ class SiteBranding(models.Model):
         )
         super().save(*args, **kwargs)
         cache.delete(SITE_BRANDING_CACHE_KEY)
+        if self.logo:
+            ensure_dark_logo(self.logo)
 
     def delete(self, *args, **kwargs):
         result = super().delete(*args, **kwargs)
         cache.delete(SITE_BRANDING_CACHE_KEY)
         return result
+
+    @property
+    def logo_dark_url(self):
+        """Dark-theme copy of the logo (black ink lifted to silver), or None."""
+        if not self.logo:
+            return None
+        return ensure_dark_logo(self.logo)
 
     @classmethod
     def load(cls) -> "SiteBranding":

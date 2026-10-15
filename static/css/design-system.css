@@ -604,14 +604,11 @@ html[lang="ar"] .rd-sidebar-brand-name {
   object-fit: contain;
 }
 
-/* Brand logos are drawn for light paper; in dark give them a soft light
-   plate instead of recolouring the image. */
-[data-bs-theme="dark"] .rd-sidebar-brand-logo {
-  box-sizing: border-box;
-  max-height: 3.6rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--rd-radius-sm);
-  background: color-mix(in srgb, var(--rd-ink) 90%, var(--rd-surface));
+/* Both themes show the logo with no plate. Dark uses a server-built copy
+   whose black ink is lifted to silver (SiteBranding.logo_dark_url). */
+[data-bs-theme="dark"] .rd-sidebar-brand-logo--light,
+:root:not([data-bs-theme="dark"]) .rd-sidebar-brand-logo--dark {
+  display: none;
 }
 
 /* Tighten the surrounding chrome when the brand is just a logo so the

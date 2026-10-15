@@ -30,7 +30,10 @@
     <aside class="rd-sidebar" data-rd-nav-panel id="rd-sidebar">
       <a class="rd-sidebar-brand{% if site_branding.logo %} rd-sidebar-brand--logo{% endif %}" href="{% url 'reports:dashboard' %}">
         {% if site_branding.logo %}
-          <img class="rd-sidebar-brand-logo" src="{{ site_branding.logo.url }}" alt="{{ site_name }}">
+          <img class="rd-sidebar-brand-logo rd-sidebar-brand-logo--light" src="{{ site_branding.logo.url }}" alt="{{ site_name }}">
+          {% with dark_logo=site_branding.logo_dark_url %}
+            <img class="rd-sidebar-brand-logo rd-sidebar-brand-logo--dark" src="{{ dark_logo|default:site_branding.logo.url }}" alt="{{ site_name }}">
+          {% endwith %}
         {% else %}
           <span class="rd-sidebar-brand-mark">{{ site_name|slice:":1" }}</span>
           <span class="rd-sidebar-brand-text">
