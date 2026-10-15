@@ -175,15 +175,11 @@
 
 /* ---- card ---------------------------------------------------------------- */
 
-/* The hero is a dark plate in both themes: ink in light, surface-2 in dark.
-   Status tones on it therefore use the "on dark" variant of each theme. */
+/* Head (logo · number · status), plan, two time boxes, usage rows, then the
+   screen-only footer (price, ICCID) and the share button. The share image is
+   drawn in JS from the same data (number-check-share.js), never from this DOM. */
 .rd-ncheck {
-  --nc-hero-bg: var(--rd-primary-bg);
-  --nc-hero-fg: var(--rd-primary-fg);
-  --nc-glow: color-mix(in srgb, var(--rd-accent) 30%, transparent);
-  --nc-ok: var(--rd-success-on-ink);
-  --nc-warn: var(--rd-warning-on-ink);
-  --nc-danger: var(--rd-danger-on-ink);
+  --nc-tone: var(--rd-ink);
   position: relative;
   overflow: hidden;
   border-radius: var(--rd-radius-xl);
@@ -195,13 +191,14 @@
   animation: rd-ncheck-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-[data-bs-theme="dark"] .rd-ncheck {
-  --nc-hero-bg: var(--rd-surface-2);
-  --nc-hero-fg: var(--rd-ink);
-  --nc-ok: var(--rd-success);
-  --nc-warn: var(--rd-warning);
-  --nc-danger: var(--rd-danger);
-}
+/* Network identity tint for the monogram tile (identity tones, never status). */
+.rd-ncheck--cellcom { --nc-tone: var(--rd-tone-1); }
+.rd-ncheck--pelephone { --nc-tone: var(--rd-tone-2); }
+.rd-ncheck--partner { --nc-tone: var(--rd-tone-3); }
+.rd-ncheck--hot { --nc-tone: var(--rd-tone-4); }
+.rd-ncheck--golan { --nc-tone: var(--rd-tone-5); }
+.rd-ncheck--jawwal { --nc-tone: var(--rd-tone-6); }
+.rd-ncheck--ooredoo { --nc-tone: var(--rd-tone-2); }
 
 .rd-ncheck__icon {
   flex: none;
@@ -214,192 +211,181 @@
   stroke-linejoin: round;
 }
 
-/* ---- hero ---------------------------------------------------------------- */
-
-.rd-ncheck__hero {
-  position: relative;
-  isolation: isolate;
-  padding: 1rem 1.1rem 1.15rem;
-  color: var(--nc-hero-fg);
-  background:
-    radial-gradient(110% 130% at 0% 0%, var(--nc-glow) 0%, transparent 55%),
-    radial-gradient(80% 120% at 100% 100%, rgba(255, 255, 255, 0.08) 0%, transparent 60%),
-    var(--nc-hero-bg);
+.rd-ncheck__icon--lg {
+  width: 1.3rem;
+  height: 1.3rem;
 }
 
-.rd-ncheck__hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    120deg,
-    rgba(255, 255, 255, 0.045) 0 1px,
-    transparent 1px 13px
-  );
-  mask-image: linear-gradient(to left, black, transparent 75%);
-}
+/* ---- head ---------------------------------------------------------------- */
 
-.rd-ncheck__hero-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.rd-ncheck__tags {
+.rd-ncheck__head {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1rem 0.7rem;
 }
 
-.rd-ncheck__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.22rem 0.65rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.4;
+/* A light tile in both themes: uploaded logos are drawn for a light ground. */
+.rd-ncheck__logo {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 3.4rem;
+  block-size: 3.4rem;
+  padding: 0.35rem;
+  overflow: hidden;
+  border-radius: 0.8rem;
+  border: 1px solid var(--bs-border-color);
+  background: var(--rd-hero-plate);
+}
+
+.rd-ncheck__logo-img {
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  object-fit: contain;
+}
+
+.rd-ncheck__mono {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--nc-tone) 18%, var(--rd-surface));
+  color: var(--rd-ink);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rd-ncheck__id {
+  flex: 1 1 8rem;
+  min-inline-size: 0;
+}
+
+.rd-ncheck__num {
+  font-family: var(--rd-font-num);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  text-align: end;
+  unicode-bidi: isolate;
+}
+
+[dir="rtl"] .rd-ncheck__num { text-align: right; }
+
+.rd-ncheck__meta {
+  color: var(--rd-muted);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.rd-ncheck__dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.65);
+/* Status: dot + text, tone only reinforces it. */
+.rd-ncheck__pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
-.rd-ncheck__status.is-ok .rd-ncheck__dot {
-  background: var(--nc-ok);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--nc-ok) 70%, transparent);
+.rd-ncheck__pill.is-ok { background: var(--rd-success-soft); color: var(--rd-success); }
+.rd-ncheck__pill.is-warn { background: var(--rd-warning-soft); color: var(--rd-warning); }
+
+.rd-ncheck__dot {
+  inline-size: 0.55rem;
+  block-size: 0.55rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rd-ncheck__pill.is-ok .rd-ncheck__dot {
   animation: rd-ncheck-pulse 2s ease-out infinite;
 }
 
-.rd-ncheck__status.is-warn .rd-ncheck__dot { background: var(--nc-warn); }
-
-/* SIM contact plate, purely decorative. */
-.rd-ncheck__chip {
-  position: relative;
-  flex: none;
-  width: 2.4rem;
-  height: 1.8rem;
-  border-radius: 0.4rem;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--nc-hero-fg) 92%, var(--nc-hero-bg)) 0%,
-    color-mix(in srgb, var(--nc-hero-fg) 62%, var(--nc-hero-bg)) 45%,
-    color-mix(in srgb, var(--nc-hero-fg) 82%, var(--nc-hero-bg)) 70%,
-    color-mix(in srgb, var(--nc-hero-fg) 52%, var(--nc-hero-bg)) 100%
-  );
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--nc-hero-bg) 35%, transparent),
-    0 2px 6px rgba(0, 0, 0, 0.25);
-}
-
-.rd-ncheck__chip::before {
-  --nc-chip-line: color-mix(in srgb, var(--nc-hero-bg) 40%, transparent);
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, transparent 31%, var(--nc-chip-line) 31% 34%, transparent 34% 66%, var(--nc-chip-line) 66% 69%, transparent 69%),
-    linear-gradient(0deg, transparent 46%, var(--nc-chip-line) 46% 54%, transparent 54%);
-}
-
-.rd-ncheck__hero-main {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.rd-ncheck__ident { min-width: 0; }
-
-.rd-ncheck__eyebrow {
-  font-size: 0.7rem;
-  font-weight: 600;
-  opacity: 0.72;
-}
-
-.rd-ncheck__network {
-  font-size: 1.65rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
 .rd-ncheck__plan {
-  margin-top: 0.2rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  opacity: 0.92;
+  padding: 0 1rem 0.85rem;
+  font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
 
-/* Days-left countdown. */
-.rd-ncheck__count {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 5.4rem;
-  padding: 0.5rem 0.75rem 0.45rem;
-  border-radius: var(--rd-radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(8px);
-  text-align: center;
-  line-height: 1.2;
+.rd-ncheck__plan b { font-weight: 600; }
+
+/* ---- time boxes ---------------------------------------------------------- */
+
+.rd-ncheck__time {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  padding: 0 1rem 1rem;
 }
 
-.rd-ncheck__count-cap {
-  font-size: 0.68rem;
+.rd-ncheck__box {
+  min-inline-size: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--rd-radius-md);
+  background: var(--rd-surface-2);
+}
+
+.rd-ncheck__box.is-ok { background: var(--rd-success-soft); }
+.rd-ncheck__box.is-warn { background: var(--rd-warning-soft); }
+.rd-ncheck__box.is-danger { background: var(--rd-danger-soft); }
+.rd-ncheck__box--wide { grid-column: 1 / -1; }
+
+.rd-ncheck__box-label {
+  color: var(--rd-muted);
+  font-size: 0.82rem;
+}
+
+.rd-ncheck__big {
+  font-family: var(--rd-font-num);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.rd-ncheck__box.is-ok .rd-ncheck__big { color: var(--rd-success); }
+.rd-ncheck__box.is-warn .rd-ncheck__big { color: var(--rd-warning); }
+.rd-ncheck__box.is-danger .rd-ncheck__big { color: var(--rd-danger); }
+
+.rd-ncheck__big-word {
+  margin-inline-start: 0.3rem;
+  font-family: var(--rd-font-ar);
+  font-size: 1rem;
   font-weight: 600;
-  opacity: 0.8;
 }
 
-.rd-ncheck__count-num {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-}
-
-.rd-ncheck__count-state {
-  padding: 0.35rem 0;
-  font-size: 0.95rem;
+.rd-ncheck__state {
+  font-family: var(--rd-font-ar);
+  font-size: 1.45rem;
   font-weight: 700;
 }
 
-.rd-ncheck__count-date {
-  margin-top: 0.3rem;
-  padding-top: 0.3rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 0.68rem;
-  opacity: 0.85;
-  font-variant-numeric: tabular-nums;
-  direction: ltr;
+.rd-ncheck__date {
+  margin-top: 0.35rem;
+  font-family: var(--rd-font-num);
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: right;
 }
 
-.rd-ncheck__count.is-warn .rd-ncheck__count-num { color: var(--nc-warn); }
+/* ---- usage --------------------------------------------------------------- */
 
-.rd-ncheck__count.is-danger {
-  border-color: color-mix(in srgb, var(--nc-danger) 55%, transparent);
-  background: color-mix(in srgb, var(--nc-danger) 30%, transparent);
+.rd-ncheck__usage {
+  padding: 0.85rem 1rem 1rem;
+  border-top: 1px solid var(--bs-border-color);
 }
-
-/* ---- body ---------------------------------------------------------------- */
-
-.rd-ncheck__body { padding: 1rem 1.1rem 1.1rem; }
 
 .rd-ncheck__section-head {
   display: flex;
@@ -416,12 +402,8 @@
 }
 
 .rd-ncheck__util {
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: var(--rd-accent-muted);
-  color: var(--rd-accent-ink);
-  font-size: 0.72rem;
-  font-weight: 700;
+  color: var(--rd-muted);
+  font-size: 0.82rem;
 }
 
 .rd-ncheck__empty {
@@ -430,119 +412,88 @@
   color: var(--bs-secondary-color);
 }
 
-.rd-ncheck__gauges {
+.rd-ncheck__rows {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin: 0.7rem 0 0;
+  gap: 0.75rem;
+  margin: 0.75rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.rd-ncheck__gauge {
-  --nc-g: var(--rd-accent);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
-  padding: 0.8rem 0.4rem 0.7rem;
-  border-radius: var(--rd-radius-lg);
-  border: 1px solid var(--bs-border-color);
-  background:
-    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--nc-g) 10%, transparent), transparent 70%),
-    var(--bs-tertiary-bg);
-  text-align: center;
-}
-
-.rd-ncheck__gauge--data { --nc-g: var(--rd-ink); }
-.rd-ncheck__gauge--minutes { --nc-g: var(--rd-accent); }
-.rd-ncheck__gauge--sms { --nc-g: var(--rd-muted); }
-.rd-ncheck__gauge.is-warn { --nc-g: var(--rd-warning); }
-.rd-ncheck__gauge.is-danger { --nc-g: var(--rd-danger); }
-
-.rd-ncheck__ring-wrap {
-  position: relative;
-  width: 4.4rem;
-  height: 4.4rem;
-}
-
-.rd-ncheck__ring {
-  display: block;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.rd-ncheck__ring-track,
-.rd-ncheck__ring-fill {
-  fill: none;
-  stroke-width: 3.4;
-}
-
-.rd-ncheck__ring-track { stroke: color-mix(in srgb, var(--nc-g) 16%, transparent); }
-
-.rd-ncheck__ring-fill {
-  stroke: var(--nc-g);
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--nc-g) 45%, transparent));
-  animation: rd-ncheck-ring 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both;
-}
-
-.rd-ncheck__ring-center {
-  position: absolute;
-  inset: 0;
+.rd-ncheck__row {
+  --nc-bar: var(--rd-ink);
   display: grid;
-  place-items: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.rd-ncheck__ring-center small {
-  font-size: 0.62rem;
-  font-weight: 600;
-  opacity: 0.7;
-}
-
-.rd-ncheck__gauge-label {
-  display: inline-flex;
+  grid-template-columns: 3.6rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.3rem;
-  margin-top: 0.15rem;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.92rem;
 }
 
-.rd-ncheck__gauge-label .rd-ncheck__icon { color: var(--nc-g); }
+.rd-ncheck__row.is-warn { --nc-bar: var(--rd-warning); }
+.rd-ncheck__row.is-danger { --nc-bar: var(--rd-danger); }
 
-.rd-ncheck__gauge-value {
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+.rd-ncheck__row-label { font-weight: 600; }
+
+.rd-ncheck__bar {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  inline-size: 100%;
+  block-size: 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rd-surface-2);
+  overflow: hidden;
 }
 
-.rd-ncheck__gauge-total,
-.rd-ncheck__gauge-unit {
-  font-weight: 500;
-  color: var(--bs-secondary-color);
+.rd-ncheck__bar::-webkit-progress-bar {
+  border-radius: 999px;
+  background: var(--rd-surface-2);
 }
 
-.rd-ncheck__gauge-unit { font-size: 0.7rem; }
-
-.rd-ncheck__gauge-left {
-  font-size: 0.7rem;
-  color: var(--bs-secondary-color);
+.rd-ncheck__bar::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--nc-bar);
 }
 
-/* ---- price / ICCID tiles ------------------------------------------------- */
+.rd-ncheck__bar::-moz-progress-bar {
+  border-radius: 999px;
+  background: var(--nc-bar);
+}
+
+.rd-ncheck__row-val {
+  color: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rd-ncheck__row-unit {
+  color: var(--rd-muted);
+  font-family: var(--rd-font-ar);
+  font-weight: 400;
+}
+
+.rd-ncheck__row-meta {
+  grid-column: 2 / -1;
+  color: var(--rd-muted);
+  font-size: 0.75rem;
+}
+
+.rd-ncheck__row-off {
+  grid-column: 2 / -1;
+  color: var(--rd-muted);
+  font-size: 0.85rem;
+}
+
+/* ---- price / ICCID tiles (screen only) ----------------------------------- */
 
 .rd-ncheck__tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
-  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--bs-border-color);
 }
 
 .rd-ncheck__tile {
@@ -566,11 +517,11 @@
 }
 
 .rd-ncheck__price {
+  font-family: var(--rd-font-num);
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1.2;
   color: var(--rd-success);
-  font-variant-numeric: tabular-nums;
 }
 
 .rd-ncheck__price.is-empty { color: var(--bs-secondary-color); }
@@ -588,8 +539,8 @@
 }
 
 .rd-ncheck__iccid {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.8rem;
+  font-family: var(--rd-font-num);
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: right;
@@ -599,14 +550,16 @@
 .rd-ncheck__copy {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.3rem;
-  margin-top: 0.5rem;
-  padding: 0.22rem 0.7rem;
+  min-block-size: 3.45rem;
+  margin-top: 0.3rem;
+  padding: 0.22rem 0.9rem;
   border-radius: 999px;
   border: 1px solid var(--bs-border-color);
   background: var(--bs-tertiary-bg);
   color: var(--bs-body-color);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 600;
   transition: border-color var(--rd-transition-fast), color var(--rd-transition-fast);
 }
@@ -620,6 +573,22 @@
 .rd-ncheck__copy.is-done {
   border-color: var(--rd-success);
   color: var(--rd-success);
+}
+
+/* ---- share --------------------------------------------------------------- */
+
+.rd-ncheck__actions { padding: 0 1rem 1rem; }
+
+.rd-ncheck__share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  inline-size: 100%;
+  min-block-size: 3.45rem;
+  border-radius: var(--rd-radius-md);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 /* ---- loading skeleton ---------------------------------------------------- */
@@ -644,7 +613,7 @@
   animation: rd-ncheck-shimmer 1.2s linear infinite;
 }
 
-.rd-ncheck-skel__hero { height: 8.5rem; }
+.rd-ncheck-skel__hero { height: 6rem; }
 
 .rd-ncheck-skel__row {
   display: grid;
@@ -667,11 +636,8 @@
   from { opacity: 0; transform: translateY(8px); }
 }
 
-@keyframes rd-ncheck-ring {
-  from { stroke-dashoffset: 100; }
-}
-
 @keyframes rd-ncheck-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); }
   70% { box-shadow: 0 0 0 6px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
@@ -681,8 +647,6 @@
 }
 
 @media (max-width: 360px) {
-  .rd-ncheck__gauges { gap: 0.4rem; }
-  .rd-ncheck__ring-wrap { width: 3.8rem; height: 3.8rem; }
   .rd-ncheck__tiles { grid-template-columns: 1fr; }
 }
 
@@ -690,8 +654,7 @@
   .rd-ncheck,
   .rd-ncheck-slot.is-error,
   .rd-ncheck-form .rd-refresh-result,
-  .rd-ncheck__ring-fill,
-  .rd-ncheck__status.is-ok .rd-ncheck__dot,
+  .rd-ncheck__pill.is-ok .rd-ncheck__dot,
   .rd-ncheck-skel__hero,
   .rd-ncheck-skel__row span {
     animation: none;

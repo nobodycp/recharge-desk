@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
 import re
 import uuid
@@ -32,8 +33,12 @@ from sales.services import create_sale
 User = get_user_model()
 
 PHONE = "0525737739"
+PHONE_DISPLAY = "052-573-7739"
 TODAY = dt.date(2026, 10, 14)
 TZ_PLUS_2 = dt.timezone(dt.timedelta(hours=2))
+# "Now" for every check in this module: the card counts days from today, so the
+# tests must not depend on the real date (nor on the minute, which could print "29").
+NOW = dt.datetime(2026, 10, 14, 12, 5, tzinfo=TZ_PLUS_2)
 # Sky's own price: must never reach the browser. The rest of the fixture data
 # is chosen so that "29" does not appear anywhere else in the card.
 SKY_PRICE = Decimal("29")
@@ -60,6 +65,23 @@ NOT_AVAILABLE = "فحص الرقم غير متاح لهذا المزوّد"
 EXPIRED = "انتهت صلاحية الطلب، أعد المحاولة."
 STILL_RUNNING = "الطلب ما زال قيد المعالجة، حاول بعد دقيقة"
 BUSY = "الخدمة مشغولة حالياً، حاول بعد قليل"
+
+
+SHARE_RE = re.compile(
+    r'<script id="rd-ncheck-share-data" type="application/json">(.*?)</script>', re.S
+)
+
+
+def _share_json(html):
+    """The decoded payload of the card's ``json_script`` (what the image is drawn from)."""
+    match = SHARE_RE.search(html)
+    assert match, "card has no share data"
+    return json.loads(match.group(1))
+
+
+def _visible(html):
+    """The card markup without the (``\\uXXXX``-escaped) share payload."""
+    return SHARE_RE.sub("", html)
 
 
 def _save_credentials(key="sky"):
@@ -103,6 +125,9 @@ class _Base(TestCase):
         patcher = patch.object(SkyAdapter, "number_info", return_value=INFO)
         self.adapter_call = patcher.start()
         self.addCleanup(patcher.stop)
+        clock = patch.object(number_check, "_now", return_value=NOW)
+        clock.start()
+        self.addCleanup(clock.stop)
 
     def make_sale(self, phone=PHONE, company=None, product=None, when=None):
         sale = create_sale(
@@ -271,7 +296,8 @@ class HappyPathTests(_Base):
             "مفعل",
             "حملة رمضان 400 جيجا سلكوم",
             "13/11/2026",
-            '<span class="rd-ncheck__count-num">30</span>',
+            '<span class="rd-ncheck__big-num">30</span>',
+            PHONE_DISPLAY,
             "إنترنت: 6.08 من 400 جيجا",
             "1.5%",
             ICCID,
@@ -287,6 +313,22 @@ class HappyPathTests(_Base):
         self.assertEqual(row.user_id, self.emp.pk)
         self.assertEqual(row.sale_id, sale.pk)
         self.adapter_call.assert_called_once_with(PHONE)
+
+    def test_check_payload_passes_the_phone_and_branding_to_the_card(self):
+        from django.core.cache import cache
+        from core.models import SiteBranding
+
+        SiteBranding.objects.update_or_create(pk=1, defaults={"site_name": "Acme Sim"})
+        cache.clear()
+        self.addCleanup(cache.clear)
+        self.make_sale()
+        _, status = self.run_check()
+        html = status.json()["html"]
+        share = _share_json(html)
+        self.assertEqual(share["phone_display"], PHONE_DISPLAY)
+        self.assertRegex(share["checked_at"], r"^14/10/2026 · \d\d:05$")
+        self.assertIn('data-site-name="Acme Sim"', html)
+        self.assertIn('data-site-logo=""', html)
 
     def test_management_check_is_recorded_as_management(self):
         self.make_sale()
@@ -315,7 +357,8 @@ class HappyPathTests(_Base):
         # so check the decoded card text: Sky's 29 appears nowhere in it, and our
         # own price shows as 60.
         html = status.json()["html"]
-        self.assertNotIn("29", html)
+        self.assertNotIn("29", _visible(html))
+        self.assertNotIn("29", json.dumps(_share_json(html), ensure_ascii=False))
         self.assertNotIn("plan_price", html)
         self.assertNotIn("₪29", html)
         self.assertNotIn("29 ₪", html)
@@ -511,12 +554,25 @@ class CardContextTests(_Base):
         self.product.default_sell_price = Decimal(price)
         return Sale(product=self.product, company=self.company, created_at=created)
 
-    def ctx(self, info=INFO, sale=None, today=TODAY):
-        return card_context(info, sale, today)
+    def ctx(self, info=INFO, sale=None, today=TODAY, phone=PHONE, now=NOW):
+        return card_context(info, sale, today, phone=phone, now=now)
 
-    def card(self, info=INFO, sale="default"):
+    def card(self, info=INFO, sale="default", **kwargs):
         sale = self.sale() if sale == "default" else sale
-        return render_to_string("sales/partials/number_check_card.html", self.ctx(info, sale))
+        return render_to_string(
+            "sales/partials/number_check_card.html", self.ctx(info, sale, **kwargs)
+        )
+
+    def line_with_icon(self, name, icon="icons/product_lines/x.webp", company=None):
+        # Created first and given the icon by update: saving an ImageField would
+        # try to optimise a real file.
+        company = company or Company.objects.create(
+            name=f"Co {name}", opening_balance=1, current_balance=1
+        )
+        line = ProductLine.objects.create(company=company, name=name)
+        ProductLine.objects.filter(pk=line.pk).update(icon=icon)
+        line.refresh_from_db()
+        return line
 
     def test_full_row_matches_the_spec(self):
         ctx = self.ctx(sale=self.sale())
@@ -537,6 +593,8 @@ class CardContextTests(_Base):
         self.assertEqual(
             ctx["sale"], {"price": "60", "product": "سلكوم — رمضان", "date": "14/10/2026"}
         )
+        self.assertEqual(ctx["phone"], PHONE)
+        self.assertEqual(ctx["phone_display"], PHONE_DISPLAY)
 
     def test_gauges_carry_used_total_percent_and_remaining(self):
         data, minutes, sms = self.ctx()["usage"]
@@ -671,21 +729,237 @@ class CardContextTests(_Base):
             f'data-copy="{ICCID}"',
         ):
             self.assertIn(text, html, text)
-        self.assertRegex(html, r'class="rd-ncheck__count-num">\s*30\s*<')
+        self.assertIn('<span class="rd-ncheck__big-num">30</span>', html)
         self.assertRegex(html, r"<bdi>60</bdi>")
-        self.assertEqual(html.count('class="rd-ncheck__gauge '), 3)
-        self.assertIn('stroke-dashoffset="98.48"', html)
-        self.assertEqual(html.count("rd-ncheck__ring-fill"), 1)
+        self.assertEqual(html.count('class="rd-ncheck__row '), 3)
+        self.assertEqual(html.count("<progress "), 3)
+        self.assertIn('value="1.5"', html)
 
     def test_card_has_no_inline_style(self):
         self.assertNotIn("style=", self.card())
 
     def test_card_never_mentions_the_provider_price(self):
-        html = render_to_string(
-            "sales/partials/number_check_card.html", self.ctx(INFO, self.sale())
-        )
-        self.assertNotIn("29", html)
+        html = self.card()
+        self.assertNotIn("29", _visible(html))
+        self.assertNotIn("29", json.dumps(_share_json(html), ensure_ascii=False))
         self.assertNotIn("plan_price", html)
+
+    # --- phone, line logo, share payload -----------------------------------
+
+    def test_phone_is_grouped_three_three_four(self):
+        self.assertEqual(self.ctx(phone="0525737739")["phone_display"], "052-573-7739")
+
+    def test_phone_that_is_not_ten_digits_is_shown_as_is(self):
+        self.assertEqual(self.ctx(phone="12345")["phone_display"], "12345")
+        self.assertEqual(self.ctx(phone="+972525737739")["phone_display"], "+972525737739")
+        self.assertEqual(self.ctx(phone="")["phone_display"], "")
+
+    def test_phone_defaults_to_empty(self):
+        ctx = card_context(INFO, None, TODAY)
+        self.assertEqual((ctx["phone"], ctx["phone_display"], ctx["share"]["checked_at"]), ("", "", ""))
+
+    def test_line_logo_comes_from_the_sale_product_line_without_a_query(self):
+        line = self.line_with_icon("سلكوم 2", icon="icons/product_lines/own.webp")
+        product = Product.objects.create(
+            line=line, cost_price=Decimal("5"), default_sell_price=Decimal("60")
+        )
+        sale = Sale(product=product, company=self.company, created_at=NOW)
+        with self.assertNumQueries(0):
+            ctx = self.ctx(sale=sale)
+        self.assertTrue(ctx["line_logo"].endswith("icons/product_lines/own.webp"), ctx["line_logo"])
+        self.assertEqual(ctx["line_name"], "سلكوم 2")
+        self.assertEqual(ctx["share"]["line_logo"], ctx["line_logo"])
+
+    def test_line_logo_falls_back_to_a_line_matching_the_network_name(self):
+        self.line_with_icon("سلكوم", icon="icons/product_lines/cellcom.webp")
+        with self.assertNumQueries(1):
+            ctx = self.ctx(sale=None)
+        self.assertTrue(ctx["line_logo"].endswith("icons/product_lines/cellcom.webp"))
+        self.assertEqual(ctx["line_name"], "سلكوم")
+
+    def test_fallback_runs_when_the_sale_line_has_no_icon(self):
+        self.line_with_icon("سلكوم", icon="icons/product_lines/other.webp")
+        ctx = self.ctx(sale=self.sale())  # self.product's line has no icon
+        self.assertTrue(ctx["line_logo"].endswith("icons/product_lines/other.webp"))
+
+    def test_fallback_matches_by_network_tone_ignoring_spaces_and_hyphens(self):
+        self.line_with_icon("Cell-com 019", icon="icons/product_lines/c.webp")
+        self.assertTrue(self.ctx(NumberInfo(network="سلكوم"))["line_logo"].endswith("c.webp"))
+
+    def test_fallback_matches_by_name_containment(self):
+        self.line_with_icon("مزود جديد - باقات", icon="icons/product_lines/n.webp")
+        self.assertTrue(self.ctx(NumberInfo(network="مزود  جديد"))["line_logo"].endswith("n.webp"))
+
+    def test_fallback_ignores_lines_without_an_icon_and_other_networks(self):
+        ProductLine.objects.create(company=self.company, name="سلكوم 2")
+        self.line_with_icon("هوت", icon="icons/product_lines/hot.webp")
+        ctx = self.ctx(sale=None)
+        self.assertEqual((ctx["line_logo"], ctx["line_name"]), ("", ""))
+
+    def test_no_network_means_no_logo_and_no_query(self):
+        self.line_with_icon("سلكوم")
+        with self.assertNumQueries(0):
+            ctx = self.ctx(NumberInfo(), sale=None)
+        self.assertEqual(ctx["line_logo"], "")
+
+    def test_share_holds_only_customer_facing_values(self):
+        sale = self.sale("77.5", created=dt.datetime(2026, 9, 1, 9, 0, tzinfo=TZ_PLUS_2))
+        share = self.ctx(sale=sale)["share"]
+        self.assertEqual(
+            set(share),
+            {
+                "phone_display", "network", "sim_type", "status", "status_tone", "plan_name",
+                "expiry", "usage", "utilization", "line_logo", "checked_at",
+            },
+        )
+        self.assertEqual(share["phone_display"], PHONE_DISPLAY)
+        self.assertEqual((share["network"], share["sim_type"]), ("سلكوم", "شريحة إلكترونية"))
+        self.assertEqual((share["status"], share["status_tone"]), ("مفعل", "ok"))
+        self.assertEqual(share["plan_name"], "حملة رمضان 400 جيجا سلكوم")
+        self.assertEqual(share["expiry"], self.ctx()["expiry"])
+        self.assertEqual(share["utilization"], "1.5")
+        self.assertEqual(share["checked_at"], timezone.localtime(NOW).strftime("%d/%m/%Y · %H:%M"))
+        self.assertRegex(share["checked_at"], r"^14/10/2026 · \d\d:05$")
+        self.assertEqual(
+            share["usage"][0],
+            {"label": "إنترنت", "used": "6.08", "total": "400", "unit": "جيجا", "pct": "1.5", "included": True},
+        )
+        self.assertEqual(len(share["usage"]), 3)
+        text = json.dumps(share, ensure_ascii=False)
+        for secret in ("77.5", ICCID, "8997", "سلكوم — رمضان", "01/09/2026", "plan_price", "iccid", "price", "sale", "product", "29"):
+            self.assertNotIn(secret, text, secret)
+
+    def test_share_payload_in_the_card_has_no_price_iccid_or_sale(self):
+        sale = self.sale("77.5", created=dt.datetime(2026, 9, 1, 9, 0, tzinfo=TZ_PLUS_2))
+        html = self.card(sale=sale)
+        payload = SHARE_RE.search(html).group(1)
+        for secret in ("77.5", ICCID, "8997", "01/09/2026", "plan_price", "iccid"):
+            self.assertNotIn(secret, payload, secret)
+        self.assertNotIn("سلكوم — رمضان", json.dumps(_share_json(html), ensure_ascii=False))
+
+    # --- card markup -----------------------------------------------------------
+
+    def test_number_is_shown_ltr_and_grouped(self):
+        self.assertIn(f'<div class="rd-ncheck__num tabular-nums" dir="ltr">{PHONE_DISPLAY}</div>', self.card())
+
+    def test_head_shows_network_and_sim_type_under_the_number(self):
+        self.assertIn("سلكوم · شريحة إلكترونية", self.card())
+
+    def test_line_logo_is_an_img_with_alt(self):
+        self.line_with_icon("سلكوم", icon="icons/product_lines/cellcom.webp")
+        html = self.card(sale=None)
+        self.assertRegex(html, r'<img class="rd-ncheck__logo-img" src="[^"]*cellcom\.webp" alt="سلكوم"')
+        self.assertNotIn("rd-ncheck__mono", html)
+
+    def test_monogram_tile_when_there_is_no_logo(self):
+        html = self.card(sale=None)
+        self.assertNotIn("<img", html)
+        self.assertRegex(html, r'<span class="rd-ncheck__mono" aria-hidden="true">س</span>')
+
+    def test_monogram_without_a_network_is_a_dash(self):
+        self.assertRegex(self.card(NumberInfo(), sale=None), r'rd-ncheck__mono" aria-hidden="true">—<')
+
+    def test_status_pill_has_dot_text_and_tone(self):
+        html = self.card()
+        self.assertRegex(html, r'<span class="rd-ncheck__pill is-ok"[^>]*>\s*<span class="rd-ncheck__dot" aria-hidden="true"></span>\s*مفعل\s*</span>')
+        warn = self.card(NumberInfo(status="موقوف"))
+        self.assertIn("rd-ncheck__pill is-warn", warn)
+        self.assertIn("rd-ncheck__pill is-muted", self.card(NumberInfo()))
+
+    def test_plan_line(self):
+        self.assertRegex(self.card(), r"الحزمة: <b>حملة رمضان 400 جيجا سلكوم</b>")
+
+    def test_days_box_shows_the_count_the_word_and_the_ltr_end_date(self):
+        html = self.card()
+        self.assertRegex(html, r'rd-ncheck__box is-ok[^>]*>\s*<div class="rd-ncheck__box-label">الأيام المتبقية</div>')
+        self.assertIn('<span class="rd-ncheck__big-num">30</span><span class="rd-ncheck__big-word">يوم</span>', html)
+        self.assertIn('<div class="rd-ncheck__date tabular-nums" dir="ltr">13/11/2026</div>', html)
+
+    def test_days_box_tone_follows_the_expiry(self):
+        def box(day):
+            ends = dt.datetime(2026, 10, day, 12, 0, tzinfo=TZ_PLUS_2)
+            return self.card(NumberInfo(ends_at=ends))
+        self.assertIn("rd-ncheck__box is-danger", box(15))
+        self.assertIn("rd-ncheck__box is-warn", box(19))
+
+    def test_expired_card_shows_the_state_instead_of_a_count(self):
+        ends = dt.datetime(2026, 10, 1, 12, 0, tzinfo=TZ_PLUS_2)
+        html = self.card(NumberInfo(ends_at=ends))
+        self.assertIn('<span class="rd-ncheck__state">منتهية</span>', html)
+        self.assertIn("rd-ncheck__box is-danger", html)
+        self.assertNotIn("rd-ncheck__big-num", html)
+        self.assertIn(">01/10/2026<", html)
+
+    def test_expiring_today_card_shows_the_state(self):
+        ends = dt.datetime(2026, 10, 14, 12, 0, tzinfo=TZ_PLUS_2)
+        html = self.card(NumberInfo(ends_at=ends))
+        self.assertIn('<span class="rd-ncheck__state">تنتهي اليوم</span>', html)
+        self.assertIn(">14/10/2026<", html)
+
+    def test_no_expiry_shows_one_muted_box(self):
+        html = self.card(NumberInfo())
+        self.assertEqual(html.count("rd-ncheck__box "), 1)
+        self.assertIn("rd-ncheck__box is-muted", html)
+        self.assertIn("لا يوجد تاريخ انتهاء", html)
+        self.assertNotIn("الأيام المتبقية", html)
+
+    def test_usage_rows_show_value_remaining_and_percent(self):
+        html = self.card()
+        self.assertIn("<bdi dir=\"ltr\">6.08 / 400</bdi>", html)
+        self.assertIn("جيجا", html)
+        self.assertIn("<bdi dir=\"ltr\">0 / 5000</bdi>", html)
+        self.assertIn("دقيقة", html)
+        self.assertIn("رسالة", html)
+        self.assertIn("متبقي <bdi dir=\"ltr\">393.92</bdi>", html)
+        self.assertIn("متبقي <bdi dir=\"ltr\">5000</bdi>", html)
+        self.assertIn("<bdi dir=\"ltr\">1.5%</bdi>", html)  # row pct and the utilization line
+        self.assertIn("نسبة الاستخدام", html)
+        self.assertIn('aria-label="إنترنت: 6.08 من 400 جيجا"', html)
+
+    def test_usage_row_without_total_shows_only_the_used_value(self):
+        html = self.card(NumberInfo(data_used_gb=Decimal("1.50")))
+        self.assertIn('<bdi dir="ltr">1.5</bdi>', html)
+        self.assertNotIn("1.5 /", html)
+
+    def test_not_included_row_has_no_bar(self):
+        html = self.card(NumberInfo(sms_used=0, sms_total=0))
+        self.assertIn("غير مشمولة بالحزمة", html)
+        self.assertEqual(html.count("<progress "), 0)
+
+    def test_footer_keeps_price_product_date_iccid_and_copy(self):
+        html = self.card()
+        for text in ("سعر البيع", "<bdi>60</bdi>", "₪", "سلكوم — رمضان", "آخر بيعة 14/10/2026",
+                     "رقم الشريحة", "8997 2012 3456 7890 123", f'data-copy="{ICCID}"',
+                     'data-done-label="تم النسخ"'):
+            self.assertIn(text, html, text)
+
+    def test_footer_without_a_sale(self):
+        html = self.card(sale=None)
+        self.assertIn("لا توجد بيعة سابقة لهذا الرقم", html)
+        self.assertNotIn("<bdi>60</bdi>", html)
+
+    def test_share_button_and_data(self):
+        html = self.card()
+        self.assertRegex(html, r'<button type="button" class="btn btn-primary rd-ncheck__share" data-rd-share-check>')
+        self.assertIn("مشاركة كصورة", html)
+        self.assertIn('data-rd-share-label', html)
+        self.assertEqual(html.count('id="rd-ncheck-share-data"'), 1)
+        self.assertEqual(_share_json(html)["phone_display"], PHONE_DISPLAY)
+
+    def test_price_and_iccid_are_outside_the_share_payload(self):
+        html = self.card()
+        payload = SHARE_RE.search(html).group(1)
+        self.assertIn("<bdi>60</bdi>", _visible(html))
+        for secret in ("60", ICCID, "8997 2012", "سلكوم — رمضان"):
+            self.assertNotIn(secret, payload, secret)
+
+    def test_card_exposes_site_branding_for_the_image(self):
+        html = render_to_string(
+            "sales/partials/number_check_card.html",
+            {**self.ctx(), "site_logo": "/media/branding/logo.webp", "site_name": "Pro Sim"},
+        )
+        self.assertIn('data-site-logo="/media/branding/logo.webp"', html)
+        self.assertIn('data-site-name="Pro Sim"', html)
 
     def test_helper_module_does_not_leak_info_fields(self):
         self.assertNotIn("plan_price", self.ctx(INFO, self.sale()))

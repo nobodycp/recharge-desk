@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -24,6 +24,7 @@ from django.utils import timezone
 from redis.exceptions import LockError
 
 from accounts.permissions import is_management
+from companies.models import ProductLine
 from phone_refresh.models import SystemSettings
 from phone_refresh.validation import PHONE_RE
 from providers import jobs, operations
@@ -63,6 +64,11 @@ class CheckTicket:
 
     job_id: str | None
     payload: dict | None
+
+
+def _now() -> datetime:
+    """Current local time (one seam, so the card's "today" can be pinned in tests)."""
+    return timezone.localtime()
 
 
 def _error(message: str, **extra) -> dict:
@@ -216,7 +222,9 @@ def check_payload(job_id: str) -> dict:
             message = result.get("message")
             return _error(message) if message else _error(MSG_EXPIRED)
         info = NumberInfo.from_dict(result["info"])
-        context = card_context(info, _job_sale(job), timezone.localdate())
+        now = _now()
+        context = card_context(info, _job_sale(job), now.date(), phone=job.phone, now=now)
+        context.update(_branding())
         return {"status": "ok", "html": render_to_string(CARD_TEMPLATE, context)}
 
     age = (timezone.now() - job.created_at).total_seconds()
@@ -226,6 +234,22 @@ def check_payload(job_id: str) -> dict:
 
 
 # --- card -----------------------------------------------------------------
+
+DEFAULT_SITE_NAME = "Pro Sim"
+
+
+def _branding() -> dict:
+    """Site logo (light variant) and name for the share image's header and footer."""
+    try:
+        from core.models import SiteBranding
+
+        branding = SiteBranding.load()
+        logo = branding.logo.url if branding.logo else ""
+        name = (branding.site_name or "").strip()
+    except Exception:  # noqa: BLE001 — branding must never break a result card
+        logo, name = "", ""
+    return {"site_logo": logo, "site_name": name or DEFAULT_SITE_NAME}
+
 
 # Keyword (lower-case) -> brand tone class of the card header.
 _NETWORK_TONES = (
@@ -358,15 +382,91 @@ def _sale(sale: Sale | None) -> dict | None:
     }
 
 
-def card_context(info: NumberInfo, sale: Sale | None, today: date) -> dict:
-    """Display values for the card partial (pure; never includes ``plan_price``)."""
+def _phone_display(phone: str) -> str:
+    """``0521234567`` -> ``052-123-4567``; anything else is shown as typed."""
+    if len(phone) == 10 and phone.isascii() and phone.isdigit():
+        return f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
+    return phone
+
+
+MIN_CONTAINED_NAME = 3  # shorter names are too ambiguous to match by containment
+
+
+def _normalise_line_name(text: str) -> str:
+    return "".join(ch for ch in (text or "").lower() if ch not in " -_\u00a0")
+
+
+def _line_matches(network: str, line_name: str) -> bool:
+    """A line belongs to ``network`` by brand keyword or by name containment."""
+    a, b = _normalise_line_name(network), _normalise_line_name(line_name)
+    if not a or not b:
+        return False
+    tone = _network_tone(a)
+    if tone != "default" and tone == _network_tone(b):
+        return True
+    shorter, longer = sorted((a, b), key=len)
+    return len(shorter) >= MIN_CONTAINED_NAME and shorter in longer
+
+
+def _line_logo(sale: Sale | None, network: str) -> tuple[str, str]:
+    """(logo URL, line name): the last sale's line icon, else a line matching the network."""
+    product = sale.product if sale is not None else None
+    line = product.line if product is not None else None
+    if line is not None and line.icon:
+        return line.icon.url, line.name
+    if not network:
+        return "", ""
+    candidates = (
+        ProductLine.objects.exclude(icon__isnull=True)
+        .exclude(icon="")
+        .order_by("sort_order", "pk")
+    )
+    for candidate in candidates:
+        if _line_matches(network, candidate.name):
+            return candidate.icon.url, candidate.name
+    return "", ""
+
+
+def _share(ctx: dict) -> dict:
+    """What the shared image may show: customer facts only, never price, ICCID or sale."""
+    return {
+        "phone_display": ctx["phone_display"],
+        "network": ctx["network"],
+        "sim_type": ctx["sim_type"],
+        "status": ctx["status"],
+        "status_tone": ctx["status_tone"],
+        "plan_name": ctx["plan_name"],
+        "expiry": ctx["expiry"],
+        "usage": [
+            {key: g[key] for key in ("label", "used", "total", "unit", "pct", "included")}
+            for g in ctx["usage"]
+        ],
+        "utilization": ctx["utilization"],
+        "line_logo": ctx["line_logo"],
+        "checked_at": ctx["checked_at"],
+    }
+
+
+def card_context(
+    info: NumberInfo, sale: Sale | None, today: date, phone: str = "", now=None
+) -> dict:
+    """Display values for the card partial (never includes ``plan_price``).
+
+    ``phone`` is the checked number; ``now`` (aware) stamps the share image.
+    """
     network = (info.network or "").strip()
     status = (info.status or "").strip()
     iccid = (info.iccid or "").strip()
+    phone = (phone or "").strip()
     usage = _usage(info)
-    return {
+    line_logo, line_name = _line_logo(sale, network)
+    ctx = {
+        "phone": phone,
+        "phone_display": _phone_display(phone),
         "network": network,
         "network_tone": _network_tone(network),
+        "line_logo": line_logo,
+        "line_name": line_name,
         "is_esim": info.is_esim,
         "sim_type": "شريحة إلكترونية" if info.is_esim else "شريحة عادية",
         "status": status,
@@ -380,6 +480,7 @@ def card_context(info: NumberInfo, sale: Sale | None, today: date) -> dict:
         "iccid": iccid,
         "iccid_groups": _iccid_groups(iccid),
         "sale": _sale(sale),
+        "checked_at": timezone.localtime(now).strftime("%d/%m/%Y · %H:%M") if now else "",
     }
-
-
+    ctx["share"] = _share(ctx)
+    return ctx
