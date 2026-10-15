@@ -244,6 +244,10 @@ class DashboardSmokeTests(_ReportsBase):
             )
             self.assertRegex(html, rf'class="rd-supplier-amount tabular-nums fw-bold {cls}"')
 
+    def test_customer_debt_total_keeps_expense_colour(self):
+        html = self.client.get(reverse("reports:dashboard")).content.decode()
+        self.assertRegex(html, r'class="rd-stat-value kpi-expense">\s*\d')
+
     def test_chart_bars_when_volume(self):
         self._make_sale(sell=40, paid=True)
         r = self.client.get(reverse("reports:dashboard"))

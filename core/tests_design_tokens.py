@@ -313,6 +313,18 @@ class DesignDocTokenTests(SimpleTestCase):
         self.assertEqual(missing, [], "Add these --rd-* tokens to the DESIGN.md token table")
 
 
+class TopRankColourTests(SimpleTestCase):
+    def test_dashboard_ranks_two_and_three_keep_their_colours(self):
+        for rank, token in ((2, "--rd-accent"), (3, "--rd-faint")):
+            with self.subTest(rank=rank):
+                self.assertRegex(
+                    CSS,
+                    rf"\.rd-top-item--rank-{rank} \.rd-top-rank,\s*"
+                    rf"\.rd-profit-rank__item:nth-child\({rank}\) \.rd-profit-rank__idx\s*\{{"
+                    rf"\s*background: var\({token}\);",
+                )
+
+
 class LightEmptyStateAndSparkTests(SimpleTestCase):
     """Owner ruling U4: no grey wells, full-width sparkline."""
 

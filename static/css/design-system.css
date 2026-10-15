@@ -5161,7 +5161,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   background: var(--rd-surface-2);
 }
 
-/* Rank: neutral numeral chip, #1 filled ink (no extra accent colours). */
+/* Rank chip — ink / accent / faint for the top 3, neutral for the rest. */
 .rd-top-rank {
   display: inline-flex;
   align-items: center;
@@ -5189,12 +5189,14 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   border-color: var(--rd-primary-bg);
 }
 
+.rd-top-item--rank-2 .rd-top-rank,
 .rd-profit-rank__item:nth-child(2) .rd-profit-rank__idx {
   background: var(--rd-accent);
   color: var(--rd-on-accent);
   border-color: var(--rd-accent);
 }
 
+.rd-top-item--rank-3 .rd-top-rank,
 .rd-profit-rank__item:nth-child(3) .rd-profit-rank__idx {
   background: var(--rd-faint);
   color: var(--rd-ink);
