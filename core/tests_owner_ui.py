@@ -92,6 +92,20 @@ class LangToggleTests(TestCase):
         self.assertRegex(topbar, r"min-height:\s*3\.45rem")
         self.assertRegex(topbar, r"min-width:\s*3\.45rem")
 
+    def test_login_toggles_meet_touch_target_on_phones(self):
+        mobile = "\n".join(_media_blocks(_css("login.css"), "max-width: 991.98px"))
+        rules = "\n".join(_find_rules(mobile, ".rd-login-controls .rd-theme-btn"))
+        self.assertRegex(rules, r"min-height:\s*3\.45rem")
+        self.assertRegex(rules, r"min-width:\s*3\.45rem")
+
+    def test_employee_tool_tap_areas_do_not_overlap(self):
+        css = _css("employee.css")
+        tools = "\n".join(_find_rules(css, ".rd-employee-topbar__tools"))
+        after = "\n".join(_find_rules(css, ".rd-employee-topbar__tools .rd-theme-btn::after"))
+        gap = float(re.search(r"gap:\s*([\d.]+)rem", tools).group(1))
+        reach = float(re.search(r"inset:\s*-[\d.]+rem\s+-([\d.]+)rem", after).group(1))
+        self.assertGreaterEqual(gap, 2 * reach)
+
 
 class _Branding:
     def setUp(self):

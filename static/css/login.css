@@ -850,6 +850,11 @@ html:not([lang="ar"]) .rd-login-title {
     display: none;
   }
 
+  .rd-login-controls .rd-theme-btn {
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
   .rd-login-top .rd-theme-btn {
     border-color: color-mix(in srgb, var(--rd-hero-fg) 14%, transparent);
     background: color-mix(in srgb, var(--rd-hero-fg) 10%, transparent);

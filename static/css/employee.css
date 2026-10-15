@@ -92,14 +92,14 @@
 }
 
 /* Theme + language buttons: the 2.3rem circle of the avatar so the bar keeps its
-   height; the ::after grows each tap area to 3.45 x 3.5rem (the 1rem gap keeps
-   the two areas from overlapping). They sit before the wallet chip, which keeps
-   the inline end. */
+   height; the ::after grows each tap area to 3.45 x 3.5rem. The gap must be at
+   least twice the ::after inline reach (2 x 0.575rem) so the areas don't overlap.
+   They sit before the wallet chip, which keeps the inline end. */
 .rd-employee-topbar__tools {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: 1rem;
+  gap: 1.15rem;
   margin-inline-start: auto;
 }
 
