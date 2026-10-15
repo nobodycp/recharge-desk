@@ -21,13 +21,11 @@
   <header class="rd-employee-topbar">
     <div class="rd-employee-topbar__row">
       {% include "partials/user_menu.html" with variant="ava" prefs=True %}
-      {% block employee_title %}
       <h1 class="rd-employee-title">
         {% block employee_header %}
           <span>{% trans "Sales entry" %}</span>
         {% endblock %}
       </h1>
-      {% endblock %}
       {% if acting_employee %}
         <a
           class="rd-employee-wallet{% if acting_employee.current_balance < 0 %} is-neg{% elif acting_employee.current_balance > 0 %} is-pos{% endif %}"

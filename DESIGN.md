@@ -221,7 +221,7 @@ Shared building blocks for admin pages: template tags in `core/templatetags/kit.
 
 - Form footer: put Save (`btn-primary`) and Cancel (`btn-outline-secondary`) in `<div class="rd-form-actions">` at the end of the `<form>`. It is a wrapping flex row with a top border, aligned to the inline start.
 - Search box (`.rd-filter-search`): an `a.rd-filter-search__clear` after the input is shown only while the input has text (`:placeholder-shown`), so it works with live search. Touch size 3.45rem below 992px.
-- An employee-shell page that renders `rd_page_header` overrides `{% block employee_title %}` (the whole topbar `<h1>`) with a plain `<div class="rd-employee-title">`, so the page keeps a single `<h1>`.
+- Employee-shell pages keep the topbar `<h1>` as their title; a template shared by both shells (account settings) renders `rd_page_header` only under the management shell.
 
 ### Header and width
 

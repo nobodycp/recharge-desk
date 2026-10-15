@@ -1,13 +1,15 @@
 {% extends base_template %}
 {% load i18n kit %}
 
-{% comment %}The page header carries the only <h1>; in the employee shell the topbar title becomes a plain element.{% endcomment %}
-{% block employee_title %}<div class="rd-employee-title">{% trans "Account settings" %}</div>{% endblock %}
+{% block employee_header %}{% trans "Account settings" %}{% endblock %}
 
 {% block content %}
 <div class="rd-page rd-page--form">
-  {% trans "Account settings" as settings_title %}
-  {% rd_page_header settings_title %}{% end_rd_page_header %}
+  {% comment %}Employee shell: the topbar h1 is the page title, so the kit header is management-only.{% endcomment %}
+  {% if base_template == "base_management.html" %}
+    {% trans "Account settings" as settings_title %}
+    {% rd_page_header settings_title %}{% end_rd_page_header %}
+  {% endif %}
 
   {# ---------- Profile (username / display name / avatar) ---------- #}
   <div class="rd-card mb-4">
