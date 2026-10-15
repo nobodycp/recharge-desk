@@ -6723,7 +6723,7 @@ textarea.form-control {
 }
 
 @media (max-width: 991.98px) {
-  .rd-page .btn {
+  .rd-page .btn:not(.rd-copy-ref) {
     display: inline-flex;
     align-items: center;
     justify-content: center;

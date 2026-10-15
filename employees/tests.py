@@ -556,17 +556,17 @@ class EmployeePagesKitTests(TestCase):
         form_tag = re.search(r'<form[^>]*class="rd-filter-grid"[^>]*>', html).group(0)
         self.assertIn('hx-vals="{&quot;partial&quot;: &quot;ledger&quot;}"', form_tag)
 
-    def test_reset_link_has_no_hx_vals_ancestor(self):
+    def test_reset_link_is_a_full_navigation_without_partial(self):
+        # htmx 1.9 merges hx-vals from the element and all ancestors (the filter <form> has one),
+        # so the Reset anchor must opt out of htmx entirely: hx-boost="false" means it is not processed.
         for tab in ("ledger", "payments"):
             html = self.client.get(self.detail_url, {"tab": tab}).content.decode()
-            before = html[: html.index('class="btn btn-outline-secondary btn-sm" href="%s?tab=%s"' % (self.detail_url, tab))]
-            card = before[before.index("<details"):]
-            # Nothing opened around the Reset link carries hx-vals except the <form> itself.
-            self.assertEqual(card.count("hx-vals"), 1)
-            form_open = card[card.rindex("<form"):]
-            self.assertIn("hx-vals", form_open.split(">", 1)[0])
-            wrapper = before[: before.index("<details")]
-            self.assertNotRegex(wrapper[-200:], r"<div[^>]*hx-vals")
+            reset = re.search(r'<a [^>]*>Reset</a>', html).group(0)
+            self.assertIn('hx-boost="false"', reset)
+            href = re.search(r'href="([^"]*)"', reset).group(1)
+            self.assertEqual(href, "%s?tab=%s" % (self.detail_url, tab))
+            self.assertNotIn("partial", href)
+            self.assertNotIn("hx-vals", reset)
 
     def test_range_error_rendered_in_htmx_grid_partial(self):
         text = "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;."

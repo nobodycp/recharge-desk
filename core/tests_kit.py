@@ -290,11 +290,12 @@ class PageHeaderTests(SimpleTestCase):
         with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
             css = fh.read()
         tablet = "\n".join(_media_blocks(css, "max-width: 991.98px"))
-        body = _rule_body(tablet, ".rd-page .btn")
+        body = _rule_body(tablet, ".rd-page .btn:not(.rd-copy-ref)")
         self.assertRegex(body, r"min-height:\s*3\.45rem")
         self.assertRegex(body, r"display:\s*inline-flex")
         self.assertRegex(body, r"align-items:\s*center")
         self.assertRegex(body, r"justify-content:\s*center")
+        self.assertNotIn(".rd-page .btn {", tablet)  # copy buttons must keep their size
 
     def test_stat_strip_label_meets_the_text_floor(self):
         with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
@@ -414,11 +415,11 @@ class FilterCardTests(SimpleTestCase):
         html = render_filter_card('form reset_url="/list/"')
         actions = html[html.index("rd-filter-grid__actions"):]
         self.assertRegex(actions, r'<button type="submit" class="btn btn-primary btn-sm">Apply</button>')
-        self.assertRegex(actions, r'<a class="btn btn-outline-secondary btn-sm" href="/list/">Reset</a>')
+        self.assertRegex(actions, r'<a class="btn btn-outline-secondary btn-sm" href="/list/" hx-boost="false">Reset</a>')
 
     def test_reset_defaults_to_current_path(self):
         html = render_filter_card()
-        self.assertRegex(html, r'<a class="btn btn-outline-secondary btn-sm" href="/list/">Reset</a>')
+        self.assertRegex(html, r'<a class="btn btn-outline-secondary btn-sm" href="/list/" hx-boost="false">Reset</a>')
 
     def test_non_field_error_visible(self):
         form = SearchForm({"date_from": "2024-02-01", "date_to": "2024-01-01"})
