@@ -91,6 +91,33 @@ class DatabaseBackupViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, IMPORT_CONFIRM_WORD)
 
+    def test_restore_form_keeps_confirm_gate_inputs(self):
+        response = self.client.get(reverse("core:system_settings"), {"tab": "database"})
+        html = response.content.decode()
+        form = html[html.index("data-rd-confirm-gate"):]
+        self.assertIn('data-rd-file-pick', form)
+        self.assertIn('type="file"', form)
+        self.assertIn("data-rd-confirm-input", form)
+        self.assertIn('type="checkbox"', form)
+        self.assertIn('name="acknowledge"', form)
+
+    def test_restore_errors_not_duplicated_as_toasts(self):
+        url = reverse("core:system_settings")
+        response = self.client.post(
+            url + "?tab=database",
+            {
+                "form": "import",
+                "tab": "database",
+                "confirm": "WRONG",
+                "acknowledge": "on",
+                "backup_file": SimpleUploadedFile("b.json", b"[]"),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        # The field error shows inline once; the toast only carries the summary.
+        self.assertEqual(response.content.decode().count("exactly to confirm"), 1)
+        self.assertContains(response, "Could not import backup")
+
     def test_import_fixture_roundtrip(self):
         """Restore via loaddata after flush keeps exported users."""
         from django.core.management import call_command

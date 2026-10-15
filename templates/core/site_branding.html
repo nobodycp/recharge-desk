@@ -1,15 +1,16 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 
 {% block content %}
-<div class="rd-admin-page rd-admin-page--wide">
-  <div class="rd-dash-head mb-3">
-    <h1 class="rd-heading-xl mb-0">{% trans "Site branding" %}</h1>
-  </div>
+<div class="rd-page rd-page--settings">
+  {% trans "Site branding" as branding_title %}
+  {% rd_page_header branding_title %}{% end_rd_page_header %}
 
-  <form method="post" enctype="multipart/form-data" class="rd-brand-layout" data-rd-dirty-form>
+  {% with dark_logo=branding.logo_dark_url %}
+  <form method="post" enctype="multipart/form-data" class="rd-brand-formwrap" data-rd-dirty-form>
     {% csrf_token %}
 
+    <div class="rd-brand-layout">
     <div class="rd-brand-form">
       <section class="rd-card rd-set-section">
         <header class="rd-set-section__head">
@@ -20,20 +21,24 @@
           </div>
         </header>
         <div class="rd-set-section__body rd-brand-fields">
-          <div>
-            <label class="form-label" for="{{ form.site_name.auto_id }}">{{ form.site_name.label }}</label>
-            <input type="text" name="{{ form.site_name.html_name }}" id="{{ form.site_name.auto_id }}" class="form-control" maxlength="120"
-                   value="{{ form.site_name.value|default_if_none:'' }}" placeholder="{% trans 'Recharge Desk' %}"
-                   data-rd-bind="site-name" data-rd-fallback="{% trans 'Recharge Desk' %}">
-            {{ form.site_name.errors }}
+          {% with f=form.site_name %}
+          <div class="rd-field">
+            <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}</label>
+            <input type="text" name="{{ f.html_name }}" id="{{ f.auto_id }}" class="form-control{% if f.errors %} is-invalid{% endif %}" maxlength="120"
+                   value="{{ f.value|default_if_none:'' }}" placeholder="{% trans 'Recharge Desk' %}"
+                   data-rd-bind="site-name" data-rd-fallback="{% trans 'Recharge Desk' %}"{% if f.errors %} aria-invalid="true" aria-describedby="{{ f.auto_id }}-error"{% endif %}>
+            {% if f.errors %}<div class="rd-field__error" id="{{ f.auto_id }}-error">{% for error in f.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
           </div>
-          <div>
-            <label class="form-label" for="{{ form.tagline.auto_id }}">{{ form.tagline.label }}</label>
-            <input type="text" name="{{ form.tagline.html_name }}" id="{{ form.tagline.auto_id }}" class="form-control" maxlength="160"
-                   value="{{ form.tagline.value|default_if_none:'' }}" placeholder="{% trans 'Management' %}"
-                   data-rd-bind="tagline" data-rd-fallback="{% trans 'Management' %}">
-            {{ form.tagline.errors }}
+          {% endwith %}
+          {% with f=form.tagline %}
+          <div class="rd-field">
+            <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}</label>
+            <input type="text" name="{{ f.html_name }}" id="{{ f.auto_id }}" class="form-control{% if f.errors %} is-invalid{% endif %}" maxlength="160"
+                   value="{{ f.value|default_if_none:'' }}" placeholder="{% trans 'Management' %}"
+                   data-rd-bind="tagline" data-rd-fallback="{% trans 'Management' %}"{% if f.errors %} aria-invalid="true" aria-describedby="{{ f.auto_id }}-error"{% endif %}>
+            {% if f.errors %}<div class="rd-field__error" id="{{ f.auto_id }}-error">{% for error in f.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
           </div>
+          {% endwith %}
         </div>
       </section>
 
@@ -65,7 +70,8 @@
         </div>
         <div class="rd-bp-body">
           <div class="rd-bp-side{% if branding.logo %} has-image{% endif %}" data-rd-preview-host>
-            <img class="rd-bp-side__logo" data-rd-preview-img="logo" src="{% if branding.logo %}{{ branding.logo.url }}{% endif %}" alt=""{% if not branding.logo %} hidden{% endif %}>
+            <img class="rd-bp-side__logo{% if branding.logo %} rd-bp-logo--light{% endif %}" data-rd-preview-img="logo" src="{% if branding.logo %}{{ branding.logo.url }}{% endif %}" alt=""{% if not branding.logo %} hidden{% endif %}>
+            {% if branding.logo %}<img class="rd-bp-side__logo rd-bp-logo--dark" data-rd-preview-img="logo" data-rd-light-src="{{ branding.logo.url }}" data-rd-dark-src="{{ dark_logo|default:branding.logo.url }}" src="{{ dark_logo|default:branding.logo.url }}" alt="">{% endif %}
             <span class="rd-bp-side__mark" aria-hidden="true" data-rd-bound-first="site-name">{{ site_name|slice:":1" }}</span>
             <span class="rd-bp-side__text">
               <span class="rd-bp-side__name" data-rd-bound="site-name">{{ site_name }}</span>
@@ -77,24 +83,18 @@
       </div>
 
       <div class="rd-bp-login{% if branding.logo %} has-image{% endif %}" data-rd-preview-host>
-        <img class="rd-bp-login__logo" data-rd-preview-img="logo" src="{% if branding.logo %}{{ branding.logo.url }}{% endif %}" alt=""{% if not branding.logo %} hidden{% endif %}>
+        <img class="rd-bp-login__logo{% if branding.logo %} rd-bp-logo--light{% endif %}" data-rd-preview-img="logo" src="{% if branding.logo %}{{ branding.logo.url }}{% endif %}" alt=""{% if not branding.logo %} hidden{% endif %}>
+        {% if branding.logo %}<img class="rd-bp-login__logo rd-bp-logo--dark" data-rd-preview-img="logo" data-rd-light-src="{{ branding.logo.url }}" data-rd-dark-src="{{ dark_logo|default:branding.logo.url }}" src="{{ dark_logo|default:branding.logo.url }}" alt="">{% endif %}
         <div class="rd-bp-login__name" data-rd-bound="site-name">{{ site_name }}</div>
         <span class="rd-bp-login__field" aria-hidden="true"></span>
         <span class="rd-bp-login__field" aria-hidden="true"></span>
         <span class="rd-bp-login__btn" aria-hidden="true">{% trans "Sign in" %}</span>
       </div>
     </aside>
-
-    <div class="rd-savebar{% if form.errors %} is-visible{% endif %}" data-rd-savebar{% if form.errors %} data-rd-savebar-force{% endif %}>
-      <span class="rd-savebar__msg">
-        <span class="rd-savebar__dot" aria-hidden="true"></span>
-        {% trans "You have unsaved changes" %}
-      </span>
-      <span class="rd-savebar__actions">
-        <button type="reset" class="btn btn-sm btn-outline-secondary">{% trans "Discard" %}</button>
-        <button type="submit" class="btn btn-sm btn-primary">{% trans "Save changes" %}</button>
-      </span>
     </div>
+
+    {% include "core/_savebar.html" with has_errors=form.errors %}
   </form>
+  {% endwith %}
 </div>
 {% endblock %}

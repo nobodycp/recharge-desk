@@ -1,15 +1,19 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 
 {% block content %}
-<div class="rd-admin-page">
-  <div class="rd-dash-head mb-3">
-    <h1 class="rd-heading-xl mb-0">{% trans "System settings" %}</h1>
-    <nav class="rd-period-switch" aria-label="{% trans 'System settings' %}">
-      <a class="rd-period-switch__opt{% if active_tab != database_tab_id %} is-active{% endif %}" href="?tab={{ general_tab_id }}"{% if active_tab != database_tab_id %} aria-current="page"{% endif %}>{% trans "General" %}</a>
-      <a class="rd-period-switch__opt{% if active_tab == database_tab_id %} is-active{% endif %}" href="?tab={{ database_tab_id }}"{% if active_tab == database_tab_id %} aria-current="page"{% endif %}>{% trans "Database" %}</a>
-    </nav>
-  </div>
+<div class="rd-page rd-page--settings">
+  {% trans "System settings" as settings_title %}
+  {% rd_page_header settings_title %}{% end_rd_page_header %}
+
+  <ul class="nav nav-tabs rd-section-tabs mb-3" aria-label="{% trans 'System settings' %}">
+    <li class="nav-item">
+      <a class="nav-link{% if active_tab != database_tab_id %} active{% endif %}" href="?tab={{ general_tab_id }}"{% if active_tab != database_tab_id %} aria-current="page"{% endif %}>{% trans "General" %}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link{% if active_tab == database_tab_id %} active{% endif %}" href="?tab={{ database_tab_id }}"{% if active_tab == database_tab_id %} aria-current="page"{% endif %}>{% trans "Database" %}</a>
+    </li>
+  </ul>
 
   {% if active_tab == database_tab_id %}
     {% include "core/_system_settings_database.html" %}

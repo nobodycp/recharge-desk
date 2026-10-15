@@ -1,0 +1,11 @@
+{% load i18n %}{% comment %}Always-visible save bar (admin-ui.js initDirtyForm). Arg: has_errors (bound form with errors starts dirty).{% endcomment %}
+<div class="rd-savebar{% if has_errors %} is-dirty{% endif %}" data-rd-savebar{% if has_errors %} data-rd-savebar-force{% endif %}>
+  <span class="rd-savebar__msg" role="status">
+    <span class="rd-savebar__dot" aria-hidden="true"></span>
+    <span data-rd-savebar-msg data-rd-msg-calm="{% trans 'No unsaved changes' %}" data-rd-msg-dirty="{% trans 'You have unsaved changes' %}">{% if has_errors %}{% trans "You have unsaved changes" %}{% else %}{% trans "No unsaved changes" %}{% endif %}</span>
+  </span>
+  <span class="rd-savebar__actions">
+    <button type="reset" class="btn btn-sm btn-outline-secondary" data-rd-savebar-discard{% if not has_errors %} disabled{% endif %}>{% trans "Discard" %}</button>
+    <button type="submit" class="btn btn-sm btn-primary" data-rd-savebar-save{% if not has_errors %} disabled{% endif %}>{% trans "Save changes" %}</button>
+  </span>
+</div>

@@ -103,6 +103,7 @@ def search(request):
         customer_qs = (
             Customer.objects.filter(customer_filter)
             .distinct()
+            .prefetch_related("phones")  # phones render in both the table and the mobile cards
             .order_by("-current_balance", "name")
         )
         customers = list(customer_qs[: MAX_HITS + 1])
@@ -218,6 +219,7 @@ def search_suggest(request):
         customer_rows = (
             Customer.objects.filter(customer_filter)
             .distinct()
+            .prefetch_related("phones")  # phones render in both the table and the mobile cards
             .order_by("-current_balance", "name")[:PER_GROUP]
         )
         customers = [
@@ -336,15 +338,8 @@ def system_settings(request):
                 messages.success(request, _("Database restored from backup."))
                 return _settings_redirect(SETTINGS_TAB_DATABASE)
         else:
+            # Field errors are rendered inline by the template; only the summary is a toast.
             messages.error(request, _("Could not import backup. Check the form and try again."))
-            for field, errors in import_form.errors.items():
-                label = (
-                    import_form.fields[field].label
-                    if field in import_form.fields
-                    else field
-                )
-                for err in errors:
-                    messages.error(request, f"{label}: {err}")
 
     elif request.method == "POST" and active_tab == SETTINGS_TAB_GENERAL:
         if form.is_valid():

@@ -53,6 +53,21 @@ class AppSettingsViewTests(TestCase):
         self.assertContains(response, "Approval workflows")
         self.assertContains(response, "Sales entry screen")
 
+    def test_system_settings_tabs_are_section_tabs(self):
+        response = self.client.get("/management/system-settings/")
+        self.assertContains(response, "nav-tabs rd-section-tabs")
+        self.assertContains(response, 'aria-current="page"')
+        self.assertNotContains(response, "rd-period-switch")
+        self.assertContains(response, "rd-page rd-page--settings")
+        self.assertContains(response, "?tab=database")
+
+    def test_savebar_is_always_rendered_in_calm_state(self):
+        response = self.client.get("/management/system-settings/")
+        self.assertContains(response, "data-rd-savebar")
+        self.assertContains(response, "No unsaved changes")
+        self.assertContains(response, 'data-rd-savebar-save disabled')
+        self.assertNotContains(response, "data-rd-savebar-force")
+
     def test_02_save_persists_toggle(self):
         from django.utils import translation
 

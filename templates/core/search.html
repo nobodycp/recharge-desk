@@ -1,24 +1,20 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-page-header">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Search" %}</h1>
-    {% if q %}
-      <p class="rd-text-muted mb-0">
-        {% blocktrans count n=total with q=q %}Found {{ n }} result for “{{ q }}”.{% plural %}Found {{ n }} results for “{{ q }}”.{% endblocktrans %}
-      </p>
-    {% else %}
-      <p class="rd-text-muted mb-0">{% trans "Type a reference number, customer name, phone, or numeric ID." %}</p>
-    {% endif %}
-  </div>
-</div>
+<div class="rd-page">
+{% trans "Search" as search_title %}
+{% if q %}
+  {% blocktrans count n=total with q=q asvar search_subtitle %}Found {{ n }} result for “{{ q }}”.{% plural %}Found {{ n }} results for “{{ q }}”.{% endblocktrans %}
+{% else %}
+  {% trans "Type a reference number, customer name, phone, or numeric ID." as search_subtitle %}
+{% endif %}
+{% rd_page_header search_title subtitle=search_subtitle %}{% end_rd_page_header %}
 
 <div class="rd-card mb-3">
   <div class="rd-card-body">
-    <form method="get" action="{% url 'core:search' %}" class="row g-2 align-items-end">
-      <div class="col-12 col-md">
-        <label class="form-label" for="search-q">{% trans "Search across sales, customers, and payments" %}</label>
+    <form method="get" action="{% url 'core:search' %}" role="search">
+      <label class="form-label" for="search-q">{% trans "Search across sales, customers, and payments" %}</label>
+      <div class="rd-search-row">
         <input
           type="search"
           class="form-control"
@@ -29,151 +25,245 @@
           autofocus
           autocomplete="off"
         >
-      </div>
-      <div class="col-12 col-md-auto">
-        <button class="btn btn-primary w-100" type="submit">{% trans "Search" %}</button>
+        <button class="btn btn-primary" type="submit">{% trans "Search" %}</button>
       </div>
     </form>
   </div>
 </div>
 
 {% if q and not total %}
-  <div class="rd-card">
-    <div class="rd-card-body text-center text-secondary py-5">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="mb-2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <div>{% trans "No matches across sales, customers, or payments." %}</div>
-    </div>
+  <div class="rd-card mb-3">
+    {% trans "No matches across sales, customers, or payments." as empty_title %}
+    {% include "partials/empty_state.html" with title=empty_title icon="list" %}
   </div>
 {% endif %}
 
 {% if sales %}
-  <div class="rd-card mb-3">
-    <div class="rd-card-header d-flex justify-content-between align-items-center">
-      <div class="rd-heading-md mb-0">
+  <div class="rd-card overflow-hidden mb-3">
+    <div class="rd-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="rd-heading-lg mb-0">
         {% trans "Sales" %}
-        <span class="badge bg-primary-subtle text-primary ms-2">{{ sales|length }}</span>
-      </div>
+        <span class="rd-badge rd-badge--neutral tabular-nums ms-2">{{ sales|length }}</span>
+      </h2>
       {% if sale_truncated %}
-        <a class="small" href="{% url 'sales:management_sale_list' %}?q={{ q }}">{% trans "View all matches" %} &rsaquo;</a>
+        <a class="btn btn-link btn-sm" href="{% url 'sales:management_sale_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} &rsaquo;</a>
       {% endif %}
     </div>
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>{% trans "Reference" %}</th>
-            <th>{% trans "Payer" %}</th>
-            <th>{% trans "Company" %}</th>
-            <th>{% trans "Amount" %}</th>
-            <th>{% trans "Status" %}</th>
-            <th>{% trans "Created" %}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for s in sales %}
-            <tr>
-              <td><code>{{ s.reference_number }}</code></td>
-              <td>{{ s.payer_name|default:"—" }}</td>
-              <td>{{ s.company.name }}</td>
-              <td class="tabular-nums">{{ s.sell_price_actual|intcomma }}</td>
-              <td><span class="badge bg-secondary-subtle text-secondary">{{ s.get_status_display }}</span></td>
-              <td><span class="text-secondary small">{{ s.created_at|date:"Y-m-d H:i" }}</span></td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:sale_edit' s.pk %}">{% trans "Open" %}</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="rd-table-dual">
+      <div class="d-none d-md-block rd-data-shell">
+        <div class="table-responsive border-0">
+          <table class="table mb-0 align-middle rd-table-modern">
+            <thead>
+              <tr>
+                <th>{% trans "Reference" %}</th>
+                <th>{% trans "Payer" %}</th>
+                <th>{% trans "Company" %}</th>
+                <th>{% trans "Amount" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Created" %}</th>
+                <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in sales %}
+                <tr>
+                  <td><span class="rd-ref">{{ s.reference_number }}</span></td>
+                  <td>{{ s.payer_name|default:"—" }}</td>
+                  <td>{{ s.company.name }}</td>
+                  <td class="tabular-nums">{{ s.sell_price_actual|intcomma }}</td>
+                  <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
+                  <td><span class="text-secondary small tabular-nums">{{ s.created_at|date:"Y-m-d H:i" }}</span></td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:sale_edit' s.pk %}">{% trans "Open" %}</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="d-md-none rd-mobile-stack rd-search-cards p-2">
+        {% for s in sales %}
+          <div class="rd-mobile-row-card">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span class="rd-ref">{{ s.reference_number }}</span>
+              {% include "partials/sale_status_badge.html" with sale=s %}
+            </div>
+            <div class="rd-mobile-kv">
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Payer" %}</span>
+                <span class="rd-mobile-v">{{ s.payer_name|default:"—" }}</span>
+              </div>
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Company" %}</span>
+                <span class="rd-mobile-v">{{ s.company.name }}</span>
+              </div>
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Amount" %}</span>
+                <span class="rd-mobile-v tabular-nums">{{ s.sell_price_actual|intcomma }}</span>
+              </div>
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Created" %}</span>
+                <span class="rd-mobile-v tabular-nums">{{ s.created_at|date:"Y-m-d H:i" }}</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:sale_edit' s.pk %}">{% trans "Open" %}</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 {% endif %}
 
 {% if customers %}
-  <div class="rd-card mb-3">
-    <div class="rd-card-header d-flex justify-content-between align-items-center">
-      <div class="rd-heading-md mb-0">
+  <div class="rd-card overflow-hidden mb-3">
+    <div class="rd-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h2 class="rd-heading-lg mb-0">
         {% trans "Customers" %}
-        <span class="badge bg-primary-subtle text-primary ms-2">{{ customers|length }}</span>
-      </div>
+        <span class="rd-badge rd-badge--neutral tabular-nums ms-2">{{ customers|length }}</span>
+      </h2>
       {% if customer_truncated %}
-        <a class="small" href="{% url 'customers:customer_list' %}?q={{ q }}">{% trans "View all matches" %} &rsaquo;</a>
+        <a class="btn btn-link btn-sm" href="{% url 'customers:customer_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} &rsaquo;</a>
       {% endif %}
     </div>
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>{% trans "Name" %}</th>
-            <th>{% trans "Balance" %}</th>
-            <th>{% trans "Phones" %}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in customers %}
-            <tr>
-              <td>{{ c.name }}</td>
-              <td class="tabular-nums">
+    <div class="rd-table-dual">
+      <div class="d-none d-md-block rd-data-shell">
+        <div class="table-responsive border-0">
+          <table class="table mb-0 align-middle rd-table-modern">
+            <thead>
+              <tr>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Balance" %}</th>
+                <th>{% trans "Phones" %}</th>
+                <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in customers %}
+                <tr>
+                  <td>{{ c.name }}</td>
+                  <td class="tabular-nums">
+                    {% if c.current_balance > 0 %}
+                      <span class="kpi-expense">{{ c.current_balance|intcomma }}</span>
+                    {% elif c.current_balance < 0 %}
+                      <span class="kpi-success">{{ c.current_balance|cut:"-"|intcomma }}</span>
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td class="small text-secondary">
+                    {% for ph in c.phones.all|slice:":3" %}{{ ph.phone }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' c.pk %}">{% trans "Open" %}</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="d-md-none rd-mobile-stack rd-search-cards p-2">
+        {% for c in customers %}
+          <div class="rd-mobile-row-card">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span class="fw-semibold">{{ c.name }}</span>
+              <span class="tabular-nums fw-semibold">
                 {% if c.current_balance > 0 %}
-                  <span class="text-danger">{{ c.current_balance|intcomma }}</span>
+                  <span class="kpi-expense">{{ c.current_balance|intcomma }}</span>
                 {% elif c.current_balance < 0 %}
-                  <span class="text-success">{{ c.current_balance|cut:"-"|intcomma }}</span>
+                  <span class="kpi-success">{{ c.current_balance|cut:"-"|intcomma }}</span>
                 {% else %}
                   —
                 {% endif %}
-              </td>
-              <td class="small text-secondary">
-                {% for ph in c.phones.all|slice:":3" %}{{ ph.phone }}{% if not forloop.last %} · {% endif %}{% endfor %}
-              </td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' c.pk %}">{% trans "Open" %}</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+              </span>
+            </div>
+            <div class="rd-mobile-kv">
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Phones" %}</span>
+                <span class="rd-mobile-v tabular-nums">{% for ph in c.phones.all|slice:":3" %}{{ ph.phone }}{% if not forloop.last %} · {% endif %}{% empty %}—{% endfor %}</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' c.pk %}">{% trans "Open" %}</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 {% endif %}
 
 {% if payments %}
-  <div class="rd-card mb-3">
+  <div class="rd-card overflow-hidden mb-3">
     <div class="rd-card-header">
-      <div class="rd-heading-md mb-0">
+      <h2 class="rd-heading-lg mb-0">
         {% trans "Customer payments" %}
-        <span class="badge bg-primary-subtle text-primary ms-2">{{ payments|length }}</span>
-      </div>
+        <span class="rd-badge rd-badge--neutral tabular-nums ms-2">{{ payments|length }}</span>
+      </h2>
     </div>
-    <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>#</th>
-            <th>{% trans "Customer" %}</th>
-            <th>{% trans "Amount" %}</th>
-            <th>{% trans "Method" %}</th>
-            <th>{% trans "Created" %}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in payments %}
-            <tr>
-              <td>{{ p.id }}</td>
-              <td>{{ p.customer.name }}</td>
-              <td class="tabular-nums">{{ p.amount|intcomma }}</td>
-              <td>{% if p.paid_via_employee %}{% trans "To employee" %}{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</td>
-              <td><span class="text-secondary small">{{ p.created_at|date:"Y-m-d H:i" }}</span></td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="rd-table-dual">
+      <div class="d-none d-md-block rd-data-shell">
+        <div class="table-responsive border-0">
+          <table class="table mb-0 align-middle rd-table-modern">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{% trans "Customer" %}</th>
+                <th>{% trans "Amount" %}</th>
+                <th>{% trans "Method" %}</th>
+                <th>{% trans "Created" %}</th>
+                <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in payments %}
+                <tr>
+                  <td class="tabular-nums">{{ p.id }}</td>
+                  <td>{{ p.customer.name }}</td>
+                  <td class="tabular-nums">{{ p.amount|intcomma }}</td>
+                  <td>{% if p.paid_via_employee %}{% trans "To employee" %}{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</td>
+                  <td><span class="text-secondary small tabular-nums">{{ p.created_at|date:"Y-m-d H:i" }}</span></td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="d-md-none rd-mobile-stack rd-search-cards p-2">
+        {% for p in payments %}
+          <div class="rd-mobile-row-card">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span class="fw-semibold">{{ p.customer.name }}</span>
+              <span class="text-secondary tabular-nums">#{{ p.id }}</span>
+            </div>
+            <div class="rd-mobile-kv">
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Amount" %}</span>
+                <span class="rd-mobile-v tabular-nums">{{ p.amount|intcomma }}</span>
+              </div>
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Method" %}</span>
+                <span class="rd-mobile-v">{% if p.paid_via_employee %}{% trans "To employee" %}{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</span>
+              </div>
+              <div class="rd-mobile-kv__row">
+                <span class="rd-mobile-k">{% trans "Created" %}</span>
+                <span class="rd-mobile-v tabular-nums">{{ p.created_at|date:"Y-m-d H:i" }}</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 {% endif %}
+</div>
 {% endblock %}

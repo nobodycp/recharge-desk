@@ -20,16 +20,27 @@
   }
 
   // The leave-page prompt itself lives in nav.js and keys off .is-dirty.
+  // The bar is always visible: calm ("no unsaved changes", Save and Discard disabled)
+  // until the form differs from its initial values, then dirty with both enabled.
   function initDirtyForm(form) {
     var bar = form.querySelector("[data-rd-savebar]");
     if (!bar) return;
+    var msg = bar.querySelector("[data-rd-savebar-msg]");
+    var save = bar.querySelector("[data-rd-savebar-save]");
+    var discard = bar.querySelector("[data-rd-savebar-discard]");
     var initial = snapshot(form);
     var forced = bar.hasAttribute("data-rd-savebar-force");
 
     function refresh() {
       var dirty = forced || snapshot(form) !== initial;
-      bar.classList.toggle("is-visible", dirty);
+      bar.classList.toggle("is-dirty", dirty);
       form.classList.toggle("is-dirty", dirty);
+      if (save) save.disabled = !dirty;
+      if (discard) discard.disabled = !dirty;
+      if (msg) {
+        var text = msg.getAttribute(dirty ? "data-rd-msg-dirty" : "data-rd-msg-calm");
+        if (text) msg.textContent = text;
+      }
     }
 
     form.addEventListener("input", refresh);
@@ -38,17 +49,22 @@
       form.setAttribute("data-rd-submitting", "");
     });
     form.addEventListener("reset", function () {
+      forced = false; // Discard goes back to the form's own values: calm again.
       setTimeout(function () {
         form.dispatchEvent(new CustomEvent("rd:reset"));
         refresh();
       }, 0);
     });
+    refresh();
   }
 
   function setPreviewImages(key, src) {
     document.querySelectorAll('[data-rd-preview-img="' + key + '"]').forEach(function (img) {
+      // The dark copy of a saved logo keeps its own file until a new one is picked.
+      var dark = img.getAttribute("data-rd-dark-src");
+      var shown = dark && src === img.getAttribute("data-rd-light-src") ? dark : src;
       if (src) {
-        img.src = src;
+        img.src = shown;
         img.hidden = false;
       } else {
         img.hidden = true;

@@ -420,6 +420,48 @@ class GlobalSearchTests(TestCase):
         # The payment's notes contain the reference too.
         self.assertEqual(len(r.context["payments"]), 1)
 
+    def test_search_uses_modern_tables_and_rd_badges(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"), {"q": "Hazem"})
+        self.assertContains(r, "rd-table-modern")
+        self.assertContains(r, "rd-badge rd-badge--neutral")
+        self.assertContains(r, "rd-badge rd-badge--paid")
+        self.assertNotContains(r, "table-light")
+        self.assertNotContains(r, "badge bg-")
+        self.assertNotContains(r, "rd-heading-md")
+
+    def test_search_view_all_link_urlencodes_q(self):
+        from decimal import Decimal
+
+        from sales.models import Sale
+
+        base = self.sale
+        for i in range(26):
+            Sale.objects.create(
+                company=base.company,
+                product=base.product,
+                reference_number=f"a b&c{i}",
+                payment_method=base.payment_method,
+                sell_price_actual=Decimal("10"),
+                cost_price_snapshot=Decimal("5"),
+                profit_snapshot=Decimal("5"),
+                status=Sale.Status.PAID,
+                created_by=self.boss,
+            )
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"), {"q": "a b&c"})
+        self.assertTrue(r.context["sale_truncated"])
+        self.assertContains(r, "?q=a%20b%26c")
+        self.assertNotContains(r, "?q=a b&amp;c")
+
+    def test_search_input_and_button_share_one_row(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("core:search"), {"q": "Hazem"})
+        self.assertContains(r, "rd-search-row")
+
     def test_topbar_renders_global_search_box(self):
         c = Client()
         c.force_login(self.boss)

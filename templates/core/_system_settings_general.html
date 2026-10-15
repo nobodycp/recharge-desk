@@ -71,14 +71,5 @@
     </section>
   </div>
 
-  <div class="rd-savebar{% if form.errors %} is-visible{% endif %}" data-rd-savebar{% if form.errors %} data-rd-savebar-force{% endif %}>
-    <span class="rd-savebar__msg">
-      <span class="rd-savebar__dot" aria-hidden="true"></span>
-      {% trans "You have unsaved changes" %}
-    </span>
-    <span class="rd-savebar__actions">
-      <button type="reset" class="btn btn-sm btn-outline-secondary">{% trans "Discard" %}</button>
-      <button type="submit" class="btn btn-sm btn-primary">{% trans "Save changes" %}</button>
-    </span>
-  </div>
+  {% include "core/_savebar.html" with has_errors=form.errors %}
 </form>

@@ -1057,7 +1057,7 @@ msgid "Database restored from backup."
 msgstr "تم استيراد قاعدة البيانات من النسخة الاحتياطية."
 #: core/views.py:339
 msgid "Could not import backup. Check the form and try again."
-msgstr ""
+msgstr "تعذّر استيراد النسخة الاحتياطية. راجع النموذج وحاول مرة أخرى."
 
 #: core/views.py:352
 msgid "System settings updated."
@@ -1566,7 +1566,7 @@ msgstr "المرجع"
 #: templates/customers/payment_submissions_list.html:97
 #: templates/reports/partials/company_report_sales.html:90
 msgid "To employee"
-msgstr "موظف"
+msgstr "إلى الموظف"
 
 #: customers/views/statements.py:270 sales/models.py:331
 #: templates/companies/partials/company_detail_general.html:32
@@ -4554,6 +4554,10 @@ msgstr "اللغة والثيم الابتدائيان لصفحة التحديث
 msgid "You have unsaved changes"
 msgstr "لديك تغييرات غير محفوظة"
 
+#: templates/core/_savebar.html
+msgid "No unsaved changes"
+msgstr "لا توجد تغييرات غير محفوظة"
+
 #: templates/core/_system_settings_general.html:80
 #: templates/core/site_branding.html:94
 msgid "Discard"
@@ -4678,7 +4682,7 @@ msgstr "معاينة مباشرة"
 
 #: templates/core/system_settings.html:10
 msgid "Database"
-msgstr "قواعد البيانات"
+msgstr "قاعدة البيانات"
 #: templates/customers/_invoice_letterhead.html:21
 msgid "Issued"
 msgstr "تاريخ الإصدار"

@@ -45,7 +45,7 @@ _BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
 BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
 TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 
-LEGACY_BADGES = {  # 9 files
+LEGACY_BADGES = {  # 8 files
     "templates/companies/layan_reconcile.html",
     "templates/companies/partials/layan_reconcile_review_table.html",
     "templates/companies/partials/layan_reconcile_settlements.html",
@@ -53,11 +53,9 @@ LEGACY_BADGES = {  # 9 files
     "templates/companies/partials/sky_reconcile_table.html",
     "templates/companies/product_list.html",
     "templates/companies/sky_reconcile.html",
-    "templates/core/search.html",
     "templates/inventory/_serials_paste_field.html",
 }
-LEGACY_TABLE_LIGHT = {  # 3 files
-    "templates/core/search.html",
+LEGACY_TABLE_LIGHT = {  # 2 files
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_statement.html",
 }
@@ -88,7 +86,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 61 files
+LEGACY_PAGE_HEAD = {  # 58 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -107,9 +105,6 @@ LEGACY_PAGE_HEAD = {  # 61 files
     "templates/companies/product_list.html",
     "templates/companies/product_variant_form.html",
     "templates/companies/sky_reconcile.html",
-    "templates/core/search.html",
-    "templates/core/site_branding.html",
-    "templates/core/system_settings.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_form.html",

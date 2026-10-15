@@ -540,8 +540,9 @@
 
 /* Settings sections: icon + title header, then full-width clickable rows. */
 .rd-set-form {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* flex, not grid: the sticky save bar needs the whole form as its scroll range */
 }
 
 .rd-set-section {
@@ -825,7 +826,7 @@
   opacity: 0.45;
 }
 
-/* Unsaved-changes bar: slides up from the bottom while the form is dirty. */
+/* Save bar: always visible. Calm = nothing to save; .is-dirty = unsaved edits (ink bar). */
 .rd-savebar {
   position: sticky;
   bottom: 1rem;
@@ -836,25 +837,22 @@
   gap: 1rem;
   flex-wrap: wrap;
   padding: 0.65rem 0.75rem 0.65rem 1.1rem;
+  border: 1px solid var(--bs-border-color);
   border-radius: var(--rd-radius-md);
-  background: var(--bs-body-color);
-  color: var(--bs-body-bg);
-  box-shadow: var(--rd-shadow-lg);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(1rem);
-  transition: opacity var(--rd-transition), transform var(--rd-transition), visibility 0s linear 0.2s;
+  background: var(--rd-surface);
+  color: var(--rd-muted);
+  box-shadow: var(--rd-shadow-card);
 }
 
 [dir="rtl"] .rd-savebar {
   padding: 0.65rem 1.1rem 0.65rem 0.75rem;
 }
 
-.rd-savebar.is-visible {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  transition: opacity var(--rd-transition), transform var(--rd-transition), visibility 0s;
+.rd-savebar.is-dirty {
+  border-color: var(--bs-body-color);
+  background: var(--bs-body-color);
+  color: var(--bs-body-bg);
+  box-shadow: var(--rd-shadow-lg);
 }
 
 .rd-savebar__msg {
@@ -869,6 +867,10 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
+  background: var(--rd-faint);
+}
+
+.rd-savebar.is-dirty .rd-savebar__dot {
   background: var(--rd-warning);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--rd-warning) 30%, transparent);
 }
@@ -878,14 +880,68 @@
   gap: 0.5rem;
 }
 
-.rd-savebar .btn-outline-secondary {
-  color: inherit;
-  border-color: color-mix(in srgb, var(--bs-body-bg) 35%, transparent);
+.rd-savebar.is-dirty .btn-outline-secondary {
+  --bs-btn-color: var(--bs-body-bg);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: color-mix(in srgb, var(--bs-body-bg) 45%, transparent);
+  --bs-btn-hover-color: var(--bs-body-bg);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--bs-body-bg) 14%, transparent);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-body-bg) 45%, transparent);
+  --bs-btn-active-color: var(--bs-body-bg);
+  --bs-btn-active-bg: color-mix(in srgb, var(--bs-body-bg) 20%, transparent);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--bs-body-bg) 45%, transparent);
 }
 
-.rd-savebar .btn-outline-secondary:hover {
-  background: color-mix(in srgb, var(--bs-body-bg) 12%, transparent);
-  color: inherit;
+/* Ink on ink would hide the Save button: invert it on the dirty bar. */
+.rd-savebar.is-dirty .btn-primary {
+  --bs-btn-color: var(--rd-primary-bg);
+  --bs-btn-bg: var(--rd-primary-fg);
+  --bs-btn-border-color: var(--rd-primary-fg);
+  --bs-btn-hover-color: var(--rd-primary-bg);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--rd-primary-fg) 88%, var(--rd-primary-bg));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--rd-primary-fg) 88%, var(--rd-primary-bg));
+  --bs-btn-active-color: var(--rd-primary-bg);
+  --bs-btn-active-bg: var(--rd-primary-fg);
+  --bs-btn-active-border-color: var(--rd-primary-fg);
+}
+
+/* Global search page: one row (input + button), plain ink references, readable card labels. */
+.rd-search-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.rd-search-row .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+  .rd-search-row {
+    flex-direction: column;
+  }
+}
+
+.rd-ref {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.88rem;
+  color: var(--rd-ink);
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow-wrap: anywhere;
+}
+
+.rd-search-cards .rd-mobile-k {
+  font-size: 0.8rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Saved logos are previewed twice: the original on light surfaces, the silver-ink copy on dark ones. */
+[data-bs-theme="dark"] .rd-bp-logo--light,
+:root:not([data-bs-theme="dark"]) .rd-bp-logo--dark {
+  display: none;
 }
 
 /* Branding: form beside a sticky live preview. */
@@ -902,8 +958,9 @@
   min-width: 0;
 }
 
-.rd-brand-layout > .rd-savebar {
-  grid-column: 1 / -1;
+/* The bar sits outside the grid so it can stay stuck to the viewport bottom. */
+.rd-brand-layout + .rd-savebar {
+  margin-top: 1rem;
 }
 
 .rd-brand-fields {
@@ -1001,9 +1058,15 @@
   align-items: center;
   gap: 0.45rem;
   margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--bs-secondary-color);
+  font-size: 0.88rem;
+  color: var(--rd-ink);
   cursor: pointer;
+}
+
+@media (max-width: 991.98px) {
+  .rd-drop-clear {
+    min-height: 3.45rem;
+  }
 }
 
 .rd-drop-clear .form-check-input {
@@ -1814,7 +1877,6 @@ summary.rd-audit-row:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .rd-savebar,
-  .rd-savebar.is-visible,
   .rd-audit-diff,
   .rd-person__chev,
   .rd-audit-count svg {
