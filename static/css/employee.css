@@ -1819,8 +1819,14 @@ html:has(.rd-entry-dock) {
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
+  width: 100%;
   max-width: 30rem;
   margin: 0 auto 0.5rem;
+}
+
+/* Back link pinned to the inline end (the context line may be empty). */
+.rd-entry-subrow__back {
+  margin-inline-start: auto;
 }
 
 .rd-entry-subrow--end {
@@ -2116,6 +2122,80 @@ html:has(.rd-entry-dock) {
 
 .rd-employee-app .pagination .page-item.disabled .page-link {
   opacity: 0.5;
+}
+
+/* Below 576px every pager link stays visible (« Previous 1 2 3 … Next »): the
+   number, gap and edge buttons narrow to 2.5rem and Previous / Next use tight
+   inline padding; heights stay 3.45rem. Up to 3 numbered links fit one row at
+   375px. Longer windows (8+ items) wrap with explicit breaks, so « stays on
+   the row of Previous and » on the row of Next and the numbers get their own
+   row(s); nothing is ever orphaned or hidden. */
+@media (max-width: 575.98px) {
+  .rd-employee-app .rd-datagrid-pagination__pages {
+    gap: 0.2rem;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__edge,
+  .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__gap,
+  .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num {
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__step {
+    flex: 1 1 auto;
+  }
+
+  .rd-employee-app .pagination .page-item .page-link {
+    min-width: 2.5rem;
+    padding-inline: 0.3rem;
+    white-space: nowrap;
+  }
+
+  .rd-employee-app .pagination .rd-pager__step .page-link {
+    padding-inline: 0.5rem;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) {
+    justify-content: center;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::before,
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::after {
+    content: "";
+    flex-basis: 100%;
+    height: 0;
+    margin-block-end: -0.2rem;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::before {
+    order: 3;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::after {
+    order: 5;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > li:first-child {
+    order: 1;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > li:nth-child(2) {
+    order: 2;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > .rd-pager__num,
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > .rd-pager__gap {
+    order: 4;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > li:nth-last-child(2) {
+    order: 6;
+  }
+
+  .rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8)) > li:last-child {
+    order: 7;
+  }
 }
 
 .rd-employee-app .rd-datagrid-per-page {
