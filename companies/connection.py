@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 from companies.forms_connection import (
     SERVICE_LABELS,
@@ -49,7 +50,7 @@ def needs_login(company) -> bool:
     return bool(key) and ADAPTERS[key].needs_login
 
 
-LOGIN_TEST_DISABLED_NOTE = "فعّل الربط أولاً لاختبار تسجيل الدخول"
+LOGIN_TEST_DISABLED_NOTE = _("فعّل الربط أولاً لاختبار تسجيل الدخول")
 
 
 def login_status_context(company) -> dict:
@@ -132,7 +133,7 @@ def save_system(request, company):
     if form.is_valid():
         company.provider_key = form.cleaned_data["provider_key"]
         company.save(update_fields=["provider_key"])
-        messages.success(request, "تم حفظ نظام الشركة.")
+        messages.success(request, _("تم حفظ نظام الشركة."))
     else:
         _flash_form_errors(request, form)
     return redirect_to_tab(company)
@@ -145,7 +146,7 @@ def save_services(request, company):
     form = ConnectionServicesForm(request.POST, instance=ProviderConnection.for_key(key))
     if form.is_valid():
         form.save()
-        messages.success(request, "تم حفظ إعدادات الخدمات.")
+        messages.success(request, _("تم حفظ إعدادات الخدمات."))
     else:
         _flash_form_errors(request, form)
     return redirect_to_tab(company)
@@ -157,18 +158,21 @@ def save_account(request, company):
     form = ProviderAccountForm(request.POST, provider_key=company_key(company))
     if form.is_valid():
         form.save()
-        messages.success(request, "تم حفظ حساب المزوّد.")
+        messages.success(request, _("تم حفظ حساب المزوّد."))
     else:
         _flash_form_errors(request, form)
     return redirect_to_tab(company)
 
 
 _TEST_MESSAGES = {
-    "started": (messages.info, "بدأ اختبار تسجيل الدخول — حدّث الصفحة بعد لحظات لرؤية النتيجة."),
-    "pending": (messages.info, "اختبار تسجيل الدخول قيد التنفيذ بالفعل."),
+    "started": (
+        messages.info,
+        _("بدأ اختبار تسجيل الدخول — حدّث الصفحة بعد لحظات لرؤية النتيجة."),
+    ),
+    "pending": (messages.info, _("اختبار تسجيل الدخول قيد التنفيذ بالفعل.")),
     "unavailable": (
         messages.error,
-        "تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام.",
+        _("تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام."),
     ),
 }
 

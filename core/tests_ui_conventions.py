@@ -131,14 +131,13 @@ LEGACY_APP_CARD = {  # 5 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
 }
-LEGACY_LABEL_TAG = {  # 17 files
+LEGACY_LABEL_TAG = {  # 16 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/companies/partials/company_detail_connection.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_form.html",
     "templates/inventory/cards.html",

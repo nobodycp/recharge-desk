@@ -1,22 +1,23 @@
+{% load i18n %}
 {# Login test status; swapped in place (outerHTML). Polls only while a test is pending. Context: company, login, unavailable, disabled, login_disabled_note. #}
 <div id="connection-login-status" class="small"
      {% if login.pending %}hx-get="{% url 'companies:company_connection_status' company.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
   {% if unavailable %}
-    <div class="text-danger mb-1">تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام.</div>
+    <div class="text-danger mb-1">{% trans "تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام." %}</div>
   {% endif %}
   {% if disabled %}
     <div class="text-warning mb-1">{{ login_disabled_note }}</div>
   {% endif %}
   {% if login.pending %}
-    <span class="rd-badge rd-badge--pending">جارٍ اختبار تسجيل الدخول…</span>
+    <span class="rd-badge rd-badge--pending">{% trans "جارٍ اختبار تسجيل الدخول…" %}</span>
   {% else %}
     <div class="d-flex flex-wrap gap-2 align-items-center">
       {% if login.last_login_ok is True %}
-        <span class="rd-badge rd-badge--paid">آخر دخول: ناجح</span>
+        <span class="rd-badge rd-badge--paid">{% trans "آخر دخول: ناجح" %}</span>
       {% elif login.last_login_ok is False %}
-        <span class="rd-badge rd-badge--cancelled">آخر دخول: فشل</span>
+        <span class="rd-badge rd-badge--cancelled">{% trans "آخر دخول: فشل" %}</span>
       {% else %}
-        <span class="rd-badge rd-badge--neutral">لم يُسجَّل دخول بعد</span>
+        <span class="rd-badge rd-badge--neutral">{% trans "لم يُسجَّل دخول بعد" %}</span>
       {% endif %}
       {% if login.last_login_at %}
         <span class="rd-text-muted tabular-nums">{{ login.last_login_at|date:"Y-m-d H:i" }}</span>
@@ -26,7 +27,7 @@
       <div class="text-danger text-break mt-1" dir="auto">{{ login.last_error }}</div>
     {% endif %}
     {% if login.expired %}
-      <div class="text-warning mt-1">لم تصل نتيجة من الـ worker — تأكد أنه يعمل</div>
+      <div class="text-warning mt-1">{% trans "لم تصل نتيجة من الـ worker — تأكد أنه يعمل" %}</div>
     {% endif %}
   {% endif %}
 </div>

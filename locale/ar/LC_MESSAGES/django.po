@@ -4021,6 +4021,100 @@ msgstr "تسوية الرصيد"
 #: templates/reports/company_report.html:114
 msgid "Save adjustment"
 msgstr "حفظ التسوية"
+#: companies/connection.py:53
+msgid "فعّل الربط أولاً لاختبار تسجيل الدخول"
+msgstr "فعّل الربط أولاً لاختبار تسجيل الدخول"
+#: companies/connection.py:136
+msgid "تم حفظ نظام الشركة."
+msgstr "تم حفظ نظام الشركة."
+#: companies/connection.py:149
+msgid "تم حفظ إعدادات الخدمات."
+msgstr "تم حفظ إعدادات الخدمات."
+#: companies/connection.py:161
+msgid "تم حفظ حساب المزوّد."
+msgstr "تم حفظ حساب المزوّد."
+#: companies/connection.py:170
+msgid "بدأ اختبار تسجيل الدخول — حدّث الصفحة بعد لحظات لرؤية النتيجة."
+msgstr "بدأ اختبار تسجيل الدخول — حدّث الصفحة بعد لحظات لرؤية النتيجة."
+#: companies/connection.py:172
+msgid "اختبار تسجيل الدخول قيد التنفيذ بالفعل."
+msgstr "اختبار تسجيل الدخول قيد التنفيذ بالفعل."
+#: companies/connection.py:175 templates/companies/partials/connection_login_status.html:6
+msgid "تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام."
+msgstr "تعذّر بدء الاختبار — تحقق من عمل Redis وعامل المهام."
+#: companies/forms_connection.py:14
+msgid "تحديث الأرقام"
+msgstr "تحديث الأرقام"
+#: companies/forms_connection.py:15
+msgid "الشحن"
+msgstr "الشحن"
+#: companies/forms_connection.py:16
+msgid "مطابقة الحسابات"
+msgstr "مطابقة الحسابات"
+#: companies/forms_connection.py:26
+msgid "نظام الشركة"
+msgstr "نظام الشركة"
+#: companies/forms_connection.py:40
+msgid "تفعيل الربط مع المزوّد"
+msgstr "تفعيل الربط مع المزوّد"
+#: templates/companies/partials/company_detail_connection.html:12
+msgid "النظام الذي يشغّل تحديث الأرقام والشحن ومطابقة الحسابات لهذه الشركة. إن تُرك فارغاً فلا تُنفَّذ أي عمليات مزوّد لها."
+msgstr "النظام الذي يشغّل تحديث الأرقام والشحن ومطابقة الحسابات لهذه الشركة. إن تُرك فارغاً فلا تُنفَّذ أي عمليات مزوّد لها."
+#: templates/companies/partials/company_detail_connection.html:23
+#: templates/companies/partials/company_detail_connection.html:82
+msgid "حفظ"
+msgstr "حفظ"
+#: templates/companies/partials/company_detail_connection.html:36
+msgid "الخدمات:"
+msgstr "الخدمات:"
+#: templates/companies/partials/company_detail_connection.html:38
+msgid "المفاتيح تخصّ الربط مع هذا النظام وتسري على كل الشركات المرتبطة به."
+msgstr "المفاتيح تخصّ الربط مع هذا النظام وتسري على كل الشركات المرتبطة به."
+#: templates/companies/partials/company_detail_connection.html:62
+msgid "فتح صفحة المطابقة"
+msgstr "فتح صفحة المطابقة"
+#: templates/companies/partials/company_detail_connection.html:67
+msgid "تعمل"
+msgstr "تعمل"
+#: templates/companies/partials/company_detail_connection.html:69
+msgid "غير مهيّأة"
+msgstr "غير مهيّأة"
+#: templates/companies/partials/company_detail_connection.html:71
+msgid "موقوفة"
+msgstr "موقوفة"
+#: templates/companies/partials/company_detail_connection.html:73
+msgid "غير متاحة"
+msgstr "غير متاحة"
+#: templates/companies/partials/company_detail_connection.html:95
+msgid "حساب المزوّد:"
+msgstr "حساب المزوّد:"
+#: templates/companies/partials/company_detail_connection.html:97
+msgid "تُحفظ كلمة المرور ومفتاح TOTP والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة."
+msgstr "تُحفظ كلمة المرور ومفتاح TOTP والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة."
+#: templates/companies/partials/company_detail_connection.html:126
+msgid "حفظ الحساب"
+msgstr "حفظ الحساب"
+#: templates/companies/partials/company_detail_connection.html:139
+msgid "اختبار تسجيل الدخول"
+msgstr "اختبار تسجيل الدخول"
+#: templates/companies/partials/company_detail_connection.html:153
+msgid "مشترك مع:"
+msgstr "مشترك مع:"
+#: templates/companies/partials/connection_login_status.html:12
+msgid "جارٍ اختبار تسجيل الدخول…"
+msgstr "جارٍ اختبار تسجيل الدخول…"
+#: templates/companies/partials/connection_login_status.html:16
+msgid "آخر دخول: ناجح"
+msgstr "آخر دخول: ناجح"
+#: templates/companies/partials/connection_login_status.html:18
+msgid "آخر دخول: فشل"
+msgstr "آخر دخول: فشل"
+#: templates/companies/partials/connection_login_status.html:20
+msgid "لم يُسجَّل دخول بعد"
+msgstr "لم يُسجَّل دخول بعد"
+#: templates/companies/partials/connection_login_status.html:30
+msgid "لم تصل نتيجة من الـ worker — تأكد أنه يعمل"
+msgstr "لم تصل نتيجة من الـ worker — تأكد أنه يعمل"
 #: templates/companies/partials/company_list_results.html:9
 #: templates/core/search.html:108 templates/customers/customer_list.html:61
 msgid "Name"

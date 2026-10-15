@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 
 from companies.models import Company
 from providers.contracts import Capability
@@ -10,9 +11,9 @@ from providers.models import ProviderConnection
 from providers.registry import ADAPTERS
 
 SERVICE_LABELS = {
-    Capability.REFRESH: "تحديث الأرقام",
-    Capability.CHARGE: "الشحن",
-    Capability.RECONCILE: "مطابقة الحسابات",
+    Capability.REFRESH: _("تحديث الأرقام"),
+    Capability.CHARGE: _("الشحن"),
+    Capability.RECONCILE: _("مطابقة الحسابات"),
 }
 
 
@@ -22,7 +23,7 @@ class CompanySystemForm(forms.ModelForm):
     class Meta:
         model = Company
         fields = ["provider_key"]
-        labels = {"provider_key": "نظام الشركة"}
+        labels = {"provider_key": _("نظام الشركة")}
         widgets = {"provider_key": forms.Select(attrs={"class": "form-select"})}
 
 
@@ -36,7 +37,7 @@ class ConnectionServicesForm(forms.ModelForm):
     class Meta:
         model = ProviderConnection
         fields = ["is_enabled", "refresh_enabled", "charge_enabled", "reconcile_enabled"]
-        labels = {"is_enabled": "تفعيل الربط مع المزوّد"}
+        labels = {"is_enabled": _("تفعيل الربط مع المزوّد")}
         widgets = {
             name: forms.CheckboxInput(
                 attrs={"class": "form-check-input", "role": "switch"}
