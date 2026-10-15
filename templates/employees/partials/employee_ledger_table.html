@@ -33,7 +33,7 @@
               <td class="small text-secondary text-nowrap">{{ row.created_at|date:"Y-m-d H:i" }}</td>
               <td><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></td>
               <td class="text-end tabular-nums fw-semibold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">
-                {{ row.amount|intcomma }}
+                <span dir="ltr">{{ row.amount|intcomma }}</span>
               </td>
               <td class="small">
                 {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
@@ -67,20 +67,20 @@
   </div>
   <div class="d-md-none rd-mobile-stack p-2">
     {% for row in ledger_page %}
-      <div class="rd-mobile-row-card">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <div class="small text-secondary">{{ row.created_at|date:"Y-m-d H:i" }}</div>
-          <span class="tabular-nums fw-bold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">{{ row.amount|intcomma }}</span>
+      <div class="rd-mobile-row-card rd-ledger-card">
+        <div class="rd-ledger-card__top d-flex justify-content-between align-items-start gap-2">
+          <div class="rd-ledger-card__date small text-secondary">{{ row.created_at|date:"Y-m-d H:i" }}</div>
+          <span dir="ltr" class="rd-ledger-card__amount tabular-nums fw-bold {% if row.amount < 0 %}kpi-expense{% elif row.amount > 0 %}kpi-success{% endif %}">{{ row.amount|intcomma }}</span>
         </div>
-        <div class="mt-1"><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></div>
+        <div class="rd-ledger-card__type mt-1"><span class="rd-badge rd-badge--neutral">{{ row.get_entry_type_display }}</span></div>
         {% if row.phone or row.payer_name or row.salary_month %}
-          <div class="small mt-2">
+          <div class="rd-ledger-card__detail small mt-2">
             {% if row.phone %}<span class="tabular-nums">{{ row.phone }}</span>{% endif %}
             {% if row.payer_name %} · {{ row.payer_name }}{% endif %}
             {% if row.salary_month %} · {{ row.salary_month|date:"Y-m" }}{% endif %}
           </div>
         {% endif %}
-        {% if row.notes %}<div class="small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
+        {% if row.notes %}<div class="rd-ledger-card__notes small text-secondary mt-1">{{ row.notes }}</div>{% endif %}
         {% if not ledger_read_only %}
         <form
           method="post"

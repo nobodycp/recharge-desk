@@ -2975,9 +2975,13 @@ msgstr "بيع جديد"
 msgid "Number refresh is disabled on the sales screen."
 msgstr "تحديث الأرقام معطّل في شاشة المبيعات."
 
-#: sales/views/employee.py:247 templates/sales/employee_refresh_number.html:4
+#: sales/views/employee.py:247 templates/sales/employee_refresh_number.html:60
 msgid "Refresh number"
 msgstr "تحديث الرقم"
+
+#: templates/sales/employee_refresh_number.html:61
+msgid "Check number"
+msgstr "فحص الرقم"
 #: sales/views/employee.py:257 sales/views/employee.py:289
 #: sales/views/employee.py:778
 msgid "Recording payments from the sales screen is disabled."
@@ -5357,6 +5361,9 @@ msgstr "الإدخالات"
 #: templates/partials/_employee_bottom_nav_inner.html:69
 msgid "Stock"
 msgstr "مخزون"
+#: templates/partials/_employee_bottom_nav_inner.html:18
+msgid "Check numbers"
+msgstr "فحص الأرقام"
 #: templates/partials/filter_card_open.html:20
 msgid "Search & filters"
 msgstr "البحث والفلاتر"
@@ -5469,6 +5476,10 @@ msgstr "غير مدفوع"
 #: templates/partials/theme_toggle.html:11
 msgid "Toggle color theme"
 msgstr "تبديل المظهر"
+
+#: templates/partials/user_menu.html:21
+msgid "Theme"
+msgstr "المظهر"
 
 #: templates/partials/user_menu.html:7
 #, python-format
@@ -5869,6 +5880,14 @@ msgstr "سعر البيع صفر: ستُسجَّل تكلفة المورّد ك�
 #: templates/sales/employee_record_payment.html:96
 msgid "Add note (optional)"
 msgstr "إضافة ملاحظة (اختياري)"
+
+#: templates/sales/employee_entry.html
+msgid "+ Note"
+msgstr "+ ملاحظة"
+
+#: templates/sales/employee_entry.html
+msgid "Number looks valid"
+msgstr "الرقم صحيح"
 
 #: templates/sales/employee_entry.html:248
 msgid "Save sale"

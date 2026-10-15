@@ -1,26 +1,25 @@
 {% load i18n %}
-{% if p.pk in editable_payment_ids %}
-  <div class="d-flex gap-2 justify-content-end mt-1">
+{# The wrapper only renders when an action exists (Delete covers every state that can also Edit). #}
+{% if p.pk in editable_payment_ids %}{% if p.status == "awaiting" or p.status == "rejected" or p.resulting_payment_id %}
+  <div class="rd-pay-actions">
     {% if p.status == "awaiting" %}
-      <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_payment_edit' p.pk %}">{% trans "Edit" %}</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:employee_payment_edit' p.pk %}">{% trans "Edit" %}</a>
     {% endif %}
-    {% if p.status == "awaiting" or p.status == "rejected" or p.resulting_payment_id %}
-      <form
-        method="post"
-        action="{% url 'sales:employee_payment_delete' p.pk %}"
-        class="d-inline-block m-0"
-        {% if use_htmx %}
-          hx-post="{% url 'sales:employee_payment_delete' p.pk %}"
-          hx-target="#payment-row-{{ p.pk }}"
-          hx-swap="outerHTML swap:200ms"
-        {% endif %}
-        hx-confirm="{% if p.status == 'approved' %}{% trans 'Undo this payment? Customer balance and settlements will be reversed.' %}{% else %}{% trans 'Delete this payment entry? This cannot be undone.' %}{% endif %}"
-      >
-        {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-outline-danger">
-          {% if p.status == "approved" %}{% trans "Undo" %}{% else %}{% trans "Delete" %}{% endif %}
-        </button>
-      </form>
-    {% endif %}
+    <form
+      method="post"
+      action="{% url 'sales:employee_payment_delete' p.pk %}"
+      class="d-inline-block m-0"
+      {% if use_htmx %}
+        hx-post="{% url 'sales:employee_payment_delete' p.pk %}"
+        hx-target="#payment-row-{{ p.pk }}"
+        hx-swap="outerHTML swap:200ms"
+      {% endif %}
+      hx-confirm="{% if p.status == 'approved' %}{% trans 'Undo this payment? Customer balance and settlements will be reversed.' %}{% else %}{% trans 'Delete this payment entry? This cannot be undone.' %}{% endif %}"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        {% if p.status == "approved" %}{% trans "Undo" %}{% else %}{% trans "Delete" %}{% endif %}
+      </button>
+    </form>
   </div>
-{% endif %}
+{% endif %}{% endif %}

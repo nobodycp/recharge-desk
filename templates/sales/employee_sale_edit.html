@@ -1,79 +1,90 @@
 {% extends "base_employee.html" %}
 {% load i18n humanize %}
-{% block employee_header %}{% trans "Edit entry" %}{% endblock %}
+{% block employee_header %}<span>{% trans "Edit entry" %}</span>{% endblock %}
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Edit entry" %}</h1>
-    <p class="rd-text-muted small mb-0">
+<div class="rd-sale-form rd-sale-edit">
+  <div class="rd-entry-subrow">
+    <p class="rd-entry-subtitle">
       {% blocktrans with company=sale.company.name product=sale.product.display_name ref=sale.reference_number %}{{ company }} · {{ product }} · {{ ref }}{% endblocktrans %}
     </p>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Back" %}</a>
   </div>
-  <a class="btn btn-outline-secondary" href="{% url 'sales:employee_recent_sales' %}">{% trans "Back" %}</a>
-</div>
 
-<div class="rd-card">
-  <div class="rd-card-body p-3 p-md-4">
-    <div class="alert alert-info small mb-3" role="status">
-      {% trans "Company, product and eSIM flag can't be changed here. If those need fixing, delete this entry and create a new one." %}
+  <div class="alert alert-info small" role="status">
+    {% trans "Company, product and eSIM flag can't be changed here. If those need fixing, delete this entry and create a new one." %}
+  </div>
+
+  {% if form.non_field_errors %}
+    {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
+  {% endif %}
+
+  <form method="post" class="d-flex flex-column rd-sale-form__stack" id="employee-sale-edit-form" novalidate>
+    {% csrf_token %}
+
+    <div class="rd-entry-blk">
+      <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
+        <div class="rd-entry-field">
+          <label class="rd-entry-field__label" for="{{ form.reference_number.id_for_label }}">{{ form.reference_number.label }}</label>
+          {{ form.reference_number }}
+        </div>
+        {% if form.reference_number.errors %}<div class="rd-field-error">{{ form.reference_number.errors }}</div>{% endif %}
+      </div>
+      <div class="rd-field-group{% if form.payer_name.errors %} has-error{% endif %}">
+        <div class="rd-entry-field">
+          <label class="rd-entry-field__label" for="{{ form.payer_name.id_for_label }}">{{ form.payer_name.label }}</label>
+          {{ form.payer_name }}
+        </div>
+        {% if form.payer_name.errors %}<div class="rd-field-error">{{ form.payer_name.errors }}</div>{% endif %}
+      </div>
     </div>
 
-    {% if form.non_field_errors %}
-      {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
-    {% endif %}
-
-    <form method="post" class="d-grid gap-3" novalidate>
-      {% csrf_token %}
-
-      <div>
-        {% if form.payment_method %}
-          {{ form.payment_method.label_tag }}
-          {{ form.payment_method }}
-          {{ form.payment_method.errors }}
-        {% elif sale.paid_via_employee %}
-          <div class="small text-secondary">{% trans "Payment to employee" %}</div>
-        {% elif sale.on_account %}
-          <div class="small text-secondary">{% trans "On account" %}</div>
-        {% endif %}
-      </div>
-
-      <div class="row g-3">
-        <div class="col-md-6">
-          {{ form.payer_name.label_tag }}
-          {{ form.payer_name }}
-          {{ form.payer_name.errors }}
+    <div class="rd-entry-blk">
+      {% if form.payment_method %}
+        <div class="rd-field-group{% if form.payment_method.errors %} has-error{% endif %}">
+          <div class="rd-entry-field">
+            <label class="rd-entry-field__label" for="{{ form.payment_method.id_for_label }}">{{ form.payment_method.label }}</label>
+            {{ form.payment_method }}
+          </div>
+          {% if form.payment_method.errors %}<div class="rd-field-error">{{ form.payment_method.errors }}</div>{% endif %}
         </div>
-        <div class="col-md-6">
-          {{ form.reference_number.label_tag }}
-          {{ form.reference_number }}
-          {{ form.reference_number.errors }}
-        </div>
-      </div>
-
-      <div class="row g-3">
-        <div class="col-md-6">
-          {{ form.sell_price_actual.label_tag }}
+      {% elif sale.paid_via_employee %}
+        <div class="rd-entry-note rd-entry-note--muted">{% trans "Payment to employee" %}</div>
+      {% elif sale.on_account %}
+        <div class="rd-entry-note rd-entry-note--muted">{% trans "On account" %}</div>
+      {% endif %}
+      <div class="rd-field-group{% if form.sell_price_actual.errors %} has-error{% endif %}">
+        <div class="rd-entry-field">
+          <label class="rd-entry-field__label" for="{{ form.sell_price_actual.id_for_label }}">{{ form.sell_price_actual.label }}</label>
           {{ form.sell_price_actual }}
-          {{ form.sell_price_actual.errors }}
         </div>
-        <div class="col-md-6 small text-secondary align-self-end">
-          {% trans "Status" %}:
-          <span class="fw-semibold">{{ sale.get_status_display }}</span>
-          · {{ sale.created_at|time:"H:i" }}
+        {% if form.sell_price_actual.errors %}<div class="rd-field-error">{{ form.sell_price_actual.errors }}</div>{% endif %}
+      </div>
+      <div class="rd-sale-edit__meta">
+        <span>{% trans "Status" %}</span>
+        {# Same text as before (get_status_display), Pearl badge look. #}
+        <span class="rd-badge rd-badge--{% if sale.status == 'paid' %}paid{% elif sale.status == 'pending' %}pending{% elif sale.status == 'cancelled' or sale.status == 'written_off' %}cancelled{% else %}neutral{% endif %}">{{ sale.get_status_display }}</span>
+        <span class="tabular-nums">{{ sale.created_at|time:"H:i" }}</span>
+      </div>
+    </div>
+
+    <div class="rd-entry-blk">
+      <div class="rd-field-group{% if form.notes.errors %} has-error{% endif %}">
+        <div class="rd-entry-field rd-entry-field--area">
+          <label class="rd-entry-field__label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}
         </div>
+        {% if form.notes.errors %}<div class="rd-field-error">{{ form.notes.errors }}</div>{% endif %}
       </div>
+    </div>
+  </form>
+</div>
 
-      <div>
-        {{ form.notes.label_tag }}
-        {{ form.notes }}
-        {{ form.notes.errors }}
-      </div>
-
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Save changes" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'sales:employee_recent_sales' %}">{% trans "Cancel" %}</a>
-      </div>
-    </form>
+<div class="rd-entry-dock rd-pay-sub-dock">
+  <div class="sticky-save">
+    <div class="rd-pay-sub-dock__actions">
+      <button type="submit" form="employee-sale-edit-form" class="btn btn-primary rd-dock-btn">{% trans "Save changes" %}</button>
+      <a class="btn btn-outline-secondary rd-dock-btn" href="{% url 'sales:employee_recent_sales' %}">{% trans "Cancel" %}</a>
+    </div>
   </div>
 </div>
 {% endblock %}

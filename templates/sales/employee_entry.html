@@ -3,6 +3,9 @@
 {% block employee_header %}
 <span>{% trans "Sales entry" %}</span>
 {% endblock %}
+{% block employee_progress %}
+<div class="rd-entry-progress" aria-hidden="true"><i></i></div>
+{% endblock %}
 {% block content %}
 <div class="rd-sale-form">
   <form
@@ -22,67 +25,73 @@
             <div data-rd-flash hidden><p data-level="error">{% trans "Please fix the highlighted fields." %}</p></div>
           {% endif %}
 
-          <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
-            <label class="rd-field-label d-block" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
-            <div class="input-group input-group-sm">
-              {{ form.reference_number }}
-              <button
-                type="button"
-                class="btn btn-outline-secondary employee-clipboard-paste-btn"
-                data-paste-target="id_reference_number"
-                aria-label="{% trans 'Paste from clipboard' %}"
-                data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
-              >{% trans "Paste" %}</button>
-            </div>
-            {% if form.reference_number.errors %}
-              <div class="rd-field-error" id="rd-ref-error">{{ form.reference_number.errors }}</div>
-            {% else %}
-              <div class="rd-field-error d-none" id="rd-ref-error" aria-live="polite"></div>
-            {% endif %}
-          </div>
-
-          <div
-            class="rd-field-group rd-payer-field-wrap{% if form.payer_name.errors %} has-error{% endif %}"
-            id="rd-payer-assist-root"
-            data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
-            data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
-            data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
-            data-label-used="{{ _('Previously used')|escapejs }}"
-            data-label-credit-account="{{ _('Credit account')|escapejs }}"
-            data-label-cash-payer="{{ _('Cash payer')|escapejs }}"
-          >
-            <label class="rd-field-label d-block" for="id_payer_name">{% trans "Payer name" %}</label>
-            <div class="rd-payer-ac-anchor">
-              <div class="input-group input-group-sm">
-                {{ form.payer_name }}
+          <div class="rd-entry-blk">
+            <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">
+              <div class="rd-entry-field">
+                <label class="rd-entry-field__label" for="id_reference_number">{% trans "Phone or shipment number" %}</label>
+                {{ form.reference_number }}
+                <svg class="rd-entry-valid" role="img" aria-label="{% trans 'Number looks valid' %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" hidden><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
                 <button
                   type="button"
-                  class="btn btn-outline-secondary employee-clipboard-paste-btn"
-                  data-paste-target="id_payer_name"
+                  class="employee-clipboard-paste-btn btn btn-sm"
+                  data-paste-target="id_reference_number"
                   aria-label="{% trans 'Paste from clipboard' %}"
                   data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
                 >{% trans "Paste" %}</button>
               </div>
-              <p class="rd-payer-prefill-hint mb-0" id="rd-payer-prefill-hint" hidden aria-live="polite"></p>
-              <div
-                class="rd-payer-ac-list"
-                id="rd-payer-ac-list"
-                role="listbox"
-                aria-label="{% trans 'Payer name suggestions' %}"
-                hidden
-              ></div>
+              {% if form.reference_number.errors %}
+                <div class="rd-field-error" id="rd-ref-error">{{ form.reference_number.errors }}</div>
+              {% else %}
+                <div class="rd-field-error d-none" id="rd-ref-error" aria-live="polite"></div>
+              {% endif %}
             </div>
-            {% if form.payer_name.errors %}<div class="rd-field-error">{{ form.payer_name.errors }}</div>{% endif %}
+
+            <div
+              class="rd-field-group rd-payer-field-wrap{% if form.payer_name.errors %} has-error{% endif %}"
+              id="rd-payer-assist-root"
+              data-api-payer-by-number="{% url 'sales:api_payer_by_number' %}"
+              data-api-payer-name-suggestions="{% url 'sales:api_payer_name_suggestions' %}"
+              data-hint-prefilled="{{ _('Filled from a previous sale')|escapejs }}"
+              data-label-used="{{ _('Previously used')|escapejs }}"
+              data-label-credit-account="{{ _('Credit account')|escapejs }}"
+              data-label-cash-payer="{{ _('Cash payer')|escapejs }}"
+            >
+              <div class="rd-payer-ac-anchor">
+                <div class="rd-entry-field">
+                  <div class="rd-entry-field__top">
+                    <label class="rd-entry-field__label" for="id_payer_name">{% trans "Payer name" %}</label>
+                    <span class="rd-payer-prefill-hint" id="rd-payer-prefill-hint" hidden aria-live="polite"></span>
+                  </div>
+                  {{ form.payer_name }}
+                  <button
+                    type="button"
+                    class="employee-clipboard-paste-btn btn btn-sm"
+                    data-paste-target="id_payer_name"
+                    aria-label="{% trans 'Paste from clipboard' %}"
+                    data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+                  >{% trans "Paste" %}</button>
+                </div>
+                <div
+                  class="rd-payer-ac-list"
+                  id="rd-payer-ac-list"
+                  role="listbox"
+                  aria-label="{% trans 'Payer name suggestions' %}"
+                  hidden
+                ></div>
+              </div>
+              {% if form.payer_name.errors %}<div class="rd-field-error">{{ form.payer_name.errors }}</div>{% endif %}
+            </div>
           </div>
 
-          <div class="rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-              <div class="rd-field-label mb-0">{% trans "Where did you receive the money?" %}</div>
-              <div class="d-flex flex-wrap gap-1">
+          <div class="rd-entry-blk rd-field-group{% if form.payment_method.errors %} has-error{% endif %}" id="rd-payment-section">
+            <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pay" aria-hidden="true">2</span>
+              <span class="rd-entry-blk__title">{% trans "Where did you receive the money?" %}</span>
+              <div class="rd-entry-blk__end">
                 {% if acting_employee and app_settings.sales_show_employee_payment %}
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline-info rd-employee-payment-toggle"
+                  class="btn btn-sm rd-entry-pill rd-employee-payment-toggle"
                   id="rd-employee-payment-toggle"
                   aria-pressed="false"
                   data-on-label="{% trans 'Payment to employee: ON' %}"
@@ -91,7 +100,7 @@
                 {% endif %}
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline-warning rd-on-account-toggle"
+                  class="btn btn-sm rd-entry-pill rd-on-account-toggle"
                   id="rd-on-account-toggle"
                   aria-pressed="false"
                   data-on-label="{% trans 'On account: ON' %}"
@@ -104,158 +113,168 @@
             {{ form.paid_via_employee }}
             {% if form.payment_method.errors %}<div class="rd-field-error">{{ form.payment_method.errors }}</div>{% endif %}
             {% if acting_employee and app_settings.sales_show_employee_payment %}
-            <div id="rd-employee-payment-hint" class="small text-info mb-0 mt-1 d-flex justify-content-between align-items-start gap-2 flex-wrap" hidden>
+            <div id="rd-employee-payment-hint" class="rd-entry-note rd-entry-note--info rd-entry-hint" hidden>
               <span>
                 {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
               </span>
-              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
-                {% trans "Your balance:" %} {{ acting_employee.current_balance|intcomma }}
+              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}kpi-success{% endif %}">
+                {% trans "Your balance:" %} <span dir="ltr">{{ acting_employee.current_balance|intcomma }}</span>
               </span>
             </div>
             {% endif %}
-            <div class="row row-cols-5 g-1 mt-1 justify-content-center" id="payment-tiles">
+            <div class="rd-entry-tiles rd-entry-tiles--pay" id="payment-tiles">
               {% for pm in payment_methods %}
-                <div class="col">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary w-100 py-2 px-1 rounded-2 employee-chip employee-payment-tile d-flex flex-column align-items-center justify-content-center {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
-                    data-payment-id="{{ pm.pk }}"
-                    title="{{ pm.name|tdb }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb %}</button>
-                </div>
+                <button
+                  type="button"
+                  class="employee-chip employee-payment-tile {% if selected_payment_id == pm.pk|stringformat:'s' %}is-active{% endif %}"
+                  data-payment-id="{{ pm.pk }}"
+                  title="{{ pm.name|tdb }}"
+                >{% include "sales/partials/employee_icon_mark.html" with icon=pm.icon title=pm.name|tdb show_name=True %}</button>
               {% empty %}
-                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No payment methods." %}</p></div>
+                <p class="rd-entry-empty">{% trans "No payment methods." %}</p>
               {% endfor %}
             </div>
           </div>
 
-          <div class="rd-field-group{% if form.company.errors %} has-error{% endif %}">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-              <div class="rd-field-label mb-0">{% trans "Company" %}</div>
-              <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+          <div class="rd-entry-blk rd-field-group{% if form.company.errors %} has-error{% endif %}">
+            <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="co" aria-hidden="true">3</span>
+              <span class="rd-entry-blk__title">{% trans "Company" %}</span>
+              <div class="rd-entry-blk__end">
+                <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm rd-entry-spinner" role="status" aria-hidden="true"></span>
+              </div>
             </div>
             {{ form.company }}
             {% if form.company.errors %}<div class="rd-field-error">{{ form.company.errors }}</div>{% endif %}
-            <div class="row row-cols-4 g-1 mt-1 justify-content-center" id="company-tiles">
+            <div class="rd-entry-tiles rd-entry-tiles--co" id="company-tiles">
               {% for c in companies %}
-                <div class="col">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary w-100 py-2 px-1 rounded-2 employee-chip employee-company-tile d-flex flex-column align-items-center justify-content-center {% if selected_company_id == c.pk|stringformat:'s' %}is-active{% endif %}"
-                    data-company-id="{{ c.pk }}"
-                    {% if chargeable_company_ids %}data-can-charge="{% if c.pk in chargeable_company_ids %}1{% else %}0{% endif %}"{% endif %}
-                    hx-get="{% url 'sales:employee_product_fragment' %}?company={{ c.pk }}"
-                    hx-target="#product-tiles-container"
-                    hx-swap="innerHTML"
-                    hx-indicator="#product-tiles-loading"
-                    onclick="document.getElementById('id_company').value='{{ c.pk }}'; document.getElementById('id_product').value=''; document.querySelectorAll('.employee-company-tile').forEach(function(el){ el.classList.remove('is-active'); }); this.classList.add('is-active');"
-                    title="{{ c.name }}"
-                  >{% include "sales/partials/employee_icon_mark.html" with icon=c.icon title=c.name %}</button>
-                </div>
+                <button
+                  type="button"
+                  class="employee-chip employee-company-tile {% if selected_company_id == c.pk|stringformat:'s' %}is-active{% endif %}"
+                  data-company-id="{{ c.pk }}"
+                  {% if chargeable_company_ids %}data-can-charge="{% if c.pk in chargeable_company_ids %}1{% else %}0{% endif %}"{% endif %}
+                  hx-get="{% url 'sales:employee_product_fragment' %}?company={{ c.pk }}"
+                  hx-target="#product-tiles-container"
+                  hx-swap="innerHTML"
+                  hx-indicator="#product-tiles-loading"
+                  onclick="document.getElementById('id_company').value='{{ c.pk }}'; document.getElementById('id_product').value=''; document.querySelectorAll('.employee-company-tile').forEach(function(el){ el.classList.remove('is-active'); }); this.classList.add('is-active');"
+                  title="{{ c.name }}"
+                >{% include "sales/partials/employee_icon_mark.html" with icon=c.icon title=c.name show_name=True %}</button>
               {% empty %}
-                <div class="col-12"><p class="text-secondary small mb-0">{% trans "No active companies." %}</p></div>
+                <p class="rd-entry-empty">{% trans "No active companies." %}</p>
               {% endfor %}
             </div>
           </div>
 
-          <div class="rd-field-group{% if form.product.errors %} has-error{% endif %}">
-            <div class="rd-field-label">{% trans "Product" %}</div>
+          <div class="rd-entry-blk rd-field-group{% if form.product.errors %} has-error{% endif %}">
+            <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pk" aria-hidden="true">4</span>
+              <span class="rd-entry-blk__title">{% trans "Product" %}</span>
+            </div>
             {{ form.product }}
             {% if form.product.errors %}<div class="rd-field-error">{{ form.product.errors }}</div>{% endif %}
-            <div id="product-tiles-container" class="mt-1">
+            <div id="product-tiles-container">
               {% if product_groups %}
                 {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id %}
               {% else %}
-                <p class="text-secondary small mb-0">{% trans "Choose a company to see products." %}</p>
+                <p class="rd-entry-empty">{% trans "Choose a company to see products." %}</p>
               {% endif %}
             </div>
           </div>
 
-          <div class="rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
-            <div class="row g-2 align-items-end">
-              <div class="col-4 col-sm-3" id="rd-duration-days-wrap" hidden>
-                <label class="rd-field-label d-block" for="id_duration_days">{% trans "Days" %}</label>
-                {{ form.duration_days }}
+          <div class="rd-entry-blk rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
+            <div class="rd-entry-blk__head">
+              <span class="rd-entry-step" data-step="pr" aria-hidden="true">5</span>
+              <span class="rd-entry-blk__title">{% trans "Price" %}</span>
+              <div class="rd-entry-blk__end">
+                <span class="rd-entry-est tabular-nums" id="rd-sale-preview" hidden>
+                  {% trans "Supplier cost" %} <span id="rd-preview-cost">—</span>
+                  &middot;
+                  {% trans "Profit" %} <span id="rd-preview-profit">—</span>
+                </span>
+                <details class="employee-notes-details rd-entry-notes" {% if form.notes.errors %}open{% endif %}>
+                  <summary class="employee-notes-summary rd-entry-note-link">{% trans "+ Note" %}</summary>
+                  <div class="rd-entry-notes__body">
+                    <label class="form-label fw-semibold small visually-hidden" for="id_notes">{% trans "Notes" %}</label>
+                    {{ form.notes.errors }}
+                    {{ form.notes }}
+                  </div>
+                </details>
+              </div>
+            </div>
+            <div class="rd-entry-price-row">
+              <div id="rd-duration-days-wrap" hidden>
+                <div class="rd-entry-field">
+                  <label class="rd-entry-field__label" for="id_duration_days">{% trans "Days" %}</label>
+                  {{ form.duration_days }}
+                </div>
                 {% if form.duration_days.errors %}<div class="rd-field-error">{{ form.duration_days.errors }}</div>{% endif %}
               </div>
-              <div class="col-12" id="rd-sell-price-wrap">
-                <label class="rd-field-label d-block" for="id_sell_price_actual">{% trans "Selling price" %}</label>
-                {{ form.sell_price_actual }}
+              <div id="rd-sell-price-wrap">
+                <div class="rd-entry-field">
+                  <label class="rd-entry-field__label" for="id_sell_price_actual">{% trans "Selling price" %}</label>
+                  {{ form.sell_price_actual }}
+                </div>
                 {% if form.sell_price_actual.errors %}<div class="rd-field-error">{{ form.sell_price_actual.errors }}</div>{% endif %}
               </div>
-            </div>
-            <p class="form-text small mb-1" id="rd-days-hint" hidden></p>
-            <div class="rd-esim-switch">
-              <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
-                <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_esim }}</div>
-                <label class="form-check-label mb-0 rd-esim-switch__label" for="id_is_esim">
+              <div class="rd-entry-switch">
+                <label class="rd-entry-switch__label" for="id_is_esim">
                   {% trans "eSIM" %}
-                  <span class="text-secondary rd-esim-switch__extra">(+{{ esim_extra|unlocalize }})</span>
+                  <small class="tabular-nums">(+{{ esim_extra|unlocalize }})</small>
                 </label>
+                <span class="form-check form-switch m-0 rd-entry-switch__toggle">{{ form.is_esim }}</span>
               </div>
+              {% if app_settings.sales_inventory_enabled %}
+              <div class="rd-entry-switch">
+                <label class="rd-entry-switch__label" for="id_is_new_sim">
+                  {% trans "New SIM" %}
+                  <small class="tabular-nums" id="rd-new-sim-extra-label" hidden></small>
+                </label>
+                <span class="form-check form-switch m-0 rd-entry-switch__toggle">{{ form.is_new_sim }}</span>
+              </div>
+              {% endif %}
             </div>
             {{ form.is_esim.errors }}
+            {% if app_settings.sales_inventory_enabled %}{{ form.is_new_sim.errors }}{% endif %}
+            <p class="rd-entry-note rd-entry-note--muted" id="rd-days-hint" hidden></p>
+            <div class="rd-entry-notes-line">
+              <p class="rd-entry-note rd-entry-note--info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
+              <p class="rd-entry-note rd-entry-note--info" id="rd-preview-new-sim-note" hidden>{% trans "New SIM: estimated chip cost is included in the estimate above." %}</p>
+              <p class="rd-entry-note rd-entry-note--danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
+            </div>
             {% if app_settings.sales_inventory_enabled %}
-            <div class="rd-sim-options mt-2">
-              <div class="rd-esim-switch">
-                <div class="rd-esim-switch__row d-flex align-items-center flex-wrap">
-                  <div class="form-check form-switch m-0 rd-esim-switch__toggle">{{ form.is_new_sim }}</div>
-                  <label class="form-check-label mb-0 rd-esim-switch__label" for="id_is_new_sim">
-                    {% trans "New SIM" %}
-                    <span class="text-secondary rd-esim-switch__extra" id="rd-new-sim-extra-label" hidden></span>
-                  </label>
+            <div class="rd-entry-sim-extra">
+              <div id="rd-sim-serial-wrap" hidden>
+                <div class="rd-entry-field">
+                  <label class="rd-entry-field__label" for="id_sim_serial_or_iccid">{{ form.sim_serial_or_iccid.label }}</label>
+                  {{ form.sim_serial_or_iccid }}
                 </div>
-              </div>
-              {{ form.is_new_sim.errors }}
-              <div class="mt-2" id="rd-sim-serial-wrap" hidden>
-                <label class="form-label small mb-1" for="id_sim_serial_or_iccid">{{ form.sim_serial_or_iccid.label }}</label>
-                {{ form.sim_serial_or_iccid }}
                 {{ form.sim_serial_or_iccid.errors }}
               </div>
-              <p class="mb-0 mt-1 small text-secondary" id="rd-sim-stock-preview" hidden></p>
+              <p class="rd-entry-note rd-entry-note--muted" id="rd-sim-stock-preview" hidden></p>
             </div>
             {% endif %}
           </div>
 
-          <div class="rd-field-group rd-sale-preview border rounded-2 px-3 py-2 small" id="rd-sale-preview" hidden>
-            <div class="rd-field-label mb-2">{% trans "Estimate" %}</div>
-            <div class="d-flex justify-content-between gap-2">
-              <span class="text-secondary">{% trans "Supplier cost" %}</span>
-              <span id="rd-preview-cost" class="tabular-nums fw-semibold">—</span>
-            </div>
-            <div class="d-flex justify-content-between gap-2 mt-1">
-              <span class="text-secondary">{% trans "Profit" %}</span>
-              <span id="rd-preview-profit" class="tabular-nums fw-semibold">—</span>
-            </div>
-            <p class="mb-0 mt-2 small text-info" id="rd-preview-esim-note" hidden>{% trans "eSIM: extra supplier cost is included in the estimate above." %}</p>
-            <p class="mb-0 mt-2 small text-info" id="rd-preview-new-sim-note" hidden>{% trans "New SIM: estimated chip cost is included in the estimate above." %}</p>
-            <p class="mb-0 mt-2 small text-danger" id="rd-preview-loss-note" hidden>{% trans "Selling price is 0: supplier cost will be recorded as a loss in the system." %}</p>
-          </div>
-          <details class="employee-notes-details small" {% if form.notes.errors %}open{% endif %}>
-            <summary class="employee-notes-summary text-primary">{% trans "Add note (optional)" %}</summary>
-            <div class="mt-2">
-              <label class="form-label fw-semibold small visually-hidden" for="id_notes">{% trans "Notes" %}</label>
-              {{ form.notes.errors }}
-              {{ form.notes }}
-            </div>
-          </details>
-          <div class="sticky-save">
-            <div class="sticky-save__actions">
-              <button class="btn btn-primary w-100 employee-save-sale-btn" type="submit" name="action" value="save">
-                {% trans "Save sale" %}
-              </button>
-              {% if chargeable_company_ids %}
-                <button
-                  class="btn w-100 employee-save-sale-btn employee-charge-sale-btn"
-                  type="submit" name="action" value="charge"
-                  id="rd-charge-sale-btn"
-                  title="{% trans 'Record the sale and charge the line through the provider' %}"
-                  {% if not charge_available %}hidden{% endif %}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg>
-                  {% trans "Charge & record sale" %}
+          <div class="rd-entry-dock">
+            <div class="sticky-save">
+              <div class="sticky-save__actions">
+                <button class="btn btn-primary w-100 employee-save-sale-btn" type="submit" name="action" value="save">
+                  {% trans "Save sale" %}
                 </button>
-              {% endif %}
+                {% if chargeable_company_ids %}
+                  <button
+                    class="btn btn-accent w-100 employee-save-sale-btn employee-charge-sale-btn"
+                    type="submit" name="action" value="charge"
+                    id="rd-charge-sale-btn"
+                    title="{% trans 'Record the sale and charge the line through the provider' %}"
+                    {% if not charge_available %}hidden{% endif %}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z"/></svg>
+                    {% trans "Charge & record sale" %}
+                  </button>
+                {% endif %}
+              </div>
             </div>
           </div>
         </form>
@@ -307,11 +326,8 @@
     var allow = chipAllowsPartialDays(chip);
     var baseDays = getChipBaseDays(chip);
     if (wrap) wrap.hidden = !allow;
-    if (sellWrap) {
-      sellWrap.classList.remove("col-4", "col-sm-3", "col-8", "col-sm-9", "col-12");
-      sellWrap.classList.add(allow ? "col-8" : "col-12");
-      if (allow) sellWrap.classList.add("col-sm-9");
-    }
+    var priceRow = sellWrap && sellWrap.closest(".rd-entry-price-row");
+    if (priceRow) priceRow.classList.toggle("has-days", allow);
     if (daysInp) {
       if (!allow || daysInp.value === "" || daysInp.value == null) {
         daysInp.value = String(baseDays || 30);
@@ -345,6 +361,14 @@
     sellInp.value = prorateAmount(def, baseDays, days).toFixed(2);
   }
 
+  function hideSalePreview(preview) {
+    preview.hidden = true;
+    ["rd-preview-esim-note", "rd-preview-new-sim-note", "rd-preview-loss-note"].forEach(function (id) {
+      var n = document.getElementById(id);
+      if (n) n.hidden = true;
+    });
+  }
+
   function updateSalePreview() {
     var preview = document.getElementById("rd-sale-preview");
     var pcEl = document.getElementById("rd-preview-cost");
@@ -360,12 +384,12 @@
     if (!preview || !pcEl || !ppEl || !sellInp) return;
     var chip = document.querySelector(".employee-package-chip.is-active");
     if (!chip || sellInp.value === "" || sellInp.value == null) {
-      preview.hidden = true;
+      hideSalePreview(preview);
       return;
     }
     var base = parseFloat(String(chip.getAttribute("data-product-cost") || "").replace(",", "."), 10);
     if (!isFinite(base)) {
-      preview.hidden = true;
+      hideSalePreview(preview);
       return;
     }
     var baseDays = getChipBaseDays(chip);
@@ -386,7 +410,7 @@
     var cost = packageCost + (useEsim ? getEsimExtra() : 0) + (useNewSim ? simExtra : 0);
     var sell = parseFloat(String(sellInp.value).replace(",", "."), 10);
     if (!isFinite(sell)) {
-      preview.hidden = true;
+      hideSalePreview(preview);
       return;
     }
     preview.hidden = false;
@@ -439,7 +463,7 @@
     var productVal = product && product.value ? product.value.trim() : "";
     if (!payerVal || !productVal) {
       el.hidden = false;
-      el.className = "mb-0 mt-1 small text-secondary";
+      el.className = "rd-entry-note rd-entry-note--muted";
       el.textContent = "{% trans 'Enter payer name and product to preview SIM stock.' %}";
       return;
     }
@@ -455,13 +479,13 @@
         .then(function (data) {
           if (!data.ok) {
             el.hidden = false;
-            el.className = "mb-0 mt-1 small text-danger";
+            el.className = "rd-entry-note rd-entry-note--danger";
             el.textContent = data.message || "";
             return;
           }
           el.hidden = false;
           var warn = data.source === "ambiguous" || data.source === "no_customer_stock";
-          el.className = warn ? "mb-0 mt-1 small text-danger" : "mb-0 mt-1 small text-info";
+          el.className = warn ? "rd-entry-note rd-entry-note--danger" : "rd-entry-note rd-entry-note--info";
           el.textContent = data.message || "";
         })
         .catch(function () {
@@ -580,11 +604,10 @@
     if (enabled) {
       setOnAccount(false);
       hid.value = "1";
-      btn.classList.remove("btn-outline-info");
-      btn.classList.add("btn-info");
+      btn.classList.add("is-on");
       btn.setAttribute("aria-pressed", "true");
       btn.textContent = btn.getAttribute("data-on-label") || "ON";
-      if (paymentTiles) paymentTiles.classList.add("opacity-50");
+      if (paymentTiles) paymentTiles.classList.add("is-muted");
       if (pmHidden) pmHidden.value = "";
       document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
         t.classList.remove("is-active");
@@ -592,11 +615,10 @@
       if (empHint) empHint.hidden = false;
     } else {
       hid.value = "";
-      btn.classList.remove("btn-info");
-      btn.classList.add("btn-outline-info");
+      btn.classList.remove("is-on");
       btn.setAttribute("aria-pressed", "false");
       btn.textContent = btn.getAttribute("data-off-label") || "Employee";
-      if (paymentTiles) paymentTiles.classList.remove("opacity-50");
+      if (paymentTiles) paymentTiles.classList.remove("is-muted");
       if (empHint) empHint.hidden = true;
     }
   }
@@ -632,22 +654,20 @@
     if (enabled) {
       setPaidViaEmployee(false);
       hid.value = "1";
-      btn.classList.remove("btn-outline-warning");
-      btn.classList.add("btn-warning");
+      btn.classList.add("is-on");
       btn.setAttribute("aria-pressed", "true");
       btn.textContent = btn.getAttribute("data-on-label") || "ON";
-      if (paymentTiles) paymentTiles.classList.add("opacity-50");
+      if (paymentTiles) paymentTiles.classList.add("is-muted");
       if (pmHidden) pmHidden.value = "";
       document.querySelectorAll(".employee-payment-tile").forEach(function (t) {
         t.classList.remove("is-active");
       });
     } else {
       hid.value = "";
-      btn.classList.remove("btn-warning");
-      btn.classList.add("btn-outline-warning");
+      btn.classList.remove("is-on");
       btn.setAttribute("aria-pressed", "false");
       btn.textContent = btn.getAttribute("data-off-label") || "On account";
-      if (paymentTiles) paymentTiles.classList.remove("opacity-50");
+      if (paymentTiles) paymentTiles.classList.remove("is-muted");
     }
   }
 
@@ -692,6 +712,14 @@
   };
 
   function initSaleFormUi() {
+    var notesDetails = document.querySelector(".rd-entry-notes");
+    if (notesDetails) {
+      /* Opening "+ Note" puts the cursor in the textarea. */
+      notesDetails.addEventListener("toggle", function () {
+        var ta = document.getElementById("id_notes");
+        if (notesDetails.open && ta) ta.focus({ preventScroll: true });
+      });
+    }
     var toggleBtn = document.getElementById("rd-on-account-toggle");
     if (toggleBtn) {
       toggleBtn.addEventListener("click", function () {
@@ -856,6 +884,25 @@
   document.addEventListener("click", function (e) {
     if (typeof window.__rdEmployeeSaleOnClick === "function") window.__rdEmployeeSaleOnClick(e);
   });
+
+  /* "+ Note" opens as a popover over the price block: close it on Escape (focus
+     returns to the summary) or on a tap outside. Server-side note errors keep it open. */
+  function openNotesPopover() {
+    return document.querySelector(".rd-entry-notes[open]");
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var d = openNotesPopover();
+    if (!d) return;
+    d.open = false;
+    var sum = d.querySelector("summary");
+    if (sum) sum.focus();
+  });
+  document.addEventListener("click", function (e) {
+    var d = openNotesPopover();
+    if (!d || d.contains(e.target) || d.querySelector(".errorlist")) return;
+    d.open = false;
+  });
   document.addEventListener("htmx:afterSwap", function (evt) {
     if (typeof window.__rdEmployeeSaleOnSwap === "function") window.__rdEmployeeSaleOnSwap(evt);
   });
@@ -868,6 +915,7 @@
 })();
 </script>
 <script src="{% static 'js/employee-payer-assist.js' %}{{ static_cache_query }}"></script>
+<script src="{% static 'js/employee-entry-progress.js' %}{{ static_cache_query }}"></script>
 {% if form.errors %}
 <script>
 (function () {

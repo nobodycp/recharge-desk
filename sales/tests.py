@@ -1,9 +1,11 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import translation
 
 from companies.models import Company, Product, ProductLine
 from customers.models import Customer
@@ -1672,7 +1674,10 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertContains(resp, "data-wait-seconds=")
 
     def test_number_check_page_has_both_buttons_and_urls(self):
-        resp = self.client.get(reverse("sales:employee_refresh_number"))
+        # The button labels are translated now: ask for the Arabic page.
+        self.addCleanup(translation.deactivate)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        resp = self.client.get("/ar" + reverse("sales:employee_refresh_number"))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.context["title"], "فحص الأرقام")
         self.assertContains(resp, "فحص الأرقام")
@@ -1680,7 +1685,7 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertContains(resp, 'id="rd-refresh-submit"')
         self.assertContains(resp, "تحديث الرقم")
         self.assertContains(resp, 'id="rd-check-submit"')
-        self.assertContains(resp, "btn-outline-primary")
+        self.assertNotContains(resp, "btn-outline-primary")
         self.assertContains(resp, "فحص الرقم")
         self.assertContains(resp, 'id="rd-check-result"')
         self.assertContains(
@@ -1688,7 +1693,7 @@ class EmployeeRefreshPhoneTests(TestCase):
         )
         self.assertContains(
             resp,
-            'data-check-status-url="/employee/check/status/'
+            'data-check-status-url="/ar/employee/check/status/'
             '00000000-0000-0000-0000-000000000000/"',
         )
         self.assertContains(resp, "js/employee-check-number.js")
@@ -1706,7 +1711,10 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertIn("d-none", tag)
 
     def test_bottom_nav_label_is_number_check(self):
-        resp = self.client.get(reverse("sales:employee_entry"))
+        # The label is translated now; the test client defaults to English.
+        self.addCleanup(translation.deactivate)
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        resp = self.client.get("/ar" + reverse("sales:employee_entry"))
         self.assertContains(
             resp, '<span class="rd-mobile-tabbar__label">فحص الأرقام</span>', html=True
         )

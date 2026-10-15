@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if s.pk in editable_sale_ids %}
-  <div class="d-flex gap-2 justify-content-end mt-1">
-    <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:employee_sale_edit' s.pk %}">{% trans "Edit" %}</a>
+  <div class="rd-pay-actions">
+    <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:employee_sale_edit' s.pk %}">{% trans "Edit" %}</a>
     <form
       method="post"
       action="{% url 'sales:employee_sale_delete' s.pk %}"
@@ -18,5 +18,5 @@
     </form>
   </div>
 {% elif s.entry_mode == "auto_charge" %}
-  <div class="small rd-text-muted text-end">{% trans "Charged through the provider — only management can change it." %}</div>
+  <div class="rd-recent-row__note">{% trans "Charged through the provider — only management can change it." %}</div>
 {% endif %}

@@ -1,5 +1,10 @@
+{% comment %}
+  Tile mark. Default: icon only (alt = title), or the full name when there is no icon.
+  show_name=True: icon (decorative) plus the name, as on the Pearl sale entry tiles.
+{% endcomment %}
 {% if icon %}
-  <img src="{{ icon.url }}" class="employee-chip-icon" alt="{{ title|default:'' }}" loading="lazy" />
+  <img src="{{ icon.url }}" class="employee-chip-icon" alt="{% if not show_name %}{{ title|default:'' }}{% endif %}" loading="lazy" />
+  {% if show_name %}<span class="employee-chip-label">{% if title %}{{ title }}{% else %}?{% endif %}</span>{% endif %}
 {% else %}
   <span class="employee-chip-label">{% if title %}{{ title }}{% else %}?{% endif %}</span>
 {% endif %}

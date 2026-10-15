@@ -4,47 +4,49 @@
 <span>{% trans "Check stock" %}</span>
 {% endblock %}
 {% block content %}
-<p class="rd-text-muted small mb-3">
-  {% trans "Search by customer name to see SIM stock held with them." %}
-</p>
+<div class="rd-sale-form rd-stock-check">
+  <p class="rd-entry-subtitle">
+    {% trans "Search by customer name to see SIM stock held with them." %}
+  </p>
 
-<div class="rd-card p-3 mb-3">
-  <div class="rd-field-group mb-0">
-    <label class="rd-field-label d-block" for="{{ filter_form.q.id_for_label }}">{% trans "Customer name" %}</label>
-    <div class="d-flex gap-2 align-items-start">
-      <input
-        type="search"
-        name="q"
-        id="{{ filter_form.q.id_for_label }}"
-        class="form-control form-control-sm"
-        value="{{ q }}"
-        placeholder="{% trans 'Customer name…' %}"
-        autocomplete="off"
-        autofocus
-        hx-get="{% url 'sales:employee_stock_check' %}"
-        hx-trigger="keyup changed delay:180ms, search, clear"
-        hx-target="#rd-stock-check-results"
-        hx-select="#rd-stock-check-results"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        hx-indicator="#rd-stock-check-indicator"
-      >
-      <a
-        class="btn btn-outline-secondary btn-sm flex-shrink-0"
-        href="{% url 'sales:employee_stock_check' %}"
-        hx-get="{% url 'sales:employee_stock_check' %}"
-        hx-target="#rd-stock-check-results"
-        hx-select="#rd-stock-check-results"
-        hx-swap="outerHTML"
-        hx-push-url="true"
-        onclick="var i=document.getElementById('{{ filter_form.q.id_for_label }}'); if(i) i.value='';"
-      >{% trans "Reset" %}</a>
-    </div>
-    <div class="small text-secondary mt-1" id="rd-stock-check-indicator" aria-live="polite">
-      <span class="htmx-indicator">{% trans "Searching…" %}</span>
+  <div class="rd-entry-blk">
+    <div class="rd-field-group">
+      <div class="rd-entry-field">
+        <label class="rd-entry-field__label" for="{{ filter_form.q.id_for_label }}">{% trans "Customer name" %}</label>
+        <input
+          type="search"
+          name="q"
+          id="{{ filter_form.q.id_for_label }}"
+          class="form-control"
+          value="{{ q }}"
+          placeholder="{% trans 'Customer name…' %}"
+          autocomplete="off"
+          autofocus
+          hx-get="{% url 'sales:employee_stock_check' %}"
+          hx-trigger="keyup changed delay:180ms, search, clear"
+          hx-target="#rd-stock-check-results"
+          hx-select="#rd-stock-check-results"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-indicator="#rd-stock-check-indicator"
+        >
+        <div class="rd-stock-check__indicator" id="rd-stock-check-indicator" aria-live="polite">
+          <span class="htmx-indicator">{% trans "Searching…" %}</span>
+        </div>
+        <a
+          class="btn rd-entry-field__action"
+          href="{% url 'sales:employee_stock_check' %}"
+          hx-get="{% url 'sales:employee_stock_check' %}"
+          hx-target="#rd-stock-check-results"
+          hx-select="#rd-stock-check-results"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          onclick="var i=document.getElementById('{{ filter_form.q.id_for_label }}'); if(i) i.value='';"
+        >{% trans "Reset" %}</a>
+      </div>
     </div>
   </div>
-</div>
 
-{% include "sales/partials/employee_stock_check_results.html" %}
+  {% include "sales/partials/employee_stock_check_results.html" %}
+</div>
 {% endblock %}

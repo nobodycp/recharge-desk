@@ -2,47 +2,43 @@
 {% load i18n ui_tags %}
 {% block employee_header %}{% trans "My entries" %}{% endblock %}
 {% block content %}
-<div class="mb-3">
-  <h1 class="rd-heading-xl mb-1">{% trans "My entries" %}</h1>
-  <p class="rd-text-muted small mb-0">
-    {% trans "Sales and payments you entered. You can edit or delete only your last 10 of each." %}
-    <span class="d-block mt-1">
-      <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ scope_label }}</span>
-    </span>
-  </p>
-</div>
+<div class="rd-recent">
+<header class="rd-recent-intro">
+  <p class="rd-recent-intro__text">{% trans "Sales and payments you entered. You can edit or delete only your last 10 of each." %}</p>
+  <span class="rd-badge rd-badge--neutral"><bdi>{{ scope_label }}</bdi></span>
+</header>
 
 {% active_filter_count as recent_active %}
 {% include "partials/filter_card_open.html" with active_count=recent_active indicator_id="recent-htmx-indicator" %}
-    <form method="get" class="row g-3 align-items-end">
+    <form method="get" class="rd-recent-filter">
       {% if filter_form.non_field_errors %}
         {% include "partials/form_errors_toast.html" with errors=filter_form.non_field_errors %}
       {% endif %}
-      <div class="col-12 col-md-6 col-lg-4">
+      <div class="rd-recent-filter__field">
         {{ filter_form.q.label_tag }}{{ filter_form.q }}
         {{ filter_form.q.errors }}
       </div>
-      <div class="col-6 col-md-3 col-lg-2">
+      <div class="rd-recent-filter__field">
         {{ filter_form.company.label_tag }}{{ filter_form.company }}
         {{ filter_form.company.errors }}
       </div>
-      <div class="col-6 col-md-3 col-lg-2">
+      <div class="rd-recent-filter__field">
         {{ filter_form.payment_method.label_tag }}{{ filter_form.payment_method }}
         {{ filter_form.payment_method.errors }}
       </div>
-      <div class="col-6 col-md-3 col-lg-2">
+      <div class="rd-recent-filter__field">
         {{ filter_form.status.label_tag }}{{ filter_form.status }}
         {{ filter_form.status.errors }}
       </div>
-      <div class="col-6 col-md-3 col-lg-2">
+      <div class="rd-recent-filter__field">
         {{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}
         {{ filter_form.date_from.errors }}
       </div>
-      <div class="col-6 col-md-3 col-lg-2">
+      <div class="rd-recent-filter__field">
         {{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}
         {{ filter_form.date_to.errors }}
       </div>
-      <div class="col-12 d-flex flex-wrap gap-2">
+      <div class="rd-recent-filter__actions">
         <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
         <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Reset" %}</a>
       </div>
@@ -50,42 +46,40 @@
 {% include "partials/filter_card_close.html" %}
 
 {% if entries %}
-  <div class="rd-card overflow-hidden">
-    <div class="list-group list-group-flush rd-list-flush">
-      {% for entry in entries %}
-        {% if entry.kind == "sale" %}
-          {% include "sales/partials/employee_recent_sale_row.html" with s=entry.sale %}
-        {% else %}
-          {% with p=entry.payment %}
-            <div id="payment-row-{{ p.pk }}" class="list-group-item d-flex flex-column gap-2 py-3">
-              <div class="d-flex justify-content-between gap-3">
-                <div class="min-w-0">
-                  <div class="fw-semibold text-truncate">
-                    {% trans "Payment" %}
-                    <span class="badge bg-info-subtle text-info-emphasis ms-1">{% trans "Customer payment" %}</span>
-                  </div>
-                  <div class="rd-recent-payer text-truncate">{{ p.customer.name }}</div>
-                  <div class="small text-secondary text-truncate">
-                    {% if p.paid_via_employee %}
-                      {% trans "Payment to employee" %}
-                    {% elif p.payment_method %}
-                      {{ p.payment_method.name|tdb }}
-                    {% endif %}
-                    {% if p.notes %} · {{ p.notes|truncatechars:40 }}{% endif %}
-                  </div>
-                  <div class="small text-secondary">{{ p.created_at|date:"Y-m-d H:i" }}</div>
+  <div class="rd-mobile-stack">
+    {% for entry in entries %}
+      {% if entry.kind == "sale" %}
+        {% include "sales/partials/employee_recent_sale_row.html" with s=entry.sale %}
+      {% else %}
+        {% with p=entry.payment %}
+          <div id="payment-row-{{ p.pk }}" class="rd-mobile-row-card rd-pay-row rd-recent-row">
+            <div class="rd-pay-row__main">
+              <div class="rd-pay-row__who">
+                <div class="rd-recent-row__title">
+                  <span class="rd-recent-row__name">{% trans "Payment" %}</span>
+                  <span class="rd-badge rd-badge--neutral ms-1">{% trans "Customer payment" %}</span>
                 </div>
-                <div class="text-end flex-shrink-0 small">
-                  <div class="fw-semibold tabular-nums">{{ p.amount }}</div>
-                  <div class="mt-1">{% include "partials/payment_submission_status_badge.html" with submission=p %}</div>
+                <div class="rd-recent-payer text-truncate">{{ p.customer.name }}</div>
+                <div class="rd-pay-row__sub">
+                  {% if p.paid_via_employee %}
+                    {% trans "Payment to employee" %}
+                  {% elif p.payment_method %}
+                    {{ p.payment_method.name|tdb }}
+                  {% endif %}
+                  {% if p.notes %} · {{ p.notes|truncatechars:40 }}{% endif %}
                 </div>
+                <div class="rd-pay-row__sub tabular-nums">{{ p.created_at|date:"Y-m-d H:i" }}</div>
               </div>
-              {% include "sales/partials/employee_payment_actions.html" with p=p editable_payment_ids=editable_payment_ids use_htmx=True %}
+              <div class="rd-pay-row__end">
+                <div class="rd-pay-row__amount tabular-nums">{{ p.amount }}</div>
+                {% include "partials/payment_submission_status_badge.html" with submission=p %}
+              </div>
             </div>
-          {% endwith %}
-        {% endif %}
-      {% endfor %}
-    </div>
+            {% include "sales/partials/employee_payment_actions.html" with p=p editable_payment_ids=editable_payment_ids use_htmx=True %}
+          </div>
+        {% endwith %}
+      {% endif %}
+    {% endfor %}
   </div>
 {% else %}
   <div class="empty-state">
@@ -96,4 +90,5 @@
     {% endif %}
   </div>
 {% endif %}
+</div>
 {% endblock %}

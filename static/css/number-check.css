@@ -29,6 +29,118 @@
   line-height: 1;
 }
 
+/* ---- check / refresh form ------------------------------------------------ */
+
+/* Only employee_refresh_number.html loads this file, and every rule below is
+   scoped to its own classes. */
+.rd-ncheck-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+}
+
+.rd-ncheck-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  border-radius: 1.2rem;
+}
+
+/* Number field: the entry's in-input label field (employee.css) with the same
+   value typography; employee.css scopes the value rules to the sale form. */
+.rd-ncheck-form .rd-entry-field .form-control {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  padding: 0.05rem 0.8rem 0.2rem;
+  color: var(--rd-ink);
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--rd-font-num);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  direction: ltr;
+  text-align: start;
+}
+
+[dir="rtl"] .rd-ncheck-form .rd-entry-field .form-control { text-align: end; }
+
+.rd-ncheck-form .rd-entry-field .form-control:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.rd-ncheck-form .rd-entry-field .form-control::placeholder {
+  color: var(--rd-faint);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* Refresh (ink) and check (outline) side by side. */
+.rd-ncheck-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.rd-ncheck-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.45rem;
+  padding-inline: 0.75rem;
+  border-radius: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+/* Refresh result: a flat section of the form card (the element also carries
+   .rd-card, so its surface, border, radius and shadow are reset here). A
+   hairline and spacing separate it from the buttons; no card in a card.
+   Shown by removing d-none. */
+.rd-ncheck-form .rd-refresh-result {
+  margin-top: 0.15rem;
+  padding: 0.9rem 0.35rem 0.3rem;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--bs-border-color);
+  border-radius: 0;
+  box-shadow: none;
+  animation: rd-ncheck-in 0.3s ease both;
+}
+
+.rd-refresh-result__title {
+  margin-bottom: 0.25rem;
+  color: var(--rd-ink);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rd-refresh-result__title:empty { display: none; }
+
+.rd-refresh-result__body {
+  color: var(--rd-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 /* ---- card ---------------------------------------------------------------- */
 
 /* The hero is a dark plate in both themes: ink in light, surface-2 in dark.
@@ -545,6 +657,7 @@
 @media (prefers-reduced-motion: reduce) {
   .rd-ncheck,
   .rd-ncheck-slot.is-error,
+  .rd-ncheck-form .rd-refresh-result,
   .rd-ncheck__ring-fill,
   .rd-ncheck__status.is-ok .rd-ncheck__dot,
   .rd-ncheck-skel__hero,
