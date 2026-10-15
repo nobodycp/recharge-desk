@@ -224,7 +224,8 @@
       var t = (el.type || "").toLowerCase();
       if (t === "checkbox" || t === "radio") {
         if (!el.checked) continue;
-      } else if (el.value === "" || el.value == null) {
+      } else if (el.value == null || String(el.value).trim() === "") {
+        // Trimmed, to match the server's stripped count (rd_filter_card).
         continue;
       }
       seen[name] = 1;

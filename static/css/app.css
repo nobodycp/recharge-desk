@@ -1448,8 +1448,22 @@
 }
 
 tr:hover .rd-row-actions,
+tr:focus-within .rd-row-actions,
 .rd-row-actions:focus-within {
   opacity: 1;
+}
+
+/* No hover on touch screens (or on phones/tablets): never leave the icons faint. */
+@media (hover: none) {
+  .rd-row-actions {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .rd-row-actions {
+    opacity: 1;
+  }
 }
 
 .rd-icon-btn {

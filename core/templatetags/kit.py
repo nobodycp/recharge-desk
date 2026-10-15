@@ -184,7 +184,8 @@ def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicat
     is_open = bool(active_count or form.errors) if open is None else bool(open)
     path = action or request.path
     visible = form.visible_fields()
-    kept = [(key, value) for key in keep.split() for value in request.GET.getlist(key)]
+    own_names = {form.add_prefix(name) for name in form.fields}  # the form already posts these
+    kept = [(key, value) for key in keep.split() if key not in own_names for value in request.GET.getlist(key)]
     return {
         "form": form,
         "title": title,

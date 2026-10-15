@@ -1,11 +1,16 @@
 from datetime import date
+from urllib.parse import parse_qs, urlsplit
 
 from django import forms
+from django.conf import settings
 from django.template import Context, Template
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.utils import translation
+
+from core.tests_design_tokens import _rule_body
+from core.tests_shell import _media_blocks, _rules
 
 
 class _StoredFile:
@@ -275,11 +280,11 @@ class PageHeaderTests(SimpleTestCase):
         self.assertNotIn("rd-page-head__meta", render_header('"X"'))
 
     def test_aside_form_buttons_fill_on_phones(self):
-        css = open("static/css/design-system.css", encoding="utf-8").read()
-        start = css.index(".rd-page-head__aside {\n    flex: 1 1 100%;")
-        phone = css[start:start + 600]
-        self.assertIn(".rd-page-head__aside > form .btn", phone)
-        self.assertRegex(phone, r"\.rd-page-head__aside > form \.btn\s*\{[^}]*width:\s*100%")
+        with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
+            css = fh.read()
+        phone = "\n".join(_media_blocks(css, "max-width: 575.98px"))
+        self.assertRegex(_rule_body(phone, ".rd-page-head__aside"), r"flex:\s*1 1 100%")
+        self.assertRegex(_rule_body(phone, ".rd-page-head__aside > form .btn"), r"width:\s*100%")
 
 
 class SearchForm(forms.Form):
@@ -338,6 +343,22 @@ class FilterCardTests(SimpleTestCase):
         self.assertEqual(html.count("data-rd-filter-keep"), 1)
         self.assertRegex(html, r'<input type="hidden" name="tab" value="x" data-rd-filter-keep>')
         self.assertNotRegex(html, r'name="token"[^>]*data-rd-filter-keep')
+
+    def test_keep_skips_the_forms_own_field_names(self):
+        html = render_filter_card('form keep="q tab"', query="?q=ab&tab=x")
+        self.assertEqual(html.count('name="q"'), 1)
+        self.assertNotIn('name="q" value="ab" data-rd-filter-keep', html)
+        self.assertIn('<input type="hidden" name="tab" value="x" data-rd-filter-keep>', html)
+
+    def test_keep_skips_prefixed_field_names_and_form_hidden_fields(self):
+        class WithHidden(SearchForm):
+            token = forms.CharField(required=False, widget=forms.HiddenInput)
+
+        form = WithHidden(prefix="f")
+        html = render_filter_card('form keep="f-q f-token q"', query="?f-q=a&f-token=t&q=zzz", form=form)
+        self.assertEqual(html.count('name="f-q"'), 1)
+        self.assertEqual(html.count('name="f-token"'), 1)
+        self.assertEqual(html.count("data-rd-filter-keep"), 1)  # only the unprefixed `q`
 
     def test_keep_value_is_escaped(self):
         html = render_filter_card('form keep="tab"', query='?tab=%22%3E%3Cb%3E')
@@ -545,6 +566,28 @@ class RowActionsTests(SimpleTestCase):
         self.assertRegex(html, r">\s*Delete\s*</button>")
 
 
+class RowActionsCssTests(SimpleTestCase):
+    @staticmethod
+    def css():
+        with open(settings.BASE_DIR / "static/css/app.css", encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_icons_dim_until_hover_on_desktop_pointers(self):
+        css = self.css()
+        self.assertRegex(_rule_body(css, ".rd-row-actions"), r"opacity:\s*0\.55")
+        self.assertRegex(_rule_body(css, "tr:hover .rd-row-actions"), r"opacity:\s*1")
+
+    def test_icons_are_full_opacity_when_row_has_focus(self):
+        self.assertRegex(_rule_body(self.css(), "tr:focus-within .rd-row-actions"), r"opacity:\s*1")
+
+    def test_icons_are_full_opacity_on_touch_and_below_992px(self):
+        css = self.css()
+        touch = "\n".join(_media_blocks(css, "hover: none"))
+        self.assertRegex(_rule_body(touch, ".rd-row-actions"), r"opacity:\s*1")
+        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        self.assertRegex(_rule_body(mobile, ".rd-row-actions"), r"opacity:\s*1")
+
+
 class EmptyRowTests(SimpleTestCase):
     def test_empty_row_wraps_empty_state(self):
         html = render_to_string(
@@ -576,12 +619,14 @@ class PaginationTests(TestCase):
         self.assertTrue(links)
         for link in links:
             href = link.split('"', 1)[0]
-            self.assertIn("payments_page=1", href)
-            self.assertIn("per_page=", href)
+            query = parse_qs(urlsplit(href.replace("&amp;", "&")).query)
+            self.assertEqual(query["payments_page"], ["1"])
+            self.assertIn("per_page", query)
 
     def test_per_page_links_reset_default_page_key(self):
         for href in (h.split('"', 1)[0] for h in self.per_page_hrefs(self.render("?page=2"))):
-            self.assertIn("page=1", href)
+            query = parse_qs(urlsplit(href.replace("&amp;", "&")).query)
+            self.assertEqual(query["page"], ["1"])
 
     def test_known_sibling_keys_still_reset(self):
         for key in ("ledger_page", "sales_page", "phones_page"):

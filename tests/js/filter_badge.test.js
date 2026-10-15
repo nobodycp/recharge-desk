@@ -52,6 +52,13 @@ const tests = {
     const b = badgeFor([input("tab", "payments", { type: "hidden" })]);
     assert.strictEqual(b.textContent, "1");
   },
+  "whitespace-only values do not count and are trimmed like the server does"() {
+    const b = badgeFor([input("q", "   "), input("status", "\t\n"), input("code", " x ")]);
+    assert.strictEqual(b.textContent, "1");
+    const none = badgeFor([input("q", "  ")]);
+    assert.strictEqual(none.textContent, "0");
+    assert.strictEqual(none.style.display, "none");
+  },
   "checked checkboxes count, unchecked do not"() {
     const b = badgeFor([input("paid", "1", { type: "checkbox", checked: true }), input("late", "1", { type: "checkbox" })]);
     assert.strictEqual(b.textContent, "1");
