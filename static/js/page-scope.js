@@ -78,7 +78,57 @@
     return id;
   };
 
+  // htmx.onLoad(fn) registers a wrapper on "htmx:load" that runs for every
+  // later swap, so a page script's callback must go when its page does.
+  // Ownership is decided at call time; head (shell) registrations are kept.
+  var loadHooks = [];
+
+  function patchHtmx(h) {
+    if (!h || typeof h.onLoad !== "function" || h.onLoad.__rdPageScope) return;
+    var nativeOnLoad = h.onLoad;
+    var patched = function (fn) {
+      if (!pageOwned() || typeof fn !== "function") return nativeOnLoad.apply(this, arguments);
+      for (var i = 0; i < loadHooks.length; i++) {
+        if (loadHooks[i].fn === fn) return loadHooks[i].wrapper;
+      }
+      var wrapper = nativeOnLoad.apply(this, arguments);
+      if (typeof wrapper === "function") loadHooks.push({ fn: fn, wrapper: wrapper });
+      return wrapper;
+    };
+    patched.__rdPageScope = true;
+    h.onLoad = patched;
+  }
+
+  // page-scope.js loads before htmx; the htmx UMD does `window.htmx = window.htmx || factory()`,
+  // so catch that assignment, patch the object, then leave a plain data property behind.
+  if (window.htmx) {
+    patchHtmx(window.htmx);
+  } else {
+    Object.defineProperty(window, "htmx", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        return undefined;
+      },
+      set: function (value) {
+        Object.defineProperty(window, "htmx", {
+          configurable: true,
+          enumerable: true,
+          writable: true,
+          value: value,
+        });
+        patchHtmx(value);
+      },
+    });
+  }
+
   function leavePage() {
+    var hooks = loadHooks.splice(0);
+    if (hooks.length && window.htmx && typeof window.htmx.off === "function") {
+      hooks.forEach(function (hook) {
+        window.htmx.off("htmx:load", hook.wrapper);
+      });
+    }
     listeners.splice(0).forEach(function (l) {
       nativeRemove.call(l.target, l.type, l.wrapped, l.capture);
     });
