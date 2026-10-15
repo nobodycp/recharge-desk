@@ -45,6 +45,7 @@ from sales.charging import (
     create_charged_sale,
     find_duplicate_submit,
 )
+from sales.phone_validation import SALE_PHONE_RE, normalize_sale_phone
 from sales.payer_lookup import latest_sale_for_reference, payer_name_suggestions
 from sales.pricing import ESIM_EXTRA_COST
 from inventory.forms import CustomerStockFilterForm
@@ -102,8 +103,15 @@ def _duplicate_charge_redirect(request, sale):
 def employee_entry(request):
     company_id = request.POST.get("company") or request.GET.get("company")
     initial = {}
-    if request.method == "GET" and company_id:
-        initial["company"] = company_id
+    from_reconcile = False
+    if request.method == "GET":
+        if company_id:
+            initial["company"] = company_id
+        # Quick-record link from the supplier reconcile page: prefill a valid number only.
+        phone = normalize_sale_phone(request.GET.get("phone", ""))
+        if SALE_PHONE_RE.match(phone):
+            initial["reference_number"] = phone
+        from_reconcile = request.GET.get("from") == "reconcile"
     form = EmployeeSaleForm(
         request.POST if request.method == "POST" else None,
         company_id=company_id,
@@ -218,6 +226,7 @@ def employee_entry(request):
         {
             "form": form,
             "title": _("New sale"),
+            "from_reconcile": from_reconcile,
             "product_groups": product_groups,
             "companies": companies,
             "payment_methods": payment_methods,

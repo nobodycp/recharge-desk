@@ -24,6 +24,9 @@
           {% elif form.errors %}
             <div data-rd-flash hidden><p data-level="error">{% trans "Please fix the highlighted fields." %}</p></div>
           {% endif %}
+          {% if from_reconcile %}
+            <div class="alert alert-warning rd-entry-alert" role="note">{% trans "This number was already charged at the supplier. Record the sale without charging it again." %}</div>
+          {% endif %}
 
           <div class="rd-entry-blk">
             <div class="rd-field-group{% if form.reference_number.errors %} has-error{% endif %}">

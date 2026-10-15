@@ -1216,6 +1216,16 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   color: var(--rd-danger);
 }
 
+/* Persistent state note above the form (e.g. coming from the reconcile page):
+   compact so the entry screen still fits on a phone. */
+.rd-entry-alert {
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 /* Employee-payment hint: a flex row, so [hidden] needs the guard above. */
 .rd-entry-hint {
   display: flex;

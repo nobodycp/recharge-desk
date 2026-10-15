@@ -6457,6 +6457,12 @@ msgstr "التبديل إلى العربية"
 msgid "Check"
 msgstr "فحص"
 
+#: templates/sales/employee_entry.html
+msgid ""
+"This number was already charged at the supplier. Record the sale without "
+"charging it again."
+msgstr "هذا الرقم مشحون عند المزوّد مسبقاً. سجّل البيعة بدون شحنه مرة ثانية."
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."
