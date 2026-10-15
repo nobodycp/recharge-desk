@@ -206,11 +206,43 @@ class DashboardSmokeTests(_ReportsBase):
     def test_chart_empty_state_when_no_volume(self):
         r = self.client.get(reverse("reports:dashboard"))
         self.assertEqual(r.context["chart_total_volume"], 0)
-        self.assertContains(r, "empty-state")
+        # The series has buckets (all zero), so the copy is about volume, not
+        # about missing sales; the empty state lives inside the mini-chart.
+        self.assertTrue(r.context["chart_series"])
+        self.assertContains(r, "rd-mini-chart--empty")
         self.assertNotContains(r, "rd-mini-chart-bar-cell")
         # The card header (title, total, average) stays.
         self.assertContains(r, "rd-mini-chart-summary")
-        self.assertContains(r, "No sales recorded in this period.")
+        self.assertContains(r, "No sales volume in this period.")
+        self.assertNotContains(r, "No sales recorded in this period.")
+
+    def test_chart_empty_state_for_zero_price_sales_only(self):
+        self._make_sale(sell=0, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertTrue(r.context["chart_series"])
+        self.assertEqual(r.context["chart_total_volume"], 0)
+        self.assertContains(r, "rd-mini-chart--empty")
+        self.assertContains(r, "No sales volume in this period.")
+        self.assertNotContains(r, "No sales recorded in this period.")
+
+    def test_chart_empty_copy_has_arabic_translation(self):
+        with translation.override("ar"):
+            self.assertEqual(
+                translation.gettext("No sales volume in this period."),
+                "لا يوجد حجم مبيعات في هذه الفترة.",
+            )
+
+    def test_supplier_balances_keep_semantic_colours(self):
+        Company.objects.all().delete()
+        for name, bal in (("NegCo", -50), ("ZeroCo", 0), ("PosCo", 75)):
+            Company.objects.create(name=name, opening_balance=_d(bal), current_balance=_d(bal))
+        html = self.client.get(reverse("reports:dashboard")).content.decode()
+        for cls, state in (("kpi-danger", "danger"), ("kpi-warning", "warning"), ("kpi-success", "success")):
+            self.assertRegex(
+                html,
+                rf'rd-supplier-meta is-{state}',
+            )
+            self.assertRegex(html, rf'class="rd-supplier-amount tabular-nums fw-bold {cls}"')
 
     def test_chart_bars_when_volume(self):
         self._make_sale(sell=40, paid=True)

@@ -189,7 +189,7 @@
                   {% if c.current_balance < 0 %}{% trans "Overdrawn" %}{% elif c.current_balance == 0 %}{% trans "Empty" %}{% else %}{% trans "Available" %}{% endif %}
                 </span>
               </span>
-              <span class="rd-supplier-amount tabular-nums fw-bold{% if c.current_balance < 0 %} kpi-danger{% endif %}">{{ c.current_balance|intcomma }}</span>
+              <span class="rd-supplier-amount tabular-nums fw-bold {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ c.current_balance|intcomma }}</span>
               <svg class="rd-supplier-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
           </li>
@@ -245,7 +245,7 @@
             </div>
           </div>
         {% else %}
-          {% trans "No sales recorded in this period." as no_sales %}
+          {% if chart_series %}{% trans "No sales volume in this period." as no_sales %}{% else %}{% trans "No sales recorded in this period." as no_sales %}{% endif %}
           <div class="rd-mini-chart rd-mini-chart--empty">
             {% include "partials/empty_state.html" with icon="chart" title=no_sales %}
             {% if chart_series %}

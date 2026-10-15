@@ -5573,6 +5573,10 @@ msgstr "فتح تقرير الأرباح"
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
+#: templates/reports/dashboard.html
+msgid "No sales volume in this period."
+msgstr "لا يوجد حجم مبيعات في هذه الفترة."
+
 #: templates/reports/dashboard.html:259
 msgid "No paid sales in this period yet."
 msgstr "لا توجد مبيعات مدفوعة في هذه الفترة بعد."

@@ -413,7 +413,8 @@
   color: var(--bs-secondary-color);
 }
 
-/* Status = coloured dot + text label (never colour alone); text stays muted. */
+/* Status = coloured dot + text label (never colour alone); the whole status
+   line takes the semantic colour (owner ruling U3). */
 .rd-supplier-dot {
   width: 0.45rem;
   height: 0.45rem;
@@ -422,11 +423,11 @@
   flex: 0 0 auto;
 }
 
-.rd-supplier-meta.is-success .rd-supplier-dot {
+.rd-supplier-meta.is-success {
   color: var(--rd-success);
 }
 
-.rd-supplier-meta.is-warning .rd-supplier-dot {
+.rd-supplier-meta.is-warning {
   color: var(--rd-warning);
 }
 
@@ -438,7 +439,8 @@
   font-family: var(--rd-font-num);
   font-size: 0.95rem;
   letter-spacing: -0.02em;
-  color: var(--rd-ink);
+  /* No colour here: the template adds kpi-danger / kpi-warning / kpi-success
+     (owner ruling U3) and a colour on this rule would compete with them. */
   white-space: nowrap;
 }
 
