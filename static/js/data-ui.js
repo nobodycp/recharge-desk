@@ -219,6 +219,8 @@
       var el = fields[i];
       var name = el.name;
       if (!name || FILTER_NOISE[name] || seen[name]) continue;
+      // Params the page re-posts only to keep its own state (rd_filter_card keep=…).
+      if (el.hasAttribute && el.hasAttribute("data-rd-filter-keep")) continue;
       var t = (el.type || "").toLowerCase();
       if (t === "checkbox" || t === "radio") {
         if (!el.checked) continue;

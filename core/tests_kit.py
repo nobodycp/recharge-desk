@@ -325,10 +325,19 @@ class FilterCardTests(SimpleTestCase):
 
     def test_keep_reposts_hidden_inputs(self):
         html = render_filter_card('form keep="sort order tab"', query="?sort=name&order=desc&other=1")
-        self.assertIn('<input type="hidden" name="sort" value="name">', html)
-        self.assertIn('<input type="hidden" name="order" value="desc">', html)
+        self.assertIn('<input type="hidden" name="sort" value="name" data-rd-filter-keep>', html)
+        self.assertIn('<input type="hidden" name="order" value="desc" data-rd-filter-keep>', html)
         self.assertNotIn('name="tab"', html)
         self.assertNotIn('name="other"', html)
+
+    def test_kept_inputs_are_marked_but_form_hidden_fields_are_not(self):
+        class WithHidden(SearchForm):
+            token = forms.CharField(required=False, widget=forms.HiddenInput)
+
+        html = render_filter_card('form keep="tab"', query="?tab=x&token=t", form=WithHidden(request_for().GET))
+        self.assertEqual(html.count("data-rd-filter-keep"), 1)
+        self.assertRegex(html, r'<input type="hidden" name="tab" value="x" data-rd-filter-keep>')
+        self.assertNotRegex(html, r'name="token"[^>]*data-rd-filter-keep')
 
     def test_keep_value_is_escaped(self):
         html = render_filter_card('form keep="tab"', query='?tab=%22%3E%3Cb%3E')
