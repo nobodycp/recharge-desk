@@ -1,0 +1,5 @@
+{% load kit %}{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+{% include "partials/form_errors_toast.html" with errors=errors %}
+<div class="rd-form-grid">
+  {% for field, span in fields %}{% rd_field field size=size full=span %}{% endfor %}
+</div>

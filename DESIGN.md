@@ -208,6 +208,17 @@ Unchanged from the structural contract; only the look is Pearl.
 - No new visual style for a single page when an `rd-*` component fits; no raw `.card`, `.table-sm`; no filters inside table headers; no whitespace "balancing".
 - No `alert-success` / `alert-danger` boxes or `messages` loops; no new `<body>`.
 
+## Page kit
+
+Shared building blocks for admin pages: template tags in `core/templatetags/kit.py` (`{% load kit %}`), partials in `templates/partials/kit/`, styles in the `Page kit` section at the end of `design-system.css`. It adds no tokens.
+
+### Forms
+
+- Render a whole form with `{% rd_fields form %}` (options: `size="sm"`, `full="name notes"` for fields that span both columns, `exclude="is_active"` for fields placed elsewhere). It prints hidden fields, shows form-wide errors as a toast, then a two-column `.rd-form-grid` (one column below 768px).
+- Render a single field with `{% rd_field form.name %}` (options: `size`, `full`, `label`, `help`). It supplies the label (no colon, `*` on required fields), the Bootstrap control classes, `is-invalid`, and the `aria-describedby` link to help and error text.
+- Never write `label_tag`, `{{ field }}` or `field.errors` by hand for a kit page, and never put `form-control` classes on a widget to style it.
+- File inputs always go through the kit: it renders the Arabic drop zone (`.rd-file-pick`) plus, for an optional field with a stored file, the current file name and a "Remove current file" checkbox. Do not use Django's default `ClearableFileInput` markup.
+
 ## Guardrails And Legacy Lists
 
 `core/tests_ui_conventions.py` fails on raw hex, Bootstrap colour badges and `table-light` in any template, except files in the shrink-only sets `LEGACY_HEX`, `LEGACY_BADGES`, `LEGACY_TABLE_LIGHT`. These are pages still waiting for migration in later phases. **Never add a file to them**; fix the template instead. When you migrate a legacy file, remove it from its set (`test_legacy_lists_only_shrink` fails otherwise). `phone_refresh/templates/phone_refresh/public_refresh.html` is out of scope and exempt.

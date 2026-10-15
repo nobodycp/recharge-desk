@@ -1,0 +1,19 @@
+{% load i18n %}<label class="rd-file-pick" data-rd-file-pick>
+  <span class="rd-file-pick__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+  <span class="rd-file-pick__text">
+    <span class="rd-file-pick__name" data-rd-file-name>{% trans "Choose a file or drop it here" %}</span>
+  </span>
+  {{ widget_html }}
+</label>
+{% if current_file %}
+  <div class="rd-file-current">
+    <span class="rd-file-current__label">{% trans "Current file" %}</span>
+    <bdi class="rd-file-current__name">{{ current_file }}</bdi>
+    {% if clear_name %}
+      <div class="form-check rd-file-current__clear">
+        <input type="checkbox" class="form-check-input" name="{{ clear_name }}" id="{{ clear_id }}">
+        <label class="form-check-label" for="{{ clear_id }}">{% trans "Remove current file" %}</label>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}

@@ -6516,3 +6516,128 @@ html[lang="ar"] .rd-invoice-sig-block .rd-label {
 html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, select, button) {
   font-family: var(--rd-font-ar);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Page kit                                                                   */
+/* -------------------------------------------------------------------------- */
+/* Forms: `rd_field` / `rd_fields` (core/templatetags/kit.py). */
+.rd-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .rd-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.rd-field--full {
+  grid-column: 1 / -1;
+}
+
+.rd-field .form-label {
+  margin-bottom: 0.35rem;
+  color: var(--rd-ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.rd-field__req {
+  margin-inline-start: 0.2rem;
+  color: var(--rd-danger);
+}
+
+.rd-field__error,
+.errorlist {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--rd-danger);
+  font-size: 0.82rem;
+}
+
+.form-text,
+.rd-help {
+  color: var(--rd-muted);
+  font-size: 0.82rem;
+}
+
+.rd-help ul {
+  margin: 0.3rem 0 0;
+  padding-inline-start: 1.1rem;
+}
+
+.rd-help li + li {
+  margin-top: 0.1rem;
+}
+
+textarea.form-control {
+  resize: vertical;
+}
+
+.rd-field__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.6rem;
+}
+
+.rd-field__check .form-check-input,
+.rd-field__check.form-switch .form-check-input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.rd-field__check.form-switch {
+  padding-inline-start: 0;
+}
+
+.rd-field__check .form-check-label {
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.rd-file-current {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.rd-file-current__label {
+  color: var(--rd-muted);
+}
+
+.rd-file-current__name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.rd-file-current__clear {
+  margin: 0;
+}
+
+@media (max-width: 991.98px) {
+  .rd-field__check,
+  .rd-file-current__clear {
+    min-height: 3.45rem;
+  }
+
+  .rd-file-current__clear {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline-start: 0;
+  }
+
+  .rd-file-current__clear .form-check-input {
+    float: none;
+    margin: 0;
+  }
+}

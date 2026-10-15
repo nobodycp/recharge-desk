@@ -4419,6 +4419,18 @@ msgstr "أو اسحبها إلى هنا"
 msgid "Remove current image"
 msgstr "إزالة الصورة الحالية"
 
+#: templates/partials/kit/file_field.html:5
+msgid "Choose a file or drop it here"
+msgstr "اختر ملفاً أو اسحبه هنا"
+
+#: templates/partials/kit/file_field.html:15
+msgid "Remove current file"
+msgstr "إزالة الملف الحالي"
+
+#: templates/partials/kit/file_field.html:12
+msgid "Current file"
+msgstr "الملف الحالي"
+
 #: templates/core/_system_settings_database.html:3
 msgid "Engine"
 msgstr "المحرك"

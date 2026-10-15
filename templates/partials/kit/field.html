@@ -1,0 +1,13 @@
+<div class="{{ wrapper_class }}">
+  {% if is_check %}
+    <div class="rd-field__check{% if is_switch %} form-switch{% endif %}">
+      {{ widget_html }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %}<span class="rd-field__req" aria-hidden="true">*</span>{% endif %}</label>
+    </div>
+  {% else %}
+    {% if label %}<label class="form-label" for="{{ field.id_for_label }}">{{ label }}{% if field.field.required %}<span class="rd-field__req" aria-hidden="true">*</span>{% endif %}</label>{% endif %}
+    {% if is_file %}{% include "partials/kit/file_field.html" %}{% else %}{{ widget_html }}{% endif %}
+  {% endif %}
+  {% if help %}<div class="form-text rd-help" id="{{ help_id }}">{{ help|safe }}</div>{% endif %}
+  {% if field.errors %}<div class="rd-field__error" id="{{ error_id }}">{% for error in field.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
+</div>
