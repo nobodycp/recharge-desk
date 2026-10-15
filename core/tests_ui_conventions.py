@@ -80,7 +80,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 49 files
+LEGACY_PAGE_HEAD = {  # 47 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -124,14 +124,12 @@ LEGACY_PAGE_HEAD = {  # 49 files
     "templates/sales/employee_sale_edit.html",
     "templates/sales/employee_stock_check.html",
     "templates/sales/management_sale_list.html",
-    "templates/sales/payment_method_form.html",
-    "templates/sales/payment_method_list.html",
     "templates/sales/pending_payments.html",
     "templates/sales/sale_edit.html",
     "templates/sms_gateway/reports.html",
     "templates/sms_gateway/settings_index.html",
 }
-LEGACY_APP_CARD = {  # 8 files
+LEGACY_APP_CARD = {  # 7 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
@@ -139,9 +137,8 @@ LEGACY_APP_CARD = {  # 8 files
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/companies/product_line_form.html",
     "templates/companies/product_variant_form.html",
-    "templates/sales/payment_method_form.html",
 }
-LEGACY_LABEL_TAG = {  # 21 files
+LEGACY_LABEL_TAG = {  # 20 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -160,11 +157,10 @@ LEGACY_LABEL_TAG = {  # 21 files
     "templates/reports/stale_phone_edit.html",
     "templates/sales/employee_recent.html",
     "templates/sales/management_sale_list.html",
-    "templates/sales/payment_method_form.html",
     "templates/sales/pending_payments.html",
     "templates/sales/sale_edit.html",
 }
-LEGACY_INLINE_WIDTH = {  # 15 files
+LEGACY_INLINE_WIDTH = {  # 14 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
@@ -178,7 +174,6 @@ LEGACY_INLINE_WIDTH = {  # 15 files
     "templates/reports/partials/company_report_sales.html",
     "templates/reports/stale_phone_edit.html",
     "templates/sales/partials/management_sale_row.html",
-    "templates/sales/payment_method_form.html",
     "templates/sales/sale_edit.html",
 }
 

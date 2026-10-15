@@ -391,9 +391,7 @@ class PaymentMethodForm(forms.ModelForm):
         model = PaymentMethod
         fields = ["name", "icon", "is_active"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "is_active": forms.CheckboxInput(attrs={"role": "switch"}),
         }
 
 

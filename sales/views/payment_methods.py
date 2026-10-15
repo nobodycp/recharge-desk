@@ -1,8 +1,9 @@
 """CRUD views for the PaymentMethod taxonomy (management-only)."""
 
+from django.apps import apps
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import ProtectedError
+from django.db.models import Exists, OuterRef, ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 
@@ -12,9 +13,23 @@ from sales.forms import PaymentMethodForm
 from sales.models import PaymentMethod
 
 
+def _has_refs_subquery():
+    """`OR` of three `Exists()` subqueries — folds into one SELECT so the
+    list page does not fire a fresh EXISTS per row (see
+    `PaymentMethod.is_deletable`)."""
+    Sale = apps.get_model("sales", "Sale")
+    CustomerPayment = apps.get_model("customers", "CustomerPayment")
+    CustomerPaymentSubmission = apps.get_model("customers", "CustomerPaymentSubmission")
+    return (
+        Exists(Sale.objects.filter(payment_method_id=OuterRef("pk")))
+        | Exists(CustomerPayment.objects.filter(payment_method_id=OuterRef("pk")))
+        | Exists(CustomerPaymentSubmission.objects.filter(payment_method_id=OuterRef("pk")))
+    )
+
+
 @management_required
 def payment_method_list(request):
-    qs = PaymentMethod.objects.order_by("name")
+    qs = PaymentMethod.objects.annotate(has_refs_annotated=_has_refs_subquery()).order_by("name")
     page_obj = paginate_request(request, qs)
     return render(
         request,

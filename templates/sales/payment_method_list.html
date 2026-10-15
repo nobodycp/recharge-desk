@@ -1,44 +1,71 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Payment methods" %}</h1>
-    <p class="rd-text-muted mb-0">{% trans "Tiles shown on the employee sales screen." %}</p>
-  </div>
+<div class="rd-page">
+{% trans "Payment methods" as title %}{% trans "Tiles shown on the employee sales screen." as subtitle %}
+{% rd_page_header title subtitle=subtitle %}
   <a class="btn btn-primary" href="{% url 'sales:payment_method_create' %}">{% trans "New" %}</a>
-</div>
+{% end_rd_page_header %}
+
 <div class="rd-card overflow-hidden">
-  <div class="list-group list-group-flush rd-list-flush">
+  <div class="d-none d-md-block rd-data-shell">
+    <div class="table-responsive border-0">
+      <table class="table mb-0 align-middle rd-table-modern">
+        <thead>
+          <tr>
+            <th>{% trans "Name" %}</th>
+            <th>{% trans "Active" %}</th>
+            <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in page_obj %}
+            <tr>
+              <td class="fw-semibold">{{ m.name }}</td>
+              <td>{% if m.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}</td>
+              <td class="text-end">
+                <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
+                  {% url 'sales:payment_method_edit' m.pk as edit_url %}
+                  {% if m.is_deletable %}
+                    {% url 'sales:payment_method_delete' m.pk as delete_url %}
+                    {% blocktrans with name=m.name asvar confirm_text %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}
+                    {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text variant="text" %}
+                  {% else %}
+                    {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="text" %}
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            {% trans "No payment methods." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=3 title=empty_title icon="list" %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none rd-mobile-stack p-2">
     {% for m in page_obj %}
-      <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
+      <div class="rd-mobile-row-card">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
           <div class="fw-semibold">{{ m.name }}</div>
-          <div class="small mt-1">
-            {% if m.is_active %}
-              <span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>
-            {% else %}
-              <span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>
-            {% endif %}
-          </div>
+          {% if m.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Active" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}
         </div>
-        <div class="d-flex gap-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:payment_method_edit' m.pk %}">{% trans "Edit" %}</a>
-          <form
-            method="post"
-            action="{% url 'sales:payment_method_delete' m.pk %}"
-            class="m-0"
-            hx-confirm="{% blocktrans with name=m.name %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}"
-          >
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-          </form>
+        <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
+          {% url 'sales:payment_method_edit' m.pk as edit_url %}
+          {% if m.is_deletable %}
+            {% url 'sales:payment_method_delete' m.pk as delete_url %}
+            {% blocktrans with name=m.name asvar confirm_text %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text variant="text" %}
+          {% else %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="text" %}
+          {% endif %}
         </div>
       </div>
     {% empty %}
-      <div class="list-group-item text-secondary">{% trans "No payment methods." %}</div>
+      {% trans "No payment methods." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
     {% endfor %}
   </div>
-  {% include "partials/pagination.html" %}
+</div>
+{% include "partials/pagination.html" with page_obj=page_obj %}
 </div>
 {% endblock %}

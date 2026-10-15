@@ -6277,22 +6277,23 @@ msgstr "تحديد البيع"
 #: templates/sales/partials/pending_payments_results.html:155
 msgid "No pending sales."
 msgstr "لا توجد مبيعات معلّقة."
-#: templates/sales/payment_method_form.html:38
+#: templates/sales/payment_method_form.html:37
 msgid ""
-"Deleting a payment method is permanent. If existing sales or customer "
-"payments still reference it, the delete will be blocked — mark it inactive "
-"instead."
+"This payment method can't be deleted because sales or customer payments "
+"still reference it. Turn off “Active” and save to hide it on the sales "
+"screen."
 msgstr ""
-"حذف طريقة الدفع لا يمكن التراجع عنه. إذا كانت هناك مبيعات أو دفعات زبائن لا "
-"تزال مرتبطة بها، سيتم منع الحذف — اجعلها غير نشطة بدلاً من ذلك."
+"لا يمكن حذف طريقة الدفع هذه لأن عليها مبيعات أو دفعات عملاء لا تزال مرتبطة "
+"بها. ألغِ تفعيل «نشط» واحفظ لإخفائها من شاشة البيع."
 
-#: templates/sales/payment_method_form.html:44
+#: templates/sales/payment_method_form.html:32
 #: templates/sales/payment_method_list.html:31
+#: templates/sales/payment_method_list.html:57
 #, python-format
 msgid "Delete payment method “%(name)s”? This cannot be undone."
 msgstr "حذف طريقة الدفع \"%(name)s\"؟ لا يمكن التراجع عن هذا الإجراء."
 
-#: templates/sales/payment_method_form.html:47
+#: templates/sales/payment_method_form.html:35
 msgid "Delete payment method"
 msgstr "حذف طريقة الدفع"
 

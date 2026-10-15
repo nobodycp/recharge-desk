@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.apps import apps
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -32,6 +33,22 @@ class PaymentMethod(models.Model):
     def save(self, *args, **kwargs):
         maybe_optimize_image_field(self, "icon")
         super().save(*args, **kwargs)
+
+    @property
+    def is_deletable(self) -> bool:
+        # If the queryset annotated `has_refs_annotated` (see
+        # sales.views.payment_methods.payment_method_list), reuse that
+        # result instead of firing three fresh EXISTS queries per row.
+        annotated = getattr(self, "has_refs_annotated", None)
+        if annotated is not None:
+            return not annotated
+        CustomerPayment = apps.get_model("customers", "CustomerPayment")
+        CustomerPaymentSubmission = apps.get_model("customers", "CustomerPaymentSubmission")
+        return not (
+            self.sales.exists()
+            or CustomerPayment.objects.filter(payment_method_id=self.pk).exists()
+            or CustomerPaymentSubmission.objects.filter(payment_method_id=self.pk).exists()
+        )
 
 
 class Sale(models.Model):
