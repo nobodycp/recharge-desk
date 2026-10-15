@@ -1,51 +1,55 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="mx-auto" style="max-width: 45rem;">
-  <h1 class="h3 mb-3">{{ title }}</h1>
-  <p class="text-secondary small mb-3">
-    {% trans "Product line" %}: <span class="fw-semibold text-body">{{ line.company.name }} — {{ line.name }}</span>
-  </p>
-  <div class="app-card card">
-    <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+<div class="rd-page rd-page--form">
+  {% trans "Products" as products_label %}
+  {% url 'companies:product_list' as products_url %}
+  {% with line_subtitle=line.company.name|add:" — "|add:line.name %}
+  {% rd_page_header title subtitle=line_subtitle back_url=products_url back_label=products_label %}{% end_rd_page_header %}
+  {% endwith %}
+
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {% for field in form %}
-          <div>
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {{ field.errors }}
-          </div>
-        {% endfor %}
-        <div class="d-flex gap-2">
+        {% rd_fields form %}
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
           <a class="btn btn-outline-secondary" href="{% url 'companies:product_list' %}">{% trans "Cancel" %}</a>
         </div>
       </form>
-      {% if variant %}
-        <div class="border-top pt-3 mt-3 d-flex flex-wrap gap-2">
-          {% if variant.is_deletable %}
-            <form method="post" action="{% url 'companies:product_variant_delete' variant.pk %}" hx-confirm="{% filter force_escape %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger">{% trans "Delete package" %}</button>
-            </form>
-          {% elif variant.is_active %}
-            <form method="post" action="{% url 'companies:product_variant_archive' variant.pk %}" hx-confirm="{% filter force_escape %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-warning">{% trans "Archive package" %}</button>
-            </form>
-            <p class="small text-secondary mb-0 align-self-center">{% trans "Has sales — archive to hide it without affecting history." %}</p>
-          {% else %}
-            <form method="post" action="{% url 'companies:product_variant_unarchive' variant.pk %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-primary">{% trans "Restore package" %}</button>
-            </form>
-            <p class="small text-secondary mb-0 align-self-center">{% trans "Archived — hidden from new sales." %}</p>
-          {% endif %}
-        </div>
-      {% endif %}
     </div>
   </div>
+
+  {% if variant %}
+    <section class="rd-card rd-set-section rd-set-section--danger">
+      <header class="rd-set-section__head">
+        <span class="rd-set-icon rd-set-icon--danger" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+        <div>
+          <h2 class="rd-set-section__title">{% trans "Danger zone" %}</h2>
+        </div>
+      </header>
+      <div class="rd-set-section__body d-flex flex-wrap align-items-center gap-2">
+        {% if variant.is_deletable %}
+          <form method="post" action="{% url 'companies:product_variant_delete' variant.pk %}" class="m-0" hx-confirm="{% filter force_escape %}{% trans "Delete this package? This cannot be undone." %}{% endfilter %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">{% trans "Delete package" %}</button>
+          </form>
+        {% elif variant.is_active %}
+          <form method="post" action="{% url 'companies:product_variant_archive' variant.pk %}" class="m-0" hx-confirm="{% filter force_escape %}{% trans "Archive this package? It will be hidden from new sales. Past sales stay unchanged." %}{% endfilter %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary">{% trans "Archive package" %}</button>
+          </form>
+          <p class="small text-secondary mb-0">{% trans "Has sales — archive to hide it without affecting history." %}</p>
+        {% else %}
+          <form method="post" action="{% url 'companies:product_variant_unarchive' variant.pk %}" class="m-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary">{% trans "Restore package" %}</button>
+          </form>
+          <p class="small text-secondary mb-0">{% trans "Archived — hidden from new sales." %}</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
 </div>
 {% endblock %}

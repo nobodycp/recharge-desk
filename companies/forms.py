@@ -49,16 +49,10 @@ class ProductLineForm(forms.ModelForm):
             "default_package",
         ]
         widgets = {
-            "company": forms.Select(attrs={"class": "form-select"}),
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "sort_order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
-            "estimated_unit_cost": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01", "min": "0"}
-            ),
-            "allow_partial_days": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "default_package": forms.Select(attrs={"class": "form-select"}),
+            "sort_order": forms.NumberInput(attrs={"min": "0"}),
+            "estimated_unit_cost": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "allow_partial_days": forms.CheckboxInput(attrs={"role": "switch"}),
+            "is_active": forms.CheckboxInput(attrs={"role": "switch"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -166,7 +160,6 @@ class ProductVariantForm(forms.ModelForm):
             (90, _("3 months (90 days)")),
         ),
         initial=30,
-        widget=forms.Select(attrs={"class": "form-select"}),
         help_text=_("Leave as monthly unless this package is a 3-month offer."),
     )
 
@@ -175,8 +168,8 @@ class ProductVariantForm(forms.ModelForm):
         # Package icons are not used — the product-line icon is shared by all packages.
         fields = ["variant_label", "cost_price", "default_sell_price", "base_days", "is_active"]
         widgets = {
-            "variant_label": forms.TextInput(attrs={"class": "form-control", "placeholder": _("e.g. 100 GB")}),
-            "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "default_sell_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "variant_label": forms.TextInput(attrs={"placeholder": _("e.g. 100 GB")}),
+            "cost_price": forms.NumberInput(attrs={"step": "0.01"}),
+            "default_sell_price": forms.NumberInput(attrs={"step": "0.01"}),
+            "is_active": forms.CheckboxInput(attrs={"role": "switch"}),
         }

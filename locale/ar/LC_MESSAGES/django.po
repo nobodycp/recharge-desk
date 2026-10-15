@@ -1793,7 +1793,6 @@ msgid "SIM inventory"
 msgstr "مخزون الشرائح"
 #: inventory/forms.py:20 inventory/forms.py:62 inventory/forms.py:104
 #: inventory/forms.py:228 inventory/forms.py:280
-#: templates/companies/product_variant_form.html:7
 #: templates/customers/customer_detail.html:214
 #: templates/inventory/cards.html:43
 #: templates/inventory/customer_detail.html:30
@@ -3763,10 +3762,9 @@ msgstr "حذف الشركة"
 msgid "This company can't be deleted because it has sales. To hide it from the sales screen, turn off “Active” and save."
 msgstr "لا يمكن حذف هذه الشركة لأن عليها مبيعات. لإخفائها من شاشة البيع، ألغِ تفعيل «نشط» واحفظ."
 
-#: templates/companies/company_form.html:31
-#: templates/companies/product_line_form.html:31
-msgid "Delete unavailable (has sales)"
-msgstr "الحذف غير متاح (لها مبيعات)"
+#: templates/companies/product_line_form.html:37
+msgid "This product line can't be deleted because it has sales. Turn off “Active” and save to hide it from new sales."
+msgstr "لا يمكن حذف خط المنتج هذا لأن عليه مبيعات. ألغِ تفعيل «نشط» واحفظ لإخفائه من المبيعات الجديدة."
 
 #: templates/companies/company_list.html:7
 msgid "Suppliers and balance overview."
@@ -4168,12 +4166,12 @@ msgid "cycles"
 msgstr "دورات"
 
 #: templates/companies/partials/product_package_actions.html:5
-#: templates/companies/product_variant_form.html:29
+#: templates/companies/product_variant_form.html:34
 msgid "Delete this package? This cannot be undone."
 msgstr "حذف هذه الباقة؟ لا يمكن التراجع."
 
 #: templates/companies/partials/product_package_actions.html:10
-#: templates/companies/product_variant_form.html:34
+#: templates/companies/product_variant_form.html:39
 msgid ""
 "Archive this package? It will be hidden from new sales. Past sales stay "
 "unchanged."
@@ -4200,16 +4198,15 @@ msgstr "قارن أسطر سكاي والنظام"
 #: templates/companies/partials/sky_reconcile_table.html:29
 msgid "Sky charges"
 msgstr "خصومات سكاي"
-#: templates/companies/product_line_form.html:26
+#: templates/companies/product_line_form.html:32
 #: templates/companies/product_list.html:176
 msgid "Delete this product line and all its packages? This cannot be undone."
 msgstr "حذف خط المنتج هذا وكل باقاته؟ لا يمكن التراجع."
 
-#: templates/companies/product_line_form.html:28
+#: templates/companies/product_line_form.html:34
 msgid "Delete product line"
 msgstr "حذف خط المنتج"
 
-#: templates/companies/product_line_form.html:31
 #: templates/companies/product_list.html:181
 msgid "Cannot delete: this line has sales."
 msgstr "لا يمكن الحذف: للخط مبيعات."
@@ -4313,20 +4310,20 @@ msgstr "حذف الخط"
 msgid "No product lines."
 msgstr "لا توجد خطوط منتجات."
 
-#: templates/companies/product_variant_form.html:31
+#: templates/companies/product_variant_form.html:36
 msgid "Delete package"
 msgstr "حذف الباقة"
 
-#: templates/companies/product_variant_form.html:36
+#: templates/companies/product_variant_form.html:41
 msgid "Archive package"
 msgstr "أرشفة الباقة"
-#: templates/companies/product_variant_form.html:38
+#: templates/companies/product_variant_form.html:43
 msgid "Has sales — archive to hide it without affecting history."
 msgstr "لها مبيعات — أرشفها لإخفائها دون التأثير على السجل."
-#: templates/companies/product_variant_form.html:42
+#: templates/companies/product_variant_form.html:47
 msgid "Restore package"
 msgstr "استعادة الباقة"
-#: templates/companies/product_variant_form.html:44
+#: templates/companies/product_variant_form.html:49
 msgid "Archived — hidden from new sales."
 msgstr "مؤرشفة — مخفية من المبيعات الجديدة."
 #: templates/companies/sky_reconcile.html:62

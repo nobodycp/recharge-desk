@@ -80,7 +80,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 47 files
+LEGACY_PAGE_HEAD = {  # 45 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -91,9 +91,7 @@ LEGACY_PAGE_HEAD = {  # 47 files
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/companies/company_detail.html",
-    "templates/companies/product_line_form.html",
     "templates/companies/product_list.html",
-    "templates/companies/product_variant_form.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_form.html",
@@ -129,16 +127,14 @@ LEGACY_PAGE_HEAD = {  # 47 files
     "templates/sms_gateway/reports.html",
     "templates/sms_gateway/settings_index.html",
 }
-LEGACY_APP_CARD = {  # 7 files
+LEGACY_APP_CARD = {  # 5 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/companies/product_line_form.html",
-    "templates/companies/product_variant_form.html",
 }
-LEGACY_LABEL_TAG = {  # 20 files
+LEGACY_LABEL_TAG = {  # 18 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -147,8 +143,6 @@ LEGACY_LABEL_TAG = {  # 20 files
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/companies/partials/company_detail_connection.html",
     "templates/companies/partials/company_detail_general.html",
-    "templates/companies/product_line_form.html",
-    "templates/companies/product_variant_form.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_form.html",
     "templates/inventory/cards.html",
@@ -160,15 +154,13 @@ LEGACY_LABEL_TAG = {  # 20 files
     "templates/sales/pending_payments.html",
     "templates/sales/sale_edit.html",
 }
-LEGACY_INLINE_WIDTH = {  # 14 files
+LEGACY_INLINE_WIDTH = {  # 12 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/reports.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/companies/product_line_form.html",
-    "templates/companies/product_variant_form.html",
     "templates/core/forbidden.html",
     "templates/customers/customer_form.html",
     "templates/reports/partials/company_report_sales.html",
