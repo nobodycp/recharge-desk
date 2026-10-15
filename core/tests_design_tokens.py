@@ -384,13 +384,16 @@ class LightEmptyStateAndSparkTests(SimpleTestCase):
         body = "\n".join(b for sels, b in _rules(CSS) if ".rd-mini-chart--empty .empty-state" in sels)
         self.assertNotRegex(body, r"min-height:\s*[1-9]")
 
-    def test_sparkline_is_full_width_with_a_fixed_height(self):
+    def test_sparkline_shares_the_value_row_so_the_card_never_grows(self):
+        # Owner: the hero must keep its height when sales appear; the line
+        # fills the space beside the number instead of adding a row.
         body = _rule_body(CSS, ".rd-spark")
-        self.assertRegex(body, r"width:\s*100%")
-        self.assertNotIn("max-width", body)
-        self.assertRegex(body, r"height:\s*1\.75rem")
-        self.assertRegex(body, r"flex:\s*0 0 100%")
-        self.assertRegex(_rule_body(CSS, ".rd-stat-figure"), r"flex-wrap:\s*wrap")
+        self.assertRegex(body, r"flex:\s*1 1 0")
+        self.assertRegex(body, r"min-width:\s*0")
+        self.assertRegex(body, r"height:\s*1\.5rem")
+        figure = _rule_body(CSS, ".rd-stat-figure")
+        self.assertRegex(figure, r"flex-wrap:\s*nowrap")
+        self.assertRegex(figure, r"min-height:\s*1\.75rem")
 
 
 class HeroKpiFollowsThemeTests(SimpleTestCase):
@@ -426,9 +429,11 @@ class HeroKpiFollowsThemeTests(SimpleTestCase):
         self.assertIn("background: var(--rd-primary-bg)", body)
         self.assertIn("color: var(--rd-primary-fg)", body)
 
-    def test_hero_has_accent_edge_icon_chip_and_sparkline(self):
-        hero = self._bodies(".rd-stat.rd-stat--hero")
-        self.assertRegex(hero, r"border-color:\s*color-mix\(in srgb, var\(--rd-accent\) 35%, var\(--bs-border-color\)\)")
+    def test_hero_has_plain_border_accent_icon_chip_and_sparkline(self):
+        # Owner: same border as every other card; accent only on icon + line.
+        for sels, body in _rules(CSS):
+            if any("rd-stat--hero" in s and "rd-balance-stats" not in s for s in sels):
+                self.assertNotIn("border", body, sels)
         icon = self._bodies(".rd-stat.rd-stat--hero .rd-stat-icon")
         self.assertIn("background: var(--rd-accent-soft)", icon)
         self.assertRegex(icon, r"color:\s*var\(--rd-accent(-ink)?\)")

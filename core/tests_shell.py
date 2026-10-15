@@ -685,6 +685,15 @@ class ManagementTopbarTests(TestCase):
         self.assertRegex(joined, r"max-height:")
         self.assertRegex(joined, r"overflow-y:\s*auto")
 
+    def test_wide_screens_use_the_width(self):
+        # Owner on 1680x1050: no big empty gutters, a roomier sidebar.
+        wide = "\n".join(_media_blocks(self._css(), "min-width: 1400px"))
+        content = "\n".join(_find_rules(wide, ".rd-content"))
+        self.assertGreaterEqual(float(re.search(r"max-width:\s*([\d.]+)rem", content).group(1)), 110)
+        app = "\n".join(_find_rules(wide, ".rd-app"))
+        self.assertRegex(app, r"grid-template-columns:\s*minmax\(16rem, 19rem\) 1fr")
+        self.assertRegex("\n".join(_find_rules(wide, ".rd-nav-link")), r"font-size:\s*0\.98rem")
+
     def test_desktop_search_types_in_the_bar_itself(self):
         # The open panel sits on top of the bar: its field lands exactly where
         # the bar is (panel padding 0.4rem + 1px border), same height.
