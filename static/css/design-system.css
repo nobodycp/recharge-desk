@@ -1047,8 +1047,9 @@ html[lang="ar"] .rd-sidebar-brand-name {
   padding: 0.7rem 1rem;
   /* Mockup C: the bar is part of the page (no hairline, no card). The
      translucent page colour + blur only keeps scrolled content readable.
-     NOTE: backdrop-filter also makes the bar the containing block for the
-     fixed phone panels below (they anchor to `top: 100%` of the bar). */
+     NOTE: the phone sheets (search, bell, avatar menu) are `position:
+     absolute` and anchor to this sticky bar (their wrappers are static below
+     576 px). Do not rely on backdrop-filter as a containing block. */
   background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
@@ -1489,11 +1490,16 @@ html[lang="ar"] .rd-hello__title {
   text-decoration: none;
 }
 
-/* Phones: the results open as a full-width sheet under the top bar (the bar
-   is the containing block, see .rd-topbar), never wider than the viewport. */
+/* Phones: the results open as a full-width sheet under the top bar, never
+   wider than the viewport. .rd-search is static here so the panel anchors to
+   the sticky bar (see .rd-topbar), not to the toggle's wrapper. */
 @media (max-width: 575.98px) {
+  .rd-search {
+    position: static;
+  }
+
   .rd-search .rd-search-panel {
-    position: fixed;
+    position: absolute;
     inset-inline: 0.5rem;
     top: calc(100% + 0.4rem);
     width: auto;
@@ -2491,12 +2497,6 @@ a.rd-person__name:hover {
   display: flex;
   flex-direction: column;
   background: var(--bs-body-bg);
-}
-
-.rd-lang-select {
-  font-size: 0.8rem;
-  border-radius: var(--rd-radius-sm);
-  max-width: 8.5rem;
 }
 
 .rd-sale-form__stack {
@@ -4799,7 +4799,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     min-height: 3.45rem;
   }
 
-  .rd-topbar .rd-user-menu--ava .rd-avatar {
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-trigger .rd-avatar {
     width: 3.45rem;
     height: 3.45rem;
   }
@@ -4825,17 +4825,40 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   }
 
   .rd-lang-toggle__btn {
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  /* Search results: rows and the "all results" link are touch targets too. */
+  .rd-search-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 3.45rem;
+  }
+
+  .rd-search-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     min-height: 3.45rem;
   }
 }
 
-/* Phones: both popovers become sheets pinned under the bar. The bar is their
-   containing block (it has a backdrop-filter), so `top: 100%` is the bar's
-   bottom edge and the inline insets keep them inside the viewport in RTL/LTR. */
+/* Phones: both popovers become sheets pinned under the bar. The wrappers
+   (.rd-user-menu) drop `position: relative` here, so the panels anchor to the
+   sticky bar itself (a positioned ancestor, independent of backdrop-filter):
+   `top: 100%` is the bar's bottom edge and the inline insets keep them inside
+   the viewport in RTL/LTR. */
 @media (max-width: 575.98px) {
+  .rd-topbar .rd-user-menu {
+    position: static;
+  }
+
   .rd-topbar .rd-notif-menu .rd-user-menu-panel,
   .rd-topbar .rd-user-menu--ava .rd-user-menu-panel {
-    position: fixed;
+    position: absolute;
     inset-inline: 0.5rem;
     top: calc(100% + 0.4rem);
     min-width: 0;
@@ -5712,7 +5735,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 
 .rd-phone-lifecycle,
 .rd-phone-donut {
-  --donut-active: var(--rd-ink);
+  --donut-active: var(--rd-success);
   --donut-due: var(--rd-accent);
   --donut-grace: var(--rd-muted);
   --donut-overdue: var(--rd-danger);
@@ -5919,7 +5942,11 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   text-decoration: underline;
 }
 
-/* Values are ink; the coloured dot (swatch) + the text label carry the status. */
+/* Owner ruling U3: each number takes its swatch's hue (the dot + text label
+   still carry the status, never colour alone). Every colour is >= 4.5:1 on the
+   card surface in both themes (tests_design_tokens.PhoneLegendContrastTests);
+   the ring/swatch orange (--rd-accent) is below that as text, so the "ends
+   today" number uses the text-safe sibling --rd-accent-ink. */
 .rd-phone-lifecycle__val {
   font-family: var(--rd-font-num);
   font-size: 1.1rem;
@@ -5930,10 +5957,29 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   text-decoration: none;
 }
 
+.rd-phone-lifecycle__item--active .rd-phone-lifecycle__val {
+  color: var(--donut-active);
+}
+.rd-phone-lifecycle__item--due .rd-phone-lifecycle__val {
+  color: var(--rd-accent-ink);
+}
+.rd-phone-lifecycle__item--grace .rd-phone-lifecycle__val {
+  color: var(--donut-grace);
+}
+.rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__val {
+  color: var(--donut-overdue);
+}
+
+/* The count link keeps its hue; the dotted underline is its resting
+   affordance, solid on hover / keyboard focus. */
+a.rd-phone-lifecycle__val {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
 a.rd-phone-lifecycle__val:hover,
 a.rd-phone-lifecycle__val:focus-visible {
-  color: var(--rd-ink);
-  text-decoration: underline;
+  text-decoration: underline solid;
   text-underline-offset: 0.2em;
 }
 

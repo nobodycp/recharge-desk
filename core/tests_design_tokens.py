@@ -235,3 +235,68 @@ class FloatingPanelTokenTests(SimpleTestCase):
             block = _block(CSS, theme)
             ratio = _contrast(_token(block, "--rd-muted"), _token(block, "--rd-surface-raised"))
             self.assertGreaterEqual(ratio, 4.5, f"{theme}: {ratio:.2f}")
+
+
+class PhoneLegendContrastTests(SimpleTestCase):
+    """Owner ruling U3: the phone-status legend numbers take their swatch hue."""
+
+    THEMES = ('[data-bs-theme="light"]', '[data-bs-theme="dark"]')
+    ITEMS = ("active", "due", "grace", "overdue")
+
+    def _resolve(self, value, *blocks):
+        while value.startswith("var("):
+            name = re.fullmatch(r"var\((--[\w-]+)\)", value).group(1)
+            for block in blocks:
+                m = re.search(rf"{re.escape(name)}:\s*([^;]+);", block)
+                if m:
+                    value = m.group(1).strip()
+                    break
+            else:
+                raise AssertionError(f"{name} not defined")
+        return value
+
+    def _colour_decl(self, selector):
+        body = _rule_body(CSS, selector)
+        m = re.search(r"(?<![\w-])color:\s*([^;]+);", body)
+        self.assertTrue(m, f"{selector} has no colour")
+        return m.group(1).strip()
+
+    def test_numbers_use_their_swatch_hue(self):
+        donut = _rule_body(CSS, ".rd-phone-lifecycle")
+        self.assertRegex(donut, r"--donut-active:\s*var\(--rd-success\)")
+        self.assertRegex(donut, r"--donut-overdue:\s*var\(--rd-danger\)")
+        # Ends today: orange family (accent for ring + swatch, accent-ink as text).
+        self.assertRegex(donut, r"--donut-due:\s*var\(--rd-accent\)")
+        self.assertEqual(
+            self._colour_decl(".rd-phone-lifecycle__item--due .rd-phone-lifecycle__val"),
+            "var(--rd-accent-ink)",
+        )
+        # Active / grace / overdue numbers use exactly the swatch variable.
+        for item in ("active", "grace", "overdue"):
+            self.assertEqual(
+                self._colour_decl(f".rd-phone-lifecycle__item--{item} .rd-phone-lifecycle__val"),
+                f"var(--donut-{item})",
+                item,
+            )
+
+    def test_numbers_meet_text_contrast_in_both_themes(self):
+        donut = _rule_body(CSS, ".rd-phone-lifecycle")
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            for surface_name in ("--rd-surface", "--rd-surface-2"):  # card + row hover
+                surface = self._resolve(f"var({surface_name})", block)
+                for item in self.ITEMS:
+                    decl = self._colour_decl(f".rd-phone-lifecycle__item--{item} .rd-phone-lifecycle__val")
+                    colour = self._resolve(decl, donut, block)
+                    ratio = _contrast(colour, surface)
+                    self.assertGreaterEqual(
+                        ratio, 4.5, f"{theme} {item}: {decl} = {colour} on {surface_name} {surface} = {ratio:.2f}"
+                    )
+
+    def test_overdue_link_has_resting_affordance(self):
+        body = _rule_body(CSS, "a.rd-phone-lifecycle__val")
+        self.assertIn("text-decoration: underline dotted", body)
+        self.assertIn("text-underline-offset: 0.2em", body)
+        hover = _rule_body(CSS, "a.rd-phone-lifecycle__val:hover")
+        self.assertIn("underline solid", hover)
+        self.assertNotRegex(hover, r"(?<![\w-])color:")  # keeps the red

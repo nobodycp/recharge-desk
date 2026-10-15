@@ -509,9 +509,12 @@ class ManagementTopbarTests(TestCase):
         for decl in ("max-width: 100%", "max-height: 100%", "object-fit: cover", "border-radius: 50%"):
             self.assertIn(decl, img)
         mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
-        small = "\n".join(_find_rules(mobile, ".rd-topbar .rd-user-menu--ava .rd-avatar"))
+        # Only the trigger's avatar grows on phones; the avatar in the open menu
+        # header keeps its 2.6rem size.
+        small = "\n".join(_find_rules(mobile, ".rd-topbar .rd-user-menu--ava .rd-user-menu-trigger .rd-avatar"))
         self.assertRegex(small, r"width:\s*3\.45rem")
         self.assertRegex(small, r"height:\s*3\.45rem")
+        self.assertEqual(_find_rules(mobile, ".rd-topbar .rd-user-menu--ava .rd-avatar"), [])
         menu = "\n".join(_find_rules(desktop, ".rd-topbar .rd-user-menu-header .rd-avatar"))
         self.assertRegex(menu, r"width:\s*2\.6rem")
         base = "\n".join(_find_rules(desktop, ".rd-avatar img"))
@@ -536,7 +539,7 @@ class ManagementTopbarTests(TestCase):
         order = [
             header.index("rd-hello"),
             header.index("data-rd-search-toggle"),
-            header.index("data-rd-notifications") if "data-rd-notifications" in header else header.index("rd-topbar-cta"),
+            header.index("data-rd-notifications"),
             header.index("rd-topbar-cta"),
             header.index("rd-user-menu--ava"),
         ]
@@ -579,9 +582,23 @@ class ManagementTopbarTests(TestCase):
         for sel in (".rd-notif-menu .rd-user-menu-panel", ".rd-search-panel", ".rd-user-menu--ava .rd-user-menu-panel"):
             with self.subTest(sel=sel):
                 joined = "\n".join(_find_rules(small, sel))
-                self.assertIn("position: fixed", joined)
+                # Anchored to the sticky bar, not `fixed` (which would depend on
+                # the bar's backdrop-filter creating a containing block).
+                self.assertIn("position: absolute", joined)
+                self.assertNotIn("position: fixed", joined)
                 self.assertRegex(joined, r"inset-inline:\s*0?\.5rem")
                 self.assertNotRegex(joined, r"(?<![\w-])width:\s*\d")
+
+    def test_phone_sheets_anchor_to_the_bar_without_backdrop_filter(self):
+        css = self._css()
+        small = "\n".join(_media_blocks(css, "max-width: 575.98px"))
+        # Intermediate wrappers must not be positioned, or the sheet would
+        # anchor to the toggle/trigger instead of the bar.
+        for sel in (".rd-search", ".rd-topbar .rd-user-menu"):
+            with self.subTest(sel=sel):
+                self.assertIn("position: static", "\n".join(_find_rules(small, sel)))
+        bar = "\n".join(_find_rules(css, ".rd-topbar"))
+        self.assertIn("position: sticky", bar)  # the positioned ancestor
 
     def test_menu_controls_meet_touch_target_on_phones(self):
         css = self._css()
@@ -590,10 +607,19 @@ class ManagementTopbarTests(TestCase):
             ".rd-user-menu-panel .rd-user-menu-item",  # links, logout button, notification rows
             ".rd-user-menu-pref .rd-theme-btn",
             ".rd-lang-toggle__btn",
+            ".rd-search-item",
+            ".rd-search-more",
         ):
             with self.subTest(sel=sel):
                 joined = "\n".join(_find_rules(mobile, sel))
                 self.assertRegex(joined, r"min-height:\s*3\.45rem")
+        lang = "\n".join(_find_rules(mobile, ".rd-lang-toggle__btn"))
+        self.assertRegex(lang, r"min-width:\s*3\.45rem")
+        item = "\n".join(_find_rules(mobile, ".rd-search-item"))
+        self.assertIn("display: flex", item)
+        self.assertIn("flex-direction: column", item)
+        more = "\n".join(_find_rules(mobile, ".rd-search-more"))
+        self.assertIn("display: flex", more)
         theme = "\n".join(_find_rules(mobile, ".rd-user-menu-pref .rd-theme-btn"))
         self.assertRegex(theme, r"min-width:\s*3\.45rem")
 
@@ -615,7 +641,7 @@ class ManagementTopbarTests(TestCase):
         css = self._css()
         for sel in (".rd-user-menu-panel", ".rd-search-panel"):
             with self.subTest(sel=sel):
-                bodies = [b for s_, b in _rules(css) if s_.strip().endswith(sel) and "position: absolute" in b]
+                bodies = [b for s_, b in _rules(css) if s_.strip().endswith(sel) and "background:" in b and "position: absolute" in b]
                 self.assertEqual(len(bodies), 1, sel)
                 self.assertIn("background: var(--rd-surface-raised)", bodies[0])
                 self.assertIn("box-shadow: var(--rd-shadow-pop)", bodies[0])
