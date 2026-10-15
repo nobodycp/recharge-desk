@@ -6732,4 +6732,50 @@ textarea.form-control {
   .rd-page-head__aside > a {
     flex: 1 1 auto;
   }
+
+  .rd-page-head__aside > form .btn {
+    width: 100%;
+  }
+}
+
+/* Filters, tables, row actions: `rd_filter_card`, `rd_sort_link`, `row_actions.html`, `empty_row.html`. */
+.rd-filter-grid {
+  display: grid;
+  gap: 0.85rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
+  align-items: end;
+}
+
+.rd-filter-grid .rd-field {
+  margin: 0;
+}
+
+.rd-field--wide {
+  grid-column: span 2;
+}
+
+.rd-filter-grid__errors {
+  grid-column: 1 / -1;
+}
+
+.rd-filter-grid__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  grid-column: -2 / -1;
+}
+
+.rd-empty-row > td {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.rd-empty-row {
+  --bs-table-hover-bg: transparent;
+}
+
+@media (max-width: 575.98px) {
+  .rd-field--wide {
+    grid-column: span 1;
+  }
 }

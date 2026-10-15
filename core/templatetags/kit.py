@@ -1,8 +1,12 @@
 import copy
+import numbers
 import os
 
 from django import forms, template
 from django.template.loader import get_template
+from django.utils.html import format_html
+
+from core.templatetags.ui_tags import querystring
 
 register = template.Library()
 
@@ -67,7 +71,7 @@ def _render_widget(bound_field, attrs):
 
 
 @register.inclusion_tag("partials/kit/field.html")
-def rd_field(field, size="", full=False, label=None, help=None):
+def rd_field(field, size="", full=False, label=None, help=None, wide=False):
     widget = field.field.widget
     help_html = field.help_text if help is None else help
     is_file = _is_file(widget)
@@ -78,6 +82,8 @@ def rd_field(field, size="", full=False, label=None, help=None):
         wrapper.append("rd-field--check")
     if full or is_file or isinstance(widget, forms.Textarea) or "<ul" in str(help_html):
         wrapper.append("rd-field--full")
+    if wide:
+        wrapper.append("rd-field--wide")
 
     context = {
         "field": field,
@@ -134,6 +140,8 @@ class PageHeaderNode(template.Node):
         values.update({name: expr.resolve(context) for name, expr in self.kwargs.items()})
         actions = self.nodelist.render(context)
         values = {name: ("" if value is None else value) for name, value in values.items()}
+        if isinstance(values.get("meta"), numbers.Number):
+            values["meta"] = str(values["meta"])  # a count of 0 must still show
         values["actions"] = actions if actions.strip() else ""
         return get_template("partials/kit/page_header.html").render(values)
 
@@ -159,3 +167,47 @@ def rd_page_header(parser, token):
     nodelist = parser.parse(("end_rd_page_header",))
     parser.delete_first_token()
     return PageHeaderNode(args, kwargs, nodelist)
+
+
+SEARCH_FIELDS = ("q", "search")
+
+
+def _filled(request, key):
+    return any(str(value).strip() for value in request.GET.getlist(key))
+
+
+@register.inclusion_tag("partials/kit/filter_card.html", takes_context=True)
+def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicator_id="", keep="", title="", open=None):
+    """Collapsible filter card around a GET form. Counts only the form's own fields as active."""
+    request = context["request"]
+    active_count = sum(1 for name in form.fields if _filled(request, form.add_prefix(name)))
+    is_open = bool(active_count or form.errors) if open is None else bool(open)
+    path = action or request.path
+    visible = form.visible_fields()
+    kept = [(key, value) for key in keep.split() for value in request.GET.getlist(key)]
+    return {
+        "form": form,
+        "title": title,
+        "active_count": active_count,
+        "is_open": is_open,
+        "action_url": path,
+        "reset_url": reset_url or request.path,
+        "hx_target": hx_target,
+        "indicator_id": indicator_id,
+        "hidden_fields": form.hidden_fields(),
+        "kept": kept,
+        "fields": [(field, i == 0 and field.name in SEARCH_FIELDS) for i, field in enumerate(visible)],
+        "errors": form.non_field_errors(),
+    }
+
+
+@register.simple_tag(takes_context=True)
+def rd_sort_link(context, key, label, sort, order, page_key="page", sort_param="sort", order_param="order", first="desc"):
+    """Sortable column header. Same hrefs as the hand-written headers:
+    the active column in desc flips to asc, any other click gives `first` ("desc")."""
+    active = sort == key
+    direction = order if order in ("asc", "desc") else "asc"
+    new_order = ("asc" if direction == "desc" else "desc") if active else first
+    href = querystring(context, **{sort_param: key, order_param: new_order, page_key: 1})
+    classes = f"rd-datagrid-sort is-active is-{direction}" if active else "rd-datagrid-sort"
+    return format_html('<a class="{}" href="{}">{}</a>', classes, href, label)

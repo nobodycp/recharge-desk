@@ -1456,8 +1456,8 @@ tr:hover .rd-row-actions,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.4rem;
+  height: 2.4rem;
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--rd-radius-sm);
@@ -1469,6 +1469,13 @@ tr:hover .rd-row-actions,
 .rd-icon-btn svg {
   width: 1rem;
   height: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  .rd-icon-btn {
+    width: 3.45rem;
+    height: 3.45rem;
+  }
 }
 
 .rd-icon-btn:hover,

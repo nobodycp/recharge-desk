@@ -2,7 +2,9 @@ from datetime import date
 
 from django import forms
 from django.template import Context, Template
-from django.test import SimpleTestCase
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
+from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.utils import translation
 
 
@@ -260,3 +262,326 @@ class PageHeaderTests(SimpleTestCase):
         )
         self.assertNotIn("<i>y</i>", html)
         self.assertIn("&lt;i&gt;y&lt;/i&gt;", html)
+
+    def test_zero_meta_is_shown(self):
+        html = render_header('"X" meta=0')
+        self.assertRegex(html, r'<span class="rd-page-head__meta tabular-nums">0</span>')
+        html = render_header('"X" meta=count', context={"count": 0})
+        self.assertRegex(html, r'<span class="rd-page-head__meta tabular-nums">0</span>')
+
+    def test_empty_or_missing_meta_is_hidden(self):
+        self.assertNotIn("rd-page-head__meta", render_header('"X" meta=""'))
+        self.assertNotIn("rd-page-head__meta", render_header('"X" meta=missing'))
+        self.assertNotIn("rd-page-head__meta", render_header('"X"'))
+
+    def test_aside_form_buttons_fill_on_phones(self):
+        css = open("static/css/design-system.css", encoding="utf-8").read()
+        start = css.index(".rd-page-head__aside {\n    flex: 1 1 100%;")
+        phone = css[start:start + 600]
+        self.assertIn(".rd-page-head__aside > form .btn", phone)
+        self.assertRegex(phone, r"\.rd-page-head__aside > form \.btn\s*\{[^}]*width:\s*100%")
+
+
+class SearchForm(forms.Form):
+    q = forms.CharField(label="Search", required=False)
+    status = forms.ChoiceField(label="Status", required=False, choices=[("", "All"), ("paid", "Paid")])
+    date_from = forms.DateField(label="From", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+    date_to = forms.DateField(label="To", required=False, widget=forms.DateInput(attrs={"type": "date"}))
+
+    def clean(self):
+        data = super().clean()
+        if data.get("date_from") and data.get("date_to") and data["date_from"] > data["date_to"]:
+            raise forms.ValidationError("From must be before To")
+        return data
+
+
+def request_for(query=""):
+    return RequestFactory().get("/list/" + query)
+
+
+def render_filter_card(args="form", query="", form=None, extra=None):
+    request = request_for(query)
+    form = form if form is not None else SearchForm(request.GET or None)
+    context = {"request": request, "form": form}
+    context.update(extra or {})
+    return Template("{% load kit %}{% rd_filter_card " + args + " %}").render(Context(context))
+
+
+class FilterCardTests(SimpleTestCase):
+    def test_counts_only_form_fields(self):
+        html = render_filter_card(query="?tab=x&sort=a&order=asc&page=2&q=ab")
+        self.assertRegex(html, r"<span class=\"rd-filter-active-badge\" data-rd-filter-count>1</span>")
+
+    def test_blank_and_whitespace_values_do_not_count(self):
+        html = render_filter_card(query="?q=%20%20&status=&date_from=2024-01-01")
+        self.assertRegex(html, r"data-rd-filter-count>1</span>")
+        html = render_filter_card(query="?q=%20&status=")
+        self.assertIn('data-rd-filter-count style="display:none"', html)
+
+    def test_prefixed_form_counts_prefixed_names(self):
+        form = SearchForm(prefix="f")
+        html = render_filter_card(query="?f-q=abc&q=zzz&status=paid", form=form)
+        self.assertRegex(html, r"data-rd-filter-count>1</span>")
+
+    def test_keep_reposts_hidden_inputs(self):
+        html = render_filter_card('form keep="sort order tab"', query="?sort=name&order=desc&other=1")
+        self.assertIn('<input type="hidden" name="sort" value="name">', html)
+        self.assertIn('<input type="hidden" name="order" value="desc">', html)
+        self.assertNotIn('name="tab"', html)
+        self.assertNotIn('name="other"', html)
+
+    def test_keep_value_is_escaped(self):
+        html = render_filter_card('form keep="tab"', query='?tab=%22%3E%3Cb%3E')
+        self.assertNotIn("<b>", html)
+        self.assertIn("&quot;&gt;&lt;b&gt;", html)
+
+    def test_plain_get_form_without_target(self):
+        html = render_filter_card('form action="/other/" reset_url="/list/"')
+        self.assertRegex(html, r'<form method="get" action="/other/" class="rd-filter-grid"')
+        self.assertNotIn("hx-", html.split("<form", 1)[1].split(">", 1)[0])
+        self.assertIn('<form method="get" action="/list/" class="rd-filter-grid"', render_filter_card())
+
+    def test_htmx_attrs_only_with_target(self):
+        html = render_filter_card('form action="/list/" hx_target="#results" indicator_id="spin"')
+        tag = html.split("<form", 1)[1].split(">", 1)[0]
+        self.assertIn('hx-get="/list/"', tag)
+        self.assertIn('hx-target="#results"', tag)
+        self.assertIn('hx-push-url="true"', tag)
+        self.assertIn('hx-indicator="#spin"', tag)
+        self.assertIn('id="spin"', html)
+        plain = render_filter_card('form action="/list/"')
+        self.assertNotIn("hx-get", plain)
+
+    def test_hx_get_defaults_to_current_path(self):
+        html = render_filter_card('form hx_target="#r"')
+        self.assertIn('hx-get="/list/"', html)
+
+    def test_buttons_and_reset_link(self):
+        html = render_filter_card('form reset_url="/list/"')
+        actions = html[html.index("rd-filter-grid__actions"):]
+        self.assertRegex(actions, r'<button type="submit" class="btn btn-primary btn-sm">Apply</button>')
+        self.assertRegex(actions, r'<a class="btn btn-outline-secondary btn-sm" href="/list/">Reset</a>')
+
+    def test_reset_defaults_to_current_path(self):
+        html = render_filter_card()
+        self.assertRegex(html, r'<a class="btn btn-outline-secondary btn-sm" href="/list/">Reset</a>')
+
+    def test_non_field_error_visible(self):
+        form = SearchForm({"date_from": "2024-02-01", "date_to": "2024-01-01"})
+        html = render_filter_card(form=form, query="?date_from=2024-02-01&date_to=2024-01-01")
+        self.assertRegex(html, r'<div class="rd-field__error[^"]*"[^>]*>\s*<div>From must be before To</div>')
+        self.assertIn("<details", html)
+        self.assertRegex(html, r"<details[^>]* open")
+
+    def test_fields_small_and_without_colons(self):
+        html = render_filter_card()
+        self.assertRegex(html, r"<input[^>]*\bform-control-sm\b")
+        self.assertRegex(html, r"<select[^>]*\bform-select-sm\b")
+        self.assertNotIn(":</label>", html)
+
+    def test_search_field_is_wide(self):
+        html = render_filter_card()
+        self.assertEqual(html.count("rd-field--wide"), 1)
+        self.assertRegex(html, r'class="rd-field rd-field--wide"[^>]*>\s*<label class="form-label" for="id_q"')
+
+    def test_open_state(self):
+        self.assertNotRegex(render_filter_card(), r"<details[^>]* open")
+        self.assertRegex(render_filter_card(query="?q=a"), r"<details[^>]* open")
+        self.assertRegex(render_filter_card("form open=True"), r"<details[^>]* open")
+        self.assertNotRegex(render_filter_card("form open=False", query="?q=a"), r"<details[^>]* open")
+
+    def test_title_override(self):
+        self.assertIn("<span>Refine</span>", render_filter_card('form title="Refine"'))
+        self.assertIn("<span>Search & filters</span>", render_filter_card())
+
+
+SORT_HAND_WRITTEN = (
+    "{% load ui_tags %}"
+    "{% if sort == 'role' and order == 'desc' %}{% querystring sort='role' order='asc' page=1 %}"
+    "{% else %}{% querystring sort='role' order='desc' page=1 %}{% endif %}"
+)
+
+
+def render_sort(args, query="", context=None):
+    ctx = {"request": request_for(query), "sort": "", "order": "asc"}
+    ctx.update(context or {})
+    return Template("{% load kit %}{% rd_sort_link " + args + " %}").render(Context(ctx))
+
+
+def href_of(html):
+    return html.split('href="', 1)[1].split('"', 1)[0]
+
+
+class SortLinkTests(SimpleTestCase):
+    def test_inactive_column_uses_first_order_and_resets_page(self):
+        html = render_sort('"role" "Role" sort order', "?q=a&page=3&sort=username&order=asc",
+                           {"sort": "username"})
+        self.assertIn('class="rd-datagrid-sort"', html)
+        self.assertEqual(href_of(html), "?q=a&amp;page=1&amp;sort=role&amp;order=desc")
+        self.assertTrue(html.endswith(">Role</a>"))
+
+    def test_first_order_can_be_asc(self):
+        html = render_sort('"role" "Role" sort order first="asc"', "?page=3", {"sort": "username"})
+        self.assertIn("order=asc", href_of(html))
+
+    def test_active_asc_toggles_to_desc(self):
+        html = render_sort('"role" "Role" sort order', "?sort=role&order=asc", {"sort": "role", "order": "asc"})
+        self.assertIn('class="rd-datagrid-sort is-active is-asc"', html)
+        self.assertIn("order=desc", href_of(html))
+
+    def test_active_desc_toggles_to_asc(self):
+        html = render_sort('"role" "Role" sort order', "?sort=role&order=desc", {"sort": "role", "order": "desc"})
+        self.assertIn('class="rd-datagrid-sort is-active is-desc"', html)
+        self.assertIn("order=asc", href_of(html))
+
+    def test_hrefs_match_hand_written_headers(self):
+        cases = [
+            ("", {"sort": "", "order": "asc"}),
+            ("?q=a&page=3", {"sort": "username", "order": "asc"}),
+            ("?sort=role&order=asc&page=2&status=x", {"sort": "role", "order": "asc"}),
+            ("?sort=role&order=desc&page=2&x=%C3%A9%26", {"sort": "role", "order": "desc"}),
+        ]
+        for query, ctx in cases:
+            with self.subTest(query=query):
+                full = {"request": request_for(query), **ctx}
+                expected = Template(SORT_HAND_WRITTEN).render(Context(full))
+                self.assertEqual(href_of(render_sort('"role" "Role" sort order', query, ctx)), expected)
+
+    def test_custom_keys(self):
+        html = render_sort(
+            '"ref" "Ref" payments_sort payments_order page_key="payments_page" '
+            'sort_param="payments_sort" order_param="payments_order"',
+            "?payments_page=4&tab=p",
+            {"payments_sort": "ref", "payments_order": "desc"},
+        )
+        self.assertIn("is-active is-desc", html)
+        self.assertEqual(
+            href_of(html), "?payments_page=1&amp;tab=p&amp;payments_sort=ref&amp;payments_order=asc"
+        )
+
+    def test_label_is_escaped(self):
+        html = render_sort('"role" label sort order', context={"label": "<b>R</b>"})
+        self.assertIn("&lt;b&gt;R&lt;/b&gt;", html)
+        self.assertNotIn("<b>", html)
+
+
+def render_actions(**kwargs):
+    context = {"request": request_for(), "csrf_token": "tok"}
+    context.update(kwargs)
+    return render_to_string("partials/kit/row_actions.html", context)
+
+
+class RowActionsTests(SimpleTestCase):
+    def test_icon_variant_has_labels_and_escaped_confirm(self):
+        html = render_actions(
+            edit_url="/e/1/", delete_url="/d/1/", confirm='Delete "Ann" & her data?'
+        )
+        self.assertIn('<span class="rd-row-actions">', html)
+        edit = html[html.index("<a "):html.index("</a>")]
+        self.assertIn('class="rd-icon-btn"', edit)
+        self.assertIn('href="/e/1/"', edit)
+        self.assertIn('hx-boost="false" data-rd-page', edit)
+        self.assertIn('aria-label="Edit"', edit)
+        self.assertIn('title="Edit"', edit)
+        self.assertIn('hx-confirm="Delete &quot;Ann&quot; &amp; her data?"', html)
+        button = html[html.index("<button"):html.index("</button>")]
+        self.assertIn('class="rd-icon-btn rd-icon-btn--danger"', button)
+        self.assertIn('aria-label="Delete"', button)
+        self.assertIn('title="Delete"', button)
+        self.assertIn("<svg", button)
+        self.assertIn('method="post" action="/d/1/"', html)
+
+    def test_labels_are_overridable_and_translated(self):
+        html = render_actions(edit_url="/e/", delete_url="/d/", edit_label="Edit user", delete_label="Delete user")
+        self.assertIn('aria-label="Edit user"', html)
+        self.assertIn('aria-label="Delete user"', html)
+        with translation.override("ar"):
+            html = render_actions(edit_url="/e/", delete_url="/d/")
+        self.assertIn('aria-label="تعديل"', html)
+        self.assertIn('aria-label="حذف"', html)
+
+    def test_omits_delete_without_url(self):
+        html = render_actions(edit_url="/e/")
+        self.assertIn("rd-icon-btn", html)
+        self.assertNotIn("<form", html)
+        self.assertNotIn("<button", html)
+
+    def test_omits_edit_without_url(self):
+        html = render_actions(delete_url="/d/")
+        self.assertNotIn("<a ", html)
+        self.assertIn("<form", html)
+
+    def test_next_is_hidden_input(self):
+        self.assertIn('<input type="hidden" name="next" value="/back/?a=1&amp;b=2">',
+                      render_actions(delete_url="/d/", next="/back/?a=1&b=2"))
+        self.assertNotIn('name="next"', render_actions(delete_url="/d/"))
+
+    def test_no_confirm_attr_without_text(self):
+        self.assertNotIn("hx-confirm", render_actions(delete_url="/d/"))
+
+    def test_hx_target_uses_hx_post(self):
+        html = render_actions(delete_url="/d/", hx_target="#rows", hx_swap="outerHTML")
+        form = html[html.index("<form"):html.index(">", html.index("<form"))]
+        self.assertIn('hx-post="/d/"', form)
+        self.assertIn('hx-target="#rows"', form)
+        self.assertIn('hx-swap="outerHTML"', form)
+        self.assertNotIn("hx-post", render_actions(delete_url="/d/"))
+
+    def test_text_variant(self):
+        html = render_actions(edit_url="/e/", delete_url="/d/", variant="text")
+        self.assertNotIn("rd-icon-btn", html)
+        self.assertIn('class="btn btn-sm btn-outline-secondary"', html)
+        self.assertIn('class="btn btn-sm btn-outline-danger"', html)
+        self.assertRegex(html, r">\s*Edit\s*</a>")
+        self.assertRegex(html, r">\s*Delete\s*</button>")
+
+
+class EmptyRowTests(SimpleTestCase):
+    def test_empty_row_wraps_empty_state(self):
+        html = render_to_string(
+            "partials/kit/empty_row.html",
+            {"colspan": 5, "title": "No users", "text": "Add one", "icon": "list"},
+        )
+        self.assertRegex(html, r'<tr class="rd-empty-row">\s*<td colspan="5">')
+        self.assertIn('class="empty-state"', html)
+        self.assertIn("No users", html)
+        self.assertIn("Add one", html)
+        self.assertIn("empty-state__icon", html)
+
+
+class PaginationTests(TestCase):
+    def render(self, query="?x=1", **context):
+        request = request_for(query)
+        page = Paginator(list(range(100)), 10).page(2)
+        base = {"request": request, "page_obj": page}
+        base.update(context)
+        return render_to_string("partials/pagination.html", base)
+
+    def per_page_hrefs(self, html):
+        block = html[html.index("rd-datagrid-per-page"):]
+        return [h for h in block.split('href="')[1:]]
+
+    def test_per_page_links_reset_custom_page_key(self):
+        html = self.render("?payments_page=2&q=a", page_key="payments_page")
+        links = self.per_page_hrefs(html)
+        self.assertTrue(links)
+        for link in links:
+            href = link.split('"', 1)[0]
+            self.assertIn("payments_page=1", href)
+            self.assertIn("per_page=", href)
+
+    def test_per_page_links_reset_default_page_key(self):
+        for href in (h.split('"', 1)[0] for h in self.per_page_hrefs(self.render("?page=2"))):
+            self.assertIn("page=1", href)
+
+    def test_known_sibling_keys_still_reset(self):
+        for key in ("ledger_page", "sales_page", "phones_page"):
+            with self.subTest(key=key):
+                html = self.render(f"?{key}=2", page_key=key)
+                self.assertIn(f"{key}=1", self.per_page_hrefs(html)[0])
+
+    def test_sibling_reset_flag_still_resets_all(self):
+        html = self.render("?ledger_page=2", pagination_reset_sibling_pages=True)
+        href = self.per_page_hrefs(html)[0].split('"', 1)[0]
+        for key in ("page", "ledger_page", "sales_page", "phones_page"):
+            self.assertIn(f"{key}=1", href)

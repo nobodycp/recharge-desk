@@ -1,0 +1,12 @@
+{% load i18n kit %}{% include "partials/filter_card_open.html" with filter_title=title active_count=active_count indicator_id=indicator_id card_open=is_open %}
+    <form method="get" action="{{ action_url }}" class="rd-filter-grid"{% if hx_target %} hx-get="{{ action_url }}" hx-target="{{ hx_target }}" hx-push-url="true"{% if indicator_id %} hx-indicator="#{{ indicator_id }}"{% endif %}{% endif %}>
+      {% for name, value in kept %}<input type="hidden" name="{{ name }}" value="{{ value }}">
+      {% endfor %}{% for hidden in hidden_fields %}{{ hidden }}
+      {% endfor %}{% for field, wide in fields %}{% rd_field field size="sm" wide=wide %}
+      {% endfor %}{% if errors %}<div class="rd-field__error rd-filter-grid__errors" role="alert">{% for error in errors %}<div>{{ error }}</div>{% endfor %}</div>
+      {% endif %}<div class="rd-filter-grid__actions">
+        <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ reset_url }}">{% trans "Reset" %}</a>
+      </div>
+    </form>
+{% include "partials/filter_card_close.html" %}

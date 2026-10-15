@@ -47,14 +47,8 @@
         {% for sz in sizes %}
           {% if pagination_reset_sibling_pages %}
             <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% querystring per_page=sz page=1 ledger_page=1 sales_page=1 phones_page=1 %}">{{ sz }}</a>
-          {% elif pk == "ledger_page" %}
-            <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% querystring per_page=sz ledger_page=1 %}">{{ sz }}</a>
-          {% elif pk == "sales_page" %}
-            <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% querystring per_page=sz sales_page=1 %}">{{ sz }}</a>
-          {% elif pk == "phones_page" %}
-            <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% querystring per_page=sz phones_page=1 %}">{{ sz }}</a>
           {% else %}
-            <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% querystring per_page=sz page=1 %}">{{ sz }}</a>
+            <a class="rd-datagrid-per-page__link {% if page_obj.paginator.per_page == sz %}is-active{% endif %}"{% if page_obj.paginator.per_page == sz %} aria-current="true"{% endif %} href="{% per_page_url sz pk %}">{{ sz }}</a>
           {% endif %}
         {% endfor %}
       </div>
