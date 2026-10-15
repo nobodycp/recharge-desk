@@ -12,6 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 from accounts.permissions import management_required
 from companies.forms import (
     CompanyForm,
+    CompanySearchForm,
     LayanReportReconcileForm,
     ProductLineForm,
     ProductVariantForm,
@@ -64,6 +65,7 @@ def company_list(request):
     ctx = {
         "page_obj": page_obj,
         "title": _("Companies"),
+        "card_form": CompanySearchForm(initial=request.GET.dict()),
         "sort": request.GET.get("sort") or "name",
         "order": (request.GET.get("order") or "asc").lower(),
     }

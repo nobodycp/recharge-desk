@@ -3759,10 +3759,9 @@ msgstr "حذف هذه الشركة؟ لا يمكن التراجع."
 msgid "Delete company"
 msgstr "حذف الشركة"
 
-#: templates/companies/company_form.html:31
-#: templates/companies/partials/company_list_results.html:39
-msgid "Cannot delete: company has sales."
-msgstr "لا يمكن الحذف: للشركة مبيعات."
+#: templates/companies/company_form.html:42
+msgid "This company can't be deleted because it has sales. To hide it from the sales screen, turn off “Active” and save."
+msgstr "لا يمكن حذف هذه الشركة لأن عليها مبيعات. لإخفائها من شاشة البيع، ألغِ تفعيل «نشط» واحفظ."
 
 #: templates/companies/company_form.html:31
 #: templates/companies/product_line_form.html:31

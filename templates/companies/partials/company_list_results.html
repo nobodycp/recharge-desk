@@ -1,23 +1,16 @@
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
+{% trans "Delete this company? This cannot be undone." as confirm_text %}{% trans "Delete company" as delete_company_label %}
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
       <table class="table mb-0 align-middle rd-table-modern">
         <thead>
           <tr>
-            <th>
-              <a class="rd-datagrid-sort {% if sort == 'name' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'name' and order == 'desc' %}{% querystring sort='name' order='asc' page=1 %}{% else %}{% querystring sort='name' order='desc' page=1 %}{% endif %}">{% trans "Name" %}</a>
-            </th>
-            <th class="text-end">
-              <a class="rd-datagrid-sort {% if sort == 'opening' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'opening' and order == 'desc' %}{% querystring sort='opening' order='asc' page=1 %}{% else %}{% querystring sort='opening' order='desc' page=1 %}{% endif %}">{% trans "Opening" %}</a>
-            </th>
-            <th class="text-end">
-              <a class="rd-datagrid-sort {% if sort == 'balance' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'balance' and order == 'desc' %}{% querystring sort='balance' order='asc' page=1 %}{% else %}{% querystring sort='balance' order='desc' page=1 %}{% endif %}">{% trans "Current balance" %}</a>
-            </th>
-            <th>
-              <a class="rd-datagrid-sort {% if sort == 'active' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'active' and order == 'desc' %}{% querystring sort='active' order='asc' page=1 %}{% else %}{% querystring sort='active' order='desc' page=1 %}{% endif %}">{% trans "Active" %}</a>
-            </th>
-            <th class="text-end">{% trans "Actions" %}</th>
+            <th>{% rd_sort_link "name" _("Name") sort order %}</th>
+            <th class="text-end">{% rd_sort_link "opening" _("Opening") sort order %}</th>
+            <th class="text-end">{% rd_sort_link "balance" _("Current balance") sort order %}</th>
+            <th>{% rd_sort_link "active" _("Active") sort order %}</th>
+            <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -27,21 +20,21 @@
               <td class="tabular-nums text-end kpi-muted">{{ c.opening_balance|intcomma }}</td>
               <td class="fw-medium tabular-nums text-end {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 and c.is_active %}kpi-warning{% endif %}">{{ c.current_balance|intcomma }}</td>
               <td>{% if c.is_active %}<span class="rd-badge rd-badge--paid">{% trans "Yes" %}</span>{% else %}<span class="rd-badge rd-badge--neutral">{% trans "No" %}</span>{% endif %}</td>
-              <td class="text-end text-nowrap">
-                <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:company_detail' c.pk %}" hx-boost="false" data-rd-page>{% trans "Details" %}</a>
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-                {% if c.is_deletable %}
-                  <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-                  </form>
-                {% else %}
-                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{% trans 'Cannot delete: company has sales.' %}">{% trans "Delete" %}</button>
-                {% endif %}
+              <td class="text-end">
+                <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:company_detail' c.pk %}" hx-boost="false" data-rd-page>{% trans "Details" %}</a>
+                  {% url 'companies:company_edit' c.pk as edit_url %}
+                  {% if c.is_deletable %}
+                    {% url 'companies:company_delete' c.pk as delete_url %}
+                    {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url delete_label=delete_company_label confirm=confirm_text variant="text" %}
+                  {% else %}
+                    {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="text" %}
+                  {% endif %}
+                </div>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5" class="text-center py-5"><div class="empty-state border-0 mb-0">{% trans "No companies." %}</div></td></tr>
+            {% trans "No companies." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=5 title=empty_title icon="list" %}
           {% endfor %}
         </tbody>
       </table>
@@ -64,19 +57,19 @@
             <div class="rd-mobile-v tabular-nums {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 and c.is_active %}kpi-warning{% endif %}">{{ c.current_balance|intcomma }}</div>
           </div>
         </div>
-        <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top" style="border-color: var(--bs-border-color);">
+        <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
           <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:company_detail' c.pk %}" hx-boost="false" data-rd-page>{% trans "Details" %}</a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'companies:company_edit' c.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
+          {% url 'companies:company_edit' c.pk as edit_url %}
           {% if c.is_deletable %}
-            <form method="post" action="{% url 'companies:company_delete' c.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-            </form>
+            {% url 'companies:company_delete' c.pk as delete_url %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url delete_label=delete_company_label confirm=confirm_text variant="text" %}
+          {% else %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="text" %}
           {% endif %}
         </div>
       </div>
     {% empty %}
-      <div class="text-center text-secondary py-4">{% trans "No companies." %}</div>
+      {% trans "No companies." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
     {% endfor %}
   </div>
 </div>

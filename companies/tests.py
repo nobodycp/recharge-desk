@@ -237,3 +237,109 @@ class CompanyProviderKeyTests(TestCase):
         from companies.forms import CompanyForm
 
         self.assertIn("provider_key", CompanyForm().fields)
+
+
+class CompanyKitPagesTests(TestCase):
+    """Company list and edit page on the page kit; Delete only for deletable companies."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+        from sales.models import PaymentMethod, Sale
+
+        cls.user = User.objects.create_user("kitmgr", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.sold = Company.objects.create(
+            name="SoldCo", opening_balance=_decimal(0), current_balance=_decimal(0)
+        )
+        cls.free = Company.objects.create(
+            name="FreeCo", opening_balance=_decimal(0), current_balance=_decimal(0)
+        )
+        line = ProductLine.objects.create(company=cls.sold, name="SoldLine")
+        product = Product.objects.create(
+            line=line,
+            variant_label="SoldPkg",
+            cost_price=_decimal(5),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="CashKit")
+        Sale.objects.create(
+            company=cls.sold,
+            product=product,
+            reference_number="0599000222",
+            payer_name="Kit Test",
+            payment_method=pm,
+            sell_price_actual=_decimal(50),
+            cost_price_snapshot=_decimal(5),
+            profit_snapshot=_decimal(45),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=cls.user,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_list_hides_delete_for_companies_with_sales(self):
+        html = self.client.get("/management/companies/").content.decode()
+        sold_delete = reverse("companies:company_delete", args=[self.sold.pk])
+        free_delete = reverse("companies:company_delete", args=[self.free.pk])
+        self.assertNotIn(sold_delete, html)
+        self.assertNotRegex(html, r"disabled[^>]*>\s*Delete")
+        self.assertNotIn("Cannot delete: company has sales.", html)
+        self.assertEqual(html.count(free_delete), 2)  # desktop + mobile
+        self.assertIn("Delete this company? This cannot be undone.", html)
+        # Details and Edit stay for both.
+        for company in (self.sold, self.free):
+            self.assertIn(reverse("companies:company_detail", args=[company.pk]), html)
+            self.assertIn(reverse("companies:company_edit", args=[company.pk]), html)
+
+    def test_edit_page_explains_why_delete_is_unavailable(self):
+        from django.utils.translation import override
+
+        sentence = (
+            "This company can't be deleted because it has sales. To hide it from the "
+            "sales screen, turn off “Active” and save."
+        )
+        with override("en"):
+            sold = self.client.get(reverse("companies:company_edit", args=[self.sold.pk]))
+            free = self.client.get(reverse("companies:company_edit", args=[self.free.pk]))
+        self.assertContains(sold, sentence)
+        self.assertNotContains(sold, reverse("companies:company_delete", args=[self.sold.pk]))
+        self.assertNotContains(sold, "Delete company")
+        self.assertContains(free, "Delete company")
+        self.assertContains(free, reverse("companies:company_delete", args=[self.free.pk]))
+        self.assertNotContains(free, "be deleted because it has sales")
+
+    def test_company_list_uses_kit(self):
+        r = self.client.get("/management/companies/")
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, 'name="q"')
+        self.assertContains(r, "rd-filter")
+        self.assertContains(r, 'id="company-list-results"')
+        self.assertContains(r, 'hx-boost="true"')
+        html = r.content.decode()
+        for key in ("name", "opening", "balance", "active"):
+            self.assertIn(f"sort={key}", html)
+        self.assertEqual(html.count("rd-datagrid-sort"), 4)
+        self.assertNotIn("max-width", html.split('id="company-list-results"', 1)[0].split("<main", 1)[-1])
+        r_search = self.client.get("/management/companies/", {"q": "FreeCo"})
+        self.assertContains(r_search, "FreeCo")
+        self.assertNotContains(r_search, "SoldCo")
+
+    def test_company_form_uses_kit(self):
+        r = self.client.get(reverse("companies:company_edit", args=[self.free.pk]))
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, "rd-field")
+        self.assertNotContains(r, "max-width: 45rem")
+        bad = self.client.post(
+            reverse("companies:company_edit", args=[self.free.pk]),
+            {"name": "", "opening_balance": "abc", "notes": "keep these notes"},
+        )
+        self.assertEqual(bad.status_code, 200)
+        self.assertContains(bad, "keep these notes")
+        self.assertContains(bad, "abc")
+        self.assertContains(bad, "rd-field__error")

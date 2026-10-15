@@ -6,17 +6,24 @@ from django.utils.translation import gettext_lazy as _
 from companies.models import Company, Product, ProductLine
 
 
+class CompanySearchForm(forms.Form):
+    """Render-only filter form for the company list (the view reads ``request.GET``)."""
+
+    q = forms.CharField(
+        required=False,
+        label=_("Search"),
+        widget=forms.TextInput(attrs={"placeholder": _("Company name or notes…")}),
+    )
+
+
 class CompanyForm(forms.ModelForm):
     class Meta:
         model = Company
         fields = ["name", "icon", "opening_balance", "provider_key", "notes", "is_active"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control"}),
-            "icon": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "opening_balance": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
-            "provider_key": forms.Select(attrs={"class": "form-select"}),
-            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "opening_balance": forms.NumberInput(attrs={"step": "0.01"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+            "is_active": forms.CheckboxInput(attrs={"role": "switch"}),
         }
 
     def save(self, commit=True):

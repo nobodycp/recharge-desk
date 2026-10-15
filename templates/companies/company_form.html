@@ -1,38 +1,44 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
+
 {% block content %}
-<div class="mx-auto" style="max-width: 45rem;">
-  <h1 class="h3 mb-3">{{ title }}</h1>
-  <div class="app-card card">
-    <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+<div class="rd-page rd-page--form">
+  {% trans "Companies" as companies_label %}
+  {% url 'companies:company_list' as companies_url %}
+  {% rd_page_header title subtitle=company.name back_url=companies_url back_label=companies_label %}{% end_rd_page_header %}
+
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {% for field in form %}
-          <div>
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-            {{ field.errors }}
-          </div>
-        {% endfor %}
-        <div class="d-flex flex-wrap gap-2 align-items-center">
+        {% rd_fields form %}
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
           <a class="btn btn-outline-secondary" href="{% url 'companies:company_list' %}">{% trans "Cancel" %}</a>
         </div>
       </form>
-      {% if company %}
-        <div class="border-top pt-3 mt-3">
-          {% if company.is_deletable %}
-            <form method="post" action="{% url 'companies:company_delete' company.pk %}" hx-confirm="{% filter force_escape %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger">{% trans "Delete company" %}</button>
-            </form>
-          {% else %}
-            <p class="small text-secondary mb-0" title="{% trans 'Cannot delete: company has sales.' %}">{% trans "Delete unavailable (has sales)" %}</p>
-          {% endif %}
-        </div>
-      {% endif %}
     </div>
   </div>
+
+  {% if company %}
+    <section class="rd-card rd-set-section rd-set-section--danger">
+      <header class="rd-set-section__head">
+        <span class="rd-set-icon rd-set-icon--danger" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+        <div>
+          <h2 class="rd-set-section__title">{% trans "Danger zone" %}</h2>
+        </div>
+      </header>
+      <div class="rd-set-section__body">
+        {% if company.is_deletable %}
+          <form method="post" action="{% url 'companies:company_delete' company.pk %}" class="m-0" hx-confirm="{% filter force_escape %}{% trans "Delete this company? This cannot be undone." %}{% endfilter %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">{% trans "Delete company" %}</button>
+          </form>
+        {% else %}
+          <p class="alert alert-info mb-0" role="note">{% trans "This company can't be deleted because it has sales. To hide it from the sales screen, turn off “Active” and save." %}</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
 </div>
 {% endblock %}
