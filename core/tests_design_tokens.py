@@ -455,3 +455,22 @@ class HeroKpiFollowsThemeTests(SimpleTestCase):
             icon = self._bodies(".rd-stat.rd-stat--hero .rd-stat-icon")
             token = re.search(r"color:\s*var\((--rd-[\w-]+)\)", icon).group(1)
             self.assertGreaterEqual(_contrast(_token(block, token), soft), 3.0, f"{theme} icon {token}")
+
+
+class ReportFilterLegacyCssTests(SimpleTestCase):
+    """Unmigrated report pages still use the inline label+input header filter markup."""
+
+    TEMPLATES = ("templates/reports/profit_report.html", "templates/reports/employee_report.html")
+
+    def test_every_report_filter_class_has_a_rule(self):
+        for rel in self.TEMPLATES:
+            html = (Path(settings.BASE_DIR) / rel).read_text(encoding="utf-8")
+            classes = set(re.findall(r"rd-report-filter[\w-]*", html))
+            self.assertTrue(classes, rel)
+            for name in classes:
+                self.assertRegex(CSS, rf"\.{re.escape(name)}\b", f"{rel}: .{name} lost its rule")
+
+    def test_report_filter_inputs_keep_sizing_and_phone_layout(self):
+        self.assertRegex(CSS, r"(?s)\.rd-report-filter \.form-control\s*\{[^}]*min-width:\s*9\.5rem")
+        self.assertRegex(CSS, r"(?s)\.rd-report-filter__field\s*\{[^}]*flex:\s*1 1 0")
+        self.assertRegex(CSS, r"(?s)\.rd-report-filter \.form-control\s*\{[^}]*width:\s*100%")

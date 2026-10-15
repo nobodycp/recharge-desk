@@ -70,7 +70,7 @@
               <tr>
                 <td class="text-nowrap small text-secondary">{{ e.date }}</td>
                 <td>{{ e.title }}</td>
-                <td class="small">{{ e.category }}</td>
+                <td><span class="rd-badge rd-badge--neutral rd-badge--readable">{{ e.category }}</span></td>
                 <td class="fw-semibold tabular-nums text-end">{{ e.amount|floatformat:"-2g" }}</td>
                 <td class="text-end">
                   {% url 'expenses:expense_edit' e.pk as edit_url %}{% url 'expenses:expense_delete' e.pk as delete_url %}
@@ -91,7 +91,7 @@
             <div>
               <div class="small text-secondary">{{ e.date }}</div>
               <div class="fw-semibold">{{ e.title }}</div>
-              <div class="small">{{ e.category }}</div>
+              <div class="mt-1"><span class="rd-badge rd-badge--neutral rd-badge--readable">{{ e.category }}</span></div>
             </div>
             <div class="text-end tabular-nums fw-semibold">{{ e.amount|floatformat:"-2g" }}</div>
           </div>

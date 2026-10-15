@@ -300,3 +300,45 @@ class ExpensePageKitTests(TestCase):
         Expense.objects.all().delete()
         r = self.client.get(reverse("expenses:expense_report"))
         self.assertContains(r, "rd-empty-row")
+
+
+class ExpenseListFilterErrorTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("mgr_xp_err", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.user)
+
+    def test_invalid_filter_error_renders_inside_swapped_grid(self):
+        r = self.client.get(
+            reverse("expenses:expense_list"), {"date_from": "not-a-date"}, HTTP_HX_REQUEST="true"
+        )
+        self.assertContains(r, "rd-grid-error")
+
+    def test_invalid_filter_error_is_in_grid_not_stale_in_card(self):
+        r = self.client.get(reverse("expenses:expense_list"), {"date_from": "not-a-date"})
+        html = r.content.decode()
+        self.assertEqual(html.count("rd-grid-error"), 1)
+        card = html[html.index("rd-filter-grid"): html.index('id="expense-list-results"')]
+        self.assertNotIn("is-invalid", card)
+        self.assertNotIn("rd-field__error", card)
+
+    def test_valid_filter_has_no_grid_error(self):
+        r = self.client.get(reverse("expenses:expense_list"), {"q": "x"}, HTTP_HX_REQUEST="true")
+        self.assertNotContains(r, "rd-grid-error")
+
+    def test_category_chips_use_readable_badge(self):
+        Expense.objects.create(title="t", category="ops", amount=_d(1), date=date(2026, 4, 19), created_by=self.user)
+        for name in ("expenses:expense_list", "expenses:expense_report"):
+            r = self.client.get(reverse(name))
+            self.assertContains(r, "rd-badge rd-badge--neutral rd-badge--readable")
+
+    def test_expense_form_matches_other_kit_forms_novalidate(self):
+        r = self.client.get(reverse("expenses:expense_create"))
+        self.assertContains(r, "novalidate")

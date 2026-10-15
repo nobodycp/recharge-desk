@@ -8,7 +8,7 @@
 {% end_rd_page_header %}
 
 {% url 'expenses:expense_list' as list_url %}
-{% rd_filter_card filter_form action=list_url reset_url=list_url hx_target="#expense-list-results" indicator_id="expense-htmx-indicator" keep="sort order" %}
+{% rd_filter_card card_form action=list_url reset_url=list_url hx_target="#expense-list-results" indicator_id="expense-htmx-indicator" keep="sort order" %}
 
 <div
   class="rd-card overflow-hidden rd-datagrid"

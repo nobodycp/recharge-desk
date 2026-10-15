@@ -35,6 +35,9 @@ def expense_list(request):
     ctx = {
         "page_obj": page_obj,
         "filter_form": form,
+        # The card sits outside the htmx swap target, so it is drawn from an unbound
+        # copy (values only); validation errors render inside the swapped grid.
+        "card_form": ExpenseListFilterForm(initial=request.GET.dict()),
         "title": _("Expenses"),
         "sort": request.GET.get("sort") or "date",
         "order": (request.GET.get("order") or "desc").lower(),

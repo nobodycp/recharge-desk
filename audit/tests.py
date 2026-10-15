@@ -222,7 +222,30 @@ class AuditLogViewTests(TestCase):
         c = Client()
         c.force_login(self.boss)
         html = c.get(reverse("audit:audit_log_list")).content.decode()
-        self.assertIn('rd-badge rd-badge--paid">Create', html)
-        self.assertIn('rd-badge rd-badge--pending">Update', html)
-        self.assertIn('rd-badge rd-badge--cancelled">Delete', html)
-        self.assertIn('rd-badge rd-badge--neutral">Approve', html)
+        self.assertIn('rd-badge--paid">Create', html)
+        self.assertIn('rd-badge--pending">Update', html)
+        self.assertIn('rd-badge--cancelled">Delete', html)
+        self.assertIn('rd-badge--neutral">Approve', html)
+
+
+    def test_field_count_arabic_plurals(self):
+        """The audit row's "N fields" blocktrans (msgid "%(n)s field") reads correctly in Arabic."""
+        from django.template import Context, Template
+        from django.utils import translation
+
+        tpl = Template(
+            "{% load i18n %}{% blocktrans count n=n %}{{ n }} field{% plural %}{{ n }} fields{% endblocktrans %}"
+        )
+        with translation.override("ar"):
+            got = {n: tpl.render(Context({"n": n})).strip() for n in (1, 2, 3, 11)}
+        self.assertEqual(got, {1: "1 حقل", 2: "حقلان", 3: "3 حقول", 11: "11 حقلاً"})
+        with translation.override("en"):
+            self.assertEqual(tpl.render(Context({"n": 2})).strip(), "2 fields")
+
+    def test_audit_template_uses_the_field_plural_msgid(self):
+        from pathlib import Path
+
+        from django.conf import settings
+
+        html = (Path(settings.BASE_DIR) / "templates/audit/audit_log_list.html").read_text(encoding="utf-8")
+        self.assertIn("{{ n }} field{% plural %}{{ n }} fields", html)

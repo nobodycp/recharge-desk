@@ -1941,6 +1941,11 @@ a.rd-card:hover {
   color: var(--rd-muted);
 }
 
+/* Scoped size bump for chips that carry data (expense category, audit action): 0.82rem stays above the 0.8rem readable floor. */
+.rd-badge--readable {
+  font-size: 0.82rem;
+}
+
 /* Count badges and badges that carry their own icon skip the dot. */
 :is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral):not(.tabular-nums):not(:has(svg))::before {
   content: "";
@@ -5593,12 +5598,40 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   flex: 0 0 auto;
 }
 
-/* Inline date filter in the page header: label above each date, controls never narrower than 9rem. */
+/* Inline date filter in the page header. The label+input markup (`__field`, `__lbl`)
+   is still used by the unmigrated profit and employee reports; the expense report
+   uses `.rd-field` children (label above, kit controls). */
 .rd-report-filter {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rd-report-filter:has(> .rd-field) {
   align-items: flex-end;
   gap: 0.5rem 0.75rem;
+}
+
+.rd-report-filter__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rd-report-filter__lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+}
+
+.rd-report-filter .form-control {
+  width: auto;
+  min-width: 9.5rem;
+  padding-block: 0.3rem;
+  font-size: 0.85rem;
 }
 
 .rd-report-filter .rd-field {
@@ -5607,7 +5640,11 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   margin: 0;
 }
 
-.rd-report-filter .form-label {
+.rd-report-filter .rd-field .form-control {
+  width: 100%;
+}
+
+.rd-report-filter .rd-field .form-label {
   margin-bottom: 0.2rem;
   font-size: 0.82rem;
 }
@@ -5717,6 +5754,16 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 
   .rd-stat-strip__val {
     font-size: 1.2rem;
+  }
+
+  .rd-report-filter__field {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .rd-report-filter .form-control {
+    min-width: 0;
+    width: 100%;
   }
 
   .rd-report-filter .rd-field {

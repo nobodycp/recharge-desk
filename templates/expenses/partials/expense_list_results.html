@@ -1,5 +1,7 @@
 {% load i18n humanize ui_tags kit %}
 {% trans "Delete this expense?" as confirm_text %}
+{% with range_errors=filter_form.non_field_errors %}{% for error in range_errors %}<div class="rd-field__error rd-grid-error" role="alert">{{ error }}</div>{% endfor %}{% endwith %}
+{% for field in filter_form %}{% for error in field.errors %}<div class="rd-field__error rd-grid-error" role="alert">{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
@@ -19,7 +21,7 @@
             <tr>
               <td class="text-nowrap">{{ e.date }}</td>
               <td class="fw-semibold">{{ e.title }}</td>
-              <td><span class="rd-badge rd-badge--neutral">{{ e.category }}</span></td>
+              <td><span class="rd-badge rd-badge--neutral rd-badge--readable">{{ e.category }}</span></td>
               <td class="tabular-nums text-end fw-semibold kpi-expense">{{ e.amount|intcomma }}</td>
               <td class="small kpi-muted">{% if e.created_by %}{{ e.created_by.username }}{% else %}—{% endif %}</td>
               <td class="text-end">
@@ -41,7 +43,7 @@
           <div>
             <div class="small kpi-muted">{{ e.date }}</div>
             <div class="fw-semibold">{{ e.title }}</div>
-            <div class="mt-1"><span class="rd-badge rd-badge--neutral">{{ e.category }}</span></div>
+            <div class="mt-1"><span class="rd-badge rd-badge--neutral rd-badge--readable">{{ e.category }}</span></div>
           </div>
           <div class="text-end tabular-nums fw-bold kpi-expense">{{ e.amount|intcomma }}</div>
         </div>

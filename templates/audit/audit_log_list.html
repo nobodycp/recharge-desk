@@ -22,7 +22,7 @@
             <span class="rd-audit-main">
               <span class="rd-audit-line">
                 <span class="rd-audit-actor">{% if row.actor %}{{ row.actor.username }}{% else %}{% trans "System" %}{% endif %}</span>
-                <span class="rd-badge rd-badge--{% if row.action == 'create' %}paid{% elif row.action == 'update' %}pending{% elif row.action == 'delete' %}cancelled{% else %}neutral{% endif %}">{{ row.get_action_display }}</span>
+                <span class="rd-badge rd-badge--readable rd-badge--{% if row.action == 'create' %}paid{% elif row.action == 'update' %}pending{% elif row.action == 'delete' %}cancelled{% else %}neutral{% endif %}">{{ row.get_action_display }}</span>
                 <span class="rd-audit-target">{{ row.model_label|model_verbose }}{% if row.object_repr %} · {{ row.object_repr|truncatechars:60 }}{% endif %}</span>
               </span>
               <span class="rd-audit-meta">

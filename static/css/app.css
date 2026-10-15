@@ -1664,10 +1664,6 @@ summary.rd-audit-row:hover {
   font-weight: 700;
 }
 
-.rd-audit-line .rd-badge {
-  font-size: 0.82rem;
-}
-
 .rd-audit-target {
   min-width: 0;
   color: var(--bs-body-color);
