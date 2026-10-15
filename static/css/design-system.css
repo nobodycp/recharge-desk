@@ -88,13 +88,13 @@ html {
   --rd-shadow-float: 0 10px 22px -10px rgba(10, 10, 10, 0.55);
 
   /* Chrome: drawer scrim, text on red count chips, and status tones that
-     sit on an ink surface (toasts), i.e. the opposite theme's values. */
+     sit on an ink surface (toasts, employee balance hero), i.e. the opposite
+     theme's values. */
   --rd-scrim: rgba(10, 10, 10, 0.32);
   --rd-on-danger: #ffffff;
   --rd-success-on-ink: #4ade80;
   --rd-warning-on-ink: #fbbf24;
   --rd-danger-on-ink: #f87171;
-  --rd-accent-on-ink: #ff5a1f;
 
   /* Hero surface: stays ink in both themes (login brand panel). The plate
      sits behind uploaded logos, which are drawn for a light background. */
@@ -200,7 +200,6 @@ html {
   --rd-success-on-ink: #0a7a3e;
   --rd-warning-on-ink: #c2410c;
   --rd-danger-on-ink: #b91c1c;
-  --rd-accent-on-ink: #c2410c;
 
   --rd-hero-bg: #050505;
   --rd-hero-fg: #f5f5f2;
@@ -2859,36 +2858,37 @@ a.rd-person__name:hover {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 85%, var(--bs-secondary-bg));
 }
 
-/* Hero KPI: the one inverted card on a page (ink in light, pearl in dark).
+/* Hero KPI (dashboard "today's sales"): follows the theme like every other
+   card and is the primary one through accent only: a subtle accent edge, an
+   orange icon chip and the orange sparkline (max one accent set per screen).
    Prefixed with .rd-stat so it outranks the dashboard rules in app.css. */
 .rd-stat.rd-stat--hero {
+  border-color: color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color));
+}
+
+/* Glyph uses the text-safe orange: raw --rd-accent on its own tint is 2.78:1
+   in light (< 3:1 for a meaningful icon); tests_design_tokens pins this. */
+.rd-stat.rd-stat--hero .rd-stat-icon {
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent-ink);
+}
+
+/* Employee balance hero ("my balance"): the one inverted card (ink in light,
+   pearl in dark). Scoped so it does not leak to the dashboard hero. */
+.rd-balance-stats .rd-stat--hero {
   background: var(--rd-primary-bg);
   border-color: var(--rd-primary-bg);
   color: var(--rd-primary-fg);
   box-shadow: var(--rd-shadow-sm);
 }
 
-.rd-stat.rd-stat--hero .rd-stat-icon {
-  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
-  color: var(--rd-accent-on-ink);
-}
-
-.rd-stat.rd-stat--hero .rd-stat-value,
-.rd-stat.rd-stat--hero .kpi-info {
+.rd-balance-stats .rd-stat--hero .rd-stat-value,
+.rd-balance-stats .rd-stat--hero .kpi-info {
   color: var(--rd-primary-fg);
 }
 
-.rd-stat.rd-stat--hero .rd-label,
-.rd-stat.rd-stat--hero .rd-stat-footnote {
+.rd-balance-stats .rd-stat--hero .rd-label {
   color: color-mix(in srgb, var(--rd-primary-fg) 66%, transparent);
-}
-
-.rd-stat.rd-stat--hero .text-secondary {
-  color: color-mix(in srgb, var(--rd-primary-fg) 62%, transparent) !important;
-}
-
-.rd-stat.rd-stat--hero .rd-stat-meta {
-  border-top-color: color-mix(in srgb, var(--rd-primary-fg) 16%, transparent);
 }
 
 /* Dashboard KPI card: head row (icon chip + trend chip), label, figure
@@ -2990,32 +2990,12 @@ a.rd-person__name:hover {
 }
 
 .rd-spark--accent {
-  stroke: var(--rd-accent-on-ink);
+  stroke: var(--rd-accent);
 }
 
 .rd-trend--flat {
   background: var(--rd-surface-2);
   color: var(--rd-muted);
-}
-
-/* Trend chip on the inverted hero card: text uses the on-ink tones (they flip
-   with the theme) on the bare hero surface, so contrast stays above 4.5:1
-   in both themes; a hairline keeps it chip-shaped. */
-.rd-stat.rd-stat--hero .rd-trend {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent);
-}
-
-.rd-stat.rd-stat--hero .rd-trend--up {
-  color: var(--rd-success-on-ink);
-}
-
-.rd-stat.rd-stat--hero .rd-trend--down {
-  color: var(--rd-warning-on-ink);
-}
-
-.rd-stat.rd-stat--hero .rd-trend--flat {
-  color: var(--rd-primary-fg);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -6411,11 +6391,11 @@ a.rd-phone-lifecycle__val:focus-visible {
   outline: none;
 }
 
-/* Toasts and the hero KPI are inverted (ink) surfaces, so an ink outline would
-   vanish there: use the on-ink foreground. */
+/* Toasts and the employee balance hero are inverted (ink) surfaces, so an ink
+   outline would vanish there: use the on-ink foreground. */
 .rd-toast__close:focus-visible,
 .rd-toast :is(.btn, .page-link):focus-visible,
-.rd-stat--hero :is(.btn, .page-link):focus-visible {
+.rd-balance-stats .rd-stat--hero :is(.btn, .page-link):focus-visible {
   outline-color: var(--rd-primary-fg);
 }
 

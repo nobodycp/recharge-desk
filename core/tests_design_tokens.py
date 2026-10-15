@@ -354,3 +354,62 @@ class LightEmptyStateAndSparkTests(SimpleTestCase):
         self.assertRegex(body, r"height:\s*1\.75rem")
         self.assertRegex(body, r"flex:\s*0 0 100%")
         self.assertRegex(_rule_body(CSS, ".rd-stat-figure"), r"flex-wrap:\s*wrap")
+
+
+class HeroKpiFollowsThemeTests(SimpleTestCase):
+    """Owner ruling U5: the dashboard hero KPI follows the theme; accent only."""
+
+    THEMES = ('[data-bs-theme="light"]', '[data-bs-theme="dark"]')
+
+    def _over(self, rgba, surface):
+        m = re.fullmatch(r"rgba\(\s*(\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\s*\)", rgba.strip())
+        self.assertTrue(m, rgba)
+        r, g, b, a = int(m.group(1)), int(m.group(2)), int(m.group(3)), float(m.group(4))
+        sr, sg, sb = _parse_colour(surface)
+        mixed = tuple(round(c * a + s * (1 - a)) for c, s in zip((r, g, b), (sr, sg, sb)))
+        return "rgb(%d, %d, %d)" % mixed
+
+    def _bodies(self, selector):
+        return "\n".join(body for sels, body in _rules(CSS) if selector in sels)
+
+    def test_dashboard_hero_is_not_inverted(self):
+        # No dashboard-hero rule may paint the card with the inverted primary colours.
+        for sels, body in _rules(CSS):
+            for sel in sels:
+                if "rd-stat--hero" in sel and "rd-balance-stats" not in sel:
+                    self.assertNotRegex(
+                        body,
+                        r"var\(--rd-(primary-bg|primary-fg|[\w-]*on-ink)\)",
+                        f"{sel} must follow the theme",
+                    )
+        self.assertNotIn("--rd-accent-on-ink", CSS)
+
+    def test_employee_balance_hero_stays_inverted(self):
+        body = self._bodies(".rd-balance-stats .rd-stat--hero")
+        self.assertIn("background: var(--rd-primary-bg)", body)
+        self.assertIn("color: var(--rd-primary-fg)", body)
+
+    def test_hero_has_accent_edge_icon_chip_and_sparkline(self):
+        hero = self._bodies(".rd-stat.rd-stat--hero")
+        self.assertRegex(hero, r"border-color:\s*color-mix\(in srgb, var\(--rd-accent\) 35%, var\(--bs-border-color\)\)")
+        icon = self._bodies(".rd-stat.rd-stat--hero .rd-stat-icon")
+        self.assertIn("background: var(--rd-accent-soft)", icon)
+        self.assertRegex(icon, r"color:\s*var\(--rd-accent(-ink)?\)")
+        self.assertIn("stroke: var(--rd-accent)", self._bodies(".rd-spark--accent"))
+
+    def test_hero_trend_chip_uses_normal_styling(self):
+        for sels, _ in _rules(CSS):
+            for sel in sels:
+                self.assertFalse(
+                    "rd-stat--hero" in sel and "rd-trend" in sel, f"{sel}: chip must be the normal tinted one"
+                )
+
+    def test_hero_accent_contrast_in_both_themes(self):
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            surface = _token(block, "--rd-surface")
+            self.assertGreaterEqual(_contrast(_token(block, "--rd-accent"), surface), 3.0, f"{theme} sparkline")
+            soft = self._over(_token(block, "--rd-accent-soft"), surface)
+            icon = self._bodies(".rd-stat.rd-stat--hero .rd-stat-icon")
+            token = re.search(r"color:\s*var\((--rd-[\w-]+)\)", icon).group(1)
+            self.assertGreaterEqual(_contrast(_token(block, token), soft), 3.0, f"{theme} icon {token}")

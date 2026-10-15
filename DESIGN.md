@@ -45,8 +45,7 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-surface-raised` | `#ffffff` | `#262624` | floating panels (user/bell menus, search results); lighter than page and cards in dark so a popover reads as raised |
 | `--rd-shadow-card` / `--rd-shadow-xs` / `--rd-shadow-sm` / `--rd-shadow-md` / `--rd-shadow-lg` / `--rd-shadow-float` | ink-tinted, very light | inset hairline + deep shadows | elevation (card, controls, raised blocks, floating buttons) |
 | `--rd-shadow-pop` | `0 16px 48px rgba(10,10,10,.1)` | deep shadow + 1px white-5 % ring | shadow of floating panels (pair with `--rd-surface-raised`) |
-| `--rd-accent-on-ink` | `#ff5a1f` | `#c2410c` | orange on an *inverted* (ink) surface, e.g. the hero sparkline; the opposite theme's accent text |
-| `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (toasts, hero trend chips); flip with the theme |
+| `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (toasts, the employee balance hero); flip with the theme |
 | `--rd-on-danger` | `#ffffff` | `#0a0a0a` | text on red count chips |
 | `--rd-scrim` | `rgba(10,10,10,.32)` | `rgba(0,0,0,.6)` | drawer / modal dim |
 | `--rd-hero-bg` / `--rd-hero-fg` / `--rd-hero-plate` / `--rd-hero-success` | `#0a0a0a` / `#fff` / `#fff` / `#4ade80` | `#050505` / `#f5f5f2` / `#f5f5f2` / `#4ade80` | login brand panel: stays ink in both themes; the plate sits behind uploaded logos |
@@ -84,9 +83,9 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 ## Cards And KPIs
 
 - Surfaces: `.rd-card` + `.rd-card-body` / `.rd-card-header` / `.rd-card-footer`. Don't use raw `.card` / `.app-card` in new templates.
-- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
-- Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill) / `.rd-trend--flat` (muted on `--rd-surface-2`); it is LTR-isolated. On the inverted hero card (`.rd-stat--hero`) the chip has a transparent fill and a hairline outline, and its text uses the on-ink tones (`--rd-success-on-ink`, `--rd-warning-on-ink`, `--rd-primary-fg`) so contrast holds in both themes.
-- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent-on-ink` (hero card only, orange accent rule).
+- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark) and stands out through accent only: a 1px edge `color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color))`, an `--rd-accent-soft` icon chip (glyph `--rd-accent-ink`, since raw `--rd-accent` on its tint is 2.78:1 in light) and the `--rd-accent` sparkline (≥ 3:1 on the surface in both themes). Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
+- Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill) / `.rd-trend--flat` (muted on `--rd-surface-2`); it is LTR-isolated. The chip looks the same on the hero card (tinted fill, no special case).
+- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent` (hero card only, orange accent rule).
 - Partials (all in `templates/partials/`):
   - `kpi_trend.html` — arg `trend` (from `{% rd_trend series as trend %}`: `direction` up|down|flat, `pct`). Renders the chip; the "vs yesterday" text is visually hidden (no `title`).
   - `kpi_sparkline.html` — args `points` (from `{% rd_sparkline_points series "count" as points %}`), optional `accent=True` for `.rd-spark--accent`. Decorative (`aria-hidden`); outputs nothing when `points` is empty (the tag returns `""` for all-zero series).
