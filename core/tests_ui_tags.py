@@ -87,6 +87,8 @@ class TrendChipTests(SimpleTestCase):
         html = self._render({"direction": "up", "pct": 12})
         self.assertIn("visually-hidden", html)
         self.assertIn("vs yesterday", html)
+        # The text is visually hidden, not duplicated in a tooltip attribute.
+        self.assertNotIn("title=", html)
 
     def test_trend_chip_renders_nothing_without_trend(self):
         self.assertEqual(self._render(None).strip(), "")
@@ -159,6 +161,7 @@ class EmptyStatePartialTests(SimpleTestCase):
         self.assertIn("Nothing here", html)
         self.assertNotIn("<a ", html)
         self.assertNotIn("empty-state__text", html)
+        self.assertNotIn("role=", html)  # static content, not a live region
 
     def test_empty_state_partial_icon_is_decorative(self):
         html = render_to_string(

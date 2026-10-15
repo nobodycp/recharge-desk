@@ -300,3 +300,14 @@ class PhoneLegendContrastTests(SimpleTestCase):
         hover = _rule_body(CSS, "a.rd-phone-lifecycle__val:hover")
         self.assertIn("underline solid", hover)
         self.assertNotRegex(hover, r"(?<![\w-])color:")  # keeps the red
+
+
+class DesignDocTokenTests(SimpleTestCase):
+    def test_every_light_theme_token_is_documented(self):
+        doc = (Path(settings.BASE_DIR) / "DESIGN.md").read_text(encoding="utf-8")
+        block = _block(CSS, '[data-bs-theme="light"]')
+        block = re.sub(r"/\*.*?\*/", "", block, flags=re.S)
+        names = sorted(set(re.findall(r"(?m)^\s*(--rd-[\w-]+)\s*:", block)))
+        self.assertTrue(names)
+        missing = [n for n in names if n not in doc]
+        self.assertEqual(missing, [], "Add these --rd-* tokens to the DESIGN.md token table")

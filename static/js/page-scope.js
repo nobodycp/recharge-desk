@@ -7,6 +7,7 @@
  * and add another copy on each visit. Anything such a script registers —
  * while it runs, or later from inside one of its own listeners — is
  * recorded here and removed right before the next page is swapped in.
+ * Page-owned htmx.onLoad callbacks are likewise removed when the page is left.
  *
  * Shell scripts live in <head>, so their listeners are never touched.
  * Must load (not deferred) before any page content.
