@@ -30,6 +30,7 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-surface` | `#ffffff` | `#151514` | cards, inputs, popovers |
 | `--rd-surface-2` | `#f4f4f2` | `#1f1f1d` | table headers, chips, skeletons, hover |
 | `--bs-border-color` | `#ececea` | `#2a2a27` | hairline borders |
+| `--rd-field-border` | `#8a8a86` | `#74746e` | borders of inputs, selects, checkboxes, entry fields (≥ 3:1 vs `--rd-surface`; hairline stays for cards/dividers) |
 | `--rd-ink` | `#0a0a0a` | `#f5f5f2` | text, primary fills, focus outline |
 | `--rd-muted` | `#6b6b68` | `#9a9a94` | secondary text (≥ 4.5:1) |
 | `--rd-faint` | `#a3a39e` | `#6b6b66` | placeholders, decorative marks only |
@@ -41,7 +42,18 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-success` / `-soft` | `#0a7a3e` / `#e8f6ee` | `#4ade80` / `rgba(74,222,128,.12)` | paid, up |
 | `--rd-warning` / `-soft` | `#c2410c` / `#fff0e9` | `#fbbf24` / `rgba(251,191,36,.12)` | pending, down |
 | `--rd-danger` / `-soft` | `#b91c1c` / `#fdecec` | `#f87171` / `rgba(248,113,113,.12)` | cancelled, failed, destructive |
-| `--rd-shadow-card/-xs/-sm/-md/-lg/-float` | ink-tinted, very light | inset hairline + deep shadows | elevation |
+| `--rd-surface-raised` | `#ffffff` | `#262624` | floating panels (user/bell menus, search results); lighter than page and cards in dark so a popover reads as raised |
+| `--rd-shadow-card` / `--rd-shadow-xs` / `--rd-shadow-sm` / `--rd-shadow-md` / `--rd-shadow-lg` / `--rd-shadow-float` | ink-tinted, very light | inset hairline + deep shadows | elevation (card, controls, raised blocks, floating buttons) |
+| `--rd-shadow-pop` | `0 16px 48px rgba(10,10,10,.1)` | deep shadow + 1px white-5 % ring | shadow of floating panels (pair with `--rd-surface-raised`) |
+| `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (toasts, the employee balance hero); flip with the theme |
+| `--rd-on-danger` | `#ffffff` | `#0a0a0a` | text on red count chips |
+| `--rd-scrim` | `rgba(10,10,10,.32)` | `rgba(0,0,0,.6)` | drawer / modal dim |
+| `--rd-hero-bg` / `--rd-hero-fg` / `--rd-hero-plate` / `--rd-hero-success` | `#0a0a0a` / `#fff` / `#fff` / `#4ade80` | `#050505` / `#f5f5f2` / `#f5f5f2` / `#4ade80` | login brand panel: stays ink in both themes; the plate sits behind uploaded logos |
+| `--rd-warning-ink` | `var(--rd-warning)` | `#fcd34d` | warning *text* on a soft warning tint |
+| `--rd-info` / `--rd-info-soft` | `var(--rd-ink)` / `var(--rd-surface-2)` | same | info = neutral ink (Pearl has no blue) |
+| `--rd-accent-hover` / `--rd-accent-muted` | `#e84a10` / `var(--rd-accent-soft)` | `#ff8a5c` / `var(--rd-accent-soft)` | legacy accent names, kept so existing CSS keeps working |
+| `--rd-accent-2` / `--rd-accent-2-strong` / `--rd-accent-2-strong-rgb` / `--rd-accent-2-ink` / `--rd-on-accent-strong` | `#ff5a1f` / `#c2410c` / `194, 65, 12` / `#9a3412` / `#fff` | `#ff6a33` / `#ff8a5c` / `255, 138, 92` / `#ff8a5c` / `#0a0a0a` | legacy accent names: the strong variants are text-safe orange (fill behind white text, or small text on an orange tint) |
+| `--rd-success-soft` / `--rd-warning-soft` / `--rd-danger-soft` | see rows above | see rows above | tinted backgrounds for status chips and alerts |
 | `--rd-radius-xs … -xl` | `0.375` … `1.375rem` | same | corners |
 
 Bootstrap's `--bs-primary/-success/-warning/-danger/-info`, link and subtle-background variables are remapped to these tokens in both blocks, so Bootstrap utilities (`text-success`, `border-danger`, …) already render in Pearl. Need a new colour? Add a token to *both* theme blocks first.
@@ -71,10 +83,22 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 ## Cards And KPIs
 
 - Surfaces: `.rd-card` + `.rd-card-body` / `.rd-card-header` / `.rd-card-footer`. Don't use raw `.card` / `.app-card` in new templates.
-- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
-- Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill); it is LTR-isolated.
+- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark) and stands out through accent only: a 1px edge `color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color))`, an `--rd-accent-soft` icon chip (glyph `--rd-accent-ink`, since raw `--rd-accent` on its tint is 2.78:1 in light) and the `--rd-accent` sparkline (≥ 3:1 on the surface in both themes). Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
+- Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill) / `.rd-trend--flat` (muted on `--rd-surface-2`); it is LTR-isolated. The chip looks the same on the hero card (tinted fill, no special case).
+- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent` (hero card only, orange accent rule).
+- Partials (all in `templates/partials/`):
+  - `kpi_trend.html` — arg `trend` (from `{% rd_trend series as trend %}`: `direction` up|down|flat, `pct`). Renders the chip; the "vs yesterday" text is visually hidden (no `title`).
+  - `kpi_sparkline.html` — args `points` (from `{% rd_sparkline_points series "count" as points %}`), optional `accent=True` for `.rd-spark--accent`. Decorative (`aria-hidden`); outputs nothing when `points` is empty (the tag returns `""` for all-zero series).
+  - `empty_state.html` — args `title` (required, already translated), optional `text`, `icon` (`chart` | `building` | `trophy` | `list`; any other non-empty value shows `list`), `action_url` + `action_label`. Static content: it carries no live-region role. Look: light, never a grey well — transparent, compact (1rem) padding, small `--rd-surface-2` icon circle, muted 0.9rem title; standalone = dashed hairline, inside `.rd-card` / `.rd-card-body` = no box at all.
+- Phone-status donut legend (`.rd-phone-lifecycle`): each count takes its swatch's hue (active = `--rd-success`, ends today = `--rd-accent-ink`, disconnected only = `--rd-muted`, left the agency = `--rd-danger`, the last one a link with a dotted resting underline). The raw `--rd-accent` is under 4.5:1 as text, hence the `-ink` sibling for the number; colours are contrast-tested in both themes.
+- Supplier balances keep semantic colour: amount `kpi-danger` / `kpi-warning` / `kpi-success` (negative / zero / positive), the status line takes the same hue.
 - Loading placeholders: `.rd-skeleton` (sweep on a pseudo-element, transform only).
 - Avoid large empty cards; merge related small metrics.
+
+## Top Bar And Menus
+
+- The management top bar (`.rd-topbar`, sticky) holds the greeting, search, sales-entry CTA, bell and avatar menu. Language is an `AR | EN` segmented control (`.rd-lang-toggle` / `.rd-lang-toggle__btn`, same `set_language` form, no JS) inside the user menu; ≥ 3.45rem touch targets below 992 px.
+- Popovers (search results, bell, user menu) use `--rd-surface-raised` + `--rd-shadow-pop`. Below 576 px they become sheets: `position: absolute` anchored to the sticky bar (their wrappers are `position: static` there), 0.5rem side insets, `dvh` max-height with a bottom gap, one scroll box. Never depend on `backdrop-filter` for a containing block.
 
 ## Buttons
 

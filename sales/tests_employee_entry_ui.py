@@ -1106,7 +1106,7 @@ class EmployeeSecondaryPagesTests(TestCase):
         self.assertRegex(
             html,
             r'(?s)<div class="rd-entry-subrow">\s*<p class="rd-entry-subtitle">.*?</p>\s*'
-            r'<a class="btn btn-outline-secondary btn-sm" href="%s">Back</a>' % re.escape(back),
+            r'<a class="btn btn-outline-secondary btn-sm rd-entry-subrow__back" href="%s">Back</a>' % re.escape(back),
         )
 
     def test_sale_edit_labels_sit_inside_their_fields(self):
@@ -1444,8 +1444,8 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
         self._assert_decl(".rd-stock-check .rd-entry-blk", "border: 0")
         self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-neg", "var(--rd-danger-on-ink)")
         self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-pos", "var(--rd-success-on-ink)")
-        # The field border is the entry page's own token; the edit page adds no override.
-        self._assert_decl(".rd-entry-field", "var(--bs-border-color)")
+        # The field border is the shared field-border token; the edit page adds no override.
+        self._assert_decl(".rd-entry-field", "var(--rd-field-border)")
         for sels, _body in _rules(self._section()):
             for s in sels:
                 self.assertFalse(s.endswith(".rd-entry-field") and "rd-sale-edit" in s, s)
@@ -1464,3 +1464,79 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
             for s in sels:
                 if "pagination" in s or "per-page" in s or "pager" in s:
                     self.assertTrue(s.startswith(".rd-employee-app "), s)
+
+
+def _media_block(css, query):
+    """Body of the first `@media <query> { ... }` block (brace matched), comments stripped."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    if "@media " + query not in css:
+        return ""
+    start = css.index("@media " + query)
+    i = css.index("{", start) + 1
+    depth, j = 1, i
+    while depth:
+        depth += {"{": 1, "}": -1}.get(css[j], 0)
+        j += 1
+    return css[i : j - 1]
+
+
+class EmployeePhase1ResidualsTests(SimpleTestCase):
+    """Phase 2 Task 7: subrow width, sale-edit Back link placement, 375 px pager."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.css = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+        cls.small = _media_block(cls.css, "(max-width: 575.98px)")
+
+    def _decl(self, css, selector):
+        bodies = _bodies(css, selector)
+        self.assertTrue(bodies, f"no rule for {selector}")
+        return " ".join(" ".join(b.split()) for b in bodies)
+
+    def _width_rem(self, decl):
+        m = re.search(r"(?<![-\w])(?:flex: 0 0|width|min-width|max-width) ?:? ?([\d.]+)rem", decl)
+        self.assertIsNotNone(m, decl)
+        return float(m.group(1))
+
+    def test_subrow_spans_the_column(self):
+        self.assertIn("width: 100%", self._decl(self.css, ".rd-entry-subrow"))
+
+    def test_sale_edit_back_link_uses_a_logical_end_margin_class(self):
+        tpl = (Path(settings.BASE_DIR) / "templates/sales/employee_sale_edit.html").read_text(encoding="utf-8")
+        link = re.search(r'<a [^>]*href="\{% url \'sales:employee_recent_sales\' %\}"[^>]*>', tpl).group(0)
+        self.assertNotIn("style=", link)
+        cls = re.search(r'class="([^"]*)"', link).group(1).split()
+        self.assertIn("rd-entry-subrow__back", cls)
+        decl = self._decl(self.css, ".rd-entry-subrow__back")
+        self.assertIn("margin-inline-start: auto", decl)
+        self.assertNotRegex(decl, r"margin-(left|right)")
+
+    def test_pager_buttons_are_narrow_below_576px_and_nothing_is_hidden(self):
+        small = self.small
+        for sel in (
+            ".rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num",
+            ".rd-employee-app .rd-datagrid-pagination__pages .rd-pager__gap",
+            ".rd-employee-app .rd-datagrid-pagination__pages .rd-pager__edge",
+        ):
+            self.assertLessEqual(self._width_rem(self._decl(small, sel)), 2.75, sel)
+        link = self._decl(small, ".rd-employee-app .pagination .page-item .page-link")
+        self.assertLessEqual(self._width_rem(link), 2.75)
+        self.assertIn("padding-inline", link)
+        # Heights stay the touch height; no pager item is hidden at any width.
+        self.assertNotIn("min-height", link)
+        for sels, body in _rules(self.css):
+            if any("rd-pager" in s or "pagination" in s for s in sels):
+                self.assertNotRegex(" ".join(body.split()), r"display: none|visibility: hidden", sels)
+
+    def test_pager_wrapping_keeps_the_edges_with_their_neighbours(self):
+        # Long windows put the numbers on their own rows; « stays with Previous
+        # and » with Next (explicit row breaks around the numbers).
+        self.assertIn(
+            "flex-basis: 100%",
+            self._decl(self.small, ".rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::before"),
+        )
+        self.assertIn(
+            "flex-basis: 100%",
+            self._decl(self.small, ".rd-employee-app .rd-datagrid-pagination__pages:has(> li:nth-child(8))::after"),
+        )

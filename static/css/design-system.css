@@ -82,10 +82,14 @@ html {
   --rd-shadow-sm: 0 2px 8px rgba(10, 10, 10, 0.06);
   --rd-shadow-md: 0 8px 24px rgba(10, 10, 10, 0.08);
   --rd-shadow-lg: 0 16px 48px rgba(10, 10, 10, 0.1);
+  /* Floating panels (menus, search): elevated surface + pop shadow. */
+  --rd-surface-raised: #ffffff;
+  --rd-shadow-pop: 0 16px 48px rgba(10, 10, 10, 0.1);
   --rd-shadow-float: 0 10px 22px -10px rgba(10, 10, 10, 0.55);
 
   /* Chrome: drawer scrim, text on red count chips, and status tones that
-     sit on an ink surface (toasts), i.e. the opposite theme's values. */
+     sit on an ink surface (toasts, employee balance hero), i.e. the opposite
+     theme's values. */
   --rd-scrim: rgba(10, 10, 10, 0.32);
   --rd-on-danger: #ffffff;
   --rd-success-on-ink: #4ade80;
@@ -105,6 +109,8 @@ html {
   --bs-secondary-bg: var(--rd-surface);
   --bs-tertiary-bg: var(--rd-surface-2);
   --bs-border-color: #ececea;
+  /* Field / control outline: >= 3:1 against --rd-surface (WCAG 1.4.11). */
+  --rd-field-border: #8a8a86;
   --bs-border-color-translucent: rgba(10, 10, 10, 0.08);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
@@ -184,6 +190,9 @@ html {
   --rd-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
   --rd-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
   --rd-shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.55);
+  /* Floating panels: lighter than the page/cards so they read as raised. */
+  --rd-surface-raised: #262624;
+  --rd-shadow-pop: 0 20px 56px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --rd-shadow-float: 0 10px 24px -10px rgba(0, 0, 0, 0.85);
 
   --rd-scrim: rgba(0, 0, 0, 0.6);
@@ -203,6 +212,8 @@ html {
   --bs-secondary-bg: var(--rd-surface);
   --bs-tertiary-bg: var(--rd-surface-2);
   --bs-border-color: #2a2a27;
+  /* Field / control outline: >= 3:1 against --rd-surface (WCAG 1.4.11). */
+  --rd-field-border: #74746e;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
@@ -718,15 +729,15 @@ html[lang="ar"] .rd-sidebar-brand-name {
 .rd-sidebar-nav--accordion .rd-nav-group-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
   width: 100%;
-  padding: 0.55rem 0.8rem 0.35rem;
+  padding: 0.6rem 0.75rem 0.4rem;
   border: none;
-  border-radius: 0.6rem;
+  border-radius: 0.85rem;
   background: transparent;
   color: var(--rd-nav-bw-muted);
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   text-align: start;
   cursor: pointer;
@@ -782,9 +793,29 @@ html[lang="ar"] .rd-sidebar-brand-name {
   color: var(--rd-nav-bw-text);
 }
 
-/* Section labels carry no icon; the links below them do. */
+/* Section labels keep their icon (Pearl mockup C): same 1.1rem grid as the
+   link icons below, a touch quieter. */
 .rd-sidebar-nav--accordion .rd-nav-group-icon {
-  display: none;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.7;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-icon {
+  opacity: 0.9;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-label {
@@ -826,8 +857,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.85rem;
   font-size: 0.92rem;
   font-weight: 500;
   color: var(--rd-nav-bw-muted);
@@ -906,7 +937,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   white-space: nowrap;
 }
 
-/* Same red count chip as the topbar bell, sitting at the end of the row. */
+/* Ink count chip (Pearl: red is for errors, not for counts), sitting at the
+   end of the row. The bell badge keeps its own danger styling. */
 .rd-nav-count {
   flex: 0 0 auto;
   margin-inline-start: auto;
@@ -914,8 +946,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   height: 1.15rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: var(--rd-danger);
-  color: var(--rd-on-danger);
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
   font-family: var(--rd-font-num);
   font-size: 0.68rem;
   font-weight: 700;
@@ -981,6 +1013,15 @@ html[lang="ar"] .rd-sidebar-brand-name {
     border-radius: 0;
     box-shadow: var(--rd-shadow-lg);
   }
+
+  /* Touch targets: 3.45rem = 44 px at the 80 % root size. */
+  .rd-sidebar-nav--accordion .rd-nav-link {
+    min-height: 3.45rem;
+  }
+
+  .rd-sidebar-nav--accordion .rd-nav-group-toggle {
+    min-height: 3.45rem;
+  }
 }
 
 .rd-sidebar-brand--logo + .rd-sidebar-nav--accordion {
@@ -1003,11 +1044,14 @@ html[lang="ar"] .rd-sidebar-brand-name {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.7rem 1rem;
-  /* Translucent page color: content scrolls under a frosted strip. */
-  background: color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
+  /* Mockup C: the bar is part of the page (no hairline, no card). The
+     translucent page colour + blur only keeps scrolled content readable.
+     NOTE: the phone sheets (search, bell, avatar menu) are `position:
+     absolute` and anchor to this sticky bar (their wrappers are static below
+     576 px). Do not rely on backdrop-filter as a containing block. */
+  background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  border-bottom: 1px solid var(--bs-border-color);
 }
 
 @media (min-width: 992px) {
@@ -1033,7 +1077,7 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 .rd-hello__title {
-  font-size: 1.3rem;
+  font-size: 1.4rem; /* mockup C: 18 px */
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--rd-ink);
@@ -1048,7 +1092,7 @@ html[lang="ar"] .rd-hello__title {
 }
 
 .rd-hello__date {
-  font-size: 0.8rem;
+  font-size: 0.86rem; /* mockup C: 11 px */
   color: var(--rd-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1061,7 +1105,8 @@ html[lang="ar"] .rd-hello__title {
   }
 }
 
-/* End: search, bell, then the compact cluster (language, theme, CTA, avatar). */
+/* End (mockup C): search pill · bell · "Sales entry" · avatar. Language and
+   theme live inside the avatar menu. */
 .rd-topbar-meta {
   display: flex;
   align-items: center;
@@ -1075,16 +1120,24 @@ html[lang="ar"] .rd-hello__title {
 .rd-topbar-cluster {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .rd-topbar-cta {
-  min-height: 2.375rem;
+  min-height: 2.6rem;
   display: inline-flex;
   align-items: center;
-  padding-inline: 0.85rem;
-  border-radius: 0.75rem;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-inline: 1rem;
+  border-radius: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.rd-topbar-cta__plus {
+  display: none;
 }
 
 @media (min-width: 992px) {
@@ -1099,20 +1152,32 @@ html[lang="ar"] .rd-hello__title {
   .rd-topbar-cluster {
     gap: 0.3rem;
   }
-  .rd-topbar .rd-lang-select {
-    max-width: 6.25rem;
-    padding-inline: 0.5rem 1.75rem;
-    text-overflow: ellipsis;
-  }
-  .rd-topbar-cta {
-    padding-inline: 0.6rem;
-  }
-}
 
-.rd-topbar .rd-lang-select {
-  min-height: 2.375rem;
-  border-radius: 0.75rem;
-  background-color: var(--rd-surface);
+  /* Phones: the label stays in the accessible name; the "+" icon is the
+     visible affordance. Same 44 px square as the other bar controls. */
+  .rd-topbar-cta {
+    width: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+    padding: 0;
+  }
+
+  .rd-topbar-cta__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .rd-topbar-cta__plus {
+    display: block;
+  }
 }
 
 /* Topbar search — collapses to an icon button matching the bell /
@@ -1132,11 +1197,13 @@ html[lang="ar"] .rd-hello__title {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 2.375rem;
-  height: 2.375rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
   padding: 0;
   border: 1px solid var(--bs-border-color);
-  border-radius: 0.75rem;
+  border-radius: 0.85rem; /* mockup C: 11 px */
   background: var(--rd-surface);
   color: var(--rd-ink);
   cursor: pointer;
@@ -1169,7 +1236,8 @@ html[lang="ar"] .rd-hello__title {
 /* Desktop: the toggle reads as a wide search field with the "/" shortcut. */
 @media (min-width: 992px) {
   .rd-search-toggle {
-    width: clamp(13rem, 24vw, 21rem);
+    width: clamp(14rem, 24vw, 21rem); /* mockup C: min 180 px */
+    border-radius: 0.95rem; /* mockup C: 12 px */
     justify-content: flex-start;
     gap: 0.55rem;
     padding-inline: 0.8rem 0.5rem;
@@ -1214,8 +1282,12 @@ html[lang="ar"] .rd-hello__title {
     color: var(--rd-ink);
   }
 
+  /* Wide, scrollable results (the pill itself is narrower than the panel). */
   .rd-search .rd-search-panel {
-    width: max(100%, 20rem);
+    width: max(100%, 26rem);
+    min-width: 26rem;
+    max-height: min(75vh, 34rem);
+    overflow-y: auto;
   }
 }
 
@@ -1231,13 +1303,15 @@ html[lang="ar"] .rd-hello__title {
   inset-inline-start: 0;
   z-index: 1080;
   width: min(16.5rem, calc(100vw - 1rem));
-  background: var(--rd-surface);
+  background: var(--rd-surface-raised);
   color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, var(--bs-border-color));
   border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
+  box-shadow: var(--rd-shadow-pop);
   padding: 0.4rem;
   display: block;
+  max-height: min(75vh, 34rem);
+  overflow-y: auto;
   animation: rd-user-menu-in 0.12s ease-out;
 }
 
@@ -1283,7 +1357,25 @@ html[lang="ar"] .rd-hello__title {
   outline: none;
   padding: 0.05rem 0;
   font-size: 0.82rem;
-  color: var(--bs-body-color);
+  color: var(--rd-ink);
+  -webkit-text-fill-color: var(--rd-ink);
+  caret-color: var(--rd-ink);
+}
+
+/* Typed text must stay plainly readable: explicit selection + autofill colours
+   (UA defaults gave a grey block over the text in dark mode). */
+.rd-search-input::selection {
+  background: color-mix(in srgb, var(--rd-accent) 35%, transparent);
+  color: var(--rd-ink);
+  -webkit-text-fill-color: var(--rd-ink);
+}
+
+.rd-search-input:-webkit-autofill,
+.rd-search-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--rd-ink);
+  box-shadow: 0 0 0 100rem var(--rd-surface-2) inset;
+  caret-color: var(--rd-ink);
+  transition: background-color 9999s ease-out;
 }
 
 .rd-search-input::placeholder {
@@ -1313,10 +1405,9 @@ html[lang="ar"] .rd-hello__title {
   line-height: 1;
 }
 
+/* The PANEL is the only scroll box (see .rd-search-panel); results never scroll on their own. */
 .rd-search-results {
   margin-top: 0.3rem;
-  max-height: min(50vh, 18rem);
-  overflow-y: auto;
 }
 
 .rd-search-results[hidden] { display: none !important; }
@@ -1398,16 +1489,26 @@ html[lang="ar"] .rd-hello__title {
   text-decoration: none;
 }
 
-@media (max-width: 480px) {
-  .rd-search-panel {
-    inset-inline-start: 0;
-    width: min(21rem, calc(100vw - 0.75rem));
+/* Phones: the results open as a full-width sheet under the top bar, never
+   wider than the viewport. .rd-search is static here so the panel anchors to
+   the sticky bar (see .rd-topbar), not to the toggle's wrapper. */
+@media (max-width: 575.98px) {
+  .rd-search {
+    position: static;
+  }
+
+  .rd-search .rd-search-panel {
+    position: absolute;
+    inset-inline: 0.5rem;
+    top: calc(100% + 0.4rem);
+    width: auto;
+    /* bar (~5.9rem) + gap + a comfortable 1rem bottom margin */
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
   }
   .rd-search-input {
-    font-size: 0.78rem;
-  }
-  .rd-search-item-label {
-    font-size: 0.78rem;
+    font-size: 0.9rem;
   }
   .rd-search-kbd { display: none; }
 }
@@ -1416,9 +1517,11 @@ html[lang="ar"] .rd-hello__title {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--bs-border-color);
   background: var(--rd-surface);
   color: var(--rd-ink);
@@ -2255,7 +2358,7 @@ a.rd-person__name:hover {
 .form-select {
   border-radius: 0.75rem;
   background-color: var(--rd-surface);
-  border-color: var(--bs-border-color);
+  border-color: var(--rd-field-border);
   color: var(--rd-ink);
   transition:
     border-color var(--rd-transition-fast),
@@ -2281,7 +2384,7 @@ a.rd-person__name:hover {
 
 .form-check-input {
   background-color: var(--rd-surface);
-  border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+  border-color: var(--rd-field-border);
 }
 
 .form-check-input:checked {
@@ -2393,12 +2496,6 @@ a.rd-person__name:hover {
   display: flex;
   flex-direction: column;
   background: var(--bs-body-bg);
-}
-
-.rd-lang-select {
-  font-size: 0.8rem;
-  border-radius: var(--rd-radius-sm);
-  max-width: 8.5rem;
 }
 
 .rd-sale-form__stack {
@@ -2522,12 +2619,60 @@ a.rd-person__name:hover {
 
 /* Empty state */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  /* Light by design: no grey well. The standalone variant is only a dashed
+     hairline; inside a card it has no box at all (rule below). */
   border: 1px dashed var(--bs-border-color);
   border-radius: var(--rd-radius-lg);
-  padding: 2.25rem 1.25rem;
+  padding: 1rem;
   text-align: center;
   color: var(--rd-muted);
-  background: var(--rd-surface);
+  background: transparent;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.rd-card .empty-state,
+.rd-card-body .empty-state {
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.empty-state > * {
+  margin: 0;
+}
+
+.empty-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-block-end: 0.15rem;
+  border-radius: 50%;
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
+}
+
+.empty-state__title {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--rd-muted);
+}
+
+.empty-state__text {
+  max-width: 28rem;
+  font-size: 0.85rem;
+  color: var(--rd-muted);
+}
+
+.empty-state__action {
+  margin-block-start: 0.65rem;
 }
 
 /* Sky reconcile — compact run strip + waiting steps */
@@ -2713,36 +2858,144 @@ a.rd-person__name:hover {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 85%, var(--bs-secondary-bg));
 }
 
-/* Hero KPI: the one inverted card on a page (ink in light, pearl in dark).
+/* Hero KPI (dashboard "today's sales"): follows the theme like every other
+   card and is the primary one through accent only: a subtle accent edge, an
+   orange icon chip and the orange sparkline (max one accent set per screen).
    Prefixed with .rd-stat so it outranks the dashboard rules in app.css. */
 .rd-stat.rd-stat--hero {
+  border-color: color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color));
+}
+
+/* Glyph uses the text-safe orange: raw --rd-accent on its own tint is 2.78:1
+   in light (< 3:1 for a meaningful icon); tests_design_tokens pins this. */
+.rd-stat.rd-stat--hero .rd-stat-icon {
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent-ink);
+}
+
+/* Employee balance hero ("my balance"): the one inverted card (ink in light,
+   pearl in dark). Scoped so it does not leak to the dashboard hero. */
+.rd-balance-stats .rd-stat--hero {
   background: var(--rd-primary-bg);
   border-color: var(--rd-primary-bg);
   color: var(--rd-primary-fg);
   box-shadow: var(--rd-shadow-sm);
 }
 
-.rd-stat.rd-stat--hero .rd-stat-icon {
-  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
-  color: var(--rd-accent);
-}
-
-.rd-stat.rd-stat--hero .rd-stat-value,
-.rd-stat.rd-stat--hero .kpi-info {
+.rd-balance-stats .rd-stat--hero .rd-stat-value,
+.rd-balance-stats .rd-stat--hero .kpi-info {
   color: var(--rd-primary-fg);
 }
 
-.rd-stat.rd-stat--hero .rd-label,
-.rd-stat.rd-stat--hero .rd-stat-footnote {
+.rd-balance-stats .rd-stat--hero .rd-label {
   color: color-mix(in srgb, var(--rd-primary-fg) 66%, transparent);
 }
 
-.rd-stat.rd-stat--hero .text-secondary {
-  color: color-mix(in srgb, var(--rd-primary-fg) 62%, transparent) !important;
+/* Dashboard KPI card: head row (icon chip + trend chip), label, figure
+   (value + sparkline), then a hairline meta row or a footnote. Heights are
+   equal per row because the column stretches the card and the body fills it. */
+.rd-dashboard-kpi-row > .col {
+  min-width: 0;
 }
 
-.rd-stat.rd-stat--hero .rd-stat-meta {
-  border-top-color: color-mix(in srgb, var(--rd-primary-fg) 16%, transparent);
+.rd-dashboard-kpi-row .rd-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-stat .rd-stat-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.65rem 0.85rem;
+}
+
+.rd-stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+  margin-bottom: 0.4rem;
+}
+
+.rd-stat-head .rd-stat-icon {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0;
+}
+
+.rd-stat-head .rd-stat-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.rd-stat-body .rd-label {
+  margin-bottom: 0.2rem;
+}
+
+.rd-stat-figure {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  margin-bottom: 0.45rem;
+}
+
+.rd-stat-figure .rd-stat-value {
+  font-size: clamp(1.15rem, 2.1vw, 1.42rem);
+  line-height: 1.05;
+}
+
+/* Pushes the foot (meta / footnote) to the card bottom when a sibling card in
+   the row is taller; the gap only ever appears under the value. */
+.rd-stat-body .rd-stat-meta,
+.rd-stat-body .rd-stat-footnote {
+  margin-top: auto;
+}
+
+.rd-stat-body .rd-stat-meta {
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.rd-stat-body .rd-stat-footnote {
+  padding-top: 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--bs-secondary-color);
+}
+
+/* Sparkline: full inner width of the card, on its own row under the value;
+   preserveAspectRatio="none" stretches the polyline and the non-scaling 2 px
+   stroke keeps its weight. Mirrored in RTL so the newest bucket sits where the
+   bar chart puts it. */
+.rd-spark {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 1.75rem;
+  overflow: visible;
+  stroke: var(--rd-ink);
+  stroke-width: 2;
+}
+
+[dir="rtl"] .rd-spark {
+  transform: scaleX(-1);
+}
+
+.rd-spark--accent {
+  stroke: var(--rd-accent);
+}
+
+.rd-trend--flat {
+  background: var(--rd-surface-2);
+  color: var(--rd-muted);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -4031,7 +4284,13 @@ body.rd-inv-dialog-open {
 .rd-avatar img {
   width: 100%;
   height: 100%;
+  /* Flex item: without min/max an uploaded photo's intrinsic size wins. */
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
+  border-radius: 50%;
   display: block;
 }
 
@@ -4108,11 +4367,11 @@ body.rd-inv-dialog-open {
   z-index: 1080;
   min-width: 16rem;
   max-width: calc(100vw - 1rem);
-  background: var(--rd-surface);
+  background: var(--rd-surface-raised);
   color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, var(--bs-border-color));
   border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
+  box-shadow: var(--rd-shadow-pop);
   padding: 0.45rem;
   animation: rd-user-menu-in 140ms ease-out;
 }
@@ -4185,6 +4444,13 @@ body.rd-inv-dialog-open {
   color: var(--rd-ink);
   text-decoration: none;
   outline: none;
+}
+
+.rd-user-menu-panel .rd-user-menu-item:not(.rd-user-menu-item--danger):hover,
+.rd-user-menu-panel .rd-user-menu-item:not(.rd-user-menu-item--danger):focus-visible,
+.rd-search-panel .rd-search-item:hover,
+.rd-search-panel .rd-search-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--rd-ink) 8%, var(--rd-surface-raised));
 }
 
 .rd-user-menu-item svg {
@@ -4349,6 +4615,250 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   opacity: 0.95;
 }
 
+/* Rows with nothing waiting stay visible (text + count) but read as muted. */
+.rd-notif-item:has(.rd-notif-count:not(.is-active)) {
+  color: var(--rd-muted);
+}
+
+.rd-notif-item:has(.rd-notif-count:not(.is-active)):hover,
+.rd-notif-item:has(.rd-notif-count:not(.is-active)):focus-visible {
+  color: var(--rd-ink);
+}
+
+.rd-notif-item:has(.rd-notif-count:not(.is-active)) svg {
+  opacity: 0.55;
+}
+
+/* Preferences inside the avatar menu (language + theme). Shared by the
+ * management and employee shells. */
+.rd-user-menu-prefs {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.1rem 0.25rem;
+}
+
+.rd-user-menu-pref {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.45rem;
+  padding-inline: 0.45rem;
+}
+
+.rd-user-menu-pref__label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--rd-muted);
+}
+
+/* AR | EN segmented control (same set_language form, no JS). */
+.rd-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--rd-surface-2);
+}
+
+.rd-lang-toggle__btn {
+  min-width: 3rem;
+  min-height: 2.2rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--rd-transition-fast),
+    color var(--rd-transition-fast);
+}
+
+.rd-lang-toggle__btn:hover {
+  color: var(--rd-ink);
+}
+
+.rd-lang-toggle__btn.is-active {
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+}
+
+.rd-lang-toggle__btn:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+
+.rd-user-menu-pref .rd-theme-btn {
+  position: relative;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.rd-user-menu-pref .rd-theme-btn::after {
+  content: "";
+  position: absolute;
+  inset: -0.45rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Management top bar controls (mockup C): bell, avatar, popover panels       */
+/* -------------------------------------------------------------------------- */
+/* Same 2.6rem rounded square for every icon button; 3.45rem (44 px) below
+   992 px. Scoped to .rd-topbar so the employee shell keeps its own sizes. */
+.rd-topbar .rd-user-menu > summary.rd-notif-trigger {
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
+}
+
+.rd-topbar .rd-user-menu--ava .rd-user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+}
+
+/* Header avatar = trigger size, photo or initials. */
+.rd-topbar .rd-user-menu--ava .rd-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1rem;
+}
+
+.rd-topbar .rd-user-menu--ava .rd-avatar img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Photo/initials in the open menu header: fixed medium size. */
+.rd-topbar .rd-user-menu-header .rd-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+/* The count stays (information), reduced to a small pill on the bell's
+   corner like the mockup's dot. Ring uses the button surface. */
+.rd-topbar .rd-notif-badge {
+  top: -0.3rem;
+  inset-inline-end: -0.3rem;
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+
+.rd-topbar .rd-notif-panel {
+  min-width: 21rem;
+}
+
+.rd-topbar .rd-user-menu-panel {
+  top: calc(100% + 0.6rem);
+}
+
+/* The <details> wrapper is a block holding an inline-flex <summary>; baseline
+   alignment adds descender space under the trigger and the flex row then
+   centres a taller box (avatar sat ~3 px high). Top-align the trigger so the
+   wrapper is exactly as tall as the control. */
+.rd-topbar .rd-user-menu > summary {
+  vertical-align: top;
+}
+
+@media (max-width: 991.98px) {
+  .rd-topbar .rd-search-toggle,
+  .rd-topbar .rd-user-menu > summary.rd-notif-trigger,
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-trigger,
+  .rd-topbar .rd-menu-btn {
+    width: 3.45rem;
+    height: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-trigger .rd-avatar {
+    width: 3.45rem;
+    height: 3.45rem;
+  }
+
+  .rd-topbar .rd-topbar-cta {
+    min-height: 3.45rem;
+  }
+
+  /* Touch targets inside the open menus (links, logout, theme, language). */
+  .rd-user-menu-panel .rd-user-menu-item {
+    min-height: 3.45rem;
+  }
+
+  .rd-user-menu-pref .rd-theme-btn {
+    width: 3.45rem;
+    height: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  .rd-user-menu-pref .rd-theme-btn::after {
+    inset: 0;
+  }
+
+  .rd-lang-toggle__btn {
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  /* Search results: rows and the "all results" link are touch targets too. */
+  .rd-search-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 3.45rem;
+  }
+
+  .rd-search-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.45rem;
+  }
+}
+
+/* Phones: both popovers become sheets pinned under the bar. The wrappers
+   (.rd-user-menu) drop `position: relative` here, so the panels anchor to the
+   sticky bar itself (a positioned ancestor, independent of backdrop-filter):
+   `top: 100%` is the bar's bottom edge and the inline insets keep them inside
+   the viewport in RTL/LTR. */
+@media (max-width: 575.98px) {
+  .rd-topbar .rd-user-menu {
+    position: static;
+  }
+
+  .rd-topbar .rd-notif-menu .rd-user-menu-panel,
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-panel {
+    position: absolute;
+    inset-inline: 0.5rem;
+    top: calc(100% + 0.4rem);
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+  }
+}
+
 /* Mini-charts on the management dashboard. The bar chart is built with
    inline DIVs so we avoid any external chart dependency and keep the
    strict CSP intact. Heights are set inline via {% widthratio %}. */
@@ -4375,7 +4885,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-mini-chart-grid > span {
-  border-top: 1px dashed color-mix(in srgb, var(--bs-border-color) 60%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 70%, transparent);
   display: block;
 }
 
@@ -4405,32 +4915,36 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   width: 100%;
   max-width: 30px;
   min-height: 3px;
-  background: linear-gradient(
-    180deg,
-    var(--bs-primary) 0%,
-    color-mix(in srgb, var(--bs-primary) 45%, transparent) 100%
-  );
-  border-radius: 5px 5px 0 0;
-  transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  /* Pearl: solid ink at 85 %, rounded tops; today's bar is the one accent. */
+  background: color-mix(in srgb, var(--rd-ink) 85%, transparent);
+  border-radius: 6px 6px 0 0;
+  transform-origin: bottom;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar,
 .rd-mini-chart-bar-cell:focus-visible .rd-mini-chart-bar {
-  filter: brightness(1.12) saturate(1.1);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--bs-primary) 32%, transparent);
+  background: var(--rd-ink);
+  transform: scaleY(1.02);
 }
 
-.rd-mini-chart-bar-cell.is-today .rd-mini-chart-bar {
-  background: linear-gradient(
-    180deg,
-    var(--rd-accent) 0%,
-    color-mix(in srgb, var(--rd-accent) 45%, transparent) 100%
-  );
+.rd-mini-chart-bar-cell.is-today .rd-mini-chart-bar,
+.rd-mini-chart-bar-cell.is-today:hover .rd-mini-chart-bar {
+  background: var(--rd-accent);
 }
 
 .rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
-  background: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  background: var(--bs-border-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-mini-chart-bar {
+    transition: none;
+  }
+  .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar,
+  .rd-mini-chart-bar-cell:focus-visible .rd-mini-chart-bar {
+    transform: none;
+  }
 }
 
 /* Custom hover tooltip — replaces the native title attribute. */
@@ -4454,7 +4968,6 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
   z-index: 5;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 .rd-mini-chart-tip::after {
@@ -4535,9 +5048,9 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   flex: 1 1 0;
   min-width: 0;
   text-align: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--bs-secondary-color);
   line-height: 1;
 }
@@ -4556,28 +5069,59 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   line-height: 1.25;
 }
 
+/* Mockup C header: big total, average beside it, hairline between. */
 .rd-mini-chart-summary {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.5rem;
+  align-items: flex-end;
+  gap: 0.25rem 1.1rem;
+  margin-block-start: 0.15rem;
   font-size: 0.78rem;
   color: var(--bs-secondary-color);
 }
 
-.rd-mini-chart-summary__lbl {
-  font-weight: 500;
-  margin-inline-end: 0.15rem;
+.rd-mini-chart-summary__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
+.rd-mini-chart-summary__lbl {
+  font-weight: 500;
+  font-size: 0.72rem;
+}
+
+/* The "·" stays in the DOM (decorative); it is drawn as a hairline. */
 .rd-mini-chart-summary__sep {
-  opacity: 0.45;
+  align-self: stretch;
+  width: 1px;
+  font-size: 0;
+  background: var(--bs-border-color);
   user-select: none;
 }
 
 .rd-mini-chart-summary__item .tabular-nums {
-  font-weight: 600;
-  color: var(--bs-body-color);
+  font-family: var(--rd-font-num);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  color: var(--rd-ink);
+}
+
+.rd-mini-chart-summary__item--total .tabular-nums {
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.rd-mini-chart--empty {
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+.rd-mini-chart--empty .empty-state {
+  min-height: 0;
 }
 
 .rd-mini-chart-axis {
@@ -4597,21 +5141,24 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   padding: 0;
 }
 
+/* Pearl rows: hairline-separated, no boxes. */
 .rd-top-item {
   display: grid;
   grid-template-columns: auto auto 1fr;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.55rem 0.6rem;
+  padding: 0.65rem 0.25rem;
   border-radius: 0.7rem;
-  background: var(--bs-tertiary-bg);
-  border: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--rd-transition-fast);
+}
+
+.rd-top-item + .rd-top-item {
+  border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  border-radius: 0 0 0.7rem 0.7rem;
 }
 
 .rd-top-item:hover {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-body-bg));
-  border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
+  background: var(--rd-surface-2);
 }
 
 /* Rank chip — ink / accent / faint for the top 3, neutral for the rest. */
@@ -4624,14 +5171,18 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   border-radius: 50%;
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  background: var(--bs-secondary-bg, var(--bs-tertiary-bg));
-  color: var(--bs-secondary-color);
-  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
   flex: 0 0 auto;
 }
 
-.rd-top-item--rank-1 .rd-top-rank,
+.rd-top-item--rank-1 .rd-top-rank {
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+  border-color: var(--rd-primary-bg);
+}
+
 .rd-profit-rank__item:nth-child(1) .rd-profit-rank__idx {
   background: var(--rd-primary-bg);
   color: var(--rd-primary-fg);
@@ -4652,8 +5203,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   border-color: var(--rd-faint);
 }
 
-/* Letter avatar — neutral chip; every second one takes the accent tint,
-   matching the supplier list. */
+/* Letter avatar — neutral chip (same as the supplier list). */
 .rd-top-avatar {
   display: inline-flex;
   align-items: center;
@@ -4664,23 +5214,15 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   font-weight: 700;
   font-size: 0.92rem;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  background: var(--rd-surface);
+  background: var(--rd-surface-2);
   color: var(--rd-ink);
-  border: 1px solid var(--bs-border-color);
   flex: 0 0 auto;
-}
-
-.rd-top-item:nth-child(2n) .rd-top-avatar {
-  background: var(--rd-accent-soft);
-  color: var(--rd-accent-ink);
-  border-color: color-mix(in srgb, var(--rd-accent) 22%, transparent);
 }
 
 .rd-top-body {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   min-width: 0;
 }
 
@@ -4703,28 +5245,26 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-top-profit {
+  font-family: var(--rd-font-num);
   font-weight: 700;
   font-size: 0.95rem;
-  letter-spacing: -0.01em;
-  color: var(--rd-success);
+  letter-spacing: -0.02em;
+  color: var(--rd-ink);
   white-space: nowrap;
   flex: 0 0 auto;
 }
 
 .rd-top-list-track {
-  height: 5px;
+  height: 4px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--bs-border-color) 55%, transparent);
+  background: var(--rd-surface-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bs-border-color) 70%, transparent);
   overflow: hidden;
 }
 
 .rd-top-list-fill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--rd-success) 0%,
-    color-mix(in srgb, var(--rd-success) 55%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--rd-ink) 85%, transparent);
   border-radius: inherit;
 }
 
@@ -5096,19 +5636,15 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar {
-  background: linear-gradient(
-    180deg,
-    var(--rd-success) 0%,
-    color-mix(in srgb, var(--rd-success) 45%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--rd-success) 85%, transparent);
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell:hover .rd-mini-chart-bar {
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-success) 32%, transparent);
+  background: var(--rd-success);
 }
 
 .rd-mini-chart--profit .rd-mini-chart-bar-cell.is-empty .rd-mini-chart-bar {
-  background: color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  background: var(--bs-border-color);
 }
 
 @media (max-width: 575.98px) {
@@ -5191,7 +5727,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 
 .rd-phone-lifecycle,
 .rd-phone-donut {
-  --donut-active: var(--rd-ink);
+  --donut-active: var(--rd-success);
   --donut-due: var(--rd-accent);
   --donut-grace: var(--rd-muted);
   --donut-overdue: var(--rd-danger);
@@ -5289,7 +5825,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0;
   flex: 1 1 14rem;
   min-width: 0;
 }
@@ -5299,12 +5835,15 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 0.7rem;
-  background: var(--bs-tertiary-bg);
-  border: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
-  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  padding: 0.55rem 0.4rem;
+  border-radius: 0.6rem;
+  transition: background var(--rd-transition-fast);
   animation: rd-phone-legend-in 420ms ease-out both;
+}
+
+.rd-phone-lifecycle__item + .rd-phone-lifecycle__item {
+  border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 70%, transparent);
+  border-radius: 0 0 0.6rem 0.6rem;
 }
 
 .rd-phone-lifecycle__item:nth-child(1) { animation-delay: 40ms; }
@@ -5338,8 +5877,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-phone-lifecycle__item:hover {
-  background: color-mix(in srgb, var(--bs-tertiary-bg) 55%, var(--bs-body-bg));
-  border-color: color-mix(in srgb, var(--bs-border-color) 90%, transparent);
+  background: var(--rd-surface-2);
 }
 
 .rd-phone-lifecycle__swatch {
@@ -5396,11 +5934,45 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   text-decoration: underline;
 }
 
+/* Owner ruling U3: each number takes its swatch's hue (the dot + text label
+   still carry the status, never colour alone). Every colour is >= 4.5:1 on the
+   card surface in both themes (tests_design_tokens.PhoneLegendContrastTests);
+   the ring/swatch orange (--rd-accent) is below that as text, so the "ends
+   today" number uses the text-safe sibling --rd-accent-ink. */
 .rd-phone-lifecycle__val {
+  font-family: var(--rd-font-num);
   font-size: 1.1rem;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   line-height: 1;
+  color: var(--rd-ink);
+  text-decoration: none;
+}
+
+.rd-phone-lifecycle__item--active .rd-phone-lifecycle__val {
+  color: var(--donut-active);
+}
+.rd-phone-lifecycle__item--due .rd-phone-lifecycle__val {
+  color: var(--rd-accent-ink);
+}
+.rd-phone-lifecycle__item--grace .rd-phone-lifecycle__val {
+  color: var(--donut-grace);
+}
+.rd-phone-lifecycle__item--overdue .rd-phone-lifecycle__val {
+  color: var(--donut-overdue);
+}
+
+/* The count link keeps its hue; the dotted underline is its resting
+   affordance, solid on hover / keyboard focus. */
+a.rd-phone-lifecycle__val {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+
+a.rd-phone-lifecycle__val:hover,
+a.rd-phone-lifecycle__val:focus-visible {
+  text-decoration: underline solid;
+  text-underline-offset: 0.2em;
 }
 
 @media (max-width: 575.98px) {
@@ -5801,6 +6373,14 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   outline-offset: 2px;
 }
 
+/* Scroll / clip containers (overflow auto|hidden) would cut a 2px-offset outline:
+   draw it inside the button instead. */
+.table-responsive .btn:focus-visible,
+.rd-table-wrap .btn:focus-visible,
+.rd-card.overflow-hidden .btn:focus-visible {
+  outline-offset: -2px;
+}
+
 /* Tab items fill the rail height: draw the outline inside them. */
 .rd-mobile-tabbar__item:focus-visible {
   outline-offset: -2px;
@@ -5812,11 +6392,11 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   outline: none;
 }
 
-/* Toasts and the hero KPI are inverted (ink) surfaces, so an ink outline would
-   vanish there: use the on-ink foreground. */
+/* Toasts and the employee balance hero are inverted (ink) surfaces, so an ink
+   outline would vanish there: use the on-ink foreground. */
 .rd-toast__close:focus-visible,
 .rd-toast :is(.btn, .page-link):focus-visible,
-.rd-stat--hero :is(.btn, .page-link):focus-visible {
+.rd-balance-stats .rd-stat--hero :is(.btn, .page-link):focus-visible {
   outline-color: var(--rd-primary-fg);
 }
 

@@ -91,7 +91,7 @@
         </a>
         <a class="rd-nav-link {% if ns == 'reports' and un == 'provider_operations' %}is-active{% endif %}" href="{% url 'reports:provider_operations' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
-          <span>تقارير المزودين</span>
+          <span>{% trans "Provider reports" %}</span>
         </a>
         <a class="rd-nav-link {% if ns == 'expenses' and un == 'expense_report' %}is-active{% endif %}" href="{% url 'expenses:expense_report' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>
@@ -135,7 +135,7 @@
     </button>
     <div class="rd-nav-group-panel">
       <div class="rd-nav-group-panel-inner">
-        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'settings' %}is-active{% elif ns == 'phone_refresh' and un == 'message_create' %}is-active{% elif ns == 'phone_refresh' and un == 'message_edit' %}is-active{% elif ns == 'phone_refresh' and un == 'status_create' %}is-active{% elif ns == 'phone_refresh' and un == 'status_edit' %}is-active{% endif %}" href="{% url 'phone_refresh:settings' %}">
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'settings' %}is-active{% elif ns == 'phone_refresh' and un == 'message_create' %}is-active{% elif ns == 'phone_refresh' and un == 'message_edit' %}is-active{% elif ns == 'phone_refresh' and un == 'status_create' %}is-active{% elif ns == 'phone_refresh' and un == 'status_edit' %}is-active{% endif %}" href="{% url 'phone_refresh:settings' %}" aria-label="{% trans 'Update link' %}: {% trans 'Settings' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
           <span>{% trans "Settings" %}</span>
         </a>
@@ -145,9 +145,9 @@
         </a>
         <a class="rd-nav-link {% if ns == 'phone_refresh' and un|slice:':4' == 'api_' %}is-active{% endif %}" href="{% url 'phone_refresh:api_index' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg></span>
-          <span>API</span>
+          <span>{% trans "API" %}</span>
         </a>
-        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'reports' %}is-active{% endif %}" href="{% url 'phone_refresh:reports' %}">
+        <a class="rd-nav-link {% if ns == 'phone_refresh' and un == 'reports' %}is-active{% endif %}" href="{% url 'phone_refresh:reports' %}" aria-label="{% trans 'Update link' %}: {% trans 'Reports' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
           <span>{% trans "Reports" %}</span>
         </a>
@@ -164,11 +164,11 @@
     </button>
     <div class="rd-nav-group-panel">
       <div class="rd-nav-group-panel-inner">
-        <a class="rd-nav-link {% if ns == 'sms_gateway' and un != 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:settings' %}">
+        <a class="rd-nav-link {% if ns == 'sms_gateway' and un != 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:settings' %}" aria-label="{% trans 'Messages update' %}: {% trans 'Settings' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
           <span>{% trans "Settings" %}</span>
         </a>
-        <a class="rd-nav-link {% if ns == 'sms_gateway' and un == 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:reports' %}">
+        <a class="rd-nav-link {% if ns == 'sms_gateway' and un == 'reports' %}is-active{% endif %}" href="{% url 'sms_gateway:reports' %}" aria-label="{% trans 'Messages update' %}: {% trans 'Reports' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
           <span>{% trans "Reports" %}</span>
         </a>

@@ -5518,6 +5518,10 @@ msgstr "الصافي"
 msgid "Cost of sales at zero price"
 msgstr "تكلفة المبيعات بسعر صفر"
 
+#: templates/partials/kpi_trend.html:1
+msgid "vs yesterday"
+msgstr "مقارنةً بالأمس"
+
 #: templates/reports/dashboard.html:95
 msgid "Line status"
 msgstr "حالة الأرقام"
@@ -5569,9 +5573,56 @@ msgstr "فتح تقرير الأرباح"
 msgid "No sales recorded in this period."
 msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 
+#: templates/reports/dashboard.html
+msgid "No sales volume in this period."
+msgstr "لا يوجد حجم مبيعات في هذه الفترة."
+
 #: templates/reports/dashboard.html:259
 msgid "No paid sales in this period yet."
 msgstr "لا توجد مبيعات مدفوعة في هذه الفترة بعد."
+
+#: templates/reports/dashboard.html:17
+msgid "Connection status"
+msgstr "حالة الربط"
+
+#: templates/reports/dashboard.html:22
+msgid "View connection"
+msgstr "عرض الربط"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Monday"
+msgid "M"
+msgstr "ن"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Tuesday"
+msgid "T"
+msgstr "ث"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Wednesday"
+msgid "W"
+msgstr "ر"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Thursday"
+msgid "T"
+msgstr "خ"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Friday"
+msgid "F"
+msgstr "ج"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Saturday"
+msgid "S"
+msgstr "س"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Sunday"
+msgid "S"
+msgstr "ح"
 
 #: templates/reports/employee_report.html:24
 #: templates/reports/profit_report.html:32
@@ -6258,6 +6309,14 @@ msgstr "تحديث الرسائل"
 #: templates/partials/management_nav.html
 msgid "Provider rules"
 msgstr "قواعد المزودين"
+
+#: templates/partials/management_nav.html
+msgid "Provider reports"
+msgstr "تقارير المزودين"
+
+#: templates/partials/management_nav.html
+msgid "API"
+msgstr "API"
 
 #: templates/accounts/login.html
 msgid "Management & sales desk"

@@ -198,115 +198,7 @@
   color: var(--bs-secondary-color);
 }
 
-/* Management dashboard — KPI grid & balance panel */
-.rd-dashboard-kpi-row > .col {
-  min-width: 0;
-}
-
-.rd-dashboard-kpi-row .rd-stat {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.rd-dashboard-kpi-row .rd-stat .rd-card-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0.65rem 0.85rem;
-}
-
-.rd-dashboard-kpi-row .rd-kpi-spacer {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.rd-dashboard-kpi-row .rd-stat-icon {
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 0.3rem;
-}
-
-.rd-dashboard-kpi-row .rd-stat-icon svg {
-  width: 1.125rem;
-  height: 1.125rem;
-}
-
-.rd-dashboard-kpi-row .rd-stat-value {
-  font-size: clamp(1.15rem, 2.1vw, 1.42rem);
-  line-height: 1.05;
-}
-
-.rd-dashboard-kpi-row .rd-label {
-  margin-bottom: 0.2rem;
-}
-
-.rd-dashboard-kpi-row .rd-stat-meta {
-  margin-top: 0.35rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.rd-dashboard-kpi-row .rd-stat-footnote {
-  margin-top: 0.3rem;
-  padding-top: 0.35rem;
-  font-size: 0.7rem;
-  color: var(--bs-secondary-color);
-  line-height: 1.3;
-}
-
-.rd-dashboard-kpi-row .rd-stat-loss-trio {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.35rem 0.25rem;
-  margin-top: 0.3rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--bs-border-color-translucent, var(--bs-border-color));
-}
-
-.rd-dashboard-kpi-row .rd-stat-loss-trio__item {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.3rem;
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.rd-dashboard-kpi-row .rd-stat-loss-trio__lbl {
-  font-size: 0.58rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--bs-secondary-color);
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.rd-dashboard-kpi-row .rd-stat-loss-trio__val {
-  font-weight: 700;
-  font-size: clamp(0.8rem, 2vw, 0.95rem);
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-
-.rd-dashboard-summary__value {
-  font-size: clamp(1.45rem, 2.8vw, 1.85rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.rd-dashboard-summary__value--md {
-  font-size: clamp(1.25rem, 2.5vw, 1.55rem);
-}
+/* Management dashboard — balance panel (KPI cards live in design-system.css) */
 
 .rd-dashboard-status-row .rd-dashboard-balance-list {
   /* Show ~4 rows comfortably; scrollbar appears only when > 4 items.        */
@@ -357,11 +249,14 @@
   gap: 2px;
   padding: 3px;
   border-radius: 0.7rem;
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
   border: 1px solid var(--bs-border-color);
 }
 
 .rd-period-switch__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 4.25rem;
   padding: 0.4rem 0.9rem;
   border-radius: 0.55rem;
@@ -389,8 +284,15 @@
 .rd-period-switch__opt.is-active {
   background: var(--rd-surface);
   color: var(--rd-ink);
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
+}
+
+/* Touch targets (3.45rem = 44 px at the 80 % root) below the desktop breakpoint. */
+@media (max-width: 991.98px) {
+  .rd-period-switch__opt {
+    min-height: 3.45rem;
+  }
 }
 
 .rd-dash-swap > :not(.rd-dash-head) {
@@ -465,11 +367,10 @@
 }
 
 .rd-supplier-row:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rd-accent) 55%, transparent);
+  box-shadow: inset 0 0 0 2px var(--rd-ink);
 }
 
-/* Letter avatar — neutral chip; every second row takes the accent tint so
-   adjacent suppliers stay easy to tell apart. */
+/* Letter avatar — neutral chip. */
 .rd-supplier-avatar {
   display: inline-flex;
   align-items: center;
@@ -482,15 +383,8 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   flex: 0 0 auto;
-  background: var(--rd-surface);
+  background: var(--rd-surface-2);
   color: var(--rd-ink);
-  border: 1px solid var(--bs-border-color);
-}
-
-.rd-supplier-list > li:nth-child(2n) .rd-supplier-avatar {
-  background: var(--rd-accent-soft);
-  color: var(--rd-accent-ink);
-  border-color: color-mix(in srgb, var(--rd-accent) 22%, transparent);
 }
 
 .rd-supplier-info {
@@ -519,6 +413,8 @@
   color: var(--bs-secondary-color);
 }
 
+/* Status = coloured dot + text label (never colour alone); the whole status
+   line takes the semantic colour (owner ruling U3). */
 .rd-supplier-dot {
   width: 0.45rem;
   height: 0.45rem;
@@ -540,8 +436,11 @@
 }
 
 .rd-supplier-amount {
+  font-family: var(--rd-font-num);
   font-size: 0.95rem;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  /* No colour here: the template adds kpi-danger / kpi-warning / kpi-success
+     (owner ruling U3) and a colour on this rule would compete with them. */
   white-space: nowrap;
 }
 
@@ -568,7 +467,7 @@
 }
 
 .rd-supplier-empty {
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   text-align: center;
   color: var(--bs-secondary-color);
   font-size: 0.875rem;
@@ -1907,7 +1806,6 @@ summary.rd-audit-row:hover {
 
 /* Arabic must never be tracked (positive letter-spacing breaks joining). */
 html[lang="ar"] .rd-payer-ac-item-badge,
-html[lang="ar"] .rd-dashboard-kpi-row .rd-stat-loss-trio__lbl,
 html[lang="ar"] .rd-supplier-avatar,
 html[lang="ar"] .rd-supplier-meta,
 html[lang="ar"] .rd-brand-preview__label,

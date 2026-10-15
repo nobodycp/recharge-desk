@@ -118,20 +118,11 @@
           </div>
           {% include "partials/nav_notifications.html" %}
           <div class="rd-topbar-cluster">
-            <form action="{% url 'set_language' %}" method="post" class="d-flex align-items-center gap-1 mb-0" hx-boost="false">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{{ request.get_full_path }}">
-              <label class="visually-hidden" for="rd-lang-mgmt">{% trans "Language" %}</label>
-              <select name="language" id="rd-lang-mgmt" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
-                {% get_current_language as LANGUAGE_CODE %}
-                {% for code, label in languages %}
-                  <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </form>
-            {% include "partials/theme_toggle.html" with variant="shell" %}
-            <a class="btn btn-sm btn-primary rd-topbar-cta" href="{% url 'sales:employee_entry' %}" hx-boost="false">{% trans "Sales entry" %}</a>
-            {% include "partials/user_menu.html" with variant="ava" %}
+            <a class="btn btn-primary rd-topbar-cta" href="{% url 'sales:employee_entry' %}" hx-boost="false">
+              <svg class="rd-topbar-cta__plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="rd-topbar-cta__label">{% trans "Sales entry" %}</span>
+            </a>
+            {% include "partials/user_menu.html" with variant="ava" prefs=True lang_id="rd-lang-mgmt" %}
           </div>
         </div>
       </header>

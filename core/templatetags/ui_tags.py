@@ -1,7 +1,9 @@
+from datetime import date
+
 from django import template
 from django.apps import apps
 from django.core.files.storage import default_storage
-from django.utils.translation import gettext
+from django.utils.translation import gettext, pgettext_lazy
 
 register = template.Library()
 
@@ -145,6 +147,102 @@ def audit_changes(changes):
         else:
             rows.append({"field": field, "old": None, "new": value})
     return rows
+
+
+def _series_values(series, key):
+    """Numeric value of ``key`` for every bucket (missing / ``None`` → 0)."""
+    values = []
+    for item in series or []:
+        try:
+            values.append(float(item.get(key) or 0))
+        except (AttributeError, TypeError, ValueError):
+            values.append(0.0)
+    return values
+
+
+def _fmt_coord(n: float) -> str:
+    return f"{round(n, 2):g}"
+
+
+@register.simple_tag
+def rd_sparkline_points(series, key: str = "count", width: int = 100, height: int = 28) -> str:
+    """SVG ``points`` string for a KPI sparkline built from a dashboard series.
+
+    x is spread evenly over ``width``; y is scaled between the series minimum and
+    maximum inside ``height`` with 2 px of padding. Fewer than two buckets give
+    ``""``, and so does an all-zero series (a flat line carries no information
+    and would read like a progress bar); a flat non-zero series is drawn across
+    the middle.
+    """
+    values = _series_values(series, key)
+    if len(values) < 2 or not any(values):
+        return ""
+    pad = 2
+    low, high = min(values), max(values)
+    span = high - low
+    usable = height - 2 * pad
+    last = len(values) - 1
+    points = []
+    for i, value in enumerate(values):
+        if span:
+            y = height - pad - (value - low) / span * usable
+        else:
+            y = height - pad if not value else height / 2
+        points.append(f"{_fmt_coord(i * width / last)},{_fmt_coord(y)}")
+    return " ".join(points)
+
+
+@register.simple_tag
+def rd_trend(series, key: str = "count"):
+    """Compare the last bucket with the previous one.
+
+    Returns ``{"direction": "up"|"down"|"flat", "pct": int}`` where ``pct`` is the
+    absolute percentage change (the direction carries the sign), or ``None`` when
+    there are fewer than two buckets or the previous value is 0.
+    """
+    values = _series_values(series, key)
+    if len(values) < 2:
+        return None
+    previous, current = values[-2], values[-1]
+    if not previous:
+        return None
+    pct = int(round(abs(current - previous) / abs(previous) * 100))
+    if pct == 0:
+        direction = "flat"
+    else:
+        direction = "up" if current > previous else "down"
+    return {"direction": direction, "pct": pct}
+
+
+# One-letter weekday labels for the dashboard chart. Each weekday has its own
+# context so English "T"/"S" (Tue/Thu, Sat/Sun) can translate independently.
+# Index = ``date.weekday()`` (Monday = 0).
+_WEEKDAY_INITIALS = (
+    pgettext_lazy("weekday initial: Monday", "M"),
+    pgettext_lazy("weekday initial: Tuesday", "T"),
+    pgettext_lazy("weekday initial: Wednesday", "W"),
+    pgettext_lazy("weekday initial: Thursday", "T"),
+    pgettext_lazy("weekday initial: Friday", "F"),
+    pgettext_lazy("weekday initial: Saturday", "S"),
+    pgettext_lazy("weekday initial: Sunday", "S"),
+)
+
+
+@register.filter(name="rd_weekday_initial")
+def rd_weekday_initial(iso_date) -> str:
+    """Localised one-letter weekday for an ISO date (``"2026-10-12"`` → ``"M"`` / ``"ن"``).
+
+    Resolved at render time so the cached chart payload stays language-neutral.
+    Accepts ``date`` objects too; anything unparsable gives ``""``.
+    """
+    if isinstance(iso_date, date):
+        day = iso_date
+    else:
+        try:
+            day = date.fromisoformat(str(iso_date))
+        except (TypeError, ValueError):
+            return ""
+    return str(_WEEKDAY_INITIALS[day.weekday()])
 
 
 @register.filter(name="audit_has_old")

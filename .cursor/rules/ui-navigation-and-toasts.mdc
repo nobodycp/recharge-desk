@@ -18,6 +18,7 @@ rest, so run it after UI changes.
 - Unsaved-form prompts and server or network error toasts work.
 - Plain `{{ form.non_field_errors }}` becomes a toast.
 - `document`/`window`/`body` listeners and `setInterval` added by a page script are removed when you leave the page (`static/js/page-scope.js`).
+- `htmx.onLoad` callbacks registered by page scripts are removed when you leave the page.
 - Don't add "bind once" guards like `if (window.__x) return;`: they break re-binding.
 
 ## Rules

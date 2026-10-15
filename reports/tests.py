@@ -149,6 +149,7 @@ class DashboardSmokeTests(_ReportsBase):
         r = self.client.get(reverse("reports:dashboard"))
         self.assertNotContains(r, 'id="connection-health-alert"')
         self.assertNotContains(r, "حالة الربط")
+        self.assertNotContains(r, "Connection status")
 
     def test_connection_health_block_shown_when_jobs_wait_over_two_minutes(self):
         self.company.provider_key = "sky"
@@ -156,7 +157,7 @@ class DashboardSmokeTests(_ReportsBase):
         self._queued_refresh_job(180)
         r = self.client.get(reverse("reports:dashboard"))
         self.assertContains(r, 'id="connection-health-alert"')
-        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "Connection status")
         self.assertContains(r, "الـ worker متوقف أو الطلبات عالقة")
         self.assertContains(
             r,
@@ -182,10 +183,99 @@ class DashboardSmokeTests(_ReportsBase):
         ]
         with mock.patch("reports.views.health_alerts", return_value=items):
             r = self.client.get(reverse("reports:dashboard"))
-        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "Connection status")
+        self.assertContains(r, "View connection")
         self.assertContains(r, "Redis لا يستجيب")
         self.assertContains(r, 'href="/x/?tab=connection"')
         self.assertContains(r, "فشل تسجيل الدخول: شركة")
+
+    def test_health_alert_strings_translated(self):
+        from unittest import mock
+
+        items = [{"text": "Redis down", "url": "/x/?tab=connection"}]
+        with mock.patch("reports.views.health_alerts", return_value=items):
+            r = self.client.get(reverse("reports:dashboard"))
+        self.assertContains(r, "Connection status")
+        self.assertContains(r, "View connection")
+        self.assertNotContains(r, "حالة الربط")
+        self.assertNotContains(r, "عرض الربط")
+        with translation.override("ar"):
+            self.assertEqual(translation.gettext("Connection status"), "حالة الربط")
+            self.assertEqual(translation.gettext("View connection"), "عرض الربط")
+
+    def test_chart_empty_state_when_no_volume(self):
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(r.context["chart_total_volume"], 0)
+        # The series has buckets (all zero), so the copy is about volume, not
+        # about missing sales; the empty state lives inside the mini-chart.
+        self.assertTrue(r.context["chart_series"])
+        self.assertContains(r, "rd-mini-chart--empty")
+        self.assertNotContains(r, "rd-mini-chart-bar-cell")
+        # The card header (title, total, average) stays.
+        self.assertContains(r, "rd-mini-chart-summary")
+        self.assertContains(r, "No sales volume in this period.")
+        self.assertNotContains(r, "No sales recorded in this period.")
+
+    def test_chart_empty_state_for_zero_price_sales_only(self):
+        self._make_sale(sell=0, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertTrue(r.context["chart_series"])
+        self.assertEqual(r.context["chart_total_volume"], 0)
+        self.assertContains(r, "rd-mini-chart--empty")
+        self.assertContains(r, "No sales volume in this period.")
+        self.assertNotContains(r, "No sales recorded in this period.")
+
+    def test_chart_empty_copy_has_arabic_translation(self):
+        with translation.override("ar"):
+            self.assertEqual(
+                translation.gettext("No sales volume in this period."),
+                "لا يوجد حجم مبيعات في هذه الفترة.",
+            )
+
+    def test_supplier_balances_keep_semantic_colours(self):
+        Company.objects.all().delete()
+        for name, bal in (("NegCo", -50), ("ZeroCo", 0), ("PosCo", 75)):
+            Company.objects.create(name=name, opening_balance=_d(bal), current_balance=_d(bal))
+        html = self.client.get(reverse("reports:dashboard")).content.decode()
+        for cls, state in (("kpi-danger", "danger"), ("kpi-warning", "warning"), ("kpi-success", "success")):
+            self.assertRegex(
+                html,
+                rf'rd-supplier-meta is-{state}',
+            )
+            self.assertRegex(html, rf'class="rd-supplier-amount tabular-nums fw-bold {cls}"')
+
+    def test_customer_debt_total_keeps_expense_colour(self):
+        html = self.client.get(reverse("reports:dashboard")).content.decode()
+        self.assertRegex(html, r'class="rd-stat-value kpi-expense">\s*\d')
+
+    def test_chart_bars_when_volume(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertGreater(r.context["chart_total_volume"], 0)
+        self.assertContains(r, "rd-mini-chart-bar-cell")
+        self.assertContains(r, "is-today")
+        self.assertContains(r, "rd-period-switch__opt")
+        self.assertContains(r, 'id="rd-dashboard"')
+
+    def test_chart_day_labels_are_localised_weekday_initials(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        today = timezone.localdate()
+        with translation.override("en"):
+            from core.templatetags.ui_tags import rd_weekday_initial
+
+            letter = rd_weekday_initial(today.isoformat())
+        self.assertContains(
+            r, f'<span class="rd-mini-chart-wd" title="{today.isoformat()}">{letter}</span>'
+        )
+
+    def test_chart_month_labels_keep_day_numbers(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"), {"period": "month"})
+        today = timezone.localdate()
+        self.assertContains(
+            r, f'<span class="rd-mini-chart-wd" title="{today.isoformat()}">{today.day}</span>'
+        )
 
     def test_dashboard_does_not_ping_health_outside_cached_alerts(self):
         self.client.get(reverse("reports:dashboard"))
@@ -437,6 +527,74 @@ class DashboardPeriodTests(_ReportsBase):
         r = self.client.get(reverse("reports:dashboard"), {"period": "month"})
         self.assertContains(r, 'class="rd-period-switch__opt is-active" href="?period=month"')
         self.assertContains(r, 'href="?period=all"')
+
+
+class DashboardKpiTrendTests(_ReportsBase):
+    """Hero KPI: sparkline in every period, today-vs-yesterday chip only in 'day' (R3)."""
+
+    def _hero(self, period=None):
+        params = {"period": period} if period else {}
+        r = self.client.get(reverse("reports:dashboard"), params)
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        hero_and_rest = html.split("rd-stat--hero", 1)[1]
+        # Hero card = up to the second KPI card (profit).
+        return html, hero_and_rest.split("rd-stat flex-fill", 1)[0]
+
+    def _sale_on(self, day, ref):
+        sale = self._make_sale(sell=20, paid=True, ref=ref)
+        Sale.objects.filter(pk=sale.pk).update(
+            created_at=timezone.make_aware(datetime.combine(day, time(12)))
+        )
+
+    def test_dashboard_hero_has_sparkline_and_day_trend(self):
+        today = timezone.localdate()
+        self._sale_on(today - timedelta(days=1), "T-YDAY")
+        self._make_sale(sell=20, paid=True, ref="T-TODAY-1")
+        self._make_sale(sell=20, paid=True, ref="T-TODAY-2")
+        html, hero = self._hero()
+        self.assertEqual(html.count("rd-stat--hero"), 1)
+        self.assertIn("rd-spark", hero)
+        self.assertIn("rd-trend", hero)
+        self.assertIn("rd-trend--up", hero)
+        self.assertIn("+100%", hero)
+        # Only the hero card gets a sparkline / trend (no extras on profit, debt, loss).
+        self.assertEqual(html.count("rd-spark--accent"), 1)
+        self.assertEqual(html.count('class="rd-trend '), 1)
+
+    def test_dashboard_hero_hides_sparkline_when_no_sales(self):
+        html, hero = self._hero()
+        self.assertNotIn("rd-spark", html)
+        self.assertIn("rd-stat-figure", hero)  # the hero card itself still renders
+
+    def test_dashboard_day_without_yesterday_has_no_trend_chip(self):
+        self._make_sale(sell=20, paid=True, ref="T-ONLY-TODAY")
+        html, hero = self._hero()
+        self.assertIn("rd-spark", hero)
+        self.assertNotIn('class="rd-trend ', html)
+
+    def test_dashboard_month_has_no_trend(self):
+        today = timezone.localdate()
+        self._sale_on(today - timedelta(days=1), "T-M-YDAY")
+        self._make_sale(sell=20, paid=True, ref="T-M-TODAY")
+        for period in ("month", "all"):
+            html, hero = self._hero(period)
+            self.assertNotIn('class="rd-trend ', html, period)
+            self.assertEqual(html.count("rd-stat--hero"), 1)
+
+    def test_dashboard_kpi_values_and_links_are_kept(self):
+        r = self.client.get(reverse("reports:dashboard"))
+        for needle in (
+            "Volume",
+            "eSIM",
+            "Expenses",
+            "Net",
+            "Total customer debt",
+            "Current balance",
+            "Cost of sales at zero price",
+            reverse("customers:customer_list"),
+        ):
+            self.assertContains(r, needle)
 
 
 # ============================================================ Profit report
