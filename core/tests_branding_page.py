@@ -1,6 +1,7 @@
 """Site branding editor on the page kit: header, savebar, dark logo preview."""
 
 import io
+from html.parser import HTMLParser
 import shutil
 import tempfile
 
@@ -52,17 +53,43 @@ class SiteBrandingPageTests(TestCase):
         self.assertContains(response, 'data-rd-bind="tagline"')
 
     def test_savebar_sits_outside_the_preview_grid(self):
-        html = self.client.get(reverse("core:site_branding")).content.decode()
-        self.assertLess(html.index("rd-brand-layout"), html.index("data-rd-savebar"))
-        self.assertGreater(html.index("data-rd-savebar"), html.index("</aside>"))
+        class Walker(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.stack, self.bar_ancestors = [], None
+
+            def handle_starttag(self, tag, attrs):
+                classes = (dict(attrs).get("class") or "").split()
+                if "rd-savebar" in classes:
+                    self.bar_ancestors = [c for _, cl in self.stack for c in cl]
+                if tag == "div":
+                    self.stack.append((tag, classes))
+
+            def handle_endtag(self, tag):
+                if tag == "div" and self.stack:
+                    self.stack.pop()
+
+        walker = Walker()
+        walker.feed(self.client.get(reverse("core:site_branding")).content.decode())
+        self.assertIsNotNone(walker.bar_ancestors, "savebar not rendered")
+        self.assertNotIn("rd-brand-layout", walker.bar_ancestors)
 
     def test_saved_logo_gets_a_dark_preview_image(self):
         branding = self._save_logo()
         html = self.client.get(reverse("core:site_branding")).content.decode()
         dark = branding.logo_dark_url
-        self.assertEqual(html.count(f'data-rd-dark-src="{dark}"'), 2)  # sidebar + login preview
-        self.assertEqual(html.count("rd-bp-logo--light"), 2)
+        self.assertEqual(html.count(f'data-rd-dark-src="{dark}"'), 3)  # sidebar + login preview + picker thumbnail
+        self.assertEqual(html.count("rd-bp-logo--light"), 3)
         self.assertIn(f'data-rd-light-src="{branding.logo.url}"', html)
+
+    def test_saved_logo_picker_thumbnail_has_a_dark_pair_but_favicon_does_not(self):
+        branding = self._save_logo()
+        html = self.client.get(reverse("core:site_branding")).content.decode()
+        dark = branding.logo_dark_url
+        self.assertEqual(html.count(f'data-rd-drop-thumb class="rd-bp-logo--dark" data-rd-light-src="{branding.logo.url}" data-rd-dark-src="{dark}"'), 1)
+        # logo pair + the favicon's single (hidden) thumbnail; the favicon has no dark copy
+        self.assertEqual(html.count("data-rd-drop-thumb"), 3)
+        self.assertEqual(html.count("data-rd-dark-src"), 3)
 
     def test_no_saved_logo_has_no_dark_preview(self):
         html = self.client.get(reverse("core:site_branding")).content.decode()

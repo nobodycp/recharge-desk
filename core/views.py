@@ -103,7 +103,7 @@ def search(request):
         customer_qs = (
             Customer.objects.filter(customer_filter)
             .distinct()
-            .prefetch_related("phones")  # phones render in both the table and the mobile cards
+            .prefetch_related("phones")  # the template lists phones in the table and in the mobile cards
             .order_by("-current_balance", "name")
         )
         customers = list(customer_qs[: MAX_HITS + 1])
@@ -219,7 +219,6 @@ def search_suggest(request):
         customer_rows = (
             Customer.objects.filter(customer_filter)
             .distinct()
-            .prefetch_related("phones")  # phones render in both the table and the mobile cards
             .order_by("-current_balance", "name")[:PER_GROUP]
         )
         customers = [

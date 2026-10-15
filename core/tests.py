@@ -456,6 +456,25 @@ class GlobalSearchTests(TestCase):
         self.assertContains(r, "?q=a%20b%26c")
         self.assertNotContains(r, "?q=a b&amp;c")
 
+    def test_view_all_arrow_follows_text_direction(self):
+        from django.template.loader import render_to_string
+        from django.test import RequestFactory
+        from django.utils import translation
+
+        for lang, arrow, other in (("ar", "&lsaquo;", "&rsaquo;"), ("en", "&rsaquo;", "&lsaquo;")):
+            with translation.override(lang):
+                request = RequestFactory().get(reverse("core:search"), {"q": "zz"})
+                request.user = self.boss
+                request.LANGUAGE_CODE = lang
+                html = render_to_string(
+                    "core/search.html",
+                    {"q": "zz", "sales": [self.sale], "sale_truncated": True, "customers": [],
+                     "payments": [], "total": 1},
+                    request=request,
+                ).replace("›", "&rsaquo;").replace("‹", "&lsaquo;")
+            self.assertIn(f'<span aria-hidden="true">{arrow}</span>', html, lang)
+            self.assertNotIn(f'<span aria-hidden="true">{other}</span>', html, lang)
+
     def test_search_input_and_button_share_one_row(self):
         c = Client()
         c.force_login(self.boss)

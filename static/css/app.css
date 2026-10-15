@@ -818,10 +818,6 @@
   opacity: 0.45;
 }
 
-.rd-restore__ack {
-  font-size: 0.86rem;
-}
-
 .rd-restore .btn[disabled] {
   opacity: 0.45;
 }
@@ -836,16 +832,13 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  padding: 0.65rem 0.75rem 0.65rem 1.1rem;
+  padding-block: 0.65rem;
+  padding-inline: 1.1rem 0.75rem;
   border: 1px solid var(--bs-border-color);
   border-radius: var(--rd-radius-md);
   background: var(--rd-surface);
   color: var(--rd-muted);
   box-shadow: var(--rd-shadow-card);
-}
-
-[dir="rtl"] .rd-savebar {
-  padding: 0.65rem 1.1rem 0.65rem 0.75rem;
 }
 
 .rd-savebar.is-dirty {
@@ -938,7 +931,7 @@
   letter-spacing: 0;
 }
 
-/* Saved logos are previewed twice: the original on light surfaces, the silver-ink copy on dark ones. */
+/* Saved logos are shown twice (preview + picker thumbnail): the original on light surfaces, the silver-ink copy on dark ones. */
 [data-bs-theme="dark"] .rd-bp-logo--light,
 :root:not([data-bs-theme="dark"]) .rd-bp-logo--dark {
   display: none;

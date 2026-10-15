@@ -58,13 +58,16 @@
     refresh();
   }
 
+  // The dark copy of a saved logo keeps its own file until a new one is picked.
+  function variantSrc(img, src) {
+    var dark = img.getAttribute("data-rd-dark-src");
+    return dark && src === img.getAttribute("data-rd-light-src") ? dark : src;
+  }
+
   function setPreviewImages(key, src) {
     document.querySelectorAll('[data-rd-preview-img="' + key + '"]').forEach(function (img) {
-      // The dark copy of a saved logo keeps its own file until a new one is picked.
-      var dark = img.getAttribute("data-rd-dark-src");
-      var shown = dark && src === img.getAttribute("data-rd-light-src") ? dark : src;
       if (src) {
-        img.src = shown;
+        img.src = variantSrc(img, src);
         img.hidden = false;
       } else {
         img.hidden = true;
@@ -83,11 +86,10 @@
 
     function show(src) {
       zone.classList.toggle("has-image", !!src);
-      var thumb = zone.querySelector("[data-rd-drop-thumb]");
-      if (thumb) {
-        if (src) thumb.src = src;
+      zone.querySelectorAll("[data-rd-drop-thumb]").forEach(function (thumb) {
+        if (src) thumb.src = variantSrc(thumb, src);
         thumb.hidden = !src;
-      }
+      });
       setPreviewImages(key, src);
     }
 

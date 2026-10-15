@@ -1,5 +1,6 @@
 {% extends "base_management.html" %}
 {% load i18n humanize kit %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
 {% block content %}
 <div class="rd-page">
 {% trans "Search" as search_title %}
@@ -46,7 +47,7 @@
         <span class="rd-badge rd-badge--neutral tabular-nums ms-2">{{ sales|length }}</span>
       </h2>
       {% if sale_truncated %}
-        <a class="btn btn-link btn-sm" href="{% url 'sales:management_sale_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} &rsaquo;</a>
+        <a class="btn btn-link btn-sm" href="{% url 'sales:management_sale_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} <span aria-hidden="true">{% if LANGUAGE_BIDI %}&lsaquo;{% else %}&rsaquo;{% endif %}</span></a>
       {% endif %}
     </div>
     <div class="rd-table-dual">
@@ -125,7 +126,7 @@
         <span class="rd-badge rd-badge--neutral tabular-nums ms-2">{{ customers|length }}</span>
       </h2>
       {% if customer_truncated %}
-        <a class="btn btn-link btn-sm" href="{% url 'customers:customer_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} &rsaquo;</a>
+        <a class="btn btn-link btn-sm" href="{% url 'customers:customer_list' %}?q={{ q|urlencode }}">{% trans "View all matches" %} <span aria-hidden="true">{% if LANGUAGE_BIDI %}&lsaquo;{% else %}&rsaquo;{% endif %}</span></a>
       {% endif %}
     </div>
     <div class="rd-table-dual">
