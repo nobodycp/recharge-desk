@@ -611,6 +611,10 @@ msgid "Could not reach Sky. Check the internet connection and try again."
 msgstr "تعذّر الوصول إلى سكاي. افحص الاتصال بالإنترنت وحاول مرة أخرى."
 
 #: companies/views.py
+msgid "Sky is signing in right now. Run matching again in a minute."
+msgstr "سكاي يسجّل الدخول الآن. شغّل المطابقة مرة أخرى بعد دقيقة."
+
+#: companies/views.py
 #, python-format
 msgid "Sky refused the request: %(error)s"
 msgstr "رفض سكاي الطلب: %(error)s"

@@ -217,6 +217,8 @@ def _sky_error_message(company, exc: Exception):
             "Sky took too long to answer. Try a shorter period or run it again "
             "in a minute."
         )
+    if isinstance(exc, TransientError) and code == "login_busy":
+        return _("Sky is signing in right now. Run matching again in a minute.")
     if isinstance(exc, (AuthRequired, TransientError, PermanentError)):
         if (
             isinstance(exc, AuthRequired)

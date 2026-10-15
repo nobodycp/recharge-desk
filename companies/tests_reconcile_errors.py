@@ -108,6 +108,14 @@ class SkyReconcileErrorTests(_Base):
         self.assertEqual(self.messages(r), [CONNECTION_MSG])
         self.assert_dates_kept(r)
 
+    def test_sky_login_in_progress_asks_to_retry(self):
+        r = self.post(TransientError("login_busy"))
+        self.assertEqual(
+            self.messages(r),
+            ["Sky is signing in right now. Run matching again in a minute."],
+        )
+        self.assert_dates_kept(r)
+
     def test_sky_refusal_keeps_scrubbed_reason(self):
         r = self.post(PermanentError("bad period"))
         self.assertEqual(self.messages(r), ["Sky refused the request: bad period"])
