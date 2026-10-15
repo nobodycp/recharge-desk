@@ -51,3 +51,4 @@ Thumbs.db
 
 # Agent plan workspaces (scratch)
 .superpowers/
+.worktrees/
