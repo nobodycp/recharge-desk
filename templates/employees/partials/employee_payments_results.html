@@ -2,5 +2,5 @@
 <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap gap-2 align-items-center justify-content-between border-bottom">
   <span class="fw-semibold">{% trans "Received sales payments" %}</span>
 </div>
-{% if not grid_error_in_card %}{% with range_errors=payments_filter_form.non_field_errors %}{% for error in range_errors %}<div class="rd-field__error rd-grid-error" role="alert">{{ error }}</div>{% endfor %}{% endwith %}{% endif %}
+{% with range_errors=payments_filter_form.non_field_errors %}{% for error in range_errors %}<div class="rd-field__error rd-grid-error" role="alert">{{ error }}</div>{% endfor %}{% endwith %}
 {% include "employees/partials/employee_payments_table.html" %}

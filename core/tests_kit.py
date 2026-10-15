@@ -427,6 +427,13 @@ class FilterCardTests(SimpleTestCase):
         self.assertIn("<details", html)
         self.assertRegex(html, r"<details[^>]* open")
 
+    def test_show_errors_false_keeps_errors_out_of_the_card(self):
+        form = SearchForm({"date_from": "2024-02-01", "date_to": "2024-01-01"})
+        html = render_filter_card('form show_errors=False', form=form, query="?date_from=2024-02-01&date_to=2024-01-01")
+        self.assertNotIn("From must be before To", html)
+        self.assertNotIn("rd-filter-grid__errors", html)
+        self.assertRegex(html, r"<details[^>]* open")  # still opens: the filter is active
+
     def test_fields_small_and_without_colons(self):
         html = render_filter_card()
         self.assertRegex(html, r"<input[^>]*\bform-control-sm\b")

@@ -583,14 +583,19 @@ class EmployeePagesKitTests(TestCase):
             ok = self.client.get(self.detail_url, {"partial": tab, "tab": tab}, HTTP_HX_REQUEST="true")
             self.assertNotContains(ok, "rd-grid-error")
 
-    def test_range_error_shown_once_on_full_page(self):
+    def test_range_error_shown_once_on_full_page_in_the_grid(self):
         text = "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;."
-        resp = self.client.get(
-            self.detail_url,
-            {"tab": "ledger", "ledger_date_from": "2026-02-10", "ledger_date_to": "2026-02-01"},
-        )
-        self.assertContains(resp, text, count=1)
-        self.assertNotContains(resp, "rd-grid-error")
+        for tab in ("ledger", "payments"):
+            resp = self.client.get(
+                self.detail_url,
+                {"tab": tab, f"{tab}_date_from": "2026-02-10", f"{tab}_date_to": "2026-02-01"},
+            )
+            html = resp.content.decode()
+            self.assertEqual(html.count(text), 1, tab)
+            self.assertEqual(html.count("rd-grid-error"), 1, tab)
+            self.assertNotIn("rd-filter-grid__errors", html)
+            # The one message sits inside the swapped grid, after the filter card.
+            self.assertGreater(html.index("rd-grid-error"), html.index('id="employee-%s-grid"' % tab))
 
     def test_adjustment_placeholder_translated_to_arabic(self):
         self.addCleanup(translation.activate, "en")

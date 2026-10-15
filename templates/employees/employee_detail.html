@@ -53,7 +53,7 @@
 
 {% if active_tab == tab_payments %}
   {% with payments_reset=detail_url|add:"?tab=payments" %}
-  {% rd_filter_card payments_filter_form reset_url=payments_reset hx_target="#employee-payments-grid" indicator_id="employee-payments-htmx" keep="tab payments_sort payments_order" hx_vals='{"partial": "payments"}' %}
+  {% rd_filter_card payments_filter_form reset_url=payments_reset hx_target="#employee-payments-grid" indicator_id="employee-payments-htmx" keep="tab payments_sort payments_order" hx_vals='{"partial": "payments"}' show_errors=False %}
   {% endwith %}
 
   <div
@@ -66,11 +66,11 @@
     hx-indicator="#employee-payments-htmx"
     hx-vals='{"partial": "payments", "tab": "payments"}'
   >
-    {% include "employees/partials/employee_payments_results.html" with grid_error_in_card=True %}
+    {% include "employees/partials/employee_payments_results.html" %}
   </div>
 {% else %}
   {% with ledger_reset=detail_url|add:"?tab=ledger" %}
-  {% rd_filter_card ledger_filter_form reset_url=ledger_reset hx_target="#employee-ledger-grid" indicator_id="employee-ledger-htmx" keep="tab ledger_sort ledger_order" hx_vals='{"partial": "ledger"}' %}
+  {% rd_filter_card ledger_filter_form reset_url=ledger_reset hx_target="#employee-ledger-grid" indicator_id="employee-ledger-htmx" keep="tab ledger_sort ledger_order" hx_vals='{"partial": "ledger"}' show_errors=False %}
   {% endwith %}
 
   <div
@@ -83,7 +83,7 @@
     hx-indicator="#employee-ledger-htmx"
     hx-vals='{"partial": "ledger", "tab": "ledger"}'
   >
-    {% include "employees/partials/employee_ledger_results.html" with grid_error_in_card=True %}
+    {% include "employees/partials/employee_ledger_results.html" %}
   </div>
 {% endif %}
 </div>
