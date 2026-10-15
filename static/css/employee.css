@@ -21,7 +21,7 @@
 }
 
 .rd-employee-app.has-employee-tabbar .rd-employee-main {
-  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6.2rem + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 768px) {
@@ -30,7 +30,7 @@
     padding: 1.15rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
   }
   .rd-employee-app.has-employee-tabbar .rd-employee-main {
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.2rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -457,27 +457,23 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 }
 
 .employee-chip-label {
-  display: inline-flex;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  border-radius: 0.45rem;
-  margin-inline: auto;
-}
-
-.employee-chip-label {
   width: 100%;
   max-width: 100%;
+  margin-inline: auto;
   padding: 0.15rem 0.2rem;
+  border-radius: 0.45rem;
+  font-weight: 700;
   line-height: 1.15;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
   hyphens: auto;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
   overflow: hidden;
 }
 
@@ -521,15 +517,10 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 /* Sale entry (Pearl, one screen at 375x667)                                  */
 /* ========================================================================== */
 
-/* The blocks are the cards, so the old page-level form card goes. */
+/* The blocks are the cards: the form itself carries no surface. */
 .rd-sale-form {
   max-width: 30rem;
   margin-inline: auto;
-  padding: 0;
-  background: none;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
 }
 
 .rd-sale-form .rd-sale-form__stack {
@@ -1307,6 +1298,10 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   white-space: normal;
 }
 
+.rd-entry-dock .employee-save-sale-btn:active {
+  transform: scale(0.99);
+}
+
 .rd-entry-dock .employee-charge-sale-btn[hidden] {
   display: none;
 }
@@ -1862,6 +1857,36 @@ html:has(.rd-entry-dock) {
   overflow-wrap: anywhere;
 }
 
+/* Subtitle row: context line at the start, the "Back" link at the end. */
+.rd-entry-subrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  max-width: 30rem;
+  margin: 0 auto 0.5rem;
+}
+
+.rd-entry-subrow--end {
+  justify-content: flex-end;
+}
+
+.rd-entry-subrow .rd-entry-subtitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.rd-employee-app .rd-entry-subrow .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 3.45rem;
+  padding-inline: 1.1rem;
+  border-radius: 1.1rem;
+}
+
 .rd-sale-edit > .alert {
   margin-block-end: 0.5rem;
 }
@@ -2086,16 +2111,16 @@ html:has(.rd-entry-dock) {
 }
 
 /* Pager (shared partial; only inside the employee shell). One row of 44px
-   targets: « Previous [page] Next »; the numbered window is hidden because the
-   "Page X of Y" line and the current-page pill say where you are. Rows-per-page
-   are 44px chips on their own line. */
+   targets: « Previous 1 2 3 … Next »; the numbered window stays visible and wraps
+   to a second row when it does not fit (aria-current marks the current page).
+   Rows-per-page are 44px chips on their own line. */
 .rd-employee-app .rd-datagrid-pagination__bar > *,
 .rd-employee-app .rd-datagrid-pagination__bar > div > * {
   flex: 1 1 100%;
 }
 
 .rd-employee-app .rd-datagrid-pagination__pages {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.3rem;
   width: 100%;
 }
@@ -2105,18 +2130,14 @@ html:has(.rd-entry-dock) {
 }
 
 .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__step {
-  flex: 1 1 0;
+  flex: 1 1 4.5rem;
   min-width: 0;
 }
 
 .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__edge,
+.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__gap,
 .rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num {
   flex: 0 0 3.45rem;
-}
-
-.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__gap,
-.rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num:not(.active) {
-  display: none;
 }
 
 .rd-employee-app .pagination .page-item .page-link {

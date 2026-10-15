@@ -117,7 +117,7 @@
               <span>
                 {% blocktrans with name=acting_employee.display_name %}Payment will be recorded to your account: {{ name }}{% endblocktrans %}
               </span>
-              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}text-success{% endif %}">
+              <span class="tabular-nums text-nowrap {% if acting_employee.current_balance < 0 %}kpi-expense{% elif acting_employee.current_balance > 0 %}kpi-success{% endif %}">
                 {% trans "Your balance:" %} <span dir="ltr">{{ acting_employee.current_balance|intcomma }}</span>
               </span>
             </div>

@@ -194,6 +194,24 @@ class EmployeeShellTests(TestCase):
             self.assertIn(marker, panel)
             self.assertNotIn(marker, outside)
 
+    def test_prefs_are_a_labelled_group_inside_the_menu(self):
+        header = self._header(self._page("en"))
+        self.assertIn('<div class="rd-user-menu-prefs" role="group" aria-label="Settings">', header)
+        ar = self._header(self._page("ar"))
+        self.assertIn('class="rd-user-menu-prefs" role="group" aria-label="الإعدادات"', ar)
+
+    def test_number_check_topbar_title_is_translated(self):
+        self.addCleanup(translation.deactivate)
+        for lang, title in (("en", "Check numbers"), ("ar", "فحص الأرقام")):
+            with self.subTest(lang=lang):
+                self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = lang
+                with translation.override(lang):
+                    url = reverse("sales:employee_refresh_number")
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                header = self._header(response.content.decode())
+                self.assertRegex(header, r'<h1 class="rd-employee-title">\s*<span>%s</span>' % title)
+
     def test_employee_css_loaded(self):
         self.assertIn("css/employee.css", self._page())
 

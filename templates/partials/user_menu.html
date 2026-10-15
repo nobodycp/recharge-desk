@@ -37,7 +37,7 @@
     </div>
 
     {% if prefs %}
-      <div class="rd-user-menu-prefs">
+      <div class="rd-user-menu-prefs" role="group" aria-label="{% trans 'Settings' %}">
         <form action="{% url 'set_language' %}" method="post" class="rd-user-menu-pref mb-0" hx-boost="false">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.get_full_path }}">

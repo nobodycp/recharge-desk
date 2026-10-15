@@ -602,6 +602,22 @@ class EmployeePaymentPagesTests(TestCase):
             with self.subTest(hook=hook):
                 self.assertIn(hook, html)
 
+    def test_edit_page_keeps_the_back_link(self):
+        html = self._edit()
+        back = reverse("sales:employee_recent_sales")
+        self.assertIn(
+            '<a class="btn btn-outline-secondary btn-sm" href="%s">Back</a>' % back, html
+        )
+        self.assertIn('class="rd-entry-subrow', html)
+
+    def test_positive_balance_hint_uses_the_kpi_success_token(self):
+        from employees.models import EmployeeProfile
+
+        EmployeeProfile.objects.filter(user=self.emp).update(current_balance=Decimal("40"))
+        hint = self._record().split('-employee-hint"', 1)[1].split("Your balance:", 1)[0]
+        self.assertIn("kpi-success", hint)
+        self.assertNotIn("text-success", hint)
+
     def test_edit_page_keeps_every_hook(self):
         html = self._edit()
         for hook in self.SHARED_HOOKS:
@@ -912,7 +928,7 @@ class EmployeeRecentEntriesTests(TestCase):
 
     def test_scope_label_is_a_neutral_pearl_chip(self):
         html = self._page()
-        self.assertRegex(html, r'<span class="rd-badge rd-badge--neutral">[^<]+</span>\s*</header>')
+        self.assertRegex(html, r'<span class="rd-badge rd-badge--neutral"><bdi>[^<]+</bdi></span>\s*</header>')
 
     def test_auto_charge_row_keeps_its_charge_class(self):
         from sales.models import Sale
@@ -1083,6 +1099,15 @@ class EmployeeSecondaryPagesTests(TestCase):
             before = html[: m.start()]
             self.assertGreater(before.rfind('class="rd-field-group'), before.rfind("</form>"), name)
             self.assertGreater(before.rfind('class="rd-entry-field'), before.rfind('class="rd-field-group'), name)
+
+    def test_sale_edit_keeps_the_back_link_in_the_subtitle_row(self):
+        html = self._edit()
+        back = reverse("sales:employee_recent_sales")
+        self.assertRegex(
+            html,
+            r'(?s)<div class="rd-entry-subrow">\s*<p class="rd-entry-subtitle">.*?</p>\s*'
+            r'<a class="btn btn-outline-secondary btn-sm" href="%s">Back</a>' % re.escape(back),
+        )
 
     def test_sale_edit_labels_sit_inside_their_fields(self):
         html = self._edit()
@@ -1345,6 +1370,31 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
     def _section(self):
         return self.css.split("Sale edit, stock check, my balance", 1)[1]
 
+    def test_back_link_is_a_touch_target_scoped_to_the_employee_app(self):
+        self._assert_decl(".rd-employee-app .rd-entry-subrow .btn", "min-height: 3.45rem")
+
+    def test_main_clears_the_fab_ring_on_pages_without_the_dock(self):
+        bodies = _bodies(self.css, ".rd-employee-app.has-employee-tabbar .rd-employee-main")
+        self.assertEqual(len(bodies), 2, "base and >=768px variants")
+        for body in bodies:
+            self.assertIn("padding-bottom: calc(6.2rem + env(safe-area-inset-bottom))", body)
+
+    def test_chip_label_is_one_rule_and_the_dock_owns_the_press_scale(self):
+        self.assertEqual(len(_bodies(self.css, ".employee-chip-label")), 1)
+        self.assertNotIn("employee-chip-icon-fallback", self.css)
+        self._assert_decl(".rd-entry-dock .employee-save-sale-btn:active", "transform: scale(0.99)")
+
+    def test_design_system_has_no_dead_employee_form_rules(self):
+        ds = (CSS_DIR / "design-system.css").read_text(encoding="utf-8")
+        for gone in (
+            ".rd-list-flush > .list-group-item.rd-charge-row",
+            ".sticky-save .employee-save-sale-btn",
+            ".employee-save-sale-btn:active",
+            ".has-error .input-group .form-control",
+        ):
+            self.assertNotIn(gone, ds)
+        self.assertEqual(_bodies(ds, ".rd-sale-form"), [])
+
     def test_sale_edit_shares_the_payment_page_column_and_dock(self):
         for sels, _body in _rules(self.css):
             if ".rd-employee-main:has(.rd-pay-sub)" in sels:
@@ -1403,7 +1453,12 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
     def test_pager_targets_are_touch_sized_and_scoped(self):
         self._assert_decl(".rd-employee-app .pagination .page-item .page-link", "min-height: 3.45rem", "min-width: 3.45rem")
         self._assert_decl(".rd-employee-app .rd-datagrid-per-page__link", "min-height: 3.45rem", "min-width: 3.45rem")
-        self._assert_decl(".rd-employee-app .rd-datagrid-pagination__pages", "flex-wrap: nowrap")
+        # The numbered window is never hidden: it wraps instead.
+        self._assert_decl(".rd-employee-app .rd-datagrid-pagination__pages", "flex-wrap: wrap", "gap: 0.3rem")
+        self._assert_decl(".rd-employee-app .rd-datagrid-pagination__pages .rd-pager__num", "flex: 0 0 3.45rem")
+        for sels, body in _rules(self._section()):
+            if any("rd-pager__num" in s or "rd-pager__gap" in s for s in sels):
+                self.assertNotIn("display: none", " ".join(body.split()), sels)
         self._assert_decl(".rd-employee-app .rd-datagrid-per-page__link.is-active", "text-decoration: underline")
         for sels, _body in _rules(self._section()):
             for s in sels:

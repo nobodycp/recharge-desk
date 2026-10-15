@@ -1,7 +1,7 @@
 {% extends "base_employee.html" %}
 {% load i18n static %}
 {% block employee_header %}
-<span>فحص الأرقام</span>
+<span>{% trans "Check numbers" %}</span>
 {% endblock %}
 {% block content %}
 <link href="{% static 'css/number-check.css' %}{{ static_cache_query }}" rel="stylesheet">

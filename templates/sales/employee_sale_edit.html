@@ -3,9 +3,12 @@
 {% block employee_header %}<span>{% trans "Edit entry" %}</span>{% endblock %}
 {% block content %}
 <div class="rd-sale-form rd-sale-edit">
-  <p class="rd-entry-subtitle">
-    {% blocktrans with company=sale.company.name product=sale.product.display_name ref=sale.reference_number %}{{ company }} · {{ product }} · {{ ref }}{% endblocktrans %}
-  </p>
+  <div class="rd-entry-subrow">
+    <p class="rd-entry-subtitle">
+      {% blocktrans with company=sale.company.name product=sale.product.display_name ref=sale.reference_number %}{{ company }} · {{ product }} · {{ ref }}{% endblocktrans %}
+    </p>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Back" %}</a>
+  </div>
 
   <div class="alert alert-info small" role="status">
     {% trans "Company, product and eSIM flag can't be changed here. If those need fixing, delete this entry and create a new one." %}

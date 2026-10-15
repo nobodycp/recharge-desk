@@ -1923,12 +1923,6 @@ a.rd-card:hover {
   }
 }
 
-/* Employee "My entries": auto-charged rows carry an accent edge on the leading side.
-   Management rows skip it — their leading edge already marks pending sales. */
-.rd-list-flush > .list-group-item.rd-charge-row {
-  border-inline-start: 3px solid var(--rd-accent-2);
-}
-
 .rd-table-modern > .rd-charge-row > tr.rd-charge-detail-row > td {
   padding-top: 0;
   border-top: 0;
@@ -2407,21 +2401,6 @@ a.rd-person__name:hover {
   max-width: 8.5rem;
 }
 
-/* Employee form surface */
-.rd-sale-form {
-  background: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-md);
-  padding: 0.85rem 0.9rem 1rem;
-}
-
-@media (min-width: 576px) {
-  .rd-sale-form {
-    padding: 1.05rem 1.15rem 1.15rem;
-  }
-}
-
 .rd-sale-form__stack {
   gap: 0.7rem;
 }
@@ -2468,8 +2447,7 @@ a.rd-person__name:hover {
 }
 .rd-sale-form .form-control.is-invalid,
 .rd-sale-form .form-select.is-invalid,
-.rd-sale-form .has-error .form-control,
-.rd-sale-form .has-error .input-group .form-control {
+.rd-sale-form .has-error .form-control {
   border-color: var(--rd-danger);
   box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--rd-danger) 18%, transparent);
 }
@@ -2672,18 +2650,6 @@ a.rd-person__name:hover {
   margin-top: 0.5rem;
   padding: 0.65rem 0 calc(0.65rem + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, transparent 0%, var(--bs-body-bg) 35%, var(--bs-body-bg) 100%);
-}
-
-.sticky-save .employee-save-sale-btn {
-  border-radius: var(--rd-radius-md);
-  padding: 0.85rem 1rem;
-  font-size: 1.02rem;
-  font-weight: 700;
-  box-shadow: var(--rd-shadow-sm);
-}
-
-.employee-save-sale-btn:active {
-  transform: scale(0.99);
 }
 
 /* List group inside cards — management */

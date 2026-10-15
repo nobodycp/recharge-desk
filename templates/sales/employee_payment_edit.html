@@ -4,6 +4,9 @@
 <span>{% trans "Edit payment" %}</span>
 {% endblock %}
 {% block content %}
+<div class="rd-entry-subrow rd-entry-subrow--end">
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Back" %}</a>
+</div>
 <div
   class="rd-sale-form rd-pay-sub"
   id="rd-pay-sub-page"
