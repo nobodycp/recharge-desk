@@ -3748,6 +3748,9 @@ msgstr "تفاصيل المبيعات"
 #: templates/reports/partials/company_report_ledger.html:4
 msgid "Balance ledger"
 msgstr "سجل الرصيد"
+#: templates/companies/company_detail.html
+msgid "Provider connection"
+msgstr "الربط مع المزوّد"
 #: templates/companies/company_form.html:26
 #: templates/companies/partials/company_list_results.html:34
 #: templates/companies/partials/company_list_results.html:71

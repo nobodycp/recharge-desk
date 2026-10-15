@@ -210,6 +210,17 @@ class CompanyListQueryCountTests(TestCase):
         self.assertContains(r, "Manual balance top-up")
         self.assertContains(r, "company-sales-grid")
         self.assertContains(r, "company-ledger-grid")
+
+    def test_company_detail_uses_kit_page_header(self):
+        self.client.force_login(self.user)
+        company = Company.objects.first()
+        r = self.client.get(
+            reverse("companies:company_detail", args=[company.pk])
+        )
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, company.name)
+        self.assertContains(r, reverse("companies:company_list"))
+        self.assertContains(r, reverse("companies:company_edit", args=[company.pk]))
         r2 = self.client.get(
             reverse("companies:company_detail", args=[company.pk]),
             {"tab": "sales"},

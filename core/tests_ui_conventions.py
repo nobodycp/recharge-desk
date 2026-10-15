@@ -89,7 +89,6 @@ LEGACY_PAGE_HEAD = {  # 44 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/companies/company_detail.html",
     "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_form.html",

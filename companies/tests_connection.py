@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from accounts.models import UserProfile
 from companies.models import Company
@@ -70,7 +71,11 @@ class TabAccessTests(_Base):
 
     def test_management_sees_tab_label(self):
         company = self.company()
-        response = self.client.get(self.url("company_detail", company))
+        self.addCleanup(translation.deactivate)  # LocaleMiddleware leaves "ar" active
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+        with translation.override("ar"):
+            url = self.url("company_detail", company)
+        response = self.client.get(url)
         self.assertContains(response, "الربط مع المزوّد")
 
     def test_connection_tab_is_active_and_loads_health_once(self):
