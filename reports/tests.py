@@ -439,6 +439,69 @@ class DashboardPeriodTests(_ReportsBase):
         self.assertContains(r, 'href="?period=all"')
 
 
+class DashboardKpiTrendTests(_ReportsBase):
+    """Hero KPI: sparkline in every period, today-vs-yesterday chip only in 'day' (R3)."""
+
+    def _hero(self, period=None):
+        params = {"period": period} if period else {}
+        r = self.client.get(reverse("reports:dashboard"), params)
+        self.assertEqual(r.status_code, 200)
+        html = r.content.decode()
+        hero_and_rest = html.split("rd-stat--hero", 1)[1]
+        # Hero card = up to the second KPI card (profit).
+        return html, hero_and_rest.split("rd-stat flex-fill", 1)[0]
+
+    def _sale_on(self, day, ref):
+        sale = self._make_sale(sell=20, paid=True, ref=ref)
+        Sale.objects.filter(pk=sale.pk).update(
+            created_at=timezone.make_aware(datetime.combine(day, time(12)))
+        )
+
+    def test_dashboard_hero_has_sparkline_and_day_trend(self):
+        today = timezone.localdate()
+        self._sale_on(today - timedelta(days=1), "T-YDAY")
+        self._make_sale(sell=20, paid=True, ref="T-TODAY-1")
+        self._make_sale(sell=20, paid=True, ref="T-TODAY-2")
+        html, hero = self._hero()
+        self.assertEqual(html.count("rd-stat--hero"), 1)
+        self.assertIn("rd-spark", hero)
+        self.assertIn("rd-trend", hero)
+        self.assertIn("rd-trend--up", hero)
+        self.assertIn("+100%", hero)
+        # Only the hero card gets a sparkline / trend (no extras on profit, debt, loss).
+        self.assertEqual(html.count("rd-spark--accent"), 1)
+        self.assertEqual(html.count('class="rd-trend '), 1)
+
+    def test_dashboard_day_without_yesterday_has_no_trend_chip(self):
+        self._make_sale(sell=20, paid=True, ref="T-ONLY-TODAY")
+        html, hero = self._hero()
+        self.assertIn("rd-spark", hero)
+        self.assertNotIn('class="rd-trend ', html)
+
+    def test_dashboard_month_has_no_trend(self):
+        today = timezone.localdate()
+        self._sale_on(today - timedelta(days=1), "T-M-YDAY")
+        self._make_sale(sell=20, paid=True, ref="T-M-TODAY")
+        for period in ("month", "all"):
+            html, hero = self._hero(period)
+            self.assertNotIn('class="rd-trend ', html, period)
+            self.assertEqual(html.count("rd-stat--hero"), 1)
+
+    def test_dashboard_kpi_values_and_links_are_kept(self):
+        r = self.client.get(reverse("reports:dashboard"))
+        for needle in (
+            "Volume",
+            "eSIM",
+            "Expenses",
+            "Net",
+            "Total customer debt",
+            "Current balance",
+            "Cost of sales at zero price",
+            reverse("customers:customer_list"),
+        ):
+            self.assertContains(r, needle)
+
+
 # ============================================================ Profit report
 class ProfitReportTests(_ReportsBase):
     def test_empty_profit_report_renders(self):
