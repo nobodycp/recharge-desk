@@ -43,31 +43,50 @@ Views/logic stay in [`companies/views.py`](companies/views.py) `company_detail`,
 ## SDD tasks
 
 ### Task 1 — Shell + tabs
-- Files: [`templates/companies/company_detail.html`](templates/companies/company_detail.html), locale, LEGACY_PAGE_HEAD.
-- `rd-page` + `rd_page_header` (name, subtitle, back to list); keep Edit + conditional reconcile links.
-- Keep `rd-section-tabs` and all tab href/`querystring` behaviour; tab label Connection via `{% trans %}`.
-- Preserve sales/ledger wrapper grids and `hx-vals` exactly.
-- Tests: extend kit assertions; existing `test_company_detail_renders_tabs` stays green.
+
+**Files:** `templates/companies/company_detail.html`, locale if needed, `core/tests_ui_conventions.py` (LEGACY_PAGE_HEAD).
+
+**Interfaces:** `rd-page` + `rd_page_header` (company name, subtitle Supplier balance and sales, back to list); keep Edit + conditional Layan/Sky links; `rd-section-tabs` + existing `?tab=`/`querystring`; Connection tab label `{% trans "Provider connection" %}` (or equivalent) with Arabic msgstr matching `الربط مع المزوّد`; preserve sales/ledger wrapper `hx-vals` exactly.
+
+- [ ] **Step 1:** Write failing kit test(s) for company detail shell (`rd-page-head` / header) and Connection tab still showing Arabic under ar.
+- [ ] **Step 2:** Run — expect FAIL.
+- [ ] **Step 3:** Implement; remove `company_detail.html` from LEGACY_PAGE_HEAD.
+- [ ] **Step 4:** `.venv/bin/python manage.py test companies core` (+ compilemessages -l ar if new msgid).
+- [ ] **Step 5:** Commit `feat(companies): company detail shell and tabs on the page kit`
 
 ### Task 2 — General tab
-- Files: [`templates/companies/partials/company_detail_general.html`](templates/companies/partials/company_detail_general.html), optional small `PeriodFilterForm` in [`companies/forms.py`](companies/forms.py) if `rd_filter_card` needs it; LEGACY_LABEL_TAG.
-- Period filter → kit/`rd_filter_card` with same GET names; keep `cr-period-from` / `cr-period-to` ids.
-- KPI cards → consistent `rd-stat` / existing card pattern; no metric removed.
-- Deposit/adjustment: `rd_fields` on `deposit_form` / `adj_form`; buttons still `name="dep-submit"` / `adj-submit` value `1`; hidden `tab=general`.
-- Embedded sales/ledger includes unchanged contracts.
+
+**Files:** `templates/companies/partials/company_detail_general.html`, optional `PeriodFilterForm` in `companies/forms.py`, view context glue if needed, LEGACY_LABEL_TAG, locale.
+
+**Interfaces:** Period filter via kit/`rd_filter_card` with GET `period_from`/`period_to` + hidden `tab=general`; keep ids `cr-period-from`/`cr-period-to`. All KPI metrics retained (`rd-stat` ok). Deposit/adjustment via `rd_fields`; buttons `dep-submit`/`adj-submit` value `1`. Embedded grids keep `hx-vals` with `tab=general`.
+
+- [ ] **Step 1:** Failing tests for kit filter/forms, submit names, KPI labels present.
+- [ ] **Step 2:** Run — expect FAIL.
+- [ ] **Step 3:** Implement; shrink LEGACY_LABEL_TAG for general partial.
+- [ ] **Step 4:** `manage.py test companies core reports`.
+- [ ] **Step 5:** Commit `feat(companies): company detail general tab on the page kit`
 
 ### Task 3 — Connection tab
-- Files: [`templates/companies/partials/company_detail_connection.html`](templates/companies/partials/company_detail_connection.html), [`companies/forms_connection.py`](companies/forms_connection.py), [`companies/connection.py`](companies/connection.py) message strings → gettext, locale, LEGACY_LABEL_TAG.
-- Wrap UI + message strings for i18n; Arabic msgstr = current pinned text.
-- Drop `--bs-body-bg` inline styles; use design tokens / `rd-*`.
-- Keep write-only secrets; same form actions and test-login UX.
-- Tests: [`companies/tests_connection.py`](companies/tests_connection.py) stay green (Arabic still rendered).
+
+**Files:** `templates/companies/partials/company_detail_connection.html`, `companies/forms_connection.py`, `companies/connection.py`, locale, LEGACY_LABEL_TAG.
+
+**Interfaces:** All UI + flash strings gettext/`{% trans %}` with Arabic msgstr = current pinned text. No `--bs-body-bg` inline. Write-only secrets; same POST actions. `tests_connection.py` stays green.
+
+- [ ] **Step 1:** Confirm RED only if new assertions; otherwise implement against existing connection tests.
+- [ ] **Step 2:** Implement i18n + token cleanup; shrink LEGACY for connection partial.
+- [ ] **Step 3:** `manage.py test companies.tests_connection companies core` + `compilemessages -l ar`.
+- [ ] **Step 4:** Commit `feat(companies): company detail connection tab i18n and kit cleanup`
 
 ### Task 4 — Sales/Ledger partials
-- Files: [`templates/reports/partials/company_report_sales.html`](templates/reports/partials/company_report_sales.html), [`templates/reports/partials/company_report_ledger.html`](templates/reports/partials/company_report_ledger.html), LEGACY_INLINE_WIDTH.
-- Keep columns, sort links, pagination, sibling hidden fields, mobile cards, `hx-*` on filter forms.
-- Remove `style="max-width: …"` → token/class.
-- Screenshots of all four tabs; full `manage.py test`.
+
+**Files:** `templates/reports/partials/company_report_sales.html`, `company_report_ledger.html`, LEGACY_INLINE_WIDTH.
+
+**Interfaces:** Keep columns, sort, pagination, sibling hiddens, mobile cards, `hx-*`. Remove inline `max-width` styles. Screenshots all four tabs; full suite.
+
+- [ ] **Step 1:** Failing test: sales partial has no `style="…max-width`.
+- [ ] **Step 2:** Implement; shrink LEGACY_INLINE_WIDTH.
+- [ ] **Step 3:** Screenshots to `.superpowers/companies-2026-10-16/`; `manage.py test`.
+- [ ] **Step 4:** Commit `feat(companies): company sales and ledger grids kit cleanup`
 
 ## Out of scope
 
