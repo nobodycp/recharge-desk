@@ -1,30 +1,16 @@
-{% load i18n humanize ui_tags %}
-<div class="rd-card mb-4">
-  <div class="rd-card-body rd-filter-bar">
-    <form method="get" class="row g-3 align-items-end">
-      <input type="hidden" name="tab" value="{{ tab_general }}">
-      <div class="col-md-4">
-        <label class="form-label" for="cr-period-from">{% trans "Date from" %}</label>
-        <input type="date" class="form-control" id="cr-period-from" name="period_from" value="{% if period_from %}{{ period_from|date:'Y-m-d' }}{% endif %}">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="cr-period-to">{% trans "Date to" %}</label>
-        <input type="date" class="form-control" id="cr-period-to" name="period_to" value="{% if period_to %}{{ period_to|date:'Y-m-d' }}{% endif %}">
-      </div>
-      <div class="col-md-4 d-flex gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}?tab={{ tab_general }}">{% trans "Reset (all time)" %}</a>
-      </div>
-    </form>
-    {% if period_active %}
-      <div class="rd-text-muted small mt-2">
-        {% blocktrans with start=period_from|default:"—" end=period_to|default:"—" %}Showing data from {{ start }} to {{ end }}.{% endblocktrans %}
-      </div>
-    {% else %}
-      <div class="rd-text-muted small mt-2">{% trans "Showing all-time data. Pick a date range above to scope the cards and tables below." %}</div>
-    {% endif %}
+{% load i18n humanize ui_tags kit %}
+{% trans "Date range" as period_filter_title %}
+{% url 'companies:company_detail' company.pk as detail_url %}
+{% with general_reset=detail_url|add:"?tab="|add:tab_general %}
+{% rd_filter_card period_filter_form reset_url=general_reset keep="tab" title=period_filter_title show_errors=False %}
+{% endwith %}
+{% if period_active %}
+  <div class="rd-text-muted small mb-4">
+    {% blocktrans with start=period_from|default:"—" end=period_to|default:"—" %}Showing data from {{ start }} to {{ end }}.{% endblocktrans %}
   </div>
-</div>
+{% else %}
+  <div class="rd-text-muted small mb-4">{% trans "Showing all-time data. Pick a date range above to scope the cards and tables below." %}</div>
+{% endif %}
 
 <div class="row g-3 mb-4">
   <div class="col-md-3">
@@ -90,8 +76,7 @@
         <form method="post" class="d-grid gap-2">
           {% csrf_token %}
           <input type="hidden" name="tab" value="{{ tab_general }}">
-          {{ deposit_form.amount.label_tag }} {{ deposit_form.amount }}
-          {{ deposit_form.notes.label_tag }} {{ deposit_form.notes }}
+          {% rd_fields deposit_form %}
           <button class="btn btn-primary" type="submit" name="dep-submit" value="1">{% trans "Save deposit" %}</button>
         </form>
       </div>
@@ -102,8 +87,7 @@
         <form method="post" class="d-grid gap-2">
           {% csrf_token %}
           <input type="hidden" name="tab" value="{{ tab_general }}">
-          {{ adj_form.signed_amount.label_tag }} {{ adj_form.signed_amount }}
-          {{ adj_form.notes.label_tag }} {{ adj_form.notes }}
+          {% rd_fields adj_form %}
           <button class="btn btn-outline-primary" type="submit" name="adj-submit" value="1">{% trans "Save adjustment" %}</button>
         </form>
       </div>

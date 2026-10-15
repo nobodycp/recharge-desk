@@ -97,6 +97,27 @@ class ProductLineForm(forms.ModelForm):
         return cleaned
 
 
+class PeriodFilterForm(forms.Form):
+    """Render-only filter form for the company statement period (the
+    ``period_from``/``period_to`` GET params are still parsed by the view;
+    see ``companies.statement.parse_company_statement_period``).
+
+    Widget ids are pinned to ``cr-period-from`` / ``cr-period-to`` since
+    they are referenced by existing tests/automation.
+    """
+
+    period_from = forms.DateField(
+        label=_("Date from"),
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date", "id": "cr-period-from"}),
+    )
+    period_to = forms.DateField(
+        label=_("Date to"),
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date", "id": "cr-period-to"}),
+    )
+
+
 class LayanReportReconcileForm(forms.Form):
     period_from = forms.DateField(
         label=_("Date from"),

@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from companies.connection import TAB_CONNECTION, build_connection_context
+from companies.forms import PeriodFilterForm
 from core.pagination import paginate_request
 from providers.contracts import Capability
 from providers.service import service_state
@@ -273,6 +274,9 @@ def build_company_statement_context(request, company):
         "period_from": period_from,
         "period_to": period_to,
         "period_active": period_active,
+        # The filter card sits outside any htmx swap target, so it is drawn from an
+        # unbound copy (values only); the view keeps parsing dates off request.GET.
+        "period_filter_form": PeriodFilterForm(initial=request.GET.dict()),
         "balance_as_of": balance_as_of,
         "active_tab": active_tab,
         "tab_general": TAB_GENERAL,
