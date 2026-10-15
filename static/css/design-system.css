@@ -6779,3 +6779,54 @@ textarea.form-control {
     grid-column: span 1;
   }
 }
+
+/* Form footer: `.rd-form-actions` holds the submit and cancel buttons under a form. */
+.rd-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* Search box with a clear link: the link shows only while the input has text. */
+.rd-filter-search__clear {
+  inset-inline-end: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  color: var(--rd-muted);
+}
+
+.rd-filter-search__clear:hover {
+  color: var(--rd-ink);
+}
+
+.rd-filter-search__clear:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: -2px;
+  border-radius: 0.35rem;
+}
+
+.rd-filter-search input:placeholder-shown ~ .rd-filter-search__clear {
+  display: none;
+}
+
+.rd-filter-search__clear ~ .rd-filter-search__spin {
+  inset-inline-end: 2.6rem;
+}
+
+@media (max-width: 991.98px) {
+  .rd-filter-search__clear {
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  .rd-filter-search__clear ~ .rd-filter-search__spin {
+    inset-inline-end: 3.9rem;
+  }
+}

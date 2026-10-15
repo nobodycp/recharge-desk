@@ -1,11 +1,11 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="rd-admin-page rd-admin-page--wide">
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Users" %}</h1>
+<div class="rd-page">
+{% trans "Users" as users_title %}
+{% rd_page_header users_title %}
   <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% trans "Create user" %}</a>
-</div>
+{% end_rd_page_header %}
 
 <div class="rd-card rd-toolbar mb-3">
   <form
@@ -22,6 +22,7 @@
     <input type="hidden" name="order" value="{{ order }}">
     <svg class="rd-filter-search__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
     <input type="search" class="form-control" id="user-q" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'Username or full name…' %}" aria-label="{% trans 'Search' %}" autocomplete="off">
+    <a class="rd-filter-search__clear" href="{% url 'accounts:user_list' %}" aria-label="{% trans 'Reset' %}">×</a>
     <span id="user-htmx-indicator" class="htmx-indicator spinner-border spinner-border-sm text-primary rd-filter-search__spin" role="status" aria-hidden="true"></span>
   </form>
 </div>

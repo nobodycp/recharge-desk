@@ -1,4 +1,5 @@
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
+{% trans "Delete this user permanently? This cannot be undone." as confirm_text %}{% trans "Delete user" as delete_user_label %}
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
@@ -6,13 +7,13 @@
         <thead>
           <tr>
             <th>
-              <a class="rd-datagrid-sort {% if sort == 'username' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'username' and order == 'desc' %}{% querystring sort='username' order='asc' page=1 %}{% else %}{% querystring sort='username' order='desc' page=1 %}{% endif %}">{% trans "Username" %}</a>
+              {% rd_sort_link "username" _("Username") sort order %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if sort == 'role' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'role' and order == 'desc' %}{% querystring sort='role' order='asc' page=1 %}{% else %}{% querystring sort='role' order='desc' page=1 %}{% endif %}">{% trans "Role" %}</a>
+              {% rd_sort_link "role" _("Role") sort order %}
             </th>
             <th>
-              <a class="rd-datagrid-sort {% if sort == 'active' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'active' and order == 'desc' %}{% querystring sort='active' order='asc' page=1 %}{% else %}{% querystring sort='active' order='desc' page=1 %}{% endif %}">{% trans "Status" %}</a>
+              {% rd_sort_link "active" _("Status") sort order %}
             </th>
             <th>{% trans "Last sign-in" %}</th>
             <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
@@ -34,24 +35,13 @@
               <td><span class="rd-status{% if p.user.is_active and p.is_active_profile %} is-on{% endif %}">{% if p.user.is_active and p.is_active_profile %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</span></td>
               <td class="small text-secondary text-nowrap">{% if p.user.last_login %}<span title="{{ p.user.last_login|date:'Y-m-d H:i' }}">{{ p.user.last_login|naturaltime }}</span>{% else %}{% trans "Never" %}{% endif %}</td>
               <td class="text-end">
-                <span class="rd-row-actions">
-                  <a class="rd-icon-btn" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page title="{% trans 'Edit' %}" aria-label="{% trans 'Edit' %}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                  </a>
-                  {% if p.user.pk != request.user.pk %}
-                    <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
-                          hx-confirm="{% filter force_escape %}{% trans "Delete this user permanently? This cannot be undone." %}{% endfilter %}">
-                      {% csrf_token %}
-                      <button type="submit" class="rd-icon-btn rd-icon-btn--danger" title="{% trans 'Delete user' %}" aria-label="{% trans 'Delete user' %}">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-                      </button>
-                    </form>
-                  {% endif %}
-                </span>
+                {% url 'accounts:user_edit' p.pk as edit_url %}
+                {% if p.user.pk != request.user.pk %}{% url 'accounts:user_delete' p.pk as delete_url %}{% endif %}
+                {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url delete_label=delete_user_label confirm=confirm_text variant="icon" %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No users." %}</div></td></tr>
+            {% trans "No users." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=5 title=empty_title icon="list" %}
           {% endfor %}
         </tbody>
       </table>
@@ -71,19 +61,14 @@
           <span class="rd-role rd-role--{{ p.role }}">{{ p.get_role_display }}</span>
           <span class="rd-status{% if p.user.is_active and p.is_active_profile %} is-on{% endif %}">{% if p.user.is_active and p.is_active_profile %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</span>
         </div>
-        <div class="mt-2 d-flex gap-1 flex-wrap">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:user_edit' p.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-          {% if p.user.pk != request.user.pk %}
-            <form method="post" action="{% url 'accounts:user_delete' p.pk %}" class="d-inline m-0"
-                  hx-confirm="{% filter force_escape %}{% trans "Delete this user permanently? This cannot be undone." %}{% endfilter %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-            </form>
-          {% endif %}
+        <div class="mt-2">
+          {% url 'accounts:user_edit' p.pk as edit_url %}
+          {% if p.user.pk != request.user.pk %}{% url 'accounts:user_delete' p.pk as delete_url %}{% endif %}
+          {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text variant="text" %}
         </div>
       </div>
     {% empty %}
-      <div class="text-center text-secondary py-4">{% trans "No users." %}</div>
+      {% trans "No users." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
     {% endfor %}
   </div>
 </div>

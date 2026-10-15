@@ -52,6 +52,16 @@ class ManagementUserForm(UserCreationForm):
         required=False,
     )
 
+    field_order = [
+        "full_name",
+        "username",
+        "role",
+        "password1",
+        "password2",
+        "is_active",
+        "is_active_profile",
+    ]
+
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ("username",)
@@ -112,6 +122,17 @@ class UserProfileEditForm(forms.ModelForm):
         required=False,
         widget=forms.PasswordInput(attrs={"class": "form-control", "autocomplete": "new-password"}),
     )
+
+    field_order = [
+        "full_name",
+        "username",
+        "role",
+        "new_password1",
+        "new_password2",
+        "avatar",
+        "is_active",
+        "is_active_profile",
+    ]
 
     class Meta:
         model = UserProfile

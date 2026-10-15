@@ -1,16 +1,18 @@
 {% extends base_template %}
-{% load i18n %}
+{% load i18n kit %}
 
-{% block employee_header %}{% trans "Account settings" %}{% endblock %}
+{% comment %}The page header carries the only <h1>; in the employee shell the topbar title becomes a plain element.{% endcomment %}
+{% block employee_title %}<div class="rd-employee-title">{% trans "Account settings" %}</div>{% endblock %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 48rem;">
-  <h1 class="rd-heading-xl mb-3">{% trans "Account settings" %}</h1>
+<div class="rd-page rd-page--form">
+  {% trans "Account settings" as settings_title %}
+  {% rd_page_header settings_title %}{% end_rd_page_header %}
 
   {# ---------- Profile (username / display name / avatar) ---------- #}
-  <div class="app-card card mb-4">
-    <div class="card-body p-4">
-      <div class="d-flex align-items-center gap-3 mb-3">
+  <div class="rd-card mb-4">
+    <div class="rd-card-body">
+      <div class="d-flex align-items-center gap-3 mb-4">
         <div class="rd-avatar rd-avatar-lg" aria-hidden="true">
           {% if request.user.profile.avatar %}
             <img src="{{ request.user.profile.avatar.url }}" alt="">
@@ -24,28 +26,19 @@
         </div>
       </div>
 
-      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <input type="hidden" name="form" value="profile">
 
-        <div>
-          {{ profile_form.username.label_tag }}
-          {{ profile_form.username }}
-          {{ profile_form.username.errors }}
+        <div class="rd-form-grid">
+          {% rd_field profile_form.username %}
+          {% rd_field profile_form.full_name %}
+          {% trans "PNG or JPG. Will be resized automatically." as avatar_help %}
+          {% rd_field profile_form.avatar help=avatar_help %}
         </div>
-        <div>
-          {{ profile_form.full_name.label_tag }}
-          {{ profile_form.full_name }}
-          {{ profile_form.full_name.errors }}
-        </div>
-        <div>
-          {{ profile_form.avatar.label_tag }}
-          {{ profile_form.avatar }}
-          {{ profile_form.avatar.errors }}
-          <div class="form-text">{% trans "PNG or JPG. Will be resized automatically." %}</div>
-        </div>
+        {% include "partials/form_errors_toast.html" with errors=profile_form.non_field_errors %}
 
-        <div class="d-flex gap-2">
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Save changes" %}</button>
         </div>
       </form>
@@ -53,23 +46,16 @@
   </div>
 
   {# ---------- Password ---------- #}
-  <div class="app-card card">
-    <div class="card-body p-4">
+  <div class="rd-card">
+    <div class="rd-card-body">
       <h2 class="rd-heading-lg mb-3">{% trans "Change password" %}</h2>
-      <form method="post" class="d-grid gap-3">
+      <form method="post" novalidate>
         {% csrf_token %}
         <input type="hidden" name="form" value="password">
 
-        {% for field in password_form %}
-          <div>
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
-            {{ field.errors }}
-          </div>
-        {% endfor %}
+        {% rd_fields password_form full="old_password new_password1 new_password2" %}
 
-        <div class="d-flex gap-2">
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Update password" %}</button>
         </div>
       </form>

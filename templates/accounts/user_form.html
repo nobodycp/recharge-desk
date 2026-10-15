@@ -1,53 +1,46 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 
 {% block content %}
-<div class="mx-auto" style="max-width: 48rem;">
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <h1 class="rd-heading-xl mb-0">{{ title }}</h1>
-    {% if editing and target_profile %}
-      <span class="rd-badge rd-badge--neutral">{{ target_profile.get_role_display }}</span>
-    {% endif %}
-  </div>
-
+<div class="rd-page rd-page--form">
+  {% trans "Users" as users_label %}
   {% if editing and target_profile %}
-    <div class="d-flex align-items-center gap-3 mb-3">
-      <div class="rd-avatar rd-avatar-lg" aria-hidden="true">
-        {% if target_profile.avatar %}
-          <img src="{{ target_profile.avatar.url }}" alt="">
-        {% else %}
-          <span>{{ target_profile.initials }}</span>
-        {% endif %}
-      </div>
-      <div>
-        <div class="rd-heading-lg mb-0">{{ target_profile.display_name }}</div>
-        <div class="rd-text-muted small">@{{ target_profile.user.username }}</div>
-      </div>
-    </div>
+    {% blocktrans with name=target_profile.user.username asvar user_subtitle %}@{{ name }}{% endblocktrans %}
   {% endif %}
+  {% url 'accounts:user_list' as users_url %}
+  {% rd_page_header title subtitle=user_subtitle back_url=users_url back_label=users_label %}
+    {% if editing and target_profile %}<span class="rd-badge rd-badge--neutral">{{ target_profile.get_role_display }}</span>{% endif %}
+  {% end_rd_page_header %}
 
-  <div class="app-card card mb-3">
-    <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data" class="d-grid gap-3">
-        {% csrf_token %}
-        {% for field in form %}
-          <div>
-            {% if field.name == 'is_active' or field.name == 'is_active_profile' %}
-              <div class="form-check">
-                {{ field }}
-                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
-                {{ field.errors }}
-              </div>
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
+      {% if editing and target_profile %}
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="rd-avatar rd-avatar-lg" aria-hidden="true">
+            {% if target_profile.avatar %}
+              <img src="{{ target_profile.avatar.url }}" alt="">
             {% else %}
-              {{ field.label_tag }}
-              {{ field }}
-              {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
-              {{ field.errors }}
+              <span>{{ target_profile.initials }}</span>
             {% endif %}
           </div>
-        {% endfor %}
-        <div class="d-flex flex-wrap gap-2">
+          <div>
+            <div class="rd-heading-lg mb-0">{{ target_profile.display_name }}</div>
+            <div class="rd-text-muted small">@{{ target_profile.user.username }}</div>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% rd_fields form full="avatar" exclude="is_active is_active_profile" %}
+
+        <h2 class="rd-heading-lg mt-4 mb-3">{% trans "Access" %}</h2>
+        <div class="rd-form-grid">
+          {% rd_field form.is_active %}
+          {% rd_field form.is_active_profile %}
+        </div>
+
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
           <a class="btn btn-outline-secondary" href="{% url 'accounts:user_list' %}">{% trans "Cancel" %}</a>
         </div>
@@ -56,12 +49,17 @@
   </div>
 
   {% if editing and target_profile %}
-    <div class="app-card card border-danger-subtle">
-      <div class="card-body p-4">
-        <h2 class="rd-heading-lg mb-2 text-danger">{% trans "Danger zone" %}</h2>
-        <p class="rd-text-muted mb-3">
-          {% blocktrans with name=target_profile.user.username %}Permanently delete the user <strong>{{ name }}</strong>. If they are linked to any sale, customer or payment record, the deletion will be refused — disable their login instead by unticking "Login enabled" above.{% endblocktrans %}
-        </p>
+    <section class="rd-card rd-set-section rd-set-section--danger">
+      <header class="rd-set-section__head">
+        <span class="rd-set-icon rd-set-icon--danger" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+        <div>
+          <h2 class="rd-set-section__title">{% trans "Danger zone" %}</h2>
+          <p class="rd-set-section__desc">
+            {% blocktrans with name=target_profile.user.username %}Permanently delete the user <strong>{{ name }}</strong>. If they are linked to any sale, customer or payment record, the deletion will be refused — disable their login instead by unticking "Login enabled" above.{% endblocktrans %}
+          </p>
+        </div>
+      </header>
+      <div class="rd-set-section__body">
         {% if can_delete.0 %}
           <form
             method="post"
@@ -76,7 +74,7 @@
           <div class="alert alert-warning mb-0">{{ can_delete.1 }}</div>
         {% endif %}
       </div>
-    </div>
+    </section>
   {% endif %}
 </div>
 {% endblock %}

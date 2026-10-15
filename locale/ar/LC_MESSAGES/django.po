@@ -6410,6 +6410,15 @@ msgstr "عملية شحن ناجحة"
 msgid "Payment received"
 msgstr "دفعة مستلمة"
 
+#: templates/accounts/user_form.html
+msgid "Access"
+msgstr "الوصول"
+
+#: templates/accounts/user_form.html
+#, python-format
+msgid "@%(name)s"
+msgstr "@%(name)s"
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."

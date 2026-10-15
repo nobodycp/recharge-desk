@@ -88,7 +88,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 67 files
+LEGACY_PAGE_HEAD = {  # 64 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -98,9 +98,6 @@ LEGACY_PAGE_HEAD = {  # 67 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/accounts/account_settings.html",
-    "templates/accounts/user_form.html",
-    "templates/accounts/user_list.html",
     "templates/audit/audit_log_list.html",
     "templates/companies/company_detail.html",
     "templates/companies/company_form.html",
@@ -157,14 +154,12 @@ LEGACY_PAGE_HEAD = {  # 67 files
     "templates/sms_gateway/reports.html",
     "templates/sms_gateway/settings_index.html",
 }
-LEGACY_APP_CARD = {  # 16 files
+LEGACY_APP_CARD = {  # 14 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/accounts/account_settings.html",
-    "templates/accounts/user_form.html",
     "templates/companies/company_form.html",
     "templates/companies/layan_reconcile.html",
     "templates/companies/partials/layan_reconcile_settlements.html",
@@ -175,15 +170,13 @@ LEGACY_APP_CARD = {  # 16 files
     "templates/expenses/expense_form.html",
     "templates/sales/payment_method_form.html",
 }
-LEGACY_LABEL_TAG = {  # 28 files
+LEGACY_LABEL_TAG = {  # 26 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/accounts/account_settings.html",
-    "templates/accounts/user_form.html",
     "templates/companies/company_form.html",
     "templates/companies/layan_reconcile.html",
     "templates/companies/partials/company_detail_connection.html",
@@ -205,15 +198,13 @@ LEGACY_LABEL_TAG = {  # 28 files
     "templates/sales/pending_payments.html",
     "templates/sales/sale_edit.html",
 }
-LEGACY_INLINE_WIDTH = {  # 21 files
+LEGACY_INLINE_WIDTH = {  # 19 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/reports.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/accounts/account_settings.html",
-    "templates/accounts/user_form.html",
     "templates/companies/company_form.html",
     "templates/companies/partials/layan_reconcile_review_table.html",
     "templates/companies/partials/sky_reconcile_table.html",

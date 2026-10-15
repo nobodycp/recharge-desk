@@ -219,6 +219,10 @@ Shared building blocks for admin pages: template tags in `core/templatetags/kit.
 - Never write `label_tag`, `{{ field }}` or `field.errors` by hand for a kit page, and never put `form-control` classes on a widget to style it.
 - File inputs always go through the kit: it renders the Arabic drop zone (`.rd-file-pick`) plus, for an optional field with a stored file, the current file name and a "Remove current file" checkbox. Do not use Django's default `ClearableFileInput` markup.
 
+- Form footer: put Save (`btn-primary`) and Cancel (`btn-outline-secondary`) in `<div class="rd-form-actions">` at the end of the `<form>`. It is a wrapping flex row with a top border, aligned to the inline start.
+- Search box (`.rd-filter-search`): an `a.rd-filter-search__clear` after the input is shown only while the input has text (`:placeholder-shown`), so it works with live search. Touch size 3.45rem below 992px.
+- An employee-shell page that renders `rd_page_header` overrides `{% block employee_title %}` (the whole topbar `<h1>`) with a plain `<div class="rd-employee-title">`, so the page keeps a single `<h1>`.
+
 ### Header and width
 
 - Every management page starts with `{% rd_page_header title subtitle="" back_url="" back_label="" meta="" %}…actions…{% end_rd_page_header %}` inside one `.rd-page` wrapper. The body is the actions slot (buttons, links) and may be empty. `back_url` adds a "Back" link (label overridable with `back_label`); its arrow flips under `[dir="rtl"]`. `meta` is a small muted figure such as a count. Below 576px the actions take the full row and stretch.

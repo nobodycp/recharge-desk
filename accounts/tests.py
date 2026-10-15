@@ -715,3 +715,111 @@ class LoginPageTests(TestCase):
             r = self.client.get(self.url)
             self.assertContains(r, 'class="rd-login-logo"')
             self.assertContains(r, b.logo.url)
+
+
+class KitPageTests(TestCase):
+    """Users list, user form and account settings are built on the shared page kit."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.boss = User.objects.create_user("kit_boss", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.boss,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.worker = User.objects.create_user("kit_worker", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.worker,
+            defaults={
+                "role": UserProfile.Role.EMPLOYEE,
+                "is_active_profile": True,
+                "full_name": "Kit Worker",
+            },
+        )
+
+    def _client(self, user):
+        c = Client()
+        c.force_login(user)
+        return c
+
+    def test_user_form_uses_kit_and_arabic_picker(self):
+        r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.worker.profile.pk]))
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, "data-rd-file-pick")
+        self.assertNotContains(r, "Currently:")
+        self.assertContains(r, "rd-form-actions")
+        html = r.content.decode()
+        self.assertEqual(html.count("<h1"), 1)
+
+    def test_user_create_form_uses_kit(self):
+        r = self._client(self.boss).get(reverse("accounts:user_create"))
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, "rd-page rd-page--form")
+        self.assertContains(r, "rd-form-actions")
+        self.assertEqual(r.content.decode().count("<h1"), 1)
+
+    def test_user_form_field_order(self):
+        client = self._client(self.boss)
+        edit = client.get(reverse("accounts:user_edit", args=[self.worker.profile.pk])).content.decode()
+        create = client.get(reverse("accounts:user_create")).content.decode()
+
+        def order(html, names):
+            positions = [html.index(f'name="{name}"') for name in names]
+            self.assertEqual(positions, sorted(positions), names)
+
+        order(edit, ["username", "role", "new_password1", "new_password2", "avatar", "is_active", "is_active_profile"])
+        order(edit, ["full_name", "username"])
+        order(create, ["full_name", "username", "role", "password1", "password2", "is_active", "is_active_profile"])
+
+    def test_user_form_lock_checkboxes_grouped_under_access(self):
+        r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.worker.profile.pk]))
+        html = r.content.decode()
+        self.assertContains(r, "Access")
+        self.assertLess(html.index("Access"), html.index('name="is_active"'))
+
+    def test_user_form_keeps_role_badge_identity_and_danger_zone(self):
+        r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.worker.profile.pk]))
+        self.assertContains(r, "rd-badge rd-badge--neutral")
+        self.assertContains(r, "@kit_worker")
+        self.assertContains(r, "rd-set-section--danger")
+        self.assertContains(r, "Delete user permanently")
+        self.assertNotContains(r, "app-card")
+        self.assertNotContains(r, "max-width")
+
+    def test_user_form_blocked_delete_reason_is_kept(self):
+        r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.boss.profile.pk]))
+        self.assertContains(r, "alert-warning")
+        self.assertContains(r, "You can")
+
+    def test_account_settings_single_h1_in_both_shells(self):
+        url = reverse("accounts:account_settings")
+        for user in (self.boss, self.worker):
+            with self.subTest(user=user.username):
+                r = self._client(user).get(url)
+                html = r.content.decode()
+                self.assertEqual(html.count("<h1"), 1)
+                self.assertContains(r, "rd-page-head")
+                self.assertContains(r, "data-rd-file-pick")
+                self.assertContains(r, 'name="form" value="profile"')
+                self.assertContains(r, 'name="form" value="password"')
+                self.assertContains(r, "PNG or JPG")
+                self.assertNotContains(r, "Currently:")
+
+    def test_user_list_uses_kit(self):
+        r = self._client(self.boss).get(reverse("accounts:user_list"))
+        self.assertContains(r, "rd-page-head")
+        self.assertNotContains(r, "rd-admin-page")
+        self.assertContains(r, 'class="rd-page"')
+        self.assertContains(r, "sort=role&amp;order=desc&amp;page=1")
+        self.assertContains(r, "rd-icon-btn")
+        self.assertContains(r, 'id="user-q"')
+        self.assertContains(r, "hx-confirm")
+
+    def test_user_list_search_has_clear_link(self):
+        r = self._client(self.boss).get(reverse("accounts:user_list"), {"q": "kit"})
+        self.assertContains(r, 'class="rd-filter-search__clear" href="%s"' % reverse("accounts:user_list"))
+
+    def test_user_list_empty_state(self):
+        r = self._client(self.boss).get(reverse("accounts:user_list"), {"q": "zzzzzz-no-match"})
+        self.assertContains(r, "rd-empty-row")
+        self.assertContains(r, "empty-state")
