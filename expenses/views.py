@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
 from core.pagination import paginate_request
-from expenses.forms import ExpenseForm, ExpenseListFilterForm
+from expenses.forms import ExpenseForm, ExpenseListFilterForm, ExpenseReportFilterForm
 from expenses.models import Expense
 from expenses.query_utils import apply_expense_list_ordering
 from sales.models import Sale
@@ -94,21 +94,7 @@ def expense_delete(request, pk):
 
 @management_required
 def expense_report(request):
-    from django import forms
-
-    class F(forms.Form):
-        date_from = forms.DateField(
-            required=False,
-            label=_("Date from"),
-            widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
-        )
-        date_to = forms.DateField(
-            required=False,
-            label=_("Date to"),
-            widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
-        )
-
-    form = F(request.GET or None)
+    form = ExpenseReportFilterForm(request.GET or None)
     qs = Expense.objects.all()
     if form.is_valid():
         if form.cleaned_data.get("date_from"):

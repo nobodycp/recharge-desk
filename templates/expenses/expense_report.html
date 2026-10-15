@@ -1,23 +1,18 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Expense report" %}</h1>
+<div class="rd-page">
+{% trans "Expense report" as report_title %}
+{% rd_page_header report_title %}
   <form method="get" class="rd-report-filter" role="search">
-    <label class="rd-report-filter__field">
-      <span class="rd-report-filter__lbl">{{ form.date_from.label }}</span>
-      {{ form.date_from }}
-    </label>
-    <label class="rd-report-filter__field">
-      <span class="rd-report-filter__lbl">{{ form.date_to.label }}</span>
-      {{ form.date_to }}
-    </label>
+    {% rd_field form.date_from size="sm" %}
+    {% rd_field form.date_to size="sm" %}
     <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
     {% if request.GET.date_from or request.GET.date_to %}
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'expenses:expense_report' %}">{% trans "Reset" %}</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'expenses:expense_report' %}" hx-boost="false">{% trans "Reset" %}</a>
     {% endif %}
   </form>
-</div>
+{% end_rd_page_header %}
 
 <section class="rd-card rd-stat-strip mb-3">
   <div class="rd-stat-strip__cell">
@@ -61,36 +56,56 @@
   </div>
 </section>
 
+{% trans "Delete this expense?" as confirm_text %}
 <div class="rd-card overflow-hidden">
-  <div class="table-responsive rd-table-wrap border-0">
-    <table class="table mb-0 align-middle rd-table-modern">
-      <thead>
-        <tr><th>{% trans "Date" %}</th><th>{% trans "Title" %}</th><th>{% trans "Category" %}</th><th class="text-end">{% trans "Amount" %}</th><th class="text-end">{% trans "Actions" %}</th></tr>
-      </thead>
-      <tbody>
-        {% for e in expenses %}
-          <tr>
-            <td class="text-nowrap small text-secondary">{{ e.date }}</td>
-            <td>{{ e.title }}</td>
-            <td class="small">{{ e.category }}</td>
-            <td class="fw-semibold tabular-nums text-end">{{ e.amount|floatformat:"-2g" }}</td>
-            <td class="text-end">
-              <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
-                <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}">{% trans "Edit" %}</a>
-                <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Delete this expense?" %}{% endfilter %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                  <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5" class="text-center text-secondary py-4">{% trans "No expenses." %}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="rd-table-dual">
+    <div class="d-none d-md-block rd-data-shell">
+      <div class="table-responsive border-0">
+        <table class="table mb-0 align-middle rd-table-modern">
+          <thead>
+            <tr><th>{% trans "Date" %}</th><th>{% trans "Title" %}</th><th>{% trans "Category" %}</th><th class="text-end">{% trans "Amount" %}</th><th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th></tr>
+          </thead>
+          <tbody>
+            {% for e in expenses %}
+              <tr>
+                <td class="text-nowrap small text-secondary">{{ e.date }}</td>
+                <td>{{ e.title }}</td>
+                <td class="small">{{ e.category }}</td>
+                <td class="fw-semibold tabular-nums text-end">{{ e.amount|floatformat:"-2g" }}</td>
+                <td class="text-end">
+                  {% url 'expenses:expense_edit' e.pk as edit_url %}{% url 'expenses:expense_delete' e.pk as delete_url %}
+                  {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text next=request.get_full_path variant="icon" %}
+                </td>
+              </tr>
+            {% empty %}
+              {% trans "No expenses." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=5 title=empty_title icon="list" %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="d-md-none rd-mobile-stack p-2">
+      {% for e in expenses %}
+        <div class="rd-mobile-row-card">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <div class="small text-secondary">{{ e.date }}</div>
+              <div class="fw-semibold">{{ e.title }}</div>
+              <div class="small">{{ e.category }}</div>
+            </div>
+            <div class="text-end tabular-nums fw-semibold">{{ e.amount|floatformat:"-2g" }}</div>
+          </div>
+          <div class="mt-2">
+            {% url 'expenses:expense_edit' e.pk as edit_url %}{% url 'expenses:expense_delete' e.pk as delete_url %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text next=request.get_full_path variant="text" %}
+          </div>
+        </div>
+      {% empty %}
+        {% trans "No expenses." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
+      {% endfor %}
+    </div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 </div>
 {% endblock %}

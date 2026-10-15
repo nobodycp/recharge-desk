@@ -1,24 +1,17 @@
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
+{% trans "Delete this expense?" as confirm_text %}
 <div class="rd-table-dual rd-datagrid-body">
   <div class="d-none d-md-block rd-data-shell">
     <div class="table-responsive border-0">
       <table class="table mb-0 align-middle rd-table-modern">
         <thead>
           <tr>
-            <th>
-              <a class="rd-datagrid-sort {% if sort == 'date' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'date' and order == 'desc' %}{% querystring sort='date' order='asc' page=1 %}{% else %}{% querystring sort='date' order='desc' page=1 %}{% endif %}">{% trans "Date" %}</a>
-            </th>
-            <th>
-              <a class="rd-datagrid-sort {% if sort == 'title' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'title' and order == 'desc' %}{% querystring sort='title' order='asc' page=1 %}{% else %}{% querystring sort='title' order='desc' page=1 %}{% endif %}">{% trans "Title" %}</a>
-            </th>
-            <th>
-              <a class="rd-datagrid-sort {% if sort == 'category' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'category' and order == 'desc' %}{% querystring sort='category' order='asc' page=1 %}{% else %}{% querystring sort='category' order='desc' page=1 %}{% endif %}">{% trans "Category" %}</a>
-            </th>
-            <th class="text-end">
-              <a class="rd-datagrid-sort {% if sort == 'amount' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'amount' and order == 'desc' %}{% querystring sort='amount' order='asc' page=1 %}{% else %}{% querystring sort='amount' order='desc' page=1 %}{% endif %}">{% trans "Amount" %}</a>
-            </th>
+            <th>{% rd_sort_link "date" _("Date") sort order %}</th>
+            <th>{% rd_sort_link "title" _("Title") sort order %}</th>
+            <th>{% rd_sort_link "category" _("Category") sort order %}</th>
+            <th class="text-end">{% rd_sort_link "amount" _("Amount") sort order %}</th>
             <th>{% trans "By" %}</th>
-            <th class="text-end">{% trans "Actions" %}</th>
+            <th class="text-end"><span class="visually-hidden">{% trans "Actions" %}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -30,18 +23,12 @@
               <td class="tabular-nums text-end fw-semibold kpi-expense">{{ e.amount|intcomma }}</td>
               <td class="small kpi-muted">{% if e.created_by %}{{ e.created_by.username }}{% else %}—{% endif %}</td>
               <td class="text-end">
-                <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-                  <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Delete this expense?" %}{% endfilter %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-                  </form>
-                </div>
+                {% url 'expenses:expense_edit' e.pk as edit_url %}{% url 'expenses:expense_delete' e.pk as delete_url %}
+                {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text next=request.get_full_path variant="icon" %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6" class="text-center py-4"><div class="empty-state border-0 mb-0">{% trans "No expenses." %}</div></td></tr>
+            {% trans "No expenses." as empty_title %}{% include "partials/kit/empty_row.html" with colspan=6 title=empty_title icon="list" %}
           {% endfor %}
         </tbody>
       </table>
@@ -59,17 +46,13 @@
           <div class="text-end tabular-nums fw-bold kpi-expense">{{ e.amount|intcomma }}</div>
         </div>
         <div class="small kpi-muted mt-2">{% trans "By" %}: {% if e.created_by %}{{ e.created_by.username }}{% else %}—{% endif %}</div>
-        <div class="mt-2 d-flex flex-wrap gap-1">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'expenses:expense_edit' e.pk %}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-          <form method="post" action="{% url 'expenses:expense_delete' e.pk %}" class="d-inline" hx-confirm="{% filter force_escape %}{% trans "Delete this expense?" %}{% endfilter %}">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
-          </form>
+        <div class="mt-2">
+          {% url 'expenses:expense_edit' e.pk as edit_url %}{% url 'expenses:expense_delete' e.pk as delete_url %}
+          {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text next=request.get_full_path variant="text" %}
         </div>
       </div>
     {% empty %}
-      <div class="text-center text-secondary py-4">{% trans "No expenses." %}</div>
+      {% trans "No expenses." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="list" %}
     {% endfor %}
   </div>
 </div>

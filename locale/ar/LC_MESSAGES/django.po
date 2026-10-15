@@ -3655,7 +3655,7 @@ msgstr "إعادة ضبط"
 #: templates/companies/partials/layan_reconcile_review_table.html:10
 #: templates/companies/partials/sky_reconcile_table.html:10
 msgid "System"
-msgstr ""
+msgstr "النظام"
 
 #: templates/audit/audit_log_list.html:85
 #, python-format

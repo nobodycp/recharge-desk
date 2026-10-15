@@ -9,6 +9,7 @@ from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 
 from accounts.permissions import management_required
+from audit.forms import AuditLogFilterForm
 from audit.models import AuditAction, AuditLog
 from core.pagination import paginate_request
 
@@ -56,14 +57,26 @@ def audit_log_list(request):
         .order_by("model_label")
     )
 
+    actors = list(actors)
+    models_seen = list(models_seen)
+    # Rendering only (unbound, so no validation errors): the filtering above reads
+    # request.GET directly and ignores values it does not understand.
+    filter_form = AuditLogFilterForm(
+        initial=request.GET.dict(),
+        actors=actors,
+        models_seen=models_seen,
+        action_choices=AuditAction.choices,
+    )
+
     return render(
         request,
         "audit/audit_log_list.html",
         {
             "page_obj": page_obj,
-            "actors": list(actors),
-            "models_seen": list(models_seen),
+            "actors": actors,
+            "models_seen": models_seen,
             "action_choices": AuditAction.choices,
+            "filter_form": filter_form,
             "title": _("Audit log"),
         },
     )

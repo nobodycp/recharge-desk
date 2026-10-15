@@ -234,3 +234,69 @@ class ExpenseCreateAndEditTests(TestCase):
         self.assertEqual(r.status_code, 302)
         e.refresh_from_db()
         self.assertEqual(e.amount, _d(20))
+
+
+class ExpensePageKitTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("mgr_xp_kit", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.expense = Expense.objects.create(
+            title="Kit rent", category="ops", amount=_d(500),
+            date=date(2026, 4, 19), created_by=self.user,
+        )
+
+    def test_expense_report_form_lives_in_forms(self):
+        from expenses.forms import ExpenseReportFilterForm
+
+        form = ExpenseReportFilterForm({"date_from": "2026-04-01", "date_to": "2026-04-30"})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(list(form.fields), ["date_from", "date_to"])
+        r = self.client.get(reverse("expenses:expense_report"))
+        self.assertIsInstance(r.context["form"], ExpenseReportFilterForm)
+
+    def test_expense_filter_labels_without_colon(self):
+        r = self.client.get(reverse("expenses:expense_list"))
+        html = r.content.decode()
+        self.assertNotIn(":</label>", html)
+        self.assertIn('class="form-label"', html)
+        self.assertIn("rd-filter-grid", html)
+        self.assertNotIn("btn btn-primary\" type=\"submit\"", html)  # kit button is btn-sm
+
+    def test_list_pages_use_page_kit(self):
+        r = self.client.get(reverse("expenses:expense_list"))
+        self.assertContains(r, 'class="rd-page"')
+        self.assertContains(r, "rd-page-head")
+        self.assertContains(r, "rd-icon-btn")
+        self.assertContains(r, "rd-badge--neutral")
+        self.assertContains(r, "kpi-expense")
+
+    def test_expense_form_uses_form_kit(self):
+        r = self.client.get(reverse("expenses:expense_create"))
+        self.assertContains(r, "rd-page--form")
+        self.assertContains(r, "rd-form-actions")
+        self.assertNotContains(r, "app-card")
+        self.assertNotContains(r, "max-width")
+        r = self.client.post(reverse("expenses:expense_create"), {"title": "", "amount": "x"})
+        self.assertContains(r, "is-invalid")
+        self.assertContains(r, 'aria-invalid="true"')
+
+    def test_report_keeps_edit_delete_and_has_mobile_cards(self):
+        r = self.client.get(reverse("expenses:expense_report"))
+        self.assertContains(r, reverse("expenses:expense_edit", args=[self.expense.pk]))
+        self.assertContains(r, reverse("expenses:expense_delete", args=[self.expense.pk]))
+        self.assertContains(r, "rd-mobile-row-card")
+        self.assertContains(r, "rd-report-filter")
+        self.assertContains(r, "rd-page-head")
+
+    def test_report_empty_uses_empty_row(self):
+        Expense.objects.all().delete()
+        r = self.client.get(reverse("expenses:expense_report"))
+        self.assertContains(r, "rd-empty-row")

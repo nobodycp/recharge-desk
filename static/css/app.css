@@ -1568,10 +1568,10 @@ tr:focus-within .rd-row-actions,
 }
 
 .rd-audit-day {
-  padding: 0.45rem 1.15rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--bs-secondary-color);
+  padding: 0.5rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--rd-muted);
   background: var(--bs-tertiary-bg);
   border-bottom: 1px solid var(--bs-border-color);
 }
@@ -1657,20 +1657,15 @@ summary.rd-audit-row:hover {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.2rem 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
 }
 
 .rd-audit-actor {
   font-weight: 700;
 }
 
-.rd-audit-action {
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--act-soft);
-  color: var(--act);
-  font-size: 0.75rem;
-  font-weight: 700;
+.rd-audit-line .rd-badge {
+  font-size: 0.82rem;
 }
 
 .rd-audit-target {
@@ -1682,8 +1677,8 @@ summary.rd-audit-row:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.15rem 0.75rem;
-  font-size: 0.75rem;
-  color: var(--bs-secondary-color);
+  font-size: 0.82rem;
+  color: var(--rd-muted);
 }
 
 .rd-audit-meta code {
@@ -1696,9 +1691,9 @@ summary.rd-audit-row:hover {
   align-items: center;
   gap: 0.3rem;
   flex: 0 0 auto;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
 }
 
 .rd-audit-count svg {
@@ -1722,33 +1717,39 @@ summary.rd-audit-row:hover {
   animation: rd-audit-open 0.2s ease;
 }
 
-.rd-audit-diff table {
+.rd-audit-diff table.rd-table-modern {
   width: auto;
   min-width: min(100%, 28rem);
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  --bs-table-bg: transparent;
 }
 
-.rd-audit-diff th,
-.rd-audit-diff td {
+.rd-audit-diff .rd-table-modern tbody th,
+.rd-audit-diff .rd-table-modern tbody td {
   padding: 0.35rem 0.5rem;
   border-bottom: 1px dashed var(--bs-border-color);
   vertical-align: top;
   word-break: break-word;
+  background: transparent;
 }
 
-.rd-audit-diff tr:last-child th,
-.rd-audit-diff tr:last-child td {
+.rd-audit-diff .rd-table-modern tbody tr:hover {
+  background: transparent;
+}
+
+.rd-audit-diff .rd-table-modern tbody tr:last-child th,
+.rd-audit-diff .rd-table-modern tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.rd-audit-diff th {
+.rd-audit-diff .rd-table-modern tbody th {
   white-space: nowrap;
   padding-inline-end: 1.5rem;
   font-weight: 600;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
-  color: var(--bs-secondary-color);
+  font-size: 0.82rem;
+  color: var(--rd-muted);
   text-align: start;
 }
 
@@ -1765,7 +1766,7 @@ summary.rd-audit-row:hover {
 
 .rd-audit-arrow {
   width: 1.5rem;
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
   text-align: center;
 }
 
@@ -1774,7 +1775,7 @@ summary.rd-audit-row:hover {
 }
 
 .rd-audit-nil {
-  color: var(--bs-secondary-color);
+  color: var(--rd-muted);
   text-decoration: none;
   font-weight: 400;
 }
@@ -1853,10 +1854,6 @@ summary.rd-audit-row:hover {
 
   .rd-audit-diff {
     padding-inline-start: 1.15rem;
-  }
-
-  .rd-audit-count {
-    font-size: 0;
   }
 
   .rd-toolbar__action {

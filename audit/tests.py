@@ -189,3 +189,40 @@ class AuditLogViewTests(TestCase):
         row = r.context["page_obj"].object_list[0]
         self.assertEqual(row.action, AuditAction.UPDATE)
         self.assertEqual(row.model_label, "sales.sale")
+
+    def test_audit_filter_form_keeps_get_names(self):
+        import re
+
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(reverse("audit:audit_log_list"))
+        html = r.content.decode()
+        form_html = html[html.index('class="rd-filter-grid"'):]
+        form_html = form_html[: form_html.index("</form>")]
+        names = re.findall(r'<(?:input|select)\b[^>]*\bname="([^"]+)"', form_html)
+        self.assertEqual(names, ["q", "action", "model", "actor", "date_from", "date_to"])
+        self.assertContains(r, "rd-page-head")
+
+    def test_audit_filter_form_preserves_values(self):
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(
+            reverse("audit:audit_log_list"),
+            {"action": "update", "model": "sales.sale", "date_from": "2026-01-02", "q": "dum"},
+        )
+        self.assertContains(r, 'value="2026-01-02"')
+        self.assertContains(r, 'value="dum"')
+        self.assertContains(r, '<option value="update" selected>')
+        self.assertContains(r, '<option value="sales.sale" selected>')
+        self.assertEqual(len(r.context["page_obj"].object_list), 1)
+
+    def test_audit_action_badges(self):
+        AuditLog.objects.create(actor=self.boss, action=AuditAction.DELETE, model_label="sales.sale", object_id="9", object_repr="gone")
+        AuditLog.objects.create(actor=self.boss, action=AuditAction.APPROVE, model_label="sales.sale", object_id="8", object_repr="ok")
+        c = Client()
+        c.force_login(self.boss)
+        html = c.get(reverse("audit:audit_log_list")).content.decode()
+        self.assertIn('rd-badge rd-badge--paid">Create', html)
+        self.assertIn('rd-badge rd-badge--pending">Update', html)
+        self.assertIn('rd-badge rd-badge--cancelled">Delete', html)
+        self.assertIn('rd-badge rd-badge--neutral">Approve', html)
