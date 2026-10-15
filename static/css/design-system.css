@@ -82,6 +82,9 @@ html {
   --rd-shadow-sm: 0 2px 8px rgba(10, 10, 10, 0.06);
   --rd-shadow-md: 0 8px 24px rgba(10, 10, 10, 0.08);
   --rd-shadow-lg: 0 16px 48px rgba(10, 10, 10, 0.1);
+  /* Floating panels (menus, search): elevated surface + pop shadow. */
+  --rd-surface-raised: #ffffff;
+  --rd-shadow-pop: 0 16px 48px rgba(10, 10, 10, 0.1);
   --rd-shadow-float: 0 10px 22px -10px rgba(10, 10, 10, 0.55);
 
   /* Chrome: drawer scrim, text on red count chips, and status tones that
@@ -186,6 +189,9 @@ html {
   --rd-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
   --rd-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.45);
   --rd-shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.55);
+  /* Floating panels: lighter than the page/cards so they read as raised. */
+  --rd-surface-raised: #262624;
+  --rd-shadow-pop: 0 20px 56px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --rd-shadow-float: 0 10px 24px -10px rgba(0, 0, 0, 0.85);
 
   --rd-scrim: rgba(0, 0, 0, 0.6);
@@ -1295,11 +1301,11 @@ html[lang="ar"] .rd-hello__title {
   inset-inline-start: 0;
   z-index: 1080;
   width: min(16.5rem, calc(100vw - 1rem));
-  background: var(--rd-surface);
+  background: var(--rd-surface-raised);
   color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, var(--bs-border-color));
   border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
+  box-shadow: var(--rd-shadow-pop);
   padding: 0.4rem;
   display: block;
   max-height: min(75vh, 34rem);
@@ -1349,7 +1355,25 @@ html[lang="ar"] .rd-hello__title {
   outline: none;
   padding: 0.05rem 0;
   font-size: 0.82rem;
-  color: var(--bs-body-color);
+  color: var(--rd-ink);
+  -webkit-text-fill-color: var(--rd-ink);
+  caret-color: var(--rd-ink);
+}
+
+/* Typed text must stay plainly readable: explicit selection + autofill colours
+   (UA defaults gave a grey block over the text in dark mode). */
+.rd-search-input::selection {
+  background: color-mix(in srgb, var(--rd-accent) 35%, transparent);
+  color: var(--rd-ink);
+  -webkit-text-fill-color: var(--rd-ink);
+}
+
+.rd-search-input:-webkit-autofill,
+.rd-search-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--rd-ink);
+  box-shadow: 0 0 0 100rem var(--rd-surface-2) inset;
+  caret-color: var(--rd-ink);
+  transition: background-color 9999s ease-out;
 }
 
 .rd-search-input::placeholder {
@@ -1471,8 +1495,9 @@ html[lang="ar"] .rd-hello__title {
     inset-inline: 0.5rem;
     top: calc(100% + 0.4rem);
     width: auto;
-    max-height: calc(100vh - 6rem);
-    max-height: calc(100dvh - 6rem);
+    /* bar (~5.9rem) + gap + a comfortable 1rem bottom margin */
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
     overflow-y: auto;
   }
   .rd-search-input {
@@ -4185,11 +4210,11 @@ body.rd-inv-dialog-open {
   z-index: 1080;
   min-width: 16rem;
   max-width: calc(100vw - 1rem);
-  background: var(--rd-surface);
+  background: var(--rd-surface-raised);
   color: var(--bs-body-color);
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, var(--bs-border-color));
   border-radius: var(--rd-radius-lg);
-  box-shadow: var(--rd-shadow-lg);
+  box-shadow: var(--rd-shadow-pop);
   padding: 0.45rem;
   animation: rd-user-menu-in 140ms ease-out;
 }
@@ -4262,6 +4287,13 @@ body.rd-inv-dialog-open {
   color: var(--rd-ink);
   text-decoration: none;
   outline: none;
+}
+
+.rd-user-menu-panel .rd-user-menu-item:not(.rd-user-menu-item--danger):hover,
+.rd-user-menu-panel .rd-user-menu-item:not(.rd-user-menu-item--danger):focus-visible,
+.rd-search-panel .rd-search-item:hover,
+.rd-search-panel .rd-search-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--rd-ink) 8%, var(--rd-surface-raised));
 }
 
 .rd-user-menu-item svg {
@@ -4508,11 +4540,6 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   outline-offset: 2px;
 }
 
-@media (max-width: 991.98px) {
-  .rd-lang-toggle__btn {
-    min-height: 2.75rem;
-  }
-}
 
 .rd-user-menu-pref .rd-theme-btn {
   position: relative;
@@ -4587,6 +4614,14 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   top: calc(100% + 0.6rem);
 }
 
+/* The <details> wrapper is a block holding an inline-flex <summary>; baseline
+   alignment adds descender space under the trigger and the flex row then
+   centres a taller box (avatar sat ~3 px high). Top-align the trigger so the
+   wrapper is exactly as tall as the control. */
+.rd-topbar .rd-user-menu > summary {
+  vertical-align: top;
+}
+
 @media (max-width: 991.98px) {
   .rd-topbar .rd-search-toggle,
   .rd-topbar .rd-user-menu > summary.rd-notif-trigger,
@@ -4606,6 +4641,26 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   .rd-topbar .rd-topbar-cta {
     min-height: 3.45rem;
   }
+
+  /* Touch targets inside the open menus (links, logout, theme, language). */
+  .rd-user-menu-panel .rd-user-menu-item {
+    min-height: 3.45rem;
+  }
+
+  .rd-user-menu-pref .rd-theme-btn {
+    width: 3.45rem;
+    height: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+
+  .rd-user-menu-pref .rd-theme-btn::after {
+    inset: 0;
+  }
+
+  .rd-lang-toggle__btn {
+    min-height: 3.45rem;
+  }
 }
 
 /* Phones: both popovers become sheets pinned under the bar. The bar is their
@@ -4619,8 +4674,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     top: calc(100% + 0.4rem);
     min-width: 0;
     max-width: none;
-    max-height: calc(100vh - 6rem);
-    max-height: calc(100dvh - 6rem);
+    max-height: calc(100vh - 8rem);
+    max-height: calc(100dvh - 8rem);
     overflow-y: auto;
   }
 }

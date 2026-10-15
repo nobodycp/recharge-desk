@@ -212,3 +212,26 @@ class LoginScriptTests(SimpleTestCase):
 
     def test_autofill_sync_hook(self):
         self.assertIn("animationstart", self.JS)
+
+
+class FloatingPanelTokenTests(SimpleTestCase):
+    THEMES = ('[data-bs-theme="light"]', '[data-bs-theme="dark"]')
+
+    def test_raised_tokens_defined_in_both_themes(self):
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            self.assertIn("--rd-surface-raised:", block, theme)
+            self.assertIn("--rd-shadow-pop:", block, theme)
+
+    def test_dark_raised_surface_is_lighter_than_page_and_cards(self):
+        block = _block(CSS, '[data-bs-theme="dark"]')
+        raised = _token(block, "--rd-surface-raised")
+        for other in ("--bs-body-bg", "--rd-surface"):
+            ratio = _contrast(raised, _token(block, other))
+            self.assertGreater(ratio, 1.1, f"raised vs {other}: {ratio:.2f}")
+
+    def test_raised_surface_keeps_muted_text_readable(self):
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            ratio = _contrast(_token(block, "--rd-muted"), _token(block, "--rd-surface-raised"))
+            self.assertGreaterEqual(ratio, 4.5, f"{theme}: {ratio:.2f}")

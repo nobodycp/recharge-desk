@@ -497,7 +497,7 @@ class ManagementTopbarTests(TestCase):
         self.assertTrue(_find_rules(css, ".rd-lang-toggle__btn:focus-visible"))
         mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
         heights = [float(v) for v in re.findall(r"min-height:\s*([\d.]+)rem", "\n".join(_find_rules(mobile, ".rd-lang-toggle__btn")))]
-        self.assertTrue(heights and max(heights) >= 2.75, heights)
+        self.assertTrue(heights and max(heights) >= 3.45, heights)
 
     def test_header_avatar_is_constrained(self):
         css = self._css()
@@ -582,6 +582,56 @@ class ManagementTopbarTests(TestCase):
                 self.assertIn("position: fixed", joined)
                 self.assertRegex(joined, r"inset-inline:\s*0?\.5rem")
                 self.assertNotRegex(joined, r"(?<![\w-])width:\s*\d")
+
+    def test_menu_controls_meet_touch_target_on_phones(self):
+        css = self._css()
+        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        for sel in (
+            ".rd-user-menu-panel .rd-user-menu-item",  # links, logout button, notification rows
+            ".rd-user-menu-pref .rd-theme-btn",
+            ".rd-lang-toggle__btn",
+        ):
+            with self.subTest(sel=sel):
+                joined = "\n".join(_find_rules(mobile, sel))
+                self.assertRegex(joined, r"min-height:\s*3\.45rem")
+        theme = "\n".join(_find_rules(mobile, ".rd-user-menu-pref .rd-theme-btn"))
+        self.assertRegex(theme, r"min-width:\s*3\.45rem")
+
+    def test_topbar_triggers_are_top_aligned_in_their_wrapper(self):
+        rule = "\n".join(_find_rules(self._css(), ".rd-topbar .rd-user-menu > summary"))
+        self.assertIn("vertical-align: top", rule)
+
+    def test_phone_sheets_leave_a_bottom_gap(self):
+        css = self._css()
+        small = "\n".join(_media_blocks(css, "max-width: 575.98px"))
+        for sel in (".rd-search .rd-search-panel", ".rd-topbar .rd-user-menu--ava .rd-user-menu-panel"):
+            with self.subTest(sel=sel):
+                joined = "\n".join(_find_rules(small, sel))
+                self.assertRegex(joined, r"max-height:\s*calc\(100vh - 8rem\)")
+                self.assertRegex(joined, r"max-height:\s*calc\(100dvh - 8rem\)")
+                self.assertLess(joined.index("100vh"), joined.index("100dvh"))
+
+    def test_panels_use_raised_surface_and_pop_shadow(self):
+        css = self._css()
+        for sel in (".rd-user-menu-panel", ".rd-search-panel"):
+            with self.subTest(sel=sel):
+                bodies = [b for s_, b in _rules(css) if s_.strip().endswith(sel) and "position: absolute" in b]
+                self.assertEqual(len(bodies), 1, sel)
+                self.assertIn("background: var(--rd-surface-raised)", bodies[0])
+                self.assertIn("box-shadow: var(--rd-shadow-pop)", bodies[0])
+                self.assertIn("border: 1px solid", bodies[0])
+
+    def test_search_input_text_is_plainly_readable(self):
+        css = self._css()
+        base = "\n".join(body for s_, body in _rules(css) if s_.strip() == ".rd-search-input")
+        self.assertIn("color: var(--rd-ink)", base)
+        self.assertIn("-webkit-text-fill-color: var(--rd-ink)", base)
+        self.assertIn("caret-color: var(--rd-ink)", base)
+        selection = "\n".join(_find_rules(css, ".rd-search-input::selection"))
+        self.assertIn("color: var(--rd-ink)", selection)
+        self.assertIn("background: color-mix(", selection)  # token-based, never the UA grey
+        autofill = "\n".join(_find_rules(css, ".rd-search-input:-webkit-autofill"))
+        self.assertIn("-webkit-text-fill-color: var(--rd-ink)", autofill)
 
     def test_search_has_a_single_scroll_box(self):
         css = self._css()
