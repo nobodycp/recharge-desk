@@ -1282,12 +1282,34 @@ html[lang="ar"] .rd-hello__title {
     color: var(--rd-ink);
   }
 
-  /* Wide, scrollable results (the pill itself is narrower than the panel). */
+  /* The open panel covers the bar so typing happens in the same place: the
+     offsets cancel the panel's 0.4rem padding + 1px border, and the field
+     matches the bar's height, radius, icon and text. Results drop below. */
   .rd-search .rd-search-panel {
-    width: max(100%, 26rem);
-    min-width: 26rem;
+    top: calc(-0.4rem - 1px);
+    inset-inline-start: calc(-0.4rem - 1px);
+    width: max(calc(100% + 0.8rem + 2px), 22rem);
     max-height: min(75vh, 34rem);
     overflow-y: auto;
+    animation: none;
+  }
+
+  .rd-search .rd-search-field {
+    min-height: 2.6rem;
+    gap: 0.55rem;
+    padding-block: 0;
+    padding-inline: calc(0.8rem - 1px) calc(0.5rem - 1px);
+    border-radius: 0.95rem;
+    background: var(--rd-surface);
+  }
+
+  .rd-search .rd-search-field-icon svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  .rd-search .rd-search-input {
+    font-size: 0.88rem;
   }
 }
 

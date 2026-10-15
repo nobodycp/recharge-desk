@@ -680,10 +680,28 @@ class ManagementTopbarTests(TestCase):
         css = self._css()
         wide = "\n".join(_media_blocks(css, "min-width: 992px"))
         joined = "\n".join(_find_rules(wide, ".rd-search-panel"))
-        sizes = [float(v) for v in re.findall(r"min-width:\s*([\d.]+)rem", joined)]
-        self.assertTrue(sizes and max(sizes) >= 26, sizes)
+        sizes = [float(v) for v in re.findall(r"([\d.]+)rem\)", joined)]
+        self.assertTrue(sizes and max(sizes) >= 22, sizes)
         self.assertRegex(joined, r"max-height:")
         self.assertRegex(joined, r"overflow-y:\s*auto")
+
+    def test_desktop_search_types_in_the_bar_itself(self):
+        # The open panel sits on top of the bar: its field lands exactly where
+        # the bar is (panel padding 0.4rem + 1px border), same height.
+        css = self._css()
+        wide = "\n".join(_media_blocks(css, "min-width: 992px"))
+        panel = "\n".join(_find_rules(wide, ".rd-search .rd-search-panel"))
+        self.assertIn("top: calc(-0.4rem - 1px)", panel)
+        self.assertIn("inset-inline-start: calc(-0.4rem - 1px)", panel)
+        self.assertIn("width: max(calc(100% + 0.8rem + 2px), 22rem)", panel)
+        field = "\n".join(_find_rules(wide, ".rd-search-field"))
+        self.assertRegex(field, r"min-height:\s*2\.6rem")
+
+    def test_search_input_uses_the_bar_placeholder(self):
+        html = self._header()
+        bar = re.search(r'rd-search-toggle__placeholder">([^<]+)<', html).group(1)
+        field = re.search(r'id="rd-global-search"[^>]*placeholder="([^"]+)"', html, re.S).group(1)
+        self.assertEqual(bar, field)
 
     def test_zero_count_notification_rows_are_muted_not_hidden(self):
         css = self._css()
