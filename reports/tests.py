@@ -558,6 +558,11 @@ class DashboardKpiTrendTests(_ReportsBase):
         self.assertEqual(html.count("rd-spark--accent"), 1)
         self.assertEqual(html.count('class="rd-trend '), 1)
 
+    def test_dashboard_hero_hides_sparkline_when_no_sales(self):
+        html, hero = self._hero()
+        self.assertNotIn("rd-spark", html)
+        self.assertIn("rd-stat-figure", hero)  # the hero card itself still renders
+
     def test_dashboard_day_without_yesterday_has_no_trend_chip(self):
         self._make_sale(sell=20, paid=True, ref="T-ONLY-TODAY")
         html, hero = self._hero()

@@ -170,11 +170,12 @@ def rd_sparkline_points(series, key: str = "count", width: int = 100, height: in
 
     x is spread evenly over ``width``; y is scaled between the series minimum and
     maximum inside ``height`` with 2 px of padding. Fewer than two buckets give
-    ``""``; a flat series (e.g. all zeros) is drawn at the bottom, a flat
-    non-zero series across the middle.
+    ``""``, and so does an all-zero series (a flat line carries no information
+    and would read like a progress bar); a flat non-zero series is drawn across
+    the middle.
     """
     values = _series_values(series, key)
-    if len(values) < 2:
+    if len(values) < 2 or not any(values):
         return ""
     pad = 2
     low, high = min(values), max(values)

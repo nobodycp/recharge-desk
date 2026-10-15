@@ -21,10 +21,10 @@ class SparklinePointsTests(SimpleTestCase):
         self.assertEqual(pts[1][1], 14)
         self.assertEqual(pts[-1][1], 2)
 
-    def test_sparkline_points_all_zero(self):
-        pts = _pairs(rd_sparkline_points(_series(0, 0, 0, 0)))
-        self.assertEqual(len(pts), 4)
-        self.assertEqual({p[1] for p in pts}, {26})
+    def test_sparkline_points_all_zero_draws_nothing(self):
+        # A flat line of zeros carries no information (reads like a progress bar).
+        self.assertEqual(rd_sparkline_points(_series(0, 0, 0, 0)), "")
+        self.assertEqual(rd_sparkline_points([{"count": None}, {}]), "")
 
     def test_sparkline_points_constant_non_zero_is_flat(self):
         pts = _pairs(rd_sparkline_points(_series(7, 7, 7)))
@@ -103,6 +103,11 @@ class SparklinePartialTests(SimpleTestCase):
         self.assertIn("rd-spark--accent", html)
         self.assertIn('aria-hidden="true"', html)
         self.assertIn('points="0,26 100,2"', html)
+
+    def test_sparkline_markup_spans_the_card_with_a_fixed_stroke(self):
+        html = render_to_string("partials/kpi_sparkline.html", {"points": "0,26 100,2"})
+        self.assertIn('preserveAspectRatio="none"', html)
+        self.assertIn('vector-effect="non-scaling-stroke"', html)
 
     def test_sparkline_partial_empty(self):
         self.assertEqual(

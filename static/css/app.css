@@ -473,12 +473,6 @@
   font-size: 0.875rem;
 }
 
-.rd-supplier-empty .empty-state {
-  border: 0;
-  background: transparent;
-  padding-block: 1.25rem;
-}
-
 /* Stale phones / lines for disconnect — inline ICCID + mobile cards */
 .rd-stale-sim-input {
   min-width: 0;

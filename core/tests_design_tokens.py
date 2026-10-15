@@ -311,3 +311,46 @@ class DesignDocTokenTests(SimpleTestCase):
         self.assertTrue(names)
         missing = [n for n in names if n not in doc]
         self.assertEqual(missing, [], "Add these --rd-* tokens to the DESIGN.md token table")
+
+
+class LightEmptyStateAndSparkTests(SimpleTestCase):
+    """Owner ruling U4: no grey wells, full-width sparkline."""
+
+    def test_empty_state_has_no_fill_and_compact_padding(self):
+        body = _rule_body(CSS, ".empty-state")
+        self.assertRegex(body, r"background:\s*transparent")
+        self.assertRegex(body, r"border:\s*1px dashed")
+        m = re.search(r"padding:\s*([\d.]+)rem", body)
+        self.assertTrue(m and float(m.group(1)) <= 1.25, body)
+
+    def test_empty_state_inside_cards_has_no_box(self):
+        text = "\n".join(
+            body
+            for sels, body in _rules(CSS)
+            if any(s.startswith((".rd-card .empty-state", ".rd-card-body .empty-state")) for s in sels)
+        )
+        self.assertRegex(text, r"border:\s*0")
+        self.assertRegex(text, r"background:\s*transparent")
+
+    def test_empty_state_icon_and_title_are_soft(self):
+        icon = _rule_body(CSS, ".empty-state__icon")
+        self.assertRegex(icon, r"background:\s*var\(--rd-surface-2\)")
+        self.assertRegex(icon, r"color:\s*var\(--rd-muted\)")
+        self.assertNotIn("box-shadow", icon)
+        w = float(re.search(r"width:\s*([\d.]+)rem", icon).group(1))
+        self.assertLessEqual(w, 2.25)
+        title = _rule_body(CSS, ".empty-state__title")
+        self.assertIn("color: var(--rd-muted)", title)
+        self.assertRegex(title, r"font-size:\s*0\.9rem")
+
+    def test_mini_chart_empty_state_does_not_force_height(self):
+        body = "\n".join(b for sels, b in _rules(CSS) if ".rd-mini-chart--empty .empty-state" in sels)
+        self.assertNotRegex(body, r"min-height:\s*[1-9]")
+
+    def test_sparkline_is_full_width_with_a_fixed_height(self):
+        body = _rule_body(CSS, ".rd-spark")
+        self.assertRegex(body, r"width:\s*100%")
+        self.assertNotIn("max-width", body)
+        self.assertRegex(body, r"height:\s*1\.75rem")
+        self.assertRegex(body, r"flex:\s*0 0 100%")
+        self.assertRegex(_rule_body(CSS, ".rd-stat-figure"), r"flex-wrap:\s*wrap")
