@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import gzip
+import re
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -100,6 +101,41 @@ class DatabaseBackupViewTests(TestCase):
         self.assertIn("data-rd-confirm-input", form)
         self.assertIn('type="checkbox"', form)
         self.assertIn('name="acknowledge"', form)
+
+    def test_confirm_input_hooks_live_on_the_widget(self):
+        from core.forms_database import DatabaseImportForm
+
+        attrs = DatabaseImportForm().fields["confirm"].widget.attrs
+        self.assertEqual(attrs["dir"], "ltr")
+        self.assertEqual(attrs["placeholder"], IMPORT_CONFIRM_WORD)
+        self.assertIn("data-rd-confirm-input", attrs)
+        html = self.client.get(reverse("core:system_settings"), {"tab": "database"}).content.decode()
+        tag = re.search(r'<input[^>]*name="confirm"[^>]*>', html).group(0)
+        for needle in (
+            'id="id_confirm"',
+            "data-rd-confirm-input",
+            'dir="ltr"',
+            'placeholder="%s"' % IMPORT_CONFIRM_WORD,
+            'maxlength="32"',
+            'autocomplete="off"',
+            "rd-restore__word",
+            "form-control",
+            " required",
+            'aria-describedby="id_confirm-help"',
+        ):
+            self.assertIn(needle, tag)
+        self.assertIn('data-rd-confirm-gate="%s"' % IMPORT_CONFIRM_WORD, html)
+
+    def test_wrong_confirm_word_keeps_value_and_marks_invalid(self):
+        response = self.client.post(
+            reverse("core:system_settings") + "?tab=database",
+            {"form": "import", "tab": "database", "confirm": "nope", "acknowledge": "on", "backup_file": BytesIO(b"[]")},
+        )
+        tag = re.search(r'<input[^>]*name="confirm"[^>]*>', response.content.decode()).group(0)
+        self.assertIn('value="nope"', tag)
+        self.assertIn("is-invalid", tag)
+        self.assertIn('aria-describedby="id_confirm-help id_confirm-error"', tag)
+        self.assertIn("data-rd-confirm-input", tag)
 
     def test_restore_errors_not_duplicated_as_toasts(self):
         url = reverse("core:system_settings")

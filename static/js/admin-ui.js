@@ -49,7 +49,8 @@
       form.setAttribute("data-rd-submitting", "");
     });
     form.addEventListener("reset", function () {
-      forced = false; // Discard goes back to the form's own values: calm again.
+      // Discard goes back to the form's own values. On a server-error page those values
+      // are the invalid ones, so `forced` stays: never "No unsaved changes" beside errors.
       setTimeout(function () {
         form.dispatchEvent(new CustomEvent("rd:reset"));
         refresh();

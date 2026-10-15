@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from urllib.parse import parse_qs, urlsplit
 
@@ -139,6 +140,50 @@ class FieldTests(SimpleTestCase):
     def test_required_marker(self):
         self.assertIn('<span class="rd-field__req" aria-hidden="true">*</span>', render_field(F()["name"]))
         self.assertNotIn("rd-field__req", render_field(F()["amount"]))
+
+
+class ChoiceForm(forms.Form):
+    plan = forms.ChoiceField(label="Plan", choices=[("a", "Alpha"), ("b", "Beta")], widget=forms.RadioSelect)
+    roles = forms.MultipleChoiceField(
+        label="Roles", choices=[("x", "Ex"), ("y", "Why")], widget=forms.CheckboxSelectMultiple
+    )
+
+
+class ChoiceFieldTests(SimpleTestCase):
+    def test_radio_options_are_form_check_inputs_in_a_choices_wrapper(self):
+        html = render_field(ChoiceForm()["plan"])
+        self.assertNotIn("form-control", html)
+        self.assertIn("rd-field__choices", html)
+        self.assertEqual(html.count('type="radio"'), 2)
+        self.assertEqual(len(re.findall(r'<input[^>]*class="form-check-input"', html)), 2)
+        self.assertEqual(html.count("rd-field__choices"), 1)  # the wrapper only, not each radio
+
+    def test_checkbox_multiple_options_are_form_check_inputs(self):
+        html = render_field(ChoiceForm()["roles"])
+        self.assertNotIn("form-control", html)
+        self.assertEqual(len(re.findall(r'<input[^>]*type="checkbox"[^>]*class="form-check-input"', html)), 2)
+        self.assertEqual(html.count("rd-field__choices"), 1)
+
+    def test_choices_keep_checked_state_and_invalid_marking(self):
+        form = ChoiceForm(data={"plan": "b"})
+        form.is_valid()
+        html = render_field(form["plan"])
+        self.assertRegex(html, r'value="b"[^>]*checked')
+        html = render_field(form["roles"])  # required, missing
+        self.assertEqual(len(re.findall(r'<input[^>]*class="form-check-input is-invalid"', html)), 2)
+        self.assertIn("rd-field__error", html)
+
+    def test_choices_group_is_labelled_for_screen_readers(self):
+        html = render_field(ChoiceForm()["plan"])
+        self.assertIn('role="group"', html)
+        self.assertIn('aria-labelledby="id_plan-label"', html)
+        self.assertIn('id="id_plan-label"', html)
+
+    def test_choice_rows_are_touch_sized_below_992px(self):
+        with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
+            css = fh.read()
+        blocks = _media_blocks(css, "max-width: 991.98px")
+        self.assertTrue(any(".rd-field__choices" in b and "3.45rem" in b for b in blocks))
 
 
 class FileFieldTests(SimpleTestCase):
@@ -445,6 +490,15 @@ class FilterCardTests(SimpleTestCase):
         html = render_filter_card()
         self.assertEqual(html.count("rd-field--wide"), 1)
         self.assertRegex(html, r'class="rd-field rd-field--wide"[^>]*>\s*<label class="form-label" for="id_q"')
+
+    def test_prefixed_search_names_are_wide(self):
+        class TabForm(forms.Form):
+            ledger_q = forms.CharField(label="Search", required=False)
+            kind = forms.CharField(label="Kind", required=False)
+
+        html = render_filter_card(form=TabForm())
+        self.assertEqual(html.count("rd-field--wide"), 1)
+        self.assertRegex(html, r'class="rd-field rd-field--wide"[^>]*>\s*<label class="form-label" for="id_ledger_q"')
 
     def test_open_state(self):
         self.assertNotRegex(render_filter_card(), r"<details[^>]* open")

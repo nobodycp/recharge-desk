@@ -81,8 +81,22 @@ class SiteBrandingDarkLogoTests(TestCase):
         branding = self._branding_with_logo()
         name = branding.logo_dark_url[len(settings.MEDIA_URL):]
         (Path(self.media) / name).unlink()
+        branding = SiteBranding.objects.get(pk=1)  # the URL is memoised per instance
         self.assertEqual(branding.logo_dark_url[len(settings.MEDIA_URL):], name)
         self.assertTrue((Path(self.media) / name).is_file())
+
+    def test_dark_url_is_computed_once_per_instance_and_reset_on_save(self):
+        from unittest import mock
+
+        branding = self._branding_with_logo()
+        with mock.patch("core.models.ensure_dark_logo", return_value="/media/x.dark.webp") as ensure:
+            for _ in range(3):
+                self.assertEqual(branding.logo_dark_url, "/media/x.dark.webp")
+            self.assertEqual(ensure.call_count, 1)
+            branding.save()  # save() itself builds the copy once, then the memo is empty again
+            calls = ensure.call_count
+            self.assertEqual(branding.logo_dark_url, "/media/x.dark.webp")
+            self.assertEqual(ensure.call_count, calls + 1)
 
     def test_sidebar_renders_light_and_dark_logos(self):
         branding = self._branding_with_logo()

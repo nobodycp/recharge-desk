@@ -800,12 +800,6 @@
   color: var(--bs-secondary-color);
 }
 
-.rd-restore__confirm .form-label {
-  font-weight: 600;
-  font-size: 0.88rem;
-  margin-bottom: 0.35rem;
-}
-
 .rd-restore__word {
   max-width: 14rem;
   font-family: var(--bs-font-monospace);

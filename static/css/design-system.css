@@ -6518,7 +6518,7 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
 }
 
 .rd-field__error,
-.errorlist {
+.rd-field .errorlist {
   margin: 0.35rem 0 0;
   padding: 0;
   list-style: none;
@@ -6526,7 +6526,7 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
   font-size: 0.82rem;
 }
 
-.form-text,
+.rd-field .form-text,
 .rd-help {
   color: var(--rd-muted);
   font-size: 0.82rem;
@@ -6541,8 +6541,30 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
   margin-top: 0.1rem;
 }
 
-textarea.form-control {
+.rd-field textarea.form-control {
   resize: vertical;
+}
+
+/* RadioSelect / CheckboxSelectMultiple: a vertical list of check rows. */
+.rd-field__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rd-field__choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.6rem;
+  color: var(--rd-ink);
+  cursor: pointer;
+}
+
+.rd-field__choices .form-check-input {
+  flex: 0 0 auto;
+  float: none;
+  margin: 0;
 }
 
 .rd-field__check {
@@ -6593,6 +6615,7 @@ textarea.form-control {
 
 @media (max-width: 991.98px) {
   .rd-field__check,
+  .rd-field__choices label,
   .rd-file-current__clear {
     min-height: 3.45rem;
   }

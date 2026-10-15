@@ -583,6 +583,32 @@ class EmployeePagesKitTests(TestCase):
             ok = self.client.get(self.detail_url, {"partial": tab, "tab": tab}, HTTP_HX_REQUEST="true")
             self.assertNotContains(ok, "rd-grid-error")
 
+    def test_field_error_rendered_in_htmx_grid_partial(self):
+        for tab in ("ledger", "payments"):
+            resp = self.client.get(
+                self.detail_url,
+                {"partial": tab, "tab": tab, f"{tab}_date_from": "not-a-date"},
+                HTTP_HX_REQUEST="true",
+            )
+            html = resp.content.decode()
+            self.assertRegex(
+                html,
+                r'<div class="rd-field__error rd-grid-error" role="alert">Date from: [^<]+</div>',
+            )
+            self.assertEqual(html.count("rd-grid-error"), 1, tab)
+
+    def test_field_error_shown_once_on_full_page_and_card_keeps_typed_value(self):
+        for tab in ("ledger", "payments"):
+            html = self.client.get(
+                self.detail_url, {"tab": tab, f"{tab}_date_from": "not-a-date"}
+            ).content.decode()
+            self.assertEqual(html.count("rd-grid-error"), 1, tab)
+            # The card is drawn from an unbound copy: no second error under the field,
+            # and it stays open with the typed value so the user can fix it.
+            self.assertEqual(html.count("rd-field__error"), 1, tab)
+            self.assertIn('value="not-a-date"', html)
+            self.assertGreater(html.index("rd-grid-error"), html.index('id="employee-%s-grid"' % tab))
+
     def test_range_error_shown_once_on_full_page_in_the_grid(self):
         text = "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;."
         for tab in ("ledger", "payments"):

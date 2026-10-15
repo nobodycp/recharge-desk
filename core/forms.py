@@ -62,14 +62,18 @@ class SiteBrandingForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "maxlength": 120,
-                    "placeholder": _("e.g. Recharge Desk"),
+                    "placeholder": _("Recharge Desk"),
+                    "data-rd-bind": "site-name",
+                    "data-rd-fallback": _("Recharge Desk"),
                 }
             ),
             "tagline": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "maxlength": 160,
-                    "placeholder": _("e.g. Management"),
+                    "placeholder": _("Management"),
+                    "data-rd-bind": "tagline",
+                    "data-rd-fallback": _("Management"),
                 }
             ),
             "logo": forms.ClearableFileInput(attrs={"class": "form-control", "accept": "image/*"}),

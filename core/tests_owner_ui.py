@@ -45,7 +45,7 @@ class LangToggleTests(TestCase):
         self.assertIn('name="language" value="en"', html)
         self.assertNotIn('value="ar"', html)
         self.assertRegex(html, r'<span[^>]*lang="en"[^>]*>EN</span>')
-        self.assertIn('aria-label="التبديل إلى الإنجليزية"', html)
+        self.assertIn('aria-label="EN — التبديل إلى الإنجليزية"', html)
         self.assertIn('title="التبديل إلى الإنجليزية"', html)
 
     def test_shows_the_other_language_in_english_ui(self):
@@ -53,7 +53,7 @@ class LangToggleTests(TestCase):
         self.assertIn('name="language" value="ar"', html)
         self.assertNotIn('value="en"', html)
         self.assertRegex(html, r'<span[^>]*lang="ar"[^>]*>AR</span>')
-        self.assertIn('aria-label="Switch to Arabic"', html)
+        self.assertIn('aria-label="AR — Switch to Arabic"', html)
         self.assertIn('title="Switch to Arabic"', html)
 
     def test_is_a_full_navigation_post_form_with_next(self):
@@ -398,6 +398,10 @@ class NumberCheckRowTests(TestCase):
     def test_label_stays_above_the_row(self):
         form = self._form("en")
         self.assertLess(form.index('for="rd-refresh-phone-input"'), form.index('class="rd-ncheck-row"'))
+
+    def test_label_meets_the_text_floor(self):
+        label = "\n".join(_find_rules(_css("number-check.css"), ".rd-ncheck-label"))
+        self.assertRegex(label, r"font-size:\s*0\.8rem")
 
     def test_css_row_input_sized_for_ten_digits(self):
         css = _css("number-check.css")

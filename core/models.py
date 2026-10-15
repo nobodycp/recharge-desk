@@ -99,6 +99,7 @@ class SiteBranding(models.Model):
         )
         super().save(*args, **kwargs)
         cache.delete(SITE_BRANDING_CACHE_KEY)
+        self._logo_dark_memo = None
         if self.logo:
             ensure_dark_logo(self.logo)
 
@@ -112,7 +113,12 @@ class SiteBranding(models.Model):
         """Dark-theme copy of the logo (black ink lifted to silver), or None."""
         if not self.logo:
             return None
-        return ensure_dark_logo(self.logo)
+        # `ensure_dark_logo` hits storage; the shell and branding pages read this several
+        # times per request, so remember the answer per instance (keyed by logo name).
+        memo = getattr(self, "_logo_dark_memo", None)
+        if memo is None or memo[0] != self.logo.name:
+            memo = self._logo_dark_memo = (self.logo.name, ensure_dark_logo(self.logo))
+        return memo[1]
 
     @classmethod
     def load(cls) -> "SiteBranding":

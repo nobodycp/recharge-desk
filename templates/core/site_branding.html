@@ -21,24 +21,8 @@
             </div>
           </header>
           <div class="rd-set-section__body rd-brand-fields">
-            {% with f=form.site_name %}
-            <div class="rd-field">
-              <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}</label>
-              <input type="text" name="{{ f.html_name }}" id="{{ f.auto_id }}" class="form-control{% if f.errors %} is-invalid{% endif %}" maxlength="120"
-                     value="{{ f.value|default_if_none:'' }}" placeholder="{% trans 'Recharge Desk' %}"
-                     data-rd-bind="site-name" data-rd-fallback="{% trans 'Recharge Desk' %}"{% if f.errors %} aria-invalid="true" aria-describedby="{{ f.auto_id }}-error"{% endif %}>
-              {% if f.errors %}<div class="rd-field__error" id="{{ f.auto_id }}-error">{% for error in f.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
-            </div>
-            {% endwith %}
-            {% with f=form.tagline %}
-            <div class="rd-field">
-              <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}</label>
-              <input type="text" name="{{ f.html_name }}" id="{{ f.auto_id }}" class="form-control{% if f.errors %} is-invalid{% endif %}" maxlength="160"
-                     value="{{ f.value|default_if_none:'' }}" placeholder="{% trans 'Management' %}"
-                     data-rd-bind="tagline" data-rd-fallback="{% trans 'Management' %}"{% if f.errors %} aria-invalid="true" aria-describedby="{{ f.auto_id }}-error"{% endif %}>
-              {% if f.errors %}<div class="rd-field__error" id="{{ f.auto_id }}-error">{% for error in f.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
-            </div>
-            {% endwith %}
+            {% rd_field form.site_name help="" %}
+            {% rd_field form.tagline help="" %}
           </div>
         </section>
 

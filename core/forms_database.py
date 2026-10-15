@@ -12,6 +12,16 @@ class DatabaseImportForm(forms.Form):
     confirm = forms.CharField(
         label=_("Confirmation"),
         max_length=32,
+        widget=forms.TextInput(
+            attrs={
+                "class": "rd-restore__word",
+                "autocomplete": "off",
+                "spellcheck": "false",
+                "dir": "ltr",
+                "placeholder": IMPORT_CONFIRM_WORD,
+                "data-rd-confirm-input": True,
+            }
+        ),
     )
     acknowledge = forms.BooleanField(
         label=_("I understand this will erase existing data and replace it with the backup."),

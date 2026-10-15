@@ -23,6 +23,11 @@ def _is_file(widget):
     return isinstance(widget, forms.FileInput)
 
 
+def _is_choices(widget):
+    """Radio / checkbox lists: several inputs inside one wrapper."""
+    return isinstance(widget, (forms.RadioSelect, forms.CheckboxSelectMultiple))
+
+
 def rd_widget_attrs(bound_field, size="", has_help=None):
     """Attributes the kit adds to a field's widget: Bootstrap classes, validity and help wiring."""
     widget = bound_field.field.widget
@@ -35,12 +40,16 @@ def rd_widget_attrs(bound_field, size="", has_help=None):
         classes = ["form-check-input"]
     elif _is_file(widget):
         classes = ["visually-hidden"]
+    elif _is_choices(widget):
+        # The wrapper gets the list class; `_render_widget` gives each option `form-check-input`.
+        classes = ["rd-field__choices"]
     else:
         classes = ["form-control"] + (["form-control-sm"] if small else [])
 
     invalid = bool(bound_field.errors)
     if invalid:
-        classes.append("is-invalid")
+        if not _is_choices(widget):
+            classes.append("is-invalid")
         attrs["aria-invalid"] = "true"
     attrs["class"] = _merge_classes(attrs.get("class"), *classes)
 
@@ -65,9 +74,26 @@ def _render_widget(bound_field, attrs):
     elif _is_file(widget):
         # The kit draws the current file and the clear checkbox itself.
         widget = forms.FileInput(attrs=widget.attrs)
+    elif _is_choices(widget):
+        widget = copy.copy(widget)
+        widget.create_option = _option_factory(widget, invalid=bool(bound_field.errors))
     else:
         widget = None
     return bound_field.as_widget(widget=widget, attrs=attrs)
+
+
+def _option_factory(widget, invalid):
+    """Wrap `create_option` so each radio / checkbox is a `form-check-input`, not a copy of the wrapper's attrs."""
+    create_option = widget.create_option
+
+    def wrapper(*args, **kwargs):
+        option = create_option(*args, **kwargs)
+        attrs = {k: v for k, v in option["attrs"].items() if k not in ("class", "role", "aria-labelledby", "aria-describedby", "aria-invalid")}
+        attrs["class"] = "form-check-input is-invalid" if invalid else "form-check-input"
+        option["attrs"] = attrs
+        return option
+
+    return wrapper
 
 
 @register.inclusion_tag("partials/kit/field.html")
@@ -85,6 +111,7 @@ def rd_field(field, size="", full=False, label=None, help=None, wide=False):
     if wide:
         wrapper.append("rd-field--wide")
 
+    widget_attrs = rd_widget_attrs(field, size, has_help=bool(help_html))
     context = {
         "field": field,
         "wrapper_class": " ".join(wrapper),
@@ -92,9 +119,11 @@ def rd_field(field, size="", full=False, label=None, help=None, wide=False):
         "help": help_html,
         "help_id": f"{field.auto_id}-help",
         "error_id": f"{field.auto_id}-error",
-        "widget_html": _render_widget(field, rd_widget_attrs(field, size, has_help=bool(help_html))),
+        "widget_html": _render_widget(field, widget_attrs),
+        "described_by": widget_attrs.get("aria-describedby", ""),
         "is_file": is_file,
         "is_check": is_check,
+        "is_choices": _is_choices(widget),
         "is_switch": is_check and widget.attrs.get("role") == "switch",
     }
     if is_file:
@@ -172,6 +201,11 @@ def rd_page_header(parser, token):
 SEARCH_FIELDS = ("q", "search")
 
 
+def _is_search_name(name):
+    """`q` / `search`, or a prefixed twin such as `ledger_q` (several grids on one page)."""
+    return name in SEARCH_FIELDS or name.endswith("_q")
+
+
 def _filled(request, key):
     return any(str(value).strip() for value in request.GET.getlist(key))
 
@@ -198,7 +232,7 @@ def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicat
         "indicator_id": indicator_id,
         "hidden_fields": form.hidden_fields(),
         "kept": kept,
-        "fields": [(field, i == 0 and field.name in SEARCH_FIELDS) for i, field in enumerate(visible)],
+        "fields": [(field, i == 0 and _is_search_name(field.name)) for i, field in enumerate(visible)],
         "errors": form.non_field_errors() if show_errors else [],
     }
 

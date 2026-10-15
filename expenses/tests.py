@@ -300,6 +300,9 @@ class ExpensePageKitTests(TestCase):
         Expense.objects.all().delete()
         r = self.client.get(reverse("expenses:expense_report"))
         self.assertContains(r, "rd-empty-row")
+        self.assertNotContains(r, "empty-state border-0")
+        self.assertContains(r, "No data.")
+        self.assertContains(r, 'class="empty-state__title">No data.')
 
 
 class ExpenseListFilterErrorTests(TestCase):

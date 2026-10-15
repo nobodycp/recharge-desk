@@ -1,7 +1,8 @@
 // Plain-node test for the always-visible savebar in static/js/admin-ui.js (fake DOM, loaded in a vm).
 //   node tests/js/savebar.test.js
 // Calm: message "no changes", Save + Discard disabled. Dirty: message "unsaved", both enabled.
-// Reset returns to calm and still fires rd:reset. Server errors start dirty.
+// Reset returns to calm and still fires rd:reset. Server errors start dirty and stay dirty
+// (Discard cannot clear them: the re-rendered form already holds the invalid values).
 const fs = require("fs"), vm = require("vm"), path = require("path"), assert = require("assert");
 const src = fs.readFileSync(path.join(__dirname, "..", "..", "static", "js", "admin-ui.js"), "utf8");
 
@@ -91,11 +92,21 @@ const tests = {
     assert.strictEqual(t.save.disabled, false);
     assert.strictEqual(t.msg.textContent, "You have unsaved changes");
   },
-  "forced bar returns to calm after a reset"() {
+  "Discard on a server-error page keeps the bar dirty and Save enabled"() {
     const t = setup({ forced: true });
     t.fire("reset"); t.flush();
-    assert.strictEqual(t.save.disabled, true);
-    assert.strictEqual(t.msg.textContent, "No unsaved changes");
+    assert.deepStrictEqual(t.events, ["rd:reset"]);
+    assert.strictEqual(t.save.disabled, false);
+    assert.strictEqual(t.discard.disabled, false);
+    assert.strictEqual(t.msg.textContent, "You have unsaved changes");
+    assert.strictEqual(t.bar.classList.contains("is-dirty"), true);
+  },
+  "forced bar stays dirty through an edit and its undo"() {
+    const t = setup({ forced: true });
+    t.field.checked = true; t.fire("change");
+    t.field.checked = false; t.fire("change");
+    assert.strictEqual(t.save.disabled, false);
+    assert.strictEqual(t.msg.textContent, "You have unsaved changes");
   },
 };
 

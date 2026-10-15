@@ -45,14 +45,7 @@
 
       {% rd_field import_form.backup_file %}
 
-      {% with f=import_form.confirm %}
-        <div class="rd-field rd-restore__confirm">
-          <label class="form-label" for="{{ f.auto_id }}">{{ f.label }}<span class="rd-field__req" aria-hidden="true">*</span></label>
-          <input type="text" class="form-control rd-restore__word{% if f.errors %} is-invalid{% endif %}" name="{{ f.html_name }}" id="{{ f.auto_id }}" value="{{ f.value|default:'' }}" maxlength="32" autocomplete="off" spellcheck="false" dir="ltr" placeholder="{{ import_form.confirm_word }}" data-rd-confirm-input required aria-describedby="{{ f.auto_id }}-help{% if f.errors %} {{ f.auto_id }}-error{% endif %}"{% if f.errors %} aria-invalid="true"{% endif %}>
-          <div class="form-text rd-help" id="{{ f.auto_id }}-help">{{ f.help_text }}</div>
-          {% if f.errors %}<div class="rd-field__error" id="{{ f.auto_id }}-error">{% for error in f.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
-        </div>
-      {% endwith %}
+      <div class="rd-restore__confirm">{% rd_field import_form.confirm %}</div>
 
       {% rd_field import_form.acknowledge %}
 

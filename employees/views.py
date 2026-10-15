@@ -246,6 +246,10 @@ def employee_detail(request, pk):
         "ledger_sort": ledger_sort,
         "ledger_order": ledger_order,
         "ledger_filter_form": ledger_filter_form,
+        # The filter cards sit outside the htmx swap target, so they are drawn from unbound
+        # copies (values only); validation errors render inside the swapped grids.
+        "ledger_card_form": EmployeeLedgerFilterForm(initial=request.GET.dict()),
+        "payments_card_form": EmployeeSalesPaymentFilterForm(initial=request.GET.dict()),
         "sales_payments_page": sales_payments_page,
         "payments_sort": payments_sort,
         "payments_order": payments_order,

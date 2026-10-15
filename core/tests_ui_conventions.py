@@ -416,6 +416,54 @@ class TemplateConventionTests(SimpleTestCase):
         self.assertTrue(INLINE_WIDTH.search('<div style="margin:0; max-width: 40rem">'))
         self.assertFalse(INLINE_WIDTH.search('<div style="width: 40rem" class="max-width-x">'))
 
+    # --- Page kit CSS scoping ---------------------------------------------------
+
+    @staticmethod
+    def _kit_css_selectors(css):
+        """Every selector in the `/* Page kit */` block of design-system.css (comments stripped)."""
+        start = css.index("/* Page kit")
+        banner = css.index("\n/* ---", start)  # closing rule of the title banner
+        end = css.find("\n/* ---", css.index("\n", banner + 1))
+        block = re.sub(r"/\*.*?\*/", "", css[start : end if end != -1 else len(css)], flags=re.S)
+        selectors = []
+        for prelude in re.findall(r"([^{}]+)\{", block):
+            prelude = prelude.strip()
+            if not prelude or prelude.startswith("@"):
+                continue
+            depth, current = 0, ""
+            for char in prelude:
+                depth += (char in "([") - (char in ")]")
+                if char == "," and depth == 0:
+                    selectors.append(current.strip())
+                    current = ""
+                else:
+                    current += char
+            selectors.append(current.strip())
+        return [s for s in selectors if s]
+
+    @staticmethod
+    def _unscoped_kit_selectors(selectors):
+        return [s for s in selectors if not re.search(r"\.rd-[\w-]+", s)]
+
+    def test_kit_css_is_scoped_to_rd_classes(self):
+        css = (BASE_DIR / "static/css/design-system.css").read_text(encoding="utf-8")
+        selectors = self._kit_css_selectors(css)
+        self.assertGreater(len(selectors), 40)  # the parser found the block
+        self._assert_none(
+            self._unscoped_kit_selectors(selectors),
+            "Selectors in the `/* Page kit */` CSS block must contain an `.rd-` class. A bare "
+            "element or Bootstrap/Django class (`.form-text`, `.errorlist`, `textarea`, `input`...) "
+            "restyles every page that has not migrated; scope it, e.g. `.rd-field textarea.form-control`:",
+        )
+
+    def test_kit_css_scope_guard_flags_bare_selectors(self):
+        css = "/* Page kit */\n/* ---- */\n.errorlist, .rd-field .form-text, textarea.form-control {a:b}\n@media (x) { .rd-a input {a:b} select {a:b} }\n/* ---- */\n"
+        css = "/* ---- */\n" + css
+        selectors = self._kit_css_selectors(css)
+        self.assertEqual(
+            self._unscoped_kit_selectors(selectors), [".errorlist", "textarea.form-control", "select"]
+        )
+
     def test_badge_regex_ignores_rd_badges(self):
         self.assertFalse(BS_BADGE.search('<span class="rd-badge rd-badge--paid">x</span>'))
         self.assertFalse(BS_BADGE.search('<div class="bg-white"><span class="rd-badge">x</span></div>'))

@@ -1,6 +1,7 @@
 """Site branding editor on the page kit: header, savebar, dark logo preview."""
 
 import io
+import re
 from html.parser import HTMLParser
 import shutil
 import tempfile
@@ -51,6 +52,31 @@ class SiteBrandingPageTests(TestCase):
         self.assertContains(response, "data-rd-savebar-save disabled")
         self.assertContains(response, 'data-rd-bind="site-name"')
         self.assertContains(response, 'data-rd-bind="tagline"')
+
+    def test_name_and_tagline_inputs_keep_their_js_hooks_via_the_widgets(self):
+        from core.forms import SiteBrandingForm
+
+        widgets = SiteBrandingForm().fields
+        self.assertEqual(widgets["site_name"].widget.attrs["data-rd-bind"], "site-name")
+        self.assertEqual(widgets["tagline"].widget.attrs["data-rd-bind"], "tagline")
+        html = self.client.get(reverse("core:site_branding")).content.decode()
+        for name, bind, maxlength in (("site_name", "site-name", "120"), ("tagline", "tagline", "160")):
+            tag = re.search(r'<input[^>]*name="%s"[^>]*>' % name, html).group(0)
+            self.assertIn('id="id_%s"' % name, tag)
+            self.assertIn('data-rd-bind="%s"' % bind, tag)
+            self.assertIn("data-rd-fallback=", tag)
+            self.assertIn("placeholder=", tag)
+            self.assertIn('maxlength="%s"' % maxlength, tag)
+            self.assertIn("form-control", tag)
+
+    def test_name_error_is_marked_and_described(self):
+        response = self.client.post(reverse("core:site_branding"), {"site_name": "x" * 130, "tagline": ""})
+        html = response.content.decode()
+        tag = re.search(r'<input[^>]*name="site_name"[^>]*>', html).group(0)
+        self.assertIn("is-invalid", tag)
+        self.assertIn('aria-invalid="true"', tag)
+        self.assertIn('aria-describedby="id_site_name-error"', tag)
+        self.assertIn('data-rd-bind="site-name"', tag)
 
     def test_savebar_sits_outside_the_preview_grid(self):
         class Walker(HTMLParser):

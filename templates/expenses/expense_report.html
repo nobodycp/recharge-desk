@@ -51,7 +51,7 @@
         {% endfor %}
       </ul>
     {% else %}
-      <div class="empty-state border-0 my-2">{% trans "No data." %}</div>
+      {% trans "No data." as empty_title %}{% include "partials/empty_state.html" with title=empty_title icon="chart" %}
     {% endif %}
   </div>
 </section>
