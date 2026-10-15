@@ -6510,6 +6510,18 @@ msgid "Nothing here."
 msgstr "لا شيء هنا."
 
 #: templates/companies/partials/reconcile_results.html
+msgid "Missing sales, or sales logged under the wrong supplier."
+msgstr "مبيعات ناقصة، أو مبيعات مسجّلة تحت مورد غلط."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "A sale already exists — open it and fix the supplier instead of recording again."
+msgstr "البيعة موجودة — افتحها وصحّح المورد بدل ما تسجّلها مرة ثانية."
+
+#: templates/companies/partials/reconcile_waiting.html
+msgid "Numbers missing in the system and numbers missing at Sky come first."
+msgstr "الأرقام الناقصة في النظام والأرقام الناقصة عند سكاي تأتي أولاً."
+
+#: templates/companies/partials/reconcile_results.html
 msgid "Search by number"
 msgstr "ابحث بالرقم"
 

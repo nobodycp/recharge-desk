@@ -53,7 +53,7 @@ Needs: result, provider, supplier_label, company.
       <header class="rd-rec-section__head">
         <div class="rd-rec-section__titles">
           <h2 class="rd-rec-section__title" id="rec-missing-title">{% blocktrans with supplier=supplier_label %}At {{ supplier }}, not in system{% endblocktrans %}</h2>
-          <p class="rd-rec-section__hint">{% trans "These usually need a sale recorded (or a correction)." %}</p>
+          <p class="rd-rec-section__hint">{% trans "Missing sales, or sales logged under the wrong supplier." %}</p>
         </div>
         <div class="rd-rec-section__sum">
           <span class="rd-rec-section__count tabular-nums">{{ result.missing_count }}</span>
@@ -72,6 +72,7 @@ Needs: result, provider, supplier_label, company.
         {% if result.logged_other_supplier %}
           <div data-rd-rec-group>
             <h3 class="rd-rec-subhead"><span>{% trans "Logged under another supplier" %}</span><span class="tabular-nums" dir="ltr">{{ result.total_logged_other_supplier|floatformat:2 }}</span></h3>
+            <p class="rd-rec-section__hint">{% trans "A sale already exists — open it and fix the supplier instead of recording again." %}</p>
             {% include "companies/partials/reconcile_rows.html" with rows=result.logged_other_supplier section="other" %}
           </div>
         {% endif %}
