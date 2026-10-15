@@ -6259,6 +6259,14 @@ msgstr "تحديث الرسائل"
 msgid "Provider rules"
 msgstr "قواعد المزودين"
 
+#: templates/partials/management_nav.html
+msgid "Provider reports"
+msgstr "تقارير المزودين"
+
+#: templates/partials/management_nav.html
+msgid "API"
+msgstr "API"
+
 #: templates/accounts/login.html
 msgid "Management & sales desk"
 msgstr "لوحة الإدارة والمبيعات"

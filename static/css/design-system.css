@@ -722,15 +722,15 @@ html[lang="ar"] .rd-sidebar-brand-name {
 .rd-sidebar-nav--accordion .rd-nav-group-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
   width: 100%;
-  padding: 0.55rem 0.8rem 0.35rem;
+  padding: 0.6rem 0.75rem 0.4rem;
   border: none;
-  border-radius: 0.6rem;
+  border-radius: 0.85rem;
   background: transparent;
   color: var(--rd-nav-bw-muted);
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
   text-align: start;
   cursor: pointer;
@@ -786,9 +786,29 @@ html[lang="ar"] .rd-sidebar-brand-name {
   color: var(--rd-nav-bw-text);
 }
 
-/* Section labels carry no icon; the links below them do. */
+/* Section labels keep their icon (Pearl mockup C): same 1.1rem grid as the
+   link icons below, a touch quieter. */
 .rd-sidebar-nav--accordion .rd-nav-group-icon {
-  display: none;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.7;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-icon {
+  opacity: 0.9;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group-label {
@@ -830,8 +850,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.85rem;
   font-size: 0.92rem;
   font-weight: 500;
   color: var(--rd-nav-bw-muted);
@@ -910,7 +930,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   white-space: nowrap;
 }
 
-/* Same red count chip as the topbar bell, sitting at the end of the row. */
+/* Ink count chip (Pearl: red is for errors, not for counts), sitting at the
+   end of the row. The bell badge keeps its own danger styling. */
 .rd-nav-count {
   flex: 0 0 auto;
   margin-inline-start: auto;
@@ -918,8 +939,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
   height: 1.15rem;
   padding: 0 0.35rem;
   border-radius: 999px;
-  background: var(--rd-danger);
-  color: var(--rd-on-danger);
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
   font-family: var(--rd-font-num);
   font-size: 0.68rem;
   font-weight: 700;
@@ -984,6 +1005,15 @@ html[lang="ar"] .rd-sidebar-brand-name {
   .rd-sidebar:has(.rd-sidebar-nav--accordion) {
     border-radius: 0;
     box-shadow: var(--rd-shadow-lg);
+  }
+
+  /* Touch targets: 3.45rem = 44 px at the 80 % root size. */
+  .rd-sidebar-nav--accordion .rd-nav-link {
+    min-height: 3.45rem;
+  }
+
+  .rd-sidebar-nav--accordion .rd-nav-group-toggle {
+    min-height: 3.45rem;
   }
 }
 
