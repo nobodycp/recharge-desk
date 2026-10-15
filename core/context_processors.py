@@ -29,21 +29,19 @@ def _nav_notifications_version() -> int:
 
 
 def _compute_default_asset_buster() -> str:
-    """Fingerprint based on the latest mtime of the CSS/JS bundles we ship.
+    """Fingerprint based on the latest mtime of every CSS/JS file we ship.
 
-    This guarantees that any change to a tracked static file invalidates
-    upstream caches (Nginx, CDN, browsers) without requiring an explicit
-    DJANGO_ASSET_CACHE_BUSTER env var on every deploy.
+    Walks ``css/``, ``js/`` and ``vendor/`` of each STATICFILES_DIRS entry and
+    of STATIC_ROOT, so a change to any bundle (page scripts and stylesheets
+    included) invalidates upstream caches (Nginx, CDN, browsers) without an
+    explicit DJANGO_ASSET_CACHE_BUSTER on every deploy. Returns "" when no file
+    is found. Unreadable files/directories are skipped.
     """
-    candidates = [
-        "css/design-system.css",
-        "css/app.css",
-        "js/theme.js",
-        "js/data-ui.js",
-        "js/employee-payer-assist.js",
-    ]
     base_dirs = []
     for d in getattr(settings, "STATICFILES_DIRS", []) or []:
+        # STATICFILES_DIRS entries may be (prefix, path) tuples.
+        if isinstance(d, (list, tuple)) and len(d) == 2:
+            d = d[1]
         base_dirs.append(Path(d))
     static_root = getattr(settings, "STATIC_ROOT", None)
     if static_root:
@@ -51,14 +49,19 @@ def _compute_default_asset_buster() -> str:
 
     latest_mtime = 0.0
     for base in base_dirs:
-        for rel in candidates:
-            p = base / rel
-            try:
-                mtime = p.stat().st_mtime
-            except OSError:
-                continue
-            if mtime > latest_mtime:
-                latest_mtime = mtime
+        for sub in ("css", "js", "vendor"):
+            root = base / sub
+            for pattern in ("*.css", "*.js"):
+                try:
+                    for p in root.rglob(pattern):
+                        try:
+                            mtime = p.stat().st_mtime
+                        except OSError:
+                            continue
+                        if mtime > latest_mtime:
+                            latest_mtime = mtime
+                except OSError:
+                    continue
 
     if latest_mtime <= 0:
         return ""
