@@ -21,7 +21,10 @@
     <div class="rd-login-top">
       <div class="rd-login-mini">
         {% if site_branding.logo %}
-          <span class="rd-login-plate rd-login-plate--sm"><img src="{{ site_branding.logo.url }}" alt="" class="rd-login-mini-logo"></span>
+          <img src="{{ site_branding.logo.url }}" alt="" class="rd-login-mini-logo rd-login-mini-logo--light">
+          {% with dark_logo=site_branding.logo_dark_url %}
+            <img src="{{ dark_logo|default:site_branding.logo.url }}" alt="" class="rd-login-mini-logo rd-login-mini-logo--dark">
+          {% endwith %}
         {% else %}
           <span class="rd-login-mark rd-login-mark--sm" aria-hidden="true">{{ site_name|slice:":1" }}</span>
         {% endif %}
@@ -29,17 +32,7 @@
       </div>
       <div class="rd-login-controls">
         {% include "partials/theme_toggle.html" with variant="shell" %}
-        <form action="{% url 'set_language' %}" method="post" class="rd-login-lang">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <svg class="rd-login-lang-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
-          <select name="language" class="rd-login-lang-select" aria-label="{% trans 'Language' %}" onchange="this.form.submit()">
-            {% get_current_language as LANGUAGE_CODE %}
-            {% for code, label in languages %}
-              <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </form>
+        {% include "partials/lang_toggle.html" %}
       </div>
     </div>
 
@@ -104,7 +97,9 @@
 
       <div class="rd-login-brand-id">
         {% if site_branding.logo %}
-          <span class="rd-login-plate"><img src="{{ site_branding.logo.url }}" alt="{% trans 'Site logo' %}" class="rd-login-logo"></span>
+          {% with dark_logo=site_branding.logo_dark_url %}
+            <img src="{{ dark_logo|default:site_branding.logo.url }}" alt="{% trans 'Site logo' %}" class="rd-login-logo">
+          {% endwith %}
         {% else %}
           <span class="rd-login-mark" aria-hidden="true">{{ site_name|slice:":1" }}</span>
         {% endif %}

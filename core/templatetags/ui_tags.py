@@ -3,6 +3,7 @@ from datetime import date
 
 from django import template
 from django.apps import apps
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.utils.translation import gettext, pgettext_lazy
 
@@ -16,6 +17,16 @@ _FAVICON_MIME = {
     ".ico": "image/x-icon",
     ".svg": "image/svg+xml",
 }
+
+
+@register.simple_tag
+def other_language(current) -> dict:
+    """The language the one-tap toggle switches to: the first entry of
+    ``settings.LANGUAGES`` that is not ``current`` (the project has two)."""
+    for code, name in settings.LANGUAGES:
+        if code != current:
+            return {"code": code, "name": name}
+    return {"code": current, "name": ""}
 
 
 @register.filter(name="image_mime_type")

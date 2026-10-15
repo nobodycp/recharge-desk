@@ -75,58 +75,8 @@
   border-radius: 999px;
 }
 
-.rd-login-lang {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: 2.375rem;
-  margin: 0;
-  padding-inline: 0.85rem 0.7rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 999px;
-  background: var(--rd-surface);
-  color: var(--rd-ink);
-  transition: background var(--rd-transition-fast);
-}
-
-.rd-login-lang:hover {
-  background: var(--rd-surface-2);
-}
-
-.rd-login-lang:has(select:focus-visible) {
-  outline: 2px solid var(--rd-ink);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
-}
-
-.rd-login-lang-icon {
-  width: 1.05rem;
-  height: 1.05rem;
-  flex: none;
-  color: var(--rd-muted);
-}
-
-.rd-login-lang-select {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 0;
-  outline: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.rd-login-lang-select option {
-  color: var(--rd-ink);
-  background: var(--rd-surface);
-}
-
 /* -------------------------------------------------------------------------- */
-/* Marks and logo plates                                                      */
+/* Marks and logos                                                            */
 /* -------------------------------------------------------------------------- */
 .rd-login-mark {
   position: relative;
@@ -171,17 +121,6 @@
   border-color: var(--bs-body-bg);
 }
 
-.rd-login-plate {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  min-height: 3.2rem;
-  padding: 0.4rem 0.65rem;
-  border-radius: 0.95rem;
-  background: var(--rd-hero-plate);
-}
-
 .rd-login-logo {
   display: block;
   max-width: 10rem;
@@ -191,18 +130,19 @@
   object-fit: contain;
 }
 
-.rd-login-plate--sm {
-  min-height: 2.35rem;
-  padding: 0.25rem 0.45rem;
-  border-radius: 0.7rem;
-  border: 1px solid var(--bs-border-color);
-}
-
 .rd-login-mini-logo {
   display: block;
   max-width: 6rem;
   max-height: 1.8rem;
   object-fit: contain;
+}
+
+/* The mini logo sits on the page background, so each theme shows its own copy
+   (original in light, dark copy in dark), no plate. Same pairing as the
+   management sidebar. */
+[data-bs-theme="dark"] .rd-login-mini-logo--light,
+:root:not([data-bs-theme="dark"]) .rd-login-mini-logo--dark {
+  display: none;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -910,26 +850,19 @@ html:not([lang="ar"]) .rd-login-title {
     display: none;
   }
 
-  .rd-login-top .rd-theme-btn,
-  .rd-login-top .rd-login-lang {
+  .rd-login-top .rd-theme-btn {
     border-color: color-mix(in srgb, var(--rd-hero-fg) 14%, transparent);
     background: color-mix(in srgb, var(--rd-hero-fg) 10%, transparent);
     color: var(--rd-hero-fg);
   }
 
-  .rd-login-top .rd-theme-btn:hover,
-  .rd-login-top .rd-login-lang:hover {
+  .rd-login-top .rd-theme-btn:hover {
     background: color-mix(in srgb, var(--rd-hero-fg) 16%, transparent);
     color: var(--rd-hero-fg);
   }
 
-  .rd-login-top .rd-login-lang-icon {
-    color: color-mix(in srgb, var(--rd-hero-fg) 70%, transparent);
-  }
-
   /* The mobile hero is ink in both themes: outline in its foreground. */
-  .rd-login-top .rd-theme-btn:focus-visible,
-  .rd-login-top .rd-login-lang:has(select:focus-visible) {
+  .rd-login-top .rd-theme-btn:focus-visible {
     outline: 2px solid var(--rd-hero-fg);
     outline-offset: 2px;
     box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-hero-fg) 18%, transparent);

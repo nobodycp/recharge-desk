@@ -48,7 +48,7 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (toasts, the employee balance hero); flip with the theme |
 | `--rd-on-danger` | `#ffffff` | `#0a0a0a` | text on red count chips |
 | `--rd-scrim` | `rgba(10,10,10,.32)` | `rgba(0,0,0,.6)` | drawer / modal dim |
-| `--rd-hero-bg` / `--rd-hero-fg` / `--rd-hero-plate` / `--rd-hero-success` | `#0a0a0a` / `#fff` / `#fff` / `#4ade80` | `#050505` / `#f5f5f2` / `#f5f5f2` / `#4ade80` | login brand panel: stays ink in both themes; the plate sits behind uploaded logos |
+| `--rd-hero-bg` / `--rd-hero-fg` / `--rd-hero-plate` / `--rd-hero-success` | `#0a0a0a` / `#fff` / `#fff` / `#4ade80` | `#050505` / `#f5f5f2` / `#f5f5f2` / `#4ade80` | login brand panel: stays ink in both themes; the plate is the letter-mark tile shown when no logo is uploaded (uploaded logos have no plate: the hero uses `logo_dark_url`) |
 | `--rd-warning-ink` | `var(--rd-warning)` | `#fcd34d` | warning *text* on a soft warning tint |
 | `--rd-info` / `--rd-info-soft` | `var(--rd-ink)` / `var(--rd-surface-2)` | same | info = neutral ink (Pearl has no blue) |
 | `--rd-tone-1` / `--rd-tone-2` / `--rd-tone-3` / `--rd-tone-4` / `--rd-tone-5` / `--rd-tone-6` | `#1d4ed8` / `#0f766e` / `#6d28d9` / `#be185d` / `#0e7490` / `#475569` | `#60a5fa` / `#2dd4bf` / `#a78bfa` / `#f472b6` / `#22d3ee` / `#94a3b8` | company identity only (letter marks, ranking bars); never green / red / orange, which mean status. ≥ 4.5:1 on `--rd-surface`. Picked with `rd_tone` (company id cycles) |
@@ -100,7 +100,7 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 
 ## Top Bar And Menus
 
-- The management top bar (`.rd-topbar`, sticky) holds the greeting, search, sales-entry CTA, bell and avatar menu. Language is an `AR | EN` segmented control (`.rd-lang-toggle` / `.rd-lang-toggle__btn`, same `set_language` form, no JS) inside the user menu; ≥ 3.45rem touch targets below 992 px.
+- The management top bar (`.rd-topbar`, sticky) holds the greeting, search, bell, theme button, language button, sales-entry CTA and avatar menu. Language is ONE button (`partials/lang_toggle.html`, `.rd-theme-btn.rd-lang-btn`, same `set_language` form with `hx-boost="false"`): it looks like the theme button and shows the language you switch TO (`EN` in Arabic, `AR` in English). The employee top bar carries the same two buttons (`.rd-employee-topbar__tools`); the login page has them in `.rd-login-controls`. The avatar menu only holds identity, Settings and Log out. Touch targets ≥ 3.45rem below 992 px.
 - Popovers (search results, bell, user menu) use `--rd-surface-raised` + `--rd-shadow-pop`. Below 576 px they become sheets: `position: absolute` anchored to the sticky bar (their wrappers are `position: static` there), 0.5rem side insets, `dvh` max-height with a bottom gap, one scroll box. Never depend on `backdrop-filter` for a containing block.
 
 ## Buttons

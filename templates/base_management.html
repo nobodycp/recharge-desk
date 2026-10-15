@@ -121,11 +121,13 @@
           </div>
           {% include "partials/nav_notifications.html" %}
           <div class="rd-topbar-cluster">
+            {% include "partials/theme_toggle.html" with variant="shell" %}
+            {% include "partials/lang_toggle.html" %}
             <a class="btn btn-primary rd-topbar-cta" href="{% url 'sales:employee_entry' %}" hx-boost="false">
               <svg class="rd-topbar-cta__plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               <span class="rd-topbar-cta__label">{% trans "Sales entry" %}</span>
             </a>
-            {% include "partials/user_menu.html" with variant="ava" prefs=True lang_id="rd-lang-mgmt" %}
+            {% include "partials/user_menu.html" with variant="ava" %}
           </div>
         </div>
       </header>

@@ -197,10 +197,10 @@ class FieldBorderTokenTests(SimpleTestCase):
             _rule_body(login, ".rd-login-icon"), r"color:\s*var\(--rd-muted\)"
         )
 
-    def test_login_lang_focus_only_for_keyboard(self):
+    def test_login_language_is_a_theme_button_not_a_select(self):
         login = (CSS_DIR / "login.css").read_text(encoding="utf-8")
-        self.assertNotIn(".rd-login-lang:focus-within", login)
-        self.assertIn(".rd-login-lang:has(select:focus-visible)", login)
+        self.assertNotIn(".rd-login-lang", login)
+        self.assertNotIn("-select", login)
 
 
 class LoginScriptTests(SimpleTestCase):

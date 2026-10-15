@@ -36,26 +36,6 @@
       </div>
     </div>
 
-    {% if prefs %}
-      <div class="rd-user-menu-prefs" role="group" aria-label="{% trans 'Settings' %}">
-        {% get_current_language as LANGUAGE_CODE %}
-        <form action="{% url 'set_language' %}" method="post" class="rd-user-menu-pref mb-0" id="{{ lang_id|default:'rd-lang-emp' }}" hx-boost="false">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <span class="rd-user-menu-pref__label" id="{{ lang_id|default:'rd-lang-emp' }}-label">{% trans "Language" %}</span>
-          <div class="rd-lang-toggle" role="group" aria-labelledby="{{ lang_id|default:'rd-lang-emp' }}-label" dir="ltr">
-            <button type="submit" name="language" value="ar" lang="ar" aria-label="العربية" class="rd-lang-toggle__btn{% if LANGUAGE_CODE == 'ar' %} is-active{% endif %}" aria-pressed="{% if LANGUAGE_CODE == 'ar' %}true{% else %}false{% endif %}">AR</button>
-            <button type="submit" name="language" value="en" lang="en" aria-label="English" class="rd-lang-toggle__btn{% if LANGUAGE_CODE == 'en' %} is-active{% endif %}" aria-pressed="{% if LANGUAGE_CODE == 'en' %}true{% else %}false{% endif %}">EN</button>
-          </div>
-        </form>
-        <div class="rd-user-menu-pref">
-          <span class="rd-user-menu-pref__label">{% trans "Theme" %}</span>
-          {% include "partials/theme_toggle.html" with variant="shell" %}
-        </div>
-      </div>
-      <div class="rd-user-menu-divider" aria-hidden="true"></div>
-    {% endif %}
-
     <a class="rd-user-menu-item" href="{% url 'accounts:account_settings' %}" role="menuitem">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="3"/>

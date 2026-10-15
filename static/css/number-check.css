@@ -50,17 +50,42 @@
   border-radius: 1.2rem;
 }
 
-/* Number field: the entry's in-input label field (employee.css) with the same
-   value typography; employee.css scopes the value rules to the sale form. */
-.rd-ncheck-form .rd-entry-field .form-control {
+/* "Phone number": small label above the row. */
+.rd-ncheck-label {
+  margin: 0;
+  padding-inline: 0.25rem;
+  color: var(--rd-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* One row: phone field (10 digits wide, paste attached) · Refresh · Check.
+   Below ~360px the two buttons may wrap to a second line. */
+.rd-ncheck-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+/* The entry field (employee.css) without its in-field label: a single row. */
+.rd-ncheck-row .rd-entry-field {
+  flex: 0 0 auto;
+  grid-template-rows: auto;
+  max-inline-size: 100%;
+}
+
+/* Sized for 10 digits (ch + the 0.04em letter-spacing) plus the side padding. */
+.rd-ncheck-row .rd-entry-field .form-control {
   grid-column: 1;
-  grid-row: 2;
-  align-self: start;
-  width: 100%;
+  grid-row: 1;
+  align-self: center;
+  inline-size: calc(10ch + 0.4em + 1.6rem);
   min-width: 0;
   height: auto;
   min-height: 0;
-  padding: 0.05rem 0.8rem 0.2rem;
+  padding: 0.2rem 0.8rem;
   color: var(--rd-ink);
   background: transparent;
   background-image: none;
@@ -72,32 +97,32 @@
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   direction: ltr;
   text-align: start;
 }
 
-[dir="rtl"] .rd-ncheck-form .rd-entry-field .form-control { text-align: end; }
+[dir="rtl"] .rd-ncheck-row .rd-entry-field .form-control { text-align: end; }
 
-.rd-ncheck-form .rd-entry-field .form-control:focus {
+.rd-ncheck-row .rd-entry-field .form-control:focus {
   background: transparent;
   box-shadow: none;
 }
 
-.rd-ncheck-form .rd-entry-field .form-control::placeholder {
+.rd-ncheck-row .rd-entry-field .form-control::placeholder {
   color: var(--rd-faint);
   font-weight: 500;
   letter-spacing: 0.04em;
 }
 
-/* Refresh (ink) and check (outline) side by side. */
-.rd-ncheck-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+.rd-ncheck-row .rd-entry-field .employee-clipboard-paste-btn {
+  grid-row: 1;
 }
 
-.rd-ncheck-actions .btn {
+/* Refresh (ink) and Check (outline) share what is left of the line. */
+.rd-ncheck-row .btn {
   display: inline-flex;
+  flex: 1 1 4.5rem;
   align-items: center;
   justify-content: center;
   min-height: 3.45rem;
@@ -107,6 +132,13 @@
   font-weight: 600;
   line-height: 1.25;
   white-space: normal;
+}
+
+/* The paste button is part of the field, not one of the row's buttons. */
+.rd-ncheck-row .rd-entry-field .btn {
+  flex: none;
+  border-radius: 0;
+  font-size: 0.78rem;
 }
 
 /* Refresh result: a flat section of the form card (the element also carries

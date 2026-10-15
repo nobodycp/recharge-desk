@@ -103,16 +103,10 @@ class ManagementShellTests(TestCase):
         self.assertIn("data-rd-search-toggle", html)
         self.assertIn("data-rd-search-panel", html)
         self.assertIn("rd-search-toggle__placeholder", html)
-        # R1: language + theme live inside the user-menu panel (see ManagementTopbarTests).
+        # Theme + language sit in the top bar itself (see core/tests_owner_ui.py).
         self.assertIn(f'action="{reverse("set_language")}"', html)
-        self.assertIn('id="rd-lang-mgmt"', html)
         self.assertIn('name="language" value="ar"', html)
-        self.assertIn('name="language" value="en"', html)
         self.assertIn("data-app-theme-toggle", html)
-        panel = re.search(r'<div class="rd-user-menu-panel" role="menu">.*?</details>', html, re.S)
-        self.assertIsNotNone(panel, "user menu panel missing")
-        self.assertIn('id="rd-lang-mgmt"', panel.group(0))
-        self.assertIn("data-app-theme-toggle", panel.group(0))
         self.assertIn(f'href="{reverse("sales:employee_entry")}"', html)
         self.assertIn("rd-user-menu-trigger", html)
 
@@ -191,21 +185,16 @@ class EmployeeShellTests(TestCase):
         ):
             self.assertIn(decl, body)
 
-    def test_prefs_inside_user_menu(self):
+    def test_prefs_are_in_the_bar_not_the_user_menu(self):
         header = self._header(self._page())
         start = header.index('class="rd-user-menu-panel"')
         end = header.index("</details>", start)
         panel = header[start:end]
         outside = header[:start] + header[end:]
-        for marker in ('id="rd-lang-emp"', "data-app-theme-toggle"):
-            self.assertIn(marker, panel)
-            self.assertNotIn(marker, outside)
-
-    def test_prefs_are_a_labelled_group_inside_the_menu(self):
-        header = self._header(self._page("en"))
-        self.assertIn('<div class="rd-user-menu-prefs" role="group" aria-label="Settings">', header)
-        ar = self._header(self._page("ar"))
-        self.assertIn('class="rd-user-menu-prefs" role="group" aria-label="الإعدادات"', ar)
+        for marker in ('name="language"', "data-app-theme-toggle"):
+            self.assertIn(marker, outside)
+            self.assertNotIn(marker, panel)
+        self.assertNotIn("rd-user-menu-prefs", header)
 
     def test_number_check_topbar_title_is_translated(self):
         self.addCleanup(translation.deactivate)
@@ -444,60 +433,23 @@ class ManagementTopbarTests(TestCase):
         self.assertIsNotNone(match, "management top bar missing")
         return match.group(0)
 
-    def test_prefs_inside_management_user_menu(self):
+    def test_prefs_are_in_the_bar_not_the_management_user_menu(self):
         header = self._header()
-        start = header.index('class="rd-user-menu-panel" role="menu"')
+        start = header.index('class="rd-user-menu-panel" role="menu"', header.index("rd-user-menu--ava"))
         end = header.index("</details>", start)
         panel = header[start:end]
         outside = header[:start] + header[end:]
-        for marker in ('id="rd-lang-mgmt"', "data-app-theme-toggle"):
-            self.assertIn(marker, panel)
-            self.assertNotIn(marker, outside)
-        self.assertIn('<div class="rd-user-menu-prefs" role="group" aria-label="Settings">', panel)
-        self.assertIn(f'action="{reverse("set_language")}"', panel)
-        self.assertIn('name="next"', panel)
-        self.assertNotIn("onchange", panel)
-        self.assertNotIn("<select", panel)
-        self.assertIn('hx-boost="false"', panel)
-        self.assertIn("csrfmiddlewaretoken", panel)
-
-    def test_language_toggle_is_an_ar_en_segmented_control(self):
-        for lang, pressed in (("en", "en"), ("ar", "ar")):
-            with self.subTest(lang=lang):
-                header = self._header(lang)
-                form = re.search(r'<form[^>]*id="rd-lang-mgmt".*?</form>', header, re.S).group(0)
-                self.assertIn(f'action="{reverse("set_language")}"', form)
-                self.assertIn('hx-boost="false"', form)
-                self.assertIn('name="next"', form)
-                group = re.search(r'<div class="rd-lang-toggle"[^>]*>', form).group(0)
-                self.assertIn('role="group"', group)
-                self.assertIn('dir="ltr"', group)
-                self.assertIn("aria-labelledby", group)
-                buttons = re.findall(r"<button[^>]*>[^<]*</button>", form)
-                self.assertEqual(len(buttons), 2)
-                self.assertLess(form.index('value="ar"'), form.index('value="en"'))
-                for button, (code, text, name) in zip(
-                    buttons, (("ar", "AR", "العربية"), ("en", "EN", "English"))
-                ):
-                    self.assertIn('type="submit"', button)
-                    self.assertIn('name="language"', button)
-                    self.assertIn(f'value="{code}"', button)
-                    self.assertIn(f'lang="{code}"', button)
-                    self.assertIn(f'aria-label="{name}"', button)
-                    self.assertTrue(button.endswith(f">{text}</button>"), button)
-                    active = code == pressed
-                    self.assertIn(f'aria-pressed="{str(active).lower()}"', button)
-                    self.assertEqual("is-active" in button, active, button)
-
-    def test_language_toggle_css(self):
-        css = self._css()
-        active = "\n".join(_find_rules(css, ".rd-lang-toggle__btn.is-active"))
-        self.assertIn("background: var(--rd-primary-bg)", active)
-        self.assertIn("color: var(--rd-primary-fg)", active)
-        self.assertTrue(_find_rules(css, ".rd-lang-toggle__btn:focus-visible"))
-        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
-        heights = [float(v) for v in re.findall(r"min-height:\s*([\d.]+)rem", "\n".join(_find_rules(mobile, ".rd-lang-toggle__btn")))]
-        self.assertTrue(heights and max(heights) >= 3.45, heights)
+        for marker in ('name="language"', "data-app-theme-toggle"):
+            self.assertIn(marker, outside)
+            self.assertNotIn(marker, panel)
+        self.assertNotIn("rd-user-menu-prefs", header)
+        form = re.search(r"<form[^>]*rd-lang-form[^>]*>.*?</form>", header, re.S).group(0)
+        self.assertIn(f'action="{reverse("set_language")}"', form)
+        self.assertIn('hx-boost="false"', form)
+        self.assertIn('name="next"', form)
+        self.assertIn("csrfmiddlewaretoken", form)
+        self.assertNotIn("onchange", header)
+        self.assertNotIn("<select", header)
 
     def test_header_avatar_is_constrained(self):
         css = self._css()
@@ -605,16 +557,12 @@ class ManagementTopbarTests(TestCase):
         mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
         for sel in (
             ".rd-user-menu-panel .rd-user-menu-item",  # links, logout button, notification rows
-            ".rd-user-menu-pref .rd-theme-btn",
-            ".rd-lang-toggle__btn",
             ".rd-search-item",
             ".rd-search-more",
         ):
             with self.subTest(sel=sel):
                 joined = "\n".join(_find_rules(mobile, sel))
                 self.assertRegex(joined, r"min-height:\s*3\.45rem")
-        lang = "\n".join(_find_rules(mobile, ".rd-lang-toggle__btn"))
-        self.assertRegex(lang, r"min-width:\s*3\.45rem")
         item = "\n".join(_find_rules(mobile, ".rd-search-item"))
         self.assertIn("display: flex", item)
         self.assertIn("flex-direction: column", item)
@@ -623,7 +571,9 @@ class ManagementTopbarTests(TestCase):
         self.assertNotRegex(item, r"align-items:\s*(flex-)?start")
         more = "\n".join(_find_rules(mobile, ".rd-search-more"))
         self.assertIn("display: flex", more)
-        theme = "\n".join(_find_rules(mobile, ".rd-user-menu-pref .rd-theme-btn"))
+        # Theme + language buttons in the bar are touch targets too.
+        theme = "\n".join(_find_rules(mobile, ".rd-topbar .rd-theme-btn"))
+        self.assertRegex(theme, r"min-height:\s*3\.45rem")
         self.assertRegex(theme, r"min-width:\s*3\.45rem")
 
     def test_topbar_triggers_are_top_aligned_in_their_wrapper(self):

@@ -1121,8 +1121,7 @@ html[lang="ar"] .rd-hello__title {
   }
 }
 
-/* End (mockup C): search pill · bell · "Sales entry" · avatar. Language and
-   theme live inside the avatar menu. */
+/* End (mockup C): search pill · bell · theme · language · "Sales entry" · avatar. */
 .rd-topbar-meta {
   display: flex;
   align-items: center;
@@ -4683,85 +4682,35 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   opacity: 0.55;
 }
 
-/* Preferences inside the avatar menu (language + theme). Shared by the
- * management and employee shells. */
-.rd-user-menu-prefs {
-  display: grid;
-  gap: 0.1rem;
-  padding: 0.1rem 0.25rem;
-}
-
-.rd-user-menu-pref {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 3.45rem;
-  padding-inline: 0.45rem;
-}
-
-.rd-user-menu-pref__label {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--rd-muted);
-}
-
-/* AR | EN segmented control (same set_language form, no JS). */
-.rd-lang-toggle {
+/* Language toggle: the theme button's twin. Same box, border, hover and focus
+ * ring (it carries .rd-theme-btn); only the label differs. It shows the
+ * language you switch TO, in Latin caps. */
+.rd-lang-form {
   display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  padding: 0.2rem;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 999px;
-  background: var(--rd-surface-2);
+  margin: 0;
 }
 
-.rd-lang-toggle__btn {
-  min-width: 3rem;
-  min-height: 2.2rem;
-  padding: 0 0.7rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--rd-muted);
+.rd-lang-btn {
   font-family: var(--rd-font-num);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1;
-  cursor: pointer;
-  transition:
-    background var(--rd-transition-fast),
-    color var(--rd-transition-fast);
 }
 
-.rd-lang-toggle__btn:hover {
-  color: var(--rd-ink);
+.rd-lang-btn__label {
+  /* "EN"/"AR" never mirror or shape with the Arabic UI font. */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
-.rd-lang-toggle__btn.is-active {
-  background: var(--rd-primary-bg);
-  color: var(--rd-primary-fg);
-}
-
-.rd-lang-toggle__btn:focus-visible {
-  outline: 2px solid var(--rd-ink);
-  outline-offset: 2px;
-}
-
-
-.rd-user-menu-pref .rd-theme-btn {
-  position: relative;
+/* Top bar: same 2.6rem rounded square as the bell and avatar; 3.45rem on touch. */
+.rd-topbar .rd-theme-btn {
   width: 2.6rem;
   height: 2.6rem;
-}
-
-.rd-user-menu-pref .rd-theme-btn::after {
-  content: "";
-  position: absolute;
-  inset: -0.45rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -4853,23 +4802,14 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     min-height: 3.45rem;
   }
 
-  /* Touch targets inside the open menus (links, logout, theme, language). */
+  /* Touch targets inside the open menus (links, logout). */
   .rd-user-menu-panel .rd-user-menu-item {
     min-height: 3.45rem;
   }
 
-  .rd-user-menu-pref .rd-theme-btn {
+  .rd-topbar .rd-theme-btn {
     width: 3.45rem;
     height: 3.45rem;
-    min-width: 3.45rem;
-    min-height: 3.45rem;
-  }
-
-  .rd-user-menu-pref .rd-theme-btn::after {
-    inset: 0;
-  }
-
-  .rd-lang-toggle__btn {
     min-width: 3.45rem;
     min-height: 3.45rem;
   }

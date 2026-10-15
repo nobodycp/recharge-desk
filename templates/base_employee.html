@@ -20,12 +20,16 @@
   {% include "partials/toast_region.html" %}
   <header class="rd-employee-topbar">
     <div class="rd-employee-topbar__row">
-      {% include "partials/user_menu.html" with variant="ava" prefs=True %}
+      {% include "partials/user_menu.html" with variant="ava" %}
       <h1 class="rd-employee-title">
         {% block employee_header %}
           <span>{% trans "Sales entry" %}</span>
         {% endblock %}
       </h1>
+      <div class="rd-employee-topbar__tools">
+        {% include "partials/theme_toggle.html" with variant="shell" %}
+        {% include "partials/lang_toggle.html" %}
+      </div>
       {% if acting_employee %}
         <a
           class="rd-employee-wallet{% if acting_employee.current_balance < 0 %} is-neg{% elif acting_employee.current_balance > 0 %} is-pos{% endif %}"

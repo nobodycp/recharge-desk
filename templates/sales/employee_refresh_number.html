@@ -32,30 +32,31 @@
   data-msg-time-and="{{ _('and')|escapejs }}"
 >
   {% csrf_token %}
-  <div class="rd-entry-field">
-    <label class="rd-entry-field__label" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
-    <input
-      type="text"
-      class="form-control"
-      id="rd-refresh-phone-input"
-      inputmode="numeric"
-      autocomplete="off"
-      maxlength="10"
-      pattern="05[0123458][0-9]{7}"
-      placeholder="0501234567"
-      autofocus
-    >
-    <button
-      type="button"
-      class="btn btn-sm employee-clipboard-paste-btn"
-      data-paste-target="rd-refresh-phone-input"
-      aria-label="{% trans 'Paste from clipboard' %}"
-      data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
-    >{% trans "Paste" %}</button>
-  </div>
-  <div class="rd-ncheck-actions">
-    <button type="button" class="btn btn-primary" id="rd-refresh-submit">{% trans "Refresh number" %}</button>
-    <button type="button" class="btn btn-outline-secondary" id="rd-check-submit">{% trans "Check number" %}</button>
+  <label class="rd-ncheck-label" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
+  <div class="rd-ncheck-row">
+    <div class="rd-entry-field">
+      <input
+        type="text"
+        class="form-control tabular-nums"
+        id="rd-refresh-phone-input"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="10"
+        pattern="05[0123458][0-9]{7}"
+        placeholder="0501234567"
+        dir="ltr"
+        autofocus
+      >
+      <button
+        type="button"
+        class="btn btn-sm employee-clipboard-paste-btn"
+        data-paste-target="rd-refresh-phone-input"
+        aria-label="{% trans 'Paste from clipboard' %}"
+        data-paste-fail="{% trans 'Could not read clipboard. Allow paste permission or use Ctrl+V.' %}"
+      >{% trans "Paste" %}</button>
+    </div>
+    <button type="button" class="btn btn-primary" id="rd-refresh-submit">{% trans "Refresh" %}</button>
+    <button type="button" class="btn btn-outline-secondary" id="rd-check-submit">{% trans "Check" %}</button>
   </div>
   <div class="rd-card rd-refresh-result d-none" id="rd-refresh-result" role="status" aria-live="polite">
     <div class="rd-refresh-result__title" id="rd-refresh-result-title"></div>

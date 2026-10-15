@@ -6429,6 +6429,18 @@ msgstr "الوصول"
 msgid "@%(name)s"
 msgstr "@%(name)s"
 
+#: templates/partials/lang_toggle.html
+msgid "Switch to English"
+msgstr "التبديل إلى الإنجليزية"
+
+#: templates/partials/lang_toggle.html
+msgid "Switch to Arabic"
+msgstr "التبديل إلى العربية"
+
+#: templates/sales/employee_refresh_number.html
+msgid "Check"
+msgstr "فحص"
+
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."
 #~ msgstr "مبيعات ما زال المزوّد يشحنها احتفظت بالرقم القديم: %(count)s."

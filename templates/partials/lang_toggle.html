@@ -1,0 +1,19 @@
+{% load i18n ui_tags %}
+{% comment %}
+One-tap language switch. Looks like the theme button (.rd-theme-btn) and shows
+the language you switch TO (EN while the UI is Arabic, AR while English).
+A full navigation (hx-boost="false"): set_language redirects and the document
+direction changes. No arguments.
+{% endcomment %}
+{% get_current_language as current_language %}
+{% other_language current_language as other %}
+<form action="{% url 'set_language' %}" method="post" class="rd-lang-form" hx-boost="false">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <button
+    type="submit"
+    name="language" value="{{ other.code }}"
+    class="rd-theme-btn rd-lang-btn"
+    {% if other.code == "en" %}aria-label="{% trans 'Switch to English' %}" title="{% trans 'Switch to English' %}"{% else %}aria-label="{% trans 'Switch to Arabic' %}" title="{% trans 'Switch to Arabic' %}"{% endif %}
+  ><span class="rd-lang-btn__label" lang="{{ other.code }}" aria-hidden="true">{{ other.code|upper }}</span></button>
+</form>

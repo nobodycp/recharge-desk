@@ -40,7 +40,7 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* Top bar: avatar menu · title · wallet chip                                 */
+/* Top bar: avatar menu · title · theme + language · wallet chip               */
 /* -------------------------------------------------------------------------- */
 .rd-employee-topbar {
   position: sticky;
@@ -89,6 +89,38 @@
   inset-inline-start: 0;
   inset-inline-end: auto;
   width: 17rem;
+}
+
+/* Theme + language buttons: the 2.3rem circle of the avatar so the bar keeps its
+   height; the ::after grows each tap area to 3.45 x 3.5rem (the 1rem gap keeps
+   the two areas from overlapping). They sit before the wallet chip, which keeps
+   the inline end. */
+.rd-employee-topbar__tools {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 1rem;
+  margin-inline-start: auto;
+}
+
+.rd-employee-topbar__tools .rd-theme-btn {
+  position: relative;
+  width: 2.3rem;
+  height: 2.3rem;
+  min-width: 2.3rem;
+  min-height: 2.3rem;
+  border-radius: 0.75rem;
+}
+
+.rd-employee-topbar__tools .rd-theme-btn::after {
+  content: "";
+  position: absolute;
+  inset: -0.6rem -0.575rem;
+}
+
+/* The extra 0.4rem keeps the wallet's tap area off the language button's. */
+.rd-employee-topbar__tools + .rd-employee-wallet {
+  margin-inline-start: 0.4rem;
 }
 
 /* An <h1> (the page's only heading): reset Bootstrap's heading margin, colour and

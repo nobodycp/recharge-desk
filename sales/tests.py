@@ -1683,10 +1683,10 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertContains(resp, "فحص الأرقام")
         # Refresh button keeps its id and behaviour, only the label changes.
         self.assertContains(resp, 'id="rd-refresh-submit"')
-        self.assertContains(resp, "تحديث الرقم")
+        self.assertRegex(resp.content.decode(), r'id="rd-refresh-submit"[^>]*>\s*تحديث\s*</button>')
         self.assertContains(resp, 'id="rd-check-submit"')
         self.assertNotContains(resp, "btn-outline-primary")
-        self.assertContains(resp, "فحص الرقم")
+        self.assertRegex(resp.content.decode(), r'id="rd-check-submit"[^>]*>\s*فحص\s*</button>')
         self.assertContains(resp, 'id="rd-check-result"')
         self.assertContains(
             resp, 'data-check-url="%s"' % reverse("sales:employee_check_phone")
