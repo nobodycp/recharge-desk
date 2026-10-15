@@ -679,3 +679,62 @@ class ManagementTopbarTests(TestCase):
 
     def test_topbar_has_no_raw_hex(self):
         self.assertFalse(re.search(r"#[0-9a-fA-F]{3,8}\b", "\n".join(_find_rules(self._css(), ".rd-topbar"))))
+
+
+class CatalogNavHighlightTests(TestCase):
+    """Catalog sidebar: Companies vs Products highlighting follows the url name."""
+
+    def _nav(self, url_name):
+        from django.template.loader import render_to_string
+        from django.test import RequestFactory
+        from django.urls import ResolverMatch
+
+        request = RequestFactory().get("/")
+        request.resolver_match = ResolverMatch(lambda r: None, (), {}, url_name=url_name, namespaces=["companies"])
+        return render_to_string("partials/management_nav.html", {"request": request})
+
+    @staticmethod
+    def _is_active(html, href):
+        link = re.search(r'<a class="([^"]*)" href="%s"' % re.escape(href), html)
+        assert link, f"nav link {href} missing"
+        return "is-active" in link.group(1).split()
+
+    def test_reconcile_and_connection_pages_highlight_companies(self):
+        companies = reverse("companies:company_list")
+        products = reverse("companies:product_list")
+        for name in (
+            "layan_reconcile",
+            "sky_reconcile",
+            "company_connection_system",
+            "company_connection_services",
+            "company_detail",
+            "company_edit",
+        ):
+            with self.subTest(url_name=name):
+                html = self._nav(name)
+                self.assertTrue(self._is_active(html, companies))
+                self.assertFalse(self._is_active(html, products))
+
+    def test_product_pages_highlight_products(self):
+        companies = reverse("companies:company_list")
+        products = reverse("companies:product_list")
+        for name in (
+            "product_list",
+            "product_line_create",
+            "product_line_edit",
+            "product_variant_create",
+            "product_variant_edit",
+        ):
+            with self.subTest(url_name=name):
+                html = self._nav(name)
+                self.assertTrue(self._is_active(html, products))
+                self.assertFalse(self._is_active(html, companies))
+
+    def test_dead_templates_are_gone(self):
+        for rel in (
+            "templates/reports/company_report.html",
+            "templates/companies/partials/layan_reconcile_table.html",
+            "templates/companies/partials/layan_reconcile_settlements.html",
+        ):
+            with self.subTest(path=rel):
+                self.assertFalse((settings.BASE_DIR / rel).exists())

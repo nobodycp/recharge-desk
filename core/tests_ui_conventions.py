@@ -45,11 +45,9 @@ _BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
 BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
 TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 
-LEGACY_BADGES = {  # 8 files
+LEGACY_BADGES = {  # 6 files
     "templates/companies/layan_reconcile.html",
     "templates/companies/partials/layan_reconcile_review_table.html",
-    "templates/companies/partials/layan_reconcile_settlements.html",
-    "templates/companies/partials/layan_reconcile_table.html",
     "templates/companies/partials/sky_reconcile_table.html",
     "templates/companies/product_list.html",
     "templates/companies/sky_reconcile.html",
@@ -86,7 +84,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 54 files
+LEGACY_PAGE_HEAD = {  # 53 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -118,7 +116,6 @@ LEGACY_PAGE_HEAD = {  # 54 files
     "templates/inventory/main_stock.html",
     "templates/inventory/movements.html",
     "templates/inventory/overview.html",
-    "templates/reports/company_report.html",
     "templates/reports/dashboard.html",
     "templates/reports/employee_report.html",
     "templates/reports/phone_lines_report.html",
@@ -142,7 +139,7 @@ LEGACY_PAGE_HEAD = {  # 54 files
     "templates/sms_gateway/reports.html",
     "templates/sms_gateway/settings_index.html",
 }
-LEGACY_APP_CARD = {  # 13 files
+LEGACY_APP_CARD = {  # 11 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
@@ -150,14 +147,12 @@ LEGACY_APP_CARD = {  # 13 files
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/companies/company_form.html",
     "templates/companies/layan_reconcile.html",
-    "templates/companies/partials/layan_reconcile_settlements.html",
-    "templates/companies/partials/layan_reconcile_table.html",
     "templates/companies/product_line_form.html",
     "templates/companies/product_variant_form.html",
     "templates/companies/sky_reconcile.html",
     "templates/sales/payment_method_form.html",
 }
-LEGACY_LABEL_TAG = {  # 24 files
+LEGACY_LABEL_TAG = {  # 23 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -173,7 +168,6 @@ LEGACY_LABEL_TAG = {  # 24 files
     "templates/customers/customer_detail.html",
     "templates/customers/customer_form.html",
     "templates/inventory/cards.html",
-    "templates/reports/company_report.html",
     "templates/reports/phone_lines_report.html",
     "templates/reports/sales_report.html",
     "templates/reports/stale_phone_edit.html",

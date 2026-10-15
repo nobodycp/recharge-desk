@@ -110,11 +110,11 @@
     </button>
     <div class="rd-nav-group-panel">
       <div class="rd-nav-group-panel-inner">
-        <a class="rd-nav-link {% if ns == 'companies' %}{% if un == 'company_list' or un == 'company_create' or un == 'company_edit' or un == 'company_delete' or un == 'company_detail' %}is-active{% endif %}{% endif %}" href="{% url 'companies:company_list' %}">
+        <a class="rd-nav-link {% if ns == 'companies' and 'product' not in un %}is-active{% endif %}" href="{% url 'companies:company_list' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span>
           <span>{% trans "Companies" %}</span>
         </a>
-        <a class="rd-nav-link {% if ns == 'companies' %}{% if un != 'company_list' and un != 'company_create' and un != 'company_edit' and un != 'company_delete' %}is-active{% endif %}{% endif %}" href="{% url 'companies:product_list' %}">
+        <a class="rd-nav-link {% if ns == 'companies' and 'product' in un %}is-active{% endif %}" href="{% url 'companies:product_list' %}">
           <span class="rd-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
           <span>{% trans "Products" %}</span>
         </a>
