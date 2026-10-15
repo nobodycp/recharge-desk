@@ -7,6 +7,8 @@ from django.test import SimpleTestCase
 
 from providers.accounts import Credentials
 from providers.adapters.sky.client import (
+    LOGIN_CONNECT_TIMEOUT_SECONDS,
+    REPORT_READ_TIMEOUT_SECONDS,
     SkySalesClient,
     SkySalesError,
     SkySalesSession,
@@ -251,6 +253,7 @@ class SkySalesClientTests(SimpleTestCase):
         api.assert_called_once_with(
             "GetEot4RReportData",
             [22, 1550, "01/08/2026", "31/08/2026"],
+            timeout=(LOGIN_CONNECT_TIMEOUT_SECONDS, REPORT_READ_TIMEOUT_SECONDS),
         )
 
         client.session.eot_user_id = None

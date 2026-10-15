@@ -578,10 +578,11 @@ msgstr "تمت معالجة الكشف (%(rows)s صفاً)."
 msgid "Excel support is not installed (openpyxl). Contact your administrator."
 msgstr "دعم Excel غير مثبّت (openpyxl). تواصل مع مسؤول النظام."
 
-#: companies/views.py:134
-#, python-format
-msgid "Could not read the report: %(error)s"
-msgstr "تعذّر قراءة الكشف: %(error)s"
+#: companies/views.py
+msgid ""
+"Could not read the file. Make sure it is the Layan charges report exported as "
+"Excel (.xlsx)."
+msgstr "تعذّرت قراءة الملف. تأكد أنه تقرير شحنات ليان بصيغة Excel ‏(.xlsx)."
 
 #: companies/views.py:144 templates/companies/company_detail.html:12
 #: templates/companies/layan_reconcile.html:6
@@ -595,14 +596,29 @@ msgstr "مطابقة كشف سكاي متاحة لشركة سكاي فقط."
 #, python-format
 msgid "Sky report processed (%(rows)s rows)."
 msgstr "تمت معالجة تقرير سكاي (%(rows)s صف)."
-#: companies/views.py:183
+#: companies/views.py
+msgid ""
+"Sky took too long to answer. Try a shorter period or run it again in a minute."
+msgstr "سكاي تأخّر بالرد. جرّب فترة أقصر أو أعد المحاولة بعد دقيقة."
+
+#: companies/views.py
+msgid ""
+"Could not sign in to Sky. Check the connection settings on the company page."
+msgstr "تعذّر تسجيل الدخول إلى سكاي. افحص إعدادات الربط من صفحة الشركة."
+
+#: companies/views.py
+msgid "Could not reach Sky. Check the internet connection and try again."
+msgstr "تعذّر الوصول إلى سكاي. افحص الاتصال بالإنترنت وحاول مرة أخرى."
+
+#: companies/views.py
 #, python-format
-msgid "Could not fetch Sky report: %(error)s"
-msgstr "تعذّر جلب تقرير سكاي: %(error)s"
-#: companies/views.py:188
-#, python-format
-msgid "Could not run Sky matching: %(error)s"
-msgstr "تعذّر تشغيل مطابقة سكاي: %(error)s"
+msgid "Sky refused the request: %(error)s"
+msgstr "رفض سكاي الطلب: %(error)s"
+
+#: companies/views.py
+msgid "Matching failed unexpectedly. The details were saved in the server log."
+msgstr "فشلت المطابقة بشكل غير متوقع. تم حفظ التفاصيل في سجل الخادم."
+
 #: companies/views.py:198 templates/companies/company_detail.html:15
 #: templates/companies/sky_reconcile.html:6
 msgid "Sky report matching"

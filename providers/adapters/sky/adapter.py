@@ -48,6 +48,8 @@ def _sky_errors() -> Iterator[None]:
         yield
     except SkySalesSessionError as exc:
         raise AuthRequired("session_expired") from exc
+    except requests.Timeout as exc:
+        raise TransientError("timeout") from exc
     except requests.RequestException as exc:
         raise TransientError("connection_error") from exc
     except SkySalesError as exc:

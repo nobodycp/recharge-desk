@@ -1,3 +1,4 @@
+import logging
 from itertools import groupby
 
 from django.apps import apps
@@ -19,16 +20,22 @@ from companies.forms import (
 from companies.models import Company, Product, ProductLine
 from companies.query_utils import apply_company_list_ordering
 from core.pagination import paginate_request
+from providers import operations as provider_operations
 from providers import service as provider_service
 from providers.contracts import (
     RECONCILE_NOT_SUPPORTED,
+    AuthRequired,
     Capability,
     PermanentError,
-    ProviderError,
+    TransientError,
 )
 from companies import connection
 from companies.statement import render_company_statement
 from sales.services import initialize_company_opening_balance
+
+log = logging.getLogger(__name__)
+
+_SKY_TIMEOUT_CODES = frozenset({"timeout", "sync_budget_exceeded"})
 
 
 def _has_sales_subquery(field_name: str):
@@ -181,9 +188,13 @@ def layan_reconcile(request, pk):
                     request, _("Layan report matching is only available for Layan.")
                 )
                 return redirect("companies:company_detail", pk=pk)
+            log.exception("Layan report matching failed for company %s", company.pk)
             messages.error(
                 request,
-                _("Could not read the report: %(error)s") % {"error": exc},
+                _(
+                    "Could not read the file. Make sure it is the Layan charges "
+                    "report exported as Excel (.xlsx)."
+                ),
             )
 
     return render(
@@ -195,6 +206,35 @@ def layan_reconcile(request, pk):
             "result": result,
             "title": _("Layan report matching"),
         },
+    )
+
+
+def _sky_error_message(company, exc: Exception):
+    """Plain-language text for a failed Sky run; unexpected errors go to the log."""
+    code = str(exc)
+    if isinstance(exc, TransientError) and code in _SKY_TIMEOUT_CODES:
+        return _(
+            "Sky took too long to answer. Try a shorter period or run it again "
+            "in a minute."
+        )
+    if isinstance(exc, (AuthRequired, TransientError, PermanentError)):
+        if (
+            isinstance(exc, AuthRequired)
+            or provider_operations.classify_exception("reconcile", exc).error_code
+            == "login_failed"
+        ):
+            return _(
+                "Could not sign in to Sky. Check the connection settings on the "
+                "company page."
+            )
+        if isinstance(exc, TransientError):
+            return _(
+                "Could not reach Sky. Check the internet connection and try again."
+            )
+        return _("Sky refused the request: %(error)s") % {"error": code}
+    log.exception("Sky report matching failed for company %s", company.pk)
+    return _(
+        "Matching failed unexpectedly. The details were saved in the server log."
     )
 
 
@@ -233,16 +273,7 @@ def sky_reconcile(request, pk):
             if isinstance(exc, PermanentError) and str(exc) == RECONCILE_NOT_SUPPORTED:
                 messages.error(request, _("Sky report matching is only available for Sky."))
                 return redirect("companies:company_detail", pk=pk)
-            if isinstance(exc, ProviderError):
-                messages.error(
-                    request,
-                    _("Could not fetch Sky report: %(error)s") % {"error": exc},
-                )
-            else:
-                messages.error(
-                    request,
-                    _("Could not run Sky matching: %(error)s") % {"error": exc},
-                )
+            messages.error(request, _sky_error_message(company, exc))
 
     return render(
         request,

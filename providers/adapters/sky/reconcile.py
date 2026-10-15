@@ -661,12 +661,12 @@ def reconcile_sky_report(
     total_rd_only = sum((r.rd_net for r in rd_only), Decimal("0"))
     total_other = sum((r.sky_net for r in logged_other_supplier), Decimal("0"))
 
-    # Actionable Sky-side deficit only (exclude settlements per product decision).
+    # Retained settlement amounts count toward the deficit, as for Layan.
     deficit_mismatch = sum(
         (r.gap for r in amount_mismatches if r.gap > 0),
         Decimal("0"),
     )
-    estimated_deficit = total_not + deficit_mismatch
+    estimated_deficit = total_not + deficit_mismatch + total_split
 
     balance_gap = Decimal("0")
     if sky_end is not None:

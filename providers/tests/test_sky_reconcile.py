@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+import requests
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -11,7 +12,13 @@ from accounts.models import UserProfile
 from companies.models import Company, Product, ProductLine
 from companies.views import _supports_reconcile
 from providers import service
-from providers.adapters.sky.adapter import SkyAdapter
+from providers.adapters.sky.adapter import SkyAdapter, _sky_errors
+from providers.adapters.sky.client import (
+    LOGIN_CONNECT_TIMEOUT_SECONDS,
+    REPORT_READ_TIMEOUT_SECONDS,
+    SkySalesClient,
+    SkySalesSession,
+)
 from providers.adapters.sky.reconcile import parse_sky_balance_rows, reconcile_sky_report
 from providers.contracts import AuthRequired, TransientError
 from providers.crypto import encrypt
@@ -88,7 +95,7 @@ class SkyReconcileParseTests(TestCase):
         )
         self.assertEqual(len(anomalies), 1)
 
-    def test_settlement_pair_excluded_from_deficit(self):
+    def test_settlement_pair_counts_in_deficit(self):
         company = Company.objects.create(
             name="Sky",
             opening_balance=0,
@@ -122,7 +129,116 @@ class SkyReconcileParseTests(TestCase):
         )
         self.assertEqual(len(result.split_settlements), 1)
         self.assertEqual(result.not_recorded, [])
-        self.assertEqual(result.estimated_deficit, Decimal("0"))
+        # charge 45, refund 40 => retained 5 counts toward the deficit.
+        self.assertEqual(result.estimated_deficit, Decimal("5"))
+
+
+class SkyTimeoutTests(TestCase):
+    def test_report_fetch_uses_bounded_read_timeout(self):
+        client = SkySalesClient()
+        client.session = SkySalesSession(jwt_token="t", eot_user_id=7)
+        with patch.object(
+            SkySalesClient, "_post", return_value={"result": "SUCCESS", "data": []}
+        ) as post:
+            client.fetch_balance_report(date(2026, 8, 1), date(2026, 8, 31))
+        self.assertEqual(
+            post.call_args.kwargs["timeout"],
+            (LOGIN_CONNECT_TIMEOUT_SECONDS, 40),
+        )
+        self.assertEqual(REPORT_READ_TIMEOUT_SECONDS, 40)
+
+    def test_post_default_timeout_unchanged(self):
+        client = SkySalesClient()
+        client.session = SkySalesSession(jwt_token="t")
+        response = Mock()
+        response.json.return_value = {"result": "SUCCESS"}
+        client.http = Mock()
+        client.http.post.return_value = response
+        client._post("/x", {})
+        self.assertEqual(
+            client.http.post.call_args.kwargs["timeout"], client._request_timeout()
+        )
+        client._post("/x", {}, timeout=(5, 40))
+        self.assertEqual(client.http.post.call_args.kwargs["timeout"], (5, 40))
+
+    def test_timeout_maps_to_timeout_code(self):
+        with self.assertRaises(TransientError) as ctx:
+            with _sky_errors():
+                raise requests.ReadTimeout()
+        self.assertEqual(str(ctx.exception), "timeout")
+        with self.assertRaises(TransientError) as ctx:
+            with _sky_errors():
+                raise requests.ConnectionError()
+        self.assertEqual(str(ctx.exception), "connection_error")
+
+    def test_deficit_includes_settlements_and_positive_mismatch(self):
+        company = Company.objects.create(
+            name="Sky", opening_balance=0, current_balance=0, provider_key="sky"
+        )
+        line = ProductLine.objects.create(company=company, name="L")
+        product = Product.objects.create(
+            line=line,
+            variant_label="C",
+            cost_price=Decimal("45"),
+            default_sell_price=Decimal("70"),
+        )
+        pm = PaymentMethod.objects.create(name="cash-deficit-test")
+        user = User.objects.create_user(username="deficitmgr", password="x")
+        sale = Sale.objects.create(
+            company=company,
+            product=product,
+            reference_number="0544444444",
+            payer_name="t",
+            payment_method=pm,
+            sell_price_actual=Decimal("70"),
+            cost_price_snapshot=Decimal("45"),
+            profit_snapshot=Decimal("25"),
+            loss_snapshot=Decimal("0"),
+            created_by=user,
+            status=Sale.Status.PAID,
+        )
+        sale.created_at = timezone.make_aware(datetime(2026, 8, 10, 12, 0))
+        sale.save(update_fields=["created_at"])
+        rows = [
+            # not recorded: gap 45
+            _row(phone="0566666666", delta="-45", before="100", after="55", cost="45"),
+            # mismatch: Sky 50 vs system 45 => gap +5
+            _row(
+                phone="0544444444",
+                delta="-50",
+                before="55",
+                after="5",
+                cost="50",
+                at="2026-08-10 13:00:00",
+            ),
+            # settlement: charge 45, refund 40 => retained 5
+            _row(
+                phone="0533333333",
+                delta="-45",
+                before="105",
+                after="60",
+                at="2026-08-05 10:00:00",
+            ),
+            _row(
+                phone="0533333333",
+                op="فصل",
+                delta="40",
+                before="60",
+                after="100",
+                cost="40",
+                at="2026-08-06 10:00:00",
+            ),
+        ]
+        result = reconcile_sky_report(
+            company,
+            rows,
+            period_from=date(2026, 8, 1),
+            period_to=date(2026, 8, 31),
+            min_amount_diff=Decimal("3"),
+        )
+        self.assertEqual(result.total_split_settlements, Decimal("5"))
+        self.assertEqual([r.gap for r in result.amount_mismatches], [Decimal("5")])
+        self.assertEqual(result.estimated_deficit, Decimal("55"))
 
 
 class SkyReconcileMatchTests(TestCase):
@@ -294,13 +410,19 @@ class SkyReconcileMatchTests(TestCase):
                 },
                 follow=True,
             )
-        self.assertContains(r, "login_failed")
         row = ProviderOperation.objects.get(service="reconcile")
         self.assertEqual((row.outcome, row.error_code), ("failed", "login_failed"))
         self.assertEqual(row.message, "فشل المطابقة — خطأ تسجيل الدخول")
         self.assertEqual(row.user_id, self.user.pk)
         msgs = [str(m) for m in r.context["messages"]]
-        self.assertTrue(any("Sky" in m and "login_failed" in m for m in msgs), msgs)
+        self.assertEqual(
+            msgs,
+            [
+                "Could not sign in to Sky. Check the connection settings on the "
+                "company page."
+            ],
+        )
+        self.assertNotContains(r, "login_failed")
 
 
 class _FakeSkyAdapter(SkyAdapter):

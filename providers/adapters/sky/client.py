@@ -35,6 +35,9 @@ LOGIN_DEADLINE_SECONDS = 100
 # starts if its five requests fit before the deadline at the read timeout each;
 # the deadline guard still caps the worst case.
 OTP_RETRY_REQUESTS = 5
+# The balance report runs inside a web request (gunicorn timeout 60 s): bound the
+# read so a slow Sky ends in a readable error instead of a gateway timeout.
+REPORT_READ_TIMEOUT_SECONDS = 40
 
 
 @dataclass
@@ -413,7 +416,13 @@ class SkySalesClient:
             self.session.jwt_token = token["jwtToken"]
             self.save_session()
 
-    def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _post(
+        self,
+        path: str,
+        payload: dict[str, Any],
+        *,
+        timeout: float | tuple[float, float] | None = None,
+    ) -> dict[str, Any]:
         body = dict(payload)
         if self.session.jwt_token:
             body["jwtToken"] = self.session.jwt_token
@@ -421,7 +430,11 @@ class SkySalesClient:
             body["sessionId"] = self.session.session_id
 
         url = f"{BASE}{path}"
-        resp = self.http.post(url, json=body, timeout=self._request_timeout())
+        resp = self.http.post(
+            url,
+            json=body,
+            timeout=self._request_timeout() if timeout is None else timeout,
+        )
         try:
             resp.raise_for_status()
         except requests.HTTPError as exc:
@@ -497,10 +510,17 @@ class SkySalesClient:
             return ""
         return str(self._first(rows[0], "SUB_CUSTOMER_ID", "sub_customer_id") or "")
 
-    def generic_api(self, api_name: str, wildcards: list[Any]) -> dict[str, Any]:
+    def generic_api(
+        self,
+        api_name: str,
+        wildcards: list[Any],
+        *,
+        timeout: float | tuple[float, float] | None = None,
+    ) -> dict[str, Any]:
         return self._post(
             "/ipa/apis/json/internal/generic/v2",
             {"apiName": api_name, "wildcards": wildcards},
+            timeout=timeout,
         )
 
     def fetch_balance_report(self, date_from: date, date_to: date) -> list[dict[str, Any]]:
@@ -512,6 +532,7 @@ class SkySalesClient:
         data = self.generic_api(
             "GetEot4RReportData",
             [22, self.session.eot_user_id, from_s, to_s],
+            timeout=(LOGIN_CONNECT_TIMEOUT_SECONDS, REPORT_READ_TIMEOUT_SECONDS),
         )
         if data.get("result") and str(data.get("result")).upper() not in (
             "SUCCESS",
