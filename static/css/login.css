@@ -93,7 +93,7 @@
   background: var(--rd-surface-2);
 }
 
-.rd-login-lang:focus-within {
+.rd-login-lang:has(select:focus-visible) {
   outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
   box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-ink) 7%, transparent);
@@ -278,7 +278,7 @@
   height: 3.75rem;
   padding: 0;
   padding-inline: 3.1rem 1rem;
-  border: 1px solid var(--bs-border-color);
+  border: 1px solid var(--rd-field-border);
   border-radius: 0.95rem;
   outline: 0;
   background: var(--lg-field-bg);
@@ -300,12 +300,14 @@
   box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
   -webkit-text-fill-color: var(--rd-ink);
   caret-color: var(--rd-ink);
+  animation: rd-login-autofill 0.01s;
 }
 
 .rd-login-input:autofill {
   box-shadow: 0 0 0 100rem var(--lg-field-bg) inset, var(--lg-ring);
   -webkit-text-fill-color: var(--rd-ink);
   caret-color: var(--rd-ink);
+  animation: rd-login-autofill 0.01s;
 }
 
 .rd-login-field--password .rd-login-input {
@@ -319,7 +321,7 @@
   justify-self: center;
   width: 1.3rem;
   height: 1.3rem;
-  color: var(--rd-faint);
+  color: var(--rd-muted);
   pointer-events: none;
   transition: color 0.2s ease;
 }
@@ -400,6 +402,13 @@
 
 .rd-login-field.is-invalid .rd-login-icon {
   color: var(--rd-danger);
+}
+
+/* Invisible: only its `animationstart` tells login.js a browser autofilled the
+   field without firing input/change. */
+@keyframes rd-login-autofill {
+  from { opacity: 1; }
+  to { opacity: 1; }
 }
 
 @keyframes rd-login-shake {
@@ -920,7 +929,7 @@ html:not([lang="ar"]) .rd-login-title {
 
   /* The mobile hero is ink in both themes: outline in its foreground. */
   .rd-login-top .rd-theme-btn:focus-visible,
-  .rd-login-top .rd-login-lang:focus-within {
+  .rd-login-top .rd-login-lang:has(select:focus-visible) {
     outline: 2px solid var(--rd-hero-fg);
     outline-offset: 2px;
     box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--rd-hero-fg) 18%, transparent);

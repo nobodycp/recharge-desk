@@ -105,6 +105,8 @@ html {
   --bs-secondary-bg: var(--rd-surface);
   --bs-tertiary-bg: var(--rd-surface-2);
   --bs-border-color: #ececea;
+  /* Field / control outline: >= 3:1 against --rd-surface (WCAG 1.4.11). */
+  --rd-field-border: #8a8a86;
   --bs-border-color-translucent: rgba(10, 10, 10, 0.08);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
@@ -203,6 +205,8 @@ html {
   --bs-secondary-bg: var(--rd-surface);
   --bs-tertiary-bg: var(--rd-surface-2);
   --bs-border-color: #2a2a27;
+  /* Field / control outline: >= 3:1 against --rd-surface (WCAG 1.4.11). */
+  --rd-field-border: #74746e;
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
@@ -2255,7 +2259,7 @@ a.rd-person__name:hover {
 .form-select {
   border-radius: 0.75rem;
   background-color: var(--rd-surface);
-  border-color: var(--bs-border-color);
+  border-color: var(--rd-field-border);
   color: var(--rd-ink);
   transition:
     border-color var(--rd-transition-fast),
@@ -2281,7 +2285,7 @@ a.rd-person__name:hover {
 
 .form-check-input {
   background-color: var(--rd-surface);
-  border-color: color-mix(in srgb, var(--rd-ink) 22%, transparent);
+  border-color: var(--rd-field-border);
 }
 
 .form-check-input:checked {
@@ -5799,6 +5803,14 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
 .page-link:focus-visible {
   outline: 2px solid var(--rd-ink);
   outline-offset: 2px;
+}
+
+/* Scroll / clip containers (overflow auto|hidden) would cut a 2px-offset outline:
+   draw it inside the button instead. */
+.table-responsive .btn:focus-visible,
+.rd-table-wrap .btn:focus-visible,
+.rd-card.overflow-hidden .btn:focus-visible {
+  outline-offset: -2px;
 }
 
 /* Tab items fill the rail height: draw the outline inside them. */

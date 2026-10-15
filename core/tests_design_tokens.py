@@ -91,3 +91,124 @@ class PearlTokenTests(SimpleTestCase):
             l.strip() for l in text.splitlines() if re.search(r"outline\s*:\s*(none|0)\b", l)
         ]
         self.assertEqual(offenders, [], "employee.css must not remove outlines")
+
+
+# --- Colour helpers (WCAG 2.x relative luminance / contrast ratio) -----------
+_HEX_COLOUR = re.compile(r"#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b")
+
+
+def _parse_colour(value):
+    """`#rgb`, `#rrggbb` or `rgb(r, g, b)` -> (r, g, b) ints."""
+    value = value.strip()
+    m = _HEX_COLOUR.fullmatch(value)
+    if m:
+        h = m.group(1)
+        if len(h) == 3:
+            h = "".join(c * 2 for c in h)
+        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+    m = re.fullmatch(r"rgb\(\s*(\d+)\s*[, ]\s*(\d+)\s*[, ]\s*(\d+)\s*\)", value)
+    if m:
+        return tuple(int(g) for g in m.groups())
+    raise AssertionError(f"unsupported colour: {value!r}")
+
+
+def _luminance(rgb):
+    def chan(c):
+        c = c / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = (chan(c) for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _contrast(a, b):
+    la, lb = sorted((_luminance(_parse_colour(a)), _luminance(_parse_colour(b))), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def _token(block, name):
+    m = re.search(rf"{re.escape(name)}:\s*([^;]+);", block)
+    if not m:
+        raise AssertionError(f"{name} not defined")
+    return m.group(1).strip()
+
+
+def _rules(css):
+    """Yield (selector-list, body) for every flat `selector { ... }` rule."""
+    for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+        selectors = re.sub(r"/\*.*?\*/", "", m.group(1), flags=re.S)
+        yield [s.strip() for s in selectors.split(",") if s.strip()], m.group(2)
+
+
+def _rule_body(css, selector):
+    """Body of the first rule whose selector list contains `selector` exactly."""
+    for selectors, body in _rules(css):
+        if selector in selectors:
+            return body
+    raise AssertionError(f"rule not found: {selector}")
+
+
+class FieldBorderTokenTests(SimpleTestCase):
+    THEMES = ('[data-bs-theme="light"]', '[data-bs-theme="dark"]')
+
+    def test_field_border_token_defined_in_both_themes(self):
+        for theme in self.THEMES:
+            self.assertIn("--rd-field-border:", _block(CSS, theme), theme)
+
+    def test_field_border_contrast(self):
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            border = _token(block, "--rd-field-border")
+            surface = _token(block, "--rd-surface")
+            ratio = _contrast(border, surface)
+            self.assertGreaterEqual(ratio, 3.0, f"{theme}: {border} on {surface} = {ratio:.2f}")
+
+    def test_fields_use_field_border(self):
+        employee = (CSS_DIR / "employee.css").read_text(encoding="utf-8")
+        login = (CSS_DIR / "login.css").read_text(encoding="utf-8")
+        for css, selector in (
+            (CSS, ".form-control"),
+            (CSS, ".form-select"),
+            (CSS, ".form-check-input"),
+            (employee, ".rd-entry-field"),
+            (employee, ".rd-pay-sub-notes__body .form-control"),
+            (login, ".rd-login-input"),
+        ):
+            body = _rule_body(css, selector)
+            self.assertRegex(
+                body,
+                r"border(-color)?:[^;]*var\(--rd-field-border\)",
+                f"{selector} must use --rd-field-border",
+            )
+
+    def test_focus_ring_not_clipped_in_scroll_containers(self):
+        wanted = {
+            ".table-responsive .btn:focus-visible",
+            ".rd-table-wrap .btn:focus-visible",
+            ".rd-card.overflow-hidden .btn:focus-visible",
+        }
+        for selector in wanted:
+            body = _rule_body(CSS, selector)
+            self.assertRegex(body, r"outline-offset:\s*-2px", selector)
+
+    def test_login_icon_uses_muted(self):
+        login = (CSS_DIR / "login.css").read_text(encoding="utf-8")
+        self.assertRegex(
+            _rule_body(login, ".rd-login-icon"), r"color:\s*var\(--rd-muted\)"
+        )
+
+    def test_login_lang_focus_only_for_keyboard(self):
+        login = (CSS_DIR / "login.css").read_text(encoding="utf-8")
+        self.assertNotIn(".rd-login-lang:focus-within", login)
+        self.assertIn(".rd-login-lang:has(select:focus-visible)", login)
+
+
+class LoginScriptTests(SimpleTestCase):
+    JS = (Path(settings.BASE_DIR) / "static" / "js" / "login.js").read_text(encoding="utf-8")
+
+    def test_live_region_reset_uses_animation_frame(self):
+        self.assertIn("requestAnimationFrame", self.JS)
+        self.assertNotRegex(self.JS, r"setTimeout\([^;]*,\s*50\s*\)")
+
+    def test_autofill_sync_hook(self):
+        self.assertIn("animationstart", self.JS)

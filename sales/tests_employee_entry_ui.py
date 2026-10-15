@@ -1444,8 +1444,8 @@ class EmployeeSecondaryCssTests(SimpleTestCase):
         self._assert_decl(".rd-stock-check .rd-entry-blk", "border: 0")
         self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-neg", "var(--rd-danger-on-ink)")
         self._assert_decl(".rd-balance-stats .rd-stat--hero .rd-stat-value.is-pos", "var(--rd-success-on-ink)")
-        # The field border is the entry page's own token; the edit page adds no override.
-        self._assert_decl(".rd-entry-field", "var(--bs-border-color)")
+        # The field border is the shared field-border token; the edit page adds no override.
+        self._assert_decl(".rd-entry-field", "var(--rd-field-border)")
         for sels, _body in _rules(self._section()):
             for s in sels:
                 self.assertFalse(s.endswith(".rd-entry-field") and "rd-sale-edit" in s, s)

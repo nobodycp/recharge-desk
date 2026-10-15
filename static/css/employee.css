@@ -640,7 +640,7 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   min-height: 3.45rem;
   overflow: hidden;
   background: var(--rd-surface);
-  border: 1.5px solid var(--bs-border-color);
+  border: 1.5px solid var(--rd-field-border);
   border-radius: 0.85rem;
 }
 
@@ -1607,7 +1607,7 @@ html:has(.rd-entry-dock) {
   padding: 0.6rem 0.8rem;
   color: var(--rd-ink);
   background: var(--rd-surface);
-  border: 1.5px solid var(--bs-border-color);
+  border: 1.5px solid var(--rd-field-border);
   border-radius: 0.85rem;
   box-shadow: none;
   font-size: 1rem;

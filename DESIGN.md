@@ -30,6 +30,7 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-surface` | `#ffffff` | `#151514` | cards, inputs, popovers |
 | `--rd-surface-2` | `#f4f4f2` | `#1f1f1d` | table headers, chips, skeletons, hover |
 | `--bs-border-color` | `#ececea` | `#2a2a27` | hairline borders |
+| `--rd-field-border` | `#8a8a86` | `#74746e` | borders of inputs, selects, checkboxes, entry fields (≥ 3:1 vs `--rd-surface`; hairline stays for cards/dividers) |
 | `--rd-ink` | `#0a0a0a` | `#f5f5f2` | text, primary fills, focus outline |
 | `--rd-muted` | `#6b6b68` | `#9a9a94` | secondary text (≥ 4.5:1) |
 | `--rd-faint` | `#a3a39e` | `#6b6b66` | placeholders, decorative marks only |

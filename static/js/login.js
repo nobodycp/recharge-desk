@@ -89,7 +89,14 @@
       });
       // Browser autofill fires `change` without `input` on some engines.
       f.input.addEventListener("change", function () { syncFilled(f); });
+      // ...and some fire neither: login.css runs an invisible animation on
+      // `:autofill`, whose start is the only signal.
+      f.input.addEventListener("animationstart", function (e) {
+        if (e.animationName === "rd-login-autofill") syncFilled(f);
+      });
     });
+    // Autofill applied before first paint with no event at all.
+    window.addEventListener("load", function () { fields.forEach(syncFilled); });
     syncTyping();
 
     // Re-render after a failed sign-in keeps the username: go straight to the password.
@@ -130,7 +137,7 @@
       var message = status.getAttribute("data-empty-message") || "";
       // Clear first so a repeated identical message is announced again.
       status.textContent = "";
-      window.setTimeout(function () { status.textContent = message; }, 50);
+      window.requestAnimationFrame(function () { status.textContent = message; });
     }
 
     function setLoading(on) {
