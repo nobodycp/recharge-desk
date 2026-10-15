@@ -309,7 +309,7 @@ class DesignDocTokenTests(SimpleTestCase):
         block = re.sub(r"/\*.*?\*/", "", block, flags=re.S)
         names = sorted(set(re.findall(r"(?m)^\s*(--rd-[\w-]+)\s*:", block)))
         self.assertTrue(names)
-        missing = [n for n in names if n not in doc]
+        missing = [n for n in names if not re.search(re.escape(n) + r"(?![\w-])", doc)]
         self.assertEqual(missing, [], "Add these --rd-* tokens to the DESIGN.md token table")
 
 

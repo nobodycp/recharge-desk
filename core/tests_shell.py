@@ -618,6 +618,9 @@ class ManagementTopbarTests(TestCase):
         item = "\n".join(_find_rules(mobile, ".rd-search-item"))
         self.assertIn("display: flex", item)
         self.assertIn("flex-direction: column", item)
+        # Labels are nowrap + ellipsis: they must stretch to the row width,
+        # or long names overflow the panel instead of truncating.
+        self.assertNotRegex(item, r"align-items:\s*(flex-)?start")
         more = "\n".join(_find_rules(mobile, ".rd-search-more"))
         self.assertIn("display: flex", more)
         theme = "\n".join(_find_rules(mobile, ".rd-user-menu-pref .rd-theme-btn"))

@@ -4825,7 +4825,6 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: flex-start;
     min-height: 3.45rem;
   }
 
