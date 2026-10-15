@@ -1,292 +1,37 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n kit static %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Sky report matching" %}</h1>
-    <p class="rd-text-muted mb-0">{{ company.name }}</p>
-  </div>
-  <a class="btn btn-outline-secondary" href="{% url 'companies:company_detail' company.pk %}">{% trans "Back to supplier" %}</a>
-</div>
+<div class="rd-page rd-rec">
+{% trans "Sky report matching" as page_title %}
+{% trans "Back to supplier" as back_label %}
+{% url 'companies:company_detail' company.pk as back_url %}
+{% rd_page_header page_title company.name back_url back_label %}{% end_rd_page_header %}
 
-<div class="app-card card sky-rec-run mb-3">
-  <div class="card-body py-3 px-3 px-md-4">
-    <form method="post" class="sky-rec-run__form">
-      {% csrf_token %}
-      <div class="sky-rec-run__field">
-        <label class="sky-rec-run__label" for="{{ form.period_from.id_for_label }}">{{ form.period_from.label }}</label>
-        {{ form.period_from }}
-        {{ form.period_from.errors }}
+<section class="rd-card rd-rec-run">
+  <form method="post" class="rd-rec-run__form">
+    {% csrf_token %}
+    {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
+    <div class="rd-rec-run__grid">
+      {% rd_field form.period_from %}
+      {% rd_field form.period_to %}
+      {% rd_field form.min_amount_diff %}
+    </div>
+    <div class="rd-rec-run__actions">
+      <button class="btn btn-primary" type="submit">{% trans "Run matching" %}</button>
+      <div class="rd-rec-running" role="status">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span>{% trans "Checking…" %}</span>
+        <span class="rd-rec-running__hint">{% trans "Sky can take up to a minute." %}</span>
       </div>
-      <div class="sky-rec-run__field">
-        <label class="sky-rec-run__label" for="{{ form.period_to.id_for_label }}">{{ form.period_to.label }}</label>
-        {{ form.period_to }}
-        {{ form.period_to.errors }}
-      </div>
-      <div class="sky-rec-run__field sky-rec-run__field--threshold">
-        <label class="sky-rec-run__label" for="{{ form.min_amount_diff.id_for_label }}">{{ form.min_amount_diff.label }}</label>
-        {{ form.min_amount_diff }}
-        {{ form.min_amount_diff.errors }}
-      </div>
-      <div class="sky-rec-run__cta">
-        <span class="sky-rec-run__label sky-rec-run__label--spacer" aria-hidden="true">&nbsp;</span>
-        <button class="btn btn-primary sky-rec-run__btn" type="submit">{% trans "Run matching" %}</button>
-      </div>
-    </form>
-    {% if form.min_amount_diff.help_text %}
-      <p class="sky-rec-run__hint mb-0">{{ form.min_amount_diff.help_text }}</p>
-    {% endif %}
-  </div>
-</div>
+    </div>
+  </form>
+</section>
 
 {% if result %}
-  <div class="row g-3 mb-3" id="sky-rec-priority">
-    <div class="col-md-3">
-      <button type="button" class="app-card card h-100 w-100 text-start border-danger-subtle" data-sky-panel="action">
-        <div class="card-body">
-          <div class="small text-danger">{% trans "1 · Review first" %}</div>
-          <div class="h4 mb-1">{{ result.action_count }}</div>
-          <div class="small text-secondary">
-            {% trans "Missing / wrong supplier" %}
-            · {{ result.action_total|floatformat:2 }}
-          </div>
-        </div>
-      </button>
-    </div>
-    <div class="col-md-3">
-      <button type="button" class="app-card card h-100 w-100 text-start border-warning-subtle" data-sky-panel="mismatch">
-        <div class="card-body">
-          <div class="small text-warning-emphasis">{% trans "2 · Cost differences" %}</div>
-          <div class="h4 mb-1">{{ result.mismatch_count }}</div>
-          <div class="small text-secondary">
-            {% trans "Sky vs system amount" %}
-            · {{ result.total_amount_mismatch|floatformat:2 }}
-          </div>
-        </div>
-      </button>
-    </div>
-    <div class="col-md-3">
-      <button type="button" class="app-card card h-100 w-100 text-start border-secondary-subtle" data-sky-panel="info">
-        <div class="card-body">
-          <div class="small text-secondary">{% trans "3 · Info only" %}</div>
-          <div class="h4 mb-1">{{ result.info_count }}</div>
-          <div class="small text-secondary">
-            {% trans "Settlements (not in deficit)" %}
-            · {{ result.total_split_settlements|floatformat:2 }}
-          </div>
-        </div>
-      </button>
-    </div>
-    <div class="col-md-3">
-      <div class="app-card card h-100">
-        <div class="card-body">
-          <div class="small text-secondary">{% trans "Estimated deficit" %}</div>
-          <div class="h4 mb-1 text-danger">{{ result.estimated_deficit|floatformat:2 }}</div>
-          <div class="small text-secondary">
-            {{ result.row_count|intcomma }} {% trans "Sky rows" %}
-            {% if result.period_from %}· {{ result.period_from }} → {{ result.period_to }}{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <ul class="nav nav-tabs rd-section-tabs mb-3" id="sky-rec-tabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" type="button" role="tab" data-sky-panel="action" aria-selected="true">
-        {% trans "Review first" %}
-        <span class="badge text-bg-danger ms-1">{{ result.action_count }}</span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" type="button" role="tab" data-sky-panel="mismatch" aria-selected="false">
-        {% trans "Cost differences" %}
-        <span class="badge text-bg-warning text-dark ms-1">{{ result.mismatch_count }}</span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" type="button" role="tab" data-sky-panel="info" aria-selected="false">
-        {% trans "Info only" %}
-        <span class="badge text-bg-secondary ms-1">{{ result.info_count }}</span>
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" type="button" role="tab" data-sky-panel="ok" aria-selected="false">
-        {% trans "Matched" %}
-        <span class="badge text-bg-success ms-1">{{ result.matched|length }}</span>
-      </button>
-    </li>
-  </ul>
-
-  <div id="sky-rec-panels">
-    <div class="sky-rec-panel" data-sky-panel-id="action">
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "In Sky, not in system" %}</strong>
-          <div class="small text-secondary fw-normal">{% trans "These usually need a sale recorded (or a correction)." %}</div>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.not_recorded %}
-        {% if result.total_not_recorded %}
-          <div class="card-footer small text-secondary">{% trans "Section total" %}: {{ result.total_not_recorded|floatformat:2 }}</div>
-        {% endif %}
-      </div>
-      {% if result.rd_only %}
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "In system, not in Sky" %}</strong>
-          <div class="small text-secondary fw-normal">{% trans "Sale exists locally but Sky report has no charge for this number in the period." %}</div>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.rd_only %}
-      </div>
-      {% endif %}
-      {% if result.logged_other_supplier %}
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "Logged under another supplier" %}</strong>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.logged_other_supplier %}
-      </div>
-      {% endif %}
-      {% if not result.action_count %}
-        <div class="app-card card"><div class="card-body text-secondary">{% trans "Nothing in the review-first queue." %}</div></div>
-      {% endif %}
-    </div>
-
-    <div class="sky-rec-panel d-none" data-sky-panel-id="mismatch">
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "Sales differences (Sky vs system)" %}</strong>
-          <div class="small text-secondary fw-normal">
-            {% trans "Open “Compare Sky vs system lines” on a row to see eSIM splits and package costs (like 75 vs 80)." %}
-          </div>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.amount_mismatches %}
-        {% if result.total_amount_mismatch %}
-          <div class="card-footer small text-secondary">{% trans "Absolute gap total" %}: {{ result.total_amount_mismatch|floatformat:2 }}</div>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="sky-rec-panel d-none" data-sky-panel-id="info">
-      <div class="alert alert-secondary small mb-3">
-        {% trans "Settlements are charge + disconnect cycles. They are shown so you do not treat them as missing sales, and they do not increase estimated deficit." %}
-      </div>
-      {% if result.split_settlements %}
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "Settlements on disconnected numbers" %}</strong>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.split_settlements %}
-      </div>
-      {% endif %}
-      {% if result.balance_anomalies %}
-      <div class="app-card card mb-3">
-        <div class="card-header">
-          <strong>{% trans "Balance anomalies" %}</strong>
-          <div class="small text-secondary fw-normal">{% trans "Sky rows where before + delta does not equal after." %}</div>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead>
-              <tr>
-                <th>{% trans "Number" %}</th>
-                <th>{% trans "When" %}</th>
-                <th>{% trans "Op" %}</th>
-                <th class="text-end">{% trans "Before" %}</th>
-                <th class="text-end">{% trans "Delta" %}</th>
-                <th class="text-end">{% trans "After" %}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for a in result.balance_anomalies %}
-              <tr>
-                <td class="font-monospace">{{ a.phone }}</td>
-                <td class="small">{{ a.at|default:"—" }}</td>
-                <td class="small">{{ a.op }}</td>
-                <td class="text-end">{{ a.before }}</td>
-                <td class="text-end">{{ a.delta }}</td>
-                <td class="text-end">{{ a.after }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% endif %}
-      {% if not result.info_count %}
-        <div class="app-card card"><div class="card-body text-secondary">{% trans "No informational items." %}</div></div>
-      {% endif %}
-    </div>
-
-    <div class="sky-rec-panel d-none" data-sky-panel-id="ok">
-      <div class="app-card card">
-        <div class="card-header">
-          <strong>{% trans "Matched numbers" %}</strong>
-          <div class="small text-secondary fw-normal">{% trans "Within the minimum difference — usually no action." %}</div>
-        </div>
-        {% include "companies/partials/sky_reconcile_table.html" with section_rows=result.matched %}
-      </div>
-    </div>
-  </div>
-
-  {% if result.sky_end_balance is not None %}
-  <p class="small text-secondary mt-3 mb-0">
-    {% trans "Balance vs report end" %}:
-    RD {{ result.rd_balance_end|floatformat:2 }}
-    · {% trans "Sky" %} {{ result.sky_end_balance|floatformat:2 }}
-    · {% trans "Gap" %}: {{ result.balance_gap|floatformat:2 }}
-  </p>
-  {% endif %}
-
-  <script>
-  (function () {
-    function showPanel(id) {
-      document.querySelectorAll("#sky-rec-panels .sky-rec-panel").forEach(function (el) {
-        el.classList.toggle("d-none", el.getAttribute("data-sky-panel-id") !== id);
-      });
-      document.querySelectorAll("#sky-rec-tabs [data-sky-panel]").forEach(function (btn) {
-        var on = btn.getAttribute("data-sky-panel") === id;
-        btn.classList.toggle("active", on);
-        btn.setAttribute("aria-selected", on ? "true" : "false");
-      });
-    }
-    document.querySelectorAll("[data-sky-panel]").forEach(function (el) {
-      el.addEventListener("click", function () {
-        showPanel(el.getAttribute("data-sky-panel"));
-      });
-    });
-  })();
-  </script>
+  {% include "companies/partials/reconcile_results.html" %}
+  <script src="{% static 'js/reconcile.js' %}{{ static_cache_query }}"></script>
 {% else %}
-  <div class="app-card card sky-rec-waiting">
-    <div class="card-body">
-      <p class="sky-rec-waiting__lead mb-3">
-        {% trans "Choose a period, then run matching. Live Sky charges are compared to sales in the system." %}
-      </p>
-      <ol class="sky-rec-waiting__steps list-unstyled mb-0">
-        <li class="sky-rec-waiting__step">
-          <span class="sky-rec-waiting__num">1</span>
-          <div>
-            <strong>{% trans "Set the date range" %}</strong>
-            <div class="small text-secondary">{% trans "From / to — the days you want to review." %}</div>
-          </div>
-        </li>
-        <li class="sky-rec-waiting__step">
-          <span class="sky-rec-waiting__num">2</span>
-          <div>
-            <strong>{% trans "Run matching" %}</strong>
-            <div class="small text-secondary">{% trans "Fetches the Sky balance report for that period." %}</div>
-          </div>
-        </li>
-        <li class="sky-rec-waiting__step">
-          <span class="sky-rec-waiting__num">3</span>
-          <div>
-            <strong>{% trans "Review red and amber first" %}</strong>
-            <div class="small text-secondary">{% trans "Open one tab at a time; each row explains the gap." %}</div>
-          </div>
-        </li>
-      </ol>
-    </div>
-  </div>
+  {% include "companies/partials/reconcile_waiting.html" %}
 {% endif %}
+</div>
 {% endblock %}

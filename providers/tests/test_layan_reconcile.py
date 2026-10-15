@@ -571,3 +571,63 @@ class LayanReconcileTests(TestCase):
         r = self.client.get(reverse("companies:layan_reconcile", args=[self.company.pk]))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Run matching")
+
+
+class LayanSupplierAliasTests(TestCase):
+    """Provider-neutral names the shared reconcile templates read."""
+
+    def test_row_and_result_expose_supplier_values(self):
+        from providers.adapters.layan.reconcile import (
+            LayanReconcileResult,
+            ReconcilePhoneRow,
+        )
+
+        row = ReconcilePhoneRow(
+            raw="0521234567",
+            phone="0521234567",
+            layan_net=Decimal("12.5"),
+            layan_charges=Decimal("12.5"),
+            layan_refunds=Decimal("0"),
+            rd_net=Decimal("0"),
+            gap=Decimal("12.5"),
+            category="not_recorded",
+            category_label="",
+            lines=[],
+        )
+        self.assertEqual(row.supplier_net, Decimal("12.5"))
+        result = LayanReconcileResult(
+            period_from=None,
+            period_to=None,
+            layan_end_balance=Decimal("7.25"),
+            layan_deposits=Decimal("0"),
+            layan_net_movement=Decimal("0"),
+            rd_deposits=Decimal("0"),
+            rd_deductions=Decimal("0"),
+            rd_adjustments=Decimal("0"),
+            rd_balance_end=Decimal("0"),
+            not_recorded=[],
+            split_settlements=[],
+            amount_mismatches=[],
+            matched=[],
+            rd_only=[],
+            logged_other_supplier=[],
+            total_not_recorded=Decimal("0"),
+            total_split_settlements=Decimal("0"),
+            total_amount_mismatch=Decimal("0"),
+            total_rd_only=Decimal("0"),
+            total_logged_other_supplier=Decimal("0"),
+            estimated_deficit=Decimal("0"),
+            balance_gap=Decimal("0"),
+            row_count=0,
+        )
+        self.assertEqual(result.supplier_end_balance, Decimal("7.25"))
+        self.assertEqual(result.missing_count, 0)
+        self.assertEqual(result.missing_total, Decimal("0"))
+        result.total_not_recorded = Decimal("41.25")
+        result.total_logged_other_supplier = Decimal("9.1")
+        result.not_recorded = [row]
+        result.logged_other_supplier = [row, row]
+        self.assertEqual(result.missing_count, 3)
+        self.assertEqual(result.missing_total, Decimal("50.35"))
+        result.layan_end_balance = None
+        self.assertIsNone(result.supplier_end_balance)

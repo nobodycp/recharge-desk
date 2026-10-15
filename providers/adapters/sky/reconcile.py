@@ -129,6 +129,11 @@ class SkyReconcilePhoneRow:
         return self.sky_net
 
     @property
+    def supplier_net(self) -> Decimal:
+        """Provider-neutral amount the shared reconcile templates read."""
+        return self.sky_net
+
+    @property
     def layan_charges(self) -> Decimal:
         return self.sky_charges
 
@@ -163,6 +168,20 @@ class SkyReconcileResult:
     row_count: int
     balance_gap: Decimal
     min_amount_diff: Decimal
+
+    @property
+    def supplier_end_balance(self) -> Decimal | None:
+        """Provider-neutral end balance the shared reconcile templates read."""
+        return self.sky_end_balance
+
+    @property
+    def missing_count(self) -> int:
+        """Numbers charged at the supplier with no sale under this supplier."""
+        return len(self.not_recorded) + len(self.logged_other_supplier)
+
+    @property
+    def missing_total(self) -> Decimal:
+        return self.total_not_recorded + self.total_logged_other_supplier
 
     @property
     def action_rows(self) -> list[SkyReconcilePhoneRow]:
@@ -342,8 +361,8 @@ def explain_sky_row(
     if category == "settlement":
         return str(
             _(
-                "Charge + disconnect settlement on Sky. Informational only — "
-                "not included in estimated deficit."
+                "Charge + disconnect settlement on Sky. Review retained amount; "
+                "it is included in estimated deficit."
             )
         )
     if category == "amount_mismatch":

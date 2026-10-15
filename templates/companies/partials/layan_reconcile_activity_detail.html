@@ -1,18 +1,19 @@
 {% load i18n %}
-<div class="small text-secondary mt-1 p-2 rounded bg-body-secondary">
-  <div class="fw-semibold text-body mb-2">{% trans "Layan report breakdown" %}</div>
+<div class="rd-rec-breakdown">
+  <h5 class="rd-rec-breakdown__title">{% trans "Layan report breakdown" %}</h5>
 
   {% if detail.cycles %}
-    <div class="mb-2">
-      <div class="text-body">{% trans "Settlement cycles (charge + refund)" %}</div>
-      <ul class="mb-0 ps-3">
+    <div class="rd-rec-breakdown__block">
+      <div class="rd-rec-breakdown__label">{% trans "Settlement cycles (charge + refund)" %}</div>
+      <ul class="rd-rec-lines">
         {% for c in detail.cycles %}
-          <li class="mb-1">
-            <span class="text-success">+{{ c.charge_amount|floatformat:2 }}</span>
-            <span class="text-danger">{{ c.refund_amount|floatformat:2 }}</span>
-            → <strong class="text-body">{{ c.retained|floatformat:2 }}</strong>
-            <span class="d-block">{{ c.charge_at|date:"d/m/Y H:i" }} — {{ c.refund_at|date:"d/m/Y H:i" }}</span>
-            <span class="d-block text-secondary">{{ c.charge_op }} / {{ c.refund_op }}</span>
+          <li>
+            <span class="rd-rec-pos tabular-nums" dir="ltr">+{{ c.charge_amount|floatformat:2 }}</span>
+            <span class="rd-rec-neg tabular-nums" dir="ltr">{{ c.refund_amount|floatformat:2 }}</span>
+            →
+            <strong class="rd-rec-ink tabular-nums" dir="ltr">{{ c.retained|floatformat:2 }}</strong>
+            <span class="rd-rec-when d-block tabular-nums">{{ c.charge_at|date:"d/m/Y H:i" }} — {{ c.refund_at|date:"d/m/Y H:i" }}</span>
+            <span class="rd-rec-what d-block">{{ c.charge_op }} / {{ c.refund_op }}</span>
           </li>
         {% endfor %}
       </ul>
@@ -20,41 +21,41 @@
   {% endif %}
 
   {% if detail.orphan_refunds %}
-    <div class="mb-2">
-      <div class="text-warning">{% trans "Unpaired refunds in report" %}</div>
-      <ul class="mb-0 ps-3">
+    <div class="rd-rec-breakdown__block">
+      <div class="rd-rec-breakdown__label rd-rec-breakdown__label--warn">{% trans "Unpaired refunds in report" %}</div>
+      <ul class="rd-rec-lines">
         {% for r in detail.orphan_refunds %}
           <li>
-            <span class="text-danger">{{ r.amount|floatformat:2 }}</span>
-            <span>{{ r.at|date:"d/m/Y H:i" }}</span>
-            <span class="d-block text-secondary">{{ r.op }}</span>
+            <span class="rd-rec-neg tabular-nums" dir="ltr">{{ r.amount|floatformat:2 }}</span>
+            <span class="rd-rec-when tabular-nums">{{ r.at|date:"d/m/Y H:i" }}</span>
+            <span class="rd-rec-what d-block">{{ r.op }}</span>
           </li>
         {% endfor %}
       </ul>
-      <div class="text-secondary">{% trans "Not counted in settlement total — no matching charge line before this refund in the report." %}</div>
+      <p class="rd-rec-what mb-0">{% trans "Not counted in settlement total — no matching charge line before this refund in the report." %}</p>
     </div>
   {% endif %}
 
   {% if detail.recharges %}
-    <div class="mb-2">
-      <div class="text-body">{% trans "Recharges outside settlement cycles" %}</div>
-      <ul class="mb-0 ps-3">
+    <div class="rd-rec-breakdown__block">
+      <div class="rd-rec-breakdown__label">{% trans "Recharges outside settlement cycles" %}</div>
+      <ul class="rd-rec-lines">
         {% for r in detail.recharges %}
           <li>
-            <span class="text-success">+{{ r.amount|floatformat:2 }}</span>
-            <span>{{ r.at|date:"d/m/Y H:i" }}</span>
-            <span class="d-block text-secondary">{{ r.op }}</span>
+            <span class="rd-rec-pos tabular-nums" dir="ltr">+{{ r.amount|floatformat:2 }}</span>
+            <span class="rd-rec-when tabular-nums">{{ r.at|date:"d/m/Y H:i" }}</span>
+            <span class="rd-rec-what d-block">{{ r.op }}</span>
           </li>
         {% endfor %}
       </ul>
     </div>
   {% endif %}
 
-  <div class="text-body">
+  <div class="rd-rec-breakdown__net">
     {% trans "Layan portal net in report" %}:
-    <span class="font-monospace">{{ detail.layan_charges|floatformat:2 }}</span>
-    <span class="text-danger font-monospace">{{ detail.layan_refunds|floatformat:2 }}</span>
+    <span class="tabular-nums" dir="ltr">{{ detail.layan_charges|floatformat:2 }}</span>
+    <span class="rd-rec-neg tabular-nums" dir="ltr">{{ detail.layan_refunds|floatformat:2 }}</span>
     =
-    <strong class="font-monospace">{{ detail.layan_net_movement|floatformat:2 }}</strong>
+    <strong class="rd-rec-ink tabular-nums" dir="ltr">{{ detail.layan_net_movement|floatformat:2 }}</strong>
   </div>
 </div>

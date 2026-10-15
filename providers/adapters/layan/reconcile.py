@@ -143,6 +143,11 @@ class ReconcilePhoneRow:
         """Alias for shared review-table templates (provider cost column)."""
         return self.layan_net
 
+    @property
+    def supplier_net(self) -> Decimal:
+        """Provider-neutral amount the shared reconcile templates read."""
+        return self.layan_net
+
 
 @dataclass
 class LayanReconcileResult:
@@ -171,6 +176,20 @@ class LayanReconcileResult:
     row_count: int
     min_settlement_difference: Decimal = Decimal("0")
     split_settlements_hidden_count: int = 0
+
+    @property
+    def supplier_end_balance(self) -> Decimal | None:
+        """Provider-neutral end balance the shared reconcile templates read."""
+        return self.layan_end_balance
+
+    @property
+    def missing_count(self) -> int:
+        """Numbers charged at the supplier with no sale under this supplier."""
+        return len(self.not_recorded) + len(self.logged_other_supplier)
+
+    @property
+    def missing_total(self) -> Decimal:
+        return self.total_not_recorded + self.total_logged_other_supplier
 
     @property
     def action_rows(self) -> list[ReconcilePhoneRow]:

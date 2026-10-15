@@ -204,6 +204,8 @@ def layan_reconcile(request, pk):
             "company": company,
             "form": form,
             "result": result,
+            "provider": "layan",
+            "supplier_label": _("Layan"),
             "title": _("Layan report matching"),
         },
     )
@@ -284,6 +286,8 @@ def sky_reconcile(request, pk):
             "company": company,
             "form": form,
             "result": result,
+            "provider": "sky",
+            "supplier_label": _("Sky"),
             "title": _("Sky report matching"),
         },
     )

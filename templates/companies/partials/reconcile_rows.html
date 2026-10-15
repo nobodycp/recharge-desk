@@ -1,0 +1,85 @@
+{% load i18n %}{% comment %}
+One list of reconcile rows, shared by Layan and Sky.
+Needs: rows, section (missing|extra|other|mismatch|settlement|matched), provider, supplier_label, company.
+One markup for every width: a stacked card below ~40rem of list width, one aligned line above it.
+{% endcomment %}{% if rows %}
+<ul class="rd-rec-rows">
+  {% for row in rows %}
+  <li class="rd-rec-row{% if section == 'missing' %} rd-rec-row--missing{% elif section == 'extra' or section == 'other' %} rd-rec-row--extra{% elif section == 'mismatch' and row.gap > 0 %} rd-rec-row--higher{% elif section == 'mismatch' and row.gap < 0 %} rd-rec-row--lower{% endif %}" data-rd-rec-row data-phone="{{ row.phone }}">
+    <div class="rd-rec-row__id">
+      <bdi class="rd-rec-phone tabular-nums" dir="ltr">{{ row.phone }}</bdi>
+      {% if row.category_label %}<span class="rd-badge rd-badge--neutral">{{ row.category_label }}</span>{% endif %}
+    </div>
+    <div class="rd-rec-row__why">
+      <p class="rd-rec-reason">{{ row.reason }}</p>
+      <details class="rd-rec-compare">
+        <summary>{% if provider == "sky" %}{% trans "Compare Sky vs system lines" %}{% else %}{% trans "Compare Layan vs system lines" %}{% endif %}</summary>
+        <div class="rd-rec-compare__grid">
+          <div>
+            <h4 class="rd-rec-compare__title">{% if provider == "sky" %}{% trans "Sky charges" %}{% else %}{% trans "Layan report lines" %}{% endif %}</h4>
+            {% if row.lines %}
+              <ul class="rd-rec-lines">
+                {% for ln in row.lines %}
+                  <li>
+                    <span class="rd-rec-amt tabular-nums {% if ln.1 > 0 %}rd-rec-neg{% else %}rd-rec-pos{% endif %}" dir="ltr">{{ ln.1|floatformat:2 }}</span>
+                    <span class="rd-rec-when tabular-nums">{{ ln.0|date:"d/m H:i" }}</span>
+                    <span class="rd-rec-what">{{ ln.2 }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="rd-rec-what mb-0">—</p>
+            {% endif %}
+            {% if provider == "layan" and row.activity_detail %}
+              {% include "companies/partials/layan_reconcile_activity_detail.html" with detail=row.activity_detail %}
+            {% endif %}
+          </div>
+          <div>
+            <h4 class="rd-rec-compare__title">{% trans "System sales" %}</h4>
+            {% if row.rd_sales %}
+              <ul class="rd-rec-lines">
+                {% for s in row.rd_sales %}
+                  <li>
+                    <span class="rd-rec-amt rd-rec-neg tabular-nums" dir="ltr">{{ s.cost|floatformat:2 }}</span>
+                    <span class="rd-rec-when tabular-nums">{{ s.at|date:"d/m H:i" }}</span>
+                    <span class="rd-rec-what">{{ s.product }}{% if s.is_esim %} <span class="rd-badge rd-badge--neutral">{% trans "eSIM" %}</span>{% endif %}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="rd-rec-what mb-0">{% trans "No system sale in this period." %}</p>
+            {% endif %}
+          </div>
+        </div>
+      </details>
+    </div>
+    <dl class="rd-rec-amounts">
+      <div class="rd-rec-amount">
+        <dt>{{ supplier_label }}</dt>
+        <dd><span class="tabular-nums" dir="ltr">{{ row.supplier_net|floatformat:2 }}</span></dd>
+      </div>
+      <div class="rd-rec-amount">
+        <dt>{% trans "System" %}</dt>
+        <dd><span class="tabular-nums" dir="ltr">{{ row.rd_net|floatformat:2 }}</span></dd>
+      </div>
+      <div class="rd-rec-amount rd-rec-amount--gap{% if row.gap > 0 %} rd-rec-amount--higher{% endif %}">
+        <dt>{% trans "Gap" %}</dt>
+        <dd><span class="tabular-nums" dir="ltr">{% if row.gap > 0 %}+{% endif %}{{ row.gap|floatformat:2 }}</span></dd>
+        {% if row.gap > 0 %}<dd class="rd-rec-gapword">{% trans "Supplier higher" %}</dd>{% elif row.gap < 0 %}<dd class="rd-rec-gapword">{% trans "System higher" %}</dd>{% endif %}
+      </div>
+    </dl>
+    {% if section == "missing" %}
+      <div class="rd-rec-row__act">
+        <a class="btn btn-primary btn-sm" href="{% url 'sales:employee_entry' %}?company={{ company.pk }}&amp;phone={{ row.phone|urlencode }}&amp;from=reconcile" hx-boost="false">{% trans "Record sale" %}</a>
+      </div>
+    {% elif section == "extra" or section == "other" %}
+      <div class="rd-rec-row__act">
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:management_sale_list' %}?q={{ row.phone|urlencode }}">{% trans "Find sale" %}</a>
+      </div>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="rd-rec-none">{% trans "None in this category." %}</p>
+{% endif %}

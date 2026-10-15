@@ -237,6 +237,10 @@ Shared building blocks for admin pages: template tags in `core/templatetags/kit.
 - Empty tables: `{% include "partials/kit/empty_row.html" with colspan=5 title=_("No users.") text=… icon="list" %}` inside `{% empty %}`.
 - Pagination: the "Rows" links reset whichever `page_key` the pager uses.
 
+### Reconcile page
+
+Layan and Sky matching share `companies/partials/reconcile_results.html` + `reconcile_rows.html` (`.rd-rec-*`, `static/js/reconcile.js`). Order: run card, four quiet `rd-stat`s, number search, then the two action lists ("At supplier, not in system" and "In system, not at supplier", equal weight, each row with a Record sale / Find sale link), then tabs for cost differences, settlements and matched (matched hidden by default). Rows are one list that stacks as cards in a narrow container; row accents are token borders, never table tints, and a gap always carries a word ("Supplier higher" / "System higher"). The running state is pure CSS on `form[data-rd-submitting]` (set by `nav.js` on boosted submits). Searching shows every panel narrowed to matching numbers and restores the previous tab when cleared.
+
 ## Guardrails And Legacy Lists
 
 `core/tests_ui_conventions.py` fails on raw hex, Bootstrap colour badges and `table-light` in any template, except files in the shrink-only sets `LEGACY_HEX`, `LEGACY_BADGES`, `LEGACY_TABLE_LIGHT`. These are pages still waiting for migration in later phases. **Never add a file to them**; fix the template instead. When you migrate a legacy file, remove it from its set (`test_legacy_lists_only_shrink` fails otherwise). `phone_refresh/templates/phone_refresh/public_refresh.html` is out of scope and exempt.

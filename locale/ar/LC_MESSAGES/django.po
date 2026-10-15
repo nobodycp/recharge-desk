@@ -2277,9 +2277,9 @@ msgid "Charged on Sky (%(sky)s) but logged under %(suppliers)s."
 msgstr "مخصوم في سكاي (%(sky)s) لكنه مسجّل تحت %(suppliers)s."
 #: providers/adapters/sky/reconcile.py:345
 msgid ""
-"Charge + disconnect settlement on Sky. Informational only — not included in "
-"estimated deficit."
-msgstr "تسوية شحن+فصل في سكاي. للمعلومة فقط — لا تدخل في العجز المقدّر."
+"Charge + disconnect settlement on Sky. Review retained amount; it is "
+"included in estimated deficit."
+msgstr "تسوية شحن+فصل في سكاي. راجع المبلغ المحفوظ؛ وهو داخل العجز المقدّر."
 #: providers/adapters/sky/reconcile.py:352
 #, python-format
 msgid "Sky cost %(sky)s is higher than system %(rd)s by %(gap)s."
@@ -3919,7 +3919,7 @@ msgstr "الرصيد مقابل نهاية الكشف"
 #: templates/companies/layan_reconcile.html:225
 #: templates/companies/partials/layan_reconcile_review_table.html:9
 msgid "Layan"
-msgstr "صافي ليان"
+msgstr "ليان"
 
 #: templates/companies/layan_reconcile.html:226
 #: templates/companies/partials/layan_reconcile_review_table.html:11
@@ -4085,7 +4085,7 @@ msgstr "صافي ليان في الكشف"
 #: templates/companies/partials/sky_reconcile_table.html:7
 #: templates/companies/sky_reconcile.html:192
 msgid "Number"
-msgstr ""
+msgstr "الرقم"
 
 #: templates/companies/partials/layan_reconcile_review_table.html:8
 #: templates/companies/partials/sky_reconcile_table.html:8
@@ -4193,7 +4193,7 @@ msgstr "استعادة"
 #: templates/companies/partials/sky_reconcile_table.html:9
 #: templates/companies/sky_reconcile.html:236
 msgid "Sky"
-msgstr ""
+msgstr "سكاي"
 
 #: templates/companies/partials/sky_reconcile_table.html:26
 msgid "Compare Sky vs system lines"
@@ -4372,7 +4372,7 @@ msgid "Balance anomalies"
 msgstr "شواذ الرصيد"
 #: templates/companies/sky_reconcile.html:186
 msgid "Sky rows where before + delta does not equal after."
-msgstr ""
+msgstr "صفوف سكاي التي لا يساوي فيها الرصيد قبل + التغيّر الرصيد بعد."
 
 #: templates/companies/sky_reconcile.html:193
 #: templates/customers/payment_submissions_list.html:32
@@ -4396,11 +4396,11 @@ msgstr "الرصيد قبل"
 
 #: templates/companies/sky_reconcile.html:196
 msgid "Delta"
-msgstr ""
+msgstr "التغيّر"
 
 #: templates/companies/sky_reconcile.html:197
 msgid "After"
-msgstr ""
+msgstr "الرصيد بعد"
 
 #: templates/companies/sky_reconcile.html:264
 msgid ""
@@ -6466,6 +6466,114 @@ msgid ""
 "This number was already charged at the supplier. Record the sale without "
 "charging it again."
 msgstr "هذا الرقم مشحون عند المزوّد مسبقاً. سجّل البيعة بدون شحنه مرة ثانية."
+
+#: templates/companies/partials/reconcile_results.html
+#, python-format
+msgid "At %(supplier)s, not in system"
+msgstr "عند %(supplier)s وليست في النظام"
+
+#: templates/companies/partials/reconcile_results.html
+#, python-format
+msgid "In system, not at %(supplier)s"
+msgstr "في النظام وليست عند %(supplier)s"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Not recorded in the system"
+msgstr "غير مسجّلة في النظام"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Record sale"
+msgstr "سجّل البيعة"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Find sale"
+msgstr "اعرض البيعة"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Supplier higher"
+msgstr "المزوّد أعلى"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "System higher"
+msgstr "النظام أعلى"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Checking…"
+msgstr "جاري الفحص…"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Sky can take up to a minute."
+msgstr "قد يستغرق سكاي حتى دقيقة."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Nothing here."
+msgstr "لا شيء هنا."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Search by number"
+msgstr "ابحث بالرقم"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "One number matches"
+msgstr "رقم واحد مطابق"
+
+#: templates/companies/partials/reconcile_results.html
+#, python-format
+msgid "%(n)s numbers match"
+msgstr "%(n)s رقم مطابق"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "No number matches."
+msgstr "لا يوجد رقم مطابق."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Matching details"
+msgstr "تفاصيل المطابقة"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Balance at report end"
+msgstr "الرصيد عند نهاية الكشف"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Settlements are charge + disconnect cycles. The retained amount counts toward the estimated deficit."
+msgstr "التسويات هي دورات شحن ثم فصل. المبلغ المحتجز منها يُحسب ضمن العجز التقديري."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Missing sales + retained settlements"
+msgstr "المبيعات الناقصة + المبالغ المحتجزة من التسويات"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Missing sales + higher supplier costs + retained settlements"
+msgstr "المبيعات الناقصة + فروقات التكلفة الأعلى عند المزوّد + المبالغ المحتجزة من التسويات"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "The report you upload is compared to sales in the system. Nothing is fetched from the Layan portal."
+msgstr "يُقارن التقرير الذي ترفعه بالمبيعات في النظام. لا يُجلب أي شيء من بوابة ليان."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Upload the Layan charges report"
+msgstr "ارفع تقرير شحنات ليان"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "An Excel (.xlsx) file exported from Layan. The dates are optional."
+msgstr "ملف Excel ‏(.xlsx) مصدّر من ليان. التواريخ اختيارية."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Compares every number in the report with the sales in the system."
+msgstr "تُقارن كل رقم في التقرير بالمبيعات المسجّلة في النظام."
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Start with the two lists at the top"
+msgstr "ابدأ بالقائمتين في الأعلى"
+
+#: templates/companies/partials/reconcile_results.html
+msgid "Numbers missing in the system and numbers missing at Layan come first."
+msgstr "الأرقام الناقصة في النظام والأرقام الناقصة عند ليان تأتي أولاً."
+
+#: templates/companies/partials/reconcile_results.html
+#, python-format
+msgid "Showing settlements with difference ≥ %(min)s (%(hidden)s hidden)."
+msgstr "عرض التسويات ذات الفرق ≥ %(min)s (%(hidden)s مخفية)."
 
 #~ msgid ""
 #~ "Sales still being charged by the provider kept the old number: %(count)s."

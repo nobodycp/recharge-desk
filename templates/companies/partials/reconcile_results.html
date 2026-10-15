@@ -1,0 +1,227 @@
+{% load i18n humanize %}{% comment %}
+Result of one matching run, shared by Layan and Sky (see static/js/reconcile.js for the markup contract).
+Needs: result, provider, supplier_label, company.
+{% endcomment %}
+<div class="rd-rec-result" data-rd-reconcile>
+  <p class="rd-rec-meta tabular-nums">
+    {{ result.row_count|intcomma }} {% if provider == "sky" %}{% trans "Sky rows" %}{% else %}{% trans "report rows" %}{% endif %}
+    {% if result.period_from %}· <span class="rd-rec-period"><bdi dir="ltr">{{ result.period_from|date:"Y-m-d" }}</bdi> <span class="rd-rec-period__arrow" aria-hidden="true">→</span> <bdi dir="ltr">{{ result.period_to|date:"Y-m-d" }}</bdi></span>{% endif %}
+  </p>
+
+  <div class="rd-rec-summary">
+    <div class="rd-card rd-stat rd-rec-stat">
+      <div class="rd-card-body rd-stat-body">
+        <div class="rd-label">{% blocktrans with supplier=supplier_label %}At {{ supplier }}, not in system{% endblocktrans %}</div>
+        <div class="rd-stat-figure"><div class="rd-stat-value tabular-nums">{{ result.missing_count }}</div></div>
+        <div class="rd-stat-meta rd-rec-stat__sub tabular-nums" dir="ltr">{{ result.missing_total|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="rd-card rd-stat rd-rec-stat">
+      <div class="rd-card-body rd-stat-body">
+        <div class="rd-label">{% blocktrans with supplier=supplier_label %}In system, not at {{ supplier }}{% endblocktrans %}</div>
+        <div class="rd-stat-figure"><div class="rd-stat-value tabular-nums">{{ result.rd_only|length }}</div></div>
+        <div class="rd-stat-meta rd-rec-stat__sub tabular-nums" dir="ltr">{{ result.total_rd_only|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="rd-card rd-stat rd-rec-stat">
+      <div class="rd-card-body rd-stat-body">
+        <div class="rd-label">{% trans "Cost differences" %}</div>
+        <div class="rd-stat-figure"><div class="rd-stat-value tabular-nums">{{ result.mismatch_count }}</div></div>
+        <div class="rd-stat-meta rd-rec-stat__sub tabular-nums" dir="ltr">{{ result.total_amount_mismatch|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="rd-card rd-stat rd-rec-stat rd-rec-stat--danger">
+      <div class="rd-card-body rd-stat-body">
+        <div class="rd-label">{% trans "Estimated deficit" %}</div>
+        <div class="rd-stat-figure"><div class="rd-stat-value tabular-nums" dir="ltr">{{ result.estimated_deficit|floatformat:2 }}</div></div>
+        <div class="rd-stat-meta rd-rec-stat__sub">{% if provider == "sky" %}{% trans "Missing sales + higher supplier costs + retained settlements" %}{% else %}{% trans "Missing sales + retained settlements" %}{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rd-card rd-rec-search">
+    <div class="rd-rec-search__row">
+      <label class="form-label mb-0" for="rec-search">{% trans "Search by number" %}</label>
+      <p class="rd-rec-search__count tabular-nums" data-rd-rec-count aria-live="polite" data-one="{% trans 'One number matches' %}" data-many="{% blocktrans with n='__n__' %}{{ n }} numbers match{% endblocktrans %}"></p>
+    </div>
+    <input type="search" class="form-control tabular-nums" id="rec-search" inputmode="numeric" placeholder="05XXXXXXXX" autocomplete="off" data-rd-rec-search>
+  </div>
+  <div class="rd-rec-nomatch" data-rd-rec-empty hidden>{% trans "No number matches." %}</div>
+
+  <div class="rd-rec-actions">
+    <section class="rd-card rd-rec-section rd-rec-section--missing" data-rd-rec-group data-rd-rec-section="missing" aria-labelledby="rec-missing-title">
+      <header class="rd-rec-section__head">
+        <div class="rd-rec-section__titles">
+          <h2 class="rd-rec-section__title" id="rec-missing-title">{% blocktrans with supplier=supplier_label %}At {{ supplier }}, not in system{% endblocktrans %}</h2>
+          <p class="rd-rec-section__hint">{% trans "These usually need a sale recorded (or a correction)." %}</p>
+        </div>
+        <div class="rd-rec-section__sum">
+          <span class="rd-rec-section__count tabular-nums">{{ result.missing_count }}</span>
+          <span class="rd-rec-total tabular-nums" dir="ltr">{{ result.missing_total|floatformat:2 }}</span>
+        </div>
+      </header>
+      {% if result.not_recorded or result.logged_other_supplier %}
+        {% if result.not_recorded %}
+          <div data-rd-rec-group>
+            {% if result.logged_other_supplier %}
+              <h3 class="rd-rec-subhead"><span>{% trans "Not recorded in the system" %}</span><span class="tabular-nums" dir="ltr">{{ result.total_not_recorded|floatformat:2 }}</span></h3>
+            {% endif %}
+            {% include "companies/partials/reconcile_rows.html" with rows=result.not_recorded section="missing" %}
+          </div>
+        {% endif %}
+        {% if result.logged_other_supplier %}
+          <div data-rd-rec-group>
+            <h3 class="rd-rec-subhead"><span>{% trans "Logged under another supplier" %}</span><span class="tabular-nums" dir="ltr">{{ result.total_logged_other_supplier|floatformat:2 }}</span></h3>
+            {% include "companies/partials/reconcile_rows.html" with rows=result.logged_other_supplier section="other" %}
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="rd-rec-none">{% trans "Nothing here." %}</p>
+      {% endif %}
+    </section>
+
+    <section class="rd-card rd-rec-section rd-rec-section--extra" data-rd-rec-group data-rd-rec-section="extra" aria-labelledby="rec-extra-title">
+      <header class="rd-rec-section__head">
+        <div class="rd-rec-section__titles">
+          <h2 class="rd-rec-section__title" id="rec-extra-title">{% blocktrans with supplier=supplier_label %}In system, not at {{ supplier }}{% endblocktrans %}</h2>
+          <p class="rd-rec-section__hint">{% if provider == "sky" %}{% trans "Sale exists locally but Sky report has no charge for this number in the period." %}{% else %}{% trans "Layan sale in the system with no matching line in the uploaded Layan report." %}{% endif %}</p>
+        </div>
+        <div class="rd-rec-section__sum">
+          <span class="rd-rec-section__count tabular-nums">{{ result.rd_only|length }}</span>
+          <span class="rd-rec-total tabular-nums" dir="ltr">{{ result.total_rd_only|floatformat:2 }}</span>
+        </div>
+      </header>
+      {% if result.rd_only %}
+        {% include "companies/partials/reconcile_rows.html" with rows=result.rd_only section="extra" %}
+      {% else %}
+        <p class="rd-rec-none">{% trans "Nothing here." %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="rd-rec-detail">
+    <div class="nav nav-tabs rd-section-tabs" role="tablist" aria-label="{% trans 'Matching details' %}">
+      <button class="nav-link active" type="button" role="tab" id="rec-tab-mismatch" data-rd-rec-tab="mismatch" aria-controls="rec-panel-mismatch" aria-selected="true">
+        {% trans "Cost differences" %}
+        <span class="rd-badge rd-badge--pending tabular-nums">{{ result.mismatch_count }}</span>
+      </button>
+      <button class="nav-link" type="button" role="tab" id="rec-tab-settlement" data-rd-rec-tab="settlement" aria-controls="rec-panel-settlement" aria-selected="false" tabindex="-1">
+        {% trans "Settlements" %}
+        <span class="rd-badge rd-badge--neutral tabular-nums">{{ result.info_count }}</span>
+      </button>
+      <button class="nav-link" type="button" role="tab" id="rec-tab-matched" data-rd-rec-tab="matched" aria-controls="rec-panel-matched" aria-selected="false" tabindex="-1">
+        {% trans "Matched" %}
+        <span class="rd-badge rd-badge--paid tabular-nums">{{ result.matched|length }}</span>
+      </button>
+    </div>
+
+    <div class="rd-rec-panel" id="rec-panel-mismatch" role="tabpanel" aria-labelledby="rec-tab-mismatch" data-rd-rec-panel="mismatch">
+      <section class="rd-card rd-rec-block" data-rd-rec-group>
+        <header class="rd-rec-section__head">
+          <div class="rd-rec-section__titles">
+            <h2 class="rd-rec-section__title">{% if provider == "sky" %}{% trans "Sales differences (Sky vs system)" %}{% else %}{% trans "Sales differences (Layan vs system)" %}{% endif %}</h2>
+            <p class="rd-rec-section__hint">{% if provider == "sky" %}{% trans "Open “Compare Sky vs system lines” on a row to see eSIM splits and package costs (like 75 vs 80)." %}{% else %}{% trans "Open “Compare Layan vs system lines” on a row to see report lines and local sales." %}{% endif %}</p>
+          </div>
+          {% if result.total_amount_mismatch %}
+            <div class="rd-rec-section__sum">
+              <span class="rd-rec-total-label">{% trans "Absolute gap total" %}</span>
+              <span class="rd-rec-total tabular-nums" dir="ltr">{{ result.total_amount_mismatch|floatformat:2 }}</span>
+            </div>
+          {% endif %}
+        </header>
+        {% include "companies/partials/reconcile_rows.html" with rows=result.amount_mismatches section="mismatch" %}
+      </section>
+    </div>
+
+    <div class="rd-rec-panel" id="rec-panel-settlement" role="tabpanel" aria-labelledby="rec-tab-settlement" data-rd-rec-panel="settlement" hidden>
+      <p class="rd-rec-note">{% trans "Settlements are charge + disconnect cycles. The retained amount counts toward the estimated deficit." %}</p>
+      {% if provider == "layan" and result.min_settlement_difference > 0 and result.split_settlements_hidden_count %}
+        <p class="rd-rec-note tabular-nums">
+          {% blocktrans trimmed with min=result.min_settlement_difference|floatformat:2 hidden=result.split_settlements_hidden_count %}
+            Showing settlements with difference ≥ {{ min }} ({{ hidden }} hidden).
+          {% endblocktrans %}
+        </p>
+      {% endif %}
+      {% if result.split_settlements %}
+        <section class="rd-card rd-rec-block" data-rd-rec-group>
+          <header class="rd-rec-section__head">
+            <div class="rd-rec-section__titles">
+              <h2 class="rd-rec-section__title">{% trans "Settlements on disconnected numbers" %}</h2>
+            </div>
+            {% if result.total_split_settlements %}
+              <div class="rd-rec-section__sum">
+                <span class="rd-rec-total-label">{% trans "Section total" %}</span>
+                <span class="rd-rec-total tabular-nums" dir="ltr">{{ result.total_split_settlements|floatformat:2 }}</span>
+              </div>
+            {% endif %}
+          </header>
+          {% include "companies/partials/reconcile_rows.html" with rows=result.split_settlements section="settlement" %}
+        </section>
+      {% endif %}
+      {% if provider == "sky" and result.balance_anomalies %}
+        <section class="rd-card rd-rec-block" data-rd-rec-group>
+          <header class="rd-rec-section__head">
+            <div class="rd-rec-section__titles">
+              <h2 class="rd-rec-section__title">{% trans "Balance anomalies" %}</h2>
+              <p class="rd-rec-section__hint">{% trans "Sky rows where before + delta does not equal after." %}</p>
+            </div>
+          </header>
+          <div class="table-responsive">
+            <table class="table table-sm rd-table-modern mb-0">
+              <thead>
+                <tr>
+                  <th>{% trans "Number" %}</th>
+                  <th>{% trans "When" %}</th>
+                  <th>{% trans "Op" %}</th>
+                  <th class="text-end">{% trans "Before" %}</th>
+                  <th class="text-end">{% trans "Delta" %}</th>
+                  <th class="text-end">{% trans "After" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in result.balance_anomalies %}
+                <tr data-rd-rec-row data-phone="{{ a.phone }}">
+                  <td><bdi class="rd-rec-phone tabular-nums" dir="ltr">{{ a.phone }}</bdi></td>
+                  <td class="small tabular-nums">{{ a.at|default:"—" }}</td>
+                  <td class="small">{{ a.op }}</td>
+                  <td class="text-end tabular-nums"><span dir="ltr">{{ a.before }}</span></td>
+                  <td class="text-end tabular-nums"><span dir="ltr">{{ a.delta }}</span></td>
+                  <td class="text-end tabular-nums"><span dir="ltr">{{ a.after }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endif %}
+      {% if not result.info_count %}
+        <section class="rd-card rd-rec-block" data-rd-rec-group>
+          <p class="rd-rec-none">{% trans "No informational items." %}</p>
+        </section>
+      {% endif %}
+    </div>
+
+    <div class="rd-rec-panel" id="rec-panel-matched" role="tabpanel" aria-labelledby="rec-tab-matched" data-rd-rec-panel="matched" hidden>
+      <section class="rd-card rd-rec-block" data-rd-rec-group>
+        <header class="rd-rec-section__head">
+          <div class="rd-rec-section__titles">
+            <h2 class="rd-rec-section__title">{% trans "Matched numbers" %}</h2>
+            <p class="rd-rec-section__hint">{% trans "Within the minimum difference — usually no action." %}</p>
+          </div>
+        </header>
+        {% include "companies/partials/reconcile_rows.html" with rows=result.matched section="matched" %}
+      </section>
+    </div>
+  </div>
+
+  {% if result.supplier_end_balance is not None %}
+    <p class="rd-rec-balance">
+      <span class="rd-rec-balance__title">{% trans "Balance at report end" %}</span>
+      <span>{% trans "System" %} <strong class="tabular-nums" dir="ltr">{{ result.rd_balance_end|floatformat:2 }}</strong></span>
+      <span>{{ supplier_label }} <strong class="tabular-nums" dir="ltr">{{ result.supplier_end_balance|floatformat:2 }}</strong></span>
+      <span>{% trans "Gap" %} <strong class="tabular-nums" dir="ltr">{{ result.balance_gap|floatformat:2 }}</strong></span>
+    </p>
+  {% elif provider == "layan" %}
+    <p class="rd-rec-balance">{% trans "End balance not found in file." %}</p>
+  {% endif %}
+</div>

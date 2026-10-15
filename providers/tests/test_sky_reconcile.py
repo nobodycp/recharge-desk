@@ -466,3 +466,75 @@ class FetchSkyRowsTests(TestCase):
         self.assertEqual(
             adapter.fetch_calls, [(date(2026, 8, 1), date(2026, 8, 31))] * 2
         )
+
+
+class SkySupplierAliasTests(TestCase):
+    """Provider-neutral names the shared reconcile templates read."""
+
+    def test_row_and_result_expose_supplier_values(self):
+        from providers.adapters.sky.reconcile import (
+            SkyReconcilePhoneRow,
+            SkyReconcileResult,
+        )
+
+        row = SkyReconcilePhoneRow(
+            raw="0521234567",
+            phone="0521234567",
+            sky_net=Decimal("12.5"),
+            sky_charges=Decimal("12.5"),
+            sky_refunds=Decimal("0"),
+            rd_net=Decimal("0"),
+            gap=Decimal("12.5"),
+            category="not_recorded",
+            category_label="",
+            lines=[],
+        )
+        self.assertEqual(row.supplier_net, Decimal("12.5"))
+        result = SkyReconcileResult(
+            period_from=None,
+            period_to=None,
+            sky_end_balance=Decimal("7.25"),
+            rd_balance_end=Decimal("0"),
+            not_recorded=[],
+            split_settlements=[],
+            amount_mismatches=[],
+            matched=[],
+            rd_only=[],
+            logged_other_supplier=[],
+            balance_anomalies=[],
+            total_not_recorded=Decimal("0"),
+            total_split_settlements=Decimal("0"),
+            total_amount_mismatch=Decimal("0"),
+            total_rd_only=Decimal("0"),
+            total_logged_other_supplier=Decimal("0"),
+            estimated_deficit=Decimal("0"),
+            row_count=0,
+            balance_gap=Decimal("0"),
+            min_amount_diff=Decimal("3"),
+        )
+        self.assertEqual(result.supplier_end_balance, Decimal("7.25"))
+        self.assertEqual(result.missing_count, 0)
+        self.assertEqual(result.missing_total, Decimal("0"))
+        result.total_not_recorded = Decimal("41.25")
+        result.total_logged_other_supplier = Decimal("9.1")
+        result.not_recorded = [row]
+        result.logged_other_supplier = [row, row]
+        self.assertEqual(result.missing_count, 3)
+        self.assertEqual(result.missing_total, Decimal("50.35"))
+        result.sky_end_balance = None
+        self.assertIsNone(result.supplier_end_balance)
+
+    def test_settlement_reason_matches_the_deficit_rule(self):
+        from django.utils import translation
+
+        from providers.adapters.sky.reconcile import explain_sky_row
+
+        with translation.override("en"):
+            text = explain_sky_row(
+                category="settlement",
+                sky_net=Decimal("5"),
+                rd_net=Decimal("0"),
+                gap=Decimal("5"),
+            )
+        self.assertIn("included in estimated deficit", text)
+        self.assertNotIn("not included", text)
