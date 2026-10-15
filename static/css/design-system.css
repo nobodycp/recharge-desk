@@ -1281,10 +1281,6 @@ html[lang="ar"] .rd-hello__title {
     max-height: min(75vh, 34rem);
     overflow-y: auto;
   }
-
-  .rd-search-results {
-    max-height: min(60vh, 26rem);
-  }
 }
 
 .rd-search-panel {
@@ -1306,6 +1302,8 @@ html[lang="ar"] .rd-hello__title {
   box-shadow: var(--rd-shadow-lg);
   padding: 0.4rem;
   display: block;
+  max-height: min(75vh, 34rem);
+  overflow-y: auto;
   animation: rd-user-menu-in 0.12s ease-out;
 }
 
@@ -1381,10 +1379,9 @@ html[lang="ar"] .rd-hello__title {
   line-height: 1;
 }
 
+/* The PANEL is the only scroll box (see .rd-search-panel); results never scroll on their own. */
 .rd-search-results {
   margin-top: 0.3rem;
-  max-height: min(50vh, 18rem);
-  overflow-y: auto;
 }
 
 .rd-search-results[hidden] { display: none !important; }
@@ -1477,10 +1474,6 @@ html[lang="ar"] .rd-hello__title {
     max-height: calc(100vh - 6rem);
     max-height: calc(100dvh - 6rem);
     overflow-y: auto;
-  }
-  .rd-search-results {
-    max-height: none;
-    overflow-y: visible;
   }
   .rd-search-input {
     font-size: 0.9rem;
@@ -4109,7 +4102,13 @@ body.rd-inv-dialog-open {
 .rd-avatar img {
   width: 100%;
   height: 100%;
+  /* Flex item: without min/max an uploaded photo's intrinsic size wins. */
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
+  border-radius: 50%;
   display: block;
 }
 
@@ -4465,11 +4464,54 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   color: var(--rd-muted);
 }
 
-.rd-user-menu-pref .rd-lang-select {
-  width: 9rem;
-  max-width: 9rem;
-  min-height: 3.45rem;
-  font-size: 0.9rem;
+/* AR | EN segmented control (same set_language form, no JS). */
+.rd-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--rd-surface-2);
+}
+
+.rd-lang-toggle__btn {
+  min-width: 3rem;
+  min-height: 2.2rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rd-muted);
+  font-family: var(--rd-font-num);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--rd-transition-fast),
+    color var(--rd-transition-fast);
+}
+
+.rd-lang-toggle__btn:hover {
+  color: var(--rd-ink);
+}
+
+.rd-lang-toggle__btn.is-active {
+  background: var(--rd-primary-bg);
+  color: var(--rd-primary-fg);
+}
+
+.rd-lang-toggle__btn:focus-visible {
+  outline: 2px solid var(--rd-ink);
+  outline-offset: 2px;
+}
+
+@media (max-width: 991.98px) {
+  .rd-lang-toggle__btn {
+    min-height: 2.75rem;
+  }
 }
 
 .rd-user-menu-pref .rd-theme-btn {
@@ -4507,10 +4549,26 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
   min-height: 2.6rem;
 }
 
+/* Header avatar = trigger size, photo or initials. */
 .rd-topbar .rd-user-menu--ava .rd-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1rem;
+}
+
+.rd-topbar .rd-user-menu--ava .rd-avatar img {
   width: 100%;
   height: 100%;
-  font-size: 1rem;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+/* Photo/initials in the open menu header: fixed medium size. */
+.rd-topbar .rd-user-menu-header .rd-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
 }
 
 /* The count stays (information), reduced to a small pill on the bell's
@@ -4539,6 +4597,15 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     min-width: 3.45rem;
     min-height: 3.45rem;
   }
+
+  .rd-topbar .rd-user-menu--ava .rd-avatar {
+    width: 3.45rem;
+    height: 3.45rem;
+  }
+
+  .rd-topbar .rd-topbar-cta {
+    min-height: 3.45rem;
+  }
 }
 
 /* Phones: both popovers become sheets pinned under the bar. The bar is their
@@ -4555,10 +4622,6 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
     max-height: calc(100vh - 6rem);
     max-height: calc(100dvh - 6rem);
     overflow-y: auto;
-  }
-
-  .rd-topbar .rd-user-menu-pref .rd-lang-select {
-    width: min(9rem, 55%);
   }
 }
 

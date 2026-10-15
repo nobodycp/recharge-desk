@@ -106,6 +106,8 @@ class ManagementShellTests(TestCase):
         # R1: language + theme live inside the user-menu panel (see ManagementTopbarTests).
         self.assertIn(f'action="{reverse("set_language")}"', html)
         self.assertIn('id="rd-lang-mgmt"', html)
+        self.assertIn('name="language" value="ar"', html)
+        self.assertIn('name="language" value="en"', html)
         self.assertIn("data-app-theme-toggle", html)
         panel = re.search(r'<div class="rd-user-menu-panel" role="menu">.*?</details>', html, re.S)
         self.assertIsNotNone(panel, "user menu panel missing")
@@ -454,9 +456,80 @@ class ManagementTopbarTests(TestCase):
         self.assertIn('<div class="rd-user-menu-prefs" role="group" aria-label="Settings">', panel)
         self.assertIn(f'action="{reverse("set_language")}"', panel)
         self.assertIn('name="next"', panel)
-        self.assertIn('onchange="this.form.submit()"', panel)
+        self.assertNotIn("onchange", panel)
+        self.assertNotIn("<select", panel)
         self.assertIn('hx-boost="false"', panel)
-        self.assertIn('for="rd-lang-mgmt"', panel)
+        self.assertIn("csrfmiddlewaretoken", panel)
+
+    def test_language_toggle_is_an_ar_en_segmented_control(self):
+        for lang, pressed in (("en", "en"), ("ar", "ar")):
+            with self.subTest(lang=lang):
+                header = self._header(lang)
+                form = re.search(r'<form[^>]*id="rd-lang-mgmt".*?</form>', header, re.S).group(0)
+                self.assertIn(f'action="{reverse("set_language")}"', form)
+                self.assertIn('hx-boost="false"', form)
+                self.assertIn('name="next"', form)
+                group = re.search(r'<div class="rd-lang-toggle"[^>]*>', form).group(0)
+                self.assertIn('role="group"', group)
+                self.assertIn('dir="ltr"', group)
+                self.assertIn("aria-labelledby", group)
+                buttons = re.findall(r"<button[^>]*>[^<]*</button>", form)
+                self.assertEqual(len(buttons), 2)
+                self.assertLess(form.index('value="ar"'), form.index('value="en"'))
+                for button, (code, text, name) in zip(
+                    buttons, (("ar", "AR", "العربية"), ("en", "EN", "English"))
+                ):
+                    self.assertIn('type="submit"', button)
+                    self.assertIn('name="language"', button)
+                    self.assertIn(f'value="{code}"', button)
+                    self.assertIn(f'lang="{code}"', button)
+                    self.assertIn(f'aria-label="{name}"', button)
+                    self.assertTrue(button.endswith(f">{text}</button>"), button)
+                    active = code == pressed
+                    self.assertIn(f'aria-pressed="{str(active).lower()}"', button)
+                    self.assertEqual("is-active" in button, active, button)
+
+    def test_language_toggle_css(self):
+        css = self._css()
+        active = "\n".join(_find_rules(css, ".rd-lang-toggle__btn.is-active"))
+        self.assertIn("background: var(--rd-primary-bg)", active)
+        self.assertIn("color: var(--rd-primary-fg)", active)
+        self.assertTrue(_find_rules(css, ".rd-lang-toggle__btn:focus-visible"))
+        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        heights = [float(v) for v in re.findall(r"min-height:\s*([\d.]+)rem", "\n".join(_find_rules(mobile, ".rd-lang-toggle__btn")))]
+        self.assertTrue(heights and max(heights) >= 2.75, heights)
+
+    def test_header_avatar_is_constrained(self):
+        css = self._css()
+        desktop = re.sub(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}", "", css)
+        avatar = "\n".join(_find_rules(desktop, ".rd-topbar .rd-user-menu--ava .rd-avatar"))
+        self.assertRegex(avatar, r"width:\s*2\.6rem")
+        self.assertRegex(avatar, r"height:\s*2\.6rem")
+        img = "\n".join(_find_rules(desktop, ".rd-topbar .rd-user-menu--ava .rd-avatar img"))
+        for decl in ("max-width: 100%", "max-height: 100%", "object-fit: cover", "border-radius: 50%"):
+            self.assertIn(decl, img)
+        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        small = "\n".join(_find_rules(mobile, ".rd-topbar .rd-user-menu--ava .rd-avatar"))
+        self.assertRegex(small, r"width:\s*3\.45rem")
+        self.assertRegex(small, r"height:\s*3\.45rem")
+        menu = "\n".join(_find_rules(desktop, ".rd-topbar .rd-user-menu-header .rd-avatar"))
+        self.assertRegex(menu, r"width:\s*2\.6rem")
+        base = "\n".join(_find_rules(desktop, ".rd-avatar img"))
+        self.assertIn("object-fit: cover", base)
+        self.assertIn("max-width: 100%", base)
+
+    def test_header_avatar_markup_photo_and_initials(self):
+        header = self._header()
+        pattern = r'<details class="rd-user-menu rd-user-menu--ava">\s*<summary.*?</summary>'
+        trigger = re.search(pattern, header, re.S).group(0)
+        self.assertNotIn("<img", trigger)
+        self.assertIn("<span>B</span>", trigger)
+        UserProfile.objects.filter(user=self.user).update(avatar="avatars/me.png")
+        header = self._header()
+        trigger = re.search(pattern, header, re.S).group(0)
+        self.assertIn('<img src="/media/avatars/me.png" alt="">', trigger)
+        panel = header[header.index('class="rd-user-menu-panel" role="menu"'):]
+        self.assertIn('<img src="/media/avatars/me.png" alt="">', panel)
 
     def test_topbar_row_order_and_sales_entry(self):
         header = self._header()
@@ -481,6 +554,7 @@ class ManagementTopbarTests(TestCase):
             ".rd-notif-trigger",
             ".rd-user-menu--ava .rd-user-menu-trigger",
             ".rd-menu-btn",
+            ".rd-topbar-cta",  # wide (label), so only its height is pinned
         )
         mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
         for sel in targets:
@@ -488,13 +562,14 @@ class ManagementTopbarTests(TestCase):
                 bodies = _find_rules(mobile, sel)
                 self.assertTrue(bodies, f"{sel} missing in the <992px block")
                 joined = "\n".join(bodies)
-                self.assertRegex(joined, r"min-width:\s*3\.45rem")
+                if sel != ".rd-topbar-cta":
+                    self.assertRegex(joined, r"min-width:\s*3\.45rem")
                 self.assertRegex(joined, r"min-height:\s*3\.45rem")
         for sel in targets:
             with self.subTest(sel=sel, viewport="desktop"):
                 bodies = _find_rules(re.sub(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}", "", css), sel)
                 joined = "\n".join(bodies)
-                for prop in ("min-width", "min-height"):
+                for prop in ("min-height",) if sel == ".rd-topbar-cta" else ("min-width", "min-height"):
                     values = [float(v) for v in re.findall(prop + r":\s*([\d.]+)rem", joined)]
                     self.assertTrue(values and max(values) >= 2.6, f"{sel} {prop} {values}")
 
@@ -507,6 +582,20 @@ class ManagementTopbarTests(TestCase):
                 self.assertIn("position: fixed", joined)
                 self.assertRegex(joined, r"inset-inline:\s*0?\.5rem")
                 self.assertNotRegex(joined, r"(?<![\w-])width:\s*\d")
+
+    def test_search_has_a_single_scroll_box(self):
+        css = self._css()
+        for sel, body in _rules(css):
+            if ".rd-search-results" in sel and "[hidden]" not in sel:
+                self.assertNotRegex(body, r"max-height|overflow", f"{sel} must not scroll on its own")
+        for query in ("min-width: 992px", "max-width: 575.98px"):
+            for block in _media_blocks(css, query):
+                for sel, body in _rules(block):
+                    if sel.strip() == ".rd-search-results":
+                        self.assertNotRegex(body, r"max-height|overflow")
+        base = "\n".join(body for sel, body in _rules(css) if sel.strip() == ".rd-search-panel")
+        self.assertRegex(base, r"overflow-y:\s*auto")
+        self.assertRegex(base, r"max-height:")
 
     def test_search_panel_desktop_width(self):
         css = self._css()
