@@ -18,6 +18,9 @@
   var TITLE = "نتيجة فحص الرقم";
   var FOOTER_TAIL = "فحص فوري للخطوط";
   var DEFAULT_SITE_NAME = "Pro Sim";
+  // Arabic letters + digits, so the Arabic unicode-range subset is requested too.
+  var FONT_SAMPLE = "مفعل 0123";
+  var LOGO_IMG = ".rd-ncheck__logo img";
 
   // Colour tokens read from a light-themed probe, so the image never follows the page theme.
   var TOKEN_VARS = {
@@ -378,7 +381,7 @@
     if (!fonts || !fonts.load) return Promise.resolve();
     return Promise.all(
       FONT_WEIGHTS.map(function (w) {
-        return fonts.load(w + " 40px 'IBM Plex Sans Arabic'").catch(function () {});
+        return fonts.load(w + " 40px 'IBM Plex Sans Arabic'", FONT_SAMPLE).catch(function () {});
       })
     );
   }
@@ -443,24 +446,52 @@
     try {
       var out = await renderBlob(card);
       var digits = phoneDigits(out.data.phone_display);
-      var file = new File([out.blob], "number-check-" + digits + ".png", { type: "image/png" });
+      var file = new File([out.blob], "number-check" + (digits ? "-" + digits : "") + ".png", { type: "image/png" });
       var nav = window.navigator;
       if (nav && nav.canShare && nav.canShare({ files: [file] })) {
         try {
-          await nav.share({ files: [file], title: TITLE, text: TITLE + " " + digits });
+          await nav.share({ files: [file], title: TITLE, text: (TITLE + " " + digits).trim() });
           return;
         } catch (err) {
           if (err && err.name === "AbortError") return; // the user closed the sheet
+          console.warn("navigator.share failed, downloading instead", err);
         }
       }
       download(file);
       toast(MSG_SAVED, "success");
     } catch (err) {
+      console.error("number-check share failed", err);
       toast(MSG_FAILED, "error");
     } finally {
       btn.disabled = false;
       if (label) label.textContent = original;
     }
+  }
+
+  // The monogram sits under the logo <img> in the tile; a logo file that fails to load is
+  // hidden so the monogram shows instead of a broken image.
+  function hideBrokenLogos(root) {
+    if (!root || !root.querySelectorAll) return;
+    Array.prototype.forEach.call(root.querySelectorAll(LOGO_IMG), function (img) {
+      if (img.complete && img.naturalWidth === 0) img.hidden = true;
+    });
+  }
+
+  // `error` does not bubble: listen in the capture phase on document.
+  document.addEventListener(
+    "error",
+    function (event) {
+      var img = event.target;
+      if (!img || img.tagName !== "IMG" || !img.closest) return;
+      if (img.closest(".rd-ncheck__logo")) img.hidden = true;
+    },
+    true
+  );
+
+  // Cards injected by the polling flow (or already failed when the page is shown).
+  hideBrokenLogos(document);
+  if (window.htmx && window.htmx.onLoad) {
+    window.htmx.onLoad(function (elt) { hideBrokenLogos(elt); });
   }
 
   // Delegated on document: works for every card injected into the result box and is
@@ -484,6 +515,7 @@
     toneColors: toneColors,
     readTokens: readTokens,
     layoutShare: layoutShare,
+    hideBrokenLogos: hideBrokenLogos,
     TOKEN_VARS: TOKEN_VARS,
     TOKEN_FALLBACK: TOKEN_FALLBACK,
   };

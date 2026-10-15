@@ -25,7 +25,7 @@ const COLORS = {
 };
 
 function makeEnv(opts = {}) {
-  const listeners = {};
+  const listeners = {}, captures = {}, fontCalls = [], logs = { error: [], warn: [] };
   const toasts = [], downloads = [], shared = [], styleReads = [];
   const drawn = [];
   const canvas = {
@@ -40,9 +40,9 @@ function makeEnv(opts = {}) {
   const body = { appendChild() {}, removeChild() {} };
   const mkEl = () => ({ style: {}, setAttribute() {}, click() { downloads.push({ href: this.href, name: this.download }); } });
   const document = {
-    body, fonts: { load: () => Promise.resolve() },
+    body, fonts: { load: (spec, text) => { fontCalls.push([spec, text]); return Promise.resolve(); } },
     createElement: (tag) => (tag === "canvas" ? canvas : mkEl()),
-    addEventListener: (t, fn) => { (listeners[t] = listeners[t] || []).push(fn); },
+    addEventListener: (t, fn, cap) => { (listeners[t] = listeners[t] || []).push(fn); captures[t] = cap; },
   };
   const label = { textContent: "مشاركة كصورة" };
   const json = { textContent: JSON.stringify(opts.share || SHARE) };
@@ -59,7 +59,7 @@ function makeEnv(opts = {}) {
     getComputedStyle: () => ({ getPropertyValue: (n) => { styleReads.push(n); return opts.tokens === false ? "" : "#123456"; }, color: "rgb(1, 2, 3)" }),
   };
   const ctx = {
-    document, window, console, Promise, JSON, Math, Object, String, Number, parseFloat, URL, setTimeout: () => 0,
+    document, window, console: { error: (...a) => logs.error.push(a), warn: (...a) => logs.warn.push(a), log() {} }, Promise, JSON, Math, Object, String, Number, parseFloat, URL, setTimeout: () => 0,
     File: class { constructor(parts, name, o) { this.parts = parts; this.name = name; this.type = o.type; } },
     Image: class { set src(v) { setTimeout0(() => (opts.imgFail ? this.onerror() : this.onload())); } get width() { return 100; } get height() { return 50; } },
   };
@@ -71,7 +71,7 @@ function makeEnv(opts = {}) {
     listeners.click[0]({ target: { closest: (s) => (s === "[data-rd-share-check]" ? btn : null) }, preventDefault() {} });
     for (let i = 0; i < 50; i++) await new Promise((r) => setImmediate(r));
   };
-  return { api: window.rdNcheckShare, listeners, click, btn, label, toasts, downloads, shared, drawn, styleReads };
+  return { api: window.rdNcheckShare, listeners, captures, fontCalls, logs, click, btn, label, toasts, downloads, shared, drawn, styleReads };
 }
 const setTimeout0 = (fn) => setImmediate(fn);
 
@@ -112,7 +112,8 @@ const setTimeout0 = (fn) => setImmediate(fn);
   check("layout: 1080 wide, height near 1270", L.width === 1080 && L.height > 1200 && L.height < 1400, [L.width, L.height]);
   const phone = texts.find((o) => o.s === "052-123-4567");
   check("layout: number drawn LTR from an explicit left x", phone && phone.dir === "ltr" && phone.align === "left" && phone.x > 0, phone);
-  const pieces = texts.filter((o) => ["6.08", "/", "400"].includes(o.s) && o.dir === "ltr" && o.y === 880);
+  const firstY = (texts.find((o) => o.s === "6.08") || {}).y;
+  const pieces = texts.filter((o) => ["6.08", "/", "400"].includes(o.s) && o.dir === "ltr" && o.y === firstY);
   check("layout: 'used / total' drawn piece by piece, increasing x", pieces.length === 3 && pieces[0].x < pieces[1].x && pieces[1].x < pieces[2].x && pieces.every((p) => p.y === pieces[0].y), pieces);
   check("layout: date and days LTR", texts.some((o) => o.s === "13/11/2026" && o.dir === "ltr") && texts.some((o) => o.s === "29" && o.dir === "ltr"), 0);
   check("layout: Arabic runs are rtl, right-aligned",
@@ -166,6 +167,47 @@ const setTimeout0 = (fn) => setImmediate(fn);
   e = makeEnv({ imgFail: true, share: { ...SHARE, line_logo: "/media/x.webp" } });
   await e.click();
   check("image load error never breaks drawing (monogram used)", e.downloads.length === 1 && e.drawn.some((d) => d.s === "س"), [e.downloads, e.toasts]);
+
+
+  // --- review fixes
+  e = makeEnv();
+  await e.click();
+  check("document.fonts.load gets Arabic and digit sample text for 400/600/700",
+    e.fontCalls.length === 3 && e.fontCalls.every(([, t]) => /[\u0600-\u06FF]/.test(t) && /\d/.test(t)) && ["400", "600", "700"].every((w) => e.fontCalls.some(([f]) => f.startsWith(w + " "))), e.fontCalls);
+
+  const logo = {};
+  const mkImg = (extra = {}) => ({ tagName: "IMG", hidden: false, closest: (s) => (s === ".rd-ncheck__logo" ? logo : null), ...extra });
+  check("capture-phase error listener on document", (e.listeners.error || []).length === 1 && e.captures.error === true, [e.listeners.error, e.captures]);
+  const onError = e.listeners.error[0];
+  const broken = mkImg(); onError({ target: broken });
+  check("image error inside the logo tile hides the img", broken.hidden === true, broken);
+  const other = { tagName: "IMG", hidden: false, closest: () => null }; onError({ target: other });
+  check("image error outside the logo tile is ignored", other.hidden === false, other);
+  const notImg = { tagName: "DIV", hidden: false, closest: () => logo }; onError({ target: notImg });
+  check("non-img error targets are ignored", notImg.hidden === false, notImg);
+  onError({ target: null }); onError({ target: mkImg({ closest: undefined }) });
+  check("odd error targets do not throw", true);
+  const doneBroken = mkImg({ complete: true, naturalWidth: 0 }), doneOk = mkImg({ complete: true, naturalWidth: 40 }), loading = mkImg({ complete: false, naturalWidth: 0 });
+  e.api.hideBrokenLogos({ querySelectorAll: (sel) => (sel === ".rd-ncheck__logo img" ? [doneBroken, doneOk, loading] : []) });
+  check("hideBrokenLogos hides an already-failed img only (not loaded, not still loading)", doneBroken.hidden === true && doneOk.hidden === false && loading.hidden === false, [doneBroken, doneOk, loading]);
+  e.api.hideBrokenLogos(null);
+  check("hideBrokenLogos tolerates a missing root", true);
+
+  e = makeEnv({ noBlob: true });
+  await e.click();
+  check("failure logs console.error before the toast", e.logs.error.length === 1 && e.toasts[0].l === "error", [e.logs, e.toasts]);
+
+  e = makeEnv({ canShare: true, shareImpl: () => Promise.reject(Object.assign(new Error("x"), { name: "NotAllowedError" })) });
+  await e.click();
+  check("NotAllowedError: console.warn, still downloads + toast", e.logs.warn.length === 1 && e.downloads.length === 1 && e.toasts[0].m === "تم حفظ الصورة", [e.logs, e.downloads]);
+
+  e = makeEnv({ canShare: true, shareImpl: () => Promise.reject(Object.assign(new Error("x"), { name: "AbortError" })) });
+  await e.click();
+  check("AbortError stays silent (no warn)", e.logs.warn.length === 0 && e.logs.error.length === 0, e.logs);
+
+  e = makeEnv({ share: { ...SHARE, phone_display: "" } });
+  await e.click();
+  check("empty phone: filename is number-check.png", e.downloads.length === 1 && e.downloads[0].name === "number-check.png", e.downloads);
 
   console.log(fail ? "FAILED" : "ALL OK"); process.exit(fail ? 1 : 0);
 })();

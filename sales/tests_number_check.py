@@ -602,12 +602,11 @@ class CardContextTests(_Base):
             data,
             {
                 "key": "data", "label": "إنترنت", "unit": "جيجا",
-                "used": "6.08", "total": "400", "pct": "1.5", "offset": "98.48",
+                "used": "6.08", "total": "400", "pct": "1.5",
                 "remaining": "393.92", "tone": "ok", "included": True,
             },
         )
         self.assertEqual((minutes["used"], minutes["total"], minutes["pct"]), ("0", "5000", "0"))
-        self.assertEqual(minutes["offset"], "")
         self.assertEqual(minutes["remaining"], "5000")
         self.assertEqual(sms["unit"], "رسالة")
 
@@ -621,7 +620,8 @@ class CardContextTests(_Base):
 
     def test_gauge_is_clamped_when_usage_exceeds_the_allowance(self):
         gauge = self.ctx(NumberInfo(sms_used=150, sms_total=100))["usage"][2]
-        self.assertEqual((gauge["pct"], gauge["offset"], gauge["remaining"]), ("100", "0.00", "0"))
+        self.assertEqual((gauge["pct"], gauge["remaining"]), ("100", "0"))
+        self.assertNotIn("offset", gauge)
 
     def test_zero_allowance_is_not_included(self):
         gauge = self.ctx(NumberInfo(sms_used=0, sms_total=0))["usage"][2]
@@ -790,6 +790,43 @@ class CardContextTests(_Base):
         self.line_with_icon("مزود جديد - باقات", icon="icons/product_lines/n.webp")
         self.assertTrue(self.ctx(NumberInfo(network="مزود  جديد"))["line_logo"].endswith("n.webp"))
 
+    def test_tone_match_beats_an_earlier_sorted_containment_match(self):
+        self.line_with_icon("جديد", icon="icons/product_lines/contained.webp")  # sorts first
+        self.line_with_icon("Cellcom", icon="icons/product_lines/tone.webp")
+        ctx = self.ctx(NumberInfo(network="سلكوم جديد"), sale=None)
+        self.assertTrue(ctx["line_logo"].endswith("tone.webp"), ctx["line_logo"])
+        self.assertEqual(ctx["line_name"], "Cellcom")
+
+    def test_two_character_names_are_ignored(self):
+        self.line_with_icon("xy", icon="icons/product_lines/xy.webp")
+        self.assertEqual(self.ctx(NumberInfo(network="xy"), sale=None)["line_logo"], "")
+        self.assertEqual(self.ctx(NumberInfo(network="xy mobile"), sale=None)["line_logo"], "")
+
+    def test_containment_is_on_whole_words_only(self):
+        self.line_with_icon("Mobile", icon="icons/product_lines/mobile.webp")
+        self.line_with_icon("eSIM", icon="icons/product_lines/esim.webp")
+        # Substrings of one spaceless word never match ...
+        self.assertEqual(self.ctx(NumberInfo(network="Hotmobile"), sale=None)["line_logo"], "")
+        self.assertEqual(self.ctx(NumberInfo(network="Wesimple"), sale=None)["line_logo"], "")
+        # ... a whole word does.
+        self.assertTrue(self.ctx(NumberInfo(network="New Mobile"), sale=None)["line_logo"].endswith("mobile.webp"))
+
+    def test_hot_mobile_network_is_not_taken_by_a_generic_line_through_its_spaceless_name(self):
+        self.line_with_icon("Mobile", icon="icons/product_lines/mobile.webp")
+        hot = self.line_with_icon("Hot Mobile", icon="icons/product_lines/hot.webp")
+        ctx = self.ctx(NumberInfo(network="Hot Mobile"), sale=None)
+        self.assertTrue(ctx["line_logo"].endswith("hot.webp"), ctx["line_logo"])
+        self.assertEqual(ctx["line_name"], hot.name)
+
+    def test_branding_failure_is_logged_and_the_card_still_renders(self):
+        self.make_sale()
+        with patch("core.models.SiteBranding.load", side_effect=RuntimeError("db down")):
+            with self.assertLogs("sales.number_check", level="WARNING") as logs:
+                _, status = self.run_check()
+        self.assertEqual(status.json()["status"], "ok")
+        self.assertIn("branding", logs.output[0])
+        self.assertIn("data-site-name=\"Pro Sim\"", status.json()["html"])
+
     def test_fallback_ignores_lines_without_an_icon_and_other_networks(self):
         ProductLine.objects.create(company=self.company, name="سلكوم 2")
         self.line_with_icon("هوت", icon="icons/product_lines/hot.webp")
@@ -849,7 +886,16 @@ class CardContextTests(_Base):
         self.line_with_icon("سلكوم", icon="icons/product_lines/cellcom.webp")
         html = self.card(sale=None)
         self.assertRegex(html, r'<img class="rd-ncheck__logo-img" src="[^"]*cellcom\.webp" alt="سلكوم"')
-        self.assertNotIn("rd-ncheck__mono", html)
+
+    def test_monogram_is_always_present_under_the_logo_img(self):
+        # A missing icon file must not leave a broken image: the monogram sits in the
+        # same tile, before (below) the <img>, which number-check-share.js hides on error.
+        self.line_with_icon("سلكوم", icon="icons/product_lines/cellcom.webp")
+        html = self.card(sale=None)
+        tile = html[html.index('class="rd-ncheck__logo"'):html.index('class="rd-ncheck__id"')]
+        self.assertIn('<span class="rd-ncheck__mono" aria-hidden="true">س</span>', tile)
+        self.assertIn('<img class="rd-ncheck__logo-img"', tile)
+        self.assertLess(tile.index("rd-ncheck__mono"), tile.index("<img"))
 
     def test_monogram_tile_when_there_is_no_logo(self):
         html = self.card(sale=None)

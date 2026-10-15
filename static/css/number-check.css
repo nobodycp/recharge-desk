@@ -241,11 +241,19 @@
   background: var(--rd-hero-plate);
 }
 
+/* Layered above the monogram on the same light plate; hidden when the file fails to load. */
 .rd-ncheck__logo-img {
-  max-inline-size: 100%;
-  max-block-size: 100%;
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0.35rem;
+  background: var(--rd-hero-plate);
   object-fit: contain;
 }
+
+.rd-ncheck__logo-img[hidden] { display: none; }
 
 .rd-ncheck__mono {
   position: absolute;
@@ -274,14 +282,10 @@
   unicode-bidi: isolate;
 }
 
-[dir="rtl"] .rd-ncheck__num { text-align: right; }
-
 .rd-ncheck__meta {
   color: var(--rd-muted);
   font-size: 0.9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Status: dot + text, tone only reinforces it. */
@@ -377,7 +381,7 @@
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.2;
-  text-align: right;
+  text-align: end;
 }
 
 /* ---- usage --------------------------------------------------------------- */
@@ -543,7 +547,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  text-align: right;
+  text-align: end;
   overflow-wrap: anywhere;
 }
 

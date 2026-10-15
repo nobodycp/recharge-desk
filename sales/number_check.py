@@ -12,6 +12,7 @@ result and is never part of the card.
 from __future__ import annotations
 
 import logging
+import re
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -247,6 +248,7 @@ def _branding() -> dict:
         logo = branding.logo.url if branding.logo else ""
         name = (branding.site_name or "").strip()
     except Exception:  # noqa: BLE001 — branding must never break a result card
+        log.warning("site branding unavailable for the number check card", exc_info=True)
         logo, name = "", ""
     return {"site_logo": logo, "site_name": name or DEFAULT_SITE_NAME}
 
@@ -340,7 +342,6 @@ def _gauge(key: str, label: str, unit: str, used, total) -> dict:
         "used": _num(used),
         "total": "" if total is None else _num(total),
         "pct": "",
-        "offset": "",
         "remaining": "",
         "tone": "ok",
         "included": total != 0,
@@ -351,8 +352,6 @@ def _gauge(key: str, label: str, unit: str, used, total) -> dict:
     pct = min(max(used / total * _HUNDRED, Decimal(0)), _HUNDRED)
     gauge.update(
         pct=_pct_text(pct),
-        # A zero-length arc still paints its round cap, so nothing is drawn at 0.
-        offset=f"{_HUNDRED - pct:.2f}" if pct > 0 else "",
         remaining=_num(max(total - used, Decimal(0))),
         tone="danger" if pct >= 90 else "warn" if pct >= 70 else "ok",
     )
@@ -390,40 +389,55 @@ def _phone_display(phone: str) -> str:
 
 
 MIN_CONTAINED_NAME = 3  # shorter names are too ambiguous to match by containment
+_WORD = re.compile(r"\w+")
 
 
 def _normalise_line_name(text: str) -> str:
     return "".join(ch for ch in (text or "").lower() if ch not in " -_\u00a0")
 
 
-def _line_matches(network: str, line_name: str) -> bool:
-    """A line belongs to ``network`` by brand keyword or by name containment."""
-    a, b = _normalise_line_name(network), _normalise_line_name(line_name)
-    if not a or not b:
+def _words(text: str) -> list[str]:
+    return _WORD.findall((text or "").lower())
+
+
+def _tone_matches(network: str, line_name: str) -> bool:
+    """Same brand keyword (spaces and hyphens ignored): «Cell-com 019» is a Cellcom line."""
+    tone = _network_tone(_normalise_line_name(network))
+    return tone != "default" and tone == _network_tone(_normalise_line_name(line_name))
+
+
+def _name_contained(network: str, line_name: str) -> bool:
+    """One name's words appear, as whole consecutive words, in the other's."""
+    a, b = _words(network), _words(line_name)
+    shorter, longer = sorted((a, b), key=lambda w: len("".join(w)))
+    if len("".join(shorter)) < MIN_CONTAINED_NAME:
         return False
-    tone = _network_tone(a)
-    if tone != "default" and tone == _network_tone(b):
-        return True
-    shorter, longer = sorted((a, b), key=len)
-    return len(shorter) >= MIN_CONTAINED_NAME and shorter in longer
+    return any(
+        longer[i : i + len(shorter)] == shorter
+        for i in range(len(longer) - len(shorter) + 1)
+    )
 
 
 def _line_logo(sale: Sale | None, network: str) -> tuple[str, str]:
-    """(logo URL, line name): the last sale's line icon, else a line matching the network."""
+    """(logo URL, line name): the last sale's line icon, else a line matching the network.
+
+    Brand-keyword matches rank before whole-word name containment.
+    """
     product = sale.product if sale is not None else None
     line = product.line if product is not None else None
     if line is not None and line.icon:
         return line.icon.url, line.name
     if not network:
         return "", ""
-    candidates = (
+    candidates = list(
         ProductLine.objects.exclude(icon__isnull=True)
         .exclude(icon="")
         .order_by("sort_order", "pk")
     )
-    for candidate in candidates:
-        if _line_matches(network, candidate.name):
-            return candidate.icon.url, candidate.name
+    for matches in (_tone_matches, _name_contained):
+        for candidate in candidates:
+            if matches(network, candidate.name):
+                return candidate.icon.url, candidate.name
     return "", ""
 
 

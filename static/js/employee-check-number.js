@@ -63,6 +63,10 @@
     resultBox.classList.remove("is-error");
     resultBox.innerHTML = html;
     resultBox.classList.remove("d-none");
+    // number-check-share.js: hide a logo file that already failed to load.
+    if (window.rdNcheckShare && window.rdNcheckShare.hideBrokenLogos) {
+      window.rdNcheckShare.hideBrokenLogos(resultBox);
+    }
   }
 
   function showText(message) {

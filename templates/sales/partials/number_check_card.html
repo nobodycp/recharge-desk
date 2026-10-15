@@ -2,12 +2,10 @@
 {# The share image is drawn client-side from `share` only (no price, ICCID or sale). #}
 <article class="rd-ncheck rd-ncheck--{{ network_tone }}" dir="rtl" aria-label="نتيجة فحص الرقم" data-rd-ncheck data-site-logo="{{ site_logo }}" data-site-name="{{ site_name }}">
   <header class="rd-ncheck__head">
+    {# The monogram is always there; the logo <img> is layered above it and hidden on load error (number-check-share.js). #}
     <span class="rd-ncheck__logo">
-      {% if line_logo %}
-      <img class="rd-ncheck__logo-img" src="{{ line_logo }}" alt="{{ line_name|default:network }}">
-      {% else %}
       <span class="rd-ncheck__mono" aria-hidden="true">{{ network|first|default:"—" }}</span>
-      {% endif %}
+      {% if line_logo %}<img class="rd-ncheck__logo-img" src="{{ line_logo }}" alt="{{ line_name|default:network }}">{% endif %}
     </span>
     <div class="rd-ncheck__id">
       <div class="rd-ncheck__num tabular-nums" dir="ltr">{{ phone_display|default:"—" }}</div>
