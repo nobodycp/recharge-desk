@@ -5706,7 +5706,7 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-stat-strip__lbl {
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--bs-secondary-color);
   white-space: nowrap;
@@ -6722,6 +6722,15 @@ textarea.form-control {
   }
 }
 
+@media (max-width: 991.98px) {
+  .rd-page .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.45rem;
+  }
+}
+
 @media (max-width: 575.98px) {
   .rd-page-head__aside {
     flex: 1 1 100%;
@@ -6756,6 +6765,12 @@ textarea.form-control {
 
 .rd-filter-grid__errors {
   grid-column: 1 / -1;
+}
+
+.rd-grid-error {
+  margin: 0;
+  padding: 0.6rem 1.15rem;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .rd-filter-grid__actions {

@@ -531,7 +531,9 @@ class EmployeePagesKitTests(TestCase):
         self.assertContains(resp, "rd-section-tabs")
         # adjustment: help text is visible and Save is not full width.
         self.assertContains(resp, "Positive credits the employee; negative debits them.")
-        self.assertNotContains(resp, "w-100")
+        adjustment = re.search(r'<form method="post" novalidate>.*?</form>', resp.content.decode(), re.S).group(0)
+        self.assertIn("form_kind", adjustment)
+        self.assertNotIn("w-100", adjustment)
 
     def test_detail_filter_badge_counts_only_filters(self):
         for tab in ("ledger", "payments"):
@@ -551,7 +553,50 @@ class EmployeePagesKitTests(TestCase):
             self.assertRegex(html, r'<input type="hidden" name="%s" value="%s" data-rd-filter-keep>' % (name, value))
         self.assertContains(resp, 'hx-target="#employee-ledger-grid"')
         # The htmx submit must ask for the grid fragment, not the whole page.
-        self.assertRegex(html, r"hx-vals='\{[^']*&quot;partial&quot;: *&quot;ledger&quot;|hx-vals='\{[^']*\"partial\": *\"ledger\"")
+        form_tag = re.search(r'<form[^>]*class="rd-filter-grid"[^>]*>', html).group(0)
+        self.assertIn('hx-vals="{&quot;partial&quot;: &quot;ledger&quot;}"', form_tag)
+
+    def test_reset_link_has_no_hx_vals_ancestor(self):
+        for tab in ("ledger", "payments"):
+            html = self.client.get(self.detail_url, {"tab": tab}).content.decode()
+            before = html[: html.index('class="btn btn-outline-secondary btn-sm" href="%s?tab=%s"' % (self.detail_url, tab))]
+            card = before[before.index("<details"):]
+            # Nothing opened around the Reset link carries hx-vals except the <form> itself.
+            self.assertEqual(card.count("hx-vals"), 1)
+            form_open = card[card.rindex("<form"):]
+            self.assertIn("hx-vals", form_open.split(">", 1)[0])
+            wrapper = before[: before.index("<details")]
+            self.assertNotRegex(wrapper[-200:], r"<div[^>]*hx-vals")
+
+    def test_range_error_rendered_in_htmx_grid_partial(self):
+        text = "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;."
+        for tab in ("ledger", "payments"):
+            params = {
+                "partial": tab,
+                "tab": tab,
+                f"{tab}_date_from": "2026-02-10",
+                f"{tab}_date_to": "2026-02-01",
+            }
+            resp = self.client.get(self.detail_url, params, HTTP_HX_REQUEST="true")
+            self.assertContains(resp, text)
+            self.assertContains(resp, 'class="rd-field__error rd-grid-error" role="alert"')
+            ok = self.client.get(self.detail_url, {"partial": tab, "tab": tab}, HTTP_HX_REQUEST="true")
+            self.assertNotContains(ok, "rd-grid-error")
+
+    def test_range_error_shown_once_on_full_page(self):
+        text = "&#x27;Date from&#x27; must be on or before &#x27;Date to&#x27;."
+        resp = self.client.get(
+            self.detail_url,
+            {"tab": "ledger", "ledger_date_from": "2026-02-10", "ledger_date_to": "2026-02-01"},
+        )
+        self.assertContains(resp, text, count=1)
+        self.assertNotContains(resp, "rd-grid-error")
+
+    def test_adjustment_placeholder_translated_to_arabic(self):
+        self.addCleanup(translation.activate, "en")
+        self.client.cookies["django_language"] = "ar"
+        resp = self.client.get(self.detail_url, follow=True)
+        self.assertContains(resp, 'placeholder="ملاحظات اختيارية"')
 
     def test_detail_date_range_error_visible(self):
         reversed_range = {"ledger_date_from": "2026-02-10", "ledger_date_to": "2026-02-01"}

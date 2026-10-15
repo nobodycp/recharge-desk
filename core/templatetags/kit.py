@@ -177,7 +177,7 @@ def _filled(request, key):
 
 
 @register.inclusion_tag("partials/kit/filter_card.html", takes_context=True)
-def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicator_id="", keep="", title="", open=None):
+def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicator_id="", keep="", title="", open=None, hx_vals=""):
     """Collapsible filter card around a GET form. Counts only the form's own fields as active."""
     request = context["request"]
     active_count = sum(1 for name in form.fields if _filled(request, form.add_prefix(name)))
@@ -194,6 +194,7 @@ def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicat
         "action_url": path,
         "reset_url": reset_url or request.path,
         "hx_target": hx_target,
+        "hx_vals": hx_vals,
         "indicator_id": indicator_id,
         "hidden_fields": form.hidden_fields(),
         "kept": kept,

@@ -286,6 +286,21 @@ class PageHeaderTests(SimpleTestCase):
         self.assertRegex(_rule_body(phone, ".rd-page-head__aside"), r"flex:\s*1 1 100%")
         self.assertRegex(_rule_body(phone, ".rd-page-head__aside > form .btn"), r"width:\s*100%")
 
+    def test_page_buttons_are_touch_sized_below_992px(self):
+        with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
+            css = fh.read()
+        tablet = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        body = _rule_body(tablet, ".rd-page .btn")
+        self.assertRegex(body, r"min-height:\s*3\.45rem")
+        self.assertRegex(body, r"display:\s*inline-flex")
+        self.assertRegex(body, r"align-items:\s*center")
+        self.assertRegex(body, r"justify-content:\s*center")
+
+    def test_stat_strip_label_meets_the_text_floor(self):
+        with open(settings.BASE_DIR / "static/css/design-system.css", encoding="utf-8") as fh:
+            css = fh.read()
+        self.assertRegex(_rule_body(css, ".rd-stat-strip__lbl"), r"font-size:\s*0\.8rem")
+
 
 class SearchForm(forms.Form):
     q = forms.CharField(label="Search", required=False)
@@ -381,6 +396,15 @@ class FilterCardTests(SimpleTestCase):
         self.assertIn('id="spin"', html)
         plain = render_filter_card('form action="/list/"')
         self.assertNotIn("hx-get", plain)
+
+    def test_hx_vals_only_on_form_and_only_with_target(self):
+        html = render_filter_card('form hx_target="#r" hx_vals=vals', extra={"vals": '{"partial": "x"}'})
+        tag = html.split("<form", 1)[1].split(">", 1)[0]
+        self.assertIn('hx-vals="{&quot;partial&quot;: &quot;x&quot;}"', tag)
+        self.assertEqual(html.count("hx-vals"), 1)
+        plain = render_filter_card('form hx_vals=vals', extra={"vals": '{"partial": "x"}'})
+        self.assertNotIn("hx-vals", plain)
+        self.assertNotIn("hx-vals", render_filter_card('form hx_target="#r"'))
 
     def test_hx_get_defaults_to_current_path(self):
         html = render_filter_card('form hx_target="#r"')

@@ -1,5 +1,5 @@
 {% load i18n kit %}{% include "partials/filter_card_open.html" with filter_title=title active_count=active_count indicator_id=indicator_id card_open=is_open %}
-    <form method="get" action="{{ action_url }}" class="rd-filter-grid"{% if hx_target %} hx-get="{{ action_url }}" hx-target="{{ hx_target }}" hx-push-url="true"{% if indicator_id %} hx-indicator="#{{ indicator_id }}"{% endif %}{% endif %}>
+    <form method="get" action="{{ action_url }}" class="rd-filter-grid"{% if hx_target %} hx-get="{{ action_url }}" hx-target="{{ hx_target }}" hx-push-url="true"{% if indicator_id %} hx-indicator="#{{ indicator_id }}"{% endif %}{% if hx_vals %} hx-vals="{{ hx_vals|force_escape }}"{% endif %}{% endif %}>
       {% for name, value in kept %}<input type="hidden" name="{{ name }}" value="{{ value }}" data-rd-filter-keep>
       {% endfor %}{% for hidden in hidden_fields %}{{ hidden }}
       {% endfor %}{% for field, wide in fields %}{% rd_field field size="sm" wide=wide %}

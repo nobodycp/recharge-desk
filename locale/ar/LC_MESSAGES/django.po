@@ -1598,7 +1598,7 @@ msgid "Positive credits the employee; negative debits them."
 msgstr "موجب يُضاف للموظف؛ سالب يُخصم منه."
 #: employees/forms.py:53
 msgid "Optional notes"
-msgstr "العمليات"
+msgstr "ملاحظات اختيارية"
 
 #: employees/forms.py:60
 msgid "Amount cannot be zero."
