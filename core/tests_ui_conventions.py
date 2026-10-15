@@ -66,6 +66,170 @@ LEGACY_HEX = {  # 1 file
 }
 
 
+# --- Page kit guardrails (see core/templatetags/kit.py) ---------------------------
+# Same shrink-only rule as above. Migrate a template onto the page kit, then delete
+# it from its set. Never add a new file.
+# A "page template" extends a shell (or a variable such as `base_template`) and
+# defines {% block content %}.
+EXTENDS_SHELL = re.compile(
+    r"{%\s*extends\s+(?:[\"']base_(?:management|employee)\.html[\"']|base_template)\s*%}"
+)
+BLOCK_CONTENT = re.compile(r"{%\s*block\s+content\s*%}")
+PAGE_HEADER = re.compile(r"{%\s*rd_page_header\b")
+# Legacy card markup: `app-card…` or a Bootstrap `class="card"` / `class="card …"`.
+APP_CARD = re.compile(r"app-card|class=\"card(?![\w-])")
+LABEL_TAG = re.compile(r"\.label_tag")
+INLINE_WIDTH = re.compile(r"style=\"[^\"]*max-width")
+
+
+def _lacks_page_header(text):
+    return bool(
+        EXTENDS_SHELL.search(text) and BLOCK_CONTENT.search(text) and not PAGE_HEADER.search(text)
+    )
+
+
+LEGACY_PAGE_HEAD = {  # 67 files
+    "phone_refresh/templates/phone_refresh/api_index.html",
+    "phone_refresh/templates/phone_refresh/api_token_created.html",
+    "phone_refresh/templates/phone_refresh/api_token_form.html",
+    "phone_refresh/templates/phone_refresh/message_form.html",
+    "phone_refresh/templates/phone_refresh/providers_index.html",
+    "phone_refresh/templates/phone_refresh/reports.html",
+    "phone_refresh/templates/phone_refresh/rule_form.html",
+    "phone_refresh/templates/phone_refresh/settings_index.html",
+    "phone_refresh/templates/phone_refresh/status_form.html",
+    "templates/accounts/account_settings.html",
+    "templates/accounts/user_form.html",
+    "templates/accounts/user_list.html",
+    "templates/audit/audit_log_list.html",
+    "templates/companies/company_detail.html",
+    "templates/companies/company_form.html",
+    "templates/companies/company_list.html",
+    "templates/companies/layan_reconcile.html",
+    "templates/companies/product_line_form.html",
+    "templates/companies/product_list.html",
+    "templates/companies/product_variant_form.html",
+    "templates/companies/sky_reconcile.html",
+    "templates/core/search.html",
+    "templates/core/site_branding.html",
+    "templates/core/system_settings.html",
+    "templates/customers/customer_detail.html",
+    "templates/customers/customer_detailed_invoice.html",
+    "templates/customers/customer_form.html",
+    "templates/customers/customer_list.html",
+    "templates/customers/customer_statement.html",
+    "templates/customers/payment_submissions_list.html",
+    "templates/employees/employee_detail.html",
+    "templates/employees/employee_form.html",
+    "templates/employees/employee_list.html",
+    "templates/employees/my_balance.html",
+    "templates/expenses/expense_form.html",
+    "templates/expenses/expense_list.html",
+    "templates/expenses/expense_report.html",
+    "templates/inventory/cards.html",
+    "templates/inventory/customer_detail.html",
+    "templates/inventory/customer_list.html",
+    "templates/inventory/line_detail.html",
+    "templates/inventory/main_stock.html",
+    "templates/inventory/movements.html",
+    "templates/inventory/overview.html",
+    "templates/reports/company_report.html",
+    "templates/reports/dashboard.html",
+    "templates/reports/employee_report.html",
+    "templates/reports/phone_lines_report.html",
+    "templates/reports/profit_report.html",
+    "templates/reports/provider_operations.html",
+    "templates/reports/sales_report.html",
+    "templates/reports/stale_phone_edit.html",
+    "templates/sales/awaiting_approvals.html",
+    "templates/sales/employee_entry.html",
+    "templates/sales/employee_payment_edit.html",
+    "templates/sales/employee_recent.html",
+    "templates/sales/employee_record_payment.html",
+    "templates/sales/employee_refresh_number.html",
+    "templates/sales/employee_sale_edit.html",
+    "templates/sales/employee_stock_check.html",
+    "templates/sales/management_sale_list.html",
+    "templates/sales/payment_method_form.html",
+    "templates/sales/payment_method_list.html",
+    "templates/sales/pending_payments.html",
+    "templates/sales/sale_edit.html",
+    "templates/sms_gateway/reports.html",
+    "templates/sms_gateway/settings_index.html",
+}
+LEGACY_APP_CARD = {  # 16 files
+    "phone_refresh/templates/phone_refresh/api_token_created.html",
+    "phone_refresh/templates/phone_refresh/api_token_form.html",
+    "phone_refresh/templates/phone_refresh/message_form.html",
+    "phone_refresh/templates/phone_refresh/rule_form.html",
+    "phone_refresh/templates/phone_refresh/status_form.html",
+    "templates/accounts/account_settings.html",
+    "templates/accounts/user_form.html",
+    "templates/companies/company_form.html",
+    "templates/companies/layan_reconcile.html",
+    "templates/companies/partials/layan_reconcile_settlements.html",
+    "templates/companies/partials/layan_reconcile_table.html",
+    "templates/companies/product_line_form.html",
+    "templates/companies/product_variant_form.html",
+    "templates/companies/sky_reconcile.html",
+    "templates/expenses/expense_form.html",
+    "templates/sales/payment_method_form.html",
+}
+LEGACY_LABEL_TAG = {  # 28 files
+    "phone_refresh/templates/phone_refresh/_general_tab.html",
+    "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
+    "phone_refresh/templates/phone_refresh/api_token_form.html",
+    "phone_refresh/templates/phone_refresh/message_form.html",
+    "phone_refresh/templates/phone_refresh/rule_form.html",
+    "phone_refresh/templates/phone_refresh/status_form.html",
+    "templates/accounts/account_settings.html",
+    "templates/accounts/user_form.html",
+    "templates/companies/company_form.html",
+    "templates/companies/layan_reconcile.html",
+    "templates/companies/partials/company_detail_connection.html",
+    "templates/companies/partials/company_detail_general.html",
+    "templates/companies/product_line_form.html",
+    "templates/companies/product_variant_form.html",
+    "templates/customers/customer_detail.html",
+    "templates/customers/customer_form.html",
+    "templates/expenses/expense_form.html",
+    "templates/expenses/expense_list.html",
+    "templates/inventory/cards.html",
+    "templates/reports/company_report.html",
+    "templates/reports/phone_lines_report.html",
+    "templates/reports/sales_report.html",
+    "templates/reports/stale_phone_edit.html",
+    "templates/sales/employee_recent.html",
+    "templates/sales/management_sale_list.html",
+    "templates/sales/payment_method_form.html",
+    "templates/sales/pending_payments.html",
+    "templates/sales/sale_edit.html",
+}
+LEGACY_INLINE_WIDTH = {  # 21 files
+    "phone_refresh/templates/phone_refresh/api_token_created.html",
+    "phone_refresh/templates/phone_refresh/api_token_form.html",
+    "phone_refresh/templates/phone_refresh/message_form.html",
+    "phone_refresh/templates/phone_refresh/reports.html",
+    "phone_refresh/templates/phone_refresh/rule_form.html",
+    "phone_refresh/templates/phone_refresh/status_form.html",
+    "templates/accounts/account_settings.html",
+    "templates/accounts/user_form.html",
+    "templates/companies/company_form.html",
+    "templates/companies/partials/layan_reconcile_review_table.html",
+    "templates/companies/partials/sky_reconcile_table.html",
+    "templates/companies/product_line_form.html",
+    "templates/companies/product_variant_form.html",
+    "templates/core/forbidden.html",
+    "templates/customers/customer_form.html",
+    "templates/expenses/expense_form.html",
+    "templates/reports/partials/company_report_sales.html",
+    "templates/reports/stale_phone_edit.html",
+    "templates/sales/partials/management_sale_row.html",
+    "templates/sales/payment_method_form.html",
+    "templates/sales/sale_edit.html",
+}
+
+
 def _template_files():
     roots = [BASE_DIR / "templates"]
     for config in apps.get_app_configs():
@@ -197,10 +361,12 @@ class TemplateConventionTests(SimpleTestCase):
     # ---- Pearl identity guardrails (see DESIGN.md) ----
 
     def _offenders(self, pattern, legacy):
+        # `pattern` is a compiled regex or a predicate taking the template source.
+        offends = pattern.search if hasattr(pattern, "search") else pattern
         found = {
             name
             for name, text in _template_files()
-            if name not in OUT_OF_SCOPE and pattern.search(text)
+            if name not in OUT_OF_SCOPE and offends(text)
         }
         return found, sorted(found - legacy)
 
@@ -228,6 +394,53 @@ class TemplateConventionTests(SimpleTestCase):
             "<thead>; drop `table-light`:",
         )
 
+    def test_pages_use_the_kit_page_header(self):
+        _, offenders = self._offenders(_lacks_page_header, LEGACY_PAGE_HEAD)
+        self._assert_none(
+            offenders,
+            "Management/employee pages open with the kit header: "
+            "{% load kit %} then {% rd_page_header title=... %}...{% end_rd_page_header %}:",
+        )
+
+    def test_no_legacy_cards(self):
+        _, offenders = self._offenders(APP_CARD, LEGACY_APP_CARD)
+        self._assert_none(
+            offenders,
+            "`app-card` and Bootstrap `.card` are legacy surfaces. Use `.rd-card` "
+            "(see DESIGN.md):",
+        )
+
+    def test_no_label_tag(self):
+        _, offenders = self._offenders(LABEL_TAG, LEGACY_LABEL_TAG)
+        self._assert_none(
+            offenders,
+            "`field.label_tag` renders inconsistent labels. Use {% rd_field form.x %} / "
+            "{% rd_fields form %} from the kit:",
+        )
+
+    def test_no_inline_max_width(self):
+        _, offenders = self._offenders(INLINE_WIDTH, LEGACY_INLINE_WIDTH)
+        self._assert_none(
+            offenders,
+            "Inline `max-width` styles repeat a layout pattern. Use a design-system "
+            "class (e.g. a kit/`rd-*` width utility) instead:",
+        )
+
+    def test_kit_guard_patterns(self):
+        shell = '{% extends "base_management.html" %}{% block content %}x{% endblock %}'
+        self.assertTrue(_lacks_page_header(shell))
+        self.assertTrue(_lacks_page_header(shell.replace('"base_management.html"', "base_template")))
+        self.assertFalse(_lacks_page_header(shell.replace("x", "{% rd_page_header title=t %}{% end_rd_page_header %}")))
+        self.assertFalse(_lacks_page_header("{% block content %}x{% endblock %}"))
+        self.assertFalse(_lacks_page_header('{% extends "base_management.html" %}{% block title %}t{% endblock %}'))
+        for html in ('<div class="app-card p-3">', '<div class="card">', '<div class="card shadow">'):
+            self.assertTrue(APP_CARD.search(html), html)
+        for html in ('<div class="rd-card">', '<div class="card-body">', '<div class="mb-3 card">'):
+            self.assertFalse(APP_CARD.search(html), html)
+        self.assertTrue(LABEL_TAG.search("{{ form.name.label_tag }}"))
+        self.assertTrue(INLINE_WIDTH.search('<div style="margin:0; max-width: 40rem">'))
+        self.assertFalse(INLINE_WIDTH.search('<div style="width: 40rem" class="max-width-x">'))
+
     def test_badge_regex_ignores_rd_badges(self):
         self.assertFalse(BS_BADGE.search('<span class="rd-badge rd-badge--paid">x</span>'))
         self.assertFalse(BS_BADGE.search('<div class="bg-white"><span class="rd-badge">x</span></div>'))
@@ -244,6 +457,10 @@ class TemplateConventionTests(SimpleTestCase):
             ("LEGACY_BADGES", BS_BADGE, LEGACY_BADGES),
             ("LEGACY_TABLE_LIGHT", TABLE_LIGHT, LEGACY_TABLE_LIGHT),
             ("LEGACY_HEX", RAW_HEX, LEGACY_HEX),
+            ("LEGACY_PAGE_HEAD", _lacks_page_header, LEGACY_PAGE_HEAD),
+            ("LEGACY_APP_CARD", APP_CARD, LEGACY_APP_CARD),
+            ("LEGACY_LABEL_TAG", LABEL_TAG, LEGACY_LABEL_TAG),
+            ("LEGACY_INLINE_WIDTH", INLINE_WIDTH, LEGACY_INLINE_WIDTH),
         ):
             found, _ = self._offenders(pattern, legacy)
             stale = sorted(legacy - found)
