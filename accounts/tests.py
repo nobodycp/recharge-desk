@@ -767,15 +767,15 @@ class KitPageTests(TestCase):
             positions = [html.index(f'name="{name}"') for name in names]
             self.assertEqual(positions, sorted(positions), names)
 
-        order(edit, ["username", "role", "new_password1", "new_password2", "avatar", "is_active", "is_active_profile"])
-        order(edit, ["full_name", "username"])
-        order(create, ["full_name", "username", "role", "password1", "password2", "is_active", "is_active_profile"])
+        order(edit, ["full_name", "username", "new_password1", "new_password2", "role", "avatar", "is_active", "is_active_profile"])
+        order(create, ["full_name", "username", "password1", "password2", "role", "is_active", "is_active_profile"])
 
     def test_user_form_lock_checkboxes_grouped_under_access(self):
         r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.worker.profile.pk]))
         html = r.content.decode()
-        self.assertContains(r, "Access")
-        self.assertLess(html.index("Access"), html.index('name="is_active"'))
+        heading = re.search(r"<h2[^>]*>\s*Access\s*</h2>", html)
+        self.assertIsNotNone(heading)
+        self.assertLess(heading.start(), html.index('name="is_active"'))
 
     def test_user_form_keeps_role_badge_identity_and_danger_zone(self):
         r = self._client(self.boss).get(reverse("accounts:user_edit", args=[self.worker.profile.pk]))
@@ -824,3 +824,28 @@ class KitPageTests(TestCase):
         r = self._client(self.boss).get(reverse("accounts:user_list"), {"q": "zzzzzz-no-match"})
         self.assertContains(r, "rd-empty-row")
         self.assertContains(r, "empty-state")
+
+    def test_user_list_own_row_never_gets_another_users_delete(self):
+        # "kit_boss" sorts after "aaa_first" and before "zzz_last", so the manager's
+        # row is neither first nor last and a stale delete_url would leak into it.
+        first = User.objects.create_user("aaa_first", password="x")
+        last = User.objects.create_user("zzz_last", password="x")
+        r = self._client(self.boss).get(reverse("accounts:user_list"), {"sort": "username", "order": "asc"})
+        html = r.content.decode()
+        own_delete = reverse("accounts:user_delete", args=[self.boss.profile.pk])
+        self.assertNotIn(own_delete, html)
+        desktop, mobile = html.split('class="d-md-none rd-mobile-stack')
+        for part in (desktop, mobile):
+            rows = re.split(r"(?=@[a-z_]+(?:\s|<))", part)
+            by_user = {}
+            for chunk in rows:
+                m = re.match(r"@([a-z_]+)", chunk)
+                if m:
+                    by_user[m.group(1)] = chunk
+            self.assertTrue({"aaa_first", "kit_boss", "kit_worker", "zzz_last"} <= set(by_user))
+            for name, user in (("aaa_first", first), ("kit_worker", self.worker), ("zzz_last", last)):
+                delete = reverse("accounts:user_delete", args=[user.profile.pk])
+                self.assertEqual(by_user[name].count(delete), 1, name)
+                others = re.findall(r"/management/users/\d+/delete/", by_user[name])
+                self.assertEqual(others, [delete], name)
+            self.assertNotIn("/delete/", by_user["kit_boss"])

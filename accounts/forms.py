@@ -55,9 +55,9 @@ class ManagementUserForm(UserCreationForm):
     field_order = [
         "full_name",
         "username",
-        "role",
         "password1",
         "password2",
+        "role",
         "is_active",
         "is_active_profile",
     ]
@@ -126,9 +126,9 @@ class UserProfileEditForm(forms.ModelForm):
     field_order = [
         "full_name",
         "username",
-        "role",
         "new_password1",
         "new_password2",
+        "role",
         "avatar",
         "is_active",
         "is_active_profile",

@@ -6816,7 +6816,11 @@ textarea.form-control {
   display: none;
 }
 
-.rd-filter-search__clear ~ .rd-filter-search__spin {
+.rd-filter-search .form-control:not(:placeholder-shown) {
+  padding-inline-end: 2.7rem;
+}
+
+.rd-filter-search:has(input:not(:placeholder-shown)) .rd-filter-search__spin {
   inset-inline-end: 2.6rem;
 }
 
@@ -6826,7 +6830,11 @@ textarea.form-control {
     min-height: 3.45rem;
   }
 
-  .rd-filter-search__clear ~ .rd-filter-search__spin {
+  .rd-filter-search .form-control:not(:placeholder-shown) {
+    padding-inline-end: 3.8rem;
+  }
+
+  .rd-filter-search:has(input:not(:placeholder-shown)) .rd-filter-search__spin {
     inset-inline-end: 3.9rem;
   }
 }

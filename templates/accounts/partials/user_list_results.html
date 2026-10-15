@@ -36,8 +36,12 @@
               <td class="small text-secondary text-nowrap">{% if p.user.last_login %}<span title="{{ p.user.last_login|date:'Y-m-d H:i' }}">{{ p.user.last_login|naturaltime }}</span>{% else %}{% trans "Never" %}{% endif %}</td>
               <td class="text-end">
                 {% url 'accounts:user_edit' p.pk as edit_url %}
-                {% if p.user.pk != request.user.pk %}{% url 'accounts:user_delete' p.pk as delete_url %}{% endif %}
-                {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url delete_label=delete_user_label confirm=confirm_text variant="icon" %}
+                {% if p.user.pk == request.user.pk %}
+                  {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="icon" %}
+                {% else %}
+                  {% url 'accounts:user_delete' p.pk as delete_url %}
+                  {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url delete_label=delete_user_label confirm=confirm_text variant="icon" %}
+                {% endif %}
               </td>
             </tr>
           {% empty %}
@@ -63,8 +67,12 @@
         </div>
         <div class="mt-2">
           {% url 'accounts:user_edit' p.pk as edit_url %}
-          {% if p.user.pk != request.user.pk %}{% url 'accounts:user_delete' p.pk as delete_url %}{% endif %}
-          {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text variant="text" %}
+          {% if p.user.pk == request.user.pk %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url="" variant="text" %}
+          {% else %}
+            {% url 'accounts:user_delete' p.pk as delete_url %}
+            {% include "partials/kit/row_actions.html" with edit_url=edit_url delete_url=delete_url confirm=confirm_text variant="text" %}
+          {% endif %}
         </div>
       </div>
     {% empty %}
