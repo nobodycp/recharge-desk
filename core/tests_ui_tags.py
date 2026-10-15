@@ -2,7 +2,7 @@ from django.template.loader import render_to_string
 from django.test import SimpleTestCase
 from django.utils import translation
 
-from core.templatetags.ui_tags import rd_sparkline_points, rd_trend, rd_weekday_initial
+from core.templatetags.ui_tags import rd_sparkline_points, rd_tone, rd_trend, rd_weekday_initial
 
 
 def _series(*counts, key="count"):
@@ -174,3 +174,34 @@ class EmptyStatePartialTests(SimpleTestCase):
         )
         self.assertIn("empty-state__icon", html)
         self.assertIn('aria-hidden="true"', html)
+
+
+class ToneTests(SimpleTestCase):
+    def test_same_name_same_tone_in_range(self):
+        names = ["Aloha", "Areen", "Layan", "Sky", "Cellcom", "سكاي", ""]
+        for name in names:
+            tone = rd_tone(name)
+            self.assertIn(tone, range(1, 7))
+            self.assertEqual(tone, rd_tone(name))
+        self.assertEqual(rd_tone(None), rd_tone(""))
+
+    def test_company_ids_cycle_through_all_tones(self):
+        self.assertEqual([rd_tone(pk) for pk in range(1, 8)], [1, 2, 3, 4, 5, 6, 1])
+
+    def test_company_mark_partial(self):
+        class Icon:
+            url = "/media/icons/companies/x.webp"
+
+        class Co:
+            pk = 3
+            name = "Sky"
+            icon = Icon()
+
+        html = render_to_string("partials/company_mark.html", {"company": Co(), "name": "Sky", "cls": "rd-top-avatar"})
+        self.assertIn('class="rd-top-avatar rd-company-mark has-logo rd-tone-3"', html)
+        self.assertIn('src="/media/icons/companies/x.webp"', html)
+        self.assertIn('alt=""', html)
+        html = render_to_string("partials/company_mark.html", {"company": None, "name": "layan", "cls": "rd-supplier-avatar"})
+        self.assertIn('class="rd-supplier-avatar rd-company-mark rd-tone-', html)
+        self.assertIn(">L<", html)
+        self.assertNotIn("<img", html)

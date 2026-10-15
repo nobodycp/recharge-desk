@@ -295,6 +295,14 @@ def dashboard(request):
         f"dashboard:top_companies:{period_key}", _top_companies
     )
 
+    # Logo + colour for the ranked companies, from the list already loaded
+    # for the supplier card (the cached rows stay plain data).
+    companies = list(companies)
+    companies_by_name = {c.name: c for c in companies}
+    top_companies = [
+        {**row, "company": companies_by_name.get(row["name"])} for row in top_companies
+    ]
+
     chart_buckets = len(chart_series)
     chart_max_volume = max((d["volume"] for d in chart_series), default=0) or 1
     chart_max_company_profit = max((c["profit"] for c in top_companies), default=0) or 1

@@ -1,5 +1,6 @@
 """Tests for the reports app: dashboard KPIs and report views."""
 
+import re
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
@@ -243,6 +244,21 @@ class DashboardSmokeTests(_ReportsBase):
                 rf'rd-supplier-meta is-{state}',
             )
             self.assertRegex(html, rf'class="rd-supplier-amount tabular-nums fw-bold {cls}"')
+
+    def test_companies_shown_with_logo_or_toned_letter(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self._make_sale(sell=40, paid=True)
+        co = self.company
+        co.icon = SimpleUploadedFile("mark.gif", b"GIF89a\x01\x00\x01\x00\x00\xff\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x00;", content_type="image/gif")
+        co.save()
+        self.addCleanup(co.icon.delete, save=False)
+        html = self.client.get(reverse("reports:dashboard")).content.decode()
+        tone = f"rd-tone-{(co.pk - 1) % 6 + 1}"
+        for cls in ("rd-supplier-avatar", "rd-top-avatar"):
+            with self.subTest(cls=cls):
+                self.assertRegex(html, rf'class="{cls} rd-company-mark has-logo {tone}"[^>]*>\s*<img src="{re.escape(co.icon.url)}"')
+        self.assertIn(f"rd-top-item rd-top-item--rank-1 {tone}", html)
 
     def test_customer_debt_total_keeps_expense_colour(self):
         html = self.client.get(reverse("reports:dashboard")).content.decode()

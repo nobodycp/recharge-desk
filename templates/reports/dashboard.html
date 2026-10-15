@@ -181,7 +181,7 @@
         {% for c in companies %}
           <li>
             <a class="rd-supplier-row" href="{% url 'companies:company_detail' c.pk %}">
-              <span class="rd-supplier-avatar" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
+              {% include "partials/company_mark.html" with company=c name=c.name cls="rd-supplier-avatar" %}
               <span class="rd-supplier-info">
                 <span class="rd-supplier-name">{{ c.name }}</span>
                 <span class="rd-supplier-meta {% if c.current_balance < 0 %}is-danger{% elif c.current_balance == 0 %}is-warning{% else %}is-success{% endif %}">
@@ -270,9 +270,9 @@
           <ul class="rd-top-list mb-0">
             {% for c in top_companies %}
               {% widthratio c.profit chart_max_company_profit 100 as cbar %}
-              <li class="rd-top-item rd-top-item--rank-{{ forloop.counter }}">
+              <li class="rd-top-item rd-top-item--rank-{{ forloop.counter }} rd-tone-{{ c.company.pk|default:c.name|rd_tone }}">
                 <span class="rd-top-rank" aria-hidden="true">{{ forloop.counter }}</span>
-                <span class="rd-top-avatar" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
+                {% include "partials/company_mark.html" with company=c.company name=c.name cls="rd-top-avatar" %}
                 <div class="rd-top-body">
                   <div class="rd-top-row">
                     <span class="rd-top-name">{{ c.name }}</span>

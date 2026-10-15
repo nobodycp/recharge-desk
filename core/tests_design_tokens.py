@@ -325,6 +325,31 @@ class TopRankColourTests(SimpleTestCase):
                 )
 
 
+class CompanyToneTests(SimpleTestCase):
+    """Owner: companies are told apart by colour (logo, or a toned letter)."""
+
+    THEMES = ('[data-bs-theme="light"]', '[data-bs-theme="dark"]')
+
+    def test_tones_readable_on_surface_in_both_themes(self):
+        for theme in self.THEMES:
+            block = _block(CSS, theme)
+            surface = _token(block, "--rd-surface")
+            for n in range(1, 7):
+                with self.subTest(theme=theme, tone=n):
+                    tone = _token(block, f"--rd-tone-{n}")
+                    self.assertGreaterEqual(_contrast(tone, surface), 4.5)
+            _token(block, "--rd-logo-bg")
+
+    def test_tone_classes_and_toned_marks(self):
+        for n in range(1, 7):
+            self.assertIn(f"--rd-tone: var(--rd-tone-{n})", _rule_body(CSS, f".rd-tone-{n}"))
+        self.assertIn("var(--rd-tone", _rule_body(CSS, ".rd-top-list-fill"))
+        mark = _rule_body(CSS, ".rd-company-mark")
+        self.assertIn("var(--rd-tone", mark)
+        logo = _rule_body(CSS, ".rd-company-mark.has-logo")
+        self.assertIn("background: var(--rd-logo-bg)", logo)
+
+
 class LightEmptyStateAndSparkTests(SimpleTestCase):
     """Owner ruling U4: no grey wells, full-width sparkline."""
 

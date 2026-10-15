@@ -1,0 +1,5 @@
+{% load ui_tags %}{% comment %}
+  Company mark: the company logo, or its first letter in the company tone.
+  Args: company (Company or None), name, cls (size/layout class of the caller).
+  Decorative: the company name is always printed next to it.
+{% endcomment %}{% with tone=company.pk|default:name|rd_tone %}<span class="{{ cls }} rd-company-mark{% if company.icon %} has-logo{% endif %} rd-tone-{{ tone }}" aria-hidden="true">{% if company.icon %}<img src="{{ company.icon.url }}" alt="" loading="lazy" decoding="async">{% else %}{{ name|slice:":1"|upper }}{% endif %}</span>{% endwith %}

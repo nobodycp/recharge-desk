@@ -1,3 +1,4 @@
+import zlib
 from datetime import date
 
 from django import template
@@ -243,6 +244,17 @@ def rd_weekday_initial(iso_date) -> str:
         except (TypeError, ValueError):
             return ""
     return str(_WEEKDAY_INITIALS[day.weekday()])
+
+
+RD_TONE_COUNT = 6
+
+
+@register.filter(name="rd_tone")
+def rd_tone(key) -> int:
+    """Company colour 1..6 (``--rd-tone-N``): ids cycle so neighbours differ; names hash."""
+    if isinstance(key, int) and not isinstance(key, bool):
+        return (key - 1) % RD_TONE_COUNT + 1
+    return zlib.crc32(str(key or "").strip().lower().encode("utf-8")) % RD_TONE_COUNT + 1
 
 
 @register.filter(name="audit_has_old")
