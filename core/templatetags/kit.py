@@ -2,6 +2,7 @@ import copy
 import os
 
 from django import forms, template
+from django.template.loader import get_template
 
 register = template.Library()
 
@@ -115,3 +116,46 @@ def rd_fields(form, size="", full="", exclude=""):
         ],
         "size": size,
     }
+
+
+PAGE_HEADER_ARGS = ("title", "subtitle", "back_url", "back_label", "meta")
+
+
+class PageHeaderNode(template.Node):
+    """`{% rd_page_header title ... %}actions{% end_rd_page_header %}`: the body is the actions slot."""
+
+    def __init__(self, args, kwargs, nodelist):
+        self.args = args
+        self.kwargs = kwargs
+        self.nodelist = nodelist
+
+    def render(self, context):
+        values = dict(zip(PAGE_HEADER_ARGS, (arg.resolve(context) for arg in self.args)))
+        values.update({name: expr.resolve(context) for name, expr in self.kwargs.items()})
+        actions = self.nodelist.render(context)
+        values = {name: ("" if value is None else value) for name, value in values.items()}
+        values["actions"] = actions if actions.strip() else ""
+        return get_template("partials/kit/page_header.html").render(values)
+
+
+@register.tag("rd_page_header")
+def rd_page_header(parser, token):
+    bits = token.split_contents()[1:]
+    args, kwargs = [], {}
+    for bit in bits:
+        if "=" in bit and not bit.startswith(("'", '"')):
+            name, _, expr = bit.partition("=")
+            if name not in PAGE_HEADER_ARGS:
+                raise template.TemplateSyntaxError(f"rd_page_header: unknown argument '{name}'")
+            kwargs[name] = parser.compile_filter(expr)
+        elif kwargs:
+            raise template.TemplateSyntaxError("rd_page_header: positional argument after keyword argument")
+        else:
+            args.append(parser.compile_filter(bit))
+    if len(args) > len(PAGE_HEADER_ARGS):
+        raise template.TemplateSyntaxError("rd_page_header: too many arguments")
+    if "title" not in kwargs and not args:
+        raise template.TemplateSyntaxError("rd_page_header requires a title")
+    nodelist = parser.parse(("end_rd_page_header",))
+    parser.delete_first_token()
+    return PageHeaderNode(args, kwargs, nodelist)

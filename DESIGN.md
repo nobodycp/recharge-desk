@@ -219,6 +219,12 @@ Shared building blocks for admin pages: template tags in `core/templatetags/kit.
 - Never write `label_tag`, `{{ field }}` or `field.errors` by hand for a kit page, and never put `form-control` classes on a widget to style it.
 - File inputs always go through the kit: it renders the Arabic drop zone (`.rd-file-pick`) plus, for an optional field with a stored file, the current file name and a "Remove current file" checkbox. Do not use Django's default `ClearableFileInput` markup.
 
+### Header and width
+
+- Every management page starts with `{% rd_page_header title subtitle="" back_url="" back_label="" meta="" %}…actions…{% end_rd_page_header %}` inside one `.rd-page` wrapper. The body is the actions slot (buttons, links) and may be empty. `back_url` adds a "Back" link (label overridable with `back_label`); its arrow flips under `[dir="rtl"]`. `meta` is a small muted figure such as a count. Below 576px the actions take the full row and stretch.
+- Width: plain `.rd-page` is the full content width (lists, reports, detail pages); `.rd-page--form` caps at 56rem for forms; `.rd-page--settings` caps at 76rem for settings and branding. Both capped variants are centred.
+- `.rd-admin-page` and `.rd-admin-page--wide` (in `app.css`) stay for other areas; admin pages do not use them any more.
+
 ## Guardrails And Legacy Lists
 
 `core/tests_ui_conventions.py` fails on raw hex, Bootstrap colour badges and `table-light` in any template, except files in the shrink-only sets `LEGACY_HEX`, `LEGACY_BADGES`, `LEGACY_TABLE_LIGHT`. These are pages still waiting for migration in later phases. **Never add a file to them**; fix the template instead. When you migrate a legacy file, remove it from its set (`test_legacy_lists_only_shrink` fails otherwise). `phone_refresh/templates/phone_refresh/public_refresh.html` is out of scope and exempt.

@@ -204,3 +204,59 @@ class FieldsTests(SimpleTestCase):
         html = render_fields(F(), 'size="sm"')
         self.assertIn("form-control-sm", html)
         self.assertIn("form-select-sm", html)
+
+
+def render_header(args, body="", context=None):
+    source = "{% load kit %}{% rd_page_header " + args + " %}" + body + "{% end_rd_page_header %}"
+    return Template(source).render(Context(context or {}))
+
+
+class PageHeaderTests(SimpleTestCase):
+    def test_title_only(self):
+        html = render_header('"Customers"')
+        self.assertRegex(html, r'<header class="rd-page-head">')
+        self.assertEqual(html.count("<h1"), 1)
+        self.assertRegex(html, r'<h1 class="rd-heading-xl">Customers</h1>')
+        self.assertNotIn("rd-page-head__back", html)
+        self.assertNotIn("rd-page-head__sub", html)
+        self.assertNotIn("rd-page-head__meta", html)
+        self.assertNotIn("rd-page-head__aside", html)
+
+    def test_back_link_subtitle_meta_and_actions(self):
+        html = render_header(
+            'title=t subtitle="Everyone we bill" back_url="/customers/" back_label="All customers" meta="12 total"',
+            body='<a class="btn btn-primary" href="/new/">New</a>',
+            context={"t": "Customer"},
+        )
+        self.assertRegex(html, r'<a class="rd-page-head__back" href="/customers/">\s*<svg[^>]*aria-hidden="true"')
+        self.assertIn("All customers", html)
+        self.assertRegex(html, r'<p class="rd-page-head__sub">Everyone we bill</p>')
+        self.assertRegex(html, r'<span class="rd-page-head__meta tabular-nums">12 total</span>')
+        aside = html[html.index('class="rd-page-head__aside"'):]
+        self.assertIn('<a class="btn btn-primary" href="/new/">New</a>', aside)
+        self.assertLess(aside.index("12 total"), aside.index("btn-primary"))
+
+    def test_back_label_defaults_to_translated_back(self):
+        html = render_header('"X" back_url="/x/"')
+        self.assertRegex(html, r"</svg>\s*Back\s*</a>")
+        with translation.override("ar"):
+            html = render_header('"X" back_url="/x/"')
+        self.assertIn("رجوع", html)
+
+    def test_actions_only_still_renders_aside(self):
+        html = render_header('"X"', body="<button>Go</button>")
+        self.assertIn("rd-page-head__aside", html)
+        self.assertNotIn("rd-page-head__meta", html)
+
+    def test_title_is_escaped(self):
+        html = render_header("title", context={"title": "<b>x</b>"})
+        self.assertIn("&lt;b&gt;x&lt;/b&gt;", html)
+        self.assertNotIn("<b>x</b>", html)
+
+    def test_subtitle_meta_and_back_are_escaped(self):
+        html = render_header(
+            'title subtitle=s meta=s back_url="/x/" back_label=s',
+            context={"title": "T", "s": "<i>y</i>"},
+        )
+        self.assertNotIn("<i>y</i>", html)
+        self.assertIn("&lt;i&gt;y&lt;/i&gt;", html)
