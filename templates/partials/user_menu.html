@@ -41,8 +41,8 @@
         <form action="{% url 'set_language' %}" method="post" class="rd-user-menu-pref mb-0" hx-boost="false">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <label class="rd-user-menu-pref__label" for="rd-lang-emp">{% trans "Language" %}</label>
-          <select name="language" id="rd-lang-emp" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
+          <label class="rd-user-menu-pref__label" for="{{ lang_id|default:'rd-lang-emp' }}">{% trans "Language" %}</label>
+          <select name="language" id="{{ lang_id|default:'rd-lang-emp' }}" class="form-select form-select-sm rd-lang-select" onchange="this.form.submit()">
             {% get_current_language as LANGUAGE_CODE %}
             {% for code, label in languages %}
               <option value="{{ code }}" {% if code == LANGUAGE_CODE %}selected{% endif %}>{{ label }}</option>

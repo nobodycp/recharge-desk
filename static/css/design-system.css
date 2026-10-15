@@ -1037,11 +1037,13 @@ html[lang="ar"] .rd-sidebar-brand-name {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.7rem 1rem;
-  /* Translucent page color: content scrolls under a frosted strip. */
-  background: color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
+  /* Mockup C: the bar is part of the page (no hairline, no card). The
+     translucent page colour + blur only keeps scrolled content readable.
+     NOTE: backdrop-filter also makes the bar the containing block for the
+     fixed phone panels below (they anchor to `top: 100%` of the bar). */
+  background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  border-bottom: 1px solid var(--bs-border-color);
 }
 
 @media (min-width: 992px) {
@@ -1067,7 +1069,7 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 .rd-hello__title {
-  font-size: 1.3rem;
+  font-size: 1.4rem; /* mockup C: 18 px */
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--rd-ink);
@@ -1082,7 +1084,7 @@ html[lang="ar"] .rd-hello__title {
 }
 
 .rd-hello__date {
-  font-size: 0.8rem;
+  font-size: 0.86rem; /* mockup C: 11 px */
   color: var(--rd-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1095,7 +1097,8 @@ html[lang="ar"] .rd-hello__title {
   }
 }
 
-/* End: search, bell, then the compact cluster (language, theme, CTA, avatar). */
+/* End (mockup C): search pill · bell · "Sales entry" · avatar. Language and
+   theme live inside the avatar menu. */
 .rd-topbar-meta {
   display: flex;
   align-items: center;
@@ -1109,16 +1112,24 @@ html[lang="ar"] .rd-hello__title {
 .rd-topbar-cluster {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .rd-topbar-cta {
-  min-height: 2.375rem;
+  min-height: 2.6rem;
   display: inline-flex;
   align-items: center;
-  padding-inline: 0.85rem;
-  border-radius: 0.75rem;
+  justify-content: center;
+  gap: 0.4rem;
+  padding-inline: 1rem;
+  border-radius: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.rd-topbar-cta__plus {
+  display: none;
 }
 
 @media (min-width: 992px) {
@@ -1133,20 +1144,32 @@ html[lang="ar"] .rd-hello__title {
   .rd-topbar-cluster {
     gap: 0.3rem;
   }
-  .rd-topbar .rd-lang-select {
-    max-width: 6.25rem;
-    padding-inline: 0.5rem 1.75rem;
-    text-overflow: ellipsis;
-  }
-  .rd-topbar-cta {
-    padding-inline: 0.6rem;
-  }
-}
 
-.rd-topbar .rd-lang-select {
-  min-height: 2.375rem;
-  border-radius: 0.75rem;
-  background-color: var(--rd-surface);
+  /* Phones: the label stays in the accessible name; the "+" icon is the
+     visible affordance. Same 44 px square as the other bar controls. */
+  .rd-topbar-cta {
+    width: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+    padding: 0;
+  }
+
+  .rd-topbar-cta__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .rd-topbar-cta__plus {
+    display: block;
+  }
 }
 
 /* Topbar search — collapses to an icon button matching the bell /
@@ -1166,11 +1189,13 @@ html[lang="ar"] .rd-hello__title {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 2.375rem;
-  height: 2.375rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
   padding: 0;
   border: 1px solid var(--bs-border-color);
-  border-radius: 0.75rem;
+  border-radius: 0.85rem; /* mockup C: 11 px */
   background: var(--rd-surface);
   color: var(--rd-ink);
   cursor: pointer;
@@ -1203,7 +1228,8 @@ html[lang="ar"] .rd-hello__title {
 /* Desktop: the toggle reads as a wide search field with the "/" shortcut. */
 @media (min-width: 992px) {
   .rd-search-toggle {
-    width: clamp(13rem, 24vw, 21rem);
+    width: clamp(14rem, 24vw, 21rem); /* mockup C: min 180 px */
+    border-radius: 0.95rem; /* mockup C: 12 px */
     justify-content: flex-start;
     gap: 0.55rem;
     padding-inline: 0.8rem 0.5rem;
@@ -1248,8 +1274,16 @@ html[lang="ar"] .rd-hello__title {
     color: var(--rd-ink);
   }
 
+  /* Wide, scrollable results (the pill itself is narrower than the panel). */
   .rd-search .rd-search-panel {
-    width: max(100%, 20rem);
+    width: max(100%, 26rem);
+    min-width: 26rem;
+    max-height: min(75vh, 34rem);
+    overflow-y: auto;
+  }
+
+  .rd-search-results {
+    max-height: min(60vh, 26rem);
   }
 }
 
@@ -1432,16 +1466,24 @@ html[lang="ar"] .rd-hello__title {
   text-decoration: none;
 }
 
-@media (max-width: 480px) {
-  .rd-search-panel {
-    inset-inline-start: 0;
-    width: min(21rem, calc(100vw - 0.75rem));
+/* Phones: the results open as a full-width sheet under the top bar (the bar
+   is the containing block, see .rd-topbar), never wider than the viewport. */
+@media (max-width: 575.98px) {
+  .rd-search .rd-search-panel {
+    position: fixed;
+    inset-inline: 0.5rem;
+    top: calc(100% + 0.4rem);
+    width: auto;
+    max-height: calc(100vh - 6rem);
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+  }
+  .rd-search-results {
+    max-height: none;
+    overflow-y: visible;
   }
   .rd-search-input {
-    font-size: 0.78rem;
-  }
-  .rd-search-item-label {
-    font-size: 0.78rem;
+    font-size: 0.9rem;
   }
   .rd-search-kbd { display: none; }
 }
@@ -1450,9 +1492,11 @@ html[lang="ar"] .rd-hello__title {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
   border: 1px solid var(--bs-border-color);
   background: var(--rd-surface);
   color: var(--rd-ink);
@@ -4381,6 +4425,141 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-notif-empty svg {
   color: var(--rd-success);
   opacity: 0.95;
+}
+
+/* Rows with nothing waiting stay visible (text + count) but read as muted. */
+.rd-notif-item:has(.rd-notif-count:not(.is-active)) {
+  color: var(--rd-muted);
+}
+
+.rd-notif-item:has(.rd-notif-count:not(.is-active)):hover,
+.rd-notif-item:has(.rd-notif-count:not(.is-active)):focus-visible {
+  color: var(--rd-ink);
+}
+
+.rd-notif-item:has(.rd-notif-count:not(.is-active)) svg {
+  opacity: 0.55;
+}
+
+/* Preferences inside the avatar menu (language + theme). Shared by the
+ * management and employee shells. */
+.rd-user-menu-prefs {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.1rem 0.25rem;
+}
+
+.rd-user-menu-pref {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.45rem;
+  padding-inline: 0.45rem;
+}
+
+.rd-user-menu-pref__label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--rd-muted);
+}
+
+.rd-user-menu-pref .rd-lang-select {
+  width: 9rem;
+  max-width: 9rem;
+  min-height: 3.45rem;
+  font-size: 0.9rem;
+}
+
+.rd-user-menu-pref .rd-theme-btn {
+  position: relative;
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.rd-user-menu-pref .rd-theme-btn::after {
+  content: "";
+  position: absolute;
+  inset: -0.45rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Management top bar controls (mockup C): bell, avatar, popover panels       */
+/* -------------------------------------------------------------------------- */
+/* Same 2.6rem rounded square for every icon button; 3.45rem (44 px) below
+   992 px. Scoped to .rd-topbar so the employee shell keeps its own sizes. */
+.rd-topbar .rd-user-menu > summary.rd-notif-trigger {
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  border-radius: 0.85rem;
+}
+
+.rd-topbar .rd-user-menu--ava .rd-user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+}
+
+.rd-topbar .rd-user-menu--ava .rd-avatar {
+  width: 100%;
+  height: 100%;
+  font-size: 1rem;
+}
+
+/* The count stays (information), reduced to a small pill on the bell's
+   corner like the mockup's dot. Ring uses the button surface. */
+.rd-topbar .rd-notif-badge {
+  top: -0.3rem;
+  inset-inline-end: -0.3rem;
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+
+.rd-topbar .rd-notif-panel {
+  min-width: 21rem;
+}
+
+.rd-topbar .rd-user-menu-panel {
+  top: calc(100% + 0.6rem);
+}
+
+@media (max-width: 991.98px) {
+  .rd-topbar .rd-search-toggle,
+  .rd-topbar .rd-user-menu > summary.rd-notif-trigger,
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-trigger,
+  .rd-topbar .rd-menu-btn {
+    width: 3.45rem;
+    height: 3.45rem;
+    min-width: 3.45rem;
+    min-height: 3.45rem;
+  }
+}
+
+/* Phones: both popovers become sheets pinned under the bar. The bar is their
+   containing block (it has a backdrop-filter), so `top: 100%` is the bar's
+   bottom edge and the inline insets keep them inside the viewport in RTL/LTR. */
+@media (max-width: 575.98px) {
+  .rd-topbar .rd-notif-menu .rd-user-menu-panel,
+  .rd-topbar .rd-user-menu--ava .rd-user-menu-panel {
+    position: fixed;
+    inset-inline: 0.5rem;
+    top: calc(100% + 0.4rem);
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100vh - 6rem);
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+  }
+
+  .rd-topbar .rd-user-menu-pref .rd-lang-select {
+    width: min(9rem, 55%);
+  }
 }
 
 /* Mini-charts on the management dashboard. The bar chart is built with

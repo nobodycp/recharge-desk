@@ -182,50 +182,6 @@ html[lang="ar"] .rd-employee-title {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Preferences inside the avatar menu (language + theme)                      */
-/* -------------------------------------------------------------------------- */
-.rd-user-menu-prefs {
-  display: grid;
-  gap: 0.1rem;
-  padding: 0.1rem 0.25rem;
-}
-
-.rd-user-menu-pref {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 3.45rem;
-  padding-inline: 0.45rem;
-}
-
-.rd-user-menu-pref__label {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--rd-muted);
-}
-
-.rd-user-menu-pref .rd-lang-select {
-  width: 9rem;
-  max-width: 9rem;
-  min-height: 3.45rem;
-  font-size: 0.9rem;
-}
-
-.rd-user-menu-pref .rd-theme-btn {
-  position: relative;
-  width: 2.6rem;
-  height: 2.6rem;
-}
-
-.rd-user-menu-pref .rd-theme-btn::after {
-  content: "";
-  position: absolute;
-  inset: -0.45rem;
-}
-
-/* -------------------------------------------------------------------------- */
 /* Bottom tab bar — slim glass rail, ink Sales FAB, orange dot marks active   */
 /* -------------------------------------------------------------------------- */
 .rd-mobile-tabbar {

@@ -103,9 +103,14 @@ class ManagementShellTests(TestCase):
         self.assertIn("data-rd-search-toggle", html)
         self.assertIn("data-rd-search-panel", html)
         self.assertIn("rd-search-toggle__placeholder", html)
+        # R1: language + theme live inside the user-menu panel (see ManagementTopbarTests).
         self.assertIn(f'action="{reverse("set_language")}"', html)
         self.assertIn('id="rd-lang-mgmt"', html)
         self.assertIn("data-app-theme-toggle", html)
+        panel = re.search(r'<div class="rd-user-menu-panel" role="menu">.*?</details>', html, re.S)
+        self.assertIsNotNone(panel, "user menu panel missing")
+        self.assertIn('id="rd-lang-mgmt"', panel.group(0))
+        self.assertIn("data-app-theme-toggle", panel.group(0))
         self.assertIn(f'href="{reverse("sales:employee_entry")}"', html)
         self.assertIn("rd-user-menu-trigger", html)
 
@@ -365,3 +370,167 @@ class ManagementSidebarTests(TestCase):
             self.assertIn(hook, nav)
         self.assertEqual(nav.count("data-rd-nav-group-toggle"), 6)
         self.assertEqual(nav.count('data-rd-nav-group="'), 6)
+
+
+def _media_blocks(css, query):
+    """Bodies of every top-level `@media (<query>) { ... }` block (brace matched)."""
+    blocks = []
+    needle = f"@media ({query})"
+    pos = 0
+    while True:
+        start = css.find(needle, pos)
+        if start == -1:
+            return blocks
+        i = css.index("{", start)
+        depth, j = 1, i + 1
+        while depth:
+            depth += {"{": 1, "}": -1}.get(css[j], 0)
+            j += 1
+        blocks.append(css[i + 1 : j - 1])
+        pos = j
+
+
+def _rules(css):
+    """(selector, body) for the flat rules of a CSS fragment."""
+    return [(m.group(1).strip(), m.group(2)) for m in re.finditer(r"([^{}]+)\{([^{}]*)\}", css)]
+
+
+def _find_rules(css, selector):
+    return [body for sel, body in _rules(css) if selector in sel]
+
+
+class ManagementTopbarTests(TestCase):
+    """Pearl top bar (mockup C): prefs in the user menu, 44 px targets, viewport-safe panels."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("bar_mgr", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={
+                "role": UserProfile.Role.MANAGEMENT,
+                "is_active_profile": True,
+                "full_name": "Bar Manager",
+            },
+        )
+
+    def setUp(self):
+        from providers import health
+
+        cache.clear()
+        health.reset_local_alerts()
+        self.addCleanup(health.reset_local_alerts)
+        for name in ("_redis_ok", "_worker_ok"):
+            patcher = mock.patch.object(health, name, return_value=True)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.client.force_login(self.user)
+        self.addCleanup(translation.deactivate)
+
+    @staticmethod
+    def _css():
+        return (settings.BASE_DIR / "static" / "css" / "design-system.css").read_text(encoding="utf-8")
+
+    def _header(self, lang="en"):
+        self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = lang
+        with translation.override(lang):
+            url = reverse("reports:dashboard")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        match = re.search(r'<header class="rd-topbar">.*?</header>', html, re.S)
+        self.assertIsNotNone(match, "management top bar missing")
+        return match.group(0)
+
+    def test_prefs_inside_management_user_menu(self):
+        header = self._header()
+        start = header.index('class="rd-user-menu-panel" role="menu"')
+        end = header.index("</details>", start)
+        panel = header[start:end]
+        outside = header[:start] + header[end:]
+        for marker in ('id="rd-lang-mgmt"', "data-app-theme-toggle"):
+            self.assertIn(marker, panel)
+            self.assertNotIn(marker, outside)
+        self.assertIn('<div class="rd-user-menu-prefs" role="group" aria-label="Settings">', panel)
+        self.assertIn(f'action="{reverse("set_language")}"', panel)
+        self.assertIn('name="next"', panel)
+        self.assertIn('onchange="this.form.submit()"', panel)
+        self.assertIn('hx-boost="false"', panel)
+        self.assertIn('for="rd-lang-mgmt"', panel)
+
+    def test_topbar_row_order_and_sales_entry(self):
+        header = self._header()
+        order = [
+            header.index("rd-hello"),
+            header.index("data-rd-search-toggle"),
+            header.index("data-rd-notifications") if "data-rd-notifications" in header else header.index("rd-topbar-cta"),
+            header.index("rd-topbar-cta"),
+            header.index("rd-user-menu--ava"),
+        ]
+        self.assertEqual(order, sorted(order))
+        cta = re.search(r'<a[^>]*rd-topbar-cta[^>]*>.*?</a>', header, re.S).group(0)
+        self.assertIn(f'href="{reverse("sales:employee_entry")}"', cta)
+        self.assertIn('class="rd-topbar-cta__label">Sales entry</span>', cta)
+        self.assertIn("rd-topbar-cta__plus", cta)
+        self.assertNotIn("<h1", header)
+
+    def test_topbar_touch_targets(self):
+        css = self._css()
+        targets = (
+            ".rd-search-toggle",
+            ".rd-notif-trigger",
+            ".rd-user-menu--ava .rd-user-menu-trigger",
+            ".rd-menu-btn",
+        )
+        mobile = "\n".join(_media_blocks(css, "max-width: 991.98px"))
+        for sel in targets:
+            with self.subTest(sel=sel, viewport="mobile"):
+                bodies = _find_rules(mobile, sel)
+                self.assertTrue(bodies, f"{sel} missing in the <992px block")
+                joined = "\n".join(bodies)
+                self.assertRegex(joined, r"min-width:\s*3\.45rem")
+                self.assertRegex(joined, r"min-height:\s*3\.45rem")
+        for sel in targets:
+            with self.subTest(sel=sel, viewport="desktop"):
+                bodies = _find_rules(re.sub(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}", "", css), sel)
+                joined = "\n".join(bodies)
+                for prop in ("min-width", "min-height"):
+                    values = [float(v) for v in re.findall(prop + r":\s*([\d.]+)rem", joined)]
+                    self.assertTrue(values and max(values) >= 2.6, f"{sel} {prop} {values}")
+
+    def test_panels_use_viewport_safe_positioning(self):
+        css = self._css()
+        small = "\n".join(_media_blocks(css, "max-width: 575.98px"))
+        for sel in (".rd-notif-menu .rd-user-menu-panel", ".rd-search-panel", ".rd-user-menu--ava .rd-user-menu-panel"):
+            with self.subTest(sel=sel):
+                joined = "\n".join(_find_rules(small, sel))
+                self.assertIn("position: fixed", joined)
+                self.assertRegex(joined, r"inset-inline:\s*0?\.5rem")
+                self.assertNotRegex(joined, r"(?<![\w-])width:\s*\d")
+
+    def test_search_panel_desktop_width(self):
+        css = self._css()
+        wide = "\n".join(_media_blocks(css, "min-width: 992px"))
+        joined = "\n".join(_find_rules(wide, ".rd-search-panel"))
+        sizes = [float(v) for v in re.findall(r"min-width:\s*([\d.]+)rem", joined)]
+        self.assertTrue(sizes and max(sizes) >= 26, sizes)
+        self.assertRegex(joined, r"max-height:")
+        self.assertRegex(joined, r"overflow-y:\s*auto")
+
+    def test_zero_count_notification_rows_are_muted_not_hidden(self):
+        css = self._css()
+        self.assertRegex(css, r"\.rd-notif-item:has\(\.rd-notif-count:not\(\.is-active\)\)\s*\{[^}]*color:\s*var\(--rd-muted\)")
+        self.assertNotRegex(css, r"\.rd-notif-item[^{]*\{[^}]*display:\s*none")
+
+    def test_sales_entry_label_hidden_visually_on_phones(self):
+        css = self._css()
+        small = "\n".join(_media_blocks(css, "max-width: 575.98px"))
+        label = "\n".join(_find_rules(small, ".rd-topbar-cta__label"))
+        self.assertIn("clip", label)
+        self.assertNotIn("display: none", label)
+        plus = "\n".join(_find_rules(small, ".rd-topbar-cta__plus"))
+        self.assertIn("display: block", plus)
+        self.assertIn("display: none", "\n".join(_find_rules(css, ".rd-topbar-cta__plus")))
+
+    def test_topbar_has_no_raw_hex(self):
+        self.assertFalse(re.search(r"#[0-9a-fA-F]{3,8}\b", "\n".join(_find_rules(self._css(), ".rd-topbar"))))
