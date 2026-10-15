@@ -14,12 +14,12 @@
 
 {% if health_alerts %}
 <div id="connection-health-alert" class="alert alert-warning py-2 px-3 mb-3" role="alert">
-  <div class="fw-semibold mb-1">حالة الربط</div>
+  <div class="fw-semibold mb-1">{% trans "Connection status" %}</div>
   <ul class="list-unstyled mb-0 d-flex flex-column gap-1">
     {% for item in health_alerts %}
     <li class="d-flex flex-wrap align-items-center justify-content-between gap-2">
       <span>{{ item.text }}</span>
-      {% if item.url %}<a class="btn btn-sm btn-outline-secondary" href="{{ item.url }}">عرض الربط</a>{% endif %}
+      {% if item.url %}<a class="btn btn-sm btn-outline-secondary" href="{{ item.url }}">{% trans "View connection" %}</a>{% endif %}
     </li>
     {% endfor %}
   </ul>
@@ -140,28 +140,28 @@
                   {% blocktrans with n=phones_esim_active_count %}eSIM: {{ n }}{% endblocktrans %}
                 </a>
               </span>
-              <span class="rd-phone-lifecycle__val tabular-nums kpi-success">{{ phones_active_count|intcomma }}</span>
+              <span class="rd-phone-lifecycle__val tabular-nums">{{ phones_active_count|intcomma }}</span>
             </li>
             <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--due">
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Ends today" %}</span>
               </span>
-              <span class="rd-phone-lifecycle__val tabular-nums kpi-warning">{{ phones_due_soon_count|intcomma }}</span>
+              <span class="rd-phone-lifecycle__val tabular-nums">{{ phones_due_soon_count|intcomma }}</span>
             </li>
             <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--grace">
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Disconnected only" %}</span>
               </span>
-              <span class="rd-phone-lifecycle__val tabular-nums kpi-info">{{ phones_ended_under_threshold_count|intcomma }}</span>
+              <span class="rd-phone-lifecycle__val tabular-nums">{{ phones_ended_under_threshold_count|intcomma }}</span>
             </li>
             <li class="rd-phone-lifecycle__item rd-phone-lifecycle__item--overdue">
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Left the agency" %}</span>
               </span>
-              <a class="rd-phone-lifecycle__val tabular-nums kpi-danger text-decoration-none" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
+              <a class="rd-phone-lifecycle__val tabular-nums" href="{% url 'reports:phone_lines_report' %}?status=overdue">{{ phones_overdue_count|intcomma }}</a>
             </li>
           </ul>
         </div>
@@ -189,12 +189,12 @@
                   {% if c.current_balance < 0 %}{% trans "Overdrawn" %}{% elif c.current_balance == 0 %}{% trans "Empty" %}{% else %}{% trans "Available" %}{% endif %}
                 </span>
               </span>
-              <span class="rd-supplier-amount tabular-nums fw-bold {% if c.current_balance < 0 %}kpi-danger{% elif c.current_balance == 0 %}kpi-warning{% else %}kpi-success{% endif %}">{{ c.current_balance|intcomma }}</span>
+              <span class="rd-supplier-amount tabular-nums fw-bold{% if c.current_balance < 0 %} kpi-danger{% endif %}">{{ c.current_balance|intcomma }}</span>
               <svg class="rd-supplier-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
           </li>
         {% empty %}
-          <li class="rd-supplier-empty">{% trans "No companies yet." %}</li>
+          <li class="rd-supplier-empty">{% trans "No companies yet." as no_companies %}{% include "partials/empty_state.html" with icon="building" title=no_companies %}</li>
         {% endfor %}
       </ul>
     </div>
@@ -209,7 +209,7 @@
         <div class="rd-mini-chart-header-text">
           <span class="rd-mini-chart-title">{{ period_copy.chart }}</span>
           <span class="rd-mini-chart-summary">
-            <span class="rd-mini-chart-summary__item"><span class="rd-mini-chart-summary__lbl">{% trans "Total volume" %}</span> <span class="tabular-nums">{{ chart_total_volume|floatformat:0|intcomma }}</span></span>
+            <span class="rd-mini-chart-summary__item rd-mini-chart-summary__item--total"><span class="rd-mini-chart-summary__lbl">{% trans "Total volume" %}</span> <span class="tabular-nums">{{ chart_total_volume|floatformat:0|intcomma }}</span></span>
             <span class="rd-mini-chart-summary__sep" aria-hidden="true">·</span>
             <span class="rd-mini-chart-summary__item"><span class="rd-mini-chart-summary__lbl">{{ period_copy.chart_avg }}</span> <span class="tabular-nums">{{ chart_avg_volume|floatformat:0|intcomma }}</span></span>
           </span>
@@ -217,7 +217,7 @@
         <a class="btn btn-sm btn-outline-secondary align-self-lg-end" href="{% url 'reports:profit_report' %}">{% trans "Open profit report" %}</a>
       </div>
       <div class="rd-card-body">
-        {% if chart_series %}
+        {% if chart_series and chart_total_volume %}
           <div class="rd-mini-chart{% if chart_series|length > 16 %} rd-mini-chart--dense{% endif %}" role="img" aria-label="{{ period_copy.chart }}">
             <div class="rd-mini-chart-grid" aria-hidden="true">
               <span></span><span></span><span></span><span></span>
@@ -236,7 +236,7 @@
             </div>
             <div class="rd-mini-chart-weekdays" aria-hidden="true">
               {% for d in chart_series %}
-                <span class="rd-mini-chart-wd" title="{{ d.date }}">{{ d.tick }}</span>
+                <span class="rd-mini-chart-wd" title="{{ d.date }}">{% if period == "day" %}{{ d.date|rd_weekday_initial }}{% else %}{{ d.tick }}{% endif %}</span>
               {% endfor %}
             </div>
             <div class="rd-mini-chart-axis">
@@ -245,7 +245,16 @@
             </div>
           </div>
         {% else %}
-          <div class="rd-text-muted small">{% trans "No sales recorded in this period." %}</div>
+          {% trans "No sales recorded in this period." as no_sales %}
+          <div class="rd-mini-chart rd-mini-chart--empty">
+            {% include "partials/empty_state.html" with icon="chart" title=no_sales %}
+            {% if chart_series %}
+            <div class="rd-mini-chart-axis">
+              <span>{{ chart_series.0.date }}</span>
+              <span>{{ period_copy.chart_end }}</span>
+            </div>
+            {% endif %}
+          </div>
         {% endif %}
       </div>
     </div>
@@ -277,7 +286,8 @@
             {% endfor %}
           </ul>
         {% else %}
-          <div class="rd-text-muted small">{% trans "No paid sales in this period yet." %}</div>
+          {% trans "No paid sales in this period yet." as no_paid %}
+          {% include "partials/empty_state.html" with icon="trophy" title=no_paid %}
         {% endif %}
       </div>
     </div>

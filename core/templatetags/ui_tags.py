@@ -1,7 +1,9 @@
+from datetime import date
+
 from django import template
 from django.apps import apps
 from django.core.files.storage import default_storage
-from django.utils.translation import gettext
+from django.utils.translation import gettext, pgettext_lazy
 
 register = template.Library()
 
@@ -209,6 +211,37 @@ def rd_trend(series, key: str = "count"):
     else:
         direction = "up" if current > previous else "down"
     return {"direction": direction, "pct": pct}
+
+
+# One-letter weekday labels for the dashboard chart. Each weekday has its own
+# context so English "T"/"S" (Tue/Thu, Sat/Sun) can translate independently.
+# Index = ``date.weekday()`` (Monday = 0).
+_WEEKDAY_INITIALS = (
+    pgettext_lazy("weekday initial: Monday", "M"),
+    pgettext_lazy("weekday initial: Tuesday", "T"),
+    pgettext_lazy("weekday initial: Wednesday", "W"),
+    pgettext_lazy("weekday initial: Thursday", "T"),
+    pgettext_lazy("weekday initial: Friday", "F"),
+    pgettext_lazy("weekday initial: Saturday", "S"),
+    pgettext_lazy("weekday initial: Sunday", "S"),
+)
+
+
+@register.filter(name="rd_weekday_initial")
+def rd_weekday_initial(iso_date) -> str:
+    """Localised one-letter weekday for an ISO date (``"2026-10-12"`` → ``"M"`` / ``"ن"``).
+
+    Resolved at render time so the cached chart payload stays language-neutral.
+    Accepts ``date`` objects too; anything unparsable gives ``""``.
+    """
+    if isinstance(iso_date, date):
+        day = iso_date
+    else:
+        try:
+            day = date.fromisoformat(str(iso_date))
+        except (TypeError, ValueError):
+            return ""
+    return str(_WEEKDAY_INITIALS[day.weekday()])
 
 
 @register.filter(name="audit_has_old")

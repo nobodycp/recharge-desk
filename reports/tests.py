@@ -149,6 +149,7 @@ class DashboardSmokeTests(_ReportsBase):
         r = self.client.get(reverse("reports:dashboard"))
         self.assertNotContains(r, 'id="connection-health-alert"')
         self.assertNotContains(r, "حالة الربط")
+        self.assertNotContains(r, "Connection status")
 
     def test_connection_health_block_shown_when_jobs_wait_over_two_minutes(self):
         self.company.provider_key = "sky"
@@ -156,7 +157,7 @@ class DashboardSmokeTests(_ReportsBase):
         self._queued_refresh_job(180)
         r = self.client.get(reverse("reports:dashboard"))
         self.assertContains(r, 'id="connection-health-alert"')
-        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "Connection status")
         self.assertContains(r, "الـ worker متوقف أو الطلبات عالقة")
         self.assertContains(
             r,
@@ -182,10 +183,63 @@ class DashboardSmokeTests(_ReportsBase):
         ]
         with mock.patch("reports.views.health_alerts", return_value=items):
             r = self.client.get(reverse("reports:dashboard"))
-        self.assertContains(r, "حالة الربط")
+        self.assertContains(r, "Connection status")
+        self.assertContains(r, "View connection")
         self.assertContains(r, "Redis لا يستجيب")
         self.assertContains(r, 'href="/x/?tab=connection"')
         self.assertContains(r, "فشل تسجيل الدخول: شركة")
+
+    def test_health_alert_strings_translated(self):
+        from unittest import mock
+
+        items = [{"text": "Redis down", "url": "/x/?tab=connection"}]
+        with mock.patch("reports.views.health_alerts", return_value=items):
+            r = self.client.get(reverse("reports:dashboard"))
+        self.assertContains(r, "Connection status")
+        self.assertContains(r, "View connection")
+        self.assertNotContains(r, "حالة الربط")
+        self.assertNotContains(r, "عرض الربط")
+        with translation.override("ar"):
+            self.assertEqual(translation.gettext("Connection status"), "حالة الربط")
+            self.assertEqual(translation.gettext("View connection"), "عرض الربط")
+
+    def test_chart_empty_state_when_no_volume(self):
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertEqual(r.context["chart_total_volume"], 0)
+        self.assertContains(r, "empty-state")
+        self.assertNotContains(r, "rd-mini-chart-bar-cell")
+        # The card header (title, total, average) stays.
+        self.assertContains(r, "rd-mini-chart-summary")
+        self.assertContains(r, "No sales recorded in this period.")
+
+    def test_chart_bars_when_volume(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        self.assertGreater(r.context["chart_total_volume"], 0)
+        self.assertContains(r, "rd-mini-chart-bar-cell")
+        self.assertContains(r, "is-today")
+        self.assertContains(r, "rd-period-switch__opt")
+        self.assertContains(r, 'id="rd-dashboard"')
+
+    def test_chart_day_labels_are_localised_weekday_initials(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"))
+        today = timezone.localdate()
+        with translation.override("en"):
+            from core.templatetags.ui_tags import rd_weekday_initial
+
+            letter = rd_weekday_initial(today.isoformat())
+        self.assertContains(
+            r, f'<span class="rd-mini-chart-wd" title="{today.isoformat()}">{letter}</span>'
+        )
+
+    def test_chart_month_labels_keep_day_numbers(self):
+        self._make_sale(sell=40, paid=True)
+        r = self.client.get(reverse("reports:dashboard"), {"period": "month"})
+        today = timezone.localdate()
+        self.assertContains(
+            r, f'<span class="rd-mini-chart-wd" title="{today.isoformat()}">{today.day}</span>'
+        )
 
     def test_dashboard_does_not_ping_health_outside_cached_alerts(self):
         self.client.get(reverse("reports:dashboard"))

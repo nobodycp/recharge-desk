@@ -5577,6 +5577,49 @@ msgstr "لا توجد مبيعات مسجلة في هذه الفترة."
 msgid "No paid sales in this period yet."
 msgstr "لا توجد مبيعات مدفوعة في هذه الفترة بعد."
 
+#: templates/reports/dashboard.html:17
+msgid "Connection status"
+msgstr "حالة الربط"
+
+#: templates/reports/dashboard.html:22
+msgid "View connection"
+msgstr "عرض الربط"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Monday"
+msgid "M"
+msgstr "ن"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Tuesday"
+msgid "T"
+msgstr "ث"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Wednesday"
+msgid "W"
+msgstr "ر"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Thursday"
+msgid "T"
+msgstr "خ"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Friday"
+msgid "F"
+msgstr "ج"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Saturday"
+msgid "S"
+msgstr "س"
+
+#: core/templatetags/ui_tags.py
+msgctxt "weekday initial: Sunday"
+msgid "S"
+msgstr "ح"
+
 #: templates/reports/employee_report.html:24
 #: templates/reports/profit_report.html:32
 msgid "Sales count"

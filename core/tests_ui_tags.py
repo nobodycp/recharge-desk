@@ -1,7 +1,8 @@
 from django.template.loader import render_to_string
 from django.test import SimpleTestCase
+from django.utils import translation
 
-from core.templatetags.ui_tags import rd_sparkline_points, rd_trend
+from core.templatetags.ui_tags import rd_sparkline_points, rd_trend, rd_weekday_initial
 
 
 def _series(*counts, key="count"):
@@ -105,3 +106,63 @@ class SparklinePartialTests(SimpleTestCase):
         self.assertEqual(
             render_to_string("partials/kpi_sparkline.html", {"points": ""}).strip(), ""
         )
+
+
+class WeekdayInitialTests(SimpleTestCase):
+    def test_weekday_initial_english_and_arabic(self):
+        # 2026-10-12 is a Monday.
+        with translation.override("en"):
+            self.assertEqual(rd_weekday_initial("2026-10-12"), "M")
+        with translation.override("ar"):
+            self.assertEqual(rd_weekday_initial("2026-10-12"), "ن")
+
+    def test_weekday_initial_covers_the_whole_week(self):
+        with translation.override("en"):
+            letters = [rd_weekday_initial(f"2026-10-{12 + i}") for i in range(7)]
+        self.assertEqual(letters, ["M", "T", "W", "T", "F", "S", "S"])
+        with translation.override("ar"):
+            letters = [rd_weekday_initial(f"2026-10-{12 + i}") for i in range(7)]
+        self.assertEqual(letters, ["ن", "ث", "ر", "خ", "ج", "س", "ح"])
+
+    def test_weekday_initial_accepts_date_objects(self):
+        from datetime import date
+
+        with translation.override("en"):
+            self.assertEqual(rd_weekday_initial(date(2026, 10, 14)), "W")
+
+    def test_weekday_initial_bad_input_is_empty(self):
+        self.assertEqual(rd_weekday_initial(""), "")
+        self.assertEqual(rd_weekday_initial(None), "")
+        self.assertEqual(rd_weekday_initial("2026-10"), "")
+        self.assertEqual(rd_weekday_initial("nope"), "")
+
+
+class EmptyStatePartialTests(SimpleTestCase):
+    def test_empty_state_partial_renders_title_and_action(self):
+        html = render_to_string(
+            "partials/empty_state.html",
+            {
+                "title": "Nothing here",
+                "text": "Add your first record.",
+                "action_url": "/go/",
+                "action_label": "Add record",
+            },
+        )
+        self.assertIn("empty-state", html)
+        self.assertIn("Nothing here", html)
+        self.assertIn("Add your first record.", html)
+        self.assertIn('href="/go/"', html)
+        self.assertIn("Add record", html)
+
+    def test_empty_state_partial_title_only(self):
+        html = render_to_string("partials/empty_state.html", {"title": "Nothing here"})
+        self.assertIn("Nothing here", html)
+        self.assertNotIn("<a ", html)
+        self.assertNotIn("empty-state__text", html)
+
+    def test_empty_state_partial_icon_is_decorative(self):
+        html = render_to_string(
+            "partials/empty_state.html", {"title": "T", "icon": "inbox"}
+        )
+        self.assertIn("empty-state__icon", html)
+        self.assertIn('aria-hidden="true"', html)

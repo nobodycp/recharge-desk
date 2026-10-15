@@ -1,0 +1,24 @@
+{% comment %}
+  Shared Pearl empty state.
+  Args: title (required, already translated), text, icon, action_url + action_label.
+  icon: one of "chart", "building", "trophy", "list"; any other non-empty value shows "list".
+  Styled by .empty-state in design-system.css (the raw class works on its own too).
+{% endcomment %}
+<div class="empty-state" role="status">
+  {% if icon %}
+  <span class="empty-state__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+      {% if icon == "chart" %}<path d="M3 3v18h18"/><path d="M8 17v-4"/><path d="M13 17V8"/><path d="M18 17v-7"/>
+      {% elif icon == "building" %}<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>
+      {% elif icon == "trophy" %}<path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M6 4h12v6a6 6 0 01-12 0V4z"/><path d="M9 22h6"/><path d="M12 17v5"/>
+      {% else %}<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3.5 6h.01"/><path d="M3.5 12h.01"/><path d="M3.5 18h.01"/>
+      {% endif %}
+    </svg>
+  </span>
+  {% endif %}
+  <p class="empty-state__title">{{ title }}</p>
+  {% if text %}<p class="empty-state__text">{{ text }}</p>{% endif %}
+  {% if action_url and action_label %}
+  <a class="btn btn-sm btn-outline-secondary empty-state__action" href="{{ action_url }}">{{ action_label }}</a>
+  {% endif %}
+</div>

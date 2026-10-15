@@ -249,11 +249,14 @@
   gap: 2px;
   padding: 3px;
   border-radius: 0.7rem;
-  background: var(--bs-tertiary-bg);
+  background: var(--rd-surface-2);
   border: 1px solid var(--bs-border-color);
 }
 
 .rd-period-switch__opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 4.25rem;
   padding: 0.4rem 0.9rem;
   border-radius: 0.55rem;
@@ -281,8 +284,15 @@
 .rd-period-switch__opt.is-active {
   background: var(--rd-surface);
   color: var(--rd-ink);
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: var(--rd-shadow-xs), 0 0 0 1px var(--bs-border-color);
+}
+
+/* Touch targets (3.45rem = 44 px at the 80 % root) below the desktop breakpoint. */
+@media (max-width: 991.98px) {
+  .rd-period-switch__opt {
+    min-height: 3.45rem;
+  }
 }
 
 .rd-dash-swap > :not(.rd-dash-head) {
@@ -357,11 +367,10 @@
 }
 
 .rd-supplier-row:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rd-accent) 55%, transparent);
+  box-shadow: inset 0 0 0 2px var(--rd-ink);
 }
 
-/* Letter avatar — neutral chip; every second row takes the accent tint so
-   adjacent suppliers stay easy to tell apart. */
+/* Letter avatar — neutral chip. */
 .rd-supplier-avatar {
   display: inline-flex;
   align-items: center;
@@ -374,15 +383,8 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   flex: 0 0 auto;
-  background: var(--rd-surface);
+  background: var(--rd-surface-2);
   color: var(--rd-ink);
-  border: 1px solid var(--bs-border-color);
-}
-
-.rd-supplier-list > li:nth-child(2n) .rd-supplier-avatar {
-  background: var(--rd-accent-soft);
-  color: var(--rd-accent-ink);
-  border-color: color-mix(in srgb, var(--rd-accent) 22%, transparent);
 }
 
 .rd-supplier-info {
@@ -411,6 +413,7 @@
   color: var(--bs-secondary-color);
 }
 
+/* Status = coloured dot + text label (never colour alone); text stays muted. */
 .rd-supplier-dot {
   width: 0.45rem;
   height: 0.45rem;
@@ -419,11 +422,11 @@
   flex: 0 0 auto;
 }
 
-.rd-supplier-meta.is-success {
+.rd-supplier-meta.is-success .rd-supplier-dot {
   color: var(--rd-success);
 }
 
-.rd-supplier-meta.is-warning {
+.rd-supplier-meta.is-warning .rd-supplier-dot {
   color: var(--rd-warning);
 }
 
@@ -432,8 +435,10 @@
 }
 
 .rd-supplier-amount {
+  font-family: var(--rd-font-num);
   font-size: 0.95rem;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--rd-ink);
   white-space: nowrap;
 }
 
@@ -460,10 +465,16 @@
 }
 
 .rd-supplier-empty {
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   text-align: center;
   color: var(--bs-secondary-color);
   font-size: 0.875rem;
+}
+
+.rd-supplier-empty .empty-state {
+  border: 0;
+  background: transparent;
+  padding-block: 1.25rem;
 }
 
 /* Stale phones / lines for disconnect — inline ICCID + mobile cards */
