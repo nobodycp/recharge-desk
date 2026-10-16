@@ -1,9 +1,11 @@
 {% extends "base_employee.html" %}
-{% load i18n static %}
+{% load i18n static kit %}
 {% block employee_header %}
 <span>{% trans "Check numbers" %}</span>
 {% endblock %}
 {% block content %}
+<div class="rd-page rd-page--form">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <link href="{% static 'css/number-check.css' %}{{ static_cache_query }}" rel="stylesheet">
 {% trans "Error" as msg_error_title %}
 {% trans "Something went wrong. Please try again." as msg_error_body %}
@@ -69,4 +71,5 @@
 <script src="{% static 'js/employee-refresh-number.js' %}{{ static_cache_query }}"></script>
 <script src="{% static 'js/employee-check-number.js' %}{{ static_cache_query }}"></script>
 <script src="{% static 'js/number-check-share.js' %}{{ static_cache_query }}"></script>
+</div>
 {% endblock %}

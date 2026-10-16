@@ -1,9 +1,11 @@
 {% extends "base_employee.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block employee_header %}
 <span>{% trans "Check stock" %}</span>
 {% endblock %}
 {% block content %}
+<div class="rd-page rd-page--form">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <div class="rd-sale-form rd-stock-check">
   <p class="rd-entry-subtitle">
     {% trans "Search by customer name to see SIM stock held with them." %}
@@ -48,5 +50,6 @@
   </div>
 
   {% include "sales/partials/employee_stock_check_results.html" %}
+</div>
 </div>
 {% endblock %}

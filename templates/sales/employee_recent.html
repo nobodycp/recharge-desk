@@ -1,49 +1,17 @@
 {% extends "base_employee.html" %}
-{% load i18n ui_tags %}
+{% load i18n ui_tags kit %}
 {% block employee_header %}{% trans "My entries" %}{% endblock %}
 {% block content %}
+<div class="rd-page">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <div class="rd-recent">
 <header class="rd-recent-intro">
   <p class="rd-recent-intro__text">{% trans "Sales and payments you entered. You can edit or delete only your last 10 of each." %}</p>
   <span class="rd-badge rd-badge--neutral"><bdi>{{ scope_label }}</bdi></span>
 </header>
 
-{% active_filter_count as recent_active %}
-{% include "partials/filter_card_open.html" with active_count=recent_active indicator_id="recent-htmx-indicator" %}
-    <form method="get" class="rd-recent-filter">
-      {% if filter_form.non_field_errors %}
-        {% include "partials/form_errors_toast.html" with errors=filter_form.non_field_errors %}
-      {% endif %}
-      <div class="rd-recent-filter__field">
-        {{ filter_form.q.label_tag }}{{ filter_form.q }}
-        {{ filter_form.q.errors }}
-      </div>
-      <div class="rd-recent-filter__field">
-        {{ filter_form.company.label_tag }}{{ filter_form.company }}
-        {{ filter_form.company.errors }}
-      </div>
-      <div class="rd-recent-filter__field">
-        {{ filter_form.payment_method.label_tag }}{{ filter_form.payment_method }}
-        {{ filter_form.payment_method.errors }}
-      </div>
-      <div class="rd-recent-filter__field">
-        {{ filter_form.status.label_tag }}{{ filter_form.status }}
-        {{ filter_form.status.errors }}
-      </div>
-      <div class="rd-recent-filter__field">
-        {{ filter_form.date_from.label_tag }}{{ filter_form.date_from }}
-        {{ filter_form.date_from.errors }}
-      </div>
-      <div class="rd-recent-filter__field">
-        {{ filter_form.date_to.label_tag }}{{ filter_form.date_to }}
-        {{ filter_form.date_to.errors }}
-      </div>
-      <div class="rd-recent-filter__actions">
-        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'sales:employee_recent_sales' %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
-{% include "partials/filter_card_close.html" %}
+{% url 'sales:employee_recent_sales' as recent_reset_url %}
+{% rd_filter_card filter_form reset_url=recent_reset_url indicator_id="recent-htmx-indicator" form_class="rd-recent-filter" %}
 
 {% if entries %}
   <div class="rd-mobile-stack">
@@ -90,5 +58,6 @@
     {% endif %}
   </div>
 {% endif %}
+</div>
 </div>
 {% endblock %}

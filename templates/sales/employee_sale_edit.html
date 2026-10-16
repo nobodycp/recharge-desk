@@ -1,7 +1,9 @@
 {% extends "base_employee.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block employee_header %}<span>{% trans "Edit entry" %}</span>{% endblock %}
 {% block content %}
+<div class="rd-page rd-page--form">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <div class="rd-sale-form rd-sale-edit">
   <div class="rd-entry-subrow">
     <p class="rd-entry-subtitle">
@@ -86,5 +88,6 @@
       <a class="btn btn-outline-secondary rd-dock-btn" href="{% url 'sales:employee_recent_sales' %}">{% trans "Cancel" %}</a>
     </div>
   </div>
+</div>
 </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base_employee.html" %}
-{% load i18n static l10n ui_tags humanize %}
+{% load i18n static l10n ui_tags humanize kit %}
 {% block employee_header %}
 <span>{% trans "Sales entry" %}</span>
 {% endblock %}
@@ -7,6 +7,8 @@
 <div class="rd-entry-progress" aria-hidden="true"><i></i></div>
 {% endblock %}
 {% block content %}
+<div class="rd-page rd-page--employee-entry">
+  {% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <div class="rd-sale-form">
   <form
     method="post"
@@ -931,4 +933,5 @@
 })();
 </script>
 {% endif %}
+</div>
 {% endblock %}

@@ -153,11 +153,11 @@ def rd_fields(form, size="", full="", exclude=""):
     }
 
 
-PAGE_HEADER_ARGS = ("title", "subtitle", "back_url", "back_label", "meta")
+PAGE_HEADER_ARGS = ("title", "subtitle", "back_url", "back_label", "meta", "shell_title")
 
 
 class PageHeaderNode(template.Node):
-    """`{% rd_page_header title ... %}actions{% end_rd_page_header %}`: the body is the actions slot."""
+    """Render the page header, or delegate its title to an employee shell topbar."""
 
     def __init__(self, args, kwargs, nodelist):
         self.args = args
@@ -168,6 +168,8 @@ class PageHeaderNode(template.Node):
         values = dict(zip(PAGE_HEADER_ARGS, (arg.resolve(context) for arg in self.args)))
         values.update({name: expr.resolve(context) for name, expr in self.kwargs.items()})
         actions = self.nodelist.render(context)
+        if values.get("shell_title"):
+            return ""
         values = {name: ("" if value is None else value) for name, value in values.items()}
         if isinstance(values.get("meta"), numbers.Number):
             values["meta"] = str(values["meta"])  # a count of 0 must still show
@@ -211,7 +213,7 @@ def _filled(request, key):
 
 
 @register.inclusion_tag("partials/kit/filter_card.html", takes_context=True)
-def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicator_id="", keep="", title="", open=None, hx_vals="", show_errors=True):
+def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicator_id="", keep="", title="", open=None, hx_vals="", show_errors=True, form_class=""):
     """Collapsible filter card around a GET form. Counts only the form's own fields as active."""
     request = context["request"]
     active_count = sum(1 for name in form.fields if _filled(request, form.add_prefix(name)))
@@ -230,6 +232,7 @@ def rd_filter_card(context, form, action="", reset_url="", hx_target="", indicat
         "hx_target": hx_target,
         "hx_vals": hx_vals,
         "indicator_id": indicator_id,
+        "form_class": form_class,
         "hidden_fields": form.hidden_fields(),
         "kept": kept,
         "fields": [(field, i == 0 and _is_search_name(field.name)) for i, field in enumerate(visible)],

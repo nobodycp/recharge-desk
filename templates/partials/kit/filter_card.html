@@ -1,12 +1,14 @@
 {% load i18n kit %}{% include "partials/filter_card_open.html" with filter_title=title active_count=active_count indicator_id=indicator_id card_open=is_open %}
-    <form method="get" action="{{ action_url }}" class="rd-filter-grid"{% if hx_target %} hx-get="{{ action_url }}" hx-target="{{ hx_target }}" hx-push-url="true"{% if indicator_id %} hx-indicator="#{{ indicator_id }}"{% endif %}{% if hx_vals %} hx-vals="{{ hx_vals|force_escape }}"{% endif %}{% endif %}>
+    <form method="get" action="{{ action_url }}" class="{% if form_class %}{{ form_class }}{% else %}rd-filter-grid{% endif %}"{% if hx_target %} hx-get="{{ action_url }}" hx-target="{{ hx_target }}" hx-push-url="true"{% if indicator_id %} hx-indicator="#{{ indicator_id }}"{% endif %}{% if hx_vals %} hx-vals="{{ hx_vals|force_escape }}"{% endif %}{% endif %}>{% if form_class %}
+      <div class="rd-filter-grid">{% endif %}
       {% for name, value in kept %}<input type="hidden" name="{{ name }}" value="{{ value }}" data-rd-filter-keep>
       {% endfor %}{% for hidden in hidden_fields %}{{ hidden }}
       {% endfor %}{% for field, wide in fields %}{% rd_field field size="sm" wide=wide %}
       {% endfor %}{% if errors %}<div class="rd-field__error rd-filter-grid__errors" role="alert">{% for error in errors %}<div>{{ error }}</div>{% endfor %}</div>
       {% endif %}<div class="rd-filter-grid__actions">
-        <button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>
+        {% if form_class %}<button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>{% else %}<button type="submit" class="btn btn-primary btn-sm">{% trans "Apply" %}</button>{% endif %}
         <a class="btn btn-outline-secondary btn-sm" href="{{ reset_url }}" hx-boost="false">{% trans "Reset" %}</a>
       </div>
+      {% if form_class %}</div>{% endif %}
     </form>
 {% include "partials/filter_card_close.html" %}

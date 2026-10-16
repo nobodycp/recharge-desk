@@ -1,9 +1,11 @@
 {% extends "base_employee.html" %}
-{% load i18n static humanize ui_tags %}
+{% load i18n static humanize ui_tags kit %}
 {% block employee_header %}
 <span>{% trans "Record payment" %}</span>
 {% endblock %}
 {% block content %}
+<div class="rd-page rd-page--form">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 <div
   class="rd-sale-form rd-pay-sub"
   id="rd-pay-sub-page"
@@ -154,4 +156,5 @@
   </div>
 </div>
 <script src="{% static 'js/employee-record-payment.js' %}{{ static_cache_query }}"></script>
+</div>
 {% endblock %}
