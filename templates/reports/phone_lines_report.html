@@ -1,49 +1,34 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
 {% block content %}
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Line statement" %}</h1>
-</div>
+<div class="rd-page">
+{% trans "Line statement" as report_title %}
+{% rd_page_header report_title %}{% end_rd_page_header %}
 
 {% active_filter_count as phone_lines_filter_active %}
 {% include "partials/filter_card_open.html" with active_count=phone_lines_filter_active card_open=phone_lines_filter_active %}
     <form
       method="get"
       id="phone-lines-filter-form"
-      class="row g-3 align-items-end"
+      class="rd-filter-grid"
     >
       <input type="hidden" name="sort" value="{{ sort }}">
       <input type="hidden" name="order" value="{{ order }}">
-      <div class="col-12 col-md-6 col-lg-3">
-        <label class="form-label" for="phone-lines-filter-q">{{ filter_form.q.label }}</label>
-        {{ filter_form.q }}
-      </div>
-      <div class="col-6 col-md-3 col-lg-2">
-        {{ filter_form.company.label_tag }}{{ filter_form.company }}
-      </div>
-      <div class="col-6 col-md-3 col-lg-2">
-        {{ filter_form.line_name.label_tag }}{{ filter_form.line_name }}
-      </div>
-      <div class="col-6 col-md-3 col-lg-2">
-        {{ filter_form.status.label_tag }}{{ filter_form.status }}
-      </div>
-      <div class="col-6 col-md-3 col-lg-2">
-        {{ filter_form.sim_type.label_tag }}{{ filter_form.sim_type }}
-      </div>
-      <div class="col-6 col-md-3 col-lg-2">
-        {{ filter_form.threshold_days.label_tag }}{{ filter_form.threshold_days }}
-        {% if filter_form.threshold_days.help_text %}
-          <div class="form-text d-none d-xl-block">{{ filter_form.threshold_days.help_text }}</div>
-        {% endif %}
-      </div>
-      <div class="col-12 d-flex flex-wrap gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'reports:phone_lines_report' %}">{% trans "Reset" %}</a>
+      {% rd_field filter_form.q size="sm" wide=True %}
+      {% rd_field filter_form.company size="sm" %}
+      {% rd_field filter_form.line_name size="sm" %}
+      {% rd_field filter_form.status size="sm" %}
+      {% rd_field filter_form.sim_type size="sm" %}
+      {% rd_field filter_form.threshold_days size="sm" %}
+      <div class="rd-filter-grid__actions">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:phone_lines_report' %}">{% trans "Reset" %}</a>
       </div>
     </form>
 {% include "partials/filter_card_close.html" %}
 
 <div class="position-relative" id="phone-lines-list-results">
   {% include "reports/partials/phone_lines_report_results.html" %}
+</div>
 </div>
 {% endblock %}

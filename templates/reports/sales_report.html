@@ -1,15 +1,15 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
 {% block content %}
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Sales report" %}</h1>
-</div>
+<div class="rd-page">
+{% trans "Sales report" as report_title %}
+{% rd_page_header report_title %}{% end_rd_page_header %}
 
 {% active_filter_count as report_active %}
 {% include "partials/filter_card_open.html" with active_count=report_active indicator_id="sales-report-htmx-indicator" %}
     <form
       method="get"
-      class="row g-3 align-items-end"
+      class="rd-filter-grid"
       hx-get="{% url 'reports:sales_report' %}"
       hx-target="#sales-report-results"
       hx-push-url="true"
@@ -17,21 +17,21 @@
     >
       <input type="hidden" name="sort" value="{{ sort }}">
       <input type="hidden" name="order" value="{{ order }}">
-      <div class="col-12 col-md-6 col-lg-4">
-        <label class="form-label" for="rep-q">{% trans "Search" %}</label>
+      <div class="rd-field rd-field--wide">
+        <label class="rd-field__label" for="rep-q">{% trans "Search" %}</label>
         <input type="search" class="form-control form-control-sm" id="rep-q" name="q" value="{{ request.GET.q }}" placeholder="{% trans 'Reference, payer, company…' %}">
       </div>
-      <div class="col-md-4 col-lg-3">{{ form.company.label_tag }}{{ form.company }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.product.label_tag }}{{ form.product }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.employee.label_tag }}{{ form.employee }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.payment_method.label_tag }}{{ form.payment_method }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.status.label_tag }}{{ form.status }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.esim.label_tag }}{{ form.esim }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.date_from.label_tag }}{{ form.date_from }}</div>
-      <div class="col-md-4 col-lg-3">{{ form.date_to.label_tag }}{{ form.date_to }}</div>
-      <div class="col-12 d-flex flex-wrap gap-2">
-        <button class="btn btn-primary" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary" href="{% url 'reports:sales_report' %}">{% trans "Reset" %}</a>
+      {% rd_field form.company size="sm" %}
+      {% rd_field form.product size="sm" %}
+      {% rd_field form.employee size="sm" %}
+      {% rd_field form.payment_method size="sm" %}
+      {% rd_field form.status size="sm" %}
+      {% rd_field form.esim size="sm" %}
+      {% rd_field form.date_from size="sm" %}
+      {% rd_field form.date_to size="sm" %}
+      <div class="rd-filter-grid__actions">
+        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:sales_report' %}">{% trans "Reset" %}</a>
       </div>
     </form>
 {% include "partials/filter_card_close.html" %}
@@ -46,5 +46,6 @@
   hx-indicator="#sales-report-htmx-indicator"
 >
   {% include "reports/partials/sales_report_results.html" %}
+</div>
 </div>
 {% endblock %}

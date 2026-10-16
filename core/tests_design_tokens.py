@@ -460,7 +460,7 @@ class HeroKpiFollowsThemeTests(SimpleTestCase):
 class ReportFilterLegacyCssTests(SimpleTestCase):
     """Unmigrated report pages still use the inline label+input header filter markup."""
 
-    TEMPLATES = ("templates/reports/profit_report.html", "templates/reports/employee_report.html")
+    TEMPLATES = ("templates/expenses/expense_report.html",)
 
     def test_every_report_filter_class_has_a_rule(self):
         for rel in self.TEMPLATES:

@@ -1,9 +1,8 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize ui_tags kit %}
 {% block content %}
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">تقارير المزودين</h1>
-</div>
+<div class="rd-page">
+{% rd_page_header title %}{% end_rd_page_header %}
 
 <ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
   {% for t in providers %}
@@ -17,26 +16,26 @@
 
 {% active_filter_count as report_active %}
 {% include "partials/filter_card_open.html" with active_count=report_active %}
-    <form method="get" class="row g-3 align-items-end">
+    <form method="get" class="rd-filter-grid">
       <input type="hidden" name="provider" value="{{ provider }}">
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-period">الفترة</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-period">الفترة</label>
         <select class="form-select form-select-sm" id="po-period" name="period">
           {% for value, label in period_choices %}
             <option value="{{ value }}"{% if value == period %} selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-from">من</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-from">من</label>
         <input type="date" class="form-control form-control-sm" id="po-from" name="from" value="{{ date_from }}">
       </div>
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-to">إلى</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-to">إلى</label>
         <input type="date" class="form-control form-control-sm" id="po-to" name="to" value="{{ date_to }}">
       </div>
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-service">الخدمة</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-service">الخدمة</label>
         <select class="form-select form-select-sm" id="po-service" name="service">
           <option value="">الكل</option>
           {% for value, label in service_choices %}
@@ -44,8 +43,8 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-outcome">النتيجة</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-outcome">النتيجة</label>
         <select class="form-select form-select-sm" id="po-outcome" name="outcome">
           <option value="">الكل</option>
           {% for value, label in outcome_choices %}
@@ -53,8 +52,8 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4 col-lg-2">
-        <label class="form-label" for="po-source">المصدر</label>
+      <div class="rd-field">
+        <label class="rd-field__label" for="po-source">المصدر</label>
         <select class="form-select form-select-sm" id="po-source" name="source">
           <option value="">الكل</option>
           {% for value, label in source_choices %}
@@ -62,13 +61,13 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-4 col-lg-3">
-        <label class="form-label" for="po-phone">رقم الهاتف</label>
+      <div class="rd-field rd-field--wide">
+        <label class="rd-field__label" for="po-phone">رقم الهاتف</label>
         <input type="search" class="form-control form-control-sm" id="po-phone" name="phone" value="{{ phone }}" placeholder="جزء من الرقم">
       </div>
-      <div class="col-12 d-flex flex-wrap gap-2">
-        <button class="btn btn-primary" type="submit">تطبيق</button>
-        <a class="btn btn-outline-secondary" href="{% url 'reports:provider_operations' %}?provider={{ provider }}">إعادة ضبط</a>
+      <div class="rd-filter-grid__actions">
+        <button class="btn btn-primary btn-sm" type="submit">تطبيق</button>
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:provider_operations' %}?provider={{ provider }}">إعادة ضبط</a>
       </div>
     </form>
 {% include "partials/filter_card_close.html" %}
@@ -177,5 +176,6 @@
     </div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 </div>
 {% endblock %}

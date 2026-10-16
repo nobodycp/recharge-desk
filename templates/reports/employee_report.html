@@ -1,23 +1,11 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-dash-head mb-3">
-  <h1 class="rd-heading-xl mb-0">{% trans "Employee performance" %}</h1>
-  <form method="get" class="rd-report-filter" role="search">
-    <label class="rd-report-filter__field">
-      <span class="rd-report-filter__lbl">{{ form.date_from.label }}</span>
-      {{ form.date_from }}
-    </label>
-    <label class="rd-report-filter__field">
-      <span class="rd-report-filter__lbl">{{ form.date_to.label }}</span>
-      {{ form.date_to }}
-    </label>
-    <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-    {% if request.GET.date_from or request.GET.date_to %}
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'reports:employee_report' %}">{% trans "Reset" %}</a>
-    {% endif %}
-  </form>
-</div>
+<div class="rd-page">
+{% trans "Employee performance" as report_title %}
+{% rd_page_header report_title %}{% end_rd_page_header %}
+{% url 'reports:employee_report' as report_url %}
+{% rd_filter_card form action=report_url reset_url=report_url %}
 
 <section class="rd-card rd-stat-strip mb-3">
   <div class="rd-stat-strip__cell">
@@ -72,5 +60,6 @@
       </table>
     </div>
   </div>
+</div>
 </div>
 {% endblock %}

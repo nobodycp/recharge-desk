@@ -1,16 +1,16 @@
 {% extends "base_management.html" %}
-{% load i18n humanize l10n ui_tags %}
+{% load i18n humanize l10n ui_tags kit %}
 {% block content %}
-<div id="rd-dashboard" class="rd-dash-swap">
-<div class="rd-page-header rd-page-header--dashboard rd-dash-head">
-  <h1 class="rd-heading-xl mb-0">{% trans "Operational snapshot" %}</h1>
+<div id="rd-dashboard" class="rd-page rd-dash-swap">
+{% trans "Operational snapshot" as dashboard_title %}
+{% rd_page_header dashboard_title %}
   <nav class="rd-period-switch" aria-label="{% trans 'Statistics period' %}"
        hx-target="#rd-dashboard" hx-select="#rd-dashboard" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#rd-dashboard">
     {% for key, label in period_options %}
       <a class="rd-period-switch__opt{% if key == period %} is-active{% endif %}" href="?period={{ key }}" hx-get="?period={{ key }}"{% if key == period %} aria-current="true"{% endif %}>{{ label }}</a>
     {% endfor %}
   </nav>
-</div>
+{% end_rd_page_header %}
 
 {% if health_alerts %}
 <div id="connection-health-alert" class="alert alert-warning py-2 px-3 mb-3" role="alert">
