@@ -235,10 +235,13 @@ def _discard_unsent_sale(sale: Sale, *, actor, who: dict, message: str) -> Sale:
     return sale
 
 
-def notify_discarded_charges(request) -> None:
-    """Tell this employee about charges that were dropped since they last looked."""
-    from django.contrib import messages
+def take_employee_charge_dialog(request) -> str:
+    """One notice for charges dropped since this employee last looked.
 
+    Provider refusals (a mismatched package) and charges that never left are
+    shown once, in a dialog, not as a stack of toasts. Returns "" when there
+    is nothing new.
+    """
     pending = [
         job
         for job in ProviderJob.objects.filter(
@@ -249,23 +252,40 @@ def notify_discarded_charges(request) -> None:
         ).order_by("-finished_at")[:20]
         if not (job.result or {}).get("acknowledged")
     ][:5]
+    dialog = ""
     for job in pending:
-        phone = (job.result or {}).get("phone") or job.phone
-        employee_message = (job.result or {}).get("employee_message") or ""
-        if employee_message:
-            messages.error(request, employee_message)
-        else:
-            messages.error(
-                request,
-                _(
-                    "Charge for %(phone)s never reached the provider. "
-                    "The sale was not recorded. Record it manually."
-                )
-                % {"phone": phone},
-            )
         result = dict(job.result or {})
+        text = (result.get("employee_message") or "").strip()
+        if not text:
+            phone = result.get("phone") or job.phone
+            text = _(
+                "Charge for %(phone)s never reached the provider. "
+                "The sale was not recorded. Record it manually."
+            ) % {"phone": phone}
+        if not dialog:
+            dialog = str(text)
         result["acknowledged"] = True
         ProviderJob.objects.filter(pk=job.pk).update(result=result)
+    if dialog:
+        _drop_charge_pending_messages(request)
+    return dialog
+
+
+def _drop_charge_pending_messages(request) -> None:
+    """Remove the 'recorded' and 'charge sent' toasts once the charge was refused.
+
+    Iterating the storage marks it used but leaves the messages in place, so
+    the pending ones are taken out before the page renders them as toasts.
+    """
+    from django.contrib import messages
+
+    storage = messages.get_messages(request)
+    storage._loaded_data = [
+        message
+        for message in storage
+        if "charge-pending" not in (message.extra_tags or "").split()
+    ]
+    storage._queued_messages = []
 
 
 def _flag_success_after_failure(sale: Sale, outcome: ChargeOutcome, actor, who: dict) -> Sale:

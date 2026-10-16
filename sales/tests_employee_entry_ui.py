@@ -821,6 +821,7 @@ class EmployeePaymentCssTests(SimpleTestCase):
             "display: flex",
             "flex-direction: column",
             "flex: 1 1 auto",
+            "width: 100%",
         )
 
     def test_autocomplete_rows_are_touch_sized(self):

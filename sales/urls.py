@@ -8,6 +8,11 @@ app_name = "sales"
 urlpatterns = [
     path("employee/sales/", views.employee_entry, name="employee_entry"),
     path(
+        "employee/sales/charge-notice/",
+        views.employee_charge_notice,
+        name="employee_charge_notice",
+    ),
+    path(
         "employee/sales/check-number/",
         views.employee_refresh_number,
         name="employee_refresh_number",

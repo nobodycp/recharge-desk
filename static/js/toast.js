@@ -125,7 +125,10 @@
     if (!root || !root.querySelectorAll) return;
     within(root, "[data-rd-flash]").forEach(function (queue) {
       queue.querySelectorAll("[data-level]").forEach(function (item) {
-        show(item.textContent, item.getAttribute("data-level"));
+        var toast = show(item.textContent, item.getAttribute("data-level"));
+        if (toast && item.hasAttribute("data-rd-charge-pending")) {
+          toast.setAttribute("data-rd-charge-pending", "");
+        }
       });
       queue.remove();
     });

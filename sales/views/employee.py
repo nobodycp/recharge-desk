@@ -128,10 +128,15 @@ def employee_entry(request):
     company_id = request.POST.get("company") or request.GET.get("company")
     initial = {}
     from_reconcile = False
+    charge_dialog = ""
+    charge_notice_wait = False
     if request.method == "GET":
-        from sales.charging import notify_discarded_charges
+        from sales.charging import take_employee_charge_dialog
 
-        notify_discarded_charges(request)
+        charge_dialog = take_employee_charge_dialog(request)
+        charge_notice_wait = (
+            bool(request.session.pop("charge_notice_wait", False)) and not charge_dialog
+        )
         if company_id:
             initial["company"] = company_id
         # Quick-record link from the supplier reconcile page: prefill a valid number only.
@@ -229,30 +234,12 @@ def employee_entry(request):
                     charge_notice = (
                         "failed" if sale.charge_status == Sale.ChargeStatus.FAILED else "pending"
                     )
-            if charge_notice == "discarded":
-                from providers.models import ProviderJob
-
-                job = ProviderJob.objects.filter(
-                    idempotency_key=(request.POST.get("form_token") or "").strip()
-                ).first()
-                employee_message = ((job.result or {}) if job else {}).get("employee_message") or ""
-                if employee_message:
-                    messages.error(request, employee_message)
-                else:
-                    messages.error(
-                        request,
-                        _(
-                            "Charge for %(phone)s never reached the provider. "
-                            "The sale was not recorded. Record it manually."
-                        )
-                        % {"phone": form.cleaned_data["reference_number"]},
-                    )
-            elif charge_notice == "failed":
+            if charge_notice == "failed":
                 messages.error(
                     request,
                     sale.charge_message or _("Charge failed"),
                 )
-            else:
+            elif charge_notice != "discarded":
                 if outcome == "posted_debt":
                     messages.success(request, _("Recorded on account and posted to the customer."))
                 elif outcome in ("paid", "paid_employee"):
@@ -268,11 +255,17 @@ def employee_entry(request):
                         request, _("Recorded as on-account; awaiting management approval.")
                     )
                 else:
-                    messages.success(request, _("Sale recorded successfully."))
+                    messages.success(
+                        request,
+                        _("Sale recorded successfully."),
+                        extra_tags="charge-pending" if charge_notice == "pending" else "",
+                    )
                 if charge_notice == "pending":
+                    request.session["charge_notice_wait"] = True
                     messages.info(
                         request,
                         _("Charge sent to the provider. Follow its status in My entries."),
+                        extra_tags="charge-pending",
                     )
             return redirect("sales:employee_entry")
         except ValueError as exc:
@@ -310,8 +303,20 @@ def employee_entry(request):
             "chargeable_company_ids": chargeable_company_ids,
             "charge_available": str(company_id or "")
             in {str(pk) for pk in chargeable_company_ids},
+            "charge_dialog": charge_dialog,
+            "charge_notice_wait": charge_notice_wait,
         },
     )
+
+
+@employee_required
+def employee_charge_notice(request):
+    """The refusal dialog text, once the worker has dropped the charge."""
+    from django.http import JsonResponse
+
+    from sales.charging import take_employee_charge_dialog
+
+    return JsonResponse({"message": take_employee_charge_dialog(request)})
 
 
 @employee_required
@@ -744,9 +749,9 @@ def employee_recent_sales(request):
     Defaults to today; an optional collapsible filter card lets the
     employee narrow by free-text (number/name), company, payment
     method, status, and date range — any subset, in any combination."""
-    from sales.charging import notify_discarded_charges
+    from sales.charging import take_employee_charge_dialog
 
-    notify_discarded_charges(request)
+    charge_dialog = take_employee_charge_dialog(request)
     today = timezone.localdate()
     filter_form = EmployeeRecentFilterForm(request.GET or None)
 
@@ -803,6 +808,7 @@ def employee_recent_sales(request):
         "sales/employee_recent.html",
         {
             "title": _("My entries"),
+            "charge_dialog": charge_dialog,
             "entries": entries,
             "editable_sale_ids": editable_sale_ids,
             "editable_payment_ids": editable_payment_ids,

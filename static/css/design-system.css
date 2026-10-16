@@ -5097,6 +5097,10 @@ body.rd-inv-dialog-open {
   padding-inline: 1rem;
 }
 
+.rd-confirm.is-notice .rd-confirm__actions {
+  grid-template-columns: 1fr;
+}
+
 body.rd-confirm-open {
   overflow: hidden;
 }

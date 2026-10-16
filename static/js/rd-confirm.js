@@ -83,6 +83,9 @@
     pending = resolve;
     lastFocus = document.activeElement;
     textEl.textContent = message;
+    var notice = !!options.notice;
+    host.classList.toggle("is-notice", notice);
+    cancelBtn.hidden = notice;
     cancelBtn.textContent = label("data-rd-confirm-cancel", "Cancel");
     okBtn.textContent = label("data-rd-confirm-ok", "Confirm");
     okBtn.classList.toggle("btn-primary", !options.danger);
@@ -92,7 +95,7 @@
     requestAnimationFrame(function () {
       host.classList.add("is-open");
     });
-    (options.danger ? cancelBtn : okBtn).focus();
+    (options.notice || !options.danger ? okBtn : cancelBtn).focus();
   }
 
   window.rdConfirm = function (message, options) {

@@ -1488,6 +1488,9 @@ html:has(.rd-entry-dock) {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  /* .rd-page--form centers with auto margins, which stops a flex item from
+     stretching and shrinks the form to its content. Fill the column instead. */
+  width: 100%;
 }
 
 .rd-pay-sub,

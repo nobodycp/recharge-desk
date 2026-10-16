@@ -1,5 +1,5 @@
 {% if messages %}
 <div data-rd-flash hidden>
-  {% for message in messages %}<p data-level="{{ message.level_tag|default:'info' }}">{{ message }}</p>{% endfor %}
+  {% for message in messages %}<p data-level="{{ message.level_tag|default:'info' }}"{% if "charge-pending" in message.tags %} data-rd-charge-pending{% endif %}>{{ message }}</p>{% endfor %}
 </div>
 {% endif %}

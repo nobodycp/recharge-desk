@@ -30,6 +30,7 @@ from sales.views.employee import (
     api_payer_by_number,
     api_payer_name_suggestions,
     api_sim_stock_preview,
+    employee_charge_notice,
     employee_entry,
     employee_product_fragment,
     employee_payment_delete,
@@ -75,6 +76,7 @@ from sales.views.payment_methods import (
 
 __all__ = [
     # employee
+    "employee_charge_notice",
     "employee_entry",
     "employee_product_fragment",
     "employee_recent_sales",

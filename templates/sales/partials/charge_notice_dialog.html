@@ -1,0 +1,54 @@
+{% if charge_dialog %}
+<div data-rd-charge-notice hidden>{{ charge_dialog }}</div>
+{% endif %}
+{% if charge_notice_wait %}
+<div data-rd-charge-wait hidden data-url="{% url 'sales:employee_charge_notice' %}"></div>
+{% endif %}
+<script>
+(function () {
+  function show(text) {
+    text = String(text || "").trim();
+    if (!text || !window.rdConfirm) return false;
+    document.querySelectorAll(".rd-toast[data-rd-charge-pending]").forEach(function (el) {
+      el.remove();
+    });
+    window.rdConfirm(text, { notice: true });
+    return true;
+  }
+  function boot(root) {
+    if (!root || !root.querySelector || !window.rdConfirm) return;
+    var node = root.querySelector("[data-rd-charge-notice]");
+    if (node && !node.dataset.rdShown) {
+      if (!show(node.textContent)) return;
+      node.dataset.rdShown = "1";
+    }
+    var wait = root.querySelector("[data-rd-charge-wait]");
+    if (!wait || wait.dataset.rdStarted || node) return;
+    wait.dataset.rdStarted = "1";
+    var url = wait.getAttribute("data-url");
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries += 1;
+      if (tries > 8) {
+        clearInterval(timer);
+        return;
+      }
+      fetch(url, { credentials: "same-origin" })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          if (data && data.message) {
+            clearInterval(timer);
+            show(data.message);
+          }
+        })
+        .catch(function () {});
+    }, 700);
+  }
+  if (window.htmx) htmx.onLoad(boot);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { boot(document); });
+  } else {
+    boot(document);
+  }
+})();
+</script>
