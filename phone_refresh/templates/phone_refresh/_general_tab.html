@@ -1,4 +1,5 @@
 {# General tab: internal test tool + system toggles. #}
+{% load kit %}
 
 <div class="row g-3">
   {# ── Section 1: اختبار داخلي ───────────────────────────────────────── #}
@@ -18,10 +19,7 @@
         <form id="internal-test-form" class="d-grid gap-2"
               action="{% url 'phone_refresh:settings_internal_test' %}" method="post">
           {% csrf_token %}
-          <div>
-            {{ internal_test_form.phone.label_tag }}
-            {{ internal_test_form.phone }}
-          </div>
+          {% rd_field internal_test_form.phone %}
           <div>
             <button type="submit" class="btn btn-primary">تحديث الرقم (اختبار)</button>
           </div>
@@ -90,13 +88,7 @@
             </div>
           </div>
 
-          <div>
-            <label class="form-label fw-semibold" for="{{ settings_form.default_provider.id_for_label }}">
-              المزوّد الافتراضي (عند إيقاف فحص قاعدة البيانات)
-            </label>
-            {{ settings_form.default_provider }}
-            <div class="form-text">إذا تُرك فارغًا وتم إيقاف فحص قاعدة البيانات، يتم إرجاع خطأ.</div>
-          </div>
+          {% rd_field settings_form.default_provider label="المزوّد الافتراضي (عند إيقاف فحص قاعدة البيانات)" help="إذا تُرك فارغًا وتم إيقاف فحص قاعدة البيانات، يتم إرجاع خطأ." %}
 
           <div class="form-check form-switch">
             {{ settings_form.show_last_refresh }}

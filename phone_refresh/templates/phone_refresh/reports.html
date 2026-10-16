@@ -1,5 +1,6 @@
 {% extends "base_management.html" %}
 {% load ui_tags %}
+{% load kit %}
 {% block content %}
 {% comment %}
 Self-contained detail-modal styles. The report-detail dialog deliberately
@@ -131,6 +132,7 @@ can break interactivity.
   .pr-source-badge--internal { background: var(--rd-accent-soft); color: var(--rd-accent-ink); }
   .pr-source-badge--employee  { background: var(--rd-warning-soft); color: var(--rd-warning); }
   .pr-source-badge--legacy   { background: var(--rd-surface-2); color: var(--rd-muted); }
+  .pr-report-excerpt { max-width: 28rem; }
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
@@ -143,12 +145,9 @@ can break interactivity.
   }
 </style>
 
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-    <p class="rd-text-muted mb-0">سجلّ كامل لمحاولات تحديث الأرقام عبر المزوّدين. اضغط على أي صف لعرض التفاصيل الكاملة والاستجابة الأصلية من المزوّد.</p>
-  </div>
-</div>
+<div class="rd-page">
+{% rd_page_header title "سجلّ كامل لمحاولات تحديث الأرقام عبر المزوّدين. اضغط على أي صف لعرض التفاصيل الكاملة والاستجابة الأصلية من المزوّد." %}
+{% end_rd_page_header %}
 
 {% if summary %}
   <div class="row g-2 mb-3">
@@ -269,7 +268,7 @@ can break interactivity.
                 <td class="tabular-nums">{{ log.raw_status_code|default:"—" }}</td>
                 <td class="tabular-nums">{{ log.duration_ms|default:"—" }}</td>
                 <td class="rd-text-muted small">{{ log.ip|default:"—" }}</td>
-                <td class="rd-text-muted small text-break" dir="auto" style="max-width: 28rem;">
+                <td class="rd-text-muted small text-break pr-report-excerpt" dir="auto">
                   {{ log.raw_excerpt|truncatechars:120 }}
                 </td>
                 <td class="text-end">
@@ -784,4 +783,5 @@ can break interactivity.
   refreshToolbar();
 })();
 </script>
+</div>
 {% endblock %}

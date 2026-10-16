@@ -40,13 +40,13 @@ class ProviderResponseRuleForm(forms.ModelForm):
             "note",
         ]
         widgets = {
-            "match_type": forms.Select(attrs={"class": "form-select"}),
-            "pattern": forms.TextInput(attrs={"class": "form-control", "dir": "auto"}),
-            "expected_value": forms.TextInput(attrs={"class": "form-control", "dir": "auto"}),
-            "target_status": forms.Select(attrs={"class": "form-select"}),
-            "order": forms.NumberInput(attrs={"class": "form-control", "min": "0"}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "note": forms.TextInput(attrs={"class": "form-control"}),
+            "match_type": forms.Select(),
+            "pattern": forms.TextInput(attrs={"dir": "auto"}),
+            "expected_value": forms.TextInput(attrs={"dir": "auto"}),
+            "target_status": forms.Select(),
+            "order": forms.NumberInput(attrs={"min": "0"}),
+            "is_active": forms.CheckboxInput(),
+            "note": forms.TextInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -73,9 +73,9 @@ class CustomerMessageForm(forms.ModelForm):
         model = CustomerMessage
         fields = ["status", "title", "body"]
         widgets = {
-            "status": forms.Select(attrs={"class": "form-select"}),
-            "title": forms.TextInput(attrs={"class": "form-control", "dir": "auto"}),
-            "body": forms.Textarea(attrs={"class": "form-control", "rows": 4, "dir": "auto"}),
+            "status": forms.Select(),
+            "title": forms.TextInput(attrs={"dir": "auto"}),
+            "body": forms.Textarea(attrs={"rows": 4, "dir": "auto"}),
         }
 
     def __init__(self, *args, available_statuses=None, **kwargs):
@@ -110,13 +110,13 @@ class RefreshStatusForm(forms.ModelForm):
         fields = ["code", "label", "sort_order"]
         widgets = {
             "code": forms.TextInput(
-                attrs={"class": "form-control", "dir": "ltr", "autocomplete": "off"},
+                attrs={"dir": "ltr", "autocomplete": "off"},
             ),
             "label": forms.TextInput(
-                attrs={"class": "form-control", "dir": "auto", "autocomplete": "off"},
+                attrs={"dir": "auto", "autocomplete": "off"},
             ),
             "sort_order": forms.NumberInput(
-                attrs={"class": "form-control", "min": "0", "step": "10"}
+                attrs={"min": "0", "step": "10"}
             ),
         }
         help_texts = {
@@ -185,7 +185,7 @@ class SystemSettingsForm(forms.ModelForm):
             "refresh_wait_seconds": forms.NumberInput(
                 attrs={"class": "form-control", "min": "10", "step": "5"}
             ),
-            "default_provider": forms.Select(attrs={"class": "form-select"}),
+            "default_provider": forms.Select(),
         }
 
     def clean_refresh_wait_seconds(self):
@@ -341,7 +341,6 @@ class InternalTestForm(forms.Form):
         max_length=10,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
                 "dir": "ltr",
                 "inputmode": "numeric",
                 "pattern": PHONE_HTML_PATTERN,
@@ -405,7 +404,7 @@ class ApiTokenForm(forms.ModelForm):
     scopes = forms.MultipleChoiceField(
         label=_("Scopes"),
         choices=API_SCOPES,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "form-check-input"}),
+        widget=forms.CheckboxSelectMultiple(),
         help_text=_("What this token is allowed to do."),
         error_messages={"required": _("Select at least one scope.")},
     )
@@ -416,7 +415,6 @@ class ApiTokenForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(
                 attrs={
-                    "class": "form-control",
                     "dir": "auto",
                     "autocomplete": "off",
                     "placeholder": "مثال: تطبيق العملاء",
@@ -455,7 +453,6 @@ class ProviderTestForm(forms.Form):
         max_length=10,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
                 "dir": "ltr",
                 "inputmode": "numeric",
                 "pattern": PHONE_HTML_PATTERN,
@@ -468,7 +465,7 @@ class ProviderTestForm(forms.Form):
     provider = forms.ChoiceField(
         label="المزوّد",
         choices=PhoneProvider.choices,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(),
     )
 
     def clean_phone(self) -> str:

@@ -1,32 +1,31 @@
 {% extends "base_management.html" %}
+{% load kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-    <p class="rd-text-muted mb-0">إدارة قواعد التعرّف على ردود كل مزوّد على حدة.</p>
-  </div>
-</div>
+<div class="rd-page">
+  {% rd_page_header title "إدارة قواعد التعرّف على ردود كل مزوّد على حدة." %}
+  {% end_rd_page_header %}
 
-<ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <a class="nav-link {% if active_tab == general_tab_id %}active{% endif %}"
-       href="?tab={{ general_tab_id }}" role="tab">
-      عام
-    </a>
-  </li>
-  {% for value, label in provider_tabs %}
+  <ul class="nav nav-tabs mb-3 rd-section-tabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <a class="nav-link {% if active_tab == value %}active{% endif %}"
-         href="?tab={{ value }}" role="tab">
-        {{ label }}
+      <a class="nav-link {% if active_tab == general_tab_id %}active{% endif %}"
+         href="?tab={{ general_tab_id }}" role="tab">
+        عام
       </a>
     </li>
-  {% endfor %}
-</ul>
+    {% for value, label in provider_tabs %}
+      <li class="nav-item" role="presentation">
+        <a class="nav-link {% if active_tab == value %}active{% endif %}"
+           href="?tab={{ value }}" role="tab">
+          {{ label }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
 
-{% if active_tab == general_tab_id %}
-  {% include "phone_refresh/_providers_general_tab.html" %}
-{% else %}
-  {% include "phone_refresh/_provider_tab.html" with provider=active_tab rules=current_rules %}
-{% endif %}
+  {% if active_tab == general_tab_id %}
+    {% include "phone_refresh/_providers_general_tab.html" %}
+  {% else %}
+    {% include "phone_refresh/_provider_tab.html" with provider=active_tab rules=current_rules %}
+  {% endif %}
+</div>
 {% endblock %}

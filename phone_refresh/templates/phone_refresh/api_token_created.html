@@ -1,7 +1,9 @@
 {% extends "base_management.html" %}
+{% load kit %}
 {% block content %}
-<div class="mx-auto" style="max-width: 50rem;">
-  <h1 class="h3 mb-3">{{ title }}</h1>
+<div class="rd-page rd-page--form">
+  {% rd_page_header title "احتفظ بالقيمة الخام الآن؛ لا يمكن استرجاعها لاحقاً." %}
+  {% end_rd_page_header %}
 
   <div class="alert alert-warning d-flex flex-column gap-1" role="alert">
     <div class="fw-semibold">يرجى نسخ التوكن الآن — لن يظهر مرة أخرى.</div>
@@ -10,8 +12,8 @@
     </div>
   </div>
 
-  <div class="app-card card mb-3">
-    <div class="card-body p-4">
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
       <div class="mb-2 fw-semibold">{{ token.name }}</div>
       <div class="rd-text-muted small mb-3">
         البادئة: <code dir="ltr">{{ token.prefix }}…</code>
@@ -34,7 +36,7 @@
     </div>
   </div>
 
-  <div class="d-flex flex-wrap gap-2">
+  <div class="rd-form-actions">
     <a class="btn btn-primary" href="{% url 'phone_refresh:api_index' %}?tab=tokens">
       الرجوع إلى قائمة التوكنات
     </a>

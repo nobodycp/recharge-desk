@@ -76,41 +76,13 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 11 files
-    "phone_refresh/templates/phone_refresh/api_index.html",
-    "phone_refresh/templates/phone_refresh/api_token_created.html",
-    "phone_refresh/templates/phone_refresh/api_token_form.html",
-    "phone_refresh/templates/phone_refresh/message_form.html",
-    "phone_refresh/templates/phone_refresh/providers_index.html",
-    "phone_refresh/templates/phone_refresh/reports.html",
-    "phone_refresh/templates/phone_refresh/rule_form.html",
-    "phone_refresh/templates/phone_refresh/settings_index.html",
-    "phone_refresh/templates/phone_refresh/status_form.html",
+LEGACY_PAGE_HEAD = {  # 2 files
     "templates/sms_gateway/reports.html",
     "templates/sms_gateway/settings_index.html",
 }
-LEGACY_APP_CARD = {  # 5 files
-    "phone_refresh/templates/phone_refresh/api_token_created.html",
-    "phone_refresh/templates/phone_refresh/api_token_form.html",
-    "phone_refresh/templates/phone_refresh/message_form.html",
-    "phone_refresh/templates/phone_refresh/rule_form.html",
-    "phone_refresh/templates/phone_refresh/status_form.html",
-}
-LEGACY_LABEL_TAG = {  # 6 files
-    "phone_refresh/templates/phone_refresh/_general_tab.html",
-    "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
-    "phone_refresh/templates/phone_refresh/api_token_form.html",
-    "phone_refresh/templates/phone_refresh/message_form.html",
-    "phone_refresh/templates/phone_refresh/rule_form.html",
-    "phone_refresh/templates/phone_refresh/status_form.html",
-}
-LEGACY_INLINE_WIDTH = {  # 7 files
-    "phone_refresh/templates/phone_refresh/api_token_created.html",
-    "phone_refresh/templates/phone_refresh/api_token_form.html",
-    "phone_refresh/templates/phone_refresh/message_form.html",
-    "phone_refresh/templates/phone_refresh/reports.html",
-    "phone_refresh/templates/phone_refresh/rule_form.html",
-    "phone_refresh/templates/phone_refresh/status_form.html",
+LEGACY_APP_CARD = set()
+LEGACY_LABEL_TAG = set()
+LEGACY_INLINE_WIDTH = {  # 1 file
     "templates/core/forbidden.html",
 }
 
