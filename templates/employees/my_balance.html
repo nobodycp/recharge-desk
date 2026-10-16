@@ -1,9 +1,11 @@
 {% extends "base_employee.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block employee_header %}
 <span>{% trans "Wallet details" %}</span>
 {% endblock %}
 {% block content %}
+<div class="rd-page">
+{% rd_page_header title shell_title=True %}{% end_rd_page_header %}
 {% if not employee %}
   <div class="empty-state">
     {% trans "No employee payroll profile is linked to your account yet." %}
@@ -27,4 +29,5 @@
   <h2 class="rd-heading-lg rd-balance-title">{% trans "Movement statement" %}</h2>
   {% include "employees/partials/employee_ledger_table.html" %}
 {% endif %}
+</div>
 {% endblock %}
