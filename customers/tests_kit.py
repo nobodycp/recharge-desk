@@ -149,3 +149,74 @@ class CustomerFormKitTests(TestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "rd-field__error")
+
+
+class CustomerDetailKitTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("custdetailkit", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.company = Company.objects.create(
+            name="DetailCo", opening_balance=_decimal(10000), current_balance=_decimal(10000)
+        )
+        line = ProductLine.objects.create(company=cls.company, name="Detail line")
+        cls.product = Product.objects.create(
+            line=line,
+            variant_label="Detail product",
+            cost_price=_decimal(5),
+            default_sell_price=_decimal(200),
+        )
+        PaymentMethod.objects.create(name="Detail cash")
+        cls.customer = create_customer(name="Detail Customer", user=cls.user)
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_customer_detail_uses_kit_header_and_fields(self):
+        r = self.client.get(reverse("customers:customer_detail", args=[self.customer.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '<div class="rd-page">')
+        self.assertContains(r, '<header class="rd-page-head">')
+        self.assertContains(r, reverse("customers:customer_statement", args=[self.customer.pk]))
+        self.assertContains(
+            r, reverse("customers:customer_detailed_invoice", args=[self.customer.pk])
+        )
+        self.assertContains(r, reverse("customers:customer_list"))
+        self.assertContains(r, "rd-stat-strip")
+        self.assertContains(r, "rd-field")
+        self.assertContains(r, "rd-table-modern")
+
+    def test_customer_sale_row_keeps_htmx_delete_contract(self):
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0599000444",
+            payer_name=self.customer.name,
+            payment_method=None,
+            sell_price_actual=_decimal(100),
+            notes="",
+            user=self.user,
+            on_account=True,
+            customer=self.customer,
+        )
+        post_on_account_sale(sale=sale, user=self.user)
+
+        r = self.client.get(reverse("customers:customer_detail", args=[self.customer.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, f'id="customer-sale-row-{sale.pk}"')
+        self.assertContains(r, f'hx-target="#customer-sale-row-{sale.pk}"')
+        self.assertContains(r, 'hx-swap="outerHTML swap:200ms"')
+        self.assertContains(r, 'hx-confirm="')
+
+    def test_inactive_customer_is_neutral_not_warning(self):
+        self.customer.is_active = False
+        self.customer.save(update_fields=["is_active"])
+
+        r = self.client.get(reverse("customers:customer_detail", args=[self.customer.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Inactive")
+        self.assertContains(r, "rd-badge--neutral")
+        self.assertNotContains(r, "text-warning")

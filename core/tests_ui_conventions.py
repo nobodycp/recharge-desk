@@ -79,7 +79,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 43 files
+LEGACY_PAGE_HEAD = {  # 42 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -89,7 +89,6 @@ LEGACY_PAGE_HEAD = {  # 43 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_statement.html",
     "templates/customers/payment_submissions_list.html",
@@ -129,14 +128,13 @@ LEGACY_APP_CARD = {  # 5 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
 }
-LEGACY_LABEL_TAG = {  # 16 files
+LEGACY_LABEL_TAG = {  # 15 files
     "phone_refresh/templates/phone_refresh/_general_tab.html",
     "phone_refresh/templates/phone_refresh/_providers_general_tab.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/customers/customer_detail.html",
     "templates/inventory/cards.html",
     "templates/reports/phone_lines_report.html",
     "templates/reports/sales_report.html",

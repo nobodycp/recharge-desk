@@ -118,13 +118,13 @@ class CustomerPhoneForm(forms.Form):
     phone = forms.CharField(
         label=_("Phone or shipment number"),
         max_length=64,
-        widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
     )
     label = forms.CharField(
         label=_("Label"),
         max_length=80,
         required=False,
-        widget=forms.TextInput(attrs={"class": "form-control"}),
+        widget=forms.TextInput(),
     )
 
 
@@ -134,17 +134,17 @@ class CustomerPaymentForm(forms.Form):
         max_digits=14,
         decimal_places=2,
         min_value=Decimal("0.01"),
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01", "min": "0.01"}),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0.01"}),
     )
     payment_method = forms.ModelChoiceField(
         label=_("Payment method"),
         queryset=PaymentMethod.objects.filter(is_active=True).order_by("name"),
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=forms.Select(),
     )
     notes = forms.CharField(
         label=_("Notes"),
         required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        widget=forms.Textarea(attrs={"rows": 2}),
     )
 
 
@@ -158,12 +158,12 @@ class CustomerAdjustmentForm(forms.Form):
         label=_("Signed adjustment (+/-)"),
         max_digits=14,
         decimal_places=2,
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={"step": "0.01"}),
     )
     notes = forms.CharField(
         label=_("Notes"),
         required=False,
-        widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        widget=forms.Textarea(attrs={"rows": 2}),
     )
 
     def clean_signed_amount(self):
