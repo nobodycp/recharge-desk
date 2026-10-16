@@ -17,15 +17,24 @@ class EmployeeSaleForm(forms.Form):
         label=_("Company"),
         queryset=Company.objects.filter(is_active=True),
         widget=forms.HiddenInput(attrs={"id": "id_company"}),
+        error_messages={
+            "required": _("Choose a company."),
+            "invalid_choice": _("Choose a company."),
+        },
     )
     product = forms.ModelChoiceField(
         label=_("Product"),
         queryset=Product.objects.none(),
         widget=forms.HiddenInput(attrs={"id": "id_product"}),
+        error_messages={
+            "required": _("Choose a product."),
+            "invalid_choice": _("Choose a product."),
+        },
     )
     reference_number = forms.CharField(
         label=_("Phone or shipment number"),
         max_length=64,
+        error_messages={"required": _("Enter the phone number.")},
         widget=forms.TextInput(
             attrs={
                 "id": "id_reference_number",
@@ -54,6 +63,11 @@ class EmployeeSaleForm(forms.Form):
         max_value=366,
         initial=30,
         required=False,
+        error_messages={
+            "invalid": _("Days must be a whole number from 1 to 366."),
+            "min_value": _("Days must be a whole number from 1 to 366."),
+            "max_value": _("Days must be a whole number from 1 to 366."),
+        },
         widget=forms.NumberInput(
             attrs={
                 "class": "form-control form-control-sm",
@@ -74,6 +88,11 @@ class EmployeeSaleForm(forms.Form):
         max_digits=12,
         decimal_places=2,
         min_value=Decimal("0"),
+        error_messages={
+            "required": _("Enter the selling price."),
+            "invalid": _("Enter the selling price."),
+            "min_value": _("Selling price cannot be negative."),
+        },
         widget=forms.NumberInput(
             attrs={
                 "class": "form-control form-control-sm",

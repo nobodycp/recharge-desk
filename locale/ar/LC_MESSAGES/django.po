@@ -1172,7 +1172,7 @@ msgid "You are not registered as a payroll employee."
 msgstr "حسابك غير مسجّل في نظام الموظفين."
 #: customers/forms.py:83
 msgid "This field is required."
-msgstr "رقم الهاتف مطلوب."
+msgstr "هذا الحقل مطلوب."
 
 #: customers/forms.py:91 customers/forms.py:111 sales/forms.py:27
 #: templates/sales/employee_entry.html:29
@@ -2678,6 +2678,19 @@ msgstr "اختر إما الآجل أو الدفع لدى موظف، وليس ا
 #: sales/forms.py:224 sales/forms.py:450
 msgid "Pick a payment method."
 msgstr "اختر طريقة الدفع."
+#: sales/forms.py
+msgid "Choose a company."
+msgstr "اختر الشركة."
+msgid "Choose a product."
+msgstr "اختر المنتج."
+msgid "Enter the phone number."
+msgstr "أدخل رقم الهاتف."
+msgid "Enter the selling price."
+msgstr "أدخل سعر البيع."
+msgid "Selling price cannot be negative."
+msgstr "سعر البيع لا يكون سالباً."
+msgid "Days must be a whole number from 1 to 366."
+msgstr "الأيام رقم صحيح من 1 إلى 366."
 #: sales/forms.py:273
 msgid "eSIM only"
 msgstr "eSIM فقط"

@@ -183,7 +183,7 @@
             </div>
           </div>
 
-          <div class="rd-entry-blk rd-field-group{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
+          <div class="rd-entry-blk{% if form.sell_price_actual.errors or form.duration_days.errors %} has-error{% endif %}">
             <div class="rd-entry-blk__head">
               <span class="rd-entry-step" data-step="pr" aria-hidden="true">5</span>
               <span class="rd-entry-blk__title">{% trans "Price" %}</span>
@@ -204,14 +204,14 @@
               </div>
             </div>
             <div class="rd-entry-price-row">
-              <div id="rd-duration-days-wrap" hidden>
+              <div id="rd-duration-days-wrap" class="rd-field-group{% if form.duration_days.errors %} has-error{% endif %}" hidden>
                 <div class="rd-entry-field">
                   <label class="rd-entry-field__label" for="id_duration_days">{% trans "Days" %}</label>
                   {{ form.duration_days }}
                 </div>
                 {% if form.duration_days.errors %}<div class="rd-field-error">{{ form.duration_days.errors }}</div>{% endif %}
               </div>
-              <div id="rd-sell-price-wrap">
+              <div id="rd-sell-price-wrap" class="rd-field-group{% if form.sell_price_actual.errors %} has-error{% endif %}">
                 <div class="rd-entry-field">
                   <label class="rd-entry-field__label" for="id_sell_price_actual">{% trans "Selling price" %}</label>
                   {{ form.sell_price_actual }}

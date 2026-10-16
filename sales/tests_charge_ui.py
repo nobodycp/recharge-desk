@@ -165,6 +165,34 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         after = self.client.get(url, {"phone": "0501234567"})
         self.assertTrue(after.json()["charged_today"])
 
+    def test_a_missing_price_does_not_blame_the_phone(self):
+        from django.utils import translation
+
+        from sales.forms import EmployeeSaleForm
+
+        translation.activate("ar")
+        self.addCleanup(translation.deactivate)
+        form = EmployeeSaleForm(
+            data=self.entry_payload(sell_price_actual="", duration_days="x"),
+            company_id=self.company.pk,
+            user=self.user,
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn("أدخل سعر البيع", str(form.errors["sell_price_actual"]))
+        self.assertIn("الأيام رقم صحيح من 1 إلى 366", str(form.errors["duration_days"]))
+        self.assertNotIn("رقم الهاتف مطلوب", str(form.errors))
+        translation.deactivate()
+
+        resp = self.client.post(
+            reverse("sales:employee_entry"),
+            self.entry_payload(sell_price_actual="", duration_days="9"),
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.content.decode()
+        price = body.split('id="rd-sell-price-wrap"')[1].split("rd-entry-switch")[0]
+        self.assertIn("has-error", price)
+        self.assertNotIn('id="rd-duration-days-wrap" class="rd-field-group has-error"', body)
+
     def test_traditional_save_stays_manual(self):
         self.post_entry()
         sale = Sale.objects.get()
