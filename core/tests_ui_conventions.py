@@ -48,10 +48,7 @@ TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 LEGACY_BADGES = {  # 1 file
     "templates/inventory/_serials_paste_field.html",
 }
-LEGACY_TABLE_LIGHT = {  # 2 files
-    "templates/customers/customer_detailed_invoice.html",
-    "templates/customers/customer_statement.html",
-}
+LEGACY_TABLE_LIGHT = set()  # 0 files
 LEGACY_HEX = {  # 1 file
     "templates/sms_gateway/settings_index.html",
 }
@@ -79,7 +76,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 42 files
+LEGACY_PAGE_HEAD = {  # 40 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
@@ -89,8 +86,6 @@ LEGACY_PAGE_HEAD = {  # 42 files
     "phone_refresh/templates/phone_refresh/rule_form.html",
     "phone_refresh/templates/phone_refresh/settings_index.html",
     "phone_refresh/templates/phone_refresh/status_form.html",
-    "templates/customers/customer_detailed_invoice.html",
-    "templates/customers/customer_statement.html",
     "templates/customers/payment_submissions_list.html",
     "templates/employees/my_balance.html",
     "templates/inventory/cards.html",

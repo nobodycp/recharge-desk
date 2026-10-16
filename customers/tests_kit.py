@@ -221,3 +221,35 @@ class CustomerDetailKitTests(TestCase):
         self.assertContains(r, "Inactive")
         self.assertContains(r, "rd-badge--neutral")
         self.assertNotContains(r, "text-warning")
+
+
+class CustomerDocumentsKitTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("custdocumentskit", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.customer = create_customer(name="Documents Customer", user=cls.user)
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_customer_statement_uses_kit_header_without_table_light(self):
+        r = self.client.get(reverse("customers:customer_statement", args=[self.customer.pk]))
+
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '<header class="rd-page-head">')
+        self.assertContains(r, "rd-table-modern")
+        self.assertNotContains(r, "table-light")
+
+    def test_customer_detailed_invoice_uses_kit_header_without_table_light(self):
+        r = self.client.get(
+            reverse("customers:customer_detailed_invoice", args=[self.customer.pk])
+        )
+
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '<header class="rd-page-head">')
+        self.assertContains(r, "rd-table-modern")
+        self.assertNotContains(r, "table-light")

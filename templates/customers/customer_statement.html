@@ -1,20 +1,16 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 d-print-none">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Customer statement" %}</h1>
-    <p class="rd-text-muted mb-0">
-      {{ customer.name }}
-      {% blocktrans with start=period_from end=period_to %} · From {{ start }} to {{ end }}{% endblocktrans %}
-    </p>
-  </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
-    <a hx-boost="false" class="btn btn-outline-secondary" href="{% url 'customers:customer_statement_csv' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Export CSV" %}</a>
-    <a class="btn btn-outline-primary" href="{% url 'customers:customer_detailed_invoice' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Detailed invoice" %}</a>
-    <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
-  </div>
+<div class="rd-page">
+{% trans "Customer statement" as statement_title %}
+{% blocktrans with name=customer.name start=period_from end=period_to asvar statement_subtitle %}{{ name }} · From {{ start }} to {{ end }}{% endblocktrans %}
+<div class="d-print-none">
+{% rd_page_header statement_title subtitle=statement_subtitle %}
+  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
+  <a hx-boost="false" class="btn btn-outline-secondary" href="{% url 'customers:customer_statement_csv' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Export CSV" %}</a>
+  <a class="btn btn-outline-primary" href="{% url 'customers:customer_detailed_invoice' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Detailed invoice" %}</a>
+  <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
+{% end_rd_page_header %}
 </div>
 
 <div class="rd-card mb-3 d-print-none">
@@ -64,8 +60,8 @@
     <div class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "What they took (by product)" %}</div>
       <div class="table-responsive">
-        <table class="table table-sm mb-0 align-middle">
-          <thead class="table-light">
+        <table class="table table-sm mb-0 align-middle rd-table-modern">
+          <thead>
             <tr>
               <th>{% trans "Product" %}</th>
               <th class="text-end">{% trans "Count" %}</th>
@@ -94,8 +90,8 @@
     <div class="rd-card h-100">
       <div class="rd-card-header fw-semibold">{% trans "How they paid (by method)" %}</div>
       <div class="table-responsive">
-        <table class="table table-sm mb-0 align-middle">
-          <thead class="table-light">
+        <table class="table table-sm mb-0 align-middle rd-table-modern">
+          <thead>
             <tr>
               <th>{% trans "Method" %}</th>
               <th class="text-end">{% trans "Count" %}</th>
@@ -122,8 +118,8 @@
 <div class="rd-card rd-print-flow mb-3">
   <div class="rd-card-header fw-semibold">{% trans "Activity" %}</div>
   <div class="table-responsive">
-    <table class="table table-sm align-middle mb-0">
-      <thead class="table-light">
+    <table class="table table-sm align-middle mb-0 rd-table-modern">
+      <thead>
         <tr>
           <th>{% trans "Date" %}</th>
           <th>{% trans "Type" %}</th>
@@ -136,7 +132,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr class="table-light">
+        <tr>
           <td colspan="6" class="text-end fw-semibold">{% trans "Opening balance" %}</td>
           <td class="text-end tabular-nums fw-semibold">{{ opening_balance|intcomma }}</td>
           <td></td>
@@ -178,7 +174,7 @@
           <tr><td colspan="8" class="text-center py-4 text-secondary">{% trans "No activity in this period." %}</td></tr>
         {% endfor %}
       </tbody>
-      <tfoot class="table-light">
+      <tfoot>
         <tr class="fw-semibold">
           <td colspan="4" class="text-end">{% trans "Period totals" %}</td>
           <td class="text-end tabular-nums kpi-expense">{{ charges_total|intcomma }}</td>
@@ -198,5 +194,6 @@
   <div class="rd-card-body small text-secondary">
     {% blocktrans %}Closing balance = opening balance + charges − payments + signed adjustments − reversals.{% endblocktrans %}
   </div>
+</div>
 </div>
 {% endblock %}

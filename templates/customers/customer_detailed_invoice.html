@@ -1,20 +1,16 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
+<div class="rd-page">
 {# ----- On-screen toolbar (hidden on print) ----- #}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 d-print-none">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Detailed invoice" %}</h1>
-    <p class="rd-text-muted mb-0">
-      {{ customer.name }}
-      {% blocktrans with start=period_from end=period_to %} · From {{ start }} to {{ end }}{% endblocktrans %}
-    </p>
-  </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Summary statement" %}</a>
-    <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
-    <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
-  </div>
+{% trans "Detailed invoice" as invoice_title %}
+{% blocktrans with name=customer.name start=period_from end=period_to asvar invoice_subtitle %}{{ name }} · From {{ start }} to {{ end }}{% endblocktrans %}
+<div class="d-print-none">
+{% rd_page_header invoice_title subtitle=invoice_subtitle %}
+  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Summary statement" %}</a>
+  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
+  <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
+{% end_rd_page_header %}
 </div>
 
 <div class="rd-card mb-3 d-print-none">
@@ -43,8 +39,8 @@
 <div class="rd-card rd-print-flow mb-3">
   <div class="rd-card-header fw-semibold d-print-none">{% trans "All transactions (chronological)" %}</div>
   <div class="table-responsive">
-    <table class="table table-sm align-middle mb-0 rd-invoice-table">
-      <thead class="table-light">
+    <table class="table table-sm align-middle mb-0 rd-invoice-table rd-table-modern">
+      <thead>
         <tr>
           <th style="width:1%;">#</th>
           <th>{% trans "Date" %}</th>
@@ -57,7 +53,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr class="table-light">
+        <tr>
           <td></td>
           <td colspan="4" class="fw-semibold">{% trans "Opening balance" %}</td>
           <td></td>
@@ -110,7 +106,7 @@
           <tr><td colspan="8" class="text-center py-4 text-secondary">{% trans "No activity in this period." %}</td></tr>
         {% endfor %}
       </tbody>
-      <tfoot class="table-light">
+      <tfoot>
         <tr class="fw-semibold">
           <td></td>
           <td colspan="4" class="text-end">{% trans "Period totals" %}</td>
@@ -126,4 +122,5 @@
 {# ----- Compact summary strip + inline signatures ----- #}
 {% include "customers/_invoice_summary.html" %}
 {% include "customers/_invoice_signature.html" %}
+</div>
 {% endblock %}
