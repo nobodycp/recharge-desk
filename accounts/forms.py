@@ -132,15 +132,17 @@ class UserProfileEditForm(forms.ModelForm):
         "avatar",
         "is_active",
         "is_active_profile",
+        "can_provider_charge",
     ]
 
     class Meta:
         model = UserProfile
-        fields = ["full_name", "role", "is_active_profile"]
+        fields = ["full_name", "role", "is_active_profile", "can_provider_charge"]
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "form-control"}),
             "role": forms.Select(attrs={"class": "form-select"}),
             "is_active_profile": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "can_provider_charge": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, user=None, **kwargs):

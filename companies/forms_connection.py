@@ -12,6 +12,7 @@ from providers.registry import ADAPTERS
 
 SERVICE_LABELS = {
     Capability.REFRESH: _("تحديث الأرقام"),
+    Capability.NUMBER_INFO: _("فحص الرقم"),
     Capability.CHARGE: _("الشحن"),
     Capability.RECONCILE: _("مطابقة الحسابات"),
 }
@@ -36,7 +37,13 @@ class ConnectionServicesForm(forms.ModelForm):
 
     class Meta:
         model = ProviderConnection
-        fields = ["is_enabled", "refresh_enabled", "charge_enabled", "reconcile_enabled"]
+        fields = [
+            "is_enabled",
+            "refresh_enabled",
+            "number_info_enabled",
+            "charge_enabled",
+            "reconcile_enabled",
+        ]
         labels = {"is_enabled": _("تفعيل الربط مع المزوّد")}
         widgets = {
             name: forms.CheckboxInput(

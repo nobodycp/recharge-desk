@@ -9,7 +9,7 @@
         <div class="mb-3">
           <div class="fw-semibold">{{ system_form.provider_key.label }}</div>
           <div class="rd-text-muted small">
-            {% trans "النظام الذي يشغّل تحديث الأرقام والشحن ومطابقة الحسابات لهذه الشركة. إن تُرك فارغاً فلا تُنفَّذ أي عمليات مزوّد لها." %}
+            {% trans "النظام الذي يشغّل تحديث الأرقام وفحص الرقم والشحن ومطابقة الحسابات لهذه الشركة. إن تُرك فارغاً فلا تُنفَّذ أي عمليات مزوّد لها." %}
           </div>
         </div>
         <form method="post" action="{% url 'companies:company_connection_system' company.pk %}"

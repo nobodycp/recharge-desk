@@ -52,7 +52,11 @@ class ChargingTestBase(TestCase):
         cls.user = User.objects.create_user("cashier", password="x")
         UserProfile.objects.update_or_create(
             user=cls.user,
-            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+            defaults={
+                "role": UserProfile.Role.EMPLOYEE,
+                "is_active_profile": True,
+                "can_provider_charge": True,
+            },
         )
         cls.manager = User.objects.create_user("boss", password="x")
         UserProfile.objects.update_or_create(

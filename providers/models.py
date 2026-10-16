@@ -17,6 +17,7 @@ class ProviderConnection(models.Model):
 
     SERVICE_FIELDS = {
         Capability.REFRESH: "refresh_enabled",
+        Capability.NUMBER_INFO: "number_info_enabled",
         Capability.CHARGE: "charge_enabled",
         Capability.RECONCILE: "reconcile_enabled",
     }
@@ -26,6 +27,7 @@ class ProviderConnection(models.Model):
     )
     is_enabled = models.BooleanField(default=True)
     refresh_enabled = models.BooleanField(default=True)
+    number_info_enabled = models.BooleanField(default=True)
     charge_enabled = models.BooleanField(default=False)
     reconcile_enabled = models.BooleanField(default=True)
     username = models.CharField(max_length=150, blank=True)

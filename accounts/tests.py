@@ -767,7 +767,7 @@ class KitPageTests(TestCase):
             positions = [html.index(f'name="{name}"') for name in names]
             self.assertEqual(positions, sorted(positions), names)
 
-        order(edit, ["full_name", "username", "new_password1", "new_password2", "role", "avatar", "is_active", "is_active_profile"])
+        order(edit, ["full_name", "username", "new_password1", "new_password2", "role", "avatar", "is_active", "is_active_profile", "can_provider_charge"])
         order(create, ["full_name", "username", "password1", "password2", "role", "is_active", "is_active_profile"])
 
     def test_user_form_lock_checkboxes_grouped_under_access(self):

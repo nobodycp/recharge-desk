@@ -53,6 +53,8 @@ class ChargeContext:
     is_esim: bool
     idempotency_key: str
     requested_at: datetime | None = None
+    # Charged length in days. Sky matches this to a period (3 days, 1 month = 30, …).
+    duration_days: int | None = None
 
 
 @dataclass

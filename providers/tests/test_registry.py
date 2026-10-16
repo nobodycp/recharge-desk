@@ -16,6 +16,8 @@ class RegistryTests(SimpleTestCase):
         with self.assertRaises(KeyError):
             get_adapter("nope")
 
-    def test_supports_refresh_true_charge_false_for_sky(self):
+    def test_sky_supports_refresh_number_check_and_charge(self):
         self.assertTrue(supports("sky", Capability.REFRESH))
-        self.assertFalse(supports("sky", Capability.CHARGE))
+        self.assertTrue(supports("sky", Capability.NUMBER_INFO))
+        self.assertTrue(supports("sky", Capability.CHARGE))
+        self.assertTrue(supports("sky", Capability.CHECK_CHARGE))

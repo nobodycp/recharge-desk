@@ -42,6 +42,7 @@ from sales.employee_editing import (
 from sales.charging import (
     DUPLICATE_SUBMIT,
     can_charge,
+    user_may_charge,
     create_charged_sale,
     find_duplicate_submit,
 )
@@ -140,7 +141,8 @@ def employee_entry(request):
         user=request.user,
     )
     companies = list(Company.objects.filter(is_active=True).order_by("name"))
-    chargeable_company_ids = {c.pk for c in companies if can_charge(c)}
+    may_charge = user_may_charge(request.user)
+    chargeable_company_ids = {c.pk for c in companies if may_charge and can_charge(c)}
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
     acting_employee = get_acting_employee_profile(request.user)
     company_product_bundles = _company_product_bundles(companies)
@@ -152,7 +154,7 @@ def employee_entry(request):
                 duplicate = find_duplicate_submit(request.POST.get("form_token", ""), request.user)
                 if duplicate is not None:
                     return _duplicate_charge_redirect(request, duplicate)
-                if not can_charge(form.cleaned_data["company"]):
+                if not user_may_charge(request.user) or not can_charge(form.cleaned_data["company"]):
                     raise ValueError(_("This company cannot be charged through its provider."))
             on_account = bool(form.cleaned_data.get("on_account"))
             app_settings = AppSettings.load()

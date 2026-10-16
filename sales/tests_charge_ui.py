@@ -66,6 +66,16 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertNotContains(resp, 'data-can-charge="')
         self.assertContains(resp, 'name="form_token"')
 
+    def test_charge_button_hidden_until_management_grants_it(self):
+        self.user.profile.can_provider_charge = False
+        self.user.profile.save(update_fields=["can_provider_charge"])
+        resp = self.client.get(reverse("sales:employee_entry"))
+        self.assertNotContains(resp, 'value="charge"')
+        posted = self.post_entry(action="charge")
+        self.assertEqual(Sale.objects.count(), 0)
+        self.assertEqual(posted.status_code, 200)
+        self.assertContains(posted, "This company cannot be charged through its provider.")
+
     def test_charge_button_shown_for_fake_provider(self):
         other = Company.objects.create(name="PlainCo", current_balance=Decimal("100"))
         resp = self.client.get(reverse("sales:employee_entry"))

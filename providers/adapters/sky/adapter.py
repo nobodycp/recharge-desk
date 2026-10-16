@@ -17,10 +17,21 @@ from providers.adapters.sky.client import (
 )
 from providers.adapters.sky.number_info import matches_phone, parse_number_info
 from providers.adapters.sky.reconcile import SkyReconcileResult, reconcile_sky_report
+from providers.adapters.sky.topup import (
+    build_task,
+    costs_match,
+    find_period,
+    quoted_cost,
+    task_args,
+    task_settled,
+)
 from providers.contracts import (
     AuthRequired,
     BaseAdapter,
     Capability,
+    ChargeContext,
+    ChargeOutcome,
+    ChargeResult,
     NumberInfo,
     PermanentError,
     RawResponse,
@@ -61,7 +72,13 @@ class SkyAdapter(BaseAdapter):
 
     key = PROVIDER_KEY
     capabilities = frozenset(
-        {Capability.REFRESH, Capability.RECONCILE, Capability.NUMBER_INFO}
+        {
+            Capability.REFRESH,
+            Capability.RECONCILE,
+            Capability.NUMBER_INFO,
+            Capability.CHARGE,
+            Capability.CHECK_CHARGE,
+        }
     )
     timeout: int = 120
     needs_login = True
@@ -115,6 +132,125 @@ class SkyAdapter(BaseAdapter):
         if not row or not matches_phone(row, phone):
             raise PermanentError("not_found")
         return parse_number_info(row)
+
+    def _rows(self, data: dict) -> list[dict]:
+        rows = data.get("data") or []
+        return rows if isinstance(rows, list) else []
+
+    def _call(self, client: SkySalesClient, name: str, args: list) -> dict:
+        with _sky_errors():
+            data = client.generic_api(name, args)
+        if data.get("result") != "SUCCESS":
+            raise PermanentError("provider_error")
+        return data
+
+    def charge(self, ctx: ChargeContext) -> ChargeOutcome:
+        """Top up ``ctx.phone`` for ``ctx.duration_days`` once Sky's price matches."""
+        phone = ctx.phone.strip()
+        client = self._stored_client()
+        with _sky_errors():
+            row = client.search_subscriber(phone)
+        if not row or not matches_phone(row, phone):
+            raise PermanentError("not_found")
+        if not ctx.duration_days:
+            raise PermanentError("period_unavailable")
+
+        low = {str(key).lower(): value for key, value in row.items()}
+        plan_id = str(low.get("rate_plan_id") or "")
+        periods = self._rows(
+            self._call(client, "GetRatePlanPeriods", [plan_id, "AR", "extend"])
+        )
+        period = find_period(periods, ctx.duration_days)
+        if period is None:
+            raise PermanentError("period_unavailable")
+        period_id = str({str(k).lower(): v for k, v in period.items()}.get("id") or "")
+
+        cost_rows = self._rows(
+            self._call(
+                client,
+                "GetSubscriberCosts",
+                [
+                    phone,
+                    str(low.get("sub_customer_id") or ""),
+                    plan_id,
+                    period_id,
+                    "sim-top-up",
+                    0,
+                ],
+            )
+        )
+        if not cost_rows:
+            raise PermanentError("provider_error")
+        cost = {str(key).lower(): value for key, value in cost_rows[0].items()}
+        quoted = quoted_cost(cost)
+        if not costs_match(quoted, ctx.expected_cost):
+            raise PermanentError("price_mismatch")
+
+        self._call(client, "ValidateTaskDataBeforeCreate", [phone, ""])
+        status_rows = self._rows(self._call(client, "GetSubscriberStatus", [str(low.get("id") or "")]))
+        current = str(
+            {str(k).lower(): v for k, v in (status_rows[0] if status_rows else {}).items()}.get(
+                "status_id"
+            )
+            or ""
+        )
+        if current != str(low.get("status_id") or ""):
+            raise PermanentError("not_eligible")
+
+        money = {
+            "order_cost": f"{float(cost.get('order_cost') or 0):.2f}",
+            "order_refund": f"{float(cost.get('order_refund') or 0):.2f}",
+            "order_total_cost": f"{float(cost.get('order_total_cost') or 0):.2f}",
+        }
+        with _sky_errors():
+            global_customer = client.load_global_sub_customer_id() or str(
+                low.get("sub_customer_id") or ""
+            )
+        task = build_task(
+            row, period, money, phone=phone, global_customer_id=global_customer
+        )
+        # From here a task may exist at Sky even if the response is unreadable.
+        try:
+            with _sky_errors():
+                created = client.generic_api(
+                    "CreateNewTaskWithBalanceCheck",
+                    task_args(
+                        task,
+                        user_id=client.session.eot_user_id,
+                        sim_id=str(low.get("id") or ""),
+                    ),
+                )
+        except Exception as exc:
+            # The task may already exist; a login retry would charge the line again.
+            raise TransientError("provider_error") from exc
+        created_rows = self._rows(created)
+        task_id = ""
+        if created_rows:
+            created_low = {str(k).lower(): v for k, v in created_rows[0].items()}
+            task_id = str(created_low.get("id") or "").strip()
+        if created.get("result") != "SUCCESS" or not task_id.isdigit():
+            raise TransientError("provider_error")
+        return ChargeOutcome(
+            result=ChargeResult.SUCCESS,
+            provider_ref=task_id,
+            plan_name=str(low.get("rate_plan_name") or ""),
+            provider_cost=quoted,
+        )
+
+    def check_charge(self, ctx: ChargeContext, provider_ref: str) -> ChargeOutcome:
+        """Read the Sky task. Executed is success; cancelled or rejected is failed."""
+        client = self._stored_client()
+        with _sky_errors():
+            data = client.generic_api("GetTaskDetails", [provider_ref, "AR"])
+        rows = self._rows(data)
+        state = task_settled(rows[0] if rows else None)
+        if state == "success":
+            return ChargeOutcome(result=ChargeResult.SUCCESS, provider_ref=provider_ref)
+        if state == "failed":
+            return ChargeOutcome(
+                result=ChargeResult.FAILED, provider_ref=provider_ref, message="not_eligible"
+            )
+        return ChargeOutcome(result=ChargeResult.UNVERIFIED, provider_ref=provider_ref)
 
     def fetch_balance_rows(self, date_from: date, date_to: date) -> list[dict[str, Any]]:
         """Sky template-22 balance rows for the logged-in account."""

@@ -17,6 +17,7 @@ class ProviderConnectionModelTests(TestCase):
 
         self.assertTrue(conn.is_enabled)
         self.assertTrue(conn.refresh_enabled)
+        self.assertTrue(conn.number_info_enabled)
         self.assertFalse(conn.charge_enabled)
         self.assertTrue(conn.reconcile_enabled)
         self.assertEqual(ProviderConnection.for_key("aloha").pk, conn.pk)
@@ -30,6 +31,7 @@ class ProviderConnectionModelTests(TestCase):
             ProviderConnection.SERVICE_FIELDS,
             {
                 Capability.REFRESH: "refresh_enabled",
+                Capability.NUMBER_INFO: "number_info_enabled",
                 Capability.CHARGE: "charge_enabled",
                 Capability.RECONCILE: "reconcile_enabled",
             },

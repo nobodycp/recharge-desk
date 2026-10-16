@@ -58,6 +58,7 @@ CAUSE_LABELS = {
     "rejected": "رفض المزوّد",
     "provider_error": "خطأ في العملية",
     "price_mismatch": "السعر غير مطابق",
+    "period_unavailable": "المدة غير متاحة لهذه الحزمة",
     "not_found": "الرقم غير موجود لدى المزوّد",
     "internal": "خطأ داخلي",
 }
@@ -92,6 +93,8 @@ _CODE_TO_CAUSE = {
     "timeout": "connection",
     "context_error": "internal",
     "unknown_provider": "internal",
+    "price_mismatch": "price_mismatch",
+    "period_unavailable": "period_unavailable",
 }
 
 _REJECT_REASONS = {

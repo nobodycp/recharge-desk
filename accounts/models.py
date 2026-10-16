@@ -23,6 +23,11 @@ class UserProfile(models.Model):
         default=Role.MANAGEMENT,
     )
     is_active_profile = models.BooleanField(_("profile active"), default=True)
+    can_provider_charge = models.BooleanField(
+        _("السماح بشحن الخطوط عبر المزوّد"),
+        default=False,
+        help_text=_("يظهر زر «حفظ وشحن» لهذا الموظف. الإدارة تشحن بدون هذا الخيار."),
+    )
     stale_phone_threshold_days = models.PositiveIntegerField(
         _("stale line threshold (days)"),
         default=85,

@@ -13,6 +13,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
+from accounts.permissions import is_management
 from audit.models import AuditAction
 from audit.services import record as audit_record
 from core.sale_workflow import finalize_sale_after_entry
@@ -47,6 +48,14 @@ def can_charge(company) -> bool:
     return service_state(company, Capability.CHARGE).code == "active"
 
 
+def user_may_charge(user) -> bool:
+    """Management always may. An employee may only after management grants it."""
+    if is_management(user):
+        return True
+    profile = getattr(user, "profile", None)
+    return bool(profile and profile.can_provider_charge)
+
+
 def clean_message(message: str) -> str:
     return scrub(message or "")[:255]
 
@@ -60,6 +69,7 @@ def charge_context(sale: Sale, job: ProviderJob) -> ChargeContext:
         is_esim=sale.is_esim,
         idempotency_key=job.idempotency_key or "",
         requested_at=sale.created_at,
+        duration_days=sale.duration_days,
     )
 
 

@@ -32,12 +32,13 @@
 
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {% rd_fields form full="avatar" exclude="is_active is_active_profile" %}
+        {% rd_fields form full="avatar" exclude="is_active is_active_profile can_provider_charge" %}
 
         <h2 class="rd-heading-lg mt-4 mb-3">{% trans "Access" %}</h2>
         <div class="rd-form-grid">
           {% rd_field form.is_active %}
           {% rd_field form.is_active_profile %}
+          {% if form.can_provider_charge %}{% rd_field form.can_provider_charge %}{% endif %}
         </div>
 
         <div class="rd-form-actions">

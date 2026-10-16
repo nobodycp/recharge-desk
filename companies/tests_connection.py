@@ -151,14 +151,21 @@ class ServicesTests(_Base):
         company = self.company(provider_key="layan")
         response = self.tab(company)
         self.assertContains(response, self.url("company_connection_services", company))
-        for label in ("تحديث الأرقام", "الشحن", "مطابقة الحسابات"):
+        for label in ("تحديث الأرقام", "فحص الرقم", "الشحن", "مطابقة الحسابات"):
             self.assertContains(response, label)
         self.assertContains(response, 'name="is_enabled"')
         self.assertContains(response, 'name="refresh_enabled"')
         self.assertContains(response, 'name="reconcile_enabled"')
-        # Layan has no CHARGE capability: no switch, honest reason instead.
+        # Layan has no charge or number check: no switch, honest reason instead.
         self.assertNotContains(response, 'name="charge_enabled"')
+        self.assertNotContains(response, 'name="number_info_enabled"')
         self.assertContains(response, "غير متاح لهذا النظام بعد")
+
+    def test_sky_shows_a_number_check_switch(self):
+        company = self.company(provider_key="sky")
+        response = self.tab(company)
+        self.assertContains(response, "فحص الرقم")
+        self.assertContains(response, 'name="number_info_enabled"')
 
     def test_viewing_tab_ensures_connection_row(self):
         company = self.company(provider_key="sky")
