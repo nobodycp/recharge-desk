@@ -39,6 +39,15 @@ class ReportsPageKitTests(SimpleTestCase):
         self.assertIn('hx-swap="outerHTML"', source)
         self.assertIn('hx-push-url="true"', source)
 
+    def test_dashboard_swap_keeps_page_header_interactive(self):
+        css = (Path(settings.BASE_DIR) / "static" / "css" / "app.css").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            ".rd-dash-swap.htmx-request > :not(.rd-page-head)",
+            css,
+        )
+
     def test_report_forms_use_kit_fields_without_renaming_inputs(self):
         phone_lines = self._source("phone_lines_report.html")
         self.assertIn('id="phone-lines-filter-form"', phone_lines)

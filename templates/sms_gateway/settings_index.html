@@ -19,7 +19,7 @@
 
     <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">إعدادات الخدمة العامة</div>
-      <div class="rd-card-body rd-field-grid">
+      <div class="rd-card-body rd-form-grid">
         {% rd_field general_form.service_enabled label="تشغيل الخدمة" %}
         {% rd_field general_form.replies_master_enabled label="تفعيل كل الردود" %}
         {% rd_field general_form.send_service_off_reply label="إرسال رسالة عند إيقاف الخدمة" %}
@@ -29,7 +29,7 @@
 
     <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">رقم الاختبار</div>
-      <div class="rd-card-body rd-field-grid">
+      <div class="rd-card-body rd-form-grid">
         {% rd_field general_form.test_number label="رقم الاختبار" help="عند وصول رسالة من هذا الرقم يرد النظام برسالة فحص دون تحديث حقيقي." %}
         {% rd_field general_form.test_reply_message label="رسالة فحص الجاهزية" %}
       </div>
@@ -37,7 +37,7 @@
 
     <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">إعدادات المُرسِل والحدود</div>
-      <div class="rd-card-body rd-field-grid">
+      <div class="rd-card-body rd-form-grid">
         {% rd_field general_form.sender_max_messages label="حد رسائل المُرسِل" help="0 = بلا حد." %}
         {% rd_field general_form.sender_window_minutes label="نافذة المُرسِل (دقائق)" %}
         {% rd_field general_form.global_daily_cap label="السقف اليومي الإجمالي" help="إجمالي الردود يوميًا عبر كل الأجهزة. 0 = بلا حد." %}
@@ -47,7 +47,7 @@
 
     <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">إعدادات الإرسال والأجهزة</div>
-      <div class="rd-card-body rd-field-grid">
+      <div class="rd-card-body rd-form-grid">
         {% rd_field general_form.claim_timeout_seconds label="مهلة المطالبة (ثوانٍ)" help="إعادة الرد للطابور لو لم يؤكد الجهاز إرساله خلالها." %}
         {% rd_field general_form.auto_pause_threshold label="إيقاف تلقائي بعد فشل" help="عدد مرات الفشل المتتالي قبل إيقاف الجهاز. 0 = تعطيل." %}
         {% rd_field general_form.max_send_attempts label="أقصى محاولات إرسال" %}
@@ -56,7 +56,7 @@
 
     <div class="rd-card mb-3">
       <div class="rd-card-header fw-semibold">الصيانة والتنبيهات</div>
-      <div class="rd-card-body rd-field-grid">
+      <div class="rd-card-body rd-form-grid">
         {% rd_field general_form.log_retention_days label="الاحتفاظ بالسجلات (أيام)" help="0 = الاحتفاظ دائمًا. يُنفّذ عبر أمر sms_purge_logs." %}
         {% rd_field general_form.heartbeat_alert_minutes label="تنبيه فصل الجهاز (دقائق)" %}
       </div>
@@ -70,7 +70,7 @@
     <div class="rd-card-body">
       <form method="post" action="{% url 'sms_gateway:api_gateway_save' %}">
         {% csrf_token %}
-        <div class="rd-field-grid">
+        <div class="rd-form-grid">
           {% rd_field api_form.refresh_api_url label="رابط API التحديث (اتركه فارغاً لاستخدام رابط التحديث الداخلي)" %}
           {% rd_field api_form.refresh_api_token label="توكن API (اختياري)" %}
           {% rd_field api_form.refresh_api_timeout label="المهلة (ثوانٍ)" %}
@@ -158,7 +158,7 @@
     <div class="rd-card-body">
       <form method="post" action="{% url 'sms_gateway:device_create' %}">
         {% csrf_token %}
-        <div class="rd-field-grid">
+        <div class="rd-form-grid">
           {% rd_field device_form.name label="الاسم" %}
           {% rd_field device_form.phone_number label="الرقم" %}
           {% rd_field device_form.priority label="الأولوية" %}
@@ -243,7 +243,7 @@
     <div class="rd-card-body">
       <form method="post" action="{% url 'sms_gateway:access_rule_create' %}" class="mb-3">
         {% csrf_token %}
-        <div class="rd-field-grid">
+        <div class="rd-form-grid">
           {% rd_field access_rule_form.value label="رقم أو بادئة" %}
           {% rd_field access_rule_form.mode label="النوع" %}
           {% rd_field access_rule_form.note label="ملاحظة" %}

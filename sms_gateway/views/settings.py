@@ -306,9 +306,11 @@ def reports_list(request):
 
     inbound_qs = InboundSms.objects.select_related("device", "refresh_log").all()
     report_filter_form = SmsReportFilterForm(request.GET or None)
-    report_filter_form.is_valid()
-    q = (report_filter_form.cleaned_data.get("q") or "").strip()
-    state = report_filter_form.cleaned_data.get("state") or ""
+    filter_data = (
+        report_filter_form.cleaned_data if report_filter_form.is_valid() else {}
+    )
+    q = (filter_data.get("q") or "").strip()
+    state = filter_data.get("state") or ""
     if q:
         inbound_qs = inbound_qs.filter(from_number__icontains=q)
     if state:

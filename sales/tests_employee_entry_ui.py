@@ -815,6 +815,12 @@ class EmployeePaymentCssTests(SimpleTestCase):
     def test_record_page_pins_the_dock_to_the_bottom(self):
         self._assert_decl(".rd-pay-sub-dock", "margin-block-start: auto")
         self._assert_decl(".rd-employee-main:has(.rd-pay-sub)", "display: flex", "flex-direction: column")
+        self._assert_decl(
+            ".rd-employee-main:has(.rd-pay-sub) > .rd-page",
+            "display: flex",
+            "flex-direction: column",
+            "flex: 1 1 auto",
+        )
 
     def test_autocomplete_rows_are_touch_sized(self):
         self._assert_decl(".rd-pay-sub-ac .list-group-item", "min-height: 3.45rem")

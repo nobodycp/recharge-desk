@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.contrib.auth import get_user_model
+from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
 
 from sms_gateway.forms import SmsReportFilterForm
 
@@ -27,6 +29,8 @@ class SmsGatewayPageKitTests(SimpleTestCase):
 
     def test_settings_forms_use_kit_fields_and_keep_post_contracts(self):
         source = self._source("settings_index.html")
+        self.assertIn("rd-form-grid", source)
+        self.assertNotIn("rd-field-grid", source)
         for form_name in (
             "general_form",
             "api_form",
@@ -55,3 +59,20 @@ class SmsGatewayPageKitTests(SimpleTestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("rd-badge rd-badge--neutral", serials_source)
         self.assertNotIn("text-bg-", serials_source)
+
+
+class SmsGatewayReportsRenderTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.manager = get_user_model().objects.create_superuser(
+            "sms_reports_manager",
+            "sms-reports@example.com",
+            "x",
+        )
+
+    def test_reports_bare_get_renders(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("sms_gateway:reports"))
+
+        self.assertEqual(response.status_code, 200)

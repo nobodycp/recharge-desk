@@ -1468,6 +1468,13 @@ html:has(.rd-entry-dock) {
   flex-direction: column;
 }
 
+.rd-employee-main:has(.rd-pay-sub) > .rd-page,
+.rd-employee-main:has(.rd-sale-edit) > .rd-page {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 .rd-pay-sub,
 .rd-sale-edit,
 .rd-pay-sub-recent,

@@ -295,11 +295,11 @@
   }
 }
 
-.rd-dash-swap > :not(.rd-dash-head) {
+.rd-dash-swap > :not(.rd-page-head) {
   transition: opacity var(--rd-transition);
 }
 
-.rd-dash-swap.htmx-request > :not(.rd-dash-head) {
+.rd-dash-swap.htmx-request > :not(.rd-page-head) {
   opacity: 0.45;
   pointer-events: none;
 }

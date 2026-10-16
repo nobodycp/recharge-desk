@@ -82,3 +82,10 @@ class PhoneRefreshPageKitTests(SimpleTestCase):
         created_source = self._source("api_token_created.html")
         self.assertIn('value="{{ raw_token }}"', created_source)
         self.assertIn("لن يظهر مرة أخرى", created_source)
+
+    def test_reports_bulk_toolbar_rule_is_well_formed(self):
+        source = self._source("reports.html")
+        self.assertIn(
+            ".pr-report-excerpt { max-width: 28rem; }\n  .pr-bulk-toolbar {",
+            source,
+        )
