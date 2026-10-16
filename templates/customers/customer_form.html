@@ -1,24 +1,19 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="mx-auto" style="max-width: 45rem;">
-  <h1 class="rd-heading-xl mb-3">{{ title }}</h1>
-  <div class="rd-card">
-    <div class="rd-card-body p-4">
-      {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
-      <form method="post" class="d-grid gap-3" novalidate>
+<div class="rd-page rd-page--form">
+  {% trans "Customers" as customers_label %}
+  {% url 'customers:customer_list' as list_url %}
+  {% rd_page_header title back_url=list_url back_label=customers_label %}{% end_rd_page_header %}
+
+  <div class="rd-card mb-3">
+    <div class="rd-card-body">
+      <form method="post" novalidate>
         {% csrf_token %}
-        {% for field in form %}
-          <div>
-            {{ field.label_tag }}
-            {{ field }}
-            {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
-            {{ field.errors }}
-          </div>
-        {% endfor %}
-        <div class="d-flex gap-2">
+        {% rd_fields form full="notes is_active" %}
+        <div class="rd-form-actions">
           <button class="btn btn-primary" type="submit">{% trans "Save" %}</button>
-          <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Cancel" %}</a>
+          <a class="btn btn-outline-secondary" href="{{ list_url }}">{% trans "Cancel" %}</a>
         </div>
       </form>
     </div>

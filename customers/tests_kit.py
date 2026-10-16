@@ -7,6 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import UserProfile
+from customers.models import Customer, CustomerPhone
 from customers.services import create_customer, post_on_account_sale
 from companies.models import Company, Product, ProductLine
 from sales.models import PaymentMethod
@@ -79,3 +80,72 @@ class CustomerListKitTests(TestCase):
         self.assertIn(write_off_url, html)
         self.assertNotIn("btn-warning", html)
         self.assertIn("Write off", html)
+
+
+class CustomerFormKitTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("custformkit", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_customer_create_uses_kit_and_saves(self):
+        r = self.client.get(reverse("customers:customer_create"))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "rd-page rd-page--form")
+        self.assertContains(r, '<header class="rd-page-head">')
+        self.assertContains(r, "rd-field")
+        self.assertContains(r, "rd-form-actions")
+        self.assertNotContains(r, "max-width")
+
+        r = self.client.post(
+            reverse("customers:customer_create"),
+            {
+                "name": "Kit Customer",
+                "notes": "Created via kit",
+                "is_active": "on",
+                "initial_phone": "0599888777",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        customer = Customer.objects.get(name="Kit Customer")
+        self.assertEqual(customer.notes, "Created via kit")
+        self.assertTrue(customer.is_active)
+        self.assertTrue(
+            CustomerPhone.objects.filter(customer=customer, phone="0599888777").exists()
+        )
+
+    def test_customer_edit_uses_kit_and_saves(self):
+        customer = create_customer(name="Before Edit", notes="old", user=self.user)
+        r = self.client.get(reverse("customers:customer_edit", args=[customer.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "rd-page--form")
+        self.assertContains(r, "rd-field")
+
+        r = self.client.post(
+            reverse("customers:customer_edit", args=[customer.pk]),
+            {
+                "name": "After Edit",
+                "notes": "updated notes",
+                "is_active": "",
+                "initial_phone": "",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        customer.refresh_from_db()
+        self.assertEqual(customer.name, "After Edit")
+        self.assertEqual(customer.notes, "updated notes")
+        self.assertFalse(customer.is_active)
+
+    def test_customer_create_invalid_shows_field_errors(self):
+        r = self.client.post(
+            reverse("customers:customer_create"),
+            {"name": "", "notes": "", "initial_phone": ""},
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "rd-field__error")

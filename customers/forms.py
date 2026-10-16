@@ -100,9 +100,7 @@ class CustomerForm(forms.ModelForm):
     initial_phone = forms.CharField(
         label=_("Phone or shipment number"),
         required=False,
-        widget=forms.TextInput(
-            attrs={"class": "form-control", "autocomplete": "off"}
-        ),
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
         help_text=_("Optional. Adds a first phone link so future sales auto-suggest this customer."),
     )
 
@@ -110,9 +108,9 @@ class CustomerForm(forms.ModelForm):
         model = Customer
         fields = ["name", "notes", "is_active"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
-            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
-            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "name": forms.TextInput(attrs={"autocomplete": "off"}),
+            "notes": forms.Textarea(attrs={"rows": 2}),
+            "is_active": forms.CheckboxInput(attrs={"role": "switch"}),
         }
 
 
