@@ -264,8 +264,19 @@ def build_company_statement_context(request, company):
         "reversals_total": reversals or 0,
         "adjustments_total": adjustments or 0,
         "agg": agg,
-        "deposit_form": ManualDepositForm(request.POST or None, prefix="dep"),
-        "adj_form": BalanceAdjustmentForm(request.POST or None, prefix="adj"),
+        # Bind each form only to its own submit so an invalid deposit POST
+        # does not paint required errors on the untouched adjustment form
+        # (and vice versa). ``rd_fields`` surfaces field.errors.
+        "deposit_form": (
+            ManualDepositForm(request.POST, prefix="dep")
+            if request.method == "POST" and "dep-submit" in request.POST
+            else ManualDepositForm(prefix="dep")
+        ),
+        "adj_form": (
+            BalanceAdjustmentForm(request.POST, prefix="adj")
+            if request.method == "POST" and "adj-submit" in request.POST
+            else BalanceAdjustmentForm(prefix="adj")
+        ),
         "title": company.name,
         "sales_sort": request.GET.get("sales_sort") or "created_at",
         "sales_order": (request.GET.get("sales_order") or "desc").lower(),

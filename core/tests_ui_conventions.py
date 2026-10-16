@@ -79,7 +79,7 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 44 files
+LEGACY_PAGE_HEAD = {  # 43 files
     "phone_refresh/templates/phone_refresh/api_index.html",
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",

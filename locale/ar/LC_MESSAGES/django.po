@@ -317,6 +317,10 @@ msgstr "سجل التدقيق"
 msgid "Select a package that belongs to this product line."
 msgstr "اختر باقة تنتمي لخط المنتج هذا."
 
+#: templates/companies/partials/company_detail_general.html
+msgid "Date range"
+msgstr "نطاق التاريخ"
+
 #: companies/forms.py:80 companies/forms.py:125 employees/forms.py:83
 #: employees/forms.py:119 expenses/forms.py:17 expenses/views.py:102
 #: inventory/forms.py:245 reports/views.py:352 sales/forms.py:260

@@ -210,6 +210,12 @@ class CompanyListQueryCountTests(TestCase):
         self.assertContains(r, "Manual balance top-up")
         self.assertContains(r, "company-sales-grid")
         self.assertContains(r, "company-ledger-grid")
+        r2 = self.client.get(
+            reverse("companies:company_detail", args=[company.pk]),
+            {"tab": "sales"},
+        )
+        self.assertNotContains(r2, "Manual balance top-up")
+        self.assertContains(r2, "company-sales-grid")
 
     def test_company_detail_uses_kit_page_header(self):
         self.client.force_login(self.user)
@@ -221,12 +227,18 @@ class CompanyListQueryCountTests(TestCase):
         self.assertContains(r, company.name)
         self.assertContains(r, reverse("companies:company_list"))
         self.assertContains(r, reverse("companies:company_edit", args=[company.pk]))
-        r2 = self.client.get(
+
+    def test_invalid_deposit_does_not_error_adjustment_form(self):
+        """Sibling forms share the POST body; only the submitted form binds."""
+        self.client.force_login(self.user)
+        company = Company.objects.first()
+        r = self.client.post(
             reverse("companies:company_detail", args=[company.pk]),
-            {"tab": "sales"},
+            {"dep-submit": "1", "dep-amount": "", "dep-notes": "", "tab": "general"},
         )
-        self.assertNotContains(r2, "Manual balance top-up")
-        self.assertContains(r2, "company-sales-grid")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'id="id_dep-amount-error"')
+        self.assertNotContains(r, 'id="id_adj-signed_amount-error"')
 
     def test_company_list_results_container_is_hx_boosted(self):
         """Sort headers and pagination links update the table in place via
