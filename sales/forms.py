@@ -226,45 +226,51 @@ class EmployeeSaleForm(forms.Form):
 
 
 class ManagementSaleFilterForm(forms.Form):
+    q = forms.CharField(
+        label=_("Search"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "type": "search",
+                "placeholder": _("Reference, payer, company…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
     company = forms.ModelChoiceField(
         label=_("Company"),
         queryset=Company.objects.all(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     product = forms.ModelChoiceField(
         label=_("Product"),
         queryset=Product.objects.select_related("line").all(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     employee = forms.ModelChoiceField(
         label=_("Employee"),
         queryset=User.objects.none(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     payment_method = forms.ModelChoiceField(
         label=_("Payment method"),
         queryset=PaymentMethod.objects.all(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     status = forms.ChoiceField(
         label=_("Status"),
         choices=[("", _("All"))] + list(Sale.Status.choices),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     date_from = forms.DateField(
         label=_("Date from"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}),
     )
     date_to = forms.DateField(
         label=_("Date to"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}),
     )
     esim = forms.ChoiceField(
         label=_("eSIM"),
@@ -274,13 +280,11 @@ class ManagementSaleFilterForm(forms.Form):
             ("no", _("Non-eSIM")),
         ],
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     entry_mode = forms.ChoiceField(
         label=_("Entry mode"),
         choices=[("", _("All"))] + list(Sale.EntryMode.choices),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
     charge_status = forms.ChoiceField(
         label=_("Charge status"),
@@ -288,7 +292,6 @@ class ManagementSaleFilterForm(forms.Form):
         + [(value, label) for value, label in Sale.ChargeStatus.choices if value]
         + [(NEEDS_VERIFICATION, _("Needs attention (30+ min or conflict)"))],
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -297,6 +300,27 @@ class ManagementSaleFilterForm(forms.Form):
         self.fields["product"].queryset = Product.objects.select_related("line", "line__company").order_by(
             "line__company__name", "line__sort_order", "line__name", "variant_label"
         )
+
+
+class PendingPaymentsFilterForm(ManagementSaleFilterForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("status", "entry_mode", "charge_status"):
+            self.fields.pop(name)
+
+
+class AwaitingApprovalFilterForm(forms.Form):
+    q = forms.CharField(
+        label=_("Search"),
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "type": "search",
+                "placeholder": _("Reference, payer, customer, company…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
 
 
 class EmployeeRecentFilterForm(forms.Form):
@@ -412,13 +436,12 @@ class ManagementSaleEditForm(forms.ModelForm):
             "notes",
         ]
         widgets = {
-            "payment_method": forms.Select(attrs={"class": "form-select"}),
-            "payer_name": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
-            "reference_number": forms.TextInput(attrs={"class": "form-control", "autocomplete": "off"}),
+            "payer_name": forms.TextInput(attrs={"autocomplete": "off"}),
+            "reference_number": forms.TextInput(attrs={"autocomplete": "off"}),
             "sell_price_actual": forms.NumberInput(
-                attrs={"class": "form-control", "step": "0.01", "min": "0"}
+                attrs={"step": "0.01", "min": "0"}
             ),
-            "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "notes": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):

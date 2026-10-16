@@ -23,7 +23,7 @@
       {{ s.reference_number }}
       <button type="button" class="btn btn-sm btn-link p-0 ms-1 rd-copy-ref" data-copy="{{ s.reference_number }}" title="{% trans 'Copy reference' %}">⎘</button>
     </td>
-    <td class="text-truncate" style="max-width: 12rem;" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
+    <td class="text-truncate rd-truncate-10rem" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
     <td class="small text-secondary">{{ s.created_by.username }}</td>
     <td class="fw-semibold tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>
     <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>

@@ -1,38 +1,18 @@
 {% extends "base_management.html" %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Awaiting approval" %}</h1>
-    <p class="rd-text-muted mb-0">{% trans "On-account sales waiting for management approval." %}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
+<div class="rd-page">
+{% trans "Awaiting approval" as awaiting_title %}{% trans "On-account sales waiting for management approval." as awaiting_subtitle %}
+{% rd_page_header awaiting_title subtitle=awaiting_subtitle %}
     <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'sales:awaiting_approvals_export_csv' %}?{{ request.GET.urlencode }}">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       {% trans "Export CSV" %}
     </a>
     <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
-  </div>
-</div>
+{% end_rd_page_header %}
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <form
-      method="get"
-      class="row g-2 align-items-end"
-      hx-get="{% url 'sales:awaiting_approvals' %}"
-      hx-target="#awaiting-results"
-      hx-push-url="true"
-    >
-      <div class="col-12 col-md-6 col-lg-5">
-        <label class="form-label small mb-1" for="awaiting-q">{% trans "Search" %}</label>
-        <input id="awaiting-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="{% trans 'Reference, payer, customer, company…' %}" autocomplete="off">
-      </div>
-      <div class="col-md-3 col-lg-2"><button class="btn btn-primary w-100" type="submit">{% trans "Apply" %}</button></div>
-      <div class="col-md-3 col-lg-2"><a class="btn btn-outline-secondary w-100" href="{% url 'sales:awaiting_approvals' %}">{% trans "Reset" %}</a></div>
-    </form>
-  </div>
-</div>
+{% url 'sales:awaiting_approvals' as awaiting_url %}
+{% rd_filter_card filter_form action=awaiting_url reset_url=awaiting_url hx_target="#awaiting-results" %}
 
 <div
   class="rd-card overflow-hidden rd-datagrid"
@@ -43,5 +23,6 @@
   hx-push-url="true"
 >
   {% include "sales/partials/awaiting_results.html" %}
+</div>
 </div>
 {% endblock %}

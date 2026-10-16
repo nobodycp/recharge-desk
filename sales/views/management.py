@@ -14,8 +14,10 @@ from customers.services import approve_sale as approve_on_account_sale
 from customers.services import reject_sale as reject_on_account_sale
 from sales import charging
 from sales.forms import (
+    AwaitingApprovalFilterForm,
     ManagementSaleEditForm,
     ManagementSaleFilterForm,
+    PendingPaymentsFilterForm,
 )
 from sales.models import Sale
 from sales.query_utils import (
@@ -104,7 +106,7 @@ def pending_payments(request):
             "employee_recipient__user__profile",
         )
     )
-    form = ManagementSaleFilterForm(request.GET or None)
+    form = PendingPaymentsFilterForm(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}
     qs = apply_management_sale_filter_data(qs, data, omit_status=True)
     q = (request.GET.get("q") or "").strip()
@@ -146,6 +148,7 @@ def awaiting_approvals(request):
         )
         .order_by("-created_at")
     )
+    form = AwaitingApprovalFilterForm(request.GET or None)
     q = (request.GET.get("q") or "").strip()
     if q:
         qs = qs.filter(
@@ -157,8 +160,8 @@ def awaiting_approvals(request):
     page_obj = paginate_request(request, qs)
     ctx = {
         "page_obj": page_obj,
+        "filter_form": form,
         "title": _("Awaiting approval"),
-        "q": q,
     }
     if request.headers.get("HX-Request"):
         return render(request, "sales/partials/awaiting_results.html", ctx)
