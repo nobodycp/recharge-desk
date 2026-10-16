@@ -193,6 +193,23 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertIn("has-error", price)
         self.assertNotIn('id="rd-duration-days-wrap" class="rd-field-group has-error"', body)
 
+    def test_wrong_package_shows_the_price_mismatch(self):
+        from providers.contracts import PermanentError
+
+        self.use(raise_before_send=PermanentError("price_mismatch"))
+        resp = self.post_entry(
+            action="charge", form_token="22222222-2222-4222-8222-222222222222"
+        )
+        self.assertEqual(resp.status_code, 302)
+        sale = Sale.objects.get()
+        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertEqual(sale.charge_message, "فشل الشحن — السعر غير مطابق")
+        recent = self.client.get(reverse("sales:employee_recent_sales"))
+        self.assert_charge_chip(recent, "failed", "السعر غير مطابق")
+        self.client.force_login(self.manager)
+        management = self.client.get(reverse("sales:management_sale_list"))
+        self.assertContains(management, "فشل الشحن — السعر غير مطابق")
+
     def test_traditional_save_stays_manual(self):
         self.post_entry()
         sale = Sale.objects.get()
@@ -330,7 +347,9 @@ class ManagementChargeTests(ChargeUiTestBase):
         self.assertContains(resp, reverse("sales:sale_charge_recheck", args=[sale.pk]))
         self.assertContains(resp, 'name="result" value="success"')
         self.assertContains(resp, 'name="result" value="failed"')
-        self.assertContains(resp, 'popovertarget="sale-actions-row-%s"' % sale.pk)
+        self.assertContains(resp, 'data-rd-charge-open="sale-actions-row-charge-%s"' % sale.pk)
+        self.assertContains(resp, 'id="sale-actions-row-charge-%s"' % sale.pk)
+        self.assertNotContains(resp, "popovertarget=")
 
     def test_open_charge_shows_actions_with_confirmation(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)

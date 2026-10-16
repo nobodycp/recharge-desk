@@ -34,21 +34,22 @@
 </div>
 <script>
 (function () {
-  document.addEventListener("toggle", function (event) {
-    var panel = event.target;
-    if (!panel.classList || !panel.classList.contains("rd-sale-actions")) return;
-    if (event.newState !== "open") return;
-    var button = document.querySelector('[popovertarget="' + panel.id + '"]');
-    if (!button) return;
-    var rect = button.getBoundingClientRect();
-    var width = panel.offsetWidth;
-    var height = panel.offsetHeight;
-    var left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
-    var top = rect.bottom + 6;
-    if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 6);
-    panel.style.left = left + "px";
-    panel.style.top = top + "px";
-  }, true);
+  document.addEventListener("click", function (event) {
+    var opener = event.target.closest("[data-rd-charge-open]");
+    if (opener) {
+      var dialog = document.getElementById(opener.getAttribute("data-rd-charge-open"));
+      if (dialog && dialog.showModal) dialog.showModal();
+      return;
+    }
+    if (event.target.closest("[data-rd-dialog-close]")) {
+      var openDialog = event.target.closest("dialog");
+      if (openDialog) openDialog.close();
+      return;
+    }
+    if (event.target.classList && event.target.classList.contains("rd-charge-dialog")) {
+      event.target.close();
+    }
+  });
 })();
 </script>
 {% endblock %}

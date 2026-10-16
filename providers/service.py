@@ -35,6 +35,17 @@ REFRESH_RETRY_DELAYS = (1, 2)
 SYNC_BUDGET_SECONDS = 45
 # Login-path failures: retrying would only queue on the lock again.
 NO_RETRY_TRANSIENT_CODES = frozenset({"login_busy", "login_failed"})
+# The provider answered and refused a charge, without a task being created.
+# These stay on the sale so the employee sees the reason.
+PROVIDER_ANSWER_CODES = frozenset(
+    {
+        "price_mismatch",
+        "period_unavailable",
+        "not_found",
+        "not_eligible",
+        "provider_error",
+    }
+)
 
 
 def _error_text(exc: Exception) -> str:
@@ -295,19 +306,27 @@ def _charge_once(
             return adapter.charge(ctx)
         except AuthRequired:
             raise
-        except BaseException:
+        except TransientError:
+            # Adapters raise this only once the charge request may have left.
             may_have_sent = True
             raise
 
     try:
         return run_authenticated(adapter, attempt, lock_wait=_lock_wait(deadline, budget))
     except PermanentError as exc:
-        return ChargeOutcome(result=ChargeResult.FAILED, message=_error_text(exc))
+        code = _error_text(exc)
+        return ChargeOutcome(
+            result=ChargeResult.FAILED,
+            message=code,
+            reached_provider=may_have_sent or code in PROVIDER_ANSWER_CODES,
+        )
     except Exception as exc:
         if not may_have_sent:
             message = f"not_sent:{_not_sent_code(exc)}"
             log.warning("provider %s charge not sent: %s", provider_key, message)
-            return ChargeOutcome(result=ChargeResult.FAILED, message=message)
+            return ChargeOutcome(
+                result=ChargeResult.FAILED, message=message, reached_provider=False
+            )
         log.warning("provider %s charge unverified: %s", provider_key, _error_text(exc))
         return ChargeOutcome(result=ChargeResult.UNVERIFIED, message=_error_text(exc))
 

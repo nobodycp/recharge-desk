@@ -21,18 +21,22 @@
 
   function ensure() {
     if (host) return;
-    host = document.createElement("div");
+    host = document.createElement("dialog");
     host.className = "rd-confirm";
-    host.hidden = true;
     host.innerHTML =
-      '<div class="rd-confirm__backdrop" data-rd-confirm-cancel></div>' +
-      '<div class="rd-confirm__panel rd-card" role="dialog" aria-modal="true" aria-labelledby="rd-confirm-text">' +
       '<p class="rd-confirm__text" id="rd-confirm-text"></p>' +
       '<div class="rd-confirm__actions">' +
       '<button type="button" class="btn btn-outline-secondary" data-rd-confirm-cancel></button>' +
       '<button type="button" class="btn btn-primary" data-rd-confirm-ok></button>' +
-      "</div></div>";
+      "</div>";
     document.body.appendChild(host);
+    host.addEventListener("cancel", function (ev) {
+      ev.preventDefault();
+      finish(false);
+    });
+    host.addEventListener("click", function (ev) {
+      if (ev.target === host) finish(false);
+    });
     textEl = host.querySelector(".rd-confirm__text");
     okBtn = host.querySelector("[data-rd-confirm-ok]");
     cancelBtn = host.querySelector("[data-rd-confirm-cancel]");
@@ -62,8 +66,8 @@
     if (!pending) return;
     var resolve = pending;
     pending = null;
-    host.hidden = true;
     host.classList.remove("is-open");
+    if (host.open) host.close();
     document.body.classList.remove("rd-confirm-open");
     if (lastFocus && lastFocus.focus) {
       try { lastFocus.focus({ preventScroll: true }); } catch (e) { lastFocus.focus(); }
@@ -83,7 +87,7 @@
     okBtn.textContent = label("data-rd-confirm-ok", "Confirm");
     okBtn.classList.toggle("btn-primary", !options.danger);
     okBtn.classList.toggle("btn-outline-danger", !!options.danger);
-    host.hidden = false;
+    if (!host.open) host.showModal();
     document.body.classList.add("rd-confirm-open");
     requestAnimationFrame(function () {
       host.classList.add("is-open");

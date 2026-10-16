@@ -2102,6 +2102,11 @@ a.rd-card:hover {
   color: var(--rd-success);
 }
 
+.rd-charge-tag--failed {
+  white-space: normal;
+  max-width: 18rem;
+}
+
 .rd-charge-tag--failed .rd-charge-tag__state {
   background: var(--rd-danger-soft);
   color: var(--rd-danger);
@@ -2244,35 +2249,134 @@ a.rd-card:hover {
 .rd-sale-actions {
   position: fixed;
   inset: auto;
-  width: min(22rem, calc(100vw - 1rem));
-  max-height: min(70vh, 28rem);
+  width: max-content;
+  min-width: 11rem;
+  max-width: calc(100vw - 1rem);
   margin: 0;
-  padding: 0.75rem;
+  padding: 0.35rem;
   overflow: auto;
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--rd-radius);
+  border-radius: var(--rd-radius-md);
   background: var(--rd-surface);
   color: var(--rd-ink);
   box-shadow: var(--rd-shadow-md);
-}
-
-.rd-sale-actions .rd-charge-details__body {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.rd-sale-actions .rd-charge-details__facts {
-  flex-direction: column;
-  gap: 0.45rem;
 }
 
 .rd-sale-actions__list {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  margin-top: 0.55rem;
-  padding-top: 0.45rem;
+}
+
+.rd-charge-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: min(85vh, 40rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-lg);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  box-shadow: var(--rd-shadow-lg);
+}
+
+.rd-charge-dialog::backdrop {
+  background: var(--rd-scrim);
+}
+
+.rd-charge-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.rd-charge-dialog__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  min-width: 0;
+}
+
+.rd-charge-dialog__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.rd-charge-dialog__body {
+  padding: 1rem;
+  overflow: auto;
+}
+
+.rd-charge-dialog .rd-charge-details__body {
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.rd-charge-dialog .rd-charge-details__facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-md);
+  overflow: hidden;
+}
+
+.rd-charge-dialog .rd-charge-details__facts > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 9rem) 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.7rem 0.85rem;
+  background: var(--rd-surface);
+}
+
+.rd-charge-dialog .rd-charge-details__facts > div + div {
   border-top: 1px solid var(--bs-border-color);
+}
+
+.rd-charge-dialog .rd-charge-details__facts dt {
+  margin: 0;
+}
+
+.rd-charge-dialog .rd-charge-details__facts dd {
+  font-weight: 600;
+}
+
+.rd-charge-dialog .rd-charge-details__alert {
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--rd-radius-sm);
+  background: var(--rd-danger-soft);
+}
+
+.rd-charge-dialog .rd-charge-details__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.rd-charge-dialog .rd-charge-details__actions form,
+.rd-charge-dialog .rd-charge-details__actions .btn {
+  width: 100%;
+}
+
+.rd-charge-details__actions-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--rd-muted);
 }
 
 .rd-sale-actions form {
@@ -4960,39 +5064,18 @@ body.rd-inv-dialog-open {
 
 /* Confirm dialog (static/js/rd-confirm.js). Appended to <body>, above shells. */
 .rd-confirm {
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.25rem;
-}
-
-.rd-confirm[hidden] {
-  display: none !important;
-}
-
-.rd-confirm__backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--rd-scrim);
-}
-
-.rd-confirm__panel {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 24rem);
-  margin-top: min(18vh, 6rem);
+  width: min(100% - 2rem, 24rem);
+  margin: auto;
   padding: 1.15rem 1.15rem 1rem;
-  opacity: 0;
-  transform: translateY(0.4rem);
-  transition: opacity 180ms ease, transform 180ms ease;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius-lg);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  box-shadow: var(--rd-shadow-lg);
 }
 
-.rd-confirm.is-open .rd-confirm__panel {
-  opacity: 1;
-  transform: translateY(0);
+.rd-confirm::backdrop {
+  background: var(--rd-scrim);
 }
 
 .rd-confirm__text {
@@ -5003,8 +5086,8 @@ body.rd-inv-dialog-open {
 }
 
 .rd-confirm__actions {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   margin-top: 1.1rem;
 }

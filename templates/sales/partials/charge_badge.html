@@ -12,7 +12,7 @@
     {% elif sale.charge_status == "success" %}
       <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>{% trans "Charged" %}</span>
     {% elif sale.charge_status == "failed" %}
-      <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>{% trans "Charge failed" %}</span>
+      <span class="rd-charge-tag__state"{% if sale.charge_message %} title="{{ sale.charge_message }}"{% endif %}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>{% if " — " in sale.charge_message %}{{ sale.charge_message|charge_failure_reason }}{% else %}{% trans "Charge failed" %}{% endif %}</span>
     {% elif sale|charge_not_sent %}
       <span class="rd-charge-tag__state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 7v6M12 17.5v.01"/></svg>{% trans "Not sent" %}</span>
     {% elif sale.charge_status == "unverified" %}

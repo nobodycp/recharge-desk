@@ -113,7 +113,7 @@ def _named(outcome: ChargeOutcome) -> ChargeOutcome:
 
 
 def _named_not_sent(code: str) -> ChargeOutcome:
-    return _named(ChargeOutcome(result=ChargeResult.FAILED, message=code))
+    return _named(ChargeOutcome(result=ChargeResult.FAILED, message=code, reached_provider=False))
 
 
 def _charge(job: ProviderJob, sale: Sale) -> ChargeOutcome:
@@ -154,6 +154,8 @@ def run_charge_job(job_id: str) -> None:
 
     outcome = _charge(job, sale)
     _refresh_db_connection()
+    user_id = sale.created_by_id
+    phone = sale.reference_number
     try:
         charging.apply_outcome(sale.pk, outcome)
     except Exception as exc:  # noqa: BLE001 — the verify task checks the sale later
@@ -165,7 +167,12 @@ def run_charge_job(job_id: str) -> None:
         )
         jobs.mark_failed(job, _job_result(outcome))
         return
-    jobs.mark_done(job, _job_result(outcome))
+    result = _job_result(outcome)
+    if not Sale.objects.filter(pk=sale.pk).exists():
+        result["discarded"] = True
+        result["user_id"] = user_id
+        result["phone"] = phone
+    jobs.mark_done(job, result)
 
 
 def _can_check(provider_key: str) -> bool:

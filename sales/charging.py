@@ -23,7 +23,7 @@ from providers.models import ProviderJob
 from providers.sanitize import scrub
 from providers.service import service_state
 from sales.models import Sale
-from sales.services import _cancellation_ledger_exists, cancel_sale, create_sale
+from sales.services import _cancellation_ledger_exists, cancel_sale, create_sale, delete_sale_permanently
 
 log = logging.getLogger(__name__)
 
@@ -220,6 +220,45 @@ def _conflict_extra(outcome: ChargeOutcome) -> dict:
     }
 
 
+def _discard_unsent_sale(sale: Sale, *, actor, who: dict, message: str) -> Sale:
+    """Drop a charge that never reached the provider, balance included.
+
+    The employee is told to record the sale by hand. Management never sees it.
+    """
+    delete_sale_permanently(sale=sale, user=actor)
+    log.info(
+        "sale %s dropped; the charge never reached the provider (%s, %s)",
+        sale.pk,
+        message,
+        who.get("actor", "user"),
+    )
+    return sale
+
+
+def notify_discarded_charges(request) -> None:
+    """Tell this employee about charges that were dropped since they last looked."""
+    from django.contrib import messages
+
+    pending = list(
+        ProviderJob.objects.filter(
+            kind=ProviderJob.KIND_CHARGE,
+            status=ProviderJob.STATUS_DONE,
+            result__discarded=True,
+            result__user_id=request.user.pk,
+        ).exclude(result__acknowledged=True)[:5]
+    )
+    for job in pending:
+        phone = (job.result or {}).get("phone") or job.phone
+        messages.error(
+            request,
+            _("Charge for %(phone)s never reached the provider. The sale was not recorded. Record it manually.")
+            % {"phone": phone},
+        )
+        result = dict(job.result or {})
+        result["acknowledged"] = True
+        ProviderJob.objects.filter(pk=job.pk).update(result=result)
+
+
 def _flag_success_after_failure(sale: Sale, outcome: ChargeOutcome, actor, who: dict) -> Sale:
     log.error(
         "sale %s: provider reports a successful charge after the sale was reversed",
@@ -300,6 +339,13 @@ def apply_outcome(
             ]
         )
         audit_record(AuditAction.UPDATE, sale, actor=actor, extra=extra)
+
+        if (
+            new_status == Sale.ChargeStatus.FAILED
+            and not outcome.reached_provider
+            and sale.status != Sale.Status.CANCELLED
+        ):
+            return _discard_unsent_sale(sale, actor=actor, who=who, message=sale.charge_message)
 
         if new_status == Sale.ChargeStatus.FAILED and sale.status != Sale.Status.CANCELLED:
             if _cancellation_ledger_exists(sale.pk):

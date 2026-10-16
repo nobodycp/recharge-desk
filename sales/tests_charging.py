@@ -20,6 +20,7 @@ from providers.contracts import (
     Capability,
     ChargeOutcome,
     ChargeResult,
+    PermanentError,
     TransientError,
 )
 from providers.crypto import encrypt
@@ -104,7 +105,10 @@ class ChargingTestBase(TestCase):
             sale, outcome = charging.create_charged_sale(
                 form_token=token, user=self.user, **self.sale_kwargs(**overrides)
             )
-        sale.refresh_from_db()
+        try:
+            sale.refresh_from_db()
+        except Sale.DoesNotExist:
+            pass
         return sale, outcome
 
     def charge(self, token="tok-1", **overrides) -> Sale:
@@ -234,6 +238,26 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.reversals(sale), 0)
         self.assertEqual(self.fake.sent, 1)
 
+    def test_price_mismatch_is_kept_with_the_provider_reason(self):
+        self.use(raise_before_send=PermanentError("price_mismatch"))
+        sale = self.charge()
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
+        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertEqual(sale.charge_message, "فشل الشحن — السعر غير مطابق")
+        self.assertEqual(self.balance(), START)
+        self.assertEqual(self.fake.sent, 0)
+        self.assertFalse(self.job(sale).result.get("discarded"))
+
+    def test_charge_that_never_starts_is_dropped(self):
+        self.use(raise_before_send=NotImplementedError())
+        with self.assertLogs("providers.service", level="WARNING"):
+            sale = self.charge()
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
+        self.assertEqual(self.balance(), START)
+        self.assertEqual(self.fake.sent, 0)
+        self.assertTrue(self.job(sale).result.get("discarded"))
+
     def test_charge_never_sent_because_login_failed_reverses(self):
         _save_credentials("fake")
         self.use(
@@ -245,9 +269,7 @@ class ChargeFlowTests(ChargingTestBase):
             "providers", level="WARNING"
         ):
             sale = self.charge()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ تسجيل الدخول")
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
         self.assertEqual(self.balance(), START)
         self.assertEqual(self.fake.sent, 0)
         row = ProviderOperation.objects.get()
@@ -316,13 +338,12 @@ class RunChargeJobTests(ChargingTestBase):
         sale = self.charge_without_worker()
         self.set_job(sale, provider_key="nope")
         run_charge_job(str(sale.charge_job_id))
-        sale.refresh_from_db()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ داخلي")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
         self.assertFalse(ProviderOperation.objects.exists())
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
         self.assertEqual(self.balance(), START)
-        self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
+        job = self.job(sale)
+        self.assertEqual(job.status, ProviderJob.STATUS_DONE)
+        self.assertTrue(job.result.get("discarded"))
 
     def test_context_error_never_leaves_job_running(self):
         sale = self.charge_without_worker()
@@ -331,11 +352,10 @@ class RunChargeJobTests(ChargingTestBase):
         ), self.assertLogs("sales.tasks", level="ERROR"):
             run_charge_job(str(sale.charge_job_id))
         self.assertEqual(self.fake.charges, [])
-        sale.refresh_from_db()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.charge_message, "فشل الشحن — خطأ داخلي")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
         self.assertFalse(ProviderOperation.objects.exists())
         self.assertEqual(self.job(sale).status, ProviderJob.STATUS_DONE)
+        self.assertTrue(self.job(sale).result.get("discarded"))
 
     def test_apply_outcome_error_fails_job_and_leaves_sale_open(self):
         sale = self.charge_without_worker()

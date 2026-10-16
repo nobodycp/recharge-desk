@@ -65,6 +65,9 @@ class ChargeOutcome:
     provider_cost: Decimal | None = None
     message: str = ""
     raw_excerpt: str = ""
+    # False when no charge request reached the provider. The sale is then
+    # dropped instead of left for management.
+    reached_provider: bool = True
 
 
 def _decimal_or_none(value: Any) -> Decimal | None:

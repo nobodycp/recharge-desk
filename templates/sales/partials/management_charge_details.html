@@ -1,10 +1,12 @@
 {% load i18n humanize sale_extras %}
 {# Provider-side facts and settle actions for an auto-charged sale `s` (management only). #}
 <div class="rd-charge-details">
-  <p class="rd-charge-details__title">{% trans "Charge details" %}</p>
+  {% if not in_dialog %}
+    <p class="rd-charge-details__title">{% trans "Charge details" %}</p>
+  {% endif %}
   <div class="rd-charge-details__body">
     {% if s|charge_not_sent %}
-      <p class="rd-charge-details__alert mb-0">{% trans "This request never reached the provider. No charge was created there." %}</p>
+      <p class="rd-charge-details__alert mb-0" role="status">{% trans "This request never reached the provider. No charge was created there." %}</p>
     {% endif %}
     {% if s.charge_conflict %}
       <p class="rd-charge-details__alert mb-0">{% trans "The provider reported a successful charge after the sale was reversed. Check the line at the provider and settle it by hand." %}</p>
@@ -30,7 +32,8 @@
           <span class="rd-charge-tag__pulse" aria-hidden="true"></span>{% trans "Checking with the provider…" %}
         </p>
       {% endif %}
-      <div class="d-flex flex-wrap gap-1 rd-charge-details__actions">
+      <div class="rd-charge-details__actions">
+        <p class="rd-charge-details__actions-title">{% trans "Settle by hand" %}</p>
         {% if not recheck_polls_left %}
         <form
           method="post"

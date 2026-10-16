@@ -1,44 +1,51 @@
 {% load i18n %}
 {% with menu_id=menu_id|default:"sale-actions" %}
-<button
-  type="button"
-  class="btn btn-sm btn-outline-secondary"
-  popovertarget="{{ menu_id }}-{{ s.pk }}"
->
-  {% trans "Actions" %}
-</button>
-<div id="{{ menu_id }}-{{ s.pk }}" popover class="rd-sale-actions">
+<div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
   {% if s.entry_mode == "auto_charge" %}
-    {% include "sales/partials/management_charge_details.html" with s=s row_layout=row_layout %}
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-rd-charge-open="{{ menu_id }}-charge-{{ s.pk }}">{% trans "Charge details" %}</button>
   {% endif %}
-  <div class="rd-sale-actions__list">
-    <a class="rd-sale-actions__item" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-    {% if s.status != "cancelled" and not s.charge_is_open %}
-      <form
-        method="post"
-        action="{% url 'sales:sale_cancel' s.pk %}"
-        hx-post="{% url 'sales:sale_cancel' s.pk %}"
-        hx-target="#{{ row_id }}-{{ s.pk }}"
-        hx-swap="outerHTML swap:200ms"
-        hx-confirm="{% trans 'Cancel this sale?' %}"
-      >
-        {% csrf_token %}
-        <button type="submit" class="rd-sale-actions__item">{% trans "Cancel" %}</button>
-      </form>
-    {% endif %}
-    {% if s.entry_mode != "auto_charge" or s.charge_status == "failed" %}
-      <form
-        method="post"
-        action="{% url 'sales:sale_delete_permanent' s.pk %}"
-        hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
-        hx-target="#{{ row_id }}-{{ s.pk }}"
-        hx-swap="outerHTML swap:200ms"
-        hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
-      >
-        {% csrf_token %}
-        <button type="submit" class="rd-sale-actions__item rd-sale-actions__item--danger">{% trans "Delete" %}</button>
-      </form>
-    {% endif %}
-  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
+  {% if s.status != "cancelled" and not s.charge_is_open %}
+    <form
+      method="post"
+      action="{% url 'sales:sale_cancel' s.pk %}"
+      class="d-inline-block m-0"
+      hx-post="{% url 'sales:sale_cancel' s.pk %}"
+      hx-target="#{{ row_id }}-{{ s.pk }}"
+      hx-swap="outerHTML swap:200ms"
+      hx-confirm="{% trans 'Cancel this sale?' %}"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
+    </form>
+  {% endif %}
+  {% if s.entry_mode != "auto_charge" or s.charge_status == "failed" %}
+    <form
+      method="post"
+      action="{% url 'sales:sale_delete_permanent' s.pk %}"
+      class="d-inline-block m-0"
+      hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
+      hx-target="#{{ row_id }}-{{ s.pk }}"
+      hx-swap="outerHTML swap:200ms"
+      hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
+    >
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
+    </form>
+  {% endif %}
 </div>
+{% if s.entry_mode == "auto_charge" %}
+  <dialog id="{{ menu_id }}-charge-{{ s.pk }}" class="rd-charge-dialog">
+    <div class="rd-charge-dialog__head">
+      <div class="rd-charge-dialog__heading">
+        <p class="rd-charge-dialog__title">{% trans "Charge details" %}</p>
+        {% include "sales/partials/charge_badge.html" with sale=s management=True %}
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-rd-dialog-close>{% trans "Close" %}</button>
+    </div>
+    <div class="rd-charge-dialog__body">
+      {% include "sales/partials/management_charge_details.html" with s=s row_layout=row_layout in_dialog=True %}
+    </div>
+  </dialog>
+{% endif %}
 {% endwith %}

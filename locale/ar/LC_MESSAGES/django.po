@@ -6304,6 +6304,10 @@ msgstr "ما في مخزون شرائح عند الزبائن."
 #: templates/sales/partials/management_charge_details.html:4
 msgid "Charge details"
 msgstr "تفاصيل الشحن"
+msgid "Settle by hand"
+msgstr "تسوية يدوية"
+msgid "Charge for %(phone)s never reached the provider. The sale was not recorded. Record it manually."
+msgstr "شحن %(phone)s لم يصل إلى المزوّد، ولم يُسجَّل البيع. سجّله يدوياً."
 msgid "This request never reached the provider. No charge was created there."
 msgstr "هذا الطلب لم يصل إلى المزوّد، ولم تُنشأ عملية شحن هناك."
 #: templates/sales/partials/management_charge_details.html:7

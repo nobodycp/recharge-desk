@@ -129,6 +129,9 @@ def employee_entry(request):
     initial = {}
     from_reconcile = False
     if request.method == "GET":
+        from sales.charging import notify_discarded_charges
+
+        notify_discarded_charges(request)
         if company_id:
             initial["company"] = company_id
         # Quick-record link from the supplier reconcile page: prefill a valid number only.
@@ -216,24 +219,52 @@ def employee_entry(request):
                     )
             if outcome == DUPLICATE_SUBMIT:
                 return _duplicate_charge_redirect(request, sale)
-            if outcome == "posted_debt":
-                messages.success(request, _("Recorded on account and posted to the customer."))
-            elif outcome in ("paid", "paid_employee"):
-                if paid_via_employee:
+            charge_notice = ""
+            if charge_requested:
+                try:
+                    sale.refresh_from_db()
+                except Sale.DoesNotExist:
+                    charge_notice = "discarded"
+                else:
+                    charge_notice = (
+                        "failed" if sale.charge_status == Sale.ChargeStatus.FAILED else "pending"
+                    )
+            if charge_notice == "discarded":
+                messages.error(
+                    request,
+                    _(
+                        "Charge for %(phone)s never reached the provider. "
+                        "The sale was not recorded. Record it manually."
+                    )
+                    % {"phone": form.cleaned_data["reference_number"]},
+                )
+            elif charge_notice == "failed":
+                messages.error(
+                    request,
+                    sale.charge_message or _("Charge failed"),
+                )
+            else:
+                if outcome == "posted_debt":
+                    messages.success(request, _("Recorded on account and posted to the customer."))
+                elif outcome in ("paid", "paid_employee"):
+                    if paid_via_employee:
+                        messages.success(
+                            request,
+                            _("Sale recorded; payment credited to employee ledger."),
+                        )
+                    else:
+                        messages.success(request, _("Sale recorded and marked paid."))
+                elif on_account:
                     messages.success(
-                        request,
-                        _("Sale recorded; payment credited to employee ledger."),
+                        request, _("Recorded as on-account; awaiting management approval.")
                     )
                 else:
-                    messages.success(request, _("Sale recorded and marked paid."))
-            elif on_account:
-                messages.success(request, _("Recorded as on-account; awaiting management approval."))
-            else:
-                messages.success(request, _("Sale recorded successfully."))
-            if charge_requested:
-                messages.info(
-                    request, _("Charge sent to the provider. Follow its status in My entries.")
-                )
+                    messages.success(request, _("Sale recorded successfully."))
+                if charge_notice == "pending":
+                    messages.info(
+                        request,
+                        _("Charge sent to the provider. Follow its status in My entries."),
+                    )
             return redirect("sales:employee_entry")
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -704,6 +735,9 @@ def employee_recent_sales(request):
     Defaults to today; an optional collapsible filter card lets the
     employee narrow by free-text (number/name), company, payment
     method, status, and date range — any subset, in any combination."""
+    from sales.charging import notify_discarded_charges
+
+    notify_discarded_charges(request)
     today = timezone.localdate()
     filter_form = EmployeeRecentFilterForm(request.GET or None)
 
