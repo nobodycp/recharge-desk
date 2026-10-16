@@ -30,7 +30,7 @@
       <div class="rd-set-section__body">
         {% if method.is_deletable %}
           {% blocktrans with name=method.name asvar confirm_text %}Delete payment method “{{ name }}”? This cannot be undone.{% endblocktrans %}
-          <form method="post" action="{% url 'sales:payment_method_delete' method.pk %}" class="m-0" hx-confirm="{{ confirm_text|force_escape }}">
+          <form method="post" action="{% url 'sales:payment_method_delete' method.pk %}" class="m-0" hx-confirm="{{ confirm_text }}">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger">{% trans "Delete payment method" %}</button>
           </form>

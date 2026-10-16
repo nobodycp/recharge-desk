@@ -1,6 +1,6 @@
 {% load i18n %}{% trans "Edit" as default_edit %}{% trans "Delete" as default_delete %}{% with edit_text=edit_label|default:default_edit delete_text=delete_label|default:default_delete %}{% if edit_url or delete_url %}{% if variant == "text" %}<div class="d-flex flex-wrap gap-1">
   {% if edit_url %}<a class="btn btn-sm btn-outline-secondary" href="{{ edit_url }}" hx-boost="false" data-rd-page>{{ edit_text }}</a>{% endif %}
-  {% if delete_url %}<form method="post" action="{{ delete_url }}" class="d-inline m-0"{% if hx_target %} hx-post="{{ delete_url }}" hx-target="{{ hx_target }}"{% if hx_swap %} hx-swap="{{ hx_swap }}"{% endif %}{% endif %}{% if confirm %} hx-confirm="{{ confirm|force_escape }}"{% endif %}>
+  {% if delete_url %}<form method="post" action="{{ delete_url }}" class="d-inline m-0"{% if hx_target %} hx-post="{{ delete_url }}" hx-target="{{ hx_target }}"{% if hx_swap %} hx-swap="{{ hx_swap }}"{% endif %}{% endif %}{% if confirm %} hx-confirm="{{ confirm }}"{% endif %}>
     {% csrf_token %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <button type="submit" class="btn btn-sm btn-outline-danger">{{ delete_text }}</button>
   </form>{% endif %}
@@ -8,7 +8,7 @@
   {% if edit_url %}<a class="rd-icon-btn" href="{{ edit_url }}" hx-boost="false" data-rd-page title="{{ edit_text }}" aria-label="{{ edit_text }}">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
   </a>{% endif %}
-  {% if delete_url %}<form method="post" action="{{ delete_url }}" class="d-inline m-0"{% if hx_target %} hx-post="{{ delete_url }}" hx-target="{{ hx_target }}"{% if hx_swap %} hx-swap="{{ hx_swap }}"{% endif %}{% endif %}{% if confirm %} hx-confirm="{{ confirm|force_escape }}"{% endif %}>
+  {% if delete_url %}<form method="post" action="{{ delete_url }}" class="d-inline m-0"{% if hx_target %} hx-post="{{ delete_url }}" hx-target="{{ hx_target }}"{% if hx_swap %} hx-swap="{{ hx_swap }}"{% endif %}{% endif %}{% if confirm %} hx-confirm="{{ confirm }}"{% endif %}>
     {% csrf_token %}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
     <button type="submit" class="rd-icon-btn rd-icon-btn--danger" title="{{ delete_text }}" aria-label="{{ delete_text }}">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>

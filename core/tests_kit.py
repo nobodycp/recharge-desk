@@ -607,6 +607,31 @@ class RowActionsTests(SimpleTestCase):
         self.assertIn("<svg", button)
         self.assertIn('method="post" action="/d/1/"', html)
 
+    def test_blocktrans_asvar_confirm_is_not_double_escaped(self):
+        """``{% blocktrans asvar %}`` already escapes interpolations; force_escape
+        must not run again or names like ``Cash & "Card"`` show ``&amp;`` twice."""
+        tpl = Template(
+            "{% load i18n %}"
+            "{% blocktrans with name=name asvar confirm_text %}"
+            'Delete “{{ name }}”? This cannot be undone.'
+            "{% endblocktrans %}"
+            '{% include "partials/kit/row_actions.html" with '
+            "edit_url='' delete_url='/d/' confirm=confirm_text variant='text' %}"
+        )
+        html = tpl.render(
+            Context(
+                {
+                    "name": 'Cash & "Card"',
+                    "csrf_token": "tok",
+                    "request": request_for(),
+                }
+            )
+        )
+        self.assertIn("hx-confirm=", html)
+        self.assertIn("Cash &amp; &quot;Card&quot;", html)
+        self.assertNotIn("&amp;amp;", html)
+        self.assertNotIn("&amp;quot;", html)
+
     def test_labels_are_overridable_and_translated(self):
         html = render_actions(edit_url="/e/", delete_url="/d/", edit_label="Edit user", delete_label="Delete user")
         self.assertIn('aria-label="Edit user"', html)
