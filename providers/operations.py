@@ -72,6 +72,7 @@ SUCCESS_LABELS = {
 }
 
 PENDING_MESSAGE = "الشحن قيد المتابعة"
+NOT_SENT_LABEL = "لم يُرسل الطلب إلى المزوّد"
 NOT_SENT_PREFIX = "not_sent:"
 
 _CODE_TO_CAUSE = {
@@ -159,11 +160,19 @@ def classify_exception(service: str, exc: BaseException) -> Classified:
     return _failed(service, "internal", CAUSE_LABELS["internal"])
 
 
+def _unverified_was_not_sent(message: str) -> bool:
+    """True when the charge stopped before any request reached the provider."""
+    text = message or ""
+    return text.startswith(NOT_SENT_PREFIX) or "NotImplementedError" in text
+
+
 def classify_charge(service: str, outcome: ChargeOutcome) -> Classified:
     """``service`` is ``charge`` or ``check_charge``."""
     if outcome.result == ChargeResult.SUCCESS:
         return success(service, outcome.provider_ref)
     if outcome.result == ChargeResult.UNVERIFIED:
+        if _unverified_was_not_sent(outcome.message):
+            return Classified(OUTCOME_PENDING, "not_sent", NOT_SENT_LABEL)
         return Classified(OUTCOME_PENDING, "", PENDING_MESSAGE)
     return classify_code(service, outcome.message)
 

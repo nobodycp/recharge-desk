@@ -194,6 +194,13 @@ class ClassifyChargeTests(TestCase):
             Classified("success", "", "تمّ الشحن — رقم العملية R9"),
         )
 
+    def test_unverified_before_any_request_says_it_was_not_sent(self):
+        outcome = ChargeOutcome(ChargeResult.UNVERIFIED, message="NotImplementedError")
+        self.assertEqual(
+            operations.classify_charge("charge", outcome),
+            Classified("pending", "not_sent", "لم يُرسل الطلب إلى المزوّد"),
+        )
+
     def test_unverified_is_pending(self):
         outcome = ChargeOutcome(ChargeResult.UNVERIFIED)
         self.assertEqual(

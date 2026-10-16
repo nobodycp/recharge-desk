@@ -1,8 +1,11 @@
-{% load i18n humanize %}
+{% load i18n humanize sale_extras %}
 {# Provider-side facts and settle actions for an auto-charged sale `s` (management only). #}
-<details class="rd-charge-details" data-rd-keep-open="charge-{{ s.pk }}"{% if s.charge_is_open or s.charge_conflict %} open{% endif %}>
-  <summary class="rd-charge-details__summary">{% trans "Charge details" %}</summary>
+<div class="rd-charge-details">
+  <p class="rd-charge-details__title">{% trans "Charge details" %}</p>
   <div class="rd-charge-details__body">
+    {% if s|charge_not_sent %}
+      <p class="rd-charge-details__alert mb-0">{% trans "This request never reached the provider. No charge was created there." %}</p>
+    {% endif %}
     {% if s.charge_conflict %}
       <p class="rd-charge-details__alert mb-0">{% trans "The provider reported a successful charge after the sale was reversed. Check the line at the provider and settle it by hand." %}</p>
     {% endif %}
@@ -73,4 +76,4 @@
       </div>
     {% endif %}
   </div>
-</details>
+</div>

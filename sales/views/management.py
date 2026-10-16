@@ -13,6 +13,7 @@ from core.pagination import paginate_request
 from customers.services import approve_sale as approve_on_account_sale
 from customers.services import reject_sale as reject_on_account_sale
 from sales import charging
+from sales.charging import with_charge_send_detail
 from sales.forms import (
     AwaitingApprovalFilterForm,
     ManagementSaleEditForm,
@@ -49,7 +50,7 @@ from sales.views._shared import (
 # --------------------------------------------------------------- list views
 @management_required
 def management_sale_list(request):
-    qs = Sale.objects.select_related(
+    qs = with_charge_send_detail(Sale.objects.select_related(
         "company",
         "product",
         "product__line",
@@ -58,7 +59,7 @@ def management_sale_list(request):
         "employee_recipient",
         "employee_recipient__user",
         "employee_recipient__user__profile",
-    ).order_by("-created_at")
+    ).order_by("-created_at"))
     form = ManagementSaleFilterForm(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}
     qs = apply_management_sale_filter_data(qs, data)
@@ -95,7 +96,7 @@ def pending_payments(request):
     on the customer detail page, not here.
     """
     form = PendingPaymentsFilterForm(request.GET or None)
-    qs = pending_cash_sales(request)
+    qs = with_charge_send_detail(pending_cash_sales(request))
     page_obj = paginate_request(request, qs)
     ctx = {
         "page_obj": page_obj,
@@ -112,7 +113,7 @@ def pending_payments(request):
 @management_required
 def awaiting_approvals(request):
     """List on-account sales waiting for management approval."""
-    qs = (
+    qs = with_charge_send_detail(
         Sale.objects.filter(status=Sale.Status.AWAITING)
         .select_related(
             "company",

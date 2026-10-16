@@ -51,6 +51,34 @@ def can_charge(company) -> bool:
 REPEAT_CHARGE_MESSAGE = "تم شحن هذا الرقم اليوم. هل توافق على شحنه مرة ثانية؟"
 
 
+def with_charge_send_detail(qs):
+    """Annotate each sale with the latest charge operation's raw detail."""
+    from django.db.models import OuterRef, Subquery
+
+    from providers.models import ProviderOperation
+
+    detail = (
+        ProviderOperation.objects.filter(sale_id=OuterRef("pk"), service="charge")
+        .order_by("-created_at")
+        .values("detail")[:1]
+    )
+    return qs.annotate(charge_send_detail=Subquery(detail))
+
+
+def sale_charge_not_sent(sale) -> bool:
+    """The auto-charge never reached the provider (the sale can still be settled)."""
+    from providers.operations import NOT_SENT_LABEL
+
+    if getattr(sale, "entry_mode", "") != Sale.EntryMode.AUTO_CHARGE:
+        return False
+    if (getattr(sale, "charge_provider_ref", "") or "").strip():
+        return False
+    if (sale.charge_message or "") == NOT_SENT_LABEL:
+        return True
+    detail = getattr(sale, "charge_send_detail", None) or ""
+    return "not_sent:" in detail or "NotImplementedError" in detail
+
+
 def sale_recorded_today(phone: str) -> bool:
     """True when a non-cancelled sale for this number was recorded since local midnight."""
     from django.db.models.functions import Lower, Trim

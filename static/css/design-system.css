@@ -2063,7 +2063,6 @@ a.rd-card:hover {
 }
 
 .rd-charge-tag {
-  --rd-charge-edge: color-mix(in srgb, var(--rd-accent-2) 42%, transparent);
   display: inline-flex;
   align-items: stretch;
   font-size: 0.72rem;
@@ -2071,7 +2070,6 @@ a.rd-card:hover {
   line-height: 1.25;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  border: 1px solid var(--rd-charge-edge);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -2085,12 +2083,13 @@ a.rd-card:hover {
 }
 
 .rd-charge-tag__mode {
-  background: color-mix(in srgb, var(--rd-accent-2) 14%, transparent);
-  color: var(--rd-accent-2-ink);
+  background: color-mix(in srgb, var(--rd-tone-3) 14%, transparent);
+  color: var(--rd-tone-3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rd-tone-3) 42%, transparent);
 }
 
 .rd-charge-tag__state {
-  border-inline-start: 1px solid var(--rd-charge-edge);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 32%, transparent);
 }
 
 .rd-charge-tag--processing .rd-charge-tag__state {
@@ -2111,6 +2110,11 @@ a.rd-card:hover {
 .rd-charge-tag--unverified .rd-charge-tag__state {
   background: var(--rd-warning-soft);
   color: var(--rd-warning-ink);
+}
+
+.rd-charge-tag--not-sent .rd-charge-tag__state {
+  background: var(--rd-danger-soft);
+  color: var(--rd-danger);
 }
 
 .rd-charge-tag__pulse {
@@ -2140,6 +2144,12 @@ a.rd-card:hover {
 
 .rd-charge-details {
   font-size: 0.8rem;
+}
+
+.rd-charge-details__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .rd-charge-details__summary {
@@ -2228,6 +2238,71 @@ a.rd-card:hover {
   max-width: 28rem;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+/* Sale actions: a top-layer menu (escapes the table scroll shell). */
+.rd-sale-actions {
+  position: fixed;
+  inset: auto;
+  width: min(22rem, calc(100vw - 1rem));
+  max-height: min(70vh, 28rem);
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--rd-radius);
+  background: var(--rd-surface);
+  color: var(--rd-ink);
+  box-shadow: var(--rd-shadow-md);
+}
+
+.rd-sale-actions .rd-charge-details__body {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.rd-sale-actions .rd-charge-details__facts {
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rd-sale-actions__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.rd-sale-actions form {
+  margin: 0;
+}
+
+.rd-sale-actions__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: var(--rd-radius-xs);
+  background: transparent;
+  color: var(--rd-ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.rd-sale-actions__item:hover,
+.rd-sale-actions__item:focus-visible {
+  background: var(--rd-surface-2);
+  outline: none;
+}
+
+.rd-sale-actions__item--danger {
+  color: var(--rd-danger);
 }
 
 /* Buttons */

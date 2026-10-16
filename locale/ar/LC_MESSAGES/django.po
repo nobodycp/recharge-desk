@@ -6265,6 +6265,8 @@ msgstr "شحن تلقائي"
 #: templates/sales/partials/charge_badge.html:17
 msgid "Needs verification"
 msgstr "بحاجة تحقق"
+msgid "Not sent"
+msgstr "لم يُرسل"
 #: templates/sales/partials/charge_badge.html:23
 msgid "Charge conflict"
 msgstr "تعارض شحن"
@@ -6302,6 +6304,8 @@ msgstr "ما في مخزون شرائح عند الزبائن."
 #: templates/sales/partials/management_charge_details.html:4
 msgid "Charge details"
 msgstr "تفاصيل الشحن"
+msgid "This request never reached the provider. No charge was created there."
+msgstr "هذا الطلب لم يصل إلى المزوّد، ولم تُنشأ عملية شحن هناك."
 #: templates/sales/partials/management_charge_details.html:7
 msgid ""
 "The provider reported a successful charge after the sale was reversed. Check "

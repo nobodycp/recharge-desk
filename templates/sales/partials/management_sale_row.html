@@ -14,10 +14,7 @@
     <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
     <td class="fw-medium">{{ s.company.name }}</td>
     <td>
-      {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}
-      {% if s.entry_mode == "auto_charge" %}
-        <div class="mt-1">{% include "sales/partials/charge_badge.html" with sale=s management=True %}</div>
-      {% endif %}
+      {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}{% if s.entry_mode == "auto_charge" %}{% include "sales/partials/charge_badge.html" with sale=s management=True %}{% endif %}
     </td>
     <td class="tabular-nums text-nowrap">
       {{ s.reference_number }}
@@ -29,43 +26,8 @@
     <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
     <td>{% include "partials/sale_status_badge.html" with sale=s %}</td>
     <td class="text-end text-nowrap">
-      <div class="d-inline-flex gap-1 align-items-center flex-wrap justify-content-end">
-        <a class="btn btn-sm btn-outline-primary" href="{% url 'sales:sale_edit' s.pk %}?next={{ return_path|urlencode }}" hx-boost="false" data-rd-page>{% trans "Edit" %}</a>
-        {% if s.status != "cancelled" and not s.charge_is_open %}
-          <form
-            method="post"
-            action="{% url 'sales:sale_cancel' s.pk %}"
-            class="d-inline-block m-0"
-            hx-post="{% url 'sales:sale_cancel' s.pk %}"
-            hx-target="#sale-row-{{ s.pk }}"
-            hx-swap="outerHTML swap:200ms"
-            hx-confirm="{% trans 'Cancel this sale?' %}"
-          >
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
-          </form>
-        {% endif %}
-        {% if s.entry_mode != "auto_charge" or s.charge_status == "failed" %}
-          <form
-            method="post"
-            action="{% url 'sales:sale_delete_permanent' s.pk %}"
-            class="d-inline-block m-0"
-            hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
-            hx-target="#sale-row-{{ s.pk }}"
-            hx-swap="outerHTML swap:200ms"
-            hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
-          >
-            {% csrf_token %}
-            <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>
-          </form>
-        {% endif %}
-      </div>
+      {% include "sales/partials/management_sale_actions.html" with s=s return_path=return_path menu_id="sale-actions-row" row_id="sale-row" row_layout="row" %}
     </td>
   </tr>
-  {% if s.entry_mode == "auto_charge" %}
-    <tr class="rd-charge-detail-row">
-      <td colspan="10">{% include "sales/partials/management_charge_details.html" with s=s row_layout="row" %}</td>
-    </tr>
-  {% endif %}
 </tbody>
 {% endwith %}

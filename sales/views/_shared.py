@@ -12,6 +12,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from sales.charging import with_charge_send_detail
 from sales.employee_editing import sale_is_employee_editable
 from sales.models import Sale
 
@@ -31,7 +32,7 @@ def is_htmx(request) -> bool:
 
 
 def sale_row_queryset():
-    return Sale.objects.select_related(
+    return with_charge_send_detail(Sale.objects.select_related(
         "company",
         "product",
         "product__line",
@@ -41,7 +42,7 @@ def sale_row_queryset():
         "employee_recipient",
         "employee_recipient__user",
         "employee_recipient__user__profile",
-    )
+    ))
 
 
 def sale_row_layout(request, *, management: bool) -> str:

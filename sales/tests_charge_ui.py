@@ -306,6 +306,32 @@ class ManagementChargeTests(ChargeUiTestBase):
         self.assertContains(resp, "Plan 30")
         self.assertContains(resp, "provider note")
 
+    def test_unsent_charge_says_so_and_keeps_the_settle_actions(self):
+        from providers.models import ProviderOperation
+
+        sale = self.manual_sale(
+            charge_status=Sale.ChargeStatus.UNVERIFIED,
+            charge_message="الشحن قيد المتابعة",
+        )
+        ProviderOperation.objects.create(
+            provider_key="sky",
+            service="charge",
+            phone=sale.reference_number,
+            outcome="pending",
+            message="الشحن قيد المتابعة",
+            source="employee",
+            sale_id=sale.pk,
+            detail="NotImplementedError",
+        )
+        resp = self.client.get(reverse("sales:management_sale_list"))
+        self.assertContains(resp, "Not sent")
+        self.assertNotContains(resp, "Needs verification")
+        self.assertContains(resp, "This request never reached the provider.")
+        self.assertContains(resp, reverse("sales:sale_charge_recheck", args=[sale.pk]))
+        self.assertContains(resp, 'name="result" value="success"')
+        self.assertContains(resp, 'name="result" value="failed"')
+        self.assertContains(resp, 'popovertarget="sale-actions-row-%s"' % sale.pk)
+
     def test_open_charge_shows_actions_with_confirmation(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
         resp = self.client.get(reverse("sales:management_sale_list"))
@@ -467,6 +493,33 @@ class ManagementChargeTests(ChargeUiTestBase):
         resp = self.client.get(reverse("sales:sale_charge_row", args=[sale.pk]) + "?layout=card")
         self.assertContains(resp, f'id="sale-card-{sale.pk}"')
         self.assertContains(resp, "?layout=card")
+
+    def test_pending_and_on_account_lists_show_the_charge_chip(self):
+        pending = self.manual_sale(
+            reference="0599111001",
+            charge_status=Sale.ChargeStatus.SUCCESS,
+        )
+        customer = Customer.objects.create(name="On Account", created_by=self.manager)
+        on_account = create_sale(
+            user=self.user,
+            customer=customer,
+            on_account=True,
+            **self.sale_kwargs(reference_number="0599111002", payment_method=None),
+        )
+        Sale.objects.filter(pk=on_account.pk).update(
+            entry_mode=Sale.EntryMode.AUTO_CHARGE,
+            charge_status=Sale.ChargeStatus.FAILED,
+        )
+
+        pending_page = self.client.get(reverse("sales:pending_payments"))
+        self.assertContains(pending_page, pending.reference_number)
+        self.assert_charge_chip(pending_page, "success", "Charged")
+        self.assertContains(pending_page, "Auto charge")
+
+        awaiting_page = self.client.get(reverse("sales:awaiting_approvals"))
+        self.assertContains(awaiting_page, on_account.reference_number)
+        self.assert_charge_chip(awaiting_page, "failed", "Charge failed")
+        self.assertContains(awaiting_page, "Auto charge")
 
     def test_employee_ignores_recheck_poll_params(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
