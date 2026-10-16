@@ -1424,6 +1424,23 @@ class SalesCsvExportTests(TestCase):
         self.assertIn("0590000222", body)
         self.assertNotIn("0590000111", body)
 
+    def test_pending_payments_export_ignores_charge_status_query(self):
+        """List filter omits charge_status; CSV must not apply it either."""
+        from sales.models import Sale
+
+        pending = Sale.objects.get(reference_number="0590000222")
+        Sale.objects.filter(pk=pending.pk).update(
+            charge_status=Sale.ChargeStatus.FAILED
+        )
+        c = Client()
+        c.force_login(self.boss)
+        r = c.get(
+            reverse("sales:pending_payments_export_csv"),
+            {"charge_status": Sale.ChargeStatus.SUCCESS},
+        )
+        body = b"".join(r.streaming_content).decode("utf-8")
+        self.assertIn("0590000222", body)
+
 
 class HxBoostMarkupTests(TestCase):
     """Sort headers and pagination links must update the table in place via

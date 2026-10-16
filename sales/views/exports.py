@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _g
 
 from accounts.permissions import management_required
 from core.csv_export import csv_response, fmt_dt, yesno
-from sales.forms import ManagementSaleFilterForm
+from sales.forms import ManagementSaleFilterForm, PendingPaymentsFilterForm
 from sales.models import Sale
 from sales.query_utils import (
     apply_management_sale_filter_data,
@@ -21,13 +21,14 @@ from sales.query_utils import (
 )
 
 
-def _filtered_sales(request, *, base_qs, omit_status: bool = False):
-    """Apply the ManagementSaleFilterForm + free-text ``q`` to ``base_qs``.
+def _filtered_sales(request, *, base_qs, omit_status: bool = False, form_class=ManagementSaleFilterForm):
+    """Apply a sale filter form + free-text ``q`` to ``base_qs``.
 
-    Mirrors the logic in ``management_sale_list`` /
-    ``pending_payments`` so the CSV always matches the visible page.
+    Mirrors the HTML list so the CSV matches the visible page. Pending
+    payments pass ``PendingPaymentsFilterForm`` so charge/entry filters
+    that the list no longer exposes cannot affect the export.
     """
-    form = ManagementSaleFilterForm(request.GET or None)
+    form = form_class(request.GET or None)
     data = form.cleaned_data if form.is_valid() else {}
     qs = apply_management_sale_filter_data(base_qs, data, omit_status=omit_status)
     q = (request.GET.get("q") or "").strip()
@@ -117,7 +118,12 @@ def sales_export_csv(request):
 @management_required
 def pending_payments_export_csv(request):
     base = _base_sales_qs().filter(status=Sale.Status.PENDING, on_account=False)
-    qs = _filtered_sales(request, base_qs=base, omit_status=True)
+    qs = _filtered_sales(
+        request,
+        base_qs=base,
+        omit_status=True,
+        form_class=PendingPaymentsFilterForm,
+    )
     return csv_response("pending-payments", _sale_headers(), _sale_rows(qs))
 
 

@@ -20,7 +20,7 @@ Agreed in the brainstorming session (visual companion):
   (mockup approved as-is).
 - Employee sale entry must stay **one screen, no scrolling** (as the current page is),
   using the approved compact Pearl layout (light + dark). Small tweaks after it runs.
-- Out of scope: the public phone-refresh page (`phone_refresh/public_refresh.html`)
+- Public phone-refresh page: keeps its standalone layout/`refresh.css`, but uses self-hosted Pearl fonts (no Google Fonts)
   keeps its current look.
 
 Success criteria:

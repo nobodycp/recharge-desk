@@ -15,5 +15,5 @@ Full spec: `DESIGN.md`. Tests: `core/tests_ui_conventions.py`, `core/tests_desig
 - Motion 150–450 ms, transform/opacity only. Touch targets ≥ 44 px; employee entry fits one screen.
 - Accessibility: text ≥ 4.5:1, meaningful non-text ≥ 3:1, visible `:focus-visible`, never colour alone. Check light and dark.
 - RTL first: logical properties, `{% trans %}` for strings.
-- Legacy offenders live in shrink-only `LEGACY_*` sets in `tests_ui_conventions.py`: never add to them; remove a file once migrated.
-- Out of scope: `phone_refresh/templates/phone_refresh/public_refresh.html`.
+- Legacy offenders live in shrink-only `LEGACY_*` sets in `tests_ui_conventions.py`: never add to them (keep empty); remove a file once migrated.
+- Public phone-refresh is standalone (`refresh.css`) but must use `partials/fonts_head.html` — no Google Fonts.

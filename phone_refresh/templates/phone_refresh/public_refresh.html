@@ -26,9 +26,7 @@
     <link rel="shortcut icon" type="image/png" href="{% static 'phone_refresh/img/favicon.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'phone_refresh/img/favicon.png' %}" />
     {% endif %}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    {% include "partials/fonts_head.html" %}
     <link rel="stylesheet" href="{% static 'phone_refresh/css/refresh.css' %}" />
 </head>
 <body>
@@ -73,7 +71,7 @@
     </header>
 
     <main class="stage">
-        <section class="card">
+        <section class="pr-card">
             <div class="logo">
                 <div class="logo-mark" aria-hidden="true">
                     <picture>

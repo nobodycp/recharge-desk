@@ -23,8 +23,13 @@ STANDALONE_PAGES = {
     "phone_refresh/templates/phone_refresh/public_refresh.html",
 }
 SHELLS = {"templates/base_management.html", "templates/base_employee.html"}
-FONT_PAGES = SHELLS | {"templates/accounts/login.html", "templates/core/forbidden.html"}
-OUT_OF_SCOPE = {"phone_refresh/templates/phone_refresh/public_refresh.html"}
+FONT_PAGES = SHELLS | {
+    "templates/accounts/login.html",
+    "templates/core/forbidden.html",
+    "phone_refresh/templates/phone_refresh/public_refresh.html",
+}
+# No templates are exempt from Pearl identity checks anymore.
+OUT_OF_SCOPE = set()
 MESSAGES_PARTIAL = "templates/partials/messages.html"
 
 SEVERITY_ALERT = re.compile(r"<[a-z]+\b[^>]*\balert-(success|danger)\b[^>]*>", re.I | re.S)

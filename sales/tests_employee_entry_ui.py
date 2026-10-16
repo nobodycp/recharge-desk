@@ -930,7 +930,10 @@ class EmployeeRecentEntriesTests(TestCase):
         self.assertIn('id="recent-htmx-indicator"', html)
         self.assertIn('class="rd-recent-filter"', html)
         self.assertNotIn("row g-3", html)
-        self.assertRegex(html, r'<button class="btn btn-primary btn-sm" type="submit">')
+        self.assertRegex(
+            html,
+            r'<button(?: class="btn btn-primary btn-sm" type="submit"| type="submit" class="btn btn-primary btn-sm")>',
+        )
 
     def test_scope_label_is_a_neutral_pearl_chip(self):
         html = self._page()

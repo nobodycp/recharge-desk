@@ -415,6 +415,13 @@ class PublicRefreshAsyncApiTests(TestCase):
             page, f'name="refresh-status-url" content="{status_template}"'
         )
 
+    def test_public_page_uses_self_hosted_fonts(self):
+        page = self.client.get(reverse("phone_refresh:public"))
+        self.assertEqual(page.status_code, 200)
+        self.assertNotContains(page, "fonts.googleapis.com")
+        self.assertContains(page, "css/fonts.css")
+        self.assertContains(page, "phone_refresh/css/refresh.css")
+
 
 class PublicRefreshPageTokenInjectionTests(TestCase):
     def setUp(self):

@@ -3592,7 +3592,7 @@ a.rd-person__name:hover {
 /* Pair with `.text-truncate` on a table cell to clamp a long value (e.g. a
    payer name) to a sensible column width instead of an inline `max-width`. */
 .rd-truncate-10rem {
-  max-width: 10rem;
+  max-width: 12rem;
 }
 
 tr.rd-row-pending {
