@@ -142,7 +142,7 @@ class SimCardSearchForm(forms.Form):
         label=_("Serial or ICCID"),
         required=False,
         widget=forms.TextInput(
-            attrs={"class": "form-control form-control-sm", "placeholder": _("Search serial / ICCID…")}
+            attrs={"placeholder": _("Search serial / ICCID…")}
         ),
     )
 
@@ -222,20 +222,20 @@ class MovementFilterForm(forms.Form):
         label=_("Movement type"),
         required=False,
         choices=[("", _("All"))],
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        widget=forms.Select(),
     )
     product_line = forms.ModelChoiceField(
         label=_("Product line"),
         queryset=ProductLine.objects.none(),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        widget=forms.Select(),
     )
     customer = forms.CharField(
         label=_("Customer"),
         required=False,
+        help_text=_("Type part of the name — finds any matching customer."),
         widget=forms.TextInput(
             attrs={
-                "class": "form-control form-control-sm",
                 "autocomplete": "off",
                 "placeholder": _("Type customer name…"),
             }
@@ -244,12 +244,12 @@ class MovementFilterForm(forms.Form):
     date_from = forms.DateField(
         label=_("Date from"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control form-control-sm", "type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}),
     )
     date_to = forms.DateField(
         label=_("Date to"),
         required=False,
-        widget=forms.DateInput(attrs={"class": "form-control form-control-sm", "type": "date"}),
+        widget=forms.DateInput(attrs={"type": "date"}),
     )
 
     def __init__(self, *args, **kwargs):

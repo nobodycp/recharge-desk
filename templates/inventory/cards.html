@@ -1,26 +1,17 @@
 {% extends base_template %}
-{% load i18n %}
+{% load i18n kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-    <p class="rd-text-muted mb-0">{% trans "Search tracked SIM serial numbers and ICCIDs." %}</p>
-  </div>
-</div>
+<div class="rd-page">
+{% trans "Search tracked SIM serial numbers and ICCIDs." as page_subtitle %}
+{% rd_page_header title subtitle=page_subtitle %}{% end_rd_page_header %}
 {% include "inventory/_nav.html" %}
 
-{% include "partials/filter_card_open.html" with active_count=filter_active card_open=filter_active %}
-  <form method="get" class="row g-3 align-items-end">
-    <div class="col-12 col-md-6 col-lg-4">
-      {{ filter_form.q.label_tag }}
-      {{ filter_form.q }}
-    </div>
-    <div class="col-12 d-flex flex-wrap gap-2">
-      <button type="submit" class="btn btn-primary btn-sm">{% trans "Search" %}</button>
-      <a class="btn btn-outline-secondary btn-sm" href="{% if read_only %}{% url 'inventory:employee_cards' %}{% else %}{% url 'inventory:cards' %}{% endif %}">{% trans "Reset" %}</a>
-    </div>
-  </form>
-{% include "partials/filter_card_close.html" %}
+{% if read_only %}
+  {% url 'inventory:employee_cards' as cards_list_url %}
+{% else %}
+  {% url 'inventory:cards' as cards_list_url %}
+{% endif %}
+{% rd_filter_card filter_form action=cards_list_url reset_url=cards_list_url %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -84,4 +75,5 @@
   </div>
 </div>
 {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 {% endblock %}

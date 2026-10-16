@@ -1,12 +1,9 @@
 {% extends base_template %}
-{% load i18n static %}
+{% load i18n static kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-    <p class="rd-text-muted mb-0">{% trans "SIM stock held with distributors and customers." %}</p>
-  </div>
-</div>
+<div class="rd-page">
+{% trans "SIM stock held with distributors and customers." as page_subtitle %}
+{% rd_page_header title subtitle=page_subtitle %}{% end_rd_page_header %}
 {% include "inventory/_nav.html" %}
 
 {% if read_only %}
@@ -266,4 +263,5 @@
   });
 })();
 </script>
+</div>
 {% endblock %}

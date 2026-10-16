@@ -1,14 +1,14 @@
 {% extends base_template %}
-{% load i18n static %}
+{% load i18n static kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ customer.name }}</h1>
-    <p class="rd-text-muted mb-0">
-      <a href="{% if read_only %}{% url 'inventory:employee_customers' %}{% else %}{% url 'inventory:customers' %}{% endif %}" class="text-decoration-none">{% trans "Back to customer stock list" %}</a>
-    </p>
-  </div>
-</div>
+<div class="rd-page">
+{% if read_only %}
+  {% url 'inventory:employee_customers' as customers_url %}
+{% else %}
+  {% url 'inventory:customers' as customers_url %}
+{% endif %}
+{% trans "Back to customer stock list" as back_label %}
+{% rd_page_header customer.name back_url=customers_url back_label=back_label %}{% end_rd_page_header %}
 {% include "inventory/_nav.html" %}
 
 {% if not read_only and return_form %}
@@ -84,4 +84,5 @@
   {% include "inventory/_action_dialog.html" %}
   <script src="{% static 'js/inventory-actions.js' %}{{ static_cache_query }}" defer></script>
 {% endif %}
+</div>
 {% endblock %}

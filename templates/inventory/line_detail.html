@@ -1,14 +1,14 @@
 {% extends base_template %}
-{% load i18n static %}
+{% load i18n static kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ line.name }}</h1>
-    <p class="rd-text-muted mb-0">
-      <a href="{% if read_only %}{% url 'inventory:employee_overview' %}{% else %}{% url 'inventory:overview' %}{% endif %}" class="text-decoration-none">{% trans "Back to inventory overview" %}</a>
-    </p>
-  </div>
-</div>
+<div class="rd-page">
+{% if read_only %}
+  {% url 'inventory:employee_overview' as overview_url %}
+{% else %}
+  {% url 'inventory:overview' as overview_url %}
+{% endif %}
+{% trans "Back to inventory overview" as back_label %}
+{% rd_page_header line.name back_url=overview_url back_label=back_label %}{% end_rd_page_header %}
 {% include "inventory/_nav.html" %}
 
 <div class="row g-3 mb-3">
@@ -165,5 +165,6 @@
       </tbody>
     </table>
   </div>
+</div>
 </div>
 {% endblock %}
