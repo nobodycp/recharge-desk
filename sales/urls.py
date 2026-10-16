@@ -44,6 +44,11 @@ urlpatterns = [
         name="employee_check_phone",
     ),
     path(
+        "employee/sales/api/sale-today/",
+        views.employee_sale_today,
+        name="employee_sale_today",
+    ),
+    path(
         "employee/check/status/<uuid:job_id>/",
         views.employee_check_status,
         name="employee_check_status",

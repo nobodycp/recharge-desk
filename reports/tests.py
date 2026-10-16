@@ -903,6 +903,36 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertContains(r, "Days to leave the agency")
         self.assertNotContains(r, "Lines for disconnect")
 
+    def test_second_charge_extends_a_running_line(self):
+        first = self._make_sale(ref="055STACK001", paid=True)
+        self._age_sale(first, days_ago=1, duration_days=30)
+        second = self._make_sale(ref="055STACK001", paid=True)
+        self._age_sale(second, days_ago=0, duration_days=20)
+        first.refresh_from_db()
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        row = next(
+            x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stack001"
+        )
+        self.assertEqual(row["duration_days"], 50)
+        self.assertEqual(row["status"], "active")
+        self.assertEqual(
+            row["subscription_end"],
+            first.created_at + timedelta(days=50),
+        )
+
+    def test_charge_after_expiry_starts_a_new_run(self):
+        old = self._make_sale(ref="055STACK002", paid=True)
+        self._age_sale(old, days_ago=40, duration_days=30)
+        fresh = self._make_sale(ref="055STACK002", paid=True)
+        self._age_sale(fresh, days_ago=0, duration_days=20)
+        fresh.refresh_from_db()
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        row = next(
+            x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stack002"
+        )
+        self.assertEqual(row["duration_days"], 20)
+        self.assertEqual(row["subscription_end"], fresh.created_at + timedelta(days=20))
+
     def test_statement_includes_esim(self):
         s = self._make_sale(ref="055STMTE001", paid=True, is_esim=True)
         self._age_sale(s, days_ago=5, duration_days=30)

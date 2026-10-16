@@ -69,7 +69,7 @@ def normalize_reference_key(raw: str) -> str:
 
 
 def sale_duration_days(sale: Sale) -> int:
-    """Days the latest sale covers (charged duration, else package base, else 30)."""
+    """Days one sale covers (charged duration, else package base, else 30)."""
     days = getattr(sale, "duration_days", None)
     if days is not None and int(days) >= 1:
         return int(days)
@@ -77,6 +77,58 @@ def sale_duration_days(sale: Sale) -> int:
     if base is not None and int(base) >= 1:
         return int(base)
     return MONTHLY_FALLBACK_DAYS
+
+
+def _span_days(duration_days, base_days) -> int:
+    if duration_days is not None and int(duration_days) >= 1:
+        return int(duration_days)
+    if base_days is not None and int(base_days) >= 1:
+        return int(base_days)
+    return MONTHLY_FALLBACK_DAYS
+
+
+def stack_coverage(charges: list[tuple[datetime, int]]) -> tuple[datetime, int] | None:
+    """End of a line and the days in its current run.
+
+    A charge while the line is still active extends the existing end. A charge
+    after the end has passed starts a new run from that charge. Two 30-day
+    charges a day apart therefore last 60 days, not 30 from the second charge.
+    """
+    end = None
+    chain = 0
+    for at, days in charges:
+        length = days if days >= 1 else MONTHLY_FALLBACK_DAYS
+        if end is None or at >= end:
+            end = at + timedelta(days=length)
+            chain = length
+        else:
+            end = end + timedelta(days=length)
+            chain += length
+    if end is None:
+        return None
+    return end, chain
+
+
+def coverage_by_key(keys: list[str] | None = None) -> dict[str, tuple[datetime, int]]:
+    """Stacked coverage for every non-cancelled sale, keyed by normalized number."""
+    qs = (
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .annotate(ref_key=Lower(Trim("reference_number")))
+        .exclude(ref_key="")
+    )
+    if keys is not None:
+        qs = qs.filter(ref_key__in=keys)
+    grouped: dict[str, list[tuple[datetime, int]]] = {}
+    for key, created_at, days, base in qs.order_by("created_at", "pk").values_list(
+        "ref_key", "created_at", "duration_days", "product__base_days"
+    ):
+        grouped.setdefault(key, []).append((created_at, _span_days(days, base)))
+    out = {}
+    for key, charges in grouped.items():
+        stacked = stack_coverage(charges)
+        if stacked is not None:
+            out[key] = stacked
+    return out
 
 
 def effective_activity_clock(
@@ -124,6 +176,19 @@ def _lifecycle_status(
     return STATUS_ACTIVE
 
 
+def _line_end(sale: Sale, meta: PhoneLineTracking | None, coverage) -> tuple:
+    """``(last_activity, duration_days, subscription_end, used_manual_renew)``."""
+    last, duration, used_manual = effective_activity_clock(
+        sale=sale,
+        sale_last_activity=sale.created_at,
+        meta=meta,
+    )
+    if used_manual or coverage is None:
+        return last, duration, last + timedelta(days=duration), used_manual
+    end, chain = coverage
+    return last, chain, end, False
+
+
 def _statement_row(
     *,
     sale: Sale,
@@ -132,15 +197,11 @@ def _statement_row(
     threshold_days: int,
     now,
     soon_end,
+    coverage=None,
 ) -> dict[str, Any]:
-    """One statement row from the line's latest sale."""
+    """One statement row. Coverage stacks every charge still running on the line."""
     key = sale.ref_key
-    last, duration, used_manual = effective_activity_clock(
-        sale=sale,
-        sale_last_activity=last_activity or sale.created_at,
-        meta=meta,
-    )
-    subscription_end = last + timedelta(days=duration)
+    last, duration, subscription_end, used_manual = _line_end(sale, meta, coverage)
     disconnect_at = subscription_end + timedelta(days=threshold_days)
     status = _lifecycle_status(
         now=now,
@@ -195,6 +256,7 @@ def phone_lines_aggregate(
     if not sales:
         return []
     keys = [s.ref_key for s in sales if s.ref_key]
+    coverage = coverage_by_key(keys)
     metas = {
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
@@ -217,6 +279,7 @@ def phone_lines_aggregate(
                 threshold_days=threshold_days,
                 now=now,
                 soon_end=soon_end,
+                coverage=coverage.get(key),
             )
         )
     return out
@@ -230,7 +293,7 @@ def reference_disconnect_counts(
     Buckets are mutually exclusive:
 
     - ``active``: charge still running with more than ``due_soon_hours`` left
-    - ``due_soon``: last charge ends within ``due_soon_hours``
+    - ``due_soon``: stacked coverage ends within ``due_soon_hours``
       (the day before subscription end)
     - ``ended_under_threshold``: subscription ended, still in grace
     - ``overdue``: past activity threshold
@@ -242,6 +305,7 @@ def reference_disconnect_counts(
     due_soon_hours = max(0, int(due_soon_hours))
     sales = _latest_line_sales()
     keys = [s.ref_key for s in sales if s.ref_key]
+    coverage = coverage_by_key(keys)
     metas = {
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
@@ -262,12 +326,9 @@ def reference_disconnect_counts(
         key = sale.ref_key or ""
         if not key or key in dismissed_keys:
             continue
-        last, duration, _used = effective_activity_clock(
-            sale=sale,
-            sale_last_activity=sale.created_at,
-            meta=metas.get(key),
+        _last, _duration, subscription_end, _used = _line_end(
+            sale, metas.get(key), coverage.get(key)
         )
-        subscription_end = last + timedelta(days=duration)
         disconnect_at = subscription_end + timedelta(days=threshold_days)
         status = _lifecycle_status(
             now=now,
@@ -432,6 +493,7 @@ def phone_line_row(*, ref_key: str, threshold_days: int, due_soon_hours: int = 2
         threshold_days=max(1, int(threshold_days)),
         now=now,
         soon_end=now + timedelta(hours=max(0, int(due_soon_hours))),
+        coverage=coverage_by_key([key]).get(key),
     )
 
 

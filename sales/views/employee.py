@@ -41,7 +41,9 @@ from sales.employee_editing import (
 )
 from sales.charging import (
     DUPLICATE_SUBMIT,
+    REPEAT_CHARGE_MESSAGE,
     can_charge,
+    sale_recorded_today,
     user_may_charge,
     create_charged_sale,
     find_duplicate_submit,
@@ -156,6 +158,11 @@ def employee_entry(request):
                     return _duplicate_charge_redirect(request, duplicate)
                 if not user_may_charge(request.user) or not can_charge(form.cleaned_data["company"]):
                     raise ValueError(_("This company cannot be charged through its provider."))
+            if (
+                sale_recorded_today(form.cleaned_data["reference_number"])
+                and request.POST.get("repeat_charge") != "1"
+            ):
+                raise ValueError(REPEAT_CHARGE_MESSAGE)
             on_account = bool(form.cleaned_data.get("on_account"))
             app_settings = AppSettings.load()
             paid_via_employee = (
@@ -355,6 +362,20 @@ def employee_submit_customer_payment_submission(request):
         else:
             messages.success(request, _("Payment submitted for management approval."))
     return redirect("sales:employee_record_payment")
+
+
+@employee_required
+@never_cache
+@require_GET
+def employee_sale_today(request):
+    """Whether this number already has a sale recorded today (local date)."""
+    phone = normalize_sale_phone(request.GET.get("phone", ""))
+    return JsonResponse(
+        {
+            "charged_today": sale_recorded_today(phone),
+            "message": REPEAT_CHARGE_MESSAGE,
+        }
+    )
 
 
 @employee_required

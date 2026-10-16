@@ -48,6 +48,25 @@ def can_charge(company) -> bool:
     return service_state(company, Capability.CHARGE).code == "active"
 
 
+REPEAT_CHARGE_MESSAGE = "تم شحن هذا الرقم اليوم. هل توافق على شحنه مرة ثانية؟"
+
+
+def sale_recorded_today(phone: str) -> bool:
+    """True when a non-cancelled sale for this number was recorded since local midnight."""
+    from django.db.models.functions import Lower, Trim
+
+    key = (phone or "").strip().lower()
+    if not key:
+        return False
+    start = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    return (
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .annotate(ref_key=Lower(Trim("reference_number")))
+        .filter(ref_key=key, created_at__gte=start)
+        .exists()
+    )
+
+
 def user_may_charge(user) -> bool:
     """Management always may. An employee may only after management grants it."""
     if is_management(user):

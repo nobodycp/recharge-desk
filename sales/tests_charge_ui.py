@@ -144,6 +144,27 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertContains(resp, "This company cannot be charged through its provider.")
         self.assertFalse(Sale.objects.exists())
 
+    def test_second_sale_same_day_needs_confirmation(self):
+        self.post_entry()
+        blocked = self.post_entry(form_token="22222222-2222-4222-8222-222222222222")
+        self.assertEqual(blocked.status_code, 200)
+        self.assertContains(blocked, "تم شحن هذا الرقم اليوم")
+        self.assertEqual(Sale.objects.count(), 1)
+        allowed = self.post_entry(
+            form_token="33333333-3333-4333-8333-333333333333",
+            repeat_charge="1",
+        )
+        self.assertRedirects(allowed, reverse("sales:employee_entry"), fetch_redirect_response=False)
+        self.assertEqual(Sale.objects.count(), 2)
+
+    def test_sale_today_reports_an_existing_charge(self):
+        url = reverse("sales:employee_sale_today")
+        before = self.client.get(url, {"phone": "0501234567"})
+        self.assertFalse(before.json()["charged_today"])
+        self.post_entry()
+        after = self.client.get(url, {"phone": "0501234567"})
+        self.assertTrue(after.json()["charged_today"])
+
     def test_traditional_save_stays_manual(self):
         self.post_entry()
         sale = Sale.objects.get()

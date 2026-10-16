@@ -18,6 +18,8 @@
     data-esim-extra="{{ esim_extra|unlocalize }}"
     data-sim-preview-url="{% if app_settings.sales_inventory_enabled %}{% url 'sales:api_sim_stock_preview' %}{% endif %}"
     data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
+    data-repeat-url="{% url 'sales:employee_sale_today' %}"
+    data-msg-repeat-charge="تم شحن هذا الرقم اليوم. هل توافق على شحنه مرة ثانية؟"
   >
           {% csrf_token %}
           <input type="hidden" name="form_token" value="{{ form_token }}">
@@ -818,6 +820,47 @@
       });
     }
     if (saleForm) {
+      saleForm.addEventListener("submit", function (e) {
+        if (saleForm.getAttribute("data-repeat-ok") === "1") return;
+        if (e.defaultPrevented) return;
+        var repeatUrl = saleForm.getAttribute("data-repeat-url") || "";
+        if (!repeatUrl || !saleRefInput) return;
+        var digits = String(saleRefInput.value || "").replace(/\D/g, "");
+        if (digits.indexOf("972") === 0) digits = "0" + digits.slice(3);
+        if (digits.length === 9 && digits.charAt(0) === "5") digits = "0" + digits;
+        if (!/^05[0-5]\d{7}$/.test(digits)) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var submitter = e.submitter;
+        fetch(repeatUrl + "?phone=" + encodeURIComponent(digits), {
+          credentials: "same-origin",
+          headers: { Accept: "application/json" },
+        }).then(function (r) { return r.json(); }).then(function (data) {
+          if (!data || !data.charged_today) {
+            saleForm.setAttribute("data-repeat-ok", "1");
+            saleForm.requestSubmit(submitter || undefined);
+            return;
+          }
+          var message = saleForm.getAttribute("data-msg-repeat-charge") || "";
+          var ask = window.rdConfirm ? window.rdConfirm(message) : Promise.resolve(window.confirm(message));
+          ask.then(function (ok) {
+            if (!ok) return;
+            var input = saleForm.querySelector('input[name="repeat_charge"]');
+            if (!input) {
+              input = document.createElement("input");
+              input.type = "hidden";
+              input.name = "repeat_charge";
+              saleForm.appendChild(input);
+            }
+            input.value = "1";
+            saleForm.setAttribute("data-repeat-ok", "1");
+            saleForm.requestSubmit(submitter || undefined);
+          });
+        }).catch(function () {
+          saleForm.setAttribute("data-repeat-ok", "1");
+          saleForm.requestSubmit(submitter || undefined);
+        });
+      }, true);
       /* One submit per render: a second click would otherwise record (and charge) twice. */
       saleForm.addEventListener("submit", function (e) {
         if (e.defaultPrevented) return;
