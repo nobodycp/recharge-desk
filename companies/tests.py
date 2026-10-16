@@ -437,3 +437,57 @@ class ProductKitPagesTests(TestCase):
         self.assertIn(
             "Delete this product line and all its packages? This cannot be undone.", html
         )
+
+
+class CompanySalesLedgerGridKitTests(TestCase):
+    """Sales/ledger grids on the sales tab drop inline max-width styling."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from accounts.models import UserProfile
+        from sales.models import PaymentMethod, Sale
+
+        cls.user = User.objects.create_user("salesgridmgr", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+        cls.company = Company.objects.create(
+            name="GridCo", opening_balance=_decimal(0), current_balance=_decimal(0)
+        )
+        line = ProductLine.objects.create(company=cls.company, name="GridLine")
+        product = Product.objects.create(
+            line=line,
+            variant_label="GridPkg",
+            cost_price=_decimal(5),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="CashGrid")
+        Sale.objects.create(
+            company=cls.company,
+            product=product,
+            reference_number="0599000444",
+            payer_name="A Very Long Payer Name That Should Be Truncated In The Grid",
+            payment_method=pm,
+            sell_price_actual=_decimal(50),
+            cost_price_snapshot=_decimal(5),
+            profit_snapshot=_decimal(45),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=cls.user,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_sales_grid_has_no_inline_max_width(self):
+        r = self.client.get(
+            reverse("companies:company_detail", args=[self.company.pk]), {"tab": "sales"}
+        )
+        html = r.content.decode()
+        self.assertNotIn("max-width", html)
+        # Payer column still truncates with a title tooltip; columns kept.
+        self.assertIn("text-truncate", html)
+        self.assertIn("A Very Long Payer Name That Should Be Truncated In The Grid", html)
+        self.assertIn("rd-datagrid-sort", html)
+        self.assertIn("cr-sales-q", html)

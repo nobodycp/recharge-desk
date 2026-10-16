@@ -149,7 +149,7 @@ LEGACY_LABEL_TAG = {  # 16 files
     "templates/sales/pending_payments.html",
     "templates/sales/sale_edit.html",
 }
-LEGACY_INLINE_WIDTH = {  # 12 files
+LEGACY_INLINE_WIDTH = {  # 11 files
     "phone_refresh/templates/phone_refresh/api_token_created.html",
     "phone_refresh/templates/phone_refresh/api_token_form.html",
     "phone_refresh/templates/phone_refresh/message_form.html",
@@ -158,7 +158,6 @@ LEGACY_INLINE_WIDTH = {  # 12 files
     "phone_refresh/templates/phone_refresh/status_form.html",
     "templates/core/forbidden.html",
     "templates/customers/customer_form.html",
-    "templates/reports/partials/company_report_sales.html",
     "templates/reports/stale_phone_edit.html",
     "templates/sales/partials/management_sale_row.html",
     "templates/sales/sale_edit.html",

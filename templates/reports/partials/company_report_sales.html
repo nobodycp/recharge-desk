@@ -78,7 +78,7 @@
                 <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
                 <td class="tabular-nums">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
                 {% if sales_table_full %}
-                <td class="text-truncate" style="max-width: 10rem;" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
+                <td class="text-truncate rd-truncate-10rem" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
                 <td class="small">{{ s.operator_name }}</td>
                 {% endif %}
                 <td class="tabular-nums text-end kpi-info">{{ s.sell_price_actual|intcomma }}</td>

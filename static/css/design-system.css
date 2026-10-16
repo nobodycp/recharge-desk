@@ -3589,6 +3589,12 @@ a.rd-person__name:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* Pair with `.text-truncate` on a table cell to clamp a long value (e.g. a
+   payer name) to a sensible column width instead of an inline `max-width`. */
+.rd-truncate-10rem {
+  max-width: 10rem;
+}
+
 tr.rd-row-pending {
   box-shadow: inset 0.1875rem 0 0 0 var(--rd-warning);
 }
