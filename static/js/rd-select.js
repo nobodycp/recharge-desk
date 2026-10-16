@@ -2,7 +2,9 @@
  * Page selection for data grids. Header checkbox = this page.
  * Selecting every row on the page reveals "select all results" when the
  * filtered total is larger. The action bar covers the header and does not
- * change the table size. Shell script: one document listener, kept across
+ * change the table size. Inside a scrolling .rd-data-shell it sticks to the
+ * visible top, so selecting rows after a scroll still shows the actions.
+ * Shell script: one document listener, kept across
  * boosted navigations.
  */
 (function () {
@@ -16,6 +18,21 @@
     var wide = window.matchMedia("(min-width: 768px)").matches;
     var scope = grid.querySelector(wide ? "tbody" : ".rd-mobile-stack");
     return scope ? scope.querySelectorAll("[data-rd-select-row]") : [];
+  }
+
+  function dock(grid) {
+    var slot = grid.querySelector(".rd-select-slot");
+    var shell = grid.querySelector(".rd-data-shell");
+    if (!slot) return;
+    var wide = window.matchMedia("(min-width: 768px)").matches && shell;
+    if (wide) {
+      if (slot.parentElement !== shell) shell.insertBefore(slot, shell.firstChild);
+      return;
+    }
+    var dual = grid.querySelector(".rd-table-dual");
+    var before = dual || grid.firstChild;
+    if (slot.parentElement === grid && slot.nextElementSibling === before) return;
+    if (dual) grid.insertBefore(slot, dual);
   }
 
   function place(grid) {
@@ -48,7 +65,10 @@
     var selectAll = grid.getAttribute("data-rd-select-mode") === "all" && pageFull;
     if (!selectAll) grid.removeAttribute("data-rd-select-mode");
     grid.classList.toggle("is-selecting", n > 0);
-    if (n > 0) place(grid);
+    if (n > 0) {
+      dock(grid);
+      place(grid);
+    }
     grid.querySelectorAll("[data-rd-select-count]").forEach(function (label) {
       label.textContent = String(selectAll ? matchCount : n);
     });
@@ -157,6 +177,9 @@
   }, true);
 
   window.addEventListener("resize", function () {
-    document.querySelectorAll("[data-rd-select].is-selecting").forEach(place);
+    document.querySelectorAll("[data-rd-select].is-selecting").forEach(function (grid) {
+      dock(grid);
+      place(grid);
+    });
   });
 })();

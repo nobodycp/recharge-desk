@@ -3852,6 +3852,18 @@ a.rd-person__name:hover {
   pointer-events: auto;
 }
 
+/* The lines table scrolls inside .rd-data-shell, so an absolute bar tied to
+   the thead scrolls out of view. Stick the bar to the shell's visible top and
+   pull the table back up so the header does not shift. */
+@media (min-width: 768px) {
+  .rd-data-shell > .rd-select-slot {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    margin-bottom: calc(-1 * var(--rd-select-head, 0px));
+  }
+}
+
 .rd-select-bar {
   display: flex;
   align-items: center;
