@@ -4,8 +4,8 @@
 <div class="rd-page">
 {% url 'customers:customer_list' as list_url %}
 {% trans "Customer account" as customer_subtitle %}
-{% trans "Customers" as customers_label %}
-{% rd_page_header customer.name subtitle=customer_subtitle back_url=list_url back_label=customers_label %}
+{% trans "Back" as back_label %}
+{% rd_page_header customer.name subtitle=customer_subtitle back_url=list_url back_label=back_label %}
   {% if not customer.is_active %}<span class="rd-badge rd-badge--neutral">{% trans "Inactive" %}</span>{% endif %}
   <a class="btn btn-primary btn-sm" href="{% url 'customers:customer_statement' customer.pk %}">{% trans "Statement" %}</a>
   <a class="btn btn-outline-primary btn-sm" href="{% url 'customers:customer_detailed_invoice' customer.pk %}">{% trans "Detailed invoice" %}</a>

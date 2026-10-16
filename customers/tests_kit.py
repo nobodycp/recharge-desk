@@ -185,6 +185,7 @@ class CustomerDetailKitTests(TestCase):
             r, reverse("customers:customer_detailed_invoice", args=[self.customer.pk])
         )
         self.assertContains(r, reverse("customers:customer_list"))
+        self.assertContains(r, ">Back</a>")
         self.assertContains(r, "rd-stat-strip")
         self.assertContains(r, "rd-field")
         self.assertContains(r, "rd-table-modern")
