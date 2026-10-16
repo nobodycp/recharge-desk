@@ -145,9 +145,7 @@
             <div class="rd-entry-blk__head">
               <span class="rd-entry-step" data-step="co" aria-hidden="true">3</span>
               <span class="rd-entry-blk__title">{% trans "Company" %}</span>
-              <div class="rd-entry-blk__end">
-                <span id="product-tiles-loading" class="htmx-indicator spinner-border spinner-border-sm rd-entry-spinner" role="status" aria-hidden="true"></span>
-              </div>
+              <div class="rd-entry-blk__end"></div>
             </div>
             {{ form.company }}
             {% if form.company.errors %}<div class="rd-field-error">{{ form.company.errors }}</div>{% endif %}
@@ -158,13 +156,8 @@
                   class="employee-chip employee-company-tile {% if selected_company_id == c.pk|stringformat:'s' %}is-active{% endif %}"
                   data-company-id="{{ c.pk }}"
                   {% if chargeable_company_ids %}data-can-charge="{% if c.pk in chargeable_company_ids %}1{% else %}0{% endif %}"{% endif %}
-                  hx-get="{% url 'sales:employee_product_fragment' %}?company={{ c.pk }}"
-                  hx-target="#product-tiles-container"
-                  hx-swap="innerHTML"
-                  hx-indicator="#product-tiles-loading"
-                  onclick="document.getElementById('id_company').value='{{ c.pk }}'; document.getElementById('id_product').value=''; document.querySelectorAll('.employee-company-tile').forEach(function(el){ el.classList.remove('is-active'); }); this.classList.add('is-active');"
                   title="{{ c.name }}"
-                >{% include "sales/partials/employee_icon_mark.html" with icon=c.icon title=c.name show_name=True %}</button>
+                >{% include "sales/partials/employee_icon_mark.html" with icon=c.icon title=c.name show_name=True eager=True %}</button>
               {% empty %}
                 <p class="rd-entry-empty">{% trans "No active companies." %}</p>
               {% endfor %}
@@ -179,11 +172,12 @@
             {{ form.product }}
             {% if form.product.errors %}<div class="rd-field-error">{{ form.product.errors }}</div>{% endif %}
             <div id="product-tiles-container">
-              {% if product_groups %}
-                {% include "sales/partials/employee_product_tiles.html" with product_groups=product_groups selected_line_id=selected_line_id selected_product_id=selected_product_id %}
-              {% else %}
-                <p class="rd-entry-empty">{% trans "Choose a company to see products." %}</p>
-              {% endif %}
+              <p class="rd-entry-empty" id="product-tiles-empty" {% if selected_company_id %}hidden{% endif %}>{% trans "Choose a company to see products." %}</p>
+              {% for bundle in company_product_bundles %}
+                <div data-company-products="{{ bundle.company_id }}" {% if selected_company_id != bundle.company_id|stringformat:"s" %}hidden{% endif %}>
+                  {% include "sales/partials/employee_product_tiles.html" with product_groups=bundle.groups company_id=bundle.company_id selected_line_id=selected_line_id selected_product_id=selected_product_id %}
+                </div>
+              {% endfor %}
             </div>
           </div>
 
@@ -499,14 +493,19 @@
     }, 300);
   }
 
+  function productsRoot(node) {
+    var scoped = node && node.closest ? node.closest("[data-company-products]") : null;
+    if (scoped) return scoped;
+    return document.querySelector("[data-company-products]:not([hidden])");
+  }
+
   function resetLineAndPackages() {
     document.querySelectorAll(".employee-product-line-tile").forEach(function (el) {
       el.classList.remove("is-active");
     });
-    var panel = document.getElementById("employee-packages-panel");
-    if (panel) {
+    document.querySelectorAll(".employee-packages-panel").forEach(function (panel) {
       panel.classList.add("d-none");
-    }
+    });
     document.querySelectorAll(".employee-packages-for-line").forEach(function (el) {
       el.classList.add("d-none");
       el.classList.remove("d-flex");
@@ -516,14 +515,16 @@
     });
   }
 
-  function showPackagesForLine(lineId) {
-    var panel = document.getElementById("employee-packages-panel");
+  function showPackagesForLine(lineId, scope) {
+    var root = productsRoot(scope);
+    if (!root) return;
+    var panel = root.querySelector(".employee-packages-panel");
     if (!panel) return;
-    document.querySelectorAll(".employee-packages-for-line").forEach(function (el) {
+    root.querySelectorAll(".employee-packages-for-line").forEach(function (el) {
       el.classList.add("d-none");
       el.classList.remove("d-flex");
     });
-    var box = document.getElementById("packages-for-line-" + lineId);
+    var box = root.querySelector("#packages-for-line-" + lineId);
     if (box) {
       box.classList.remove("d-none");
       box.classList.add("d-flex");
@@ -555,7 +556,7 @@
     if (lineId) {
       var lineBtn = document.querySelector('.employee-product-line-tile[data-line-id="' + lineId + '"]');
       syncLineTileActive(lineBtn);
-      showPackagesForLine(lineId);
+      showPackagesForLine(lineId, tile);
     }
     updateSalePreview();
   }
@@ -590,7 +591,7 @@
       c.classList.remove("is-active");
     });
     syncDurationDaysVisibility(null);
-    showPackagesForLine(lineId);
+    showPackagesForLine(lineId, btn);
     updateSalePreview();
   }
 
@@ -694,6 +695,31 @@
     if (!form) return;
     var companyBtn = e.target.closest(".employee-company-tile");
     if (companyBtn && form.contains(companyBtn)) {
+      var cid = companyBtn.getAttribute("data-company-id") || "";
+      var companyHidden = document.getElementById("id_company");
+      if (companyHidden) companyHidden.value = cid;
+      document.querySelectorAll(".employee-company-tile").forEach(function (el) {
+        el.classList.remove("is-active");
+      });
+      companyBtn.classList.add("is-active");
+      var empty = document.getElementById("product-tiles-empty");
+      var shown = false;
+      document.querySelectorAll("[data-company-products]").forEach(function (panel) {
+        var on = String(panel.getAttribute("data-company-products")) === String(cid);
+        panel.hidden = !on;
+        if (on) shown = true;
+      });
+      if (empty) empty.hidden = shown;
+      resetLineAndPackages();
+      var hid = document.getElementById("id_product");
+      if (hid) hid.value = "";
+      var inp = document.getElementById("id_sell_price_actual");
+      if (inp) inp.value = "";
+      var daysInp = document.getElementById("id_duration_days");
+      if (daysInp) daysInp.value = "30";
+      syncDurationDaysVisibility(null);
+      updateSalePreview();
+      updateSimStockPreview();
       syncChargeButton();
       return;
     }

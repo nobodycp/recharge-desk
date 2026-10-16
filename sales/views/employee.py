@@ -64,9 +64,25 @@ from sales.views._shared import (
 )
 
 
-def _build_product_groups(company_id):
-    lines_qs = (
-        ProductLine.objects.filter(company_id=company_id, is_active=True)
+def _line_groups(lines):
+    groups = []
+    for line in lines:
+        variants = list(line.variants.all())
+        if not variants:
+            continue
+        variant_ids = {p.pk for p in variants}
+        default_product_id = ""
+        if line.default_package_id and line.default_package_id in variant_ids:
+            default_product_id = str(line.default_package_id)
+        groups.append(
+            {"line": line, "variants": variants, "default_product_id": default_product_id}
+        )
+    return groups
+
+
+def _product_line_queryset(company_ids):
+    return (
+        ProductLine.objects.filter(company_id__in=list(company_ids), is_active=True)
         .select_related("default_package")
         .prefetch_related(
             Prefetch(
@@ -76,18 +92,23 @@ def _build_product_groups(company_id):
         )
         .order_by("sort_order", "name")
     )
-    groups = []
-    for line in lines_qs:
-        variants = list(line.variants.all())
-        if variants:
-            variant_ids = {p.pk for p in variants}
-            default_product_id = ""
-            if line.default_package_id and line.default_package_id in variant_ids:
-                default_product_id = str(line.default_package_id)
-            groups.append(
-                {"line": line, "variants": variants, "default_product_id": default_product_id}
-            )
-    return groups
+
+
+def _build_product_groups(company_id):
+    if not company_id:
+        return []
+    return _line_groups(_product_line_queryset([company_id]))
+
+
+def _company_product_bundles(companies):
+    """Every active company's lines, loaded once with the sale form."""
+    by_company = {c.pk: [] for c in companies}
+    for line in _product_line_queryset(by_company):
+        by_company.setdefault(line.company_id, []).append(line)
+    return [
+        {"company_id": c.pk, "groups": _line_groups(by_company.get(c.pk, []))}
+        for c in companies
+    ]
 
 
 def _duplicate_charge_redirect(request, sale):
@@ -122,7 +143,7 @@ def employee_entry(request):
     chargeable_company_ids = {c.pk for c in companies if can_charge(c)}
     payment_methods = list(PaymentMethod.objects.filter(is_active=True).order_by("name"))
     acting_employee = get_acting_employee_profile(request.user)
-    product_groups = _build_product_groups(company_id) if company_id else []
+    company_product_bundles = _company_product_bundles(companies)
     charge_requested = request.POST.get("action") == "charge"
 
     if request.method == "POST" and form.is_valid():
@@ -227,7 +248,7 @@ def employee_entry(request):
             "form": form,
             "title": _("New sale"),
             "from_reconcile": from_reconcile,
-            "product_groups": product_groups,
+            "company_product_bundles": company_product_bundles,
             "companies": companies,
             "payment_methods": payment_methods,
             "acting_employee": acting_employee,

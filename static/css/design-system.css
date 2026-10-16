@@ -1975,13 +1975,20 @@ a.rd-card:hover {
   color: var(--rd-muted);
 }
 
+/* Sale attribute, not a status: blue so it stays distinct from loss (red)
+   and employee payment (amber). Tone is >= 4.5:1 on the card surface. */
+.rd-sale-esim-badge {
+  background: color-mix(in srgb, var(--rd-tone-1) 14%, transparent);
+  color: var(--rd-tone-1);
+}
+
 /* Scoped size bump for chips that carry data (expense category, audit action): 0.82rem stays above the 0.8rem readable floor. */
 .rd-badge--readable {
   font-size: 0.82rem;
 }
 
 /* Count badges and badges that carry their own icon skip the dot. */
-:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral):not(.tabular-nums):not(:has(svg))::before {
+:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral, .rd-sale-esim-badge):not(.tabular-nums):not(:has(svg))::before {
   content: "";
   flex: none;
   width: 6px;
@@ -3436,15 +3443,16 @@ a.rd-person__name:hover {
   background: color-mix(in srgb, var(--bs-tertiary-bg) 85%, var(--bs-secondary-bg));
 }
 
-/* Hero KPI (dashboard "today's sales"): same card, same border as the rest
-   (owner); it is the primary one through accent only: the orange icon chip
-   and the orange sparkline (max one accent set per screen).
-
-   Glyph uses the text-safe orange: raw --rd-accent on its own tint is 2.78:1
-   in light (< 3:1 for a meaningful icon); tests_design_tokens pins this. */
+/* Default hero icon chip (employee balance). The dashboard sales card
+   overrides this below to identity blue. Glyph stays text-safe on its tint. */
 .rd-stat.rd-stat--hero .rd-stat-icon {
   background: var(--rd-accent-soft);
   color: var(--rd-accent-ink);
+}
+
+.rd-dashboard-section--today .rd-stat--hero .rd-stat-icon {
+  background: color-mix(in srgb, var(--rd-tone-1) 14%, transparent);
+  color: var(--rd-tone-1);
 }
 
 /* Employee balance hero ("my balance"): the one inverted card (ink in light,
@@ -3567,6 +3575,10 @@ a.rd-person__name:hover {
 
 .rd-spark--accent {
   stroke: var(--rd-accent);
+}
+
+.rd-dashboard-section--today .rd-spark--accent {
+  stroke: var(--rd-tone-1);
 }
 
 .rd-trend--flat {
@@ -4720,8 +4732,8 @@ body.rd-inv-dialog-open {
 /* Toasts (static/js/toast.js)                                                */
 /* -------------------------------------------------------------------------- */
 /* Stacked under the topbar on the inline-end side: top-left in Arabic,
-   top-right in English. Inverted ink surface (light in dark mode); the
-   status reads from the colored icon dot and the draining timer. */
+   top-right in English. The card follows the theme; status is the icon dot
+   and the draining timer. */
 .rd-toast-region {
   position: fixed;
   top: calc(4.35rem + env(safe-area-inset-top));
@@ -4735,7 +4747,7 @@ body.rd-inv-dialog-open {
 }
 
 .rd-toast {
-  --rd-toast-tone: var(--rd-primary-fg);
+  --rd-toast-tone: var(--rd-ink);
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -4744,10 +4756,10 @@ body.rd-inv-dialog-open {
   padding: 0.7rem 0.65rem 0.85rem;
   padding-inline-start: 0.75rem;
   border-radius: 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--rd-primary-fg) 8%, transparent);
-  background: var(--rd-primary-bg);
+  border: 1px solid var(--bs-border-color);
+  background: var(--rd-surface);
   box-shadow: var(--rd-shadow-lg);
-  color: var(--rd-primary-fg);
+  color: var(--rd-ink);
   overflow: hidden;
   pointer-events: auto;
   opacity: 0;
@@ -4768,10 +4780,10 @@ body.rd-inv-dialog-open {
   transition-duration: 0.2s;
 }
 
-.rd-toast--success { --rd-toast-tone: var(--rd-success-on-ink); }
-.rd-toast--error { --rd-toast-tone: var(--rd-danger-on-ink); }
-.rd-toast--warning { --rd-toast-tone: var(--rd-warning-on-ink); }
-.rd-toast--info { --rd-toast-tone: var(--rd-primary-fg); }
+.rd-toast--success { --rd-toast-tone: var(--rd-success); }
+.rd-toast--error { --rd-toast-tone: var(--rd-danger); }
+.rd-toast--warning { --rd-toast-tone: var(--rd-warning); }
+.rd-toast--info { --rd-toast-tone: var(--rd-ink); }
 
 .rd-toast__icon {
   display: grid;
@@ -4780,7 +4792,7 @@ body.rd-inv-dialog-open {
   height: 1.6rem;
   margin-top: 0.1rem;
   border-radius: 999px;
-  color: var(--rd-primary-bg);
+  color: var(--rd-surface);
   background: var(--rd-toast-tone);
 }
 
@@ -4809,14 +4821,14 @@ body.rd-inv-dialog-open {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: color-mix(in srgb, var(--rd-primary-fg) 60%, transparent);
+  color: var(--rd-muted);
   transition: background var(--rd-transition-fast), color var(--rd-transition-fast);
 }
 
 .rd-toast__close:hover,
 .rd-toast__close:focus-visible {
-  background: color-mix(in srgb, var(--rd-primary-fg) 12%, transparent);
-  color: var(--rd-primary-fg);
+  background: color-mix(in srgb, var(--rd-ink) 8%, transparent);
+  color: var(--rd-ink);
   outline: none;
 }
 
@@ -6494,8 +6506,8 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 .rd-phone-donut {
   --donut-active: var(--rd-success);
   --donut-due: var(--rd-accent);
-  --donut-grace: var(--rd-muted);
-  --donut-overdue: var(--rd-danger);
+  --donut-grace: var(--rd-danger);
+  --donut-overdue: var(--rd-muted);
 }
 
 .rd-phone-donut {
@@ -6701,9 +6713,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
 
 /* Owner ruling U3: each number takes its swatch's hue (the dot + text label
    still carry the status, never colour alone). Every colour is >= 4.5:1 on the
-   card surface in both themes (tests_design_tokens.PhoneLegendContrastTests);
-   the ring/swatch orange (--rd-accent) is below that as text, so the "ends
-   today" number uses the text-safe sibling --rd-accent-ink. */
+   card surface in both themes (tests_design_tokens.PhoneLegendContrastTests). */
 .rd-phone-lifecycle__val {
   font-family: var(--rd-font-num);
   font-size: 1.1rem;
@@ -6718,7 +6728,7 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   color: var(--donut-active);
 }
 .rd-phone-lifecycle__item--due .rd-phone-lifecycle__val {
-  color: var(--rd-accent-ink);
+  color: var(--donut-due);
 }
 .rd-phone-lifecycle__item--grace .rd-phone-lifecycle__val {
   color: var(--donut-grace);
@@ -6778,14 +6788,14 @@ a.rd-phone-lifecycle__val:focus-visible {
   border: 1px solid color-mix(in srgb, var(--rd-warning) 30%, transparent);
 }
 .rd-phone-status--grace {
-  background: var(--rd-surface-2);
-  color: var(--rd-ink);
-  border: 1px solid var(--bs-border-color);
-}
-.rd-phone-status--overdue {
   background: var(--rd-danger-soft);
   color: var(--rd-danger);
   border: 1px solid color-mix(in srgb, var(--rd-danger) 28%, transparent);
+}
+.rd-phone-status--overdue {
+  background: var(--rd-surface-2);
+  color: var(--rd-ink);
+  border: 1px solid var(--bs-border-color);
 }
 .rd-phone-status--esim {
   background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);

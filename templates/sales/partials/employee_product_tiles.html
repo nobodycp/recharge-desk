@@ -3,7 +3,7 @@
   <p class="rd-entry-empty">{% trans "Choose a company to see products." %}</p>
 {% else %}
   <div class="employee-product-section">
-    <div class="rd-entry-chips" id="employee-line-tiles">
+    <div class="rd-entry-chips" id="employee-line-tiles{% if company_id %}-{{ company_id }}{% endif %}">
       {% for g in product_groups %}
         <button
           type="button"
@@ -13,13 +13,13 @@
           data-default-product-id="{{ g.default_product_id }}"
           title="{{ g.line.name }}"
         >
-          {% include "sales/partials/employee_icon_mark.html" with icon=g.line.icon title=g.line.name show_name=True %}
+          {% include "sales/partials/employee_icon_mark.html" with icon=g.line.icon title=g.line.name show_name=True eager=True %}
         </button>
       {% endfor %}
     </div>
 
     <div
-      id="employee-packages-panel"
+      id="employee-packages-panel{% if company_id %}-{{ company_id }}{% endif %}"
       class="employee-packages-panel {% if not selected_line_id %}d-none{% endif %}"
     >
       {% for g in product_groups %}

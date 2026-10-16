@@ -3,7 +3,7 @@
   show_name=True: icon (decorative) plus the name, as on the Pearl sale entry tiles.
 {% endcomment %}
 {% if icon %}
-  <img src="{{ icon.url }}" class="employee-chip-icon" alt="{% if not show_name %}{{ title|default:'' }}{% endif %}" loading="lazy" />
+  <img src="{{ icon.url }}" class="employee-chip-icon" alt="{% if not show_name %}{{ title|default:'' }}{% endif %}" {% if not eager %}loading="lazy"{% endif %} />
   {% if show_name %}<span class="employee-chip-label">{% if title %}{{ title }}{% else %}?{% endif %}</span>{% endif %}
 {% else %}
   <span class="employee-chip-label">{% if title %}{{ title }}{% else %}?{% endif %}</span>

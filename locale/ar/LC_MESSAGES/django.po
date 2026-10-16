@@ -7278,6 +7278,9 @@ msgstr "إلغاء التحديد"
 msgid "Confirm"
 msgstr "تأكيد"
 
+msgid "Copied"
+msgstr "تم النسخ"
+
 msgid "Copy numbers"
 msgstr "نسخ الأرقام"
 

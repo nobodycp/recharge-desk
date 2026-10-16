@@ -45,7 +45,7 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-surface-raised` | `#ffffff` | `#262624` | floating panels (user/bell menus, search results); lighter than page and cards in dark so a popover reads as raised |
 | `--rd-shadow-card` / `--rd-shadow-xs` / `--rd-shadow-sm` / `--rd-shadow-md` / `--rd-shadow-lg` / `--rd-shadow-float` | ink-tinted, very light | inset hairline + deep shadows | elevation (card, controls, raised blocks, floating buttons) |
 | `--rd-shadow-pop` | `0 16px 48px rgba(10,10,10,.1)` | deep shadow + 1px white-5 % ring | shadow of floating panels (pair with `--rd-surface-raised`) |
-| `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (toasts, the employee balance hero); flip with the theme |
+| `--rd-success-on-ink` / `--rd-warning-on-ink` / `--rd-danger-on-ink` | `#4ade80` / `#fbbf24` / `#f87171` | `#0a7a3e` / `#c2410c` / `#b91c1c` | status tones on an ink surface (the employee balance hero). Toasts follow the theme surface and use `--rd-success` / `--rd-warning` / `--rd-danger`. |
 | `--rd-on-danger` | `#ffffff` | `#0a0a0a` | text on red count chips |
 | `--rd-scrim` | `rgba(10,10,10,.32)` | `rgba(0,0,0,.6)` | drawer / modal dim |
 | `--rd-hero-bg` / `--rd-hero-fg` / `--rd-hero-plate` / `--rd-hero-success` | `#0a0a0a` / `#fff` / `#fff` / `#4ade80` | `#050505` / `#f5f5f2` / `#f5f5f2` / `#4ade80` | login brand panel: stays ink in both themes; the plate is the letter-mark tile shown when no logo is uploaded (uploaded logos have no plate: the hero uses `logo_dark_url`) |
@@ -85,15 +85,15 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 ## Cards And KPIs
 
 - Surfaces: `.rd-card` + `.rd-card-body` / `.rd-card-header` / `.rd-card-footer`. Don't use raw `.card` / `.app-card` in new templates.
-- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark) and stands out through accent only: a 1px edge `color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color))`, an `--rd-accent-soft` icon chip (glyph `--rd-accent-ink`, the text-safe logo red) and the `--rd-accent` sparkline (≥ 3:1 on the surface in both themes). Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
+- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark). Today's sales uses identity blue (`--rd-tone-1`) for the icon chip and the sparkline. Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card, and its icon chip stays logo red. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
 - Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill) / `.rd-trend--flat` (muted on `--rd-surface-2`); it is LTR-isolated. The chip looks the same on the hero card (tinted fill, no special case).
-- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent` (hero card only).
+- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent`, and on the dashboard sales card that stroke is `--rd-tone-1`.
 - Partials (all in `templates/partials/`):
   - `kpi_trend.html` — arg `trend` (from `{% rd_trend series as trend %}`: `direction` up|down|flat, `pct`). Renders the chip; the "vs yesterday" text is visually hidden (no `title`).
   - `kpi_sparkline.html` — args `points` (from `{% rd_sparkline_points series "count" as points %}`), optional `accent=True` for `.rd-spark--accent`. Decorative (`aria-hidden`); outputs nothing when `points` is empty (the tag returns `""` for all-zero series).
   - `empty_state.html` — args `title` (required, already translated), optional `text`, `icon` (`chart` | `building` | `trophy` | `list`; any other non-empty value shows `list`), `action_url` + `action_label`. Static content: it carries no live-region role. Look: light, never a grey well — transparent, compact (1rem) padding, small `--rd-surface-2` icon circle, muted 0.9rem title; standalone = dashed hairline, inside `.rd-card` / `.rd-card-body` = no box at all.
   - `company_mark.html` — args `company` (Company or None), `name`, `cls` (caller's size class, e.g. `rd-supplier-avatar`, `rd-top-avatar`). Shows the company logo on a `--rd-logo-bg` tile (`.rd-company-mark.has-logo`), else the first letter in the company tone (`.rd-tone-N`, from `company.pk|default:name|rd_tone`). Decorative: the name is always printed beside it. Put the same `.rd-tone-N` on a row to colour its ranking bar (`.rd-top-list-fill`).
-- Phone-status donut legend (`.rd-phone-lifecycle`): each count takes its swatch's hue (active = `--rd-success`, ends today = `--rd-accent-ink`, disconnected only = `--rd-muted`, left the agency = `--rd-danger`, the last one a link with a dotted resting underline). The raw `--rd-accent` is under 4.5:1 as text, hence the `-ink` sibling for the number; colours are contrast-tested in both themes.
+- Phone-status donut legend (`.rd-phone-lifecycle`): each count takes its swatch's hue (active = `--rd-success`, ends today = `--rd-accent`, disconnected only = `--rd-danger`, left the agency = `--rd-muted`, the last one a link with a dotted resting underline). The statement chips follow the same pair. Colours are contrast-tested in both themes.
 - Supplier balances keep semantic colour: amount `kpi-danger` / `kpi-warning` / `kpi-success` (negative / zero / positive), the status line takes the same hue.
 - Loading placeholders: `.rd-skeleton` (sweep on a pseudo-element, transform only).
 - Avoid large empty cards; merge related small metrics.
@@ -120,6 +120,7 @@ Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular
 - `.rd-badge--conflict` — data conflicts that need review.
 - `.rd-badge--cancelled` — failed / cancelled / destructive.
 - `.rd-badge--neutral` — inactive, metadata, plain labels.
+- Sale chips: loss stays `.rd-badge--cancelled`, payment to an employee is `.rd-badge--pending`, eSIM is `.rd-sale-esim-badge` (identity blue, `--rd-tone-1`). New SIM stays neutral.
 
 Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are `--rd-danger`, not the logo-red accent.
 

@@ -191,7 +191,8 @@ class EmployeeSalesKitTests(TestCase):
         ):
             self.assertContains(entry, f'name="{field_name}"')
         self.assertContains(entry, 'name="action" value="save"')
-        self.assertContains(entry, 'hx-target="#product-tiles-container"')
+        self.assertContains(entry, 'data-company-products="')
+        self.assertNotContains(entry, 'hx-target="#product-tiles-container"')
 
         for name, args in (
             ("sales:employee_record_payment", ()),

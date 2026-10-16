@@ -26,8 +26,10 @@
       e.preventDefault();
       navigator.clipboard.writeText(text).then(
         function () {
-          var msg = btn.getAttribute("data-copy-done");
-          window.rdToast(msg || "Copied", "success");
+          var msg = btn.getAttribute("data-copy-done")
+            || (document.body && document.body.getAttribute("data-rd-copied"))
+            || "";
+          if (msg) window.rdToast(msg, "success");
         },
         function () {}
       );

@@ -878,8 +878,10 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   outline-offset: -3px;
 }
 
-/* Payment tiles stack icon over name; company tiles sit side by side. */
-.rd-entry-tiles--pay .employee-chip {
+/* Payment, company, and line tiles stack the mark over the name. */
+.rd-entry-tiles--pay .employee-chip,
+.rd-entry-tiles--co .employee-chip,
+.rd-entry-chips .employee-product-line-tile {
   flex-direction: column;
   gap: 0.2rem;
 }
@@ -920,11 +922,6 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   padding-inline: 0.6rem;
   color: var(--rd-ink);
   scroll-snap-align: start;
-}
-
-.rd-entry-chips .employee-product-line-tile {
-  flex-direction: row;
-  gap: 0.4rem;
 }
 
 .rd-entry-chips .employee-chip.is-active {
@@ -982,6 +979,11 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   padding: 0.15rem;
   border-radius: 0.45rem;
   background: var(--rd-surface-2);
+}
+
+.rd-entry-tiles--co .employee-chip-icon,
+.rd-entry-chips .employee-product-line-tile .employee-chip-icon {
+  background: var(--rd-logo-bg);
 }
 
 /* -------------------------------------------------------------------------- */

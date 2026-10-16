@@ -118,10 +118,8 @@ class EmployeeEntryMarkupTests(TestCase):
             'id="id_payment_method"',
             'id="id_on_account"',
             'id="id_paid_via_employee"',
-            'id="product-tiles-loading"',
             'id="company-tiles"',
-            'hx-target="#product-tiles-container"',
-            'hx-indicator="#product-tiles-loading"',
+            'data-company-products="',
             'id="id_company"',
             'id="id_product"',
             'id="product-tiles-container"',
@@ -151,8 +149,8 @@ class EmployeeEntryMarkupTests(TestCase):
     def test_package_chips_keep_js_hooks_and_show_price(self):
         html = self._html()
         for hook in (
-            'id="employee-line-tiles"',
-            'id="employee-packages-panel"',
+            'id="employee-line-tiles-',
+            'id="employee-packages-panel-',
             "employee-product-line-tile",
             "employee-package-chip",
             "data-product-id=",
@@ -166,6 +164,9 @@ class EmployeeEntryMarkupTests(TestCase):
         self.assertRegex(
             html, r'employee-package-chip[^>]*>\s*<b[^>]*>Monthly</b>\s*<span[^>]*>10(\.00)?</span>'
         )
+        self.assertIn("AlphaLine", html)
+        self.assertIn("BetaLine", html)
+        self.assertIn(f'data-company-products="{self.company2.pk}" hidden', html)
 
     def test_each_field_sits_in_a_field_group(self):
         """The submit handler resolves the error group via closest('.rd-field-group')."""
@@ -904,7 +905,7 @@ class EmployeeRecentEntriesTests(TestCase):
 
     def test_sale_chips_render_with_their_pearl_variants(self):
         html = self._page()
-        self.assertRegex(html, r'class="rd-badge rd-badge--neutral rd-sale-esim-badge ms-1"[^>]*>eSIM<')
+        self.assertRegex(html, r'class="rd-badge rd-sale-esim-badge ms-1"[^>]*>eSIM<')
         self.assertRegex(html, r'class="rd-badge rd-badge--neutral rd-sale-new-sim-badge ms-1"')
         self.assertRegex(html, r'class="rd-badge rd-badge--cancelled rd-sale-loss-badge ms-1"[^>]*>Loss<')
 
@@ -968,13 +969,13 @@ class SaleBadgePartialsTests(SimpleTestCase):
 
     def test_each_partial_renders_a_pearl_badge_with_text(self):
         cases = (
-            ("sale_esim_badge", {"is_esim": True}, "rd-badge--neutral", "eSIM"),
+            ("sale_esim_badge", {"is_esim": True}, "rd-sale-esim-badge", "eSIM"),
             ("sale_new_sim_badge", {"is_new_sim": True}, "rd-badge--neutral", "New SIM"),
             ("sale_loss_badge", {"loss_snapshot": Decimal("3")}, "rd-badge--cancelled", "Loss"),
             (
                 "sale_employee_payment_badge",
                 {"paid_via_employee": True, "employee_recipient": None},
-                "rd-badge--neutral",
+                "rd-badge--pending",
                 "Payment to employee",
             ),
         )

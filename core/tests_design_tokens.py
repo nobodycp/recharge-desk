@@ -264,15 +264,11 @@ class PhoneLegendContrastTests(SimpleTestCase):
     def test_numbers_use_their_swatch_hue(self):
         donut = _rule_body(CSS, ".rd-phone-lifecycle")
         self.assertRegex(donut, r"--donut-active:\s*var\(--rd-success\)")
-        self.assertRegex(donut, r"--donut-overdue:\s*var\(--rd-danger\)")
-        # Ends today: orange family (accent for ring + swatch, accent-ink as text).
         self.assertRegex(donut, r"--donut-due:\s*var\(--rd-accent\)")
-        self.assertEqual(
-            self._colour_decl(".rd-phone-lifecycle__item--due .rd-phone-lifecycle__val"),
-            "var(--rd-accent-ink)",
-        )
-        # Active / grace / overdue numbers use exactly the swatch variable.
-        for item in ("active", "grace", "overdue"):
+        self.assertRegex(donut, r"--donut-grace:\s*var\(--rd-danger\)")
+        self.assertRegex(donut, r"--donut-overdue:\s*var\(--rd-muted\)")
+        # Every number uses exactly the swatch variable.
+        for item in ("active", "due", "grace", "overdue"):
             self.assertEqual(
                 self._colour_decl(f".rd-phone-lifecycle__item--{item} .rd-phone-lifecycle__val"),
                 f"var(--donut-{item})",

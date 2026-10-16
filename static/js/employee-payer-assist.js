@@ -182,26 +182,11 @@
       );
       if (!tile) return;
 
-      var afterSwapHandler = function (evt) {
-        if (
-          evt.detail &&
-          evt.detail.target &&
-          evt.detail.target.id === "product-tiles-container"
-        ) {
-          document.body.removeEventListener("htmx:afterSwap", afterSwapHandler);
-          /*
-           * Run after the inline handler in employee_entry.html that resets
-           * line/packages on swap, so our chip click wins and sets product +
-           * default price + active states.
-           */
-          window.setTimeout(function () {
-            selectProductChip(productId);
-          }, 0);
-        }
-      };
-      document.body.addEventListener("htmx:afterSwap", afterSwapHandler);
       tile.click();
       lastAutoFill.company = newCid;
+      window.setTimeout(function () {
+        selectProductChip(productId);
+      }, 0);
     }
 
     function runRefLookup() {
