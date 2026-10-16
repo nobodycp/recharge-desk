@@ -23,6 +23,7 @@ from customers.forms import (
     CustomerForm,
     CustomerPaymentForm,
     CustomerPhoneForm,
+    CustomerSearchForm,
 )
 from customers.models import Customer
 from customers.services import create_customer, delete_customer_completely
@@ -58,6 +59,7 @@ def customer_list(request):
             "q": q,
             "debt_total": debt_total,
             "credit_total": credit_total,
+            "card_form": CustomerSearchForm(initial={"q": q}),
         },
     )
 

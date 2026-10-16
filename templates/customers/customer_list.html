@@ -1,23 +1,19 @@
 {% extends "base_management.html" %}
-{% load i18n humanize ui_tags %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Customers" %}</h1>
-    <p class="rd-text-muted mb-0">{% trans "Customers buying on account and their balances." %}</p>
-  </div>
-  <div class="d-flex flex-wrap gap-2">
-    <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customers_export_csv' %}?{{ request.GET.urlencode }}">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      {% trans "Export CSV" %}
-    </a>
-    <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_payments_export_csv' %}">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      {% trans "Export payments CSV" %}
-    </a>
-    <a class="btn btn-primary" href="{% url 'customers:customer_create' %}">{% trans "New customer" %}</a>
-  </div>
-</div>
+<div class="rd-page">
+{% trans "Customers" as customers_title %}{% trans "Customers buying on account and their balances." as customers_subtitle %}
+{% rd_page_header customers_title subtitle=customers_subtitle %}
+  <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customers_export_csv' %}?{{ request.GET.urlencode }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    {% trans "Export CSV" %}
+  </a>
+  <a hx-boost="false" class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_payments_export_csv' %}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    {% trans "Export payments CSV" %}
+  </a>
+  <a class="btn btn-primary" href="{% url 'customers:customer_create' %}">{% trans "New customer" %}</a>
+{% end_rd_page_header %}
 
 <div class="row g-3 mb-3">
   <div class="col-12 col-md-6">
@@ -34,19 +30,8 @@
   </div>
 </div>
 
-{% active_filter_count as customer_active %}
-{% include "partials/filter_card_open.html" with active_count=customer_active %}
-    <form method="get" class="row g-3 align-items-end">
-      <div class="col-12 col-md-6 col-lg-4">
-        <label class="form-label" for="cust-q">{% trans "Search by name or phone" %}</label>
-        <input id="cust-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" autocomplete="off">
-      </div>
-      <div class="col-12 d-flex flex-wrap gap-2">
-        <button class="btn btn-primary btn-sm" type="submit">{% trans "Apply" %}</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'customers:customer_list' %}">{% trans "Reset" %}</a>
-      </div>
-    </form>
-{% include "partials/filter_card_close.html" %}
+{% url 'customers:customer_list' as list_url %}
+{% rd_filter_card card_form action=list_url reset_url=list_url %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-datagrid-toolbar rd-card-header py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -83,13 +68,13 @@
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_edit' c.pk %}" title="{% trans 'Edit customer' %}">{% trans "Edit" %}</a>
                     {% if c.current_balance > 0 %}
                       <form method="post" action="{% url 'customers:customer_write_off' c.pk %}" class="d-inline m-0"
-                            hx-confirm="{% filter force_escape %}{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}{% endfilter %}">
+                            hx-confirm="{% trans "Close this customer's account and book the outstanding debt as a loss? Their unpaid sales will be marked as written off, the cost will appear under losses, and the customer will be deactivated." %}">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-warning" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Write off & close account' %}">{% trans "Write off" %}</button>
                       </form>
                     {% endif %}
                     <form method="post" action="{% url 'customers:customer_delete' c.pk %}" class="d-inline m-0"
-                          hx-confirm="{% filter force_escape %}{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}{% endfilter %}">
+                          hx-confirm="{% trans "Permanently delete this customer? All their sales, payments, ledger entries and phones will be removed. This cannot be undone." %}">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-outline-danger" title="{% trans 'Delete customer' %}">{% trans "Delete" %}</button>
                     </form>
@@ -127,5 +112,6 @@
     </div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 </div>
 {% endblock %}

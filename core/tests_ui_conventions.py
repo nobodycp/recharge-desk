@@ -92,7 +92,6 @@ LEGACY_PAGE_HEAD = {  # 43 files
     "templates/customers/customer_detail.html",
     "templates/customers/customer_detailed_invoice.html",
     "templates/customers/customer_form.html",
-    "templates/customers/customer_list.html",
     "templates/customers/customer_statement.html",
     "templates/customers/payment_submissions_list.html",
     "templates/employees/my_balance.html",

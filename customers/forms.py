@@ -84,6 +84,16 @@ class EmployeeCustomerPaymentSubmissionForm(forms.Form):
         return cleaned
 
 
+class CustomerSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label=_("Search by name or phone"),
+        widget=forms.TextInput(
+            attrs={"id": "cust-q", "type": "search", "autocomplete": "off"},
+        ),
+    )
+
+
 class CustomerForm(forms.ModelForm):
     """Create / edit a customer record (manager-side)."""
 
