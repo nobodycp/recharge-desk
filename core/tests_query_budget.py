@@ -42,7 +42,8 @@ BUDGETS = {
     "customers:customer_list": 11,
     # includes a known per-company N+1 (≈3 q/company); fix in the Suppliers & Stock phase, then tighten
     "inventory:overview": 31,
-    "sales:employee_entry": 8,
+    # +1 for the discarded-charge notice lookup on each visit
+    "sales:employee_entry": 11,
     "sales:employee_recent_sales": 12,
 }
 
