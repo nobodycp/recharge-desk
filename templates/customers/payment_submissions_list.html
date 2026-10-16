@@ -1,26 +1,14 @@
 {% extends "base_management.html" %}
-{% load i18n humanize %}
+{% load i18n humanize kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{% trans "Customer payments awaiting approval" %}</h1>
-    <p class="rd-text-muted mb-0">{% trans "Employee-submitted payments. Approve to apply to the customer account and FIFO settlement." %}</p>
-  </div>
-  <a class="btn btn-outline-secondary" href="{% url 'customers:customer_list' %}">{% trans "Customers" %}</a>
-</div>
+<div class="rd-page">
+{% url 'customers:customer_list' as customers_url %}
+{% url 'customers:customer_payment_submissions_list' as submissions_url %}
+{% trans "Customers" as customers_label %}
+{% trans "Employee-submitted payments. Approve to apply to the customer account and FIFO settlement." as submissions_subtitle %}
+{% rd_page_header title subtitle=submissions_subtitle back_url=customers_url back_label=customers_label %}{% end_rd_page_header %}
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-12 col-md-6 col-lg-5">
-        <label class="form-label small mb-1" for="pay-sub-q">{% trans "Search" %}</label>
-        <input id="pay-sub-q" type="search" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="{% trans 'Customer, employee, method…' %}" autocomplete="off">
-      </div>
-      <div class="col-md-3 col-lg-2"><button class="btn btn-primary w-100" type="submit">{% trans "Apply" %}</button></div>
-      <div class="col-md-3 col-lg-2"><a class="btn btn-outline-secondary w-100" href="{% url 'customers:customer_payment_submissions_list' %}">{% trans "Reset" %}</a></div>
-    </form>
-  </div>
-</div>
+{% rd_filter_card card_form action=submissions_url reset_url=submissions_url %}
 
 <div class="rd-card overflow-hidden rd-datagrid">
   <div class="rd-table-dual rd-datagrid-body">
@@ -127,5 +115,6 @@
     </div>
   </div>
   {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 </div>
 {% endblock %}

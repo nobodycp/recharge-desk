@@ -275,3 +275,31 @@ class CustomerDocumentsKitTests(TestCase):
                     self.assertContains(r, self.customer.name)
                     self.assertContains(r, " · من ")
                     self.assertNotContains(r, " · From ")
+
+
+class CustomerPaymentSubmissionsKitTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("custsubmissionskit", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_payment_submissions_list_uses_kit_header_and_filter(self):
+        r = self.client.get(
+            reverse("customers:customer_payment_submissions_list"),
+            {"q": "needle"},
+        )
+
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '<div class="rd-page">')
+        self.assertContains(r, '<header class="rd-page-head">')
+        self.assertContains(r, reverse("customers:customer_list"))
+        self.assertContains(r, "rd-filter")
+        self.assertContains(r, 'id="pay-sub-q"')
+        self.assertContains(r, 'name="q"')
+        self.assertContains(r, 'value="needle"')

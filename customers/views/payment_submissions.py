@@ -26,6 +26,21 @@ class RejectSubmissionForm(forms.Form):
     )
 
 
+class PaymentSubmissionSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label=_("Search"),
+        widget=forms.TextInput(
+            attrs={
+                "id": "pay-sub-q",
+                "type": "search",
+                "placeholder": _("Customer, employee, method…"),
+                "autocomplete": "off",
+            }
+        ),
+    )
+
+
 @management_required
 def customer_payment_submissions_list(request):
     qs = (
@@ -57,6 +72,7 @@ def customer_payment_submissions_list(request):
             "title": _("Customer payments awaiting approval"),
             "page_obj": page_obj,
             "q": q,
+            "card_form": PaymentSubmissionSearchForm(initial={"q": q}),
         },
     )
 
