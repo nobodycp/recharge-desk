@@ -69,6 +69,47 @@ def paid_sales_only(queryset):
     return queryset.filter(status=Sale.Status.PAID)
 
 
+def pending_cash_sales(request, get=None):
+    """Pending sales the till still expects, with the pending-payments filters.
+
+    ``get`` defaults to ``request.GET``. Pass a ``QueryDict`` when a bulk
+    action must re-apply the filters from a posted ``next_query``.
+    """
+    from django.db.models import Q
+
+    from sales.forms import PendingPaymentsFilterForm
+    from sales.models import Sale
+
+    get = request.GET if get is None else get
+    original = request.GET
+    request.GET = get
+    try:
+        qs = Sale.objects.filter(status=Sale.Status.PENDING, on_account=False).select_related(
+            "company",
+            "product",
+            "product__line",
+            "payment_method",
+            "created_by",
+            "employee_recipient",
+            "employee_recipient__user",
+            "employee_recipient__user__profile",
+        )
+        form = PendingPaymentsFilterForm(get or None)
+        data = form.cleaned_data if form.is_valid() else {}
+        qs = apply_management_sale_filter_data(qs, data, omit_status=True)
+        q = (get.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(reference_number__icontains=q)
+                | Q(payer_name__icontains=q)
+                | Q(product__line__name__icontains=q)
+                | Q(company__name__icontains=q)
+            )
+        return apply_sale_list_ordering(request, qs)
+    finally:
+        request.GET = original
+
+
 def apply_management_sale_filter_data(qs, data: Optional[Dict[str, Any]], *, omit_status: bool = False):
     """Apply ManagementSaleFilterForm-style filters to a Sale queryset."""
     if not data:

@@ -3,7 +3,8 @@
 {% block content %}
 <div class="rd-page">
 {% trans "Line statement" as report_title %}
-{% rd_page_header report_title %}{% end_rd_page_header %}
+{% trans "Save updates number, ICCID, and notes. Changing the number restarts the disconnect countdown." as report_help %}
+{% rd_page_header report_title subtitle=report_help %}{% end_rd_page_header %}
 
 {% active_filter_count as phone_lines_filter_active %}
 {% include "partials/filter_card_open.html" with active_count=phone_lines_filter_active card_open=phone_lines_filter_active %}
@@ -31,4 +32,115 @@
   {% include "reports/partials/phone_lines_report_results.html" %}
 </div>
 </div>
+<script>
+(function () {
+  var rootId = "phone-lines-list-results";
+  document.body.addEventListener("phoneLinesRemoved", function (ev) {
+    var keys = (ev.detail && ev.detail.keys) || [];
+    var box = document.getElementById(rootId);
+    if (!box || !keys.length) return;
+    var grid = box.querySelector("[data-rd-select]");
+    if (grid) {
+      var left = parseInt(grid.getAttribute("data-match-count") || "0", 10) - keys.length;
+      grid.setAttribute("data-match-count", String(Math.max(0, left)));
+    }
+    var emptyLabel = (grid && grid.getAttribute("data-empty-label")) || "";
+    box.querySelectorAll("[data-phone-line]").forEach(function (el) {
+      if (keys.indexOf(el.getAttribute("data-phone-line")) !== -1) el.remove();
+    });
+    var tbody = box.querySelector("tbody");
+    if (tbody && !tbody.querySelector("[data-phone-line]")) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = 12;
+      td.className = "text-center py-4 text-secondary";
+      td.textContent = emptyLabel;
+      tr.appendChild(td);
+      tbody.replaceChildren(tr);
+    }
+    var stack = box.querySelector(".rd-mobile-stack");
+    if (stack && !stack.querySelector("[data-phone-line]")) {
+      var note = document.createElement("div");
+      note.className = "text-center text-secondary py-4";
+      note.textContent = emptyLabel;
+      stack.appendChild(note);
+    }
+    if (window.rdSelectSync) window.rdSelectSync(grid || box);
+  });
+
+  document.body.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-rd-copy-numbers]");
+    if (!btn) return;
+    var form = btn.closest("form");
+    var grid = form && form.closest("[data-rd-select]");
+    if (!form || !grid) return;
+    ev.preventDefault();
+
+    function toast(kind, message) {
+      if (window.rdToast) window.rdToast(message, kind);
+    }
+
+    function finish(text) {
+      var numbers = text.split("\n").map(function (line) { return line.trim(); }).filter(Boolean);
+      if (!numbers.length) {
+        toast("error", btn.getAttribute("data-empty") || "");
+        return;
+      }
+      var payload = numbers.join("\n");
+      var done = (btn.getAttribute("data-copied") || "").replace("%(count)s", String(numbers.length));
+      var write = (navigator.clipboard && navigator.clipboard.writeText)
+        ? navigator.clipboard.writeText(payload)
+        : new Promise(function (resolve, reject) {
+            var area = document.createElement("textarea");
+            area.value = payload;
+            document.body.appendChild(area);
+            area.select();
+            try {
+              document.execCommand("copy") ? resolve() : reject();
+            } catch (err) {
+              reject(err);
+            }
+            area.remove();
+          });
+      write.then(function () { toast("success", done); }, function () {
+        toast("error", btn.getAttribute("data-failed") || "");
+      });
+    }
+
+    if (grid.getAttribute("data-rd-select-mode") === "all") {
+      var body = new FormData();
+      var token = form.querySelector("[name=csrfmiddlewaretoken]");
+      var query = form.querySelector("[name=next_query]");
+      body.append("csrfmiddlewaretoken", token ? token.value : "");
+      body.append("action", "copy");
+      body.append("match", "all");
+      body.append("next_query", query ? query.value : "");
+      fetch(form.getAttribute("action"), {
+        method: "POST",
+        body: body,
+        credentials: "same-origin",
+        headers: { Accept: "text/plain" }
+      }).then(function (response) {
+        if (!response.ok) throw new Error("copy");
+        return response.text();
+      }).then(finish, function () {
+        toast("error", btn.getAttribute("data-failed") || "");
+      });
+      return;
+    }
+
+    var wide = window.matchMedia("(min-width: 768px)").matches;
+    var scope = grid.querySelector(wide ? "tbody" : ".rd-mobile-stack");
+    var lines = [];
+    if (scope) {
+      scope.querySelectorAll("[data-rd-select-row]").forEach(function (input) {
+        if (!input.checked) return;
+        var number = (input.getAttribute("data-copy-number") || "").trim();
+        if (number) lines.push(number);
+      });
+    }
+    finish(lines.join("\n"));
+  });
+})();
+</script>
 {% endblock %}

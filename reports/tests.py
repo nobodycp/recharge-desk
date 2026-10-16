@@ -1219,6 +1219,118 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertIn("055stmtb001", refs)
         self.assertNotIn("055stmtb002", refs)
 
+    def test_htmx_delete_does_not_rebuild_the_grid(self):
+        s = self._make_sale(ref="055STMTF001", paid=True)
+        self._age_sale(s, days_ago=5, duration_days=30)
+        r = self.client.post(
+            reverse("reports:phone_line_delete", kwargs={"ref_key": "055STMTF001"}),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r["HX-Reswap"], "none")
+        self.assertIn("phoneLinesRemoved", r["HX-Trigger"])
+        self.assertNotIn("rd-stale-phones-grid", r.content.decode())
+        self.assertTrue(
+            PhoneLineTracking.objects.get(reference_key="055stmtf001").is_dismissed
+        )
+        self.assertTrue(Sale.objects.filter(pk=s.pk).exists())
+
+    def test_bulk_delete_and_renew(self):
+        overdue = self._make_sale(ref="055STMTG001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMTG002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        page = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertContains(page, "data-rd-select-all")
+        self.assertContains(page, "data-rd-select")
+
+        deleted = self.client.post(
+            reverse("reports:phone_lines_bulk"),
+            {"action": "delete", "refs": ["055STMTG002"]},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted["HX-Reswap"], "none")
+        self.assertTrue(
+            PhoneLineTracking.objects.get(reference_key="055stmtg002").is_dismissed
+        )
+        self.assertFalse(
+            PhoneLineTracking.objects.filter(reference_key="055stmtg001", is_dismissed=True).exists()
+        )
+
+        renewed = self.client.post(
+            reverse("reports:phone_lines_bulk"),
+            {"action": "renew", "refs": ["055STMTG001", "055STMTG002"]},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(renewed.status_code, 200)
+        self.assertIn("rd-stale-phones-grid", renewed.content.decode())
+        meta = PhoneLineTracking.objects.get(reference_key="055stmtg001")
+        self.assertIsNotNone(meta.manual_reset_at)
+        # The active line is not overdue, so renew leaves it dismissed from the delete.
+        self.assertTrue(
+            PhoneLineTracking.objects.get(reference_key="055stmtg002").is_dismissed
+        )
+
+    def test_bulk_match_all_follows_the_filter(self):
+        overdue = self._make_sale(ref="055STMTM001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055STMTM002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        page = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertContains(page, "data-rd-select-match")
+        self.assertContains(page, "rd-select-slot")
+        deleted = self.client.post(
+            reverse("reports:phone_lines_bulk"),
+            {
+                "action": "delete",
+                "match": "all",
+                "refs": ["055STMTM002"],
+                "next_query": "status=overdue",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertFalse(deleted.has_header("HX-Reswap"))
+        self.assertTrue(
+            PhoneLineTracking.objects.get(reference_key="055stmtm001").is_dismissed
+        )
+        self.assertFalse(
+            PhoneLineTracking.objects.filter(
+                reference_key="055stmtm002", is_dismissed=True
+            ).exists()
+        )
+
+    def test_bulk_copy_numbers_are_numbers_only(self):
+        overdue = self._make_sale(ref="055COPY0001", paid=True)
+        self._age_sale(overdue, days_ago=130, duration_days=30)
+        active = self._make_sale(ref="055COPY0002", paid=True)
+        self._age_sale(active, days_ago=5, duration_days=30)
+        page = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertContains(page, "data-rd-copy-numbers")
+        self.assertContains(page, 'data-copy-number="055COPY0001"')
+        with translation.override("ar"):
+            from django.template import engines
+
+            rendered = engines["django"].from_string(
+                "{% load i18n %}{% trans 'Copied %(count)s numbers.' %}"
+            ).render({})
+        self.assertEqual(rendered, "تم نسخ %(count)s رقماً.")
+
+        copied = self.client.post(
+            reverse("reports:phone_lines_bulk"),
+            {"action": "copy", "refs": ["055COPY0002", "055COPY0001"]},
+        )
+        self.assertEqual(copied.status_code, 200)
+        self.assertTrue(copied["Content-Type"].startswith("text/plain"))
+        self.assertEqual(copied.content.decode(), "055COPY0002\n055COPY0001")
+
+        filtered = self.client.post(
+            reverse("reports:phone_lines_bulk"),
+            {"action": "copy", "match": "all", "next_query": "status=overdue"},
+        )
+        self.assertEqual(filtered.content.decode(), "055COPY0001")
+
     def test_disconnect_report_removed(self):
         from django.urls import NoReverseMatch
 

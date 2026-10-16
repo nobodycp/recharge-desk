@@ -58,7 +58,7 @@ html {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Tokens — light (Pearl: warm off-white, ink primary, orange accent)         */
+/* Tokens — light (Pearl: warm off-white, ink primary, logo-red accent)      */
 /* -------------------------------------------------------------------------- */
 [data-bs-theme="light"] {
   color-scheme: light;
@@ -69,11 +69,11 @@ html {
   --rd-faint: #a3a39e;
   --rd-surface: #ffffff;
   --rd-surface-2: #f4f4f2;
-  --rd-accent: #ff5a1f;
-  --rd-accent-soft: rgba(255, 90, 31, 0.1);
-  --rd-on-accent: #0a0a0a;
-  /* Text-safe orange (>= 4.5:1 on surface). Orange fills are accent only. */
-  --rd-accent-ink: #c2410c;
+  --rd-accent: #d00000;
+  --rd-accent-soft: rgba(208, 0, 0, 0.1);
+  --rd-on-accent: #ffffff;
+  /* Text-safe logo red (>= 4.5:1 on surface). Red fills are accent only. */
+  --rd-accent-ink: #9b0c14;
   --rd-primary-bg: #0a0a0a;
   --rd-primary-fg: #ffffff;
 
@@ -114,14 +114,14 @@ html {
   --bs-border-color-translucent: rgba(10, 10, 10, 0.08);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
-  --rd-accent-hover: #e84a10;
+  --rd-accent-hover: #b00000;
   --rd-accent-muted: var(--rd-accent-soft);
-  --rd-accent-2: #ff5a1f;
-  /* Text-safe orange: fill behind white text / small text on an orange tint (>= 4.5:1). */
-  --rd-accent-2-strong: #c2410c;
-  --rd-accent-2-strong-rgb: 194, 65, 12;
+  --rd-accent-2: #d00000;
+  /* Text-safe logo red: fill behind white text / small text on a red tint (>= 4.5:1). */
+  --rd-accent-2-strong: #9b0c14;
+  --rd-accent-2-strong-rgb: 155, 12, 20;
   --rd-on-accent-strong: #ffffff;
-  --rd-accent-2-ink: #9a3412;
+  --rd-accent-2-ink: #7a090f;
 
   --rd-success: #0a7a3e;
   --rd-success-soft: #e8f6ee;
@@ -174,7 +174,7 @@ html {
   --bs-link-color: var(--rd-ink);
   --bs-link-color-rgb: 10, 10, 10;
   --bs-link-hover-color: var(--rd-accent-ink);
-  --bs-link-hover-color-rgb: 194, 65, 12;
+  --bs-link-hover-color-rgb: 155, 12, 20;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -189,10 +189,10 @@ html {
   --rd-faint: #6b6b66;
   --rd-surface: #151514;
   --rd-surface-2: #1f1f1d;
-  --rd-accent: #ff6a33;
-  --rd-accent-soft: rgba(255, 106, 51, 0.15);
+  --rd-accent: #ff3b3b;
+  --rd-accent-soft: rgba(255, 59, 59, 0.15);
   --rd-on-accent: #0a0a0a;
-  --rd-accent-ink: #ff8a5c;
+  --rd-accent-ink: #ff9a9a;
   --rd-primary-bg: #f5f5f2;
   --rd-primary-fg: #0a0a0a;
 
@@ -228,13 +228,13 @@ html {
   --bs-border-color-translucent: rgba(255, 255, 255, 0.1);
 
   /* Legacy accent names — kept so existing CSS/templates keep working */
-  --rd-accent-hover: #ff8a5c;
+  --rd-accent-hover: #ff6b6b;
   --rd-accent-muted: var(--rd-accent-soft);
-  --rd-accent-2: #ff6a33;
-  --rd-accent-2-strong: #ff8a5c;
-  --rd-accent-2-strong-rgb: 255, 138, 92;
+  --rd-accent-2: #ff3b3b;
+  --rd-accent-2-strong: #ff9a9a;
+  --rd-accent-2-strong-rgb: 255, 154, 154;
   --rd-on-accent-strong: #0a0a0a;
-  --rd-accent-2-ink: #ff8a5c;
+  --rd-accent-2-ink: #ffb4b4;
 
   --rd-success: #4ade80;
   --rd-success-soft: rgba(74, 222, 128, 0.12);
@@ -282,7 +282,7 @@ html {
   --bs-link-color: var(--rd-ink);
   --bs-link-color-rgb: 245, 245, 242;
   --bs-link-hover-color: var(--rd-accent-ink);
-  --bs-link-hover-color-rgb: 255, 138, 92;
+  --bs-link-hover-color-rgb: 255, 154, 154;
 }
 
 /* @end-tokens */
@@ -615,8 +615,8 @@ html[lang="ar"] .rd-sidebar-brand-name {
    empty space above (sidebar padding) and below (gap + nav section header)
    doesn't visually dwarf the wordmark itself. */
 .rd-sidebar:has(.rd-sidebar-brand--logo) {
-  padding-top: 0.25rem;
-  gap: 0.15rem;
+  padding-top: 0.85rem;
+  gap: 0.65rem;
 }
 
 .rd-sidebar-brand--logo + .rd-sidebar-nav .rd-nav-section:first-child {
@@ -694,7 +694,7 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Sidebar accordion nav — Pearl: muted items, active pill with orange icon    */
+/* Sidebar accordion nav — a raised rail, muted items, logo-red active mark   */
 /* -------------------------------------------------------------------------- */
 /* Declare the palette on BOTH the sidebar (parent) and the nav itself so
    that rules targeting either side resolve the same variables. CSS custom
@@ -703,23 +703,23 @@ html[lang="ar"] .rd-sidebar-brand-name {
    silently resolved to an invalid value (and the sidebar fell back to a
    transparent background).
 
-   The sidebar sits on the page color (it reads as part of the canvas, split
-   off by a hairline). Items read muted; hover is a surface-2 wash; the
-   active item is a raised surface pill (hairline + soft shadow) with ink
-   text and the only orange in the sidebar: its icon. The page color is
-   opaque so the mobile drawer never shows the content through it. */
+   The rail is a surface, one step off the page, so it reads as chrome
+   rather than more canvas. Items stay muted; hover is a surface-2 wash;
+   the active item is an accent tint with a short logo-red mark and an
+   accent icon. The surface is opaque so the mobile drawer never shows
+   the content through it. */
 .rd-sidebar:has(.rd-sidebar-nav--accordion),
 .rd-sidebar-nav--accordion {
-  --rd-nav-bw-bg: var(--bs-body-bg);
+  --rd-nav-bw-bg: var(--rd-surface);
   --rd-nav-bw-surface: var(--rd-surface-2);
   --rd-nav-bw-text: var(--rd-ink);
   --rd-nav-bw-muted: var(--rd-muted);
   --rd-nav-bw-border: var(--bs-border-color);
   --rd-nav-bw-hover: var(--rd-surface-2);
-  --rd-nav-bw-active-bg: var(--rd-surface);
+  --rd-nav-bw-active-bg: var(--rd-accent-soft);
   --rd-nav-bw-active-text: var(--rd-ink);
-  --rd-nav-bw-active-border: var(--bs-border-color);
-  --rd-nav-bw-active-shadow: var(--rd-shadow-xs);
+  --rd-nav-bw-active-border: transparent;
+  --rd-nav-bw-active-shadow: none;
   --rd-nav-bw-active-icon: var(--rd-accent);
 }
 
@@ -729,7 +729,7 @@ html[lang="ar"] .rd-sidebar-brand-name {
 
 [data-bs-theme="dark"] .rd-sidebar:has(.rd-sidebar-nav--accordion),
 [data-bs-theme="dark"] .rd-sidebar-nav--accordion {
-  --rd-nav-bw-active-shadow: var(--rd-shadow-card);
+  --rd-nav-bw-active-shadow: none;
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group {
@@ -738,7 +738,7 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group + .rd-nav-group {
-  margin-top: 0.15rem;
+  margin-top: 0.45rem;
 }
 
 /* Group toggles read as quiet section labels (no fill), not as rows. */
@@ -866,7 +866,10 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 .rd-sidebar-nav--accordion .rd-nav-group.is-open .rd-nav-group-panel-inner {
-  padding-block: 0.1rem 0.2rem;
+  padding-block: 0.15rem 0.35rem;
+  margin-inline-start: 1.05rem;
+  padding-inline-start: 0.55rem;
+  border-inline-start: 1px solid var(--rd-nav-bw-border);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link {
@@ -887,11 +890,23 @@ html[lang="ar"] .rd-sidebar-brand-name {
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link.is-active {
+  position: relative;
   background: var(--rd-nav-bw-active-bg);
   color: var(--rd-nav-bw-active-text);
   border-color: var(--rd-nav-bw-active-border);
   box-shadow: var(--rd-nav-bw-active-shadow);
   font-weight: 600;
+}
+
+.rd-sidebar-nav--accordion .rd-nav-link.is-active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.28rem;
+  top: 0.42rem;
+  bottom: 0.42rem;
+  width: 2px;
+  border-radius: 99px;
+  background: var(--rd-accent);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link.is-active .rd-nav-icon {
@@ -927,7 +942,9 @@ html[lang="ar"] .rd-sidebar-brand-name {
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rd-nav-bw-border);
 }
 
 .rd-sidebar-nav--accordion .rd-nav-link--pinned .rd-nav-icon {
@@ -992,7 +1009,24 @@ html[lang="ar"] .rd-sidebar-brand-name {
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand {
   color: var(--rd-nav-bw-text);
-  padding: 0.3rem 0.5rem;
+  padding: 0.15rem 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--rd-nav-bw-border);
+  border-radius: 0;
+}
+
+.rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand--logo {
+  position: relative;
+}
+
+.rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand--logo::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.85rem;
+  bottom: -1px;
+  width: 1.6rem;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--rd-accent);
 }
 
 .rd-sidebar:has(.rd-sidebar-nav--accordion) .rd-sidebar-brand:hover {
@@ -3571,6 +3605,126 @@ a.rd-person__name:hover {
   white-space: nowrap;
 }
 
+/* Row selection. The header checkbox is this page only. Actions replace the
+   header labels (they are out of flow) so the table does not move. When the
+   page is fully checked and more filtered rows exist, the bar offers
+   "select all results". See DESIGN.md. */
+.rd-select {
+  position: relative;
+}
+
+.rd-select-check {
+  width: 2.4rem;
+  text-align: center;
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 3;
+  background: var(--rd-surface);
+}
+
+.rd-select-check input,
+.rd-select-mobile-all input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--rd-accent);
+}
+
+.rd-select-mobile-all {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin: 0 0 0.35rem;
+  color: var(--rd-muted);
+  font-size: 0.85rem;
+}
+
+.rd-select-slot {
+  display: none;
+  position: absolute;
+  z-index: 6;
+  top: var(--rd-select-top, 0px);
+  height: var(--rd-select-head, 0px);
+  inset-inline-start: var(--rd-select-check, 2.4rem);
+  inset-inline-end: 0;
+  pointer-events: none;
+}
+
+.rd-select.is-selecting .rd-select-slot {
+  display: block;
+  pointer-events: auto;
+}
+
+.rd-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+  margin: 0;
+  padding: 0 0.75rem;
+  background: var(--rd-surface);
+  border-bottom: 1px solid var(--bs-border-color);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.rd-select.is-selecting thead th:not(.rd-select-check) {
+  color: transparent;
+}
+
+.rd-select.is-selecting thead th:not(.rd-select-check) a {
+  visibility: hidden;
+}
+
+.rd-select-bar__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--rd-muted);
+}
+
+.rd-select-bar__count {
+  font-weight: 700;
+  color: var(--rd-ink);
+}
+
+.rd-select-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+  flex: 0 0 auto;
+}
+
+.rd-select-bar__match {
+  padding: 0;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.rd-select [data-rd-select-item].is-selected {
+  background: var(--rd-accent-soft);
+}
+
+@media (max-width: 767.98px) {
+  .rd-select.is-selecting .rd-select-slot {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    inset-inline: 0;
+    height: auto;
+    z-index: 40;
+  }
+
+  .rd-select.is-selecting .rd-select-bar {
+    height: auto;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 0;
+    border-top: 1px solid var(--bs-border-color);
+    box-shadow: var(--rd-shadow-md);
+  }
+}
+
 .rd-table-modern tbody td {
   padding: var(--rd-table-row-pad-y) var(--rd-table-row-pad-x);
   border-bottom: 1px solid var(--bs-border-color);
@@ -4708,6 +4862,73 @@ body.rd-inv-dialog-open {
   .rd-toast,
   .rd-toast.is-leaving {
     transform: none;
+  }
+}
+
+/* Confirm dialog (static/js/rd-confirm.js). Appended to <body>, above shells. */
+.rd-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.rd-confirm[hidden] {
+  display: none !important;
+}
+
+.rd-confirm__backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--rd-scrim);
+}
+
+.rd-confirm__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 24rem);
+  margin-top: min(18vh, 6rem);
+  padding: 1.15rem 1.15rem 1rem;
+  opacity: 0;
+  transform: translateY(0.4rem);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.rd-confirm.is-open .rd-confirm__panel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rd-confirm__text {
+  margin: 0;
+  color: var(--rd-ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rd-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.rd-confirm__actions .btn {
+  min-height: 2.75rem;
+  padding-inline: 1rem;
+}
+
+body.rd-confirm-open {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-confirm__panel {
+    transform: none;
+    transition: none;
   }
 }
 
@@ -7231,13 +7452,34 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
 /* Filters, tables, row actions: `rd_filter_card`, `rd_sort_link`, `row_actions.html`, `empty_row.html`. */
 .rd-filter-grid {
   display: grid;
-  gap: 0.85rem 1rem;
+  column-gap: 1rem;
+  row-gap: 0;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
-  align-items: end;
+  align-items: start;
 }
 
-.rd-filter-grid .rd-field {
-  margin: 0;
+/* Each field occupies label / control / help tracks shared with its neighbours,
+   so help text under one field cannot push the others up or down. */
+.rd-filter-grid > .rd-field,
+.rd-filter-grid > .rd-filter-grid__actions {
+  grid-row: span 3;
+  margin-bottom: 0.85rem;
+}
+
+.rd-filter-grid > .rd-field {
+  display: grid;
+  grid-template-rows: subgrid;
+  margin-bottom: 0.85rem;
+}
+
+.rd-filter-grid > .rd-field > .form-label {
+  align-self: end;
+  margin-bottom: 0.35rem;
+}
+
+.rd-filter-grid > .rd-field > .form-text {
+  align-self: start;
+  margin: 0.35rem 0 0;
 }
 
 .rd-field--wide {
@@ -7255,10 +7497,20 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
 }
 
 .rd-filter-grid__actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  grid-column: -2 / -1;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  justify-content: start;
+  align-items: center;
+  column-gap: 0.5rem;
+  grid-column: span 2;
+  white-space: nowrap;
+}
+
+.rd-filter-grid__actions > * {
+  grid-row: 2;
+  align-self: center;
 }
 
 .rd-empty-row > td {
@@ -7271,7 +7523,8 @@ html[lang="ar"] .rd-card-header :is(.btn, .form-select, .form-control, input, se
 }
 
 @media (max-width: 575.98px) {
-  .rd-field--wide {
+  .rd-field--wide,
+  .rd-filter-grid__actions {
     grid-column: span 1;
   }
 }

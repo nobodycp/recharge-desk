@@ -1118,6 +1118,15 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 1fr);
 }
 
+/* Four columns crush the switch labels on a 320px phone. Two by two keeps
+   the thumb and the words on one tap target. */
+@media (max-width: 359.98px) {
+  .rd-entry-price-row.has-days,
+  .rd-entry-price-row.has-days:not(:has(.rd-entry-switch + .rd-entry-switch)) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 #rd-duration-days-wrap,
 #rd-sell-price-wrap {
   display: flex;
@@ -1160,10 +1169,13 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   font-weight: 600;
 }
 
-/* The label covers the whole switch, so the full 44px is the tap target. */
+/* The label covers the whole switch, so the full 44px is the tap target.
+   The checkbox itself must not also take the click: it sits under this
+   layer, and a second toggle makes the thumb snap back. */
 .rd-entry-switch__label::after {
   content: "";
   position: absolute;
+  z-index: 1;
   inset: 0;
 }
 
@@ -1180,6 +1192,7 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
 .rd-entry-switch__toggle .form-check-input {
   float: none;
   margin: 0;
+  pointer-events: none;
 }
 
 .rd-entry-switch__toggle .form-check-input:focus-visible {

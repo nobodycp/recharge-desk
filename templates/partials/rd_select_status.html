@@ -1,0 +1,12 @@
+{% load i18n %}
+<span class="rd-select-bar__text" data-rd-select-partial>
+  <span class="tabular-nums rd-select-bar__count" data-rd-select-count></span>
+  {% trans "selected" %}
+</span>
+<button type="button" class="btn btn-sm btn-link rd-select-bar__match" data-rd-select-match hidden>
+  {% blocktrans with total=match_count %}Select all {{ total }} results{% endblocktrans %}
+</button>
+<span class="rd-select-bar__text" data-rd-select-all-note hidden>
+  {% blocktrans with total=match_count %}All {{ total }} results are selected.{% endblocktrans %}
+  <button type="button" class="btn btn-sm btn-link rd-select-bar__match" data-rd-select-clear>{% trans "Clear selection" %}</button>
+</span>

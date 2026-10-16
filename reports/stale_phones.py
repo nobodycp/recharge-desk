@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Max
-from django.db.models.functions import Lower, Trim
+from django.db.models import F, Subquery, Window
+from django.db.models.functions import Lower, RowNumber, Trim
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -25,23 +25,43 @@ STATUS_ENDED_UNDER = "ended_under_threshold"
 STATUS_OVERDUE = "overdue"
 
 
-def _latest_sale_per_ref_key(keys: list[str]) -> dict[str, Sale]:
-    """Most recent non-cancelled sale per normalized reference key."""
-    if not keys:
-        return {}
-    qs = (
+def _latest_line_sales() -> list[Sale]:
+    """One non-cancelled sale per reference: the newest by created_at, then pk.
+
+    A window keeps this to a single row per line. Loading every historical
+    sale (the old path) made delete and the statement wait on the whole ledger.
+    """
+    base = (
         Sale.objects.exclude(status=Sale.Status.CANCELLED)
         .annotate(ref_key=Lower(Trim("reference_number")))
-        .filter(ref_key__in=keys)
-        .select_related("company", "customer", "product", "product__line")
-        .order_by("ref_key", "-created_at", "-pk")
+        .exclude(ref_key="")
     )
-    out: dict[str, Sale] = {}
-    for sale in qs:
-        rk = sale.ref_key
-        if rk and rk not in out:
-            out[rk] = sale
-    return out
+    ranked = base.annotate(
+        rn=Window(
+            expression=RowNumber(),
+            partition_by=[F("ref_key")],
+            order_by=[F("created_at").desc(), F("pk").desc()],
+        )
+    )
+    return list(
+        Sale.objects.filter(pk__in=Subquery(ranked.filter(rn=1).values("pk")))
+        .annotate(ref_key=Lower(Trim("reference_number")))
+        .select_related("company", "customer", "product", "product__line")
+    )
+
+
+def _latest_sale_for_key(key: str) -> Sale | None:
+    """Newest non-cancelled sale for one normalized reference. None if absent."""
+    if not key:
+        return None
+    return (
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .annotate(ref_key=Lower(Trim("reference_number")))
+        .filter(ref_key=key)
+        .select_related("company", "customer", "product", "product__line")
+        .order_by("-created_at", "-pk")
+        .first()
+    )
 
 
 def normalize_reference_key(raw: str) -> str:
@@ -104,6 +124,60 @@ def _lifecycle_status(
     return STATUS_ACTIVE
 
 
+def _statement_row(
+    *,
+    sale: Sale,
+    last_activity,
+    meta: PhoneLineTracking | None,
+    threshold_days: int,
+    now,
+    soon_end,
+) -> dict[str, Any]:
+    """One statement row from the line's latest sale."""
+    key = sale.ref_key
+    last, duration, used_manual = effective_activity_clock(
+        sale=sale,
+        sale_last_activity=last_activity or sale.created_at,
+        meta=meta,
+    )
+    subscription_end = last + timedelta(days=duration)
+    disconnect_at = subscription_end + timedelta(days=threshold_days)
+    status = _lifecycle_status(
+        now=now,
+        subscription_end=subscription_end,
+        disconnect_at=disconnect_at,
+        soon_end=soon_end,
+    )
+    days_past_end = max(0, (now - subscription_end).days)
+    line = sale.product.line
+    line_name = line.name if line else ""
+    return {
+        "ref_key": key,
+        "last_activity": last,
+        "display_reference": sale.reference_number or key,
+        "sim_identifier": (meta.sim_identifier if meta else "") or "",
+        "notes": (meta.notes if meta else "") or "",
+        "tracking_id": meta.pk if meta else None,
+        "is_esim": bool(sale.is_esim),
+        "used_manual_renew": used_manual,
+        "status": status,
+        "duration_days": duration,
+        "subscription_end": subscription_end,
+        "disconnect_at": disconnect_at,
+        "days_past_end": days_past_end,
+        "idle_days": days_past_end,
+        "customer_or_payer": (
+            sale.customer.name if sale.customer_id else sale.payer_name
+        ),
+        "company_name": sale.company.name,
+        "company_id": sale.company_id,
+        "line_name": line_name,
+        "line_name_key": normalize_reference_key(line_name),
+        "product_display": line_name,
+        "product_id": sale.product_id,
+    }
+
+
 def phone_lines_aggregate(
     *, threshold_days: int, due_soon_hours: int = 24
 ) -> list[dict[str, Any]]:
@@ -117,28 +191,10 @@ def phone_lines_aggregate(
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
-    base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
-        ref_key=Lower(Trim("reference_number"))
-    )
-    grouped = list(
-        base.values("ref_key")
-        .annotate(last_activity=Max("created_at"))
-        .exclude(ref_key="")
-    )
-    keys = [r["ref_key"] for r in grouped if r["ref_key"]]
-    if not keys:
+    sales = _latest_line_sales()
+    if not sales:
         return []
-
-    display_map: dict[str, str] = {}
-    for row in (
-        base.filter(ref_key__in=keys)
-        .order_by("-created_at")
-        .values("ref_key", "reference_number")
-    ):
-        k = row["ref_key"]
-        if k and k not in display_map:
-            display_map[k] = row["reference_number"] or k
-
+    keys = [s.ref_key for s in sales if s.ref_key]
     metas = {
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
@@ -146,60 +202,22 @@ def phone_lines_aggregate(
     dismissed_keys = {
         k for k, m in metas.items() if getattr(m, "is_dismissed", False)
     }
-    latest_by_key = _latest_sale_per_ref_key(keys)
     now = timezone.now()
     soon_end = now + timedelta(hours=due_soon_hours)
     out: list[dict[str, Any]] = []
-    for row in grouped:
-        key = row["ref_key"] or ""
+    for sale in sales:
+        key = sale.ref_key or ""
         if not key or key in dismissed_keys:
             continue
-        sale = latest_by_key.get(key)
-        if not sale:
-            continue
-        meta = metas.get(key)
-        last, duration, used_manual = effective_activity_clock(
-            sale=sale,
-            sale_last_activity=row["last_activity"] or sale.created_at,
-            meta=meta,
-        )
-        subscription_end = last + timedelta(days=duration)
-        disconnect_at = subscription_end + timedelta(days=threshold_days)
-        status = _lifecycle_status(
-            now=now,
-            subscription_end=subscription_end,
-            disconnect_at=disconnect_at,
-            soon_end=soon_end,
-        )
-        days_past_end = max(0, (now - subscription_end).days)
-        line = sale.product.line
-        line_name = line.name if line else ""
         out.append(
-            {
-                "ref_key": key,
-                "last_activity": last,
-                "display_reference": display_map.get(key, key),
-                "sim_identifier": (meta.sim_identifier if meta else "") or "",
-                "notes": (meta.notes if meta else "") or "",
-                "tracking_id": meta.pk if meta else None,
-                "is_esim": bool(sale.is_esim),
-                "used_manual_renew": used_manual,
-                "status": status,
-                "duration_days": duration,
-                "subscription_end": subscription_end,
-                "disconnect_at": disconnect_at,
-                "days_past_end": days_past_end,
-                "idle_days": days_past_end,
-                "customer_or_payer": (
-                    sale.customer.name if sale.customer_id else sale.payer_name
-                ),
-                "company_name": sale.company.name,
-                "company_id": sale.company_id,
-                "line_name": line_name,
-                "line_name_key": normalize_reference_key(line_name),
-                "product_display": line_name,
-                "product_id": sale.product_id,
-            }
+            _statement_row(
+                sale=sale,
+                last_activity=sale.created_at,
+                meta=metas.get(key),
+                threshold_days=threshold_days,
+                now=now,
+                soon_end=soon_end,
+            )
         )
     return out
 
@@ -222,16 +240,8 @@ def reference_disconnect_counts(
     """
     threshold_days = max(1, int(threshold_days))
     due_soon_hours = max(0, int(due_soon_hours))
-    base = Sale.objects.exclude(status=Sale.Status.CANCELLED).annotate(
-        ref_key=Lower(Trim("reference_number"))
-    )
-    grouped = list(
-        base.values("ref_key")
-        .annotate(last_activity=Max("created_at"))
-        .exclude(ref_key="")
-    )
-    keys = [r["ref_key"] for r in grouped if r["ref_key"]]
-    latest_by_key = _latest_sale_per_ref_key(keys)
+    sales = _latest_line_sales()
+    keys = [s.ref_key for s in sales if s.ref_key]
     metas = {
         m.reference_key: m
         for m in PhoneLineTracking.objects.filter(reference_key__in=keys)
@@ -248,16 +258,13 @@ def reference_disconnect_counts(
         STATUS_OVERDUE: 0,
     }
     esim_active = 0
-    for row in grouped:
-        key = row["ref_key"] or ""
+    for sale in sales:
+        key = sale.ref_key or ""
         if not key or key in dismissed_keys:
-            continue
-        sale = latest_by_key.get(key)
-        if not sale:
             continue
         last, duration, _used = effective_activity_clock(
             sale=sale,
-            sale_last_activity=row["last_activity"] or sale.created_at,
+            sale_last_activity=sale.created_at,
             meta=metas.get(key),
         )
         subscription_end = last + timedelta(days=duration)
@@ -348,6 +355,84 @@ def dismiss_phone_line(*, ref_key: str, display_reference: str = "") -> PhoneLin
         meta.is_dismissed = True
         meta.save(update_fields=["is_dismissed", "updated_at"])
     return meta
+
+
+def normalize_ref_keys(raw_keys) -> list[str]:
+    """Unique normalized keys, first-seen order."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in raw_keys:
+        key = normalize_reference_key(raw)
+        if key and key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
+
+
+@transaction.atomic
+def dismiss_phone_lines(keys: list[str]) -> list[str]:
+    """Dismiss every key that still has a non-cancelled sale. Returns those keys."""
+    keys = normalize_ref_keys(keys)
+    if not keys:
+        return []
+    found = list(
+        Sale.objects.exclude(status=Sale.Status.CANCELLED)
+        .annotate(ref_key=Lower(Trim("reference_number")))
+        .filter(ref_key__in=keys)
+        .values_list("ref_key", flat=True)
+        .distinct()
+    )
+    if not found:
+        return []
+    existing = {
+        m.reference_key: m
+        for m in PhoneLineTracking.objects.filter(reference_key__in=found)
+    }
+    to_create = []
+    to_update = []
+    dismissed: list[str] = []
+    for key in found:
+        meta = existing.get(key)
+        if meta is None:
+            to_create.append(
+                PhoneLineTracking(
+                    reference_key=key,
+                    is_dismissed=True,
+                    last_display_reference=key[:64],
+                )
+            )
+            dismissed.append(key)
+        elif not meta.is_dismissed:
+            meta.is_dismissed = True
+            to_update.append(meta)
+            dismissed.append(key)
+        else:
+            dismissed.append(key)
+    if to_create:
+        PhoneLineTracking.objects.bulk_create(to_create)
+    if to_update:
+        PhoneLineTracking.objects.bulk_update(to_update, ["is_dismissed"])
+    return dismissed
+
+
+def phone_line_row(*, ref_key: str, threshold_days: int, due_soon_hours: int = 24) -> dict | None:
+    """One statement row, without building the full inventory."""
+    key = normalize_reference_key(ref_key)
+    sale = _latest_sale_for_key(key)
+    if not sale:
+        return None
+    meta = PhoneLineTracking.objects.filter(reference_key=key).first()
+    if meta is not None and meta.is_dismissed:
+        return None
+    now = timezone.now()
+    return _statement_row(
+        sale=sale,
+        last_activity=sale.created_at,
+        meta=meta,
+        threshold_days=max(1, int(threshold_days)),
+        now=now,
+        soon_end=now + timedelta(hours=max(0, int(due_soon_hours))),
+    )
 
 
 @transaction.atomic

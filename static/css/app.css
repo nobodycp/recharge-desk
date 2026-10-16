@@ -489,6 +489,19 @@
   width: 100%;
 }
 
+.rd-stale-sim-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: center;
+}
+
+@media (min-width: 992px) {
+  .rd-stale-sim-form {
+    grid-template-columns: minmax(6.5rem, 0.9fr) minmax(7rem, 1.1fr) minmax(6rem, 1fr) auto;
+  }
+}
+
 .rd-stale-phone-card .rd-stale-sim-form > .rd-stale-phone-actions__btn {
   width: 100%;
 }

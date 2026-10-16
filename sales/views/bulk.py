@@ -1,7 +1,7 @@
 """Bulk actions on multiple sales (currently: mark a batch as paid)."""
 
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -9,18 +9,26 @@ from django.views.decorators.http import require_POST
 
 from accounts.permissions import management_required
 from sales.models import Sale
+from sales.query_utils import pending_cash_sales
 from sales.services import mark_sale_paid
 
 
 @management_required
 @require_POST
 def bulk_sales_mark_paid(request):
-    ids = []
-    for x in request.POST.getlist("sale_ids"):
-        try:
-            ids.append(int(x))
-        except (TypeError, ValueError):
-            continue
+    if (request.POST.get("match") or "").strip() == "all":
+        ids = list(
+            pending_cash_sales(
+                request, QueryDict(request.POST.get("next_query") or "")
+            ).values_list("pk", flat=True)
+        )
+    else:
+        ids = []
+        for x in request.POST.getlist("sale_ids"):
+            try:
+                ids.append(int(x))
+            except (TypeError, ValueError):
+                continue
     next_url = (request.POST.get("next") or "").strip() or reverse("sales:management_sale_list")
     if not ids:
         messages.warning(request, _("No sales selected."))

@@ -1,12 +1,12 @@
 # Recharge Desk Design System — Pearl
 
-This file is the source of truth for new UI work. Pearl is a calm, warm, RTL-first management interface: off-white paper, ink-black primary actions, one orange accent used sparingly, and clear numbers. `core/tests_ui_conventions.py` and `core/tests_design_tokens.py` enforce the parts that can be checked mechanically; run them after any UI change.
+This file is the source of truth for new UI work. Pearl is a calm, warm, RTL-first management interface: off-white paper, ink-black primary actions, one logo-red accent used sparingly, and clear numbers. `core/tests_ui_conventions.py` and `core/tests_design_tokens.py` enforce the parts that can be checked mechanically; run them after any UI change.
 
 ## Identity
 
 - **Paper and ink.** Warm off-white page, white surfaces, near-black text. Dark mode is the same system on layered warm blacks, never pure `#000`.
 - **Primary = ink.** `btn-primary` is black (white in dark mode). Orange is *not* the primary colour.
-- **Orange = accent only.** Active dots, focus/progress cues, and at most one special action per screen (`btn-accent`, e.g. charge). Never for errors, warnings-as-fill, or decoration.
+- **Logo red = accent only.** The accent is the Pro Sim wordmark red (`#d00000` light, `#ff3b3b` dark). Active dots, focus/progress cues, and at most one special action per screen (`btn-accent`, e.g. charge). Never for errors, warnings-as-fill, or decoration. Gold stays inside the logo.
 - **Dense but quiet.** Operational, data-heavy screens: compact spacing, hairline borders, very light shadows, numbers that line up.
 - **RTL first.** Use logical properties (`margin-inline-*`, `text-start`); no `ml-*`/`mr-*` in new CSS.
 
@@ -34,10 +34,10 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-ink` | `#0a0a0a` | `#f5f5f2` | text, primary fills, focus outline |
 | `--rd-muted` | `#6b6b68` | `#9a9a94` | secondary text (≥ 4.5:1) |
 | `--rd-faint` | `#a3a39e` | `#6b6b66` | placeholders, decorative marks only |
-| `--rd-accent` | `#ff5a1f` | `#ff6a33` | the accent fill (dots, progress, `btn-accent`) |
-| `--rd-accent-soft` | `rgba(255,90,31,.10)` | `rgba(255,106,51,.15)` | accent tint behind small marks |
-| `--rd-accent-ink` | `#c2410c` | `#ff8a5c` | orange *text* (≥ 4.5:1) |
-| `--rd-on-accent` | `#0a0a0a` | `#0a0a0a` | text on an orange fill |
+| `--rd-accent` | `#d00000` | `#ff3b3b` | the accent fill (dots, progress, `btn-accent`); sampled from the logo red |
+| `--rd-accent-soft` | `rgba(208,0,0,.10)` | `rgba(255,59,59,.15)` | accent tint behind small marks |
+| `--rd-accent-ink` | `#9b0c14` | `#ff9a9a` | logo-red *text* (≥ 4.5:1) |
+| `--rd-on-accent` | `#ffffff` | `#0a0a0a` | text on an accent fill |
 | `--rd-primary-bg` / `--rd-primary-fg` | `#0a0a0a` / `#fff` | `#f5f5f2` / `#0a0a0a` | primary buttons |
 | `--rd-success` / `-soft` | `#0a7a3e` / `#e8f6ee` | `#4ade80` / `rgba(74,222,128,.12)` | paid, up |
 | `--rd-warning` / `-soft` | `#c2410c` / `#fff0e9` | `#fbbf24` / `rgba(251,191,36,.12)` | pending, down |
@@ -53,8 +53,8 @@ Defined per theme in `design-system.css` (`[data-bs-theme="light"]` / `"dark"`).
 | `--rd-info` / `--rd-info-soft` | `var(--rd-ink)` / `var(--rd-surface-2)` | same | info = neutral ink (Pearl has no blue) |
 | `--rd-tone-1` / `--rd-tone-2` / `--rd-tone-3` / `--rd-tone-4` / `--rd-tone-5` / `--rd-tone-6` | `#1d4ed8` / `#0f766e` / `#6d28d9` / `#be185d` / `#0e7490` / `#475569` | `#60a5fa` / `#2dd4bf` / `#a78bfa` / `#f472b6` / `#22d3ee` / `#94a3b8` | company identity only (letter marks, ranking bars); never green / red / orange, which mean status. ≥ 4.5:1 on `--rd-surface`. Picked with `rd_tone` (company id cycles) |
 | `--rd-logo-bg` | `#ffffff` | `#f5f5f2` | light tile behind company logos in both themes |
-| `--rd-accent-hover` / `--rd-accent-muted` | `#e84a10` / `var(--rd-accent-soft)` | `#ff8a5c` / `var(--rd-accent-soft)` | legacy accent names, kept so existing CSS keeps working |
-| `--rd-accent-2` / `--rd-accent-2-strong` / `--rd-accent-2-strong-rgb` / `--rd-accent-2-ink` / `--rd-on-accent-strong` | `#ff5a1f` / `#c2410c` / `194, 65, 12` / `#9a3412` / `#fff` | `#ff6a33` / `#ff8a5c` / `255, 138, 92` / `#ff8a5c` / `#0a0a0a` | legacy accent names: the strong variants are text-safe orange (fill behind white text, or small text on an orange tint) |
+| `--rd-accent-hover` / `--rd-accent-muted` | `#b00000` / `var(--rd-accent-soft)` | `#ff6b6b` / `var(--rd-accent-soft)` | legacy accent names, kept so existing CSS keeps working |
+| `--rd-accent-2` / `--rd-accent-2-strong` / `--rd-accent-2-strong-rgb` / `--rd-accent-2-ink` / `--rd-on-accent-strong` | `#d00000` / `#9b0c14` / `155, 12, 20` / `#7a090f` / `#fff` | `#ff3b3b` / `#ff9a9a` / `255, 154, 154` / `#ffb4b4` / `#0a0a0a` | legacy accent names: the strong variants are text-safe logo red (fill behind white text, or small text on a red tint) |
 | `--rd-success-soft` / `--rd-warning-soft` / `--rd-danger-soft` | see rows above | see rows above | tinted backgrounds for status chips and alerts |
 | `--rd-radius-xs … -xl` | `0.375` … `1.375rem` | same | corners |
 
@@ -85,9 +85,9 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 ## Cards And KPIs
 
 - Surfaces: `.rd-card` + `.rd-card-body` / `.rd-card-header` / `.rd-card-footer`. Don't use raw `.card` / `.app-card` in new templates.
-- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark) and stands out through accent only: a 1px edge `color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color))`, an `--rd-accent-soft` icon chip (glyph `--rd-accent-ink`, since raw `--rd-accent` on its tint is 2.78:1 in light) and the `--rd-accent` sparkline (≥ 3:1 on the surface in both themes). Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
+- `.rd-stat` is the KPI card; `.rd-stat--hero` is the one emphasised KPI of a screen. On the management dashboard it follows the theme like the other cards (light surface in light, dark in dark) and stands out through accent only: a 1px edge `color-mix(in srgb, var(--rd-accent) 35%, var(--bs-border-color))`, an `--rd-accent-soft` icon chip (glyph `--rd-accent-ink`, the text-safe logo red) and the `--rd-accent` sparkline (≥ 3:1 on the surface in both themes). Only the employee balance hero (`.rd-balance-stats .rd-stat--hero`) is still an inverted ink/pearl card. Value in `.rd-stat-value`; icon tile `.rd-stat-icon` (`--success|warning|danger|info|muted` tints).
 - Deltas use `.rd-trend--up` (success) / `.rd-trend--down` (warning, **not** danger or orange-fill) / `.rd-trend--flat` (muted on `--rd-surface-2`); it is LTR-isolated. The chip looks the same on the hero card (tinted fill, no special case).
-- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent` (hero card only, orange accent rule).
+- `.rd-spark` is the 2 px non-scaling KPI sparkline, full card width and 1.75rem tall on its own row under the value (ink stroke, mirrored in RTL); it is not rendered for an all-zero or < 2-point series; `.rd-spark--accent` strokes it with `--rd-accent` (hero card only).
 - Partials (all in `templates/partials/`):
   - `kpi_trend.html` — arg `trend` (from `{% rd_trend series as trend %}`: `direction` up|down|flat, `pct`). Renders the chip; the "vs yesterday" text is visually hidden (no `title`).
   - `kpi_sparkline.html` — args `points` (from `{% rd_sparkline_points series "count" as points %}`), optional `accent=True` for `.rd-spark--accent`. Decorative (`aria-hidden`); outputs nothing when `points` is empty (the tag returns `""` for all-zero series).
@@ -106,7 +106,7 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
 ## Buttons
 
 - Primary: `btn btn-primary` (ink). One per action group.
-- The single special action of a screen: `btn btn-accent` (orange, text `--rd-on-accent`). At most one per screen.
+- The single special action of a screen: `btn btn-accent` (logo red, text `--rd-on-accent`). At most one per screen.
 - Secondary/export/edit: `btn btn-outline-secondary`. Permanent delete: `btn btn-outline-danger`. Reversible cancel/void is not red.
 - Table actions are `btn-sm`. Avoid `btn-link` for operational actions.
 - Toggles are Bootstrap `.form-check.form-switch` (Pearl skin in `design-system.css`); don't hand-roll switches. Period/segment pickers: `.rd-period-switch`.
@@ -121,7 +121,7 @@ Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular
 - `.rd-badge--cancelled` — failed / cancelled / destructive.
 - `.rd-badge--neutral` — inactive, metadata, plain labels.
 
-Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are red (`--rd-danger`), never orange.
+Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are `--rd-danger`, not the logo-red accent.
 
 ## Filters, Data Grids, Sorting
 
@@ -150,6 +150,7 @@ Unchanged from the structural contract; only the look is Pearl.
 - Desktop tables: `.rd-table-modern` only. It styles the `<thead>`; **never add `table-light`**.
 - Empty rows: `<div class="empty-state border-0 mb-0">…`.
 - Sortable headers: `.rd-datagrid-sort`; active header owns `is-active is-asc|is-desc`, rendered by the server. No stale `hx-vals` for sort; reset page to `1` on sort change.
+- Row selection (any list with checkboxes and a bulk action) uses `.rd-select` and `static/js/rd-select.js`. The header checkbox selects the current page only. The action bar is `.rd-select-slot`: it covers the column titles and stays out of flow, so the table does not grow, shrink, or shift. When every row on the page is checked and `data-match-count` is larger, the bar offers “Select all N results”; clearing any row leaves that mode. On narrow screens the same bar is fixed to the bottom. Status text is `partials/rd_select_status.html`; the mobile page checkbox is `partials/rd_select_page.html`. Do not put a second toolbar above the table.
 
 ## Forms And Tabs
 
@@ -161,7 +162,7 @@ Unchanged from the structural contract; only the look is Pearl.
 
 - HTMX for list filtering, sorting, pagination and small in-place actions. `hx-target` is the data-grid container, not an inner table (unless replacing a single row).
 - After actions that change summary cards or balances, redirect or refresh the whole section so numbers stay in sync.
-- Irreversible actions: `hx-confirm` or `onsubmit="return confirm(...)"`.
+- Irreversible actions: `hx-confirm` or `onsubmit="return confirm(...)"`. Both open the in-app confirm (`.rd-confirm` / `window.rdConfirm`), not the browser dialog. `alert(...)` is a toast.
 - Feedback goes through Django messages → corner toasts. Never loop over `messages`, never `alert-success`/`alert-danger` boxes; JS uses `window.rdToast` / `window.rdNavigate`. Full rules: `.cursor/rules/ui-navigation-and-toasts.mdc`.
 - Navigation feedback is built in: a top progress bar and a dim on `[data-rd-live].is-live-loading` (`static/js/nav.js`). Mark live-swapped regions with `data-rd-live` instead of writing spinners.
 
@@ -181,7 +182,7 @@ Unchanged from the structural contract; only the look is Pearl.
 
 ## Accessibility
 
-- Body text ≥ 4.5:1; meaningful non-text (borders of inputs, icons, focus) ≥ 3:1. Use `--rd-accent-ink` for orange text, `--rd-muted` (not `--rd-faint`) for readable secondary text.
+- Body text ≥ 4.5:1; meaningful non-text (borders of inputs, icons, focus) ≥ 3:1. Use `--rd-accent-ink` for accent text, `--rd-muted` (not `--rd-faint`) for readable secondary text.
 - Visible keyboard focus everywhere: `:focus-visible` gets a 2 px `--rd-ink` outline (grouped rule at the end of `design-system.css`). New interactive components with custom chrome must be added to that rule.
 - Never rely on colour alone; keep labels and icons with status.
 
@@ -204,7 +205,7 @@ Unchanged from the structural contract; only the look is Pearl.
 - No `table-light`; `rd-table-modern` styles the header.
 - No Google Fonts or other CDN fonts — `fonts_head.html` only.
 - No inline styles for repeated visual patterns — add or reuse a class.
-- No orange for errors, destructive actions or warnings; no orange primary buttons; no more than one `btn-accent` per screen.
+- No accent red for errors, destructive actions or warnings; no accent primary buttons; no more than one `btn-accent` per screen.
 - No new visual style for a single page when an `rd-*` component fits; no raw `.card`, `.table-sm`; no filters inside table headers; no whitespace "balancing".
 - No `alert-success` / `alert-danger` boxes or `messages` loops; no new `<body>`.
 

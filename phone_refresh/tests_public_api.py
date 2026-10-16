@@ -421,6 +421,8 @@ class PublicRefreshAsyncApiTests(TestCase):
         self.assertNotContains(page, "fonts.googleapis.com")
         self.assertContains(page, "css/fonts.css")
         self.assertContains(page, "phone_refresh/css/refresh.css")
+        self.assertContains(page, "phone_refresh/img/logo.webp")
+        self.assertContains(page, "phone_refresh/img/logo-dark.webp")
 
 
 class PublicRefreshPageTokenInjectionTests(TestCase):

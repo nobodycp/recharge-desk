@@ -21,8 +21,11 @@ from reports.models import PhoneLineTracking
 from reports.stale_phones import (
     STATUS_OVERDUE,
     dismiss_phone_line,
+    dismiss_phone_lines,
     filter_stale_rows,
+    normalize_ref_keys,
     normalize_reference_key,
+    phone_line_row,
     phone_lines_aggregate,
     rename_phone_line,
     sort_stale_rows,
@@ -34,6 +37,17 @@ def _with_htmx_toast(response: HttpResponse, message: str, *, level: str = "succ
     """Attach a client toast via HX-Trigger (see static/js/data-ui.js ``rdToast``)."""
     response["HX-Trigger"] = json.dumps(
         {"rdToast": {"message": str(message), "level": level}}
+    )
+    return response
+
+
+def _with_htmx_toast_removed(response: HttpResponse, message: str, keys: list[str]) -> HttpResponse:
+    """Toast plus a browser event that drops those rows without redrawing the grid."""
+    response["HX-Trigger"] = json.dumps(
+        {
+            "rdToast": {"message": str(message), "level": "success"},
+            "phoneLinesRemoved": {"keys": keys},
+        }
     )
     return response
 
@@ -216,10 +230,7 @@ def phone_lines_report(request):
 
 
 def _row_for_ref(*, ref_key: str, threshold_days: int) -> dict | None:
-    for row in phone_lines_aggregate(threshold_days=threshold_days):
-        if row["ref_key"] == ref_key:
-            return row
-    return None
+    return phone_line_row(ref_key=ref_key, threshold_days=threshold_days)
 
 
 @management_required
@@ -369,9 +380,10 @@ def phone_line_delete(request, ref_key: str):
     ok_msg = _("Number removed from the line statement. Sale history is kept.")
     next_query = _list_query_from_request(request)
     if is_htmx(request):
-        return _htmx_phone_lines_results(
-            request, profile, list_query=next_query, toast=ok_msg, level="success"
-        )
+        # Drop the row in the browser. Rebuilding the whole statement was the wait.
+        resp = HttpResponse(status=200)
+        resp["HX-Reswap"] = "none"
+        return _with_htmx_toast_removed(resp, ok_msg, [key])
     messages.success(request, ok_msg)
     return redirect(_safe_list_redirect(request, query=next_query))
 
@@ -412,3 +424,130 @@ def phone_line_renew(request, ref_key: str):
         )
     messages.success(request, ok_msg)
     return redirect(_safe_list_redirect(request, query=next_query))
+
+
+def _posted_ref_keys(request) -> list[str]:
+    raw = request.POST.getlist("refs")
+    blob = request.POST.get("refs") or ""
+    if blob and blob not in raw:
+        raw = list(raw) + blob.splitlines()
+    return normalize_ref_keys(raw)
+
+
+def _display_numbers(keys, threshold_days: int) -> list[str]:
+    """Phone numbers only, in the posted order. No names, status, or ICCID."""
+    wanted = {key for key in keys if key}
+    if not wanted:
+        return []
+    by_key = {
+        row["ref_key"]: (row.get("display_reference") or "").strip()
+        for row in phone_lines_aggregate(threshold_days=threshold_days)
+        if row.get("ref_key") in wanted
+    }
+    return [by_key[key] for key in keys if by_key.get(key)]
+
+
+def _filtered_ref_keys(request, profile, list_query: str) -> list[str]:
+    """Every line matching the current report filters, not just this page."""
+    get = QueryDict(list_query or "")
+    original_get = request.GET
+    request.GET = get
+    try:
+        default_th = int(profile.stale_phone_threshold_days or 85)
+        filter_form = PhoneLinesFilterForm(get or None, default_threshold=default_th)
+        cleaned, days = _phone_lines_filter_cleaned(
+            request, profile, filter_form, default_th=default_th
+        )
+        rows = phone_lines_aggregate(threshold_days=days, due_soon_hours=24)
+        rows = filter_stale_rows(rows, cleaned=cleaned, q=get.get("q", ""))
+        return [row["ref_key"] for row in rows if row.get("ref_key")]
+    finally:
+        request.GET = original_get
+
+
+@management_required
+@require_POST
+def phone_lines_bulk(request):
+    """Delete, renew, or copy numbers for checked lines or the whole filter."""
+    profile = _management_profile(request)
+    action = (request.POST.get("action") or "").strip()
+    next_query = _list_query_from_request(request)
+    list_url = _safe_list_redirect(request, query=next_query)
+    match_all = (request.POST.get("match") or "").strip() == "all"
+    keys = (
+        _filtered_ref_keys(request, profile, next_query)
+        if match_all
+        else _posted_ref_keys(request)
+    )
+
+    def _fail(message: str):
+        if is_htmx(request):
+            resp = HttpResponse(status=200)
+            resp["HX-Reswap"] = "none"
+            return _with_htmx_toast(resp, message, level="error")
+        messages.error(request, message)
+        return redirect(list_url)
+
+    if action == "copy":
+        numbers = _display_numbers(keys, profile.stale_phone_threshold_days) if keys else []
+        if not numbers:
+            return HttpResponse(status=400, content_type="text/plain; charset=utf-8")
+        resp = HttpResponse(
+            "\n".join(numbers),
+            content_type="text/plain; charset=utf-8",
+        )
+        resp["HX-Reswap"] = "none"
+        return resp
+
+    if action not in ("delete", "renew"):
+        return _fail(_("Choose delete or renew."))
+    if not keys:
+        return _fail(_("Select at least one line."))
+
+    days = profile.stale_phone_threshold_days
+    if action == "delete":
+        removed = dismiss_phone_lines(keys)
+        if not removed:
+            return _fail(_("Select at least one line."))
+        ok_msg = _(
+            "Removed %(count)s numbers from the line statement. Sale history is kept."
+        ) % {"count": len(removed)}
+        if is_htmx(request) and match_all:
+            return _htmx_phone_lines_results(
+                request, profile, list_query=next_query, toast=ok_msg, level="success"
+            )
+        if is_htmx(request):
+            resp = HttpResponse(status=200)
+            resp["HX-Reswap"] = "none"
+            return _with_htmx_toast_removed(resp, ok_msg, removed)
+        messages.success(request, ok_msg)
+        return redirect(list_url)
+
+    renewed = 0
+    now = timezone.now()
+    by_key = {
+        row["ref_key"]: row
+        for row in phone_lines_aggregate(threshold_days=days)
+        if row["ref_key"] in set(keys)
+    }
+    for key in keys:
+        row = by_key.get(key)
+        if not row or row.get("status") != STATUS_OVERDUE:
+            continue
+        PhoneLineTracking.objects.update_or_create(
+            reference_key=key,
+            defaults={
+                "manual_reset_at": now,
+                "last_display_reference": (row["display_reference"] or "")[:64],
+            },
+        )
+        renewed += 1
+    if not renewed:
+        return _fail(_("None of the selected lines are overdue."))
+    ok_msg = _("Renewed %(count)s overdue lines as a 1-day charge.") % {"count": renewed}
+    if is_htmx(request):
+        return _htmx_phone_lines_results(
+            request, profile, list_query=next_query, toast=ok_msg, level="success"
+        )
+    messages.success(request, ok_msg)
+    return redirect(list_url)

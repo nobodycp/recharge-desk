@@ -1,0 +1,45 @@
+{% load i18n %}
+<form
+  method="post"
+  action="{% url 'reports:phone_lines_bulk' %}"
+  class="rd-select-bar"
+  data-rd-select-form
+  data-value-name="refs"
+  hx-post="{% url 'reports:phone_lines_bulk' %}"
+  hx-target="#phone-lines-list-results"
+  hx-swap="innerHTML"
+  hx-boost="false"
+>
+  {% csrf_token %}
+  <input type="hidden" name="next_query" value="{{ list_query }}">
+  <span data-rd-select-values></span>
+  {% include "partials/rd_select_status.html" with match_count=page_obj.paginator.count %}
+  <span class="rd-select-bar__actions">
+    <button
+      type="button"
+      class="btn btn-sm btn-outline-primary"
+      data-rd-copy-numbers
+      data-copied="{% trans 'Copied %(count)s numbers.' %}"
+      data-empty="{% trans 'Select at least one line.' %}"
+      data-failed="{% trans 'Could not copy the numbers.' %}"
+    >{% trans "Copy numbers" %}</button>
+    <button
+      type="submit"
+      name="action"
+      value="renew"
+      class="btn btn-sm btn-outline-primary"
+      data-rd-select-needs="overdue"
+      disabled
+      onclick="this.form.setAttribute('hx-swap','innerHTML')"
+      hx-confirm="{% trans "Renew the selected overdue lines as a 1-day charge (no sale created)?" %}"
+    >{% trans "Renew 1 day" %}</button>
+    <button
+      type="submit"
+      name="action"
+      value="delete"
+      class="btn btn-sm btn-outline-danger"
+      onclick="var grid=this.form.closest('[data-rd-select]'); if(!(grid&&grid.getAttribute('data-rd-select-mode')==='all')) this.form.setAttribute('hx-swap','none')"
+      hx-confirm="{% trans "Remove the selected numbers from the line statement? Sale history stays." %}"
+    >{% trans "Delete" %}</button>
+  </span>
+</form>

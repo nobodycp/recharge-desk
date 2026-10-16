@@ -8,10 +8,11 @@ alwaysApply: true
 Full spec: `DESIGN.md`. Tests: `core/tests_ui_conventions.py`, `core/tests_design_tokens.py`.
 
 - Colours come from `--rd-*` tokens in `static/css/design-system.css`. No raw hex in templates, `app.css`, `number-check.css`, `login.css`. New colour = new token in both theme blocks.
-- Primary action is ink (`btn-primary`). Orange is accent only (`btn-accent`, max one per screen, dots, progress). Never orange for errors; errors are `--rd-danger`.
+- Primary action is ink (`btn-primary`). Logo red is accent only (`btn-accent`, max one per screen, dots, progress). Never red-as-accent for errors; errors are `--rd-danger`.
 - Status uses `rd-badge rd-badge--paid|pending|cancelled|neutral`. Never `badge bg-*` / `text-bg-*`. Never `table-light` (`rd-table-modern` styles the header).
 - Fonts are self-hosted: include `partials/fonts_head.html` on any standalone page. No Google Fonts. Numbers use `.tabular-nums`. Keep `html { font-size: 80% }`.
 - Reuse `rd-*` components (`.rd-card`, `.rd-stat`, `.rd-section-tabs`, `.rd-trend--*`, `.rd-skeleton`, `.rd-period-switch`); no inline styles for repeated patterns.
+- Row selection uses `.rd-select` (`static/js/rd-select.js`): page checkbox, actions cover the header with no layout shift, and “select all results” only after the page is fully selected. See DESIGN.md.
 - Motion 150–450 ms, transform/opacity only. Touch targets ≥ 44 px; employee entry fits one screen.
 - Accessibility: text ≥ 4.5:1, meaningful non-text ≥ 3:1, visible `:focus-visible`, never colour alone. Check light and dark.
 - RTL first: logical properties, `{% trans %}` for strings.

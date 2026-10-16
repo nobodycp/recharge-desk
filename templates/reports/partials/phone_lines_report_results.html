@@ -1,11 +1,22 @@
 {% load i18n humanize ui_tags %}
-<div class="rd-card overflow-hidden rd-datagrid rd-stale-phones-grid">
+<div
+  class="rd-card overflow-hidden rd-datagrid rd-stale-phones-grid rd-select"
+  data-rd-select
+  data-empty-label="{% trans 'No lines match these filters.' %}"
+  data-match-count="{{ page_obj.paginator.count }}"
+>
+  <div class="rd-select-slot">
+    {% include "reports/partials/phone_lines_bulk_bar.html" %}
+  </div>
   <div class="rd-table-dual rd-datagrid-body">
     <div class="d-none d-md-block rd-data-shell">
       <div class="table-responsive border-0">
         <table class="table table-sm align-middle mb-0 rd-table-modern">
           <thead>
             <tr>
+              <th class="rd-select-check">
+                <input type="checkbox" data-rd-select-all aria-label="{% trans 'Select all on this page' %}">
+              </th>
               <th>
                 <a class="rd-datagrid-sort {% if sort == 'ref' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'ref' and order == 'desc' %}{% querystring sort='ref' order='asc' page=1 %}{% else %}{% querystring sort='ref' order='desc' page=1 %}{% endif %}">{% trans "Number / reference" %}</a>
               </th>
@@ -30,7 +41,7 @@
               <th class="text-end">
                 <a class="rd-datagrid-sort {% if sort == 'days_past_end' or sort == 'idle_days' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'days_past_end' and order == 'desc' %}{% querystring sort='days_past_end' order='asc' page=1 %}{% else %}{% querystring sort='days_past_end' order='desc' page=1 %}{% endif %}">{% trans "Days past end" %}</a>
               </th>
-              <th style="min-width: 16rem;">
+              <th>
                 <a class="rd-datagrid-sort {% if sort == 'sim' %}is-active is-{{ order }}{% endif %}" href="{% if sort == 'sim' and order == 'desc' %}{% querystring sort='sim' order='asc' page=1 %}{% else %}{% querystring sort='sim' order='desc' page=1 %}{% endif %}">{% trans "Number / ICCID / notes" %}</a>
               </th>
               <th>
@@ -41,7 +52,10 @@
           </thead>
           <tbody>
             {% for row in page_obj.object_list %}
-              <tr>
+              <tr data-phone-line="{{ row.ref_key }}" data-rd-select-item>
+                <td class="rd-select-check">
+                  <input type="checkbox" value="{{ row.ref_key }}" data-copy-number="{{ row.display_reference }}" data-rd-select-row{% if row.status == "overdue" %} data-overdue="1"{% endif %} aria-label="{% trans 'Select' %} {{ row.display_reference }}">
+                </td>
                 <td class="fw-semibold font-monospace text-nowrap">{{ row.display_reference }}</td>
                 <td class="small">{% include "reports/partials/phone_line_status_badge.html" with row=row %}</td>
                 <td class="small">{{ row.customer_or_payer|default:"—" }}</td>
@@ -58,7 +72,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="11" class="text-center py-4 text-secondary">
+                <td colspan="12" class="text-center py-4 text-secondary">
                   {% trans "No lines match these filters." %}
                 </td>
               </tr>
@@ -69,9 +83,11 @@
     </div>
 
     <div class="d-md-none rd-mobile-stack p-2">
+      {% include "partials/rd_select_page.html" %}
       {% for row in page_obj.object_list %}
-        <div class="rd-mobile-row-card rd-stale-phone-card">
+        <div class="rd-mobile-row-card rd-stale-phone-card" data-phone-line="{{ row.ref_key }}" data-rd-select-item>
           <div class="d-flex justify-content-between align-items-start gap-2">
+            <input type="checkbox" value="{{ row.ref_key }}" data-copy-number="{{ row.display_reference }}" data-rd-select-row{% if row.status == "overdue" %} data-overdue="1"{% endif %} aria-label="{% trans 'Select' %} {{ row.display_reference }}">
             <div class="fw-semibold font-monospace">{{ row.display_reference }}</div>
             <span class="tabular-nums fw-bold text-nowrap">{{ row.days_past_end }}d</span>
           </div>

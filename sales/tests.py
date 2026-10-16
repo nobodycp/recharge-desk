@@ -1441,6 +1441,41 @@ class SalesCsvExportTests(TestCase):
         body = b"".join(r.streaming_content).decode("utf-8")
         self.assertIn("0590000222", body)
 
+    def test_bulk_mark_paid_match_all_follows_the_filter(self):
+        other = Sale.objects.create(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000333",
+            payer_name="آخر",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("10"),
+            cost_price_snapshot=Decimal("8"),
+            profit_snapshot=Decimal("2"),
+            loss_snapshot=Decimal("0"),
+            status=Sale.Status.PENDING,
+            created_by=self.boss,
+        )
+        c = Client()
+        c.force_login(self.boss)
+        page = c.get(reverse("sales:pending_payments"))
+        self.assertContains(page, "data-rd-select")
+        self.assertContains(page, "rd-select-slot")
+        self.assertNotContains(page, "rd-datagrid-toolbar")
+        r = c.post(
+            reverse("sales:bulk_sales_mark_paid"),
+            {
+                "match": "all",
+                "sale_ids": [str(other.pk)],
+                "next_query": "q=محمد",
+                "next": reverse("sales:pending_payments"),
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.sale_pending.refresh_from_db()
+        other.refresh_from_db()
+        self.assertEqual(self.sale_pending.status, Sale.Status.PAID)
+        self.assertEqual(other.status, Sale.Status.PENDING)
+
 
 class HxBoostMarkupTests(TestCase):
     """Sort headers and pagination links must update the table in place via

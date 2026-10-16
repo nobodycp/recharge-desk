@@ -109,36 +109,71 @@
 
   function leaveConfirmed(elt) {
     var dirty = document.querySelector("form.is-dirty:not([data-rd-submitting])");
-    if (!dirty || dirty.contains(elt)) return true;
-    return window.confirm(document.body.getAttribute("data-rd-leave-message") || "Leave this page?");
+    if (!dirty || dirty.contains(elt)) return Promise.resolve(true);
+    var message = document.body.getAttribute("data-rd-leave-message") || "Leave this page?";
+    if (window.rdConfirm) return window.rdConfirm(message);
+    return Promise.resolve(window.confirm(message));
   }
 
-  // htmx's own listener has already called preventDefault() once by the time
-  // htmx:confirm fires; any further call came from someone else. The request
-  // is held until the event has reached every listener (window, bubble), and
-  // is still issued synchronously so a form's clicked submit button is kept.
+  function issue(d) {
+    var trigger = d.triggeringEvent;
+    var btn = trigger && trigger.submitter;
+    if (btn && btn.focus) {
+      try { btn.focus({ preventScroll: true }); } catch (err) { btn.focus(); }
+    }
+    d.issueRequest(true);
+  }
+
+  // htmx fires this for every request. preventDefault aborts the native
+  // confirm(); issueRequest(true) sends the request after our dialog.
   document.addEventListener("htmx:confirm", function (evt) {
     var d = evt.detail;
-    if (!isBoosted(d.elt)) return;
+    var boosted = isBoosted(d.elt);
+    if (!boosted && !d.question) return;
     evt.preventDefault();
-    if (d.elt.tagName === "FORM" && d.elt.classList.contains("htmx-request")) return;
-    var special = linkAction(d.elt, d.target);
-    var run = special || function () {
-      if (leaveConfirmed(d.elt)) d.issueRequest();
-    };
-    var trigger = d.triggeringEvent;
-    if (!trigger || !("__rdPrevented" in trigger)) {
-      run();
+    function go() {
+      if (d.elt.tagName === "FORM" && d.elt.classList.contains("htmx-request")) return;
+      if (!boosted) {
+        issue(d);
+        return;
+      }
+      var special = linkAction(d.elt, d.target);
+      var run = special || function () {
+        leaveConfirmed(d.elt).then(function (ok) {
+          if (ok) issue(d);
+        });
+      };
+      var trigger = d.triggeringEvent;
+      if (!trigger || !("__rdPrevented" in trigger)) {
+        run();
+        return;
+      }
+      trigger.__rdPending = function () {
+        trigger.__rdPending = null;
+        if (wasCancelled(trigger)) return;
+        run();
+      };
+      setTimeout(function () {
+        if (trigger.__rdPending) trigger.__rdPending();
+      }, 0);
+    }
+    if (!d.question) {
+      go();
       return;
     }
-    trigger.__rdPending = function () {
-      trigger.__rdPending = null;
-      if (wasCancelled(trigger)) return;
-      run();
-    };
-    setTimeout(function () {
-      if (trigger.__rdPending) trigger.__rdPending();
-    }, 0);
+    if (!window.rdConfirm) {
+      if (window.confirm(d.question)) go();
+      return;
+    }
+    var btn = d.triggeringEvent && d.triggeringEvent.submitter;
+    var danger = !!(btn && btn.classList && (
+      btn.classList.contains("btn-outline-danger") ||
+      btn.classList.contains("btn-danger") ||
+      btn.classList.contains("rd-icon-btn--danger")
+    ));
+    window.rdConfirm(d.question, { danger: danger }).then(function (ok) {
+      if (ok) go();
+    });
   });
 
   function flushPending(e) {

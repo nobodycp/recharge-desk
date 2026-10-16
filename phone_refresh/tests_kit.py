@@ -85,7 +85,6 @@ class PhoneRefreshPageKitTests(SimpleTestCase):
 
     def test_reports_bulk_toolbar_rule_is_well_formed(self):
         source = self._source("reports.html")
-        self.assertIn(
-            ".pr-report-excerpt { max-width: 28rem; }\n  .pr-bulk-toolbar {",
-            source,
-        )
+        self.assertIn(".pr-report-excerpt { max-width: 28rem; }", source)
+        self.assertIn("data-rd-select", source)
+        self.assertNotIn("pr-bulk-toolbar", source)

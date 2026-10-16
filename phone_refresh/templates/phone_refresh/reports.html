@@ -1,4 +1,5 @@
 {% extends "base_management.html" %}
+{% load i18n %}
 {% load ui_tags %}
 {% load kit %}
 {% block content %}
@@ -133,17 +134,6 @@ can break interactivity.
   .pr-source-badge--employee  { background: var(--rd-warning-soft); color: var(--rd-warning); }
   .pr-source-badge--legacy   { background: var(--rd-surface-2); color: var(--rd-muted); }
   .pr-report-excerpt { max-width: 28rem; }
-  .pr-bulk-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-  .pr-bulk-toolbar .pr-bulk-count {
-    color: var(--bs-secondary-color);
-    font-size: 0.85rem;
-  }
 </style>
 
 <div class="rd-page">
@@ -207,25 +197,24 @@ can break interactivity.
     </form>
 {% include "partials/filter_card_close.html" %}
 
-<div class="pr-bulk-toolbar">
-  <button type="button" class="btn btn-sm btn-outline-danger" id="pr-bulk-delete-selected"
-          disabled>حذف المحدد</button>
-  <button type="button" class="btn btn-sm btn-outline-danger" id="pr-bulk-delete-filtered">
-    حذف كل النتائج المطابقة للفلتر
-  </button>
-  <span class="pr-bulk-count" id="pr-bulk-count">لم يتم تحديد أي سجل.</span>
-</div>
-
-<div class="rd-card overflow-hidden rd-datagrid">
+<div class="rd-card overflow-hidden rd-datagrid rd-select" data-rd-select data-match-count="{{ page_obj.paginator.count }}">
+  <div class="rd-select-slot">
+    <div class="rd-select-bar">
+      {% csrf_token %}
+      {% include "partials/rd_select_status.html" with match_count=page_obj.paginator.count %}
+      <span class="rd-select-bar__actions">
+        <button type="button" class="btn btn-sm btn-outline-danger" id="pr-bulk-delete-selected">حذف</button>
+      </span>
+    </div>
+  </div>
   <div class="rd-table-dual rd-datagrid-body">
     <div class="d-none d-md-block rd-data-shell">
       <div class="table-responsive border-0">
         <table class="table mb-0 align-middle rd-table-modern" id="pr-reports-table">
           <thead>
             <tr>
-              <th style="width: 2.5rem;">
-                <input type="checkbox" id="pr-bulk-select-all" class="form-check-input"
-                       aria-label="تحديد الكل">
+              <th class="rd-select-check">
+                <input type="checkbox" data-rd-select-all aria-label="{% trans 'Select all on this page' %}">
               </th>
               <th>الوقت</th>
               <th>الرقم</th>
@@ -241,10 +230,10 @@ can break interactivity.
           </thead>
           <tbody>
             {% for log in page_obj %}
-              <tr class="pr-log-row" data-log-id="{{ log.pk }}" style="cursor: pointer;">
-                <td>
-                  <input type="checkbox" class="form-check-input pr-log-checkbox"
-                         name="log_id" value="{{ log.pk }}"
+              <tr class="pr-log-row" data-log-id="{{ log.pk }}" data-rd-select-item style="cursor: pointer;">
+                <td class="rd-select-check">
+                  <input type="checkbox" class="pr-log-checkbox" data-rd-select-row
+                         value="{{ log.pk }}"
                          aria-label="تحديد السجل {{ log.pk }}">
                 </td>
                 <td class="text-nowrap">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
@@ -285,9 +274,11 @@ can break interactivity.
       </div>
     </div>
     <div class="d-md-none rd-mobile-stack p-2">
+      {% include "partials/rd_select_page.html" %}
       {% for log in page_obj %}
-        <div class="rd-mobile-row-card pr-log-row" data-log-id="{{ log.pk }}" style="cursor: pointer;">
+        <div class="rd-mobile-row-card pr-log-row" data-log-id="{{ log.pk }}" data-rd-select-item style="cursor: pointer;">
           <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <input type="checkbox" class="pr-log-checkbox" data-rd-select-row value="{{ log.pk }}" aria-label="تحديد السجل {{ log.pk }}">
             <div class="fw-semibold">{{ log.phone }}</div>
             <span class="rd-badge">{{ log.status.label }}</span>
           </div>
@@ -654,14 +645,10 @@ can break interactivity.
   });
 })();
 
-// ---- Bulk select + delete --------------------------------------------------
+// ---- Bulk delete (selection chrome is rd-select.js) ------------------------
 (function () {
-  var selectAllEl  = document.getElementById('pr-bulk-select-all');
-  var deleteSelEl  = document.getElementById('pr-bulk-delete-selected');
-  var deleteFltEl  = document.getElementById('pr-bulk-delete-filtered');
-  var countEl      = document.getElementById('pr-bulk-count');
-  var tableEl      = document.getElementById('pr-reports-table');
-  if (!deleteSelEl || !deleteFltEl) { return; }
+  var deleteSelEl = document.getElementById('pr-bulk-delete-selected');
+  if (!deleteSelEl) { return; }
 
   var bulkDeleteUrl = "{% url 'phone_refresh:report_logs_bulk_delete' %}";
 
@@ -671,59 +658,16 @@ can break interactivity.
     return '';
   }
 
-  function rowCheckboxes() {
-    return tableEl ? tableEl.querySelectorAll('.pr-log-checkbox') : [];
+  function toast(message, level) {
+    if (window.rdToast) { window.rdToast(message, level || 'error'); }
   }
-
-  function checkedIds() {
-    var ids = [];
-    rowCheckboxes().forEach(function (cb) {
-      if (cb.checked) { ids.push(cb.value); }
-    });
-    return ids;
-  }
-
-  function refreshToolbar() {
-    var n = checkedIds().length;
-    deleteSelEl.disabled = (n === 0);
-    if (countEl) {
-      countEl.textContent = n === 0
-        ? 'لم يتم تحديد أي سجل.'
-        : ('تم تحديد ' + n + ' سجل.');
-    }
-    if (selectAllEl) {
-      var boxes = rowCheckboxes();
-      var total = boxes.length;
-      selectAllEl.checked = (total > 0 && n === total);
-      selectAllEl.indeterminate = (n > 0 && n < total);
-    }
-  }
-
-  if (selectAllEl) {
-    selectAllEl.addEventListener('change', function () {
-      var on = selectAllEl.checked;
-      rowCheckboxes().forEach(function (cb) { cb.checked = on; });
-      refreshToolbar();
-    });
-  }
-
-  // Prevent row-open from firing when toggling checkboxes; the global
-  // click handler in the detail-modal IIFE above already ignores
-  // <input> elements, but stopping propagation here keeps the row's
-  // cursor:pointer affordance from feeling "sticky" on touch devices.
-  document.addEventListener('change', function (e) {
-    if (e.target.classList && e.target.classList.contains('pr-log-checkbox')) {
-      refreshToolbar();
-    }
-  });
-  document.addEventListener('click', function (e) {
-    if (e.target.classList && e.target.classList.contains('pr-log-checkbox')) {
-      e.stopPropagation();
-    }
-  });
 
   function postBulkDelete(body, confirmMsg) {
-    if (!window.confirm(confirmMsg)) { return; }
+    var ask = window.rdConfirm
+      ? window.rdConfirm(confirmMsg, { danger: true })
+      : Promise.resolve(window.confirm(confirmMsg));
+    ask.then(function (ok) {
+      if (!ok) { return; }
     var formData = new FormData();
     Object.keys(body).forEach(function (k) {
       if (body[k] !== undefined && body[k] !== null) {
@@ -748,40 +692,47 @@ can break interactivity.
       return resp.json();
     }).then(function (data) {
       if (data && data.ok) {
-        window.alert('تم حذف ' + (data.deleted || 0) + ' سجل.');
+        toast('تم حذف ' + (data.deleted || 0) + ' سجل.', 'success');
         window.location.reload();
       } else {
-        window.alert('تعذّر تنفيذ الحذف.');
+        toast('تعذّر تنفيذ الحذف.');
       }
     }).catch(function (err) {
-      window.alert('تعذّر تنفيذ الحذف: ' + err.message);
+      toast('تعذّر تنفيذ الحذف: ' + err.message);
+    });
     });
   }
 
   deleteSelEl.addEventListener('click', function () {
-    var ids = checkedIds();
+    var grid = deleteSelEl.closest('[data-rd-select]');
+    if (grid && grid.getAttribute('data-rd-select-mode') === 'all') {
+      var params = new URLSearchParams(window.location.search);
+      var body = { mode: 'filter' };
+      ['provider', 'status', 'source', 'q'].forEach(function (k) {
+        var v = params.get(k);
+        if (v) { body[k] = v; }
+      });
+      var hasFilter = body.provider || body.status || body.source || body.q;
+      var msg = hasFilter
+        ? 'سيتم حذف كل السجلات المطابقة للفلتر الحالي. هل أنت متأكد؟'
+        : 'لا يوجد فلتر مطبّق — سيتم حذف كل السجلات. هل أنت متأكد تمامًا؟';
+      postBulkDelete(body, msg);
+      return;
+    }
+    var ids = [];
+    var wide = window.matchMedia('(min-width: 768px)').matches;
+    var scope = grid ? grid.querySelector(wide ? 'tbody' : '.rd-mobile-stack') : null;
+    if (scope) {
+      scope.querySelectorAll('[data-rd-select-row]').forEach(function (cb) {
+        if (cb.checked) { ids.push(cb.value); }
+      });
+    }
     if (ids.length === 0) { return; }
     postBulkDelete(
       { mode: 'ids', ids: ids.join(',') },
       'سيتم حذف ' + ids.length + ' سجل المحدد. هل أنت متأكد؟'
     );
   });
-
-  deleteFltEl.addEventListener('click', function () {
-    var params = new URLSearchParams(window.location.search);
-    var body = { mode: 'filter' };
-    ['provider', 'status', 'source', 'q'].forEach(function (k) {
-      var v = params.get(k);
-      if (v) { body[k] = v; }
-    });
-    var hasFilter = body.provider || body.status || body.source || body.q;
-    var msg = hasFilter
-      ? 'سيتم حذف كل السجلات المطابقة للفلتر الحالي. هل أنت متأكد؟'
-      : 'لا يوجد فلتر مطبّق — سيتم حذف كل السجلات. هل أنت متأكد تمامًا؟';
-    postBulkDelete(body, msg);
-  });
-
-  refreshToolbar();
 })();
 </script>
 </div>

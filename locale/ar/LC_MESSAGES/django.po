@@ -7238,3 +7238,51 @@ msgstr "عرض التسويات ذات الفرق ≥ %(min)s (%(hidden)s مخف
 
 #~ msgid "Duration days must be at least 1."
 #~ msgstr "عدد الأيام يجب أن يكون 1 على الأقل."
+
+msgid "Select all on this page"
+msgstr "تحديد كل أسطر هذه الصفحة"
+
+msgid "selected"
+msgstr "محدد"
+
+msgid "Renew the selected overdue lines as a 1-day charge (no sale created)?"
+msgstr "تجديد الأرقام المتأخرة المحددة كشحن يوم واحد (بدون إنشاء بيع)؟"
+
+msgid "Remove the selected numbers from the line statement? Sale history stays."
+msgstr "إزالة الأرقام المحددة من بيان الأرقام؟ سجل المبيعات يبقى."
+
+msgid "Removed %(count)s numbers from the line statement. Sale history is kept."
+msgstr "أُزيل %(count)s رقم من بيان الأرقام. سجل المبيعات محفوظ."
+
+msgid "Renewed %(count)s overdue lines as a 1-day charge."
+msgstr "جُدّد %(count)s رقم متأخر كشحن يوم واحد."
+
+msgid "Select at least one line."
+msgstr "حدّد سطراً واحداً على الأقل."
+
+msgid "None of the selected lines are overdue."
+msgstr "لا يوجد بين المحدد رقم خرج من الوكالة."
+
+msgid "Choose delete or renew."
+msgstr "اختر الحذف أو التجديد."
+
+msgid "Select all %(total)s results"
+msgstr "تحديد كل النتائج (%(total)s)"
+
+msgid "All %(total)s results are selected."
+msgstr "كل النتائج محددة (%(total)s)."
+
+msgid "Clear selection"
+msgstr "إلغاء التحديد"
+
+msgid "Confirm"
+msgstr "تأكيد"
+
+msgid "Copy numbers"
+msgstr "نسخ الأرقام"
+
+msgid "Copied %%(count)s numbers."
+msgstr "تم نسخ %%(count)s رقماً."
+
+msgid "Could not copy the numbers."
+msgstr "تعذّر نسخ الأرقام."

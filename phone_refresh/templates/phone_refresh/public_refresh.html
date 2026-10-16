@@ -27,7 +27,7 @@
     <link rel="apple-touch-icon" href="{% static 'phone_refresh/img/favicon.png' %}" />
     {% endif %}
     {% include "partials/fonts_head.html" %}
-    <link rel="stylesheet" href="{% static 'phone_refresh/css/refresh.css' %}" />
+    <link rel="stylesheet" href="{% static 'phone_refresh/css/refresh.css' %}{{ static_cache_query }}" />
 </head>
 <body>
     <canvas id="bg-canvas" aria-hidden="true"></canvas>
@@ -73,11 +73,9 @@
     <main class="stage">
         <section class="pr-card">
             <div class="logo">
-                <div class="logo-mark" aria-hidden="true">
-                    <picture>
-                        <source srcset="{% static 'phone_refresh/img/logo.webp' %}" type="image/webp" />
-                        <img src="{% static 'phone_refresh/img/logo.png' %}" alt="Pro Sim" width="647" height="220" />
-                    </picture>
+                <div class="logo-mark">
+                    <img class="logo-for-light" src="{% static 'phone_refresh/img/logo.webp' %}" alt="Pro Sim" width="647" height="220" />
+                    <img class="logo-for-dark" src="{% static 'phone_refresh/img/logo-dark.webp' %}" alt="Pro Sim" width="647" height="220" />
                 </div>
             </div>
 
@@ -151,7 +149,7 @@
         </footer>
     </main>
 
-    <script src="{% static 'phone_refresh/js/backgrounds.js' %}"></script>
-    <script src="{% static 'phone_refresh/js/refresh.js' %}"></script>
+    <script src="{% static 'phone_refresh/js/backgrounds.js' %}{{ static_cache_query }}"></script>
+    <script src="{% static 'phone_refresh/js/refresh.js' %}{{ static_cache_query }}"></script>
 </body>
 </html>

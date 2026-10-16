@@ -39,6 +39,11 @@ urlpatterns = [
         name="phone_line_delete",
     ),
     path(
+        "management/reports/phone-lines/bulk/",
+        views_stale_phones.phone_lines_bulk,
+        name="phone_lines_bulk",
+    ),
+    path(
         "management/reports/phone-lines/",
         views_stale_phones.phone_lines_report,
         name="phone_lines_report",

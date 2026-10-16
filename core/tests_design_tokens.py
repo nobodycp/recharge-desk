@@ -35,7 +35,7 @@ class PearlTokenTests(SimpleTestCase):
         for k, v in {
             "--bs-body-bg": "#fafaf8",
             "--rd-ink": "#0a0a0a",
-            "--rd-accent": "#ff5a1f",
+            "--rd-accent": "#d00000",
             "--bs-border-color": "#ececea",
             "--rd-primary-bg": "#0a0a0a",
         }.items():
@@ -46,7 +46,7 @@ class PearlTokenTests(SimpleTestCase):
         for k, v in {
             "--bs-body-bg": "#0b0b0a",
             "--rd-ink": "#f5f5f2",
-            "--rd-accent": "#ff6a33",
+            "--rd-accent": "#ff3b3b",
             "--rd-surface": "#151514",
             "--rd-primary-bg": "#f5f5f2",
         }.items():

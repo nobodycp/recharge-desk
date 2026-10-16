@@ -24,6 +24,7 @@ from sales.query_utils import (
     NEEDS_VERIFICATION,
     apply_management_sale_filter_data,
     apply_sale_list_ordering,
+    pending_cash_sales,
     needs_charge_verification_q,
 )
 from sales.services import (
@@ -93,31 +94,8 @@ def pending_payments(request):
     customer's account (FIFO on the next CustomerPayment), so they belong
     on the customer detail page, not here.
     """
-    qs = (
-        Sale.objects.filter(status=Sale.Status.PENDING, on_account=False)
-        .select_related(
-            "company",
-            "product",
-            "product__line",
-            "payment_method",
-            "created_by",
-            "employee_recipient",
-            "employee_recipient__user",
-            "employee_recipient__user__profile",
-        )
-    )
     form = PendingPaymentsFilterForm(request.GET or None)
-    data = form.cleaned_data if form.is_valid() else {}
-    qs = apply_management_sale_filter_data(qs, data, omit_status=True)
-    q = (request.GET.get("q") or "").strip()
-    if q:
-        qs = qs.filter(
-            Q(reference_number__icontains=q)
-            | Q(payer_name__icontains=q)
-            | Q(product__line__name__icontains=q)
-            | Q(company__name__icontains=q)
-        )
-    qs = apply_sale_list_ordering(request, qs)
+    qs = pending_cash_sales(request)
     page_obj = paginate_request(request, qs)
     ctx = {
         "page_obj": page_obj,

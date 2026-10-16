@@ -5,7 +5,7 @@
     method="post"
     id="stale-sim-form-{{ row.ref_key }}"
     action="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
-    class="rd-stale-sim-form d-flex flex-column gap-1"
+    class="rd-stale-sim-form"
     hx-post="{% url 'reports:stale_phone_sim_save' ref_key=row.ref_key %}"
     hx-target="#phone-lines-list-results"
     hx-swap="innerHTML"
@@ -46,7 +46,4 @@
       {% trans "Save" %}
     </button>
   </form>
-  <div class="form-text mt-1 d-none d-md-block">
-    {% trans "Save updates number, ICCID, and notes. Changing the number restarts the disconnect countdown." %}
-  </div>
 </div>

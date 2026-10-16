@@ -13,7 +13,7 @@ rest, so run it after UI changes.
 ## Already automatic (no extra code needed)
 - Links and forms on new pages are boosted.
 - Download and export links (`download`, `.csv/.xlsx/.pdf/...`, `/export/`, `/media/`) do a real navigation.
-- `onsubmit="return confirm(...)"` and `onclick="return false"` cancel correctly.
+- `onsubmit="return confirm(...)"` and `hx-confirm` open the in-app confirm dialog (`window.rdConfirm`), not the browser dialog. `onclick="return false"` still cancels.
 - `alert(...)` shows an error toast.
 - Unsaved-form prompts and server or network error toasts work.
 - Plain `{{ form.non_field_errors }}` becomes a toast.
