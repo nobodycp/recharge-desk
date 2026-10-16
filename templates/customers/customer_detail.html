@@ -55,18 +55,10 @@
                 <tr id="customer-sale-row-{{ s.pk }}">
                   <td class="small text-nowrap">{{ s.created_at|date:"Y-m-d H:i" }}</td>
                   <td class="text-nowrap">{{ s.reference_number }}</td>
-                  <td>{{ s.product.display_name }}</td>
+                  <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}</td>
                   <td class="text-end tabular-nums">{{ s.sell_price_actual|intcomma }}</td>
                   <td>
-                    {% if s.status == 'awaiting' %}
-                      <span class="rd-badge rd-badge--warning">{% trans "Awaiting" %}</span>
-                    {% elif s.status == 'pending' %}
-                      <span class="rd-badge rd-badge--neutral">{% trans "Pending" %}</span>
-                    {% elif s.status == 'paid' %}
-                      <span class="rd-badge">{% trans "Paid" %}</span>
-                    {% elif s.status == 'cancelled' %}
-                      <span class="rd-badge rd-badge--neutral">{% trans "Cancelled" %}</span>
-                    {% endif %}
+                    {% include "partials/sale_status_badge.html" with sale=s %}
                   </td>
                   <td class="text-end">
                     <button
@@ -264,7 +256,7 @@
                   <td class="small text-nowrap">{{ p.created_at|date:"Y-m-d H:i" }}</td>
                   <td>
                     {% if p.paid_via_employee %}
-                      {% trans "To employee" %}{% if p.employee_recipient %} · {{ p.employee_recipient.display_name }}{% endif %}
+                      <span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% if p.employee_recipient %} · {{ p.employee_recipient.display_name }}{% endif %}
                     {% elif p.payment_method %}
                       {{ p.payment_method.name|tdb }}
                     {% else %}—{% endif %}

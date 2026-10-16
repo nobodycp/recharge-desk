@@ -45,7 +45,7 @@
         <div class="rd-stat-meta">
           <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 column-gap-3">
             <span class="text-nowrap"><span class="text-secondary">{% trans "Volume" %}</span> <span class="fw-semibold tabular-nums">{{ period_volume|intcomma }}</span></span>
-            <span class="text-nowrap"><span class="text-secondary">{% trans "eSIM" %}</span> <span class="fw-semibold tabular-nums">{{ period_esim_count|intcomma }}</span></span>
+            <span class="text-nowrap"><span class="rd-badge rd-sale-esim-badge">{% trans "eSIM" %}</span> <span class="fw-semibold tabular-nums">{{ period_esim_count|intcomma }}</span></span>
           </div>
         </div>
       </div>
@@ -136,7 +136,7 @@
               <span class="rd-phone-lifecycle__swatch" aria-hidden="true"></span>
               <span class="rd-phone-lifecycle__body">
                 <span class="rd-phone-lifecycle__lbl">{% trans "Active lines" %}</span>
-                <a class="rd-phone-lifecycle__hint rd-phone-lifecycle__hint--link" href="{% url 'reports:phone_lines_report' %}?status=active&amp;sim_type=esim">
+                <a class="rd-phone-lifecycle__hint rd-phone-lifecycle__hint--link rd-phone-lifecycle__hint--esim" href="{% url 'reports:phone_lines_report' %}?status=active&amp;sim_type=esim">
                   {% blocktrans with n=phones_esim_active_count %}eSIM: {{ n }}{% endblocktrans %}
                 </a>
               </span>

@@ -75,7 +75,7 @@
             {% for s in sales_page %}
               <tr class="{% if s.status == 'pending' %}rd-row-pending{% endif %}">
                 <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
-                <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</td>
+                <td>{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}</td>
                 <td class="tabular-nums">{{ s.reference_number }} <button type="button" class="btn btn-sm btn-link p-0 rd-copy-ref" data-copy="{{ s.reference_number }}">⎘</button></td>
                 {% if sales_table_full %}
                 <td class="text-truncate rd-truncate-10rem" title="{{ s.payer_name }}">{{ s.payer_name }}</td>
@@ -87,7 +87,7 @@
                 <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
                 <td class="tabular-nums text-end kpi-muted">{% if s.balance_before != None %}{{ s.balance_before|intcomma }}{% else %}—{% endif %}</td>
                 <td class="tabular-nums text-end fw-semibold {% if s.balance_after != None and s.balance_after < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{% if s.balance_after != None %}{{ s.balance_after|intcomma }}{% else %}—{% endif %}</td>
-                <td class="small">{% if s.payment_method %}{{ s.payment_method.name }}{% elif s.on_account %}{% trans "On account" %}{% elif s.paid_via_employee %}{% trans "To employee" %}{% else %}—{% endif %}</td>
+                <td class="small">{% if s.payment_method %}{{ s.payment_method.name }}{% elif s.on_account %}<span class="rd-badge rd-sale-on-account-badge">{% trans "On account" %}</span>{% elif s.paid_via_employee %}<span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% else %}—{% endif %}</td>
                 {% else %}
                 <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
                 <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
@@ -105,7 +105,7 @@
       {% for s in sales_page %}
         <div class="rd-mobile-row-card {% if s.status == 'pending' %}is-pending{% endif %}">
           <div class="small text-secondary">{{ s.created_at }}</div>
-          <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
+          <div class="fw-semibold">{{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}</div>
           <div class="tabular-nums">{{ s.reference_number }}</div>
           {% if sales_table_full %}
           <div class="small">{{ s.payer_name }} · {{ s.operator_name }}</div>

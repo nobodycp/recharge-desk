@@ -93,7 +93,7 @@ Self-hosted, Arabic + Latin subsets, `font-display: swap`. Every full-page templ
   - `kpi_sparkline.html` — args `points` (from `{% rd_sparkline_points series "count" as points %}`), optional `accent=True` for `.rd-spark--accent`. Decorative (`aria-hidden`); outputs nothing when `points` is empty (the tag returns `""` for all-zero series).
   - `empty_state.html` — args `title` (required, already translated), optional `text`, `icon` (`chart` | `building` | `trophy` | `list`; any other non-empty value shows `list`), `action_url` + `action_label`. Static content: it carries no live-region role. Look: light, never a grey well — transparent, compact (1rem) padding, small `--rd-surface-2` icon circle, muted 0.9rem title; standalone = dashed hairline, inside `.rd-card` / `.rd-card-body` = no box at all.
   - `company_mark.html` — args `company` (Company or None), `name`, `cls` (caller's size class, e.g. `rd-supplier-avatar`, `rd-top-avatar`). Shows the company logo on a `--rd-logo-bg` tile (`.rd-company-mark.has-logo`), else the first letter in the company tone (`.rd-tone-N`, from `company.pk|default:name|rd_tone`). Decorative: the name is always printed beside it. Put the same `.rd-tone-N` on a row to colour its ranking bar (`.rd-top-list-fill`).
-- Phone-status donut legend (`.rd-phone-lifecycle`): each count takes its swatch's hue (active = `--rd-success`, ends today = `--rd-accent`, disconnected only = `--rd-danger`, left the agency = `--rd-muted`, the last one a link with a dotted resting underline). The statement chips follow the same pair. Colours are contrast-tested in both themes.
+- Phone-status donut legend (`.rd-phone-lifecycle`): each count takes its swatch's hue (active = `--rd-success`, ends today = `--rd-tone-5`, disconnected only = `--rd-muted`, left the agency = `--rd-accent`, the last one a link with a dotted resting underline). The line-statement chips (`.rd-phone-status`) use the same variables. Colours are contrast-tested in both themes.
 - Supplier balances keep semantic colour: amount `kpi-danger` / `kpi-warning` / `kpi-success` (negative / zero / positive), the status line takes the same hue.
 - Loading placeholders: `.rd-skeleton` (sweep on a pseudo-element, transform only).
 - Avoid large empty cards; merge related small metrics.
@@ -120,7 +120,7 @@ Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular
 - `.rd-badge--conflict` — data conflicts that need review.
 - `.rd-badge--cancelled` — failed / cancelled / destructive.
 - `.rd-badge--neutral` — inactive, metadata, plain labels.
-- Sale chips: loss stays `.rd-badge--cancelled`, payment to an employee is `.rd-badge--pending`, eSIM is `.rd-sale-esim-badge` (identity blue, `--rd-tone-1`). New SIM stays neutral.
+- Sale chips: loss stays `.rd-badge--cancelled`, payment to an employee is `.rd-badge--pending`, on account is `.rd-sale-on-account-badge` (`--rd-tone-3`), eSIM is `.rd-sale-esim-badge` (`--rd-tone-1`). The same classes are used wherever those facts are shown. New SIM stays neutral.
 
 Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are `--rd-danger`, not the logo-red accent.
 

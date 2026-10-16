@@ -14,7 +14,7 @@
     <td class="small text-secondary text-nowrap">{{ s.created_at }}</td>
     <td class="fw-medium">{{ s.company.name }}</td>
     <td>
-      {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
+      {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}
       {% if s.entry_mode == "auto_charge" %}
         <div class="mt-1">{% include "sales/partials/charge_badge.html" with sale=s management=True %}</div>
       {% endif %}

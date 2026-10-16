@@ -76,11 +76,11 @@
             <td>
               {% if entry.sale %}
                 <div class="fw-medium">
-                  {{ entry.sale.company.name }} — {{ entry.sale.product.display_name }}
+                  {{ entry.sale.company.name }} — {{ entry.sale.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=entry.sale %}{% include "partials/sale_employee_payment_badge.html" with sale=entry.sale %}{% include "partials/sale_on_account_badge.html" with sale=entry.sale %}
                 </div>
               {% elif entry.payment %}
                 <div class="fw-medium">
-                  {% if entry.payment.paid_via_employee %}{% trans "To employee" %}{% elif entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
+                  {% if entry.payment.paid_via_employee %}<span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% elif entry.payment.payment_method %}{{ entry.payment.payment_method.name }}{% else %}{% trans "Payment" %}{% endif %}
                 </div>
               {% elif entry.entry_type == 'adjustment' %}
                 <div class="fw-medium">{% trans "Manual adjustment" %}</div>

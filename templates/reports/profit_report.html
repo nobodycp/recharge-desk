@@ -148,7 +148,7 @@
               {% widthratio r.profit max_method_profit 100 as bar %}
               <li class="rd-profit-rank__item">
                 <div class="rd-profit-rank__row">
-                  <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{% if r.payment_method__name %}{{ r.payment_method__name }}{% else %}{% trans "On account" %}{% endif %}</span>
+                  <span class="rd-profit-rank__name"><span class="rd-profit-rank__idx" aria-hidden="true">{{ forloop.counter }}</span>{% if r.payment_method__name %}{{ r.payment_method__name }}{% else %}<span class="rd-badge rd-sale-on-account-badge">{% trans "On account" %}</span>{% endif %}</span>
                   <span class="rd-profit-rank__profit tabular-nums {% if r.profit < 0 %}kpi-danger{% elif r.profit > 0 %}kpi-success{% endif %}">{{ r.profit|intcomma }}</span>
                 </div>
                 <div class="rd-profit-rank__track" aria-hidden="true">

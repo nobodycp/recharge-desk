@@ -42,7 +42,7 @@ One markup for every width: a stacked card below ~40rem of list width, one align
                   <li>
                     <span class="rd-rec-amt rd-rec-neg tabular-nums" dir="ltr">{{ s.cost|floatformat:2 }}</span>
                     <span class="rd-rec-when tabular-nums">{{ s.at|date:"d/m H:i" }}</span>
-                    <span class="rd-rec-what">{{ s.product }}{% if s.is_esim %} <span class="rd-badge rd-badge--neutral">{% trans "eSIM" %}</span>{% endif %}</span>
+                    <span class="rd-rec-what">{{ s.product }}{% if s.is_esim %} <span class="rd-badge rd-sale-esim-badge">{% trans "eSIM" %}</span>{% endif %}</span>
                   </li>
                 {% endfor %}
               </ul>

@@ -978,6 +978,7 @@ class SaleBadgePartialsTests(SimpleTestCase):
                 "rd-badge--pending",
                 "Payment to employee",
             ),
+            ("sale_on_account_badge", {"on_account": True}, "rd-sale-on-account-badge", "On account"),
         )
         for name, sale, variant, text in cases:
             with self.subTest(partial=name):
@@ -994,6 +995,7 @@ class SaleBadgePartialsTests(SimpleTestCase):
         self.assertEqual(
             self._render("sale_employee_payment_badge", paid_via_employee=False).strip(), ""
         )
+        self.assertEqual(self._render("sale_on_account_badge", on_account=False).strip(), "")
 
 
 class EmployeeRecentCssTests(SimpleTestCase):

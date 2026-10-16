@@ -9,7 +9,7 @@
   <div class="rd-pay-row__main">
     <div class="rd-pay-row__who">
       <div class="rd-recent-row__title">
-        <span class="rd-recent-row__name">{{ s.product.display_name }}</span>{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}
+        <span class="rd-recent-row__name">{{ s.product.display_name }}</span>{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}
       </div>
       {% if s.entry_mode == "auto_charge" %}
         <div class="rd-recent-row__charge">{% include "sales/partials/charge_badge.html" with sale=s management=False %}</div>
@@ -19,7 +19,7 @@
       {% endif %}
       <div class="rd-pay-row__sub">
         <bdi class="tabular-nums">{{ s.reference_number }}</bdi>
-        {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% elif s.on_account %} · {% trans "On account" %}{% endif %}
+        {% if s.payment_method %} · {{ s.payment_method.name|tdb }}{% endif %}
       </div>
       <div class="rd-pay-row__sub tabular-nums">{{ s.created_at|date:"Y-m-d H:i" }}</div>
     </div>

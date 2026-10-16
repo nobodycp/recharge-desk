@@ -14,7 +14,7 @@
     <div class="small text-secondary">{{ s.created_at }}</div>
     {% include "partials/sale_status_badge.html" with sale=s %}
   </div>
-  <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}</div>
+  <div class="fw-semibold">{{ s.company.name }} · {{ s.product.display_name }}{% include "partials/sale_esim_badge.html" with sale=s %}{% include "partials/sale_new_sim_badge.html" with sale=s %}{% include "partials/sale_loss_badge.html" with sale=s %}{% include "partials/sale_employee_payment_badge.html" with sale=s %}{% include "partials/sale_on_account_badge.html" with sale=s %}</div>
   {% if s.entry_mode == "auto_charge" %}
     <div class="mt-1">{% include "sales/partials/charge_badge.html" with sale=s management=True %}</div>
   {% endif %}

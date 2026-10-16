@@ -1982,13 +1982,19 @@ a.rd-card:hover {
   color: var(--rd-tone-1);
 }
 
+/* Deferred payment. Violet stays clear of eSIM blue and employee-payment amber. */
+.rd-sale-on-account-badge {
+  background: color-mix(in srgb, var(--rd-tone-3) 14%, transparent);
+  color: var(--rd-tone-3);
+}
+
 /* Scoped size bump for chips that carry data (expense category, audit action): 0.82rem stays above the 0.8rem readable floor. */
 .rd-badge--readable {
   font-size: 0.82rem;
 }
 
 /* Count badges and badges that carry their own icon skip the dot. */
-:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral, .rd-sale-esim-badge):not(.tabular-nums):not(:has(svg))::before {
+:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral, .rd-sale-esim-badge, .rd-sale-on-account-badge):not(.tabular-nums):not(:has(svg))::before {
   content: "";
   flex: none;
   width: 6px;
@@ -6503,11 +6509,12 @@ html[lang="ar"] .rd-user-menu--ava .rd-avatar {
 }
 
 .rd-phone-lifecycle,
-.rd-phone-donut {
+.rd-phone-donut,
+.rd-phone-status {
   --donut-active: var(--rd-success);
-  --donut-due: var(--rd-accent);
-  --donut-grace: var(--rd-danger);
-  --donut-overdue: var(--rd-muted);
+  --donut-due: var(--rd-tone-5);
+  --donut-grace: var(--rd-muted);
+  --donut-overdue: var(--rd-accent);
 }
 
 .rd-phone-donut {
@@ -6711,6 +6718,10 @@ a.rd-phone-lifecycle__hint--link:focus-visible {
   text-decoration: underline;
 }
 
+a.rd-phone-lifecycle__hint--esim {
+  color: var(--rd-tone-1);
+}
+
 /* Owner ruling U3: each number takes its swatch's hue (the dot + text label
    still carry the status, never colour alone). Every colour is >= 4.5:1 on the
    card surface in both themes (tests_design_tokens.PhoneLegendContrastTests). */
@@ -6783,24 +6794,24 @@ a.rd-phone-lifecycle__val:focus-visible {
   border: 1px solid color-mix(in srgb, var(--rd-success) 28%, transparent);
 }
 .rd-phone-status--due {
-  background: var(--rd-warning-soft);
-  color: var(--rd-warning-ink);
-  border: 1px solid color-mix(in srgb, var(--rd-warning) 30%, transparent);
+  background: color-mix(in srgb, var(--donut-due) 10%, transparent);
+  color: var(--donut-due);
+  border: 1px solid color-mix(in srgb, var(--donut-due) 28%, transparent);
 }
 .rd-phone-status--grace {
-  background: var(--rd-danger-soft);
-  color: var(--rd-danger);
-  border: 1px solid color-mix(in srgb, var(--rd-danger) 28%, transparent);
+  background: color-mix(in srgb, var(--donut-grace) 10%, transparent);
+  color: var(--donut-grace);
+  border: 1px solid color-mix(in srgb, var(--donut-grace) 28%, transparent);
 }
 .rd-phone-status--overdue {
-  background: var(--rd-surface-2);
-  color: var(--rd-ink);
-  border: 1px solid var(--bs-border-color);
+  background: color-mix(in srgb, var(--donut-overdue) 10%, transparent);
+  color: var(--donut-overdue);
+  border: 1px solid color-mix(in srgb, var(--donut-overdue) 28%, transparent);
 }
 .rd-phone-status--esim {
-  background: color-mix(in srgb, var(--bs-secondary-color) 12%, transparent);
-  color: var(--bs-secondary-color);
-  border: 1px solid color-mix(in srgb, var(--bs-border-color) 80%, transparent);
+  background: color-mix(in srgb, var(--rd-tone-1) 14%, transparent);
+  color: var(--rd-tone-1);
+  border: 1px solid color-mix(in srgb, var(--rd-tone-1) 28%, transparent);
 }
 
 /* ---------------- Customer invoice / statement layout ---------------
