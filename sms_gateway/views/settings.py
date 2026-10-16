@@ -24,6 +24,7 @@ from sms_gateway.forms import (
     SmsApiGatewayForm,
     SmsDeviceForm,
     SmsGeneralSettingsForm,
+    SmsReportFilterForm,
 )
 from sms_gateway.models import (
     InboundSms,
@@ -304,8 +305,10 @@ def reports_list(request):
     start_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     inbound_qs = InboundSms.objects.select_related("device", "refresh_log").all()
-    q = (request.GET.get("q") or "").strip()
-    state = (request.GET.get("state") or "").strip()
+    report_filter_form = SmsReportFilterForm(request.GET or None)
+    report_filter_form.is_valid()
+    q = (report_filter_form.cleaned_data.get("q") or "").strip()
+    state = report_filter_form.cleaned_data.get("state") or ""
     if q:
         inbound_qs = inbound_qs.filter(from_number__icontains=q)
     if state:
@@ -335,9 +338,7 @@ def reports_list(request):
     ctx = {
         "title": "تقارير تحديث الرسائل",
         "page_obj": page_obj,
-        "q": q,
-        "selected_state": state,
-        "states": InboundSms.State.choices,
+        "report_filter_form": report_filter_form,
         "stats": {
             "received_today": received_today,
             "processed_today": processed_today,

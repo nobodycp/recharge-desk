@@ -45,13 +45,9 @@ _BG = r"(?<![\w-])(?:text-bg|bg)-\w+"
 BS_BADGE = re.compile(rf"{_BADGE}[^>]*?{_BG}|{_BG}[^>]*?{_BADGE}")
 TABLE_LIGHT = re.compile(r"(?<![\w-])table-light(?![\w-])")
 
-LEGACY_BADGES = {  # 1 file
-    "templates/inventory/_serials_paste_field.html",
-}
+LEGACY_BADGES = set()
 LEGACY_TABLE_LIGHT = set()  # 0 files
-LEGACY_HEX = {  # 1 file
-    "templates/sms_gateway/settings_index.html",
-}
+LEGACY_HEX = set()
 
 
 # --- Page kit guardrails (see core/templatetags/kit.py) ---------------------------
@@ -76,15 +72,10 @@ def _lacks_page_header(text):
     )
 
 
-LEGACY_PAGE_HEAD = {  # 2 files
-    "templates/sms_gateway/reports.html",
-    "templates/sms_gateway/settings_index.html",
-}
+LEGACY_PAGE_HEAD = set()
 LEGACY_APP_CARD = set()
 LEGACY_LABEL_TAG = set()
-LEGACY_INLINE_WIDTH = {  # 1 file
-    "templates/core/forbidden.html",
-}
+LEGACY_INLINE_WIDTH = set()
 
 
 def _template_files():

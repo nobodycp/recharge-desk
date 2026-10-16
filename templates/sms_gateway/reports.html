@@ -1,12 +1,10 @@
 {% extends "base_management.html" %}
+{% load kit %}
 {% block content %}
-<div class="rd-page-header d-flex flex-wrap justify-content-between align-items-start gap-3">
-  <div>
-    <h1 class="rd-heading-xl mb-1">{{ title }}</h1>
-    <p class="rd-text-muted mb-0">سجل الرسائل الواردة والصادرة وإحصائيات اليوم.</p>
-  </div>
-  <a class="btn btn-outline-secondary btn-sm" href="{% url 'sms_gateway:settings' %}">الإعدادات</a>
-</div>
+<div class="rd-page">
+  {% rd_page_header title "سجل الرسائل الواردة والصادرة وإحصائيات اليوم." %}
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'sms_gateway:settings' %}">الإعدادات</a>
+  {% end_rd_page_header %}
 
 {% if heartbeat_alerts %}
   <div class="alert alert-warning">تنبيه فصل: {% for d in heartbeat_alerts %}<span class="rd-badge rd-badge--cancelled">{{ d.name }}</span> {% endfor %}</div>
@@ -48,23 +46,8 @@
   </div>
 {% endif %}
 
-<div class="rd-card mb-3">
-  <div class="rd-card-body">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-5"><label class="form-label">بحث برقم المُرسِل</label><input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" dir="ltr"></div>
-      <div class="col-md-4"><label class="form-label">الحالة</label>
-        <select name="state" class="form-select form-select-sm">
-          <option value="">— الكل —</option>
-          {% for value, label in states %}<option value="{{ value }}" {% if selected_state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary btn-sm" type="submit">تطبيق</button>
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'sms_gateway:reports' %}">إعادة ضبط</a>
-      </div>
-    </form>
-  </div>
-</div>
+{% url 'sms_gateway:reports' as reports_url %}
+{% rd_filter_card report_filter_form action=reports_url reset_url=reports_url %}
 
 <div class="rd-card overflow-hidden">
   <div class="table-responsive">
@@ -90,4 +73,5 @@
   </div>
 </div>
 {% include "partials/pagination.html" with page_obj=page_obj %}
+</div>
 {% endblock %}
