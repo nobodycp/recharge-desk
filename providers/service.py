@@ -306,12 +306,8 @@ def _charge_once(
             return adapter.charge(ctx)
         except AuthRequired:
             raise
-        except PermanentError:
-            # A refusal raised before the request leaves (price, period, eligibility).
-            raise
-        except Exception:
-            # The charge call itself failed. Unlike a login error, which is
-            # raised before this runs, the request may already have left.
+        except TransientError:
+            # Adapters raise this only once the charge request may have left.
             may_have_sent = True
             raise
 

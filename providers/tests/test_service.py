@@ -214,12 +214,14 @@ class ServiceTests(TestCase):
         self.assertEqual(outcome.result, ChargeResult.UNVERIFIED)
         self.assertEqual(adapter.calls, 1)
 
-    def test_charge_unexpected_error_is_unverified(self):
+    def test_charge_unexpected_error_before_send_is_failed(self):
         with _with_adapter(StubAdapter(RuntimeError("boom"))), self.assertLogs(
             "providers.service", level="WARNING"
         ):
             outcome = service.charge("stub", _ctx())
-        self.assertEqual(outcome.result, ChargeResult.UNVERIFIED)
+        self.assertEqual(outcome.result, ChargeResult.FAILED)
+        self.assertEqual(outcome.message, "فشل الشحن — خطأ في عملية الشحن")
+        self.assertFalse(outcome.reached_provider)
 
     def test_charge_never_sent_because_login_lock_busy_is_failed(self):
         fake = FakeChargeAdapter.configured(
