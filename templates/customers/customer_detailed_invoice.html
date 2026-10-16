@@ -4,13 +4,15 @@
 <div class="rd-page">
 {# ----- On-screen toolbar (hidden on print) ----- #}
 {% trans "Detailed invoice" as invoice_title %}
-{% blocktrans with name=customer.name start=period_from end=period_to asvar invoice_subtitle %}{{ name }} · From {{ start }} to {{ end }}{% endblocktrans %}
+{% blocktrans with start=period_from end=period_to asvar invoice_period %} · From {{ start }} to {{ end }}{% endblocktrans %}
 <div class="d-print-none">
+{% with invoice_subtitle=customer.name|add:invoice_period %}
 {% rd_page_header invoice_title subtitle=invoice_subtitle %}
   <a class="btn btn-outline-secondary" href="{% url 'customers:customer_statement' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Summary statement" %}</a>
   <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
   <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
 {% end_rd_page_header %}
+{% endwith %}
 </div>
 
 <div class="rd-card mb-3 d-print-none">

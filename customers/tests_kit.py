@@ -2,9 +2,11 @@
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import translation
 
 from accounts.models import UserProfile
 from customers.models import Customer, CustomerPhone
@@ -253,3 +255,23 @@ class CustomerDocumentsKitTests(TestCase):
         self.assertContains(r, '<header class="rd-page-head">')
         self.assertContains(r, "rd-table-modern")
         self.assertNotContains(r, "table-light")
+
+    def test_document_header_period_stays_translated_in_arabic(self):
+        with translation.override("ar"):
+            self.client.cookies[settings.LANGUAGE_COOKIE_NAME] = "ar"
+            urls = (
+                reverse("customers:customer_statement", args=[self.customer.pk]),
+                reverse("customers:customer_detailed_invoice", args=[self.customer.pk]),
+            )
+            for url in urls:
+                with self.subTest(url=url):
+                    r = self.client.get(
+                        url,
+                        {"period_from": "2026-10-01", "period_to": "2026-10-16"},
+                        HTTP_ACCEPT_LANGUAGE="ar",
+                    )
+
+                    self.assertEqual(r.status_code, 200)
+                    self.assertContains(r, self.customer.name)
+                    self.assertContains(r, " · من ")
+                    self.assertNotContains(r, " · From ")

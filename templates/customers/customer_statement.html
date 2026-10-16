@@ -3,14 +3,16 @@
 {% block content %}
 <div class="rd-page">
 {% trans "Customer statement" as statement_title %}
-{% blocktrans with name=customer.name start=period_from end=period_to asvar statement_subtitle %}{{ name }} · From {{ start }} to {{ end }}{% endblocktrans %}
+{% blocktrans with start=period_from end=period_to asvar statement_period %} · From {{ start }} to {{ end }}{% endblocktrans %}
 <div class="d-print-none">
+{% with statement_subtitle=customer.name|add:statement_period %}
 {% rd_page_header statement_title subtitle=statement_subtitle %}
   <a class="btn btn-outline-secondary" href="{% url 'customers:customer_detail' customer.pk %}">{% trans "Back to customer" %}</a>
   <a hx-boost="false" class="btn btn-outline-secondary" href="{% url 'customers:customer_statement_csv' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Export CSV" %}</a>
   <a class="btn btn-outline-primary" href="{% url 'customers:customer_detailed_invoice' customer.pk %}?period_from={{ period_from|date:'Y-m-d' }}&period_to={{ period_to|date:'Y-m-d' }}">{% trans "Detailed invoice" %}</a>
   <button type="button" class="btn btn-primary" onclick="window.print()">{% trans "Print" %}</button>
 {% end_rd_page_header %}
+{% endwith %}
 </div>
 
 <div class="rd-card mb-3 d-print-none">
