@@ -239,21 +239,30 @@ def notify_discarded_charges(request) -> None:
     """Tell this employee about charges that were dropped since they last looked."""
     from django.contrib import messages
 
-    pending = list(
-        ProviderJob.objects.filter(
+    pending = [
+        job
+        for job in ProviderJob.objects.filter(
             kind=ProviderJob.KIND_CHARGE,
             status=ProviderJob.STATUS_DONE,
             result__discarded=True,
             result__user_id=request.user.pk,
-        ).exclude(result__acknowledged=True)[:5]
-    )
+        ).order_by("-finished_at")[:20]
+        if not (job.result or {}).get("acknowledged")
+    ][:5]
     for job in pending:
         phone = (job.result or {}).get("phone") or job.phone
-        messages.error(
-            request,
-            _("Charge for %(phone)s never reached the provider. The sale was not recorded. Record it manually.")
-            % {"phone": phone},
-        )
+        employee_message = (job.result or {}).get("employee_message") or ""
+        if employee_message:
+            messages.error(request, employee_message)
+        else:
+            messages.error(
+                request,
+                _(
+                    "Charge for %(phone)s never reached the provider. "
+                    "The sale was not recorded. Record it manually."
+                )
+                % {"phone": phone},
+            )
         result = dict(job.result or {})
         result["acknowledged"] = True
         ProviderJob.objects.filter(pk=job.pk).update(result=result)

@@ -201,14 +201,12 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
             action="charge", form_token="22222222-2222-4222-8222-222222222222"
         )
         self.assertEqual(resp.status_code, 302)
-        sale = Sale.objects.get()
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(sale.charge_message, "فشل الشحن — السعر غير مطابق")
-        recent = self.client.get(reverse("sales:employee_recent_sales"))
-        self.assert_charge_chip(recent, "failed", "السعر غير مطابق")
+        self.assertFalse(Sale.objects.exists())
+        page = self.client.get(reverse("sales:employee_entry"))
+        self.assertContains(page, "السعر غير مطابق")
         self.client.force_login(self.manager)
         management = self.client.get(reverse("sales:management_sale_list"))
-        self.assertContains(management, "فشل الشحن — السعر غير مطابق")
+        self.assertNotContains(management, "السعر غير مطابق")
 
     def test_traditional_save_stays_manual(self):
         self.post_entry()
@@ -321,7 +319,7 @@ class ManagementChargeTests(ChargeUiTestBase):
         self.assertContains(resp, "Cost difference")
         self.assertContains(resp, "REF-777")
         self.assertContains(resp, "Plan 30")
-        self.assertContains(resp, "provider note")
+        self.assertNotContains(resp, "provider note")
 
     def test_unsent_charge_says_so_and_keeps_the_settle_actions(self):
         from providers.models import ProviderOperation

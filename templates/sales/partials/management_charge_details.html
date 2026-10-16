@@ -22,7 +22,7 @@
         </dd>
       </div>
       <div><dt>{% trans "Last checked" %}</dt><dd class="tabular-nums">{% if s.charge_checked_at %}{{ s.charge_checked_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</dd></div>
-      {% if s.charge_message %}
+      {% if s.charge_status == "unverified" and s.charge_message %}
         <div class="rd-charge-details__message"><dt>{% trans "Provider message" %}</dt><dd>{{ s.charge_message }}</dd></div>
       {% endif %}
     </dl>

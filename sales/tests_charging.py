@@ -238,16 +238,15 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.reversals(sale), 0)
         self.assertEqual(self.fake.sent, 1)
 
-    def test_price_mismatch_is_kept_with_the_provider_reason(self):
+    def test_price_mismatch_is_told_to_the_employee_only(self):
         self.use(raise_before_send=PermanentError("price_mismatch"))
         sale = self.charge()
-        sale.refresh_from_db()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(sale.charge_message, "فشل الشحن — السعر غير مطابق")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
         self.assertEqual(self.balance(), START)
         self.assertEqual(self.fake.sent, 0)
-        self.assertFalse(self.job(sale).result.get("discarded"))
+        result = self.job(sale).result
+        self.assertTrue(result.get("discarded"))
+        self.assertEqual(result.get("employee_message"), "فشل الشحن — السعر غير مطابق")
 
     def test_charge_that_never_starts_is_dropped(self):
         self.use(raise_before_send=NotImplementedError())

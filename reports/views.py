@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib import messages
 from django.db.models import Count, Q, Sum
@@ -22,6 +24,15 @@ from companies.models import Company
 from expenses.models import Expense
 from providers.health import alerts as health_alerts
 from sales.models import Sale
+
+_MONEY = Decimal("0.01")
+
+
+def _money(value):
+    """Two decimal places. SQLite sums otherwise keep a long fractional tail."""
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value or 0))
+    return value.quantize(_MONEY)
 
 
 def _local_today():
@@ -141,7 +152,10 @@ def dashboard(request):
         lambda: _in_period(Expense.objects.all(), "date").aggregate(s=Sum("amount"))["s"]
         or 0,
     )
-    period_net = (period_profit or 0) - (period_expenses or 0)
+    period_volume = _money(period_volume)
+    period_profit = _money(period_profit)
+    period_expenses = _money(period_expenses)
+    period_net = _money((period_profit or 0) - (period_expenses or 0))
 
     # Supplier balances card — keep live (icons / ordering).
     companies = Company.objects.filter(is_active=True).order_by("name")
@@ -200,6 +214,7 @@ def dashboard(request):
         )["s"]
         or 0,
     )
+    period_loss = _money(period_loss)
 
     # Sales chart follows the period: "day" keeps two weeks of context with
     # today highlighted, "month" shows each day of the calendar month, and

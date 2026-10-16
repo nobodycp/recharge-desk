@@ -36,7 +36,7 @@ SYNC_BUDGET_SECONDS = 45
 # Login-path failures: retrying would only queue on the lock again.
 NO_RETRY_TRANSIENT_CODES = frozenset({"login_busy", "login_failed"})
 # The provider answered and refused a charge, without a task being created.
-# These stay on the sale so the employee sees the reason.
+# The employee sees the reason. The sale is not left for management.
 PROVIDER_ANSWER_CODES = frozenset(
     {
         "price_mismatch",
@@ -315,10 +315,12 @@ def _charge_once(
         return run_authenticated(adapter, attempt, lock_wait=_lock_wait(deadline, budget))
     except PermanentError as exc:
         code = _error_text(exc)
+        answered = (not may_have_sent) and code in PROVIDER_ANSWER_CODES
         return ChargeOutcome(
             result=ChargeResult.FAILED,
             message=code,
-            reached_provider=may_have_sent or code in PROVIDER_ANSWER_CODES,
+            reached_provider=may_have_sent,
+            employee_only=answered,
         )
     except Exception as exc:
         if not may_have_sent:

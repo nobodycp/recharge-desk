@@ -68,6 +68,9 @@ class ChargeOutcome:
     # False when no charge request reached the provider. The sale is then
     # dropped instead of left for management.
     reached_provider: bool = True
+    # The provider refused before accepting a charge. The employee sees the
+    # reason; management does not.
+    employee_only: bool = False
 
 
 def _decimal_or_none(value: Any) -> Decimal | None:

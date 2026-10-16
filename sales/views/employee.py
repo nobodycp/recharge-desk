@@ -230,14 +230,23 @@ def employee_entry(request):
                         "failed" if sale.charge_status == Sale.ChargeStatus.FAILED else "pending"
                     )
             if charge_notice == "discarded":
-                messages.error(
-                    request,
-                    _(
-                        "Charge for %(phone)s never reached the provider. "
-                        "The sale was not recorded. Record it manually."
+                from providers.models import ProviderJob
+
+                job = ProviderJob.objects.filter(
+                    idempotency_key=(request.POST.get("form_token") or "").strip()
+                ).first()
+                employee_message = ((job.result or {}) if job else {}).get("employee_message") or ""
+                if employee_message:
+                    messages.error(request, employee_message)
+                else:
+                    messages.error(
+                        request,
+                        _(
+                            "Charge for %(phone)s never reached the provider. "
+                            "The sale was not recorded. Record it manually."
+                        )
+                        % {"phone": form.cleaned_data["reference_number"]},
                     )
-                    % {"phone": form.cleaned_data["reference_number"]},
-                )
             elif charge_notice == "failed":
                 messages.error(
                     request,

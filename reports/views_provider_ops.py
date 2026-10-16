@@ -158,7 +158,9 @@ def provider_operations(request):
         for key in ADAPTERS
     ]
 
-    qs = in_period.filter(provider_key=provider)
+    qs = in_period.filter(provider_key=provider).exclude(
+        service="charge", outcome=OUTCOME_FAILED
+    )
     service = params.get("service") or ""
     if service not in SERVICE_LABELS:
         service = ""
