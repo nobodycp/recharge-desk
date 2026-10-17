@@ -18,23 +18,25 @@ urlpatterns = [
         name="provider_operations",
     ),
     path(
-        # ``str`` (not ``slug``): reference can be Arabic digits/text or shipment ids.
-        "management/reports/phone-lines/edit/<str:ref_key>/",
+        # ``path`` (not ``str``/``slug``): references can include ``/`` (dates,
+        # shipment ids) and Arabic digits/text. ``str`` is [^/]+ and 500s the
+        # whole statement when any matching row has a slash in the key.
+        "management/reports/phone-lines/edit/<path:ref_key>/",
         views_stale_phones.stale_phone_edit,
         name="stale_phone_edit",
     ),
     path(
-        "management/reports/phone-lines/sim/<str:ref_key>/",
+        "management/reports/phone-lines/sim/<path:ref_key>/",
         views_stale_phones.stale_phone_sim_save,
         name="stale_phone_sim_save",
     ),
     path(
-        "management/reports/phone-lines/renew/<str:ref_key>/",
+        "management/reports/phone-lines/renew/<path:ref_key>/",
         views_stale_phones.phone_line_renew,
         name="phone_line_renew",
     ),
     path(
-        "management/reports/phone-lines/delete/<str:ref_key>/",
+        "management/reports/phone-lines/delete/<path:ref_key>/",
         views_stale_phones.phone_line_delete,
         name="phone_line_delete",
     ),

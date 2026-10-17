@@ -1361,6 +1361,30 @@ class PhoneLinesStatementTests(_ReportsBase):
         )
         self.assertEqual(filtered.content.decode(), "055COPY0001")
 
+    def test_slash_in_reference_does_not_500_the_statement(self):
+        """A date-like reference (``12/05/2026 23:30``) must reverse and render."""
+        messy = self._make_sale(ref="12/05/2026 23:30", paid=True)
+        self._age_sale(messy, days_ago=130, duration_days=30)
+        key = "12/05/2026 23:30"
+        for name in (
+            "reports:stale_phone_sim_save",
+            "reports:phone_line_renew",
+            "reports:phone_line_delete",
+            "reports:stale_phone_edit",
+        ):
+            url = reverse(name, kwargs={"ref_key": key})
+            self.assertIn("12/05/2026", url)
+        r = self.client.get(
+            reverse("reports:phone_lines_report"),
+            {
+                "company": self.company.pk,
+                "status": "overdue",
+                "threshold_days": "85",
+            },
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, reverse("reports:stale_phone_sim_save", kwargs={"ref_key": key}))
+
     def test_disconnect_report_removed(self):
         from django.urls import NoReverseMatch
 
