@@ -30,20 +30,32 @@
       '<button type="button" class="btn btn-primary" data-rd-confirm-ok></button>' +
       "</div>";
     document.body.appendChild(host);
+    textEl = host.querySelector(".rd-confirm__text");
+    okBtn = host.querySelector("[data-rd-confirm-ok]");
+    cancelBtn = host.querySelector("[data-rd-confirm-cancel]");
     host.addEventListener("cancel", function (ev) {
       ev.preventDefault();
       finish(false);
     });
+    // Backdrop click (target is the <dialog> itself, not a child).
     host.addEventListener("click", function (ev) {
       if (ev.target === host) finish(false);
     });
-    textEl = host.querySelector(".rd-confirm__text");
-    okBtn = host.querySelector("[data-rd-confirm-ok]");
-    cancelBtn = host.querySelector("[data-rd-confirm-cancel]");
-    host.addEventListener("click", function (ev) {
-      if (ev.target.closest("[data-rd-confirm-ok]")) finish(true);
-      else if (ev.target.closest("[data-rd-confirm-cancel]")) finish(false);
-    });
+    // Bind the buttons directly. A delegated click on <dialog> used to close
+    // synchronously, so the same gesture fell through to the Delete button
+    // underneath (or Enter keyup activated it after focus returned) and ran
+    // the confirm action after Cancel.
+    function arm(btn, ok) {
+      ["click", "mousedown", "pointerdown"].forEach(function (type) {
+        btn.addEventListener(type, function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (type === "click") finish(ok);
+        });
+      });
+    }
+    arm(okBtn, true);
+    arm(cancelBtn, false);
     document.addEventListener("keydown", function (ev) {
       if (!pending) return;
       if (ev.key === "Escape") {
@@ -67,15 +79,30 @@
     var resolve = pending;
     pending = null;
     host.classList.remove("is-open");
-    if (host.open) host.close();
     document.body.classList.remove("rd-confirm-open");
-    if (lastFocus && lastFocus.focus) {
-      try { lastFocus.focus({ preventScroll: true }); } catch (e) { lastFocus.focus(); }
-    }
+
+    // Cover the page for one frame so the closing click / Enter keyup cannot
+    // hit the control that opened the dialog (that looked like Cancel = OK).
+    var shield = document.createElement("div");
+    shield.setAttribute("aria-hidden", "true");
+    shield.style.cssText = "position:fixed;inset:0;z-index:2147483647;";
+    document.body.appendChild(shield);
+
+    if (host.open) host.close();
+
+    var focusEl = lastFocus;
     lastFocus = null;
-    resolve(ok);
-    var next = queue.shift();
-    if (next) open(next.message, next.options, next.resolve);
+    setTimeout(function () {
+      if (shield.parentNode) shield.remove();
+      // Only put focus back after Cancel. After Confirm the request navigates
+      // or swaps the row; restoring focus to Delete would risk a second submit.
+      if (!ok && focusEl && focusEl.isConnected && focusEl.focus) {
+        try { focusEl.focus({ preventScroll: true }); } catch (e) { focusEl.focus(); }
+      }
+      resolve(ok);
+      var next = queue.shift();
+      if (next) open(next.message, next.options, next.resolve);
+    }, 50);
   }
 
   function open(message, options, resolve) {
