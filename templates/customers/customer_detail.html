@@ -256,7 +256,7 @@
                   <td class="small text-nowrap">{{ p.created_at|date:"Y-m-d H:i" }}</td>
                   <td>
                     {% if p.paid_via_employee %}
-                      <span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% if p.employee_recipient %} · {{ p.employee_recipient.display_name }}{% endif %}
+                      <span class="rd-badge rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% if p.employee_recipient %} · {{ p.employee_recipient.display_name }}{% endif %}
                     {% elif p.payment_method %}
                       {{ p.payment_method.name|tdb }}
                     {% else %}—{% endif %}

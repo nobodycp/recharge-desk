@@ -1975,14 +1975,26 @@ a.rd-card:hover {
   color: var(--rd-muted);
 }
 
-/* Sale attribute, not a status: blue so it stays distinct from loss (red)
-   and employee payment (amber). Tone is >= 4.5:1 on the card surface. */
+/* Sale attributes (not workflow status). Each chip keeps its own tone so
+   loss (danger), new SIM (warning), and payment-to-employee stay distinct. */
 .rd-sale-esim-badge {
   background: color-mix(in srgb, var(--rd-tone-1) 14%, transparent);
   color: var(--rd-tone-1);
 }
 
-/* Deferred payment. Violet stays clear of eSIM blue and employee-payment amber. */
+/* Handed to an employee — teal, not warning/danger (those read as errors). */
+.rd-sale-employee-payment-badge {
+  background: color-mix(in srgb, var(--rd-tone-2) 14%, transparent);
+  color: var(--rd-tone-2);
+}
+
+/* Stock sale — yellow/amber warning tone (was grey and easy to miss). */
+.rd-sale-new-sim-badge {
+  background: var(--rd-warning-soft);
+  color: var(--rd-warning-ink);
+}
+
+/* Deferred payment. Violet stays clear of eSIM blue and employee teal. */
 .rd-sale-on-account-badge {
   background: color-mix(in srgb, var(--rd-tone-3) 14%, transparent);
   color: var(--rd-tone-3);
@@ -1994,7 +2006,7 @@ a.rd-card:hover {
 }
 
 /* Count badges and badges that carry their own icon skip the dot. */
-:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral, .rd-sale-esim-badge, .rd-sale-on-account-badge):not(.tabular-nums):not(:has(svg))::before {
+:is(.rd-badge--paid, .rd-badge--pending, .rd-badge--warning, .rd-badge--cancelled, .rd-badge--neutral, .rd-sale-esim-badge, .rd-sale-employee-payment-badge, .rd-sale-new-sim-badge, .rd-sale-on-account-badge):not(.tabular-nums):not(:has(svg))::before {
   content: "";
   flex: none;
   width: 6px;

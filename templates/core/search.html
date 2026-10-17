@@ -224,7 +224,7 @@
                   <td class="tabular-nums">{{ p.id }}</td>
                   <td>{{ p.customer.name }}</td>
                   <td class="tabular-nums">{{ p.amount|intcomma }}</td>
-                  <td>{% if p.paid_via_employee %}<span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</td>
+                  <td>{% if p.paid_via_employee %}<span class="rd-badge rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</td>
                   <td><span class="text-secondary small tabular-nums">{{ p.created_at|date:"Y-m-d H:i" }}</span></td>
                   <td class="text-end">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'customers:customer_detail' p.customer_id %}">{% trans "Open" %}</a>
@@ -249,7 +249,7 @@
               </div>
               <div class="rd-mobile-kv__row">
                 <span class="rd-mobile-k">{% trans "Method" %}</span>
-                <span class="rd-mobile-v">{% if p.paid_via_employee %}<span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</span>
+                <span class="rd-mobile-v">{% if p.paid_via_employee %}<span class="rd-badge rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% elif p.payment_method %}{{ p.payment_method.name }}{% else %}—{% endif %}</span>
               </div>
               <div class="rd-mobile-kv__row">
                 <span class="rd-mobile-k">{% trans "Created" %}</span>

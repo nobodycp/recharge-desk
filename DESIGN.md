@@ -120,7 +120,7 @@ Use `rd-badge` + one variant; the leading dot is automatic (skipped on `.tabular
 - `.rd-badge--conflict` — data conflicts that need review.
 - `.rd-badge--cancelled` — failed / cancelled / destructive.
 - `.rd-badge--neutral` — inactive, metadata, plain labels.
-- Sale chips: loss stays `.rd-badge--cancelled`, payment to an employee is `.rd-badge--pending`, on account is `.rd-sale-on-account-badge` (`--rd-tone-3`), eSIM is `.rd-sale-esim-badge` (`--rd-tone-1`). The same classes are used wherever those facts are shown. New SIM stays neutral.
+- Sale chips: loss stays `.rd-badge--cancelled`, payment to an employee is `.rd-sale-employee-payment-badge` (`--rd-tone-2` teal), New SIM is `.rd-sale-new-sim-badge` (warning yellow), on account is `.rd-sale-on-account-badge` (`--rd-tone-3`), eSIM is `.rd-sale-esim-badge` (`--rd-tone-1`). The same classes are used wherever those facts are shown.
 
 Never `badge bg-*` / `badge text-bg-*` (`test_no_bootstrap_color_badges`). Errors are `--rd-danger`, not the logo-red accent.
 

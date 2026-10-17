@@ -30,7 +30,7 @@
                 <div class="rd-recent-payer text-truncate">{{ p.customer.name }}</div>
                 <div class="rd-pay-row__sub">
                   {% if p.paid_via_employee %}
-                    <span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "Payment to employee" %}</span>
+                    <span class="rd-badge rd-sale-employee-payment-badge">{% trans "Payment to employee" %}</span>
                   {% elif p.payment_method %}
                     {{ p.payment_method.name|tdb }}
                   {% endif %}

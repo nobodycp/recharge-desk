@@ -50,7 +50,7 @@
           {% if form.payment_method.errors %}<div class="rd-field-error">{{ form.payment_method.errors }}</div>{% endif %}
         </div>
       {% elif sale.paid_via_employee %}
-        <span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "Payment to employee" %}</span>
+        <span class="rd-badge rd-sale-employee-payment-badge">{% trans "Payment to employee" %}</span>
       {% elif sale.on_account %}
         <span class="rd-badge rd-sale-on-account-badge">{% trans "On account" %}</span>
       {% endif %}

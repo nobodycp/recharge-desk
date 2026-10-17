@@ -1047,6 +1047,29 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   border: 1px solid var(--rd-accent);
 }
 
+/* Payment to employee is a sale attribute (teal), not the logo-red accent. */
+.rd-employee-payment-toggle.is-on {
+  --bs-btn-color: var(--rd-tone-2);
+  --bs-btn-hover-color: var(--rd-tone-2);
+  --bs-btn-active-color: var(--rd-tone-2);
+}
+
+.rd-employee-payment-toggle.is-on::before {
+  background: color-mix(in srgb, var(--rd-tone-2) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-tone-2) 42%, transparent);
+}
+
+.rd-on-account-toggle.is-on {
+  --bs-btn-color: var(--rd-tone-3);
+  --bs-btn-hover-color: var(--rd-tone-3);
+  --bs-btn-active-color: var(--rd-tone-3);
+}
+
+.rd-on-account-toggle.is-on::before {
+  background: color-mix(in srgb, var(--rd-tone-3) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-tone-3) 42%, transparent);
+}
+
 .rd-entry-note-link {
   position: relative;
   display: inline-flex;

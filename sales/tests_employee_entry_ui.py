@@ -907,7 +907,7 @@ class EmployeeRecentEntriesTests(TestCase):
     def test_sale_chips_render_with_their_pearl_variants(self):
         html = self._page()
         self.assertRegex(html, r'class="rd-badge rd-sale-esim-badge ms-1"[^>]*>eSIM<')
-        self.assertRegex(html, r'class="rd-badge rd-badge--neutral rd-sale-new-sim-badge ms-1"')
+        self.assertRegex(html, r'class="rd-badge rd-sale-new-sim-badge ms-1"')
         self.assertRegex(html, r'class="rd-badge rd-badge--cancelled rd-sale-loss-badge ms-1"[^>]*>Loss<')
 
     def test_edit_and_delete_keep_their_hx_attributes(self):
@@ -971,12 +971,12 @@ class SaleBadgePartialsTests(SimpleTestCase):
     def test_each_partial_renders_a_pearl_badge_with_text(self):
         cases = (
             ("sale_esim_badge", {"is_esim": True}, "rd-sale-esim-badge", "eSIM"),
-            ("sale_new_sim_badge", {"is_new_sim": True}, "rd-badge--neutral", "New SIM"),
+            ("sale_new_sim_badge", {"is_new_sim": True}, "rd-sale-new-sim-badge", "New SIM"),
             ("sale_loss_badge", {"loss_snapshot": Decimal("3")}, "rd-badge--cancelled", "Loss"),
             (
                 "sale_employee_payment_badge",
                 {"paid_via_employee": True, "employee_recipient": None},
-                "rd-badge--pending",
+                "rd-sale-employee-payment-badge",
                 "Payment to employee",
             ),
             ("sale_on_account_badge", {"on_account": True}, "rd-sale-on-account-badge", "On account"),

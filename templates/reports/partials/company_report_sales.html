@@ -87,7 +87,7 @@
                 <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
                 <td class="tabular-nums text-end kpi-muted">{% if s.balance_before != None %}{{ s.balance_before|intcomma }}{% else %}—{% endif %}</td>
                 <td class="tabular-nums text-end fw-semibold {% if s.balance_after != None and s.balance_after < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{% if s.balance_after != None %}{{ s.balance_after|intcomma }}{% else %}—{% endif %}</td>
-                <td class="small">{% if s.payment_method %}{{ s.payment_method.name }}{% elif s.on_account %}<span class="rd-badge rd-sale-on-account-badge">{% trans "On account" %}</span>{% elif s.paid_via_employee %}<span class="rd-badge rd-badge--pending rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% else %}—{% endif %}</td>
+                <td class="small">{% if s.payment_method %}{{ s.payment_method.name }}{% elif s.on_account %}<span class="rd-badge rd-sale-on-account-badge">{% trans "On account" %}</span>{% elif s.paid_via_employee %}<span class="rd-badge rd-sale-employee-payment-badge">{% trans "To employee" %}</span>{% else %}—{% endif %}</td>
                 {% else %}
                 <td class="tabular-nums text-end kpi-muted">{{ s.cost_price_snapshot|intcomma }}</td>
                 <td class="tabular-nums text-end {% if s.profit_snapshot < 0 %}kpi-danger{% else %}kpi-success{% endif %}">{{ s.profit_snapshot|intcomma }}</td>
