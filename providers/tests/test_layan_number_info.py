@@ -61,16 +61,16 @@ class LayanNumberInfoParseTests(TestCase):
         ends = timezone.localtime(info.ends_at)
         self.assertEqual((ends.day, ends.month, ends.hour, ends.minute), (18, 11, 16, 16))
 
-    def test_limited_data_is_converted_from_megabytes(self):
-        usage = {**USAGE, "internet_Size": 51200, "internet_UsedMB": 1024}
+    def test_limited_data_is_already_gigabytes_like_the_portal(self):
+        usage = {**USAGE, "internet_Size": 500, "internet_UsedMB": "27.82"}
         subscription = {
             **SUBSCRIPTION,
-            "package": {**SUBSCRIPTION["package"], "internet": "50 جيجا"},
+            "package": {**SUBSCRIPTION["package"], "internet": "500G"},
             "isEsim": False,
         }
         info = parse_number_info(subscription, usage)
-        self.assertEqual(info.data_used_gb, Decimal("1.00"))
-        self.assertEqual(info.data_total_gb, Decimal("50.00"))
+        self.assertEqual(info.data_used_gb, Decimal("27.82"))
+        self.assertEqual(info.data_total_gb, Decimal("500.00"))
         self.assertFalse(info.data_unlimited)
         self.assertFalse(info.is_esim)
 

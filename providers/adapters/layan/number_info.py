@@ -22,17 +22,20 @@ def parse_number_info(subscription: dict, usage: dict | None) -> NumberInfo:
     number = usage.get("number") if isinstance(usage.get("number"), dict) else {}
     internet = _text(package.get("internet"))
     unlimited = internet.lower() in _UNLIMITED
-    used_mb = _decimal(usage.get("internet_UsedMB"))
-    size_mb = _decimal(usage.get("internet_Size"))
-    if unlimited:
-        data_used = _gb(used_mb if used_mb is not None else Decimal(0))
+    used_raw = _decimal(usage.get("internet_UsedMB"))
+    size_raw = _decimal(usage.get("internet_Size"))
+    # A positive size is already gigabytes: the portal prints it next to the used
+    # figure with no conversion (500 / 27.82 on a 500G bundle). Only a missing
+    # cap (unlimited, size 0) reports the used figure in megabytes.
+    if size_raw is not None and size_raw > 0:
+        data_used = _as_gb(used_raw if used_raw is not None else Decimal(0))
+        data_total = None if unlimited else _as_gb(size_raw)
+    elif unlimited:
+        data_used = _from_mb(used_raw if used_raw is not None else Decimal(0))
         data_total = None
-    elif size_mb is not None and size_mb > 0:
-        data_used = _gb(used_mb if used_mb is not None else Decimal(0))
-        data_total = _gb(size_mb)
     else:
-        data_used = _gb(used_mb) if used_mb else None
-        data_total = Decimal(0) if size_mb == 0 and not unlimited else None
+        data_used = _from_mb(used_raw) if used_raw else None
+        data_total = Decimal(0) if size_raw == 0 else None
 
     sim = _text(subscription.get("simNumber")) or _text(usage.get("simNumber"))
     return NumberInfo(
@@ -73,7 +76,13 @@ def _decimal(value: Any) -> Decimal | None:
     return number
 
 
-def _gb(megabytes: Decimal | None) -> Decimal | None:
+def _as_gb(gigabytes: Decimal | None) -> Decimal | None:
+    if gigabytes is None:
+        return None
+    return gigabytes.quantize(_GB_QUANTUM, rounding=ROUND_HALF_UP)
+
+
+def _from_mb(megabytes: Decimal | None) -> Decimal | None:
     if megabytes is None:
         return None
     return (megabytes / _MB_PER_GB).quantize(_GB_QUANTUM, rounding=ROUND_HALF_UP)
