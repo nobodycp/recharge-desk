@@ -7,9 +7,15 @@ from django.test import TestCase
 
 from providers.adapters.layan import charge as layan_charge
 from providers.adapters.layan.adapter import LayanAdapter
-from providers.adapters.layan.client import LayanClient
+from providers.adapters.layan.client import LayanClient, LayanSessionError
 from providers.accounts import Credentials
-from providers.contracts import Capability, ChargeContext, ChargeResult, PermanentError
+from providers.contracts import (
+    Capability,
+    ChargeContext,
+    ChargeResult,
+    PermanentError,
+    TransientError,
+)
 
 
 def _creds() -> Credentials:
@@ -209,3 +215,17 @@ class LayanAdapterChargeTests(TestCase):
 
     def test_capability_includes_charge(self):
         self.assertIn(Capability.CHARGE, LayanAdapter.capabilities)
+
+    def test_post_send_session_error_is_transient_not_auth(self):
+        """A 401 after Extend must not become AuthRequired (login would re-charge)."""
+        self.client.extend_line.side_effect = LayanSessionError("session expired")
+        with self.assertRaises(TransientError) as caught:
+            self._charge()
+        self.assertEqual(str(caught.exception), "provider_error")
+        self.client.extend_line.assert_called_once()
+
+    def test_failed_charge_response_is_transient(self):
+        self.client.extend_line.return_value = (500, "خطأ في العملية")
+        with self.assertRaises(TransientError) as caught:
+            self._charge()
+        self.assertEqual(str(caught.exception), "provider_error")

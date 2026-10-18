@@ -146,25 +146,30 @@ class LayanAdapter(BaseAdapter):
         if not layan_charge.money_match(quoted, ctx.expected_cost):
             raise PermanentError("price_mismatch")
 
-        if extend:
-            code, body = self._call(
-                lambda: client.extend_line(
+        # After this point a charge may already exist at Layan. Never map errors
+        # to AuthRequired — run_authenticated would login and call charge again.
+        try:
+            if extend:
+                code, body = client.extend_line(
                     phone, duration=duration, sale_id=sale_id, user_paid=True
                 )
-            )
-        else:
-            end_date = str(row.get("endDate") or "").strip() or None
-            code, body = self._call(
-                lambda: client.activate_line(
+            else:
+                end_date = str(row.get("endDate") or "").strip() or None
+                code, body = client.activate_line(
                     phone,
                     duration=duration,
                     sale_id=sale_id,
                     end_date=end_date,
                     user_paid=True,
                 )
-            )
+        except (LayanSessionError, LayanError) as exc:
+            raise TransientError("provider_error") from exc
+        except requests.Timeout as exc:
+            raise TransientError("timeout") from exc
+        except requests.RequestException as exc:
+            raise TransientError("connection_error") from exc
         if not layan_charge.is_charge_success(code, body):
-            raise PermanentError("provider_error")
+            raise TransientError("provider_error")
 
         package = row.get("package") if isinstance(row.get("package"), dict) else {}
         plan_name = str(package.get("name") or "").strip()
