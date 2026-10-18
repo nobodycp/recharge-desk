@@ -12,6 +12,7 @@ from providers.adapters.layan.client import (
     LayanError,
     LayanSessionError,
 )
+from providers.adapters.layan import charge as layan_charge
 from providers.adapters.layan.number_info import parse_number_info
 from providers.adapters.layan.reconcile import (
     LayanReconcileResult,
@@ -23,6 +24,9 @@ from providers.contracts import (
     AuthRequired,
     BaseAdapter,
     Capability,
+    ChargeContext,
+    ChargeOutcome,
+    ChargeResult,
     NumberInfo,
     PermanentError,
     RawResponse,
@@ -33,7 +37,12 @@ from providers.contracts import (
 class LayanAdapter(BaseAdapter):
     key = "layan"
     capabilities = frozenset(
-        {Capability.REFRESH, Capability.RECONCILE, Capability.NUMBER_INFO}
+        {
+            Capability.REFRESH,
+            Capability.RECONCILE,
+            Capability.NUMBER_INFO,
+            Capability.CHARGE,
+        }
     )
     # Number refresh stays on the public endpoint. Matching and number check sign in.
     needs_login = True
@@ -94,6 +103,75 @@ class LayanAdapter(BaseAdapter):
             raise PermanentError("not_found")
         usage = self._call(lambda: client.fetch_usage(phone))
         return parse_number_info(row, usage)
+
+    def charge(self, ctx: ChargeContext) -> ChargeOutcome:
+        """Extend or activate ``ctx.phone`` once Layan's quote matches our cost."""
+        phone = ctx.phone.strip()
+        client = self._stored_client()
+        subscription = self._call(lambda: client.fetch_subscription(phone))
+        row = _matching_subscription(subscription, phone)
+        if row is None:
+            raise PermanentError("not_found")
+
+        usage = self._call(lambda: client.fetch_usage(phone)) or {}
+        number = usage.get("number") if isinstance(usage.get("number"), dict) else {}
+        status = str(number.get("status") or "")
+        extend = layan_charge.is_active_status(status)
+
+        duration: int | None
+        sale_id: str | None
+        if ctx.duration_days == 90:
+            sales = self._call(lambda: client.get_sales_by_number(phone))
+            promo = layan_charge.pick_three_month_sale(sales)
+            if promo is None:
+                raise PermanentError("period_unavailable")
+            sale_id = str(promo.get("id") or "").strip() or None
+            if not sale_id:
+                raise PermanentError("period_unavailable")
+            duration = None
+        else:
+            if not ctx.duration_days:
+                raise PermanentError("period_unavailable")
+            duration = int(ctx.duration_days)
+            sale_id = None
+
+        quote_body = self._call(
+            lambda: client.get_cost_before_activate(
+                phone, duration=duration, sale_id=sale_id
+            )
+        )
+        quoted = layan_charge.parse_cost_quote(quote_body)
+        if not layan_charge.money_match(quoted, ctx.expected_cost):
+            raise PermanentError("price_mismatch")
+
+        if extend:
+            code, body = self._call(
+                lambda: client.extend_line(
+                    phone, duration=duration, sale_id=sale_id, user_paid=True
+                )
+            )
+        else:
+            end_date = str(row.get("endDate") or "").strip() or None
+            code, body = self._call(
+                lambda: client.activate_line(
+                    phone,
+                    duration=duration,
+                    sale_id=sale_id,
+                    end_date=end_date,
+                    user_paid=True,
+                )
+            )
+        if not layan_charge.is_charge_success(code, body):
+            raise PermanentError("provider_error")
+
+        package = row.get("package") if isinstance(row.get("package"), dict) else {}
+        plan_name = str(package.get("name") or "").strip()
+        return ChargeOutcome(
+            result=ChargeResult.SUCCESS,
+            provider_ref=str(body).strip() if body else "",
+            plan_name=plan_name,
+            provider_cost=quoted,
+        )
 
     def fetch_accounting_rows(self, date_from: date, date_to: date) -> list[dict]:
         client = self._stored_client()
