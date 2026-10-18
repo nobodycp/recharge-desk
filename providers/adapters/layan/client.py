@@ -216,6 +216,87 @@ class LayanClient:
         except ValueError as exc:
             raise LayanError(f"{path} failed") from exc
 
+    def get_sales_by_number(self, phone: str) -> list[dict[str, Any]]:
+        """Promo / sale packages available for ``phone``."""
+        if not self.jwt:
+            raise LayanSessionError("session expired")
+        response = self._get(f"Subscribtions/GetSalesByNumber/{phone}")
+        if response.status_code in (401, 403):
+            raise LayanSessionError("session expired")
+        if response.status_code != 200:
+            raise LayanError(f"GetSalesByNumber failed ({response.status_code})")
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise LayanError("GetSalesByNumber failed") from exc
+        return body if isinstance(body, list) else []
+
+    def get_cost_before_activate(
+        self,
+        phone: str,
+        *,
+        duration: int | None,
+        sale_id: str | None,
+    ) -> Any:
+        """Quoted shekel cost for activate/extend before the charge is sent."""
+        return self._authed_json(
+            "Deals/GetCostBeforeActivate",
+            {"Number": phone, "Duration": duration, "SaleId": sale_id},
+        )
+
+    def extend_line(
+        self,
+        phone: str,
+        *,
+        duration: int | None,
+        sale_id: str | None,
+        user_paid: bool = True,
+    ) -> tuple[int, str]:
+        return self._deal_post(
+            "Deals/Extend",
+            {
+                "Number": phone,
+                "Duration": duration,
+                "SaleId": sale_id,
+                "UserPaid": user_paid,
+            },
+        )
+
+    def activate_line(
+        self,
+        phone: str,
+        *,
+        duration: int | None,
+        sale_id: str | None,
+        end_date: str | None,
+        user_paid: bool = True,
+    ) -> tuple[int, str]:
+        payload = {
+            "Number": phone,
+            "Duration": duration,
+            "SaleId": sale_id,
+            "UserPaid": user_paid,
+        }
+        if end_date:
+            payload["endDate"] = end_date
+        return self._deal_post("Deals/ActivateLine", payload)
+
+    def _deal_post(self, path: str, payload: dict) -> tuple[int, str]:
+        if not self.jwt:
+            raise LayanSessionError("session expired")
+        response = self._post(path, payload, auth=True)
+        if response.status_code in (401, 403):
+            raise LayanSessionError("session expired")
+        text = (response.text or "").strip()
+        if not text:
+            try:
+                body = response.json()
+            except ValueError:
+                body = None
+            if body is not None:
+                text = body if isinstance(body, str) else str(body)
+        return response.status_code, text
+
     def ping(self) -> None:
         response = self._get("Charges/GetChargeTypes")
         if response.status_code in (401, 403):
