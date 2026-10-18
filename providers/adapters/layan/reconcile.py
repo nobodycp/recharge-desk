@@ -25,6 +25,15 @@ COST_COL = 10
 DATE_COL = 12
 
 
+def _money(value) -> Decimal | None:
+    if value in (None, "", "-"):
+        return None
+    text = str(value).replace(",", "").strip()
+    if text in ("", "-"):
+        return None
+    return Decimal(text)
+
+
 def _row_affects_balance(row) -> bool:
     """True when the portal balance actually moved (before ≠ after).
 
@@ -38,7 +47,10 @@ def _row_affects_balance(row) -> bool:
     if before in (None, "", "-") or after in (None, "", "-"):
         return True
     try:
-        return Decimal(str(before)) != Decimal(str(after))
+        left, right = _money(before), _money(after)
+        if left is None or right is None:
+            return True
+        return left != right
     except Exception:
         return True
 
@@ -216,19 +228,12 @@ class LayanReconcileResult:
         return len(self.split_settlements)
 
 
-def parse_layan_workbook(
-    file_obj: BinaryIO,
+def _parse_rows(
+    rows,
     *,
     period_from: date | None,
     period_to: date | None,
 ) -> tuple[dict[str, LayanPhoneAgg], Decimal, Decimal, Decimal | None, int]:
-    try:
-        import openpyxl
-    except ImportError as exc:
-        raise ImportError("openpyxl is required for Layan report import") from exc
-
-    wb = openpyxl.load_workbook(file_obj, read_only=True, data_only=True)
-    sheet = wb.active
     by_phone: dict[str, LayanPhoneAgg] = {}
     deposits = Decimal("0")
     net_movement = Decimal("0")
@@ -236,17 +241,17 @@ def parse_layan_workbook(
     report_end_dt: datetime | None = None
     parsed_rows = 0
 
-    for row in sheet.iter_rows(min_row=3, values_only=True):
+    for row in rows:
         if not row or not row[0]:
             continue
-        raw = str(row[0]).strip()
-        if raw in ("-", ""):
+        raw = str(row[0] or "").strip()
+        if not raw:
             continue
         op = str(row[3] or "")
         cost = row[COST_COL] if len(row) > COST_COL else None
-        if cost is None or cost == "-":
+        amount = _money(cost)
+        if amount is None:
             continue
-        amount = Decimal(str(cost))
         dt = _parse_dt(row[DATE_COL] if len(row) > DATE_COL else None)
         if not dt:
             continue
@@ -256,14 +261,22 @@ def parse_layan_workbook(
         if period_to and d > period_to:
             continue
 
+        if raw == "-":
+            # Accounting deposits have no phone; other dash rows are not lines.
+            if op != DEPOSIT_OP:
+                continue
+
         if op == DEPOSIT_OP:
             parsed_rows += 1
             net_movement += amount
             deposits += amount
             if report_end_dt is None or dt > report_end_dt:
                 report_end_dt = dt
-                if row[BALANCE_AFTER_COL] is not None:
-                    report_end_balance = Decimal(str(row[BALANCE_AFTER_COL]))
+                end_balance = (
+                    _money(row[BALANCE_AFTER_COL]) if len(row) > BALANCE_AFTER_COL else None
+                )
+                if end_balance is not None:
+                    report_end_balance = end_balance
             continue
 
         ph = norm_phone(raw)
@@ -288,21 +301,64 @@ def parse_layan_workbook(
 
         if report_end_dt is None or dt >= report_end_dt:
             report_end_dt = dt
-            if row[BALANCE_AFTER_COL] is not None:
-                report_end_balance = Decimal(str(row[BALANCE_AFTER_COL]))
+            end_balance = (
+                _money(row[BALANCE_AFTER_COL]) if len(row) > BALANCE_AFTER_COL else None
+            )
+            if end_balance is not None:
+                report_end_balance = end_balance
 
-    wb.close()
     return by_phone, deposits, net_movement, report_end_balance, parsed_rows
+
+
+def parse_layan_workbook(
+    file_obj: BinaryIO,
+    *,
+    period_from: date | None,
+    period_to: date | None,
+) -> tuple[dict[str, LayanPhoneAgg], Decimal, Decimal, Decimal | None, int]:
+    try:
+        import openpyxl
+    except ImportError as exc:
+        raise ImportError("openpyxl is required for Layan report import") from exc
+
+    wb = openpyxl.load_workbook(file_obj, read_only=True, data_only=True)
+    try:
+        rows = list(wb.active.iter_rows(min_row=3, values_only=True))
+    finally:
+        wb.close()
+    return _parse_rows(rows, period_from=period_from, period_to=period_to)
 
 
 def _settlement_row_difference(row: ReconcilePhoneRow) -> Decimal:
     return abs(row.settlement_amount or row.layan_net)
 
 
+def record_to_row(record: dict) -> tuple:
+    """One accounting-table record in the same column order as the Excel export."""
+    charge_type = record.get("chargeType") or {}
+    name = charge_type.get("name") if isinstance(charge_type, dict) else ""
+    return (
+        record.get("phoneNumber"),
+        None,
+        None,
+        name or "",
+        None,
+        None,
+        None,
+        record.get("balanceBefore"),
+        record.get("balanceAfter"),
+        None,
+        record.get("cost"),
+        None,
+        record.get("chargeDate"),
+    )
+
+
 def reconcile_layan_report(
     company,
-    file_obj: BinaryIO,
+    file_obj: BinaryIO | None = None,
     *,
+    records: list | None = None,
     period_from: date | None,
     period_to: date | None,
     pending_credits: dict[str, Decimal] | None = None,
@@ -321,9 +377,16 @@ def reconcile_layan_report(
     # Tiny floor so exact equals still count as matched when min_diff is 0.
     mismatch_threshold = min_diff if min_diff > 0 else Decimal("0.01")
 
-    layan_phones, layan_dep, layan_net, layan_end, row_count = parse_layan_workbook(
-        file_obj, period_from=period_from, period_to=period_to
-    )
+    if records is not None:
+        layan_phones, layan_dep, layan_net, layan_end, row_count = _parse_rows(
+            [record_to_row(record) for record in records],
+            period_from=period_from,
+            period_to=period_to,
+        )
+    else:
+        layan_phones, layan_dep, layan_net, layan_end, row_count = parse_layan_workbook(
+            file_obj, period_from=period_from, period_to=period_to
+        )
 
     for ph, credit in pending_credits.items():
         nph = norm_phone(ph)

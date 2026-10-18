@@ -418,6 +418,14 @@ def service_enabled(provider_key: str, capability: Capability) -> bool:
     return _switches_on(connection, capability)
 
 
+def _capability_needs_login(adapter_cls, capability: Capability) -> bool:
+    """True when this capability cannot run without stored provider credentials."""
+    if not adapter_cls.needs_login:
+        return False
+    limited = adapter_cls.login_capabilities
+    return True if limited is None else capability in limited
+
+
 def service_state(
     company, capability: Capability, provider: str | None = None
 ) -> ServiceState:
@@ -438,7 +446,7 @@ def service_state(
     connection = ProviderConnection.objects.filter(provider_key=key).first()
     if connection is not None and not connection.is_enabled:
         return ServiceState("off", _OFF)
-    if adapter_cls.needs_login:
+    if _capability_needs_login(adapter_cls, capability):
         try:
             accounts.get_credentials(key)
         except PermanentError as exc:

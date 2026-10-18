@@ -120,6 +120,8 @@ class NumberInfo:
     sms_total: int | None = None
     utilization_pct: Decimal | None = None
     iccid: str = ""
+    # Data allowance is open-ended: show what was used, with no cap.
+    data_unlimited: bool = False
 
     _DECIMALS = (
         "plan_price",
@@ -155,6 +157,7 @@ class NumberInfo:
         for name in cls._INTS:
             kwargs[name] = _int_or_none(data.get(name))
         kwargs["is_esim"] = bool(data.get("is_esim", False))
+        kwargs["data_unlimited"] = bool(data.get("data_unlimited", False))
         kwargs["ends_at"] = _datetime_or_none(data.get("ends_at"))
         return cls(**kwargs)
 
@@ -186,6 +189,9 @@ class BaseAdapter:
     capabilities: frozenset = frozenset()
     timeout: int = 20
     needs_login: bool = False
+    # When set, only these capabilities require stored credentials. ``None``
+    # means every capability does, once ``needs_login`` is true.
+    login_capabilities: frozenset | None = None
     # True if ``check_charge`` can find a charge by phone/idempotency key alone.
     check_without_ref: bool = False
     reconcile_template: str = ""

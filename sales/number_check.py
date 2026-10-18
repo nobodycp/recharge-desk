@@ -53,6 +53,8 @@ MSG_UNAVAILABLE = "فحص الرقم غير متاح لهذا المزوّد"
 MSG_BUSY = "الخدمة مشغولة حالياً، حاول بعد قليل"
 MSG_EXPIRED = "انتهت صلاحية الطلب، أعد المحاولة."
 MSG_STILL_RUNNING = "الطلب ما زال قيد المعالجة، حاول بعد دقيقة"
+LEFT_AGENCY = "خرج من الوكالة"
+LEFT_AGENCY_NOTICE = "الرقم مسجّل عندنا ويمكن استرجاعه"
 
 # Gate states that are recorded as one operations row, mapped to the code the
 # classifier knows (see ``providers.service._GATE_CODES``).
@@ -187,6 +189,15 @@ def submit_number_check(phone: str, *, user) -> CheckTicket:
     return CheckTicket(str(job.id), None)
 
 
+def _left_agency_payload(job: ProviderJob, sale: Sale) -> dict:
+    """The line is ours, but the provider no longer lists it."""
+    now = _now()
+    info = NumberInfo(status=LEFT_AGENCY, is_esim=bool(sale.is_esim))
+    context = card_context(info, sale, now.date(), phone=job.phone, now=now)
+    context.update(_branding())
+    return {"status": "ok", "html": render_to_string(CARD_TEMPLATE, context)}
+
+
 def _load_job(job_id: str) -> ProviderJob | None:
     try:
         job = ProviderJob.objects.filter(pk=job_id).first()
@@ -214,6 +225,10 @@ def check_payload(job_id: str) -> dict:
 
     if job.status == ProviderJob.STATUS_FAILED:
         result = job.result or {}
+        if result.get("error_code") == "not_found":
+            sale = last_sale_for_phone(job.phone)
+            if sale is not None:
+                return _left_agency_payload(job, sale)
         message = result.get("message")
         return _error(message) if message else _error(MSG_EXPIRED)
 
@@ -306,6 +321,8 @@ def _network_tone(network: str) -> str:
 
 
 def _status_tone(status: str) -> str:
+    if status.strip() == LEFT_AGENCY:
+        return "warn"
     text = status.lower()
     if not text:
         return "muted"
@@ -345,6 +362,7 @@ def _gauge(key: str, label: str, unit: str, used, total) -> dict:
         "remaining": "",
         "tone": "ok",
         "included": total != 0,
+        "unlimited": False,
     }
     if used is None or not total:
         return gauge
@@ -364,11 +382,65 @@ def _usage(info: NumberInfo) -> list[dict]:
         "minutes": (info.minutes_used, info.minutes_total),
         "sms": (info.sms_used, info.sms_total),
     }
-    return [_gauge(key, label, unit, *values[key]) for key, label, unit in _GAUGES]
+    gauges = [_gauge(key, label, unit, *values[key]) for key, label, unit in _GAUGES]
+    if info.data_unlimited:
+        for gauge in gauges:
+            if gauge["key"] == "data":
+                gauge["unlimited"] = True
+                gauge["total"] = ""
+                gauge["pct"] = ""
+                gauge["remaining"] = ""
+                gauge["included"] = True
+    return gauges
 
 
 def _iccid_groups(iccid: str) -> str:
     return " ".join(iccid[i : i + 4] for i in range(0, len(iccid), 4))
+
+
+_REGISTERED_COMPANY = {
+    "layan": "ليان",
+    "sky": "سكاي",
+    "areen": "ارين",
+    "aloha": "الوها",
+}
+_SIZE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:gb|g)\b", re.IGNORECASE)
+
+
+def _package_label(sale: Sale | None) -> str:
+    """Our package, without the line name. ``500GB`` reads as ``500 جيجا``."""
+    product = sale.product if sale is not None else None
+    label = (getattr(product, "variant_label", "") or "").strip()
+    if not label:
+        return DASH
+    match = _SIZE.fullmatch(label)
+    if match:
+        return f"{match.group(1).replace(',', '.')} جيجا"
+    return label
+
+
+def _registered_company(sale: Sale | None) -> str:
+    company = getattr(sale, "company", None)
+    if company is None:
+        return DASH
+    key = (getattr(company, "provider_key", "") or "").strip().lower()
+    return _REGISTERED_COMPANY.get(key) or (company.name or DASH)
+
+
+def _days_value(expiry: dict | None) -> str:
+    if not expiry:
+        return DASH
+    if expiry.get("days"):
+        return f"{expiry['days']} {expiry['word']}".strip()
+    return expiry.get("state") or DASH
+
+
+def _money(amount: str) -> str:
+    return DASH if not amount or amount == DASH else f"{amount} ₪"
+
+
+def _fact(label: str, value: str, *, ltr: bool = False) -> dict:
+    return {"label": label, "value": value or DASH, "ltr": ltr}
 
 
 def _sale(sale: Sale | None) -> dict | None:
@@ -382,10 +454,8 @@ def _sale(sale: Sale | None) -> dict | None:
 
 
 def _phone_display(phone: str) -> str:
-    """``0521234567`` -> ``052-123-4567``; anything else is shown as typed."""
-    if len(phone) == 10 and phone.isascii() and phone.isdigit():
-        return f"{phone[:3]}-{phone[3:6]}-{phone[6:]}"
-    return phone
+    """The checked number, with no separators."""
+    return (phone or "").strip()
 
 
 MIN_CONTAINED_NAME = 3  # shorter names are too ambiguous to match by containment
@@ -442,23 +512,34 @@ def _line_logo(sale: Sale | None, network: str) -> tuple[str, str]:
 
 
 def _share(ctx: dict) -> dict:
-    """What the shared image may show: customer facts only, never price, ICCID or sale."""
+    """Customer card only. Provider cost, plan name and the SIM serial stay off the image."""
     return {
         "phone_display": ctx["phone_display"],
-        "network": ctx["network"],
-        "sim_type": ctx["sim_type"],
         "status": ctx["status"],
         "status_tone": ctx["status_tone"],
-        "plan_name": ctx["plan_name"],
-        "expiry": ctx["expiry"],
+        "line_name": ctx["line_name"],
+        "facts": ctx["facts"],
         "usage": [
-            {key: g[key] for key in ("label", "used", "total", "unit", "pct", "included")}
+            {
+                key: g[key]
+                for key in ("label", "used", "total", "unit", "pct", "included", "unlimited")
+            }
             for g in ctx["usage"]
         ],
-        "utilization": ctx["utilization"],
+        "has_usage": ctx["has_usage"],
+        "notice": ctx["notice"],
         "line_logo": ctx["line_logo"],
         "checked_at": ctx["checked_at"],
     }
+
+
+def _sim_is_esim(info: NumberInfo, sale: Sale | None) -> bool:
+    """Layan's eSIM flag is unreliable, so that card uses the flag on our sale."""
+    company = getattr(sale, "company", None)
+    key = (getattr(company, "provider_key", "") or "").strip().lower()
+    if sale is not None and key == "layan":
+        return bool(sale.is_esim)
+    return bool(info.is_esim)
 
 
 def card_context(
@@ -473,27 +554,50 @@ def card_context(
     iccid = (info.iccid or "").strip()
     phone = (phone or "").strip()
     usage = _usage(info)
-    line_logo, line_name = _line_logo(sale, network)
+    line_logo, matched_name = _line_logo(sale, network)
+    product = sale.product if sale is not None else None
+    own_line = product.line if product is not None else None
+    line_name = (own_line.name if own_line is not None and own_line.name else "") or matched_name
+    esim = _sim_is_esim(info, sale)
+    expiry = _expiry(info, today)
+    sold = _sale(sale)
+    facts = [
+        _fact("الشركة", line_name),
+        _fact("الحزمة", _package_label(sale)),
+        _fact("الشريحة", "شريحة إلكترونية" if esim else "شريحة عادية"),
+        _fact("تاريخ الانتهاء", expiry["date"] if expiry else "", ltr=True),
+        _fact("الأيام المتبقية", _days_value(expiry)),
+        _fact("سعر الاشتراك", _money(sold["price"]) if sold else "", ltr=True),
+    ]
+    sales = [
+        _fact("اسم الشركة", _registered_company(sale)),
+        _fact("اسم الحزمة", (info.plan_name or "").strip()),
+        _fact("تكلفة الحزمة", _money(_num(info.plan_price)), ltr=True),
+        _fact("رقم السريال", iccid, ltr=True),
+    ]
     ctx = {
         "phone": phone,
         "phone_display": _phone_display(phone),
         "network": network,
-        "network_tone": _network_tone(network),
+        "network_tone": _network_tone(line_name or network),
         "line_logo": line_logo,
         "line_name": line_name,
-        "is_esim": info.is_esim,
-        "sim_type": "شريحة إلكترونية" if info.is_esim else "شريحة عادية",
+        "is_esim": esim,
+        "sim_type": "شريحة إلكترونية" if esim else "شريحة عادية",
         "status": status,
         "status_tone": _status_tone(status),
         "plan_name": (info.plan_name or "").strip(),
-        "expiry": _expiry(info, today),
+        "expiry": expiry,
+        "facts": facts,
+        "sales": sales,
         "usage": usage,
         "has_usage": info.utilization_pct is not None
         or any(g["used"] != DASH or g["total"] for g in usage),
-        "utilization": _pct_text(info.utilization_pct),
+        "notice": LEFT_AGENCY_NOTICE if status == LEFT_AGENCY else "",
+        "utilization": "" if info.data_unlimited else _pct_text(info.utilization_pct),
         "iccid": iccid,
         "iccid_groups": _iccid_groups(iccid),
-        "sale": _sale(sale),
+        "sale": sold,
         "checked_at": timezone.localtime(now).strftime("%d/%m/%Y · %H:%M") if now else "",
     }
     ctx["share"] = _share(ctx)

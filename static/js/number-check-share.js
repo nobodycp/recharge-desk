@@ -55,10 +55,8 @@
 
   // ---- pure helpers -------------------------------------------------------
 
-  // 0521234567 -> 052-123-4567; anything else is returned as given.
   function groupPhone(raw) {
-    var s = String(raw == null ? "" : raw).trim();
-    return /^\d{10}$/.test(s) ? s.slice(0, 3) + "-" + s.slice(3, 6) + "-" + s.slice(6) : s;
+    return String(raw == null ? "" : raw).trim();
   }
 
   function phoneDigits(display) {
@@ -182,131 +180,63 @@
       return measure(s, weight, size);
     };
 
-    var expiry = data.expiry || null;
-    var network = String(data.network || "");
     var siteName = opts.siteName || DEFAULT_SITE_NAME;
-
-    // brand strip
-    if (opts.hasSiteLogo) {
-      ops.push({ t: "image", key: "site", x: MARGIN, y: 60, w: 300, h: 100 });
-    } else {
-      text(siteName, MARGIN, 125, 700, 38, c.ink, "left");
-    }
-    text(TITLE, RIGHT, 100, 400, 30, c.muted);
-    if (data.checked_at) ltrRight(String(data.checked_at), RIGHT, 142, 400, 26, c.muted);
-    rect(MARGIN, 190, WIDTH - 2 * MARGIN, 2, 0, c.border);
-
-    // identity row
-    rect(RIGHT - 150, 240, 150, 150, 32, opts.hasLineLogo ? c.surface : c.surface2, c.border);
-    if (opts.hasLineLogo) {
-      ops.push({ t: "image", key: "line", x: RIGHT - 135, y: 255, w: 120, h: 120 });
-    } else {
-      var letter = network.trim().charAt(0) || "—";
-      text(letter, RIGHT - 75, 340, 700, 76, c.ink, "center");
-    }
-
+    var lineName = String(data.line_name || data.network || "");
     var status = String(data.status || "") || "—";
     var tone = toneColors(data.status_tone, c);
-    var pillW = m(status, 700, 40) + 90;
-    var textRight = RIGHT - 190;
+
+    rect(RIGHT - 150, 48, 150, 150, 28, opts.hasLineLogo ? c.surface : c.surface2, c.border);
+    if (opts.hasLineLogo) {
+      ops.push({ t: "image", key: "line", x: RIGHT - 135, y: 63, w: 120, h: 120 });
+    } else {
+      text(lineName.trim().charAt(0) || "—", RIGHT - 75, 148, 700, 72, c.ink, "center");
+    }
     var phone = data.phone_display || groupPhone(data.phone) || "—";
-    var phoneAvail = textRight - (MARGIN + pillW + 30);
-    var phoneSize = fitSize(76, m(phone, 700, 76), phoneAvail);
-    ltrRight(phone, textRight, 318, 700, phoneSize, c.ink);
-    var metaText = [network || "—", data.sim_type || ""].filter(Boolean).join(" · ");
-    var metaSize = 34;
-    text(
-      ellipsize(metaText, textRight - MARGIN, function (s) { return m(s, 400, metaSize); }),
-      textRight, 372, 400, metaSize, c.muted
-    );
-    rect(MARGIN, 270, pillW, 84, 42, tone.bg);
-    ops.push({ t: "circle", x: MARGIN + pillW - 38, y: 312, r: 10, fill: tone.fg });
-    text(status, MARGIN + pillW - 60, 326, 700, 40, tone.fg);
-
-    // plan
-    text("الحزمة", RIGHT, 470, 400, 32, c.muted);
-    var planLines = wrapText(data.plan_name || "—", WIDTH - 2 * MARGIN, function (s) { return m(s, 600, 40); }, 3);
-    planLines.forEach(function (line, i) {
-      text(line, RIGHT, 520 + i * 54, 600, 40, c.ink);
-    });
-    var top = 520 + (planLines.length - 1) * 54 + 50;
-
-    // days-left box + end-date box
-    var gap = 30;
-    var bw = (WIDTH - 2 * MARGIN - gap) / 2;
-    var boxH = 230;
-    if (expiry) {
-      var et = toneColors(expiry.tone, c);
-      rect(RIGHT - bw, top, bw, boxH, 36, et.bg);
-      rect(MARGIN, top, bw, boxH, 36, c.surface2);
-      text(expiry.days ? "الأيام المتبقية" : "الصلاحية", RIGHT - 40, top + 60, 400, 32, c.muted);
-      text("تاريخ الانتهاء", MARGIN + bw - 40, top + 60, 400, 32, c.muted);
-      if (expiry.days) {
-        var days = String(expiry.days);
-        var daysW = m(days, 700, 120);
-        ltr(days, RIGHT - 40 - daysW, top + 190, 700, 120, et.fg);
-        text(expiry.word || "", RIGHT - 40 - daysW - 16, top + 190, 600, 40, et.fg);
-      } else {
-        text(expiry.state || "", RIGHT - 40, top + 175, 700, 64, et.fg);
-      }
-      var date = String(expiry.date || "");
-      var dateSize = fitSize(64, m(date, 700, 64), bw - 80);
-      ltrRight(date, MARGIN + bw - 40, top + 175, 700, dateSize, c.ink);
+    ltrRight(phone, RIGHT - 180, 118, 700, 64, c.ink);
+    var pillW = m(status, 700, 32) + 70;
+    rect(RIGHT - 180 - pillW, 140, pillW, 56, 28, tone.bg);
+    ops.push({ t: "circle", x: RIGHT - 180 - 28, y: 168, r: 8, fill: tone.fg });
+    text(status, RIGHT - 220, 176, 700, 32, tone.fg);
+    if (opts.hasSiteLogo) {
+      ops.push({ t: "image", key: "site", x: MARGIN, y: 70, w: 280, h: 90 });
     } else {
-      boxH = 150;
-      rect(MARGIN, top, WIDTH - 2 * MARGIN, boxH, 36, c.surface2);
-      text("لا يوجد تاريخ انتهاء", RIGHT - 40, top + 92, 600, 38, c.muted);
+      text(siteName, MARGIN, 130, 700, 36, c.ink, "left");
     }
 
-    // usage
-    var y0 = top + boxH + 80;
-    var rows = (data.usage || []).filter(function (g) {
-      return !(String(g.used) === "—" && !g.total);
+    var y = 230;
+    (data.facts || []).forEach(function (row) {
+      var label = String(row.label || "");
+      var value = String(row.value || "—");
+      rect(MARGIN, y, WIDTH - 2 * MARGIN, 64, 12, c.surface, c.border);
+      rect(RIGHT - 280, y, 280, 64, 12, c.surface2);
+      text(label, RIGHT - 24, y + 42, 500, 28, c.muted);
+      if (row.ltr) ltrRight(value, RIGHT - 304, y + 42, 600, 30, c.ink);
+      else text(value, RIGHT - 304, y + 42, 600, 30, c.ink);
+      y += 76;
     });
-    var barBottom = y0 - 28;
-    rows.forEach(function (g, i) {
-      var y = y0 + i * 92;
-      text(g.label, RIGHT, y, 600, 36, c.ink);
-      if (g.included === false) {
-        text("غير مشمولة بالحزمة", MARGIN, y, 400, 32, c.muted, "left");
-      } else {
-        text(g.unit, MARGIN, y, 400, 32, c.muted, "left");
-        var px = MARGIN + m(g.unit, 400, 32) + 14;
-        usedTotalParts(g.used, g.total).forEach(function (part) {
-          ltr(part, px, y, 600, 32, c.ink);
-          px += m(part + " ", 600, 32);
-        });
-        var barW = WIDTH - 2 * MARGIN;
-        rect(MARGIN, y + 22, barW, 16, 8, c.surface2);
-        var pct = parseFloat(g.pct);
-        if (pct > 0) {
-          var fw = Math.min(barW, Math.max((barW * pct) / 100, 24));
-          rect(RIGHT - fw, y + 22, fw, 16, 8, c.ink);
-        }
-      }
-      barBottom = y + 38;
+
+    var rings = (data.usage || []).filter(function (g) {
+      return !(String(g.used) === "—" && !g.total && !g.unlimited);
     });
-    var footerLine;
-    if (!rows.length) {
-      text("لا تتوفر بيانات استهلاك لهذا الرقم", RIGHT, y0, 400, 32, c.muted);
-      barBottom = y0 + 16;
-    }
-    if (data.utilization) {
-      var uy = barBottom + 50;
-      var label = "نسبة الاستخدام";
-      text(label, RIGHT, uy, 400, 30, c.muted);
-      ltrRight(data.utilization + "%", RIGHT - m(label, 400, 30) - 12, uy, 600, 30, c.ink);
-      footerLine = uy + 44;
+    y += 24;
+    if (!rings.length || data.has_usage === false) {
+      text(data.notice || "لا تتوفر بيانات استهلاك لهذا الرقم", RIGHT, y + 36, 400, 30, c.muted);
+      y += 70;
     } else {
-      footerLine = barBottom + 48;
+      var col = (WIDTH - 2 * MARGIN) / 3;
+      rings.forEach(function (g, i) {
+        var cx = RIGHT - col * i - col / 2;
+        ops.push({ t: "circle", x: cx, y: y + 54, r: 46, fill: c.surface2 });
+        ltr(String(g.used), cx - m(String(g.used), 700, 28) / 2, y + 64, 700, 28, c.ink);
+        text(g.label, cx, y + 130, 600, 26, c.ink, "center");
+        var caption = g.included === false ? "غير مشمولة" : g.unlimited ? "غير محدود" : "";
+        if (!caption && g.total) caption = String(g.used) + " / " + String(g.total);
+        if (caption) text(caption, cx, y + 164, 500, 24, c.muted, "center");
+      });
+      y += 190;
     }
 
-    // footer
-    rect(MARGIN, footerLine, WIDTH - 2 * MARGIN, 2, 0, c.border);
-    ops.push({ t: "circle", x: RIGHT - 8, y: footerLine + 57, r: 9, fill: c.accent });
-    text(siteName + " · " + FOOTER_TAIL, RIGHT - 30, footerLine + 67, 400, 30, c.muted);
-
-    return { width: WIDTH, height: footerLine + 120, ops: ops };
+    return { width: WIDTH, height: y + 48, ops: ops };
   }
 
   // ---- drawing ------------------------------------------------------------

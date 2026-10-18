@@ -567,10 +567,38 @@ class LayanReconcileTests(TestCase):
         self.assertEqual(r.status_code, 302)
 
     def test_layan_reconcile_page_renders(self):
+        from providers.crypto import encrypt
+        from providers.models import ProviderConnection
+
+        connection = ProviderConnection.for_key("layan")
+        connection.username = "user"
+        connection.secret_encrypted = encrypt("pass")
+        connection.save()
         self.client.force_login(self.user)
         r = self.client.get(reverse("companies:layan_reconcile", args=[self.company.pk]))
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Run matching")
+        self.assertContains(r, "Fetches the Layan accounting report for that period.")
+
+    def test_accounting_record_with_thousands_separator_is_a_deposit(self):
+        result = reconcile_layan_report(
+            self.company,
+            records=[
+                {
+                    "phoneNumber": "-",
+                    "chargeType": {"name": "دفع جديد", "value": 17},
+                    "cost": "4,000.00",
+                    "balanceBefore": "1,673.51",
+                    "balanceAfter": "5,673.51",
+                    "chargeDate": "18/10/2026 12:53",
+                }
+            ],
+            period_from=date(2026, 10, 1),
+            period_to=date(2026, 10, 31),
+        )
+        self.assertEqual(result.layan_deposits, _decimal("4000.00"))
+        self.assertEqual(result.layan_end_balance, _decimal("5673.51"))
+        self.assertEqual(result.row_count, 1)
 
 
 class LayanSupplierAliasTests(TestCase):

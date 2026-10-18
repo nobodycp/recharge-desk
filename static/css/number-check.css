@@ -433,6 +433,10 @@
   font-size: 0.92rem;
 }
 
+.rd-ncheck__row--open {
+  grid-template-columns: 3.6rem minmax(0, 1fr);
+}
+
 .rd-ncheck__row.is-warn { --nc-bar: var(--rd-warning); }
 .rd-ncheck__row.is-danger { --nc-bar: var(--rd-danger); }
 
@@ -494,10 +498,24 @@
 
 .rd-ncheck__tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.55rem;
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 1rem 0.4rem;
   border-top: 1px solid var(--bs-border-color);
+}
+
+.rd-ncheck__sim {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.15rem 1rem 0.85rem;
+}
+
+.rd-ncheck__sim-label {
+  flex: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
 }
 
 .rd-ncheck__tile {
@@ -543,45 +561,126 @@
 }
 
 .rd-ncheck__iccid {
+  flex: 1;
+  min-width: 0;
   font-family: var(--rd-font-num);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: end;
+  letter-spacing: 0.01em;
+  text-align: start;
   overflow-wrap: anywhere;
-}
-
-.rd-ncheck__copy {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  min-block-size: 3.45rem;
-  margin-top: 0.3rem;
-  padding: 0.22rem 0.9rem;
-  border-radius: 999px;
-  border: 1px solid var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-body-color);
-  font-size: 0.8rem;
-  font-weight: 600;
-  transition: border-color var(--rd-transition-fast), color var(--rd-transition-fast);
-}
-
-.rd-ncheck__copy:hover,
-.rd-ncheck__copy:focus-visible {
-  border-color: var(--rd-accent);
-  color: var(--rd-accent-ink);
-}
-
-.rd-ncheck__copy.is-done {
-  border-color: var(--rd-success);
-  color: var(--rd-success);
 }
 
 /* ---- share --------------------------------------------------------------- */
 
-.rd-ncheck__actions { padding: 0 1rem 1rem; }
+.rd-ncheck__site {
+  flex: none;
+  block-size: 2.15rem;
+  inline-size: auto;
+  max-inline-size: 7.5rem;
+  margin-inline-start: auto;
+  object-fit: contain;
+}
+
+.rd-ncheck__site-name {
+  margin-inline-start: auto;
+  color: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.rd-ncheck__facts {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0 1rem;
+}
+
+.rd-ncheck__fact {
+  display: flex;
+  align-items: center;
+  min-block-size: 1.9rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  background: var(--rd-surface);
+}
+
+.rd-ncheck__fact-lab {
+  flex: none;
+  inline-size: 6.6rem;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.65rem;
+  background: var(--rd-surface-2);
+  border-inline-end: 1px solid var(--bs-border-color);
+  color: var(--rd-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.rd-ncheck__fact-val {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  min-inline-size: 0;
+  padding: 0 0.65rem;
+  color: var(--rd-ink);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.rd-ncheck__rings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.rd-ncheck__ring { color: var(--rd-muted); font-size: 0.75rem; font-weight: 500; }
+
+.rd-ncheck__dial { inline-size: 3.4rem; block-size: 3.4rem; display: block; margin: 0 auto 0.2rem; }
+
+.rd-ncheck__dial-track { stroke: var(--rd-surface-2); }
+
+.rd-ncheck__dial-arc { stroke: var(--rd-ink); }
+
+.rd-ncheck__ring.is-warn .rd-ncheck__dial-arc { stroke: var(--rd-warning); }
+.rd-ncheck__ring.is-danger .rd-ncheck__dial-arc { stroke: var(--rd-danger); }
+
+.rd-ncheck__dial-num {
+  fill: var(--rd-ink);
+  font-family: var(--rd-font-num);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.rd-ncheck__ring-label { display: block; }
+
+.rd-ncheck__ring-meta {
+  display: block;
+  margin-top: 0.05rem;
+  color: var(--rd-ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.rd-ncheck__sales { padding: 0.9rem 0 0.4rem; }
+
+.rd-ncheck__sales-title {
+  margin: 0 1rem 0.4rem;
+  color: var(--rd-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rd-ncheck__actions { padding: 0.75rem 1rem 0.2rem; }
 
 .rd-ncheck__share {
   display: flex;

@@ -106,6 +106,18 @@ def reset_session(provider_key: str) -> None:
     """
     SessionStore(provider_key).clear()
     get_redis().delete(_cooldown_key(provider_key), _failures_key(provider_key))
+    _clear_durable_session(provider_key)
+
+
+def _clear_durable_session(provider_key: str) -> None:
+    """Drop the DB copy of the portal session (no-op if the account row is missing)."""
+    from providers.models import ProviderConnection
+
+    (
+        ProviderConnection.objects.filter(provider_key=provider_key)
+        .exclude(session_encrypted="")
+        .update(session_encrypted="")
+    )
 
 
 def _start_cooldown(redis_client, provider_key: str) -> None:

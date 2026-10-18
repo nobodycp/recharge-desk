@@ -8,14 +8,13 @@
 {% rd_page_header page_title company.name back_url back_label %}{% end_rd_page_header %}
 
 <section class="rd-card rd-rec-run">
-  <form method="post" enctype="multipart/form-data" class="rd-rec-run__form">
+  <form method="post" class="rd-rec-run__form">
     {% csrf_token %}
     {% include "partials/form_errors_toast.html" with errors=form.non_field_errors %}
     <div class="rd-rec-run__grid">
       {% rd_field form.period_from %}
       {% rd_field form.period_to %}
       {% rd_field form.min_settlement_difference %}
-      {% rd_field form.report_file %}
       {% rd_field form.pending_credits %}
     </div>
     <div class="rd-rec-run__actions">

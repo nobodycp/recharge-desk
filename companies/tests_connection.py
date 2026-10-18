@@ -12,6 +12,7 @@ from django.utils import timezone, translation
 
 from accounts.models import UserProfile
 from companies.models import Company
+from providers.crypto import encrypt
 from providers.models import ProviderConnection
 
 User = get_user_model()
@@ -156,9 +157,9 @@ class ServicesTests(_Base):
         self.assertContains(response, 'name="is_enabled"')
         self.assertContains(response, 'name="refresh_enabled"')
         self.assertContains(response, 'name="reconcile_enabled"')
-        # Layan has no charge or number check: no switch, honest reason instead.
+        self.assertContains(response, 'name="number_info_enabled"')
+        # Layan has no charge: no switch, honest reason instead.
         self.assertNotContains(response, 'name="charge_enabled"')
-        self.assertNotContains(response, 'name="number_info_enabled"')
         self.assertContains(response, "غير متاح لهذا النظام بعد")
 
     def test_sky_shows_a_number_check_switch(self):
@@ -220,6 +221,10 @@ class ServicesTests(_Base):
         self.assertContains(response, "موقوفة")
 
     def test_reconcile_row_links_to_reconcile_page_when_active(self):
+        connection = ProviderConnection.for_key("layan")
+        connection.username = "user"
+        connection.secret_encrypted = encrypt("pass")
+        connection.save()
         company = self.company(provider_key="layan")
         response = self.tab(company)
         self.assertContains(response, self.url("layan_reconcile", company))
@@ -471,7 +476,12 @@ class ReconcileGateMessageTests(_Base):
         return [m.message for m in get_messages(response.wsgi_request)]
 
     def test_layan_with_reconcile_off_gets_the_service_reason(self):
-        ProviderConnection.objects.create(provider_key="layan", reconcile_enabled=False)
+        ProviderConnection.objects.create(
+            provider_key="layan",
+            username="user",
+            secret_encrypted=encrypt("pass"),
+            reconcile_enabled=False,
+        )
         company = self.company(provider_key="layan")
         response = self.client.get(self.url("layan_reconcile", company))
         self.assertEqual(response.status_code, 302)

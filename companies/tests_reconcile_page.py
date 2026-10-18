@@ -13,7 +13,6 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import translation
@@ -199,8 +198,8 @@ class _Base(TestCase):
 
     def setUp(self):
         self.client.force_login(self.user)
-        if self.provider == "sky":
-            connection = ProviderConnection.for_key("sky")
+        if self.provider in ("sky", "layan"):
+            connection = ProviderConnection.for_key(self.provider)
             connection.username = "user"
             connection.secret_encrypted = encrypt("pass")
             connection.save()
@@ -225,8 +224,6 @@ class _Base(TestCase):
             "min_amount_diff": "3",
             "min_settlement_difference": "3",
         }
-        if self.provider == "layan":
-            payload["report_file"] = SimpleUploadedFile("r.xlsx", b"x")
         with translation.override("en"), patch(
             RECONCILE, return_value=(self.result(**result_kwargs), self.template())
         ):
@@ -386,7 +383,7 @@ class _SharedPageTests:
 class LayanReconcilePageTests(_SharedPageTests, _Base):
     provider = "layan"
     supplier = "Layan"
-    waiting_text = "Upload the Layan charges report"
+    waiting_text = "Fetches the Layan accounting report for that period."
     expected_rows = 7
 
     def result(self, **kwargs):
@@ -477,7 +474,6 @@ class ReconcileContextTests(_Base):
                 {
                     "period_from": "2026-08-01",
                     "period_to": "2026-08-31",
-                    "report_file": SimpleUploadedFile("r.xlsx", b"x"),
                 },
             )
         html = response.content.decode()

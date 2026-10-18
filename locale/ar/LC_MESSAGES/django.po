@@ -615,6 +615,29 @@ msgid "Could not reach Sky. Check the internet connection and try again."
 msgstr "تعذّر الوصول إلى سكاي. افحص الاتصال بالإنترنت وحاول مرة أخرى."
 
 #: companies/views.py
+msgid ""
+"Layan took too long to answer. Try a shorter period or run it again in a minute."
+msgstr "ليان تأخّر بالرد. جرّب فترة أقصر أو أعد المحاولة بعد دقيقة."
+
+#: companies/views.py
+msgid "Layan is signing in right now. Run matching again in a minute."
+msgstr "ليان يسجّل الدخول الآن. شغّل المطابقة مرة أخرى بعد دقيقة."
+
+#: companies/views.py
+msgid ""
+"Could not sign in to Layan. Check the connection settings on the company page."
+msgstr "تعذّر تسجيل الدخول إلى ليان. افحص إعدادات الربط من صفحة الشركة."
+
+#: companies/views.py
+msgid "Could not reach Layan. Check the internet connection and try again."
+msgstr "تعذّر الوصول إلى ليان. افحص الاتصال بالإنترنت وحاول مرة أخرى."
+
+#: companies/views.py
+#, python-format
+msgid "Layan refused the request: %(error)s"
+msgstr "ليان رفض الطلب: %(error)s"
+
+#: companies/views.py
 msgid "Sky is signing in right now. Run matching again in a minute."
 msgstr "سكاي يسجّل الدخول الآن. شغّل المطابقة مرة أخرى بعد دقيقة."
 
@@ -6680,6 +6703,17 @@ msgstr "المبيعات الناقصة + فروقات التكلفة الأعل
 #: templates/companies/partials/reconcile_results.html
 msgid "The report you upload is compared to sales in the system. Nothing is fetched from the Layan portal."
 msgstr "يُقارن التقرير الذي ترفعه بالمبيعات في النظام. لا يُجلب أي شيء من بوابة ليان."
+
+#: templates/companies/partials/reconcile_waiting.html
+msgid ""
+"Choose a period, then run matching. Live Layan accounting charges are compared "
+"to sales in the system."
+msgstr ""
+"اختر الفترة ثم شغّل المطابقة. تُقارن حركات محاسبة ليان الحية بالمبيعات في النظام."
+
+#: templates/companies/partials/reconcile_waiting.html
+msgid "Fetches the Layan accounting report for that period."
+msgstr "يجلب تقرير المحاسبة من ليان لهذه الفترة."
 
 #: templates/companies/partials/reconcile_results.html
 msgid "Upload the Layan charges report"

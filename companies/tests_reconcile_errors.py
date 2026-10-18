@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import translation
@@ -35,9 +34,11 @@ CONNECTION_MSG = "Could not reach Sky. Check the internet connection and try aga
 UNEXPECTED_MSG = (
     "Matching failed unexpectedly. The details were saved in the server log."
 )
-UNREADABLE_MSG = (
-    "Could not read the file. Make sure it is the Layan charges report "
-    "exported as Excel (.xlsx)."
+LAYAN_LOGIN_MSG = (
+    "Could not sign in to Layan. Check the connection settings on the company page."
+)
+LAYAN_UNEXPECTED_MSG = (
+    "Matching failed unexpectedly. The details were saved in the server log."
 )
 
 
@@ -139,7 +140,8 @@ class ArabicMessagesTests(TestCase):
             LOGIN_MSG,
             CONNECTION_MSG,
             UNEXPECTED_MSG,
-            UNREADABLE_MSG,
+            LAYAN_LOGIN_MSG,
+            LAYAN_UNEXPECTED_MSG,
             "Sky refused the request: %(error)s",
         ):
             with translation.override("ar"):
@@ -149,49 +151,39 @@ class ArabicMessagesTests(TestCase):
 class LayanReconcileErrorTests(_Base):
     def setUp(self):
         super().setUp()
+        connection = ProviderConnection.for_key("layan")
+        connection.username = "user"
+        connection.secret_encrypted = encrypt("pass")
+        connection.save()
         self.company = Company.objects.create(
             name="Layan Co", opening_balance=0, current_balance=0, provider_key="layan"
         )
         self.url = reverse("companies:layan_reconcile", args=[self.company.pk])
 
-    def test_unreadable_layan_file_shows_friendly_error(self):
-        upload = SimpleUploadedFile("x.xlsx", b"not excel")
-        with translation.override("en"), self.assertLogs("companies.views", "ERROR"):
-            r = self.client.post(
-                self.url,
-                {
-                    "period_from": "2026-08-01",
-                    "period_to": "2026-08-31",
-                    "report_file": upload,
-                    "pending_credits": "512823671,29",
-                    "min_settlement_difference": "3",
-                },
-            )
+    def _post(self, **extra):
+        payload = {
+            "period_from": "2026-08-01",
+            "period_to": "2026-08-31",
+            "pending_credits": "512823671,29",
+            "min_settlement_difference": "3",
+        }
+        payload.update(extra)
+        return self.client.post(self.url, payload)
+
+    def test_login_failure_keeps_the_period(self):
+        with translation.override("en"), patch(RECONCILE, side_effect=AuthRequired("x")):
+            r = self._post()
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(self.messages(r), [UNREADABLE_MSG])
+        self.assertEqual(self.messages(r), [LAYAN_LOGIN_MSG])
         self.assertContains(r, 'value="2026-08-01"')
         self.assertContains(r, 'value="2026-08-31"')
         self.assertContains(r, "512823671,29")
 
     def test_unexpected_layan_error_is_logged_not_shown(self):
-        upload = SimpleUploadedFile("x.xlsx", b"x")
         with translation.override("en"), patch(
             RECONCILE, side_effect=ValueError("secret-trace")
         ), self.assertLogs("companies.views", "ERROR") as logs:
-            r = self.client.post(
-                self.url, {"report_file": upload, "min_settlement_difference": "3"}
-            )
-        self.assertEqual(self.messages(r), [UNREADABLE_MSG])
+            r = self._post()
+        self.assertEqual(self.messages(r), [LAYAN_UNEXPECTED_MSG])
         self.assertNotContains(r, "secret-trace")
         self.assertIn("secret-trace", "\n".join(logs.output))
-
-    def test_layan_import_error_message_kept(self):
-        upload = SimpleUploadedFile("x.xlsx", b"x")
-        with translation.override("en"), patch(RECONCILE, side_effect=ImportError("x")):
-            r = self.client.post(
-                self.url, {"report_file": upload, "min_settlement_difference": "3"}
-            )
-        self.assertEqual(
-            self.messages(r),
-            ["Excel support is not installed (openpyxl). Contact your administrator."],
-        )

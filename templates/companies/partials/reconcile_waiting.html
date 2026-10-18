@@ -1,6 +1,6 @@
 {% load i18n %}<section class="rd-card rd-rec-waiting">
   <p class="rd-rec-waiting__lead">
-    {% if provider == "sky" %}{% trans "Choose a period, then run matching. Live Sky charges are compared to sales in the system." %}{% else %}{% trans "The report you upload is compared to sales in the system. Nothing is fetched from the Layan portal." %}{% endif %}
+    {% if provider == "sky" %}{% trans "Choose a period, then run matching. Live Sky charges are compared to sales in the system." %}{% else %}{% trans "Choose a period, then run matching. Live Layan accounting charges are compared to sales in the system." %}{% endif %}
   </p>
   <ol class="rd-rec-steps">
     {% if provider == "sky" %}
@@ -29,15 +29,15 @@
       <li class="rd-rec-step">
         <span class="rd-rec-step__num tabular-nums" aria-hidden="true">1</span>
         <div>
-          <strong>{% trans "Upload the Layan charges report" %}</strong>
-          <div class="rd-rec-step__text">{% trans "An Excel (.xlsx) file exported from Layan. The dates are optional." %}</div>
+          <strong>{% trans "Set the date range" %}</strong>
+          <div class="rd-rec-step__text">{% trans "From / to — the days you want to review." %}</div>
         </div>
       </li>
       <li class="rd-rec-step">
         <span class="rd-rec-step__num tabular-nums" aria-hidden="true">2</span>
         <div>
           <strong>{% trans "Run matching" %}</strong>
-          <div class="rd-rec-step__text">{% trans "Compares every number in the report with the sales in the system." %}</div>
+          <div class="rd-rec-step__text">{% trans "Fetches the Layan accounting report for that period." %}</div>
         </div>
       </li>
       <li class="rd-rec-step">

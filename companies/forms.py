@@ -121,17 +121,13 @@ class PeriodFilterForm(forms.Form):
 class LayanReportReconcileForm(forms.Form):
     period_from = forms.DateField(
         label=_("Date from"),
-        required=False,
+        required=True,
         widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
     )
     period_to = forms.DateField(
         label=_("Date to"),
-        required=False,
+        required=True,
         widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
-    )
-    report_file = forms.FileField(
-        label=_("Layan charges report (.xlsx)"),
-        widget=forms.ClearableFileInput(attrs={"class": "form-control", "accept": ".xlsx,.xls"}),
     )
     pending_credits = forms.CharField(
         label=_("Pending portal credits (optional)"),

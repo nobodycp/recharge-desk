@@ -9,15 +9,21 @@ let fail = 0;
 const check = (name, cond, extra) => { console.log((cond ? "PASS " : "FAIL ") + name, cond ? "" : JSON.stringify(extra)); if (!cond) fail++; };
 
 const SHARE = {
-  phone_display: "052-123-4567", network: "سلكوم", sim_type: "شريحة إلكترونية", status: "مفعل", status_tone: "ok",
-  plan_name: "حملة رمضان 400 جيجا سلكوم",
-  expiry: { date: "13/11/2026", days: "29", word: "يوم", state: "", tone: "ok" },
+  phone_display: "052-123-4567", line_name: "سلكوم", status: "مفعل", status_tone: "ok",
+  facts: [
+    { label: "الشركة", value: "سلكوم" },
+    { label: "الحزمة", value: "رمضان" },
+    { label: "الشريحة", value: "شريحة إلكترونية" },
+    { label: "تاريخ الانتهاء", value: "13/11/2026", ltr: true },
+    { label: "الأيام المتبقية", value: "29 يوم" },
+    { label: "سعر الاشتراك", value: "60 ₪", ltr: true },
+  ],
   usage: [
     { label: "إنترنت", used: "6.08", total: "400", unit: "جيجا", pct: "1.5", included: true },
     { label: "دقائق", used: "0", total: "5000", unit: "دقيقة", pct: "0", included: true },
     { label: "رسائل", used: "0", total: "0", unit: "رسالة", pct: "", included: false },
   ],
-  utilization: "1.5", line_logo: "/media/icons/product_lines/cellcom.webp", checked_at: "15/10/2026 · 19:50",
+  has_usage: true, line_logo: "/media/icons/product_lines/cellcom.webp", checked_at: "15/10/2026 · 19:50",
 };
 const COLORS = {
   ink: "INK", muted: "MUTED", surface: "SURFACE", surface2: "SURFACE2", border: "BORDER", success: "OK", successSoft: "OKSOFT",
@@ -80,7 +86,7 @@ const setTimeout0 = (fn) => setImmediate(fn);
   const api = e.api;
 
   // --- pure helpers
-  check("groupPhone: 10 digits -> 3-3-4", api.groupPhone("0521234567") === "052-123-4567", api.groupPhone("0521234567"));
+  check("groupPhone: digits stay ungrouped", api.groupPhone("0521234567") === "0521234567", api.groupPhone("0521234567"));
   check("groupPhone: other input as is", api.groupPhone("12345") === "12345" && api.groupPhone("") === "" && api.groupPhone("+972521234567") === "+972521234567", 0);
   check("phoneDigits strips dashes", api.phoneDigits("052-123-4567") === "0521234567", 0);
   check("usedTotalParts: pieces, no bidi run", JSON.stringify(api.usedTotalParts("6.08", "400")) === '["6.08","/","400"]' && JSON.stringify(api.usedTotalParts("6", "")) === '["6"]', 0);
@@ -109,31 +115,29 @@ const setTimeout0 = (fn) => setImmediate(fn);
   const L = api.layoutShare(SHARE, (s, w, z) => String(s).length * z * 0.5, COLORS, { siteName: "Pro Sim", hasSiteLogo: true, hasLineLogo: true });
   const texts = L.ops.filter((o) => o.t === "text");
   const strs = texts.map((o) => o.s);
-  check("layout: 1080 wide, height near 1270", L.width === 1080 && L.height > 1200 && L.height < 1400, [L.width, L.height]);
+  check("layout: 1080 wide", L.width === 1080 && L.height > 800, [L.width, L.height]);
   const phone = texts.find((o) => o.s === "052-123-4567");
   check("layout: number drawn LTR from an explicit left x", phone && phone.dir === "ltr" && phone.align === "left" && phone.x > 0, phone);
-  const firstY = (texts.find((o) => o.s === "6.08") || {}).y;
-  const pieces = texts.filter((o) => ["6.08", "/", "400"].includes(o.s) && o.dir === "ltr" && o.y === firstY);
-  check("layout: 'used / total' drawn piece by piece, increasing x", pieces.length === 3 && pieces[0].x < pieces[1].x && pieces[1].x < pieces[2].x && pieces.every((p) => p.y === pieces[0].y), pieces);
-  check("layout: date and days LTR", texts.some((o) => o.s === "13/11/2026" && o.dir === "ltr") && texts.some((o) => o.s === "29" && o.dir === "ltr"), 0);
+  check("layout: date is LTR and days stay with their word", texts.some((o) => o.s === "13/11/2026" && o.dir === "ltr") && strs.includes("29 يوم"), 0);
   check("layout: Arabic runs are rtl, right-aligned",
-    ["مفعل", "الأيام المتبقية", "تاريخ الانتهاء", "إنترنت", "الحزمة", "نتيجة فحص الرقم"].every((s) => { const o = texts.find((t) => t.s === s); return o && o.dir === "rtl"; }), 0);
-  check("layout: network · sim type, plan, days word, footer",
-    strs.includes("سلكوم · شريحة إلكترونية") && strs.includes("حملة رمضان 400 جيجا سلكوم") && strs.includes("يوم") && strs.includes("Pro Sim · فحص فوري للخطوط"), strs);
-  check("layout: not-included row says so and draws no bar for it", strs.includes("غير مشمولة بالحزمة") && !strs.includes("رسالة"), strs);
-  check("layout: utilization drawn", strs.includes("1.5%") && strs.includes("نسبة الاستخدام"), strs);
+    ["مفعل", "الأيام المتبقية", "تاريخ الانتهاء", "إنترنت", "الحزمة"].every((s) => { const o = texts.find((t) => t.s === s); return o && o.dir === "rtl"; }), 0);
+  check("layout: company, package, sim and our price",
+    strs.includes("سلكوم") && strs.includes("رمضان") && strs.includes("شريحة إلكترونية") && strs.includes("60 ₪"), strs);
+  check("layout: not-included ring says so", strs.includes("غير مشمولة"), strs);
+  check("layout: capped usage prints used / total", strs.includes("6.08 / 400") && strs.includes("0 / 5000"), strs);
   check("layout: line logo + site logo images when available", L.ops.filter((o) => o.t === "image").map((o) => o.key).sort().join() === "line,site", 0);
-  const L2 = api.layoutShare({ ...SHARE, expiry: null, usage: [] , utilization: ""}, (s, w, z) => String(s).length * z * 0.5, COLORS, { hasLineLogo: false });
+  const L2 = api.layoutShare({ ...SHARE, line_name: "سلكوم", usage: [], has_usage: false }, (s, w, z) => String(s).length * z * 0.5, COLORS, { hasLineLogo: false });
   const s2 = L2.ops.filter((o) => o.t === "text").map((o) => o.s);
-  check("layout: monogram + no-expiry + no-usage + site name fallback", s2.includes("س") && s2.includes("لا يوجد تاريخ انتهاء") && s2.includes("لا تتوفر بيانات استهلاك لهذا الرقم") && s2.includes("Pro Sim") && !L2.ops.some((o) => o.t === "image"), s2);
-  const L3 = api.layoutShare({ ...SHARE, expiry: { date: "01/10/2026", days: "", word: "", state: "منتهية", tone: "danger" } }, (s, w, z) => String(s).length * z * 0.5, COLORS, {});
+  check("layout: monogram + no-usage + site name fallback", s2.includes("س") && s2.includes("لا تتوفر بيانات استهلاك لهذا الرقم") && s2.includes("Pro Sim") && !L2.ops.some((o) => o.t === "image"), s2);
+  const expiredFacts = SHARE.facts.map((row) => row.label === "الأيام المتبقية" ? { ...row, value: "منتهية" } : row);
+  const L3 = api.layoutShare({ ...SHARE, facts: expiredFacts, status_tone: "danger" }, (s, w, z) => String(s).length * z * 0.5, COLORS, {});
   const t3 = L3.ops.filter((o) => o.t === "text").map((o) => o.s);
-  check("layout: expired state shown instead of a day count", t3.includes("منتهية") && t3.includes("الصلاحية") && !t3.includes("الأيام المتبقية"), t3);
+  check("layout: expired state is the remaining-days value", t3.includes("منتهية") && t3.includes("الأيام المتبقية"), t3);
   const leaky = api.layoutShare({ ...SHARE, plan_price: "77.7", iccid: "8997201234567890123", sale: { price: "61.5" }, product: "x" }, (s, w, z) => String(s).length * z * 0.5, COLORS, {});
   const all = JSON.stringify(leaky.ops);
-  check("layout: never draws price, iccid or sale even if present in the data", !all.includes("8997") && !all.includes("77.7") && !all.includes("61.5"), 0);
-  const long = api.layoutShare({ ...SHARE, phone_display: "052-123-4567", plan_name: "حزمة ".repeat(40) }, (s, w, z) => String(s).length * z * 0.5, COLORS, {});
-  check("layout: a long plan name wraps (taller image, <= 3 lines)", long.height > L.height && long.height <= L.height + 2 * 54 + 1, [L.height, long.height]);
+  check("layout: ignores provider cost, iccid and a stray sale price", !all.includes("8997") && !all.includes("77.7") && !all.includes("61.5"), 0);
+  const long = api.layoutShare({ ...SHARE, facts: SHARE.facts.concat([{ label: "ملاحظة", value: "حزمة ".repeat(8) }]) }, (s, w, z) => String(s).length * z * 0.5, COLORS, {});
+  check("layout: an extra fact makes the image taller", long.height > L.height, [L.height, long.height]);
   const pill = L.ops.find((o) => o.t === "circle" && o.fill === "OK");
   check("layout: status dot + soft pill use the tone colours", !!pill && L.ops.some((o) => o.t === "rect" && o.fill === "OKSOFT"), 0);
 

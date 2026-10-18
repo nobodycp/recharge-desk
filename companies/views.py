@@ -159,19 +159,18 @@ def layan_reconcile(request, pk):
         messages.error(request, blocked)
         return redirect("companies:company_detail", pk=pk)
 
-    form = LayanReportReconcileForm(request.POST or None, request.FILES or None)
+    form = LayanReportReconcileForm(request.POST or None)
     result = None
     template = "companies/layan_reconcile.html"
     if request.method == "POST" and form.is_valid():
+        min_settle = form.cleaned_data.get("min_settlement_difference")
+        if min_settle is None:
+            min_settle = 3
         try:
-            min_settle = form.cleaned_data.get("min_settlement_difference")
-            if min_settle is None:
-                min_settle = 3
             result, template = provider_service.reconcile(
                 company,
                 form.cleaned_data.get("period_from"),
                 form.cleaned_data.get("period_to"),
-                workbook=form.cleaned_data["report_file"],
                 min_amount_diff=min_settle,
                 pending_credits_text=form.cleaned_data.get("pending_credits") or "",
                 user_id=request.user.pk,
@@ -180,25 +179,13 @@ def layan_reconcile(request, pk):
                 request,
                 _("Report processed (%(rows)s rows).") % {"rows": result.row_count},
             )
-        except ImportError:
-            messages.error(
-                request,
-                _("Excel support is not installed (openpyxl). Contact your administrator."),
-            )
         except Exception as exc:
             if isinstance(exc, PermanentError) and str(exc) == RECONCILE_NOT_SUPPORTED:
                 messages.error(
                     request, _("Layan report matching is only available for Layan.")
                 )
                 return redirect("companies:company_detail", pk=pk)
-            log.exception("Layan report matching failed for company %s", company.pk)
-            messages.error(
-                request,
-                _(
-                    "Could not read the file. Make sure it is the Layan charges "
-                    "report exported as Excel (.xlsx)."
-                ),
-            )
+            messages.error(request, _layan_error_message(company, exc))
 
     return render(
         request,
@@ -211,6 +198,37 @@ def layan_reconcile(request, pk):
             "supplier_label": _("Layan"),
             "title": _("Layan report matching"),
         },
+    )
+
+
+def _layan_error_message(company, exc: Exception):
+    """Plain-language text for a failed Layan run; unexpected errors go to the log."""
+    code = str(exc)
+    if isinstance(exc, TransientError) and code in _SKY_TIMEOUT_CODES:
+        return _(
+            "Layan took too long to answer. Try a shorter period or run it again "
+            "in a minute."
+        )
+    if isinstance(exc, TransientError) and code == "login_busy":
+        return _("Layan is signing in right now. Run matching again in a minute.")
+    if isinstance(exc, (AuthRequired, TransientError, PermanentError)):
+        if (
+            isinstance(exc, AuthRequired)
+            or provider_operations.classify_exception("reconcile", exc).error_code
+            == "login_failed"
+        ):
+            return _(
+                "Could not sign in to Layan. Check the connection settings on the "
+                "company page."
+            )
+        if isinstance(exc, TransientError):
+            return _(
+                "Could not reach Layan. Check the internet connection and try again."
+            )
+        return _("Layan refused the request: %(error)s") % {"error": code}
+    log.exception("Layan report matching failed for company %s", company.pk)
+    return _(
+        "Matching failed unexpectedly. The details were saved in the server log."
     )
 
 

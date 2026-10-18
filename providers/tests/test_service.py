@@ -455,7 +455,9 @@ class KeepaliveTaskTests(TestCase):
             "providers.tasks.service.keepalive"
         ) as keepalive:
             keepalive_sessions()
-        keepalive.assert_called_once_with("sky")
+        self.assertEqual(
+            [call.args[0] for call in keepalive.call_args_list], ["sky", "layan"]
+        )
 
         with patch("providers.tasks.get_credentials", return_value=creds), patch(
             "providers.tasks.service.keepalive", side_effect=TransientError("login_failed")
@@ -486,6 +488,7 @@ class KeepaliveTaskTests(TestCase):
         keepalive.assert_not_called()
 
         ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
+        ProviderConnection.objects.create(provider_key="layan", is_enabled=False)
         with patch(
             "providers.tasks.get_credentials", return_value=Credentials("u", "p")
         ), patch("providers.tasks.service.keepalive") as keepalive:

@@ -1,94 +1,61 @@
 {# Server-rendered number check card. Every value is auto-escaped; never add |safe here. #}
-{# The share image is drawn client-side from `share` only (no price, ICCID or sale). #}
+{# The share image is drawn from `share`: the customer block only. Sales stay on screen. #}
 <article class="rd-ncheck rd-ncheck--{{ network_tone }}" dir="rtl" aria-label="نتيجة فحص الرقم" data-rd-ncheck data-site-logo="{{ site_logo }}" data-site-name="{{ site_name }}">
   <header class="rd-ncheck__head">
-    {# The monogram is always there; the logo <img> is layered above it and hidden on load error (number-check-share.js). #}
     <span class="rd-ncheck__logo">
-      <span class="rd-ncheck__mono" aria-hidden="true">{{ network|first|default:"—" }}</span>
-      {% if line_logo %}<img class="rd-ncheck__logo-img" src="{{ line_logo }}" alt="{{ line_name|default:network }}">{% endif %}
+      <span class="rd-ncheck__mono" aria-hidden="true">{{ line_name|default:network|slice:":1"|default:"—" }}</span>
+      {% if line_logo %}<img class="rd-ncheck__logo-img" src="{{ line_logo }}" alt="{{ line_name }}">{% endif %}
     </span>
     <div class="rd-ncheck__id">
       <div class="rd-ncheck__num tabular-nums" dir="ltr">{{ phone_display|default:"—" }}</div>
-      <div class="rd-ncheck__meta">{{ network|default:"—" }} · {{ sim_type }}</div>
+      <span class="rd-ncheck__pill is-{{ status_tone }}" title="الحالة">
+        <span class="rd-ncheck__dot" aria-hidden="true"></span>
+        {{ status|default:"—" }}
+      </span>
     </div>
-    <span class="rd-ncheck__pill is-{{ status_tone }}" title="الحالة">
-      <span class="rd-ncheck__dot" aria-hidden="true"></span>
-      {{ status|default:"—" }}
-    </span>
+    {% if site_logo %}
+    <img class="rd-ncheck__site" src="{{ site_logo }}" alt="{{ site_name }}">
+    {% else %}
+    <span class="rd-ncheck__site-name">{{ site_name }}</span>
+    {% endif %}
   </header>
 
-  <div class="rd-ncheck__plan" title="اسم الحزمة">الحزمة: <b>{{ plan_name|default:"—" }}</b></div>
-
-  <div class="rd-ncheck__time">
-    {% if expiry %}
-    <div class="rd-ncheck__box is-{{ expiry.tone }}">
-      <div class="rd-ncheck__box-label">{% if expiry.days %}الأيام المتبقية{% else %}الصلاحية{% endif %}</div>
-      <div class="rd-ncheck__big tabular-nums">
-        {% if expiry.days %}<span class="rd-ncheck__big-num">{{ expiry.days }}</span><span class="rd-ncheck__big-word">{{ expiry.word }}</span>{% else %}<span class="rd-ncheck__state">{{ expiry.state }}</span>{% endif %}
-      </div>
+  <div class="rd-ncheck__facts">
+    {% for row in facts %}
+    <div class="rd-ncheck__fact">
+      <div class="rd-ncheck__fact-lab">{{ row.label }}</div>
+      <div class="rd-ncheck__fact-val">{% if row.ltr %}<bdi class="tabular-nums" dir="ltr">{{ row.value }}</bdi>{% else %}{{ row.value }}{% endif %}</div>
     </div>
-    <div class="rd-ncheck__box">
-      <div class="rd-ncheck__box-label">تاريخ الانتهاء</div>
-      <div class="rd-ncheck__date tabular-nums" dir="ltr">{{ expiry.date }}</div>
-    </div>
-    {% else %}
-    <div class="rd-ncheck__box is-muted rd-ncheck__box--wide">
-      <div class="rd-ncheck__box-label">لا يوجد تاريخ انتهاء</div>
-    </div>
-    {% endif %}
+    {% endfor %}
   </div>
 
   <section class="rd-ncheck__usage" aria-label="الاستهلاك">
-    <div class="rd-ncheck__section-head">
-      <h3 class="rd-ncheck__section-title">الاستهلاك</h3>
-      {% if utilization %}
-      <span class="rd-ncheck__util tabular-nums">نسبة الاستخدام <bdi dir="ltr">{{ utilization }}%</bdi></span>
-      {% endif %}
-    </div>
     {% if has_usage %}
-    <ul class="rd-ncheck__rows">
+    <ul class="rd-ncheck__rings">
       {% for g in usage %}
-      <li class="rd-ncheck__row rd-ncheck__row--{{ g.key }} is-{{ g.tone }}">
-        <span class="rd-ncheck__row-label">{{ g.label }}</span>
+      <li class="rd-ncheck__ring is-{{ g.tone }}">
+        <svg class="rd-ncheck__dial" viewBox="0 0 36 36" aria-hidden="true">
+          <circle class="rd-ncheck__dial-track" cx="18" cy="18" r="14.5" fill="none" stroke-width="1.75" pathLength="100"/>
+          {% if g.pct %}<circle class="rd-ncheck__dial-arc" cx="18" cy="18" r="14.5" fill="none" stroke-width="1.75" pathLength="100" stroke-dasharray="{{ g.pct }} 100" transform="rotate(-90 18 18)"/>{% endif %}
+          <text class="rd-ncheck__dial-num" x="18" y="19.4" text-anchor="middle">{{ g.used }}</text>
+        </svg>
+        <span class="rd-ncheck__ring-label">{{ g.label }}</span>
         {% if not g.included %}
-        <span class="rd-ncheck__row-off">غير مشمولة بالحزمة</span>
+        <b class="rd-ncheck__ring-meta">غير مشمولة</b>
+        {% elif g.unlimited %}
+        <b class="rd-ncheck__ring-meta">غير محدود</b>
         {% else %}
-        {% if g.pct %}<progress class="rd-ncheck__bar" max="100" value="{{ g.pct }}" aria-label="{{ g.label }}: {{ g.used }}{% if g.total %} من {{ g.total }}{% endif %} {{ g.unit }}">{{ g.pct }}%</progress>{% else %}<span class="rd-ncheck__bar" aria-hidden="true"></span>{% endif %}
-        <span class="rd-ncheck__row-val tabular-nums"><bdi dir="ltr">{{ g.used }}{% if g.total %} / {{ g.total }}{% endif %}</bdi> <span class="rd-ncheck__row-unit">{{ g.unit }}</span></span>
-        {% if g.remaining %}<span class="rd-ncheck__row-meta tabular-nums">متبقي <bdi dir="ltr">{{ g.remaining }}</bdi>{% if g.pct %} · <bdi dir="ltr">{{ g.pct }}%</bdi>{% endif %}</span>{% endif %}
+        <b class="rd-ncheck__ring-meta tabular-nums" dir="ltr">{{ g.used }}{% if g.total %} / {{ g.total }}{% endif %}</b>
         {% endif %}
       </li>
       {% endfor %}
     </ul>
+    {% elif notice %}
+    <p class="rd-ncheck__empty">{{ notice }}</p>
     {% else %}
     <p class="rd-ncheck__empty">لا تتوفر بيانات استهلاك لهذا الرقم</p>
     {% endif %}
   </section>
-
-  {# Screen only: never part of the share image. #}
-  <div class="rd-ncheck__tiles">
-    <div class="rd-ncheck__tile rd-ncheck__tile--price">
-      <div class="rd-ncheck__tile-label">سعر البيع</div>
-      {% if sale %}
-      <div class="rd-ncheck__price tabular-nums"><bdi>{{ sale.price }}</bdi><span class="rd-ncheck__currency">₪</span></div>
-      <div class="rd-ncheck__tile-meta">{{ sale.product }}</div>
-      <div class="rd-ncheck__tile-meta">آخر بيعة {{ sale.date }}</div>
-      {% else %}
-      <div class="rd-ncheck__price is-empty">—</div>
-      <div class="rd-ncheck__tile-meta">لا توجد بيعة سابقة لهذا الرقم</div>
-      {% endif %}
-    </div>
-    <div class="rd-ncheck__tile">
-      <div class="rd-ncheck__tile-label">رقم الشريحة</div>
-      <div class="rd-ncheck__iccid tabular-nums" dir="ltr">{{ iccid_groups|default:"—" }}</div>
-      {% if iccid %}
-      <button type="button" class="rd-ncheck__copy" data-copy="{{ iccid }}" data-done-label="تم النسخ">
-        <svg class="rd-ncheck__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
-        <span>نسخ</span>
-      </button>
-      {% endif %}
-    </div>
-  </div>
 
   <div class="rd-ncheck__actions">
     <button type="button" class="btn btn-primary rd-ncheck__share" data-rd-share-check>
@@ -96,5 +63,19 @@
       <span data-rd-share-label>مشاركة كصورة</span>
     </button>
   </div>
+
+  <section class="rd-ncheck__sales" aria-label="تفاصيل المبيعات">
+    <h2 class="rd-ncheck__sales-title">تفاصيل المبيعات</h2>
+    <div class="rd-ncheck__facts">
+      {% for row in sales %}
+      <div class="rd-ncheck__fact">
+        <div class="rd-ncheck__fact-lab">{{ row.label }}</div>
+        <div class="rd-ncheck__fact-val">
+          {% if row.ltr %}<bdi class="tabular-nums" dir="ltr">{{ row.value }}</bdi>{% else %}{{ row.value }}{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
   {{ share|json_script:"rd-ncheck-share-data" }}
 </article>

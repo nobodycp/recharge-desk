@@ -35,6 +35,9 @@ class ProviderConnection(models.Model):
     totp_secret_encrypted = models.TextField(blank=True)
     # Encrypted JSON object, e.g. {"proxy_url": "..."}.
     extra_encrypted = models.TextField(blank=True)
+    # Encrypted portal session (JWT + expiry). Shared by every process so a
+    # long-lived login is reused instead of signing in on each operation.
+    session_encrypted = models.TextField(blank=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
     last_login_ok = models.BooleanField(null=True, blank=True)
     last_error = models.CharField(max_length=500, blank=True)

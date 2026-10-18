@@ -50,12 +50,12 @@ class ServiceStateMappingTests(TestCase):
                 _company("x", provider), Capability.RECONCILE
             ).code
 
-        self.assertEqual(code("layan"), "active")
+        self.assertEqual(code("layan"), "not_configured")
         self.assertEqual(code("aloha"), "unsupported")
         self.assertEqual(code("nope"), "unsupported")
 
     def test_reconcile_with_switch_off_is_not_supported(self):
-        connection = ProviderConnection.for_key("layan")
+        connection = _save_credentials("layan")
         connection.reconcile_enabled = False
         connection.save()
         with self.assertRaises(PermanentError) as ctx:
@@ -123,6 +123,7 @@ class ReconcileServiceTests(TestCase):
             def reconcile(self, company, period_from, period_to, **opts):
                 return "ok"
 
+        _save_credentials("layan")
         company = _company("L", "layan")
         with patch("providers.service.get_adapter", return_value=Fake()), patch(
             "providers.service.run_authenticated"

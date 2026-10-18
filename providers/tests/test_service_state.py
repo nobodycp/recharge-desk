@@ -115,8 +115,17 @@ class ServiceStateTests(_CleanEnvMixin, TestCase):
         self.assertEqual(state, ServiceState("active", ""))
 
     def test_provider_argument_matching_is_active(self):
+        _save_credentials("layan")
         state = service_state(_company("layan"), Capability.RECONCILE, provider="layan")
         self.assertEqual(state.code, "active")
+
+    def test_layan_refresh_stays_active_without_portal_credentials(self):
+        state = service_state(_company("layan"), Capability.REFRESH)
+        self.assertEqual(state, ServiceState("active", ""))
+
+    def test_layan_number_check_needs_portal_credentials(self):
+        state = service_state(_company("layan"), Capability.NUMBER_INFO)
+        self.assertEqual(state.code, "not_configured")
 
     def test_service_state_does_not_create_rows(self):
         before = ProviderConnection.objects.count()
