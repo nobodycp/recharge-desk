@@ -46,7 +46,9 @@ class LayanAdapter(BaseAdapter):
     )
     # Number refresh stays on the public endpoint. Matching and number check sign in.
     needs_login = True
-    login_capabilities = frozenset({Capability.RECONCILE, Capability.NUMBER_INFO})
+    login_capabilities = frozenset(
+        {Capability.RECONCILE, Capability.NUMBER_INFO, Capability.CHARGE}
+    )
     reconcile_template = "companies/layan_reconcile.html"
 
     URL = "https://api.layan-t.net/api/Subscribtions/CustomersRefreshNumber"

@@ -21,3 +21,7 @@ class RegistryTests(SimpleTestCase):
         self.assertTrue(supports("sky", Capability.NUMBER_INFO))
         self.assertTrue(supports("sky", Capability.CHARGE))
         self.assertTrue(supports("sky", Capability.CHECK_CHARGE))
+
+    def test_layan_supports_charge_without_check_charge(self):
+        self.assertTrue(supports("layan", Capability.CHARGE))
+        self.assertFalse(supports("layan", Capability.CHECK_CHARGE))

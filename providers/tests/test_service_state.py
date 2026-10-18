@@ -127,6 +127,24 @@ class ServiceStateTests(_CleanEnvMixin, TestCase):
         state = service_state(_company("layan"), Capability.NUMBER_INFO)
         self.assertEqual(state.code, "not_configured")
 
+    def test_layan_charge_needs_credentials_and_switch(self):
+        conn = ProviderConnection.for_key("layan")
+        conn.charge_enabled = True
+        conn.save()
+        self.assertEqual(
+            service_state(_company("layan"), Capability.CHARGE).code, "not_configured"
+        )
+        _save_credentials("layan")
+        self.assertEqual(
+            service_state(_company("layan"), Capability.CHARGE).code, "active"
+        )
+        conn = ProviderConnection.for_key("layan")
+        conn.charge_enabled = False
+        conn.save()
+        self.assertEqual(
+            service_state(_company("layan"), Capability.CHARGE).code, "off"
+        )
+
     def test_service_state_does_not_create_rows(self):
         before = ProviderConnection.objects.count()
         service_state(_company("aloha"), Capability.REFRESH)

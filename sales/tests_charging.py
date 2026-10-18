@@ -863,3 +863,70 @@ class CanChargeTests(ChargingTestBase):
         connection.charge_enabled = True
         connection.save()
         self.assertTrue(charging.can_charge(self.company))
+
+
+class LayanChargePathTests(ChargingTestBase):
+    """Employee charge path with the real Layan adapter (charge method patched)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.layan_company = Company.objects.create(
+            name="LayanCo", provider_key="layan", current_balance=START
+        )
+        line = ProductLine.objects.create(company=cls.layan_company, name="LayanLine")
+        cls.layan_product = Product.objects.create(
+            line=line,
+            cost_price=COST,
+            default_sell_price=Decimal("20"),
+            base_days=30,
+        )
+
+    def setUp(self):
+        get_redis().flushall()
+        conn = _save_credentials("layan")
+        conn.charge_enabled = True
+        conn.save()
+
+    def _charge_layan(self, token="layan-tok"):
+        with self.captureOnCommitCallbacks(execute=True):
+            sale, _ = charging.create_charged_sale(
+                form_token=token,
+                user=self.user,
+                **self.sale_kwargs(
+                    company=self.layan_company, product=self.layan_product
+                ),
+            )
+        try:
+            sale.refresh_from_db()
+        except Sale.DoesNotExist:
+            pass
+        return sale
+
+    def test_layan_success_marks_sale_charged(self):
+        outcome = ChargeOutcome(
+            result=ChargeResult.SUCCESS,
+            provider_ref="سيتم تشغيل الرقم في الخلفيه",
+            provider_cost=COST,
+        )
+        with patch(
+            "providers.adapters.layan.adapter.LayanAdapter.charge",
+            return_value=outcome,
+        ):
+            sale = self._charge_layan()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.SUCCESS)
+        self.layan_company.refresh_from_db()
+        self.assertEqual(self.layan_company.current_balance, START - COST)
+
+    def test_layan_price_mismatch_drops_sale_for_employee(self):
+        with patch(
+            "providers.adapters.layan.adapter.LayanAdapter.charge",
+            side_effect=PermanentError("price_mismatch"),
+        ):
+            sale = self._charge_layan("layan-mismatch")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
+        self.layan_company.refresh_from_db()
+        self.assertEqual(self.layan_company.current_balance, START)
+        result = ProviderJob.objects.get(pk=sale.charge_job_id).result
+        self.assertTrue(result.get("discarded"))
+        self.assertEqual(result.get("employee_message"), "فشل الشحن — السعر غير مطابق")
