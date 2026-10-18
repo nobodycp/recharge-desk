@@ -446,6 +446,8 @@ def service_state(
     connection = ProviderConnection.objects.filter(provider_key=key).first()
     if connection is not None and not connection.is_enabled:
         return ServiceState("off", _OFF)
+    if not _switches_on(connection, capability):
+        return ServiceState("off", _OFF)
     if _capability_needs_login(adapter_cls, capability):
         try:
             accounts.get_credentials(key)
@@ -455,8 +457,6 @@ def service_state(
             if str(exc) == "config_error":
                 return ServiceState("not_configured", _NOT_CONFIGURED)
             raise
-    if not _switches_on(connection, capability):
-        return ServiceState("off", _OFF)
     return ServiceState("active")
 
 

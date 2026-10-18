@@ -22,6 +22,7 @@ from providers.contracts import (
     PermanentError,
     TransientError,
 )
+from providers.crypto import encrypt
 from providers.models import ProviderConnection, ProviderOperation
 from providers.redis_conn import get_redis
 from providers.registry import ADAPTERS
@@ -229,6 +230,10 @@ class ReconcileOperationTests(TestCase):
         self.user = User.objects.create_user("op_manager", password="x")
 
     def _run(self, company, adapter, **kwargs):
+        connection = ProviderConnection.for_key(company.provider_key)
+        connection.username = connection.username or "user"
+        connection.secret_encrypted = connection.secret_encrypted or encrypt("pass")
+        connection.save()
         with patch("providers.service.get_adapter", return_value=adapter):
             return service.reconcile(
                 company, date(2026, 8, 1), date(2026, 8, 31), **kwargs
