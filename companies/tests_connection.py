@@ -158,9 +158,8 @@ class ServicesTests(_Base):
         self.assertContains(response, 'name="refresh_enabled"')
         self.assertContains(response, 'name="reconcile_enabled"')
         self.assertContains(response, 'name="number_info_enabled"')
-        # Layan has no charge: no switch, honest reason instead.
-        self.assertNotContains(response, 'name="charge_enabled"')
-        self.assertContains(response, "غير متاح لهذا النظام بعد")
+        self.assertContains(response, 'name="charge_enabled"')
+        self.assertNotContains(response, "غير متاح لهذا النظام بعد")
 
     def test_sky_shows_a_number_check_switch(self):
         company = self.company(provider_key="sky")
@@ -195,13 +194,14 @@ class ServicesTests(_Base):
         self.assertFalse(ProviderConnection.objects.get(provider_key="layan").is_enabled)
 
     def test_unsupported_service_switch_is_ignored(self):
-        company = self.company(provider_key="layan")
+        # Aloha has no charge: posting the switch must not turn it on.
+        company = self.company(provider_key="aloha")
         self.post(
             "company_connection_services",
             company,
             {"is_enabled": "on", "refresh_enabled": "on", "charge_enabled": "on"},
         )
-        self.assertFalse(ProviderConnection.objects.get(provider_key="layan").charge_enabled)
+        self.assertFalse(ProviderConnection.objects.get(provider_key="aloha").charge_enabled)
 
     def test_services_post_without_system_is_404(self):
         company = self.company()
