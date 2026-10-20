@@ -252,6 +252,11 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertNotIn('rdToast(okMsg, "success")', body)
         self.assertIn('rdToast(waitMsg, "info")', body)
         self.assertIn("Still charging", body)
+        # Silent poll — no "charging…" toast before the refuse dialog.
+        self.assertNotContains(page, "Charging the number at the provider")
+        flash = body.split("data-rd-flash")[1].split("</div>")[0] if "data-rd-flash" in body else ""
+        self.assertNotIn("charge-pending", flash)
+        self.assertNotIn("جاري شحن الرقم لدى المزوّد", flash)
 
     def test_traditional_save_stays_manual(self):
         self.post_entry()

@@ -240,14 +240,9 @@ def employee_entry(request):
                     sale.charge_message or _("Charge failed"),
                 )
             elif charge_notice == "pending":
-                # Avoid "sale recorded" / "charge sent" — a refused package would
-                # look like success. One neutral wait toast; refusal is a dialog.
+                # Silent wait: no toast. A refuse must open as a dialog only —
+                # "charging…" then an error feels like the charge started.
                 request.session["charge_notice_wait"] = True
-                messages.info(
-                    request,
-                    _("Charging the number at the provider…"),
-                    extra_tags="charge-pending",
-                )
             elif charge_notice != "discarded":
                 if outcome == "posted_debt":
                     messages.success(request, _("Recorded on account and posted to the customer."))
