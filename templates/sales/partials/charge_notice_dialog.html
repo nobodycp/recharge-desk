@@ -27,7 +27,7 @@
     if (!text) return false;
     clearPendingToasts();
     if (window.rdConfirm) {
-      window.rdConfirm(text, { notice: true }).then(afterNotice);
+      window.rdConfirm(text, { notice: true, error: true }).then(afterNotice);
       return true;
     }
     if (window.rdToast) {

@@ -9,6 +9,7 @@
 
   var host = null;
   var textEl = null;
+  var iconEl = null;
   var okBtn = null;
   var cancelBtn = null;
   var pending = null;
@@ -24,6 +25,11 @@
     host = document.createElement("dialog");
     host.className = "rd-confirm";
     host.innerHTML =
+      '<div class="rd-confirm__icon" data-rd-confirm-icon hidden aria-hidden="true">' +
+      '<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="10"></circle>' +
+      '<path d="M15 9 9 15M9 9l6 6"></path>' +
+      "</svg></div>" +
       '<p class="rd-confirm__text" id="rd-confirm-text"></p>' +
       '<div class="rd-confirm__actions">' +
       '<button type="button" class="btn btn-outline-secondary" data-rd-confirm-cancel></button>' +
@@ -31,6 +37,7 @@
       "</div>";
     document.body.appendChild(host);
     textEl = host.querySelector(".rd-confirm__text");
+    iconEl = host.querySelector("[data-rd-confirm-icon]");
     okBtn = host.querySelector("[data-rd-confirm-ok]");
     cancelBtn = host.querySelector("[data-rd-confirm-cancel]");
     host.addEventListener("cancel", function (ev) {
@@ -111,12 +118,15 @@
     lastFocus = document.activeElement;
     textEl.textContent = message;
     var notice = !!options.notice;
+    var error = !!options.error;
     host.classList.toggle("is-notice", notice);
+    host.classList.toggle("is-error", error);
+    if (iconEl) iconEl.hidden = !error;
     cancelBtn.hidden = notice;
     cancelBtn.textContent = label("data-rd-confirm-cancel", "Cancel");
     okBtn.textContent = label("data-rd-confirm-ok", "Confirm");
-    okBtn.classList.toggle("btn-primary", !options.danger);
-    okBtn.classList.toggle("btn-outline-danger", !!options.danger);
+    okBtn.classList.remove("btn-primary", "btn-outline-danger");
+    okBtn.classList.add(options.danger && !error ? "btn-outline-danger" : "btn-primary");
     if (!host.open) host.showModal();
     document.body.classList.add("rd-confirm-open");
     requestAnimationFrame(function () {

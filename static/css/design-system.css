@@ -5102,11 +5102,32 @@ body.rd-inv-dialog-open {
   background: var(--rd-scrim);
 }
 
+.rd-confirm__icon {
+  display: grid;
+  place-items: center;
+  margin: 0.15rem auto 0.85rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  color: var(--rd-danger);
+  background: var(--rd-danger-soft);
+}
+
+.rd-confirm__icon svg {
+  display: block;
+}
+
 .rd-confirm__text {
   margin: 0;
   color: var(--rd-ink);
   font-size: 0.95rem;
   line-height: 1.55;
+}
+
+.rd-confirm.is-error .rd-confirm__text {
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.02rem;
 }
 
 .rd-confirm__actions {

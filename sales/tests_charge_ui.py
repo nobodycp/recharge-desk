@@ -217,6 +217,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         page = self.client.get(reverse("sales:employee_entry"))
         self.assertContains(page, 'data-rd-charge-notice')
         self.assertContains(page, "notice: true")
+        self.assertContains(page, "error: true")
         self.assertContains(page, "الحزمة غير مطابقة لخط هذا الرقم")
         self.assertNotContains(page, "Sale recorded successfully.")
         self.assertNotContains(page, "Charge sent to the provider.")
