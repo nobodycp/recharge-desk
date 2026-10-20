@@ -5143,14 +5143,24 @@ body.rd-inv-dialog-open {
   display: none;
 }
 
-/* Charging wait: a small glass chip on the page, not a framed card. */
+/* Charging wait: glass over the page, spinner and text only. No card. */
 .rd-confirm.is-loading {
-  width: auto;
-  max-width: min(100% - 2rem, 13rem);
-  padding: 0.55rem 0.7rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
+  outline: none;
+  overflow: hidden;
 }
 
 .rd-confirm.is-loading::backdrop {
@@ -5162,7 +5172,8 @@ body.rd-inv-dialog-open {
 .rd-confirm.is-loading .rd-confirm__icon {
   width: 1.05rem;
   height: 1.05rem;
-  margin: 0 auto 0.4rem;
+  margin: 0 0 0.45rem;
+  border-radius: 0;
   background: transparent;
 }
 
