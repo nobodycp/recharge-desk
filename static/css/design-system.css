@@ -5143,6 +5143,34 @@ body.rd-inv-dialog-open {
   display: none;
 }
 
+/* Charging wait: a small glass chip on the page, not a framed card. */
+.rd-confirm.is-loading {
+  width: auto;
+  max-width: min(100% - 2rem, 13rem);
+  padding: 0.55rem 0.7rem 0.45rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rd-confirm.is-loading::backdrop {
+  background: color-mix(in srgb, var(--rd-ink) 8%, transparent);
+  -webkit-backdrop-filter: blur(2px) saturate(1.2);
+  backdrop-filter: blur(2px) saturate(1.2);
+}
+
+.rd-confirm.is-loading .rd-confirm__icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0 auto 0.4rem;
+  background: transparent;
+}
+
+.rd-confirm.is-loading .rd-confirm__text {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .rd-confirm__spinner {
   display: block;
   width: 2.25rem;
@@ -5151,6 +5179,15 @@ body.rd-inv-dialog-open {
   border-top-color: var(--rd-ink);
   border-radius: 999px;
   animation: rd-confirm-spin 0.7s linear infinite;
+}
+
+.rd-confirm.is-loading .rd-confirm__spinner {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 0;
+  background: conic-gradient(from 0deg, transparent 0 70%, var(--rd-ink) 92% 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), black calc(100% - 1.5px));
 }
 
 @keyframes rd-confirm-spin {
@@ -5164,6 +5201,12 @@ body.rd-inv-dialog-open {
     animation: none;
     border-top-color: color-mix(in srgb, var(--rd-ink) 18%, transparent);
     border-color: var(--rd-ink);
+  }
+
+  .rd-confirm.is-loading .rd-confirm__spinner {
+    border: 0;
+    opacity: 0.85;
+    background: conic-gradient(from 0deg, transparent 0 70%, var(--rd-ink) 92% 100%);
   }
 }
 
