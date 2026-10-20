@@ -175,7 +175,8 @@ class EmployeeEntryMarkupTests(TestCase):
         for field_id in ("id_reference_number", "id_payer_name"):
             with self.subTest(field=field_id):
                 self.assertIn("rd-field-group", ancestors[field_id])
-        self.assertIn('saleRefInput.closest(".rd-field-group")', html)
+        self.assertIn('el.closest(".rd-field-group")', html)
+        self.assertIn("function markSaleFieldError", html)
 
     def test_no_legacy_colour_classes(self):
         html = self._html()
