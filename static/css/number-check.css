@@ -141,38 +141,6 @@
   font-size: 0.78rem;
 }
 
-/* Refresh result: a flat section of the form card (the element also carries
-   .rd-card, so its surface, border, radius and shadow are reset here). A
-   hairline and spacing separate it from the buttons; no card in a card.
-   Shown by removing d-none. */
-.rd-ncheck-form .rd-refresh-result {
-  margin-top: 0.15rem;
-  padding: 0.9rem 0.35rem 0.3rem;
-  background: transparent;
-  border: 0;
-  border-top: 1px solid var(--bs-border-color);
-  border-radius: 0;
-  box-shadow: none;
-  animation: rd-ncheck-in 0.3s ease both;
-}
-
-.rd-refresh-result__title {
-  margin-bottom: 0.25rem;
-  color: var(--rd-ink);
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.rd-refresh-result__title:empty { display: none; }
-
-.rd-refresh-result__body {
-  color: var(--rd-muted);
-  font-size: 1rem;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
 /* ---- card ---------------------------------------------------------------- */
 
 /* Head (logo · number · status), plan, two time boxes, usage rows, then the
@@ -756,7 +724,6 @@
 @media (prefers-reduced-motion: reduce) {
   .rd-ncheck,
   .rd-ncheck-slot.is-error,
-  .rd-ncheck-form .rd-refresh-result,
   .rd-ncheck__pill.is-ok .rd-ncheck__dot,
   .rd-ncheck-skel__hero,
   .rd-ncheck-skel__row span {

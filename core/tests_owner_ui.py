@@ -361,7 +361,7 @@ class NumberCheckRowTests(TestCase):
             url = reverse("sales:employee_refresh_number")
         html = self.client.get(url).content.decode()
         start = html.index('id="rd-refresh-page"')
-        return html[start: html.index('id="rd-refresh-result"', start)]
+        return html[start: html.index('id="rd-check-result"', start)]
 
     def test_one_row_markup_in_arabic(self):
         form = self._form("ar")

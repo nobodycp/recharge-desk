@@ -50,10 +50,12 @@
     }, 260);
   }
 
-  function show(message, level) {
+  function show(message, level, durationMs) {
     var text = String(message == null ? "" : message).trim();
     if (!text) return null;
     level = normalizeLevel(level);
+    var duration = Number(durationMs);
+    if (!duration || duration < 1000) duration = DURATION[level];
 
     var key = level + "|" + text;
     var now = Date.now();
@@ -64,7 +66,7 @@
     var toast = document.createElement("div");
     toast.className = "rd-toast rd-toast--" + level;
     toast.setAttribute("role", level === "error" ? "alert" : "status");
-    toast.style.setProperty("--rd-toast-duration", DURATION[level] + "ms");
+    toast.style.setProperty("--rd-toast-duration", duration + "ms");
     toast.innerHTML =
       '<span class="rd-toast__icon" aria-hidden="true">' +
       '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +

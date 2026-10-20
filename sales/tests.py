@@ -1754,11 +1754,12 @@ class EmployeeRefreshPhoneTests(TestCase):
         # The refresh page contract is untouched.
         self.assertContains(resp, reverse("sales:employee_refresh_phone"))
 
-    def test_number_check_page_check_result_is_below_refresh_result_and_hidden(self):
+    def test_number_check_page_check_result_is_below_the_form_and_hidden(self):
         html = self.client.get(reverse("sales:employee_refresh_number")).content.decode()
-        refresh_at = html.index('id="rd-refresh-result"')
+        form_at = html.index('id="rd-refresh-page"')
         check_at = html.index('id="rd-check-result"')
-        self.assertLess(refresh_at, check_at)
+        self.assertLess(form_at, check_at)
+        self.assertNotIn('id="rd-refresh-result"', html)
         tag = html[html.rindex("<div", 0, check_at) : html.index(">", check_at)]
         self.assertIn("d-none", tag)
 

@@ -24,22 +24,26 @@ function makeEnv({ fetchImpl }) {
   const els = {};
   const el = (id) => (els[id] = els[id] || {
     id, value: "", disabled: false, _text: "", attrs: {}, classList: { add() {}, remove() {} },
-    set textContent(v) { this._text = v; if (id === "rd-refresh-result-body") shown.push({ body: v }); },
+    set textContent(v) { this._text = v; },
     get textContent() { return this._text; },
     setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return this.attrs[k] || null; },
     addEventListener(type, fn) { (listeners[id + ":" + type] = listeners[id + ":" + type] || []).push(fn); },
   });
   const root = el("rd-refresh-page");
   root.getAttribute = (k) => (ATTRS[k] !== undefined ? ATTRS[k] : null);
-  el("rd-refresh-phone-input"); el("rd-refresh-submit"); el("rd-refresh-result");
-  el("rd-refresh-result-title"); el("rd-refresh-result-body");
+  el("rd-refresh-phone-input"); el("rd-refresh-submit");
   const document = {
     getElementById: (id) => (id.startsWith("rd-refresh") ? el(id) : null),
     querySelector: (s) => (s.includes("csrfmiddlewaretoken") ? { value: "tok" } : null),
   };
   const fetchCalls = [];
   const ctx = {
-    document, window: { alert() {} }, console, URLSearchParams, Promise, Number, Math, encodeURIComponent, String, Date: { now: () => now },
+    document,
+    window: {
+      alert() {},
+      rdToast(message, level) { shown.push({ body: message, level: level }); },
+    },
+    console, URLSearchParams, Promise, Number, Math, encodeURIComponent, String, Date: { now: () => now },
     setTimeout: (fn, ms) => { timers.push(ms); now += ms; return setImmediate(fn); },
     fetch: (url, opts) => { fetchCalls.push({ url, method: opts.method, t: now }); return fetchImpl(url, opts, fetchCalls.length); },
   };
@@ -47,15 +51,14 @@ function makeEnv({ fetchImpl }) {
   vm.runInContext(src, ctx);
   const input = el("rd-refresh-phone-input");
   const button = el("rd-refresh-submit");
-  const bodyEl = el("rd-refresh-result-body");
-  const titleEl = el("rd-refresh-result-title");
+  const last = () => shown[shown.length - 1] || {};
   // Start a refresh like a click would; resolves when the run's UI has settled.
   const click = (phone = "0529000000") => {
     input.value = phone;
     listeners["rd-refresh-submit:click"][0]();
   };
   const settle = async () => { for (let i = 0; i < 200; i++) await new Promise((r) => setImmediate(r)); };
-  return { shown, timers, fetchCalls, click, settle, button, bodyEl, titleEl, input };
+  return { shown, timers, fetchCalls, click, settle, button, last, input };
 }
 
 const resp = (status, body) => Promise.resolve({ status, ok: status >= 200 && status < 300, json: async () => body });
@@ -69,7 +72,7 @@ const post = (o) => o.method === "POST";
   let e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "abc" })
     : (++polls < 3 ? resp(200, { status: "processing", job: "abc" }) : resp(200, { status: "refreshed", message: { title: "t", body: "تم" } })) });
   e.click(); await e.settle();
-  check("polls until refreshed", e.bodyEl.textContent === "تم", e.shown);
+  check("polls until refreshed", e.last().body === "t\nتم" && e.last().level === "success", e.shown);
   check("status url uses job id", e.fetchCalls[1].url === "/employee/refresh/status/abc/", e.fetchCalls);
   check(">=2000ms between polls", e.timers.every((t) => t >= 2000), e.timers);
   check("button re-enabled after result", e.button.disabled === false, e.button.disabled);
@@ -78,12 +81,12 @@ const post = (o) => o.method === "POST";
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "abc" })
     : resp(200, { status: "processing", final: true, message: { title: "x", body: "قيد المعالجة" } }) });
   e.click(); await e.settle();
-  check("final processing message, one poll", e.bodyEl.textContent === "قيد المعالجة" && e.fetchCalls.length === 2, [e.shown, e.fetchCalls.length]);
+  check("final processing message, one poll", e.last().body === "x\nقيد المعالجة" && e.last().level === "info" && e.fetchCalls.length === 2, [e.shown, e.fetchCalls.length]);
 
   // 3. 3 consecutive network failures -> generic error
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "abc" }) : Promise.reject(new Error("net")) });
   e.click(); await e.settle();
-  check("3 failures stop with generic error", e.bodyEl.textContent === "حدث خطأ ما" && e.titleEl.textContent === "خطأ" && e.fetchCalls.length === 4, [e.shown, e.fetchCalls.length]);
+  check("3 failures stop with generic error", e.last().body === "خطأ\nحدث خطأ ما" && e.last().level === "error" && e.fetchCalls.length === 4, [e.shown, e.fetchCalls.length]);
 
   // 4. failures reset by a success
   let n = 0;
@@ -91,12 +94,12 @@ const post = (o) => o.method === "POST";
     if (n === 1 || n === 2 || n === 4 || n === 5) return Promise.reject(new Error("x")); if (n === 3) return resp(200, { status: "processing", job: "a" });
     return resp(200, { status: "busy", message: { title: "b", body: "مشغولة" } }); } });
   e.click(); await e.settle();
-  check("success resets failure counter", e.bodyEl.textContent === "مشغولة", e.shown);
+  check("success resets failure counter", e.last().body === "b\nمشغولة" && e.last().level === "warning", e.shown);
 
   // 5. deadline = waitSeconds + 10
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "a" }) : resp(200, { status: "processing", job: "a" }) });
   e.click(); await e.settle();
-  check("gives up after wait+10s with generic error", e.bodyEl.textContent === "حدث خطأ ما" && e.fetchCalls.length <= 52, [e.shown, e.fetchCalls.length]);
+  check("gives up after wait+10s with generic error", e.last().body === "خطأ\nحدث خطأ ما" && e.fetchCalls.length <= 52, [e.shown, e.fetchCalls.length]);
 
   // 6. a new number submitted while the first is polling supersedes it
   let postN = 0; let release;
@@ -109,39 +112,39 @@ const post = (o) => o.method === "POST";
   await e.settle();
   release();
   await e.settle();
-  check("stale poll dropped, new run shows its own result", !e.shown.some((s) => s.body === "stale") && e.bodyEl.textContent === "fresh", e.shown);
+  check("stale poll dropped, new run shows its own result", !e.shown.some((s) => s.body === "stale") && e.last().body === "fresh", e.shown);
   check("button enabled once the latest run finished", e.button.disabled === false, e.button.disabled);
 
   // 7. plain 200 payload (cooldown etc.) is rendered without polling
   e = makeEnv({ fetchImpl: () => resp(200, { status: "wait", message: { title: "w", body: "انتظر" } }) });
   e.click(); await e.settle();
-  check("200 payload rendered, no polling", e.bodyEl.textContent === "انتظر" && e.fetchCalls.length === 1, [e.shown, e.fetchCalls.length]);
+  check("200 payload rendered, no polling", e.last().body === "w\nانتظر" && e.last().level === "warning" && e.fetchCalls.length === 1, [e.shown, e.fetchCalls.length]);
 
   // 8. 429 on status: back off 2,4,8,10 cap, not counted as failure
   let n429 = 0;
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "a" })
     : (++n429 <= 5 ? resp(429, {}) : resp(200, { status: "refreshed", message: { body: "بعد التهدئة" } })) });
   e.click(); await e.settle();
-  check("429 backs off and then shows the result", e.bodyEl.textContent === "بعد التهدئة", e.shown);
+  check("429 backs off and then shows the result", e.last().body === "بعد التهدئة" && e.last().level === "success", e.shown);
   check("backoff doubles up to 10s", JSON.stringify(e.timers.slice(0, 6)) === JSON.stringify([2000, 4000, 8000, 10000, 10000, 10000]), e.timers);
 
   // 9. 202 without a job id -> generic error, no polling
   e = makeEnv({ fetchImpl: () => resp(202, { status: "processing" }) });
   e.click(); await e.settle();
-  check("202 without job shows generic error", e.bodyEl.textContent === "حدث خطأ ما" && e.fetchCalls.length === 1, [e.shown, e.fetchCalls.length]);
+  check("202 without job shows generic error", e.last().body === "خطأ\nحدث خطأ ما" && e.fetchCalls.length === 1, [e.shown, e.fetchCalls.length]);
 
   // 10. POST network error -> generic error and button restored
   e = makeEnv({ fetchImpl: () => Promise.reject(new Error("down")) });
   e.click(); await e.settle();
-  check("POST failure shows generic error, button restored", e.bodyEl.textContent === "حدث خطأ ما" && e.button.disabled === false, [e.shown, e.button.disabled]);
+  check("POST failure shows generic error, button restored", e.last().body === "خطأ\nحدث خطأ ما" && e.button.disabled === false, [e.shown, e.button.disabled]);
 
   // 11. busy / final processing without a message body use the localized fallbacks
   e = makeEnv({ fetchImpl: () => resp(200, { status: "busy" }) });
   e.click(); await e.settle();
-  check("busy without body uses busy fallback", e.bodyEl.textContent === "الخدمة مشغولة" && e.titleEl.textContent === "", [e.shown]);
+  check("busy without body uses busy fallback", e.last().body === "الخدمة مشغولة" && e.last().level === "warning", [e.shown]);
   e = makeEnv({ fetchImpl: (url, o) => post(o) ? resp(202, { status: "processing", job: "a" }) : resp(200, { status: "processing", final: true }) });
   e.click(); await e.settle();
-  check("final processing without body uses processing fallback", e.bodyEl.textContent === "قيد المعالجة", e.shown);
+  check("final processing without body uses processing fallback", e.last().body === "قيد المعالجة" && e.last().level === "info", e.shown);
 
   console.log(fail ? "FAILED" : "ALL OK"); process.exit(fail ? 1 : 0);
 })();

@@ -7,9 +7,6 @@
   var waitSeconds = Number(root.getAttribute("data-wait-seconds")) || 90;
   var phoneInp = document.getElementById("rd-refresh-phone-input");
   var submitBtn = document.getElementById("rd-refresh-submit");
-  var resultBox = document.getElementById("rd-refresh-result");
-  var resultTitle = document.getElementById("rd-refresh-result-title");
-  var resultBody = document.getElementById("rd-refresh-result-body");
 
   function getCsrfToken() {
     var el = document.querySelector("#rd-refresh-page input[name='csrfmiddlewaretoken']");
@@ -55,11 +52,27 @@
     return body;
   }
 
-  function showResult(title, body) {
-    if (!resultBox) return;
-    resultBox.classList.remove("d-none");
-    if (resultTitle) resultTitle.textContent = title || "";
-    if (resultBody) resultBody.textContent = body || "";
+  var TOAST_LEVEL = {
+    refreshed: "success",
+    wait: "warning",
+    cooldown: "warning",
+    busy: "warning",
+    not_found: "error",
+    error: "error",
+  };
+
+  function noticeText(title, body) {
+    title = String(title || "").trim();
+    body = String(body || "").trim();
+    if (title && body && body.indexOf(title) !== 0) return title + "\n" + body;
+    return body || title;
+  }
+
+  function showResult(title, body, status) {
+    var text = noticeText(title, body);
+    if (!text || !window.rdToast) return;
+    var level = TOAST_LEVEL[status] || "info";
+    window.rdToast(text, level, level === "success" ? 8000 : 7000);
   }
 
   if (submitBtn) submitBtn.setAttribute("data-default-label", submitBtn.textContent || "");
@@ -106,7 +119,7 @@
 
   function showPayload(data) {
     var msg = (data && data.message) || {};
-    showResult(msg.title || "", buildRefreshBody(data));
+    showResult(msg.title || "", buildRefreshBody(data), (data && data.status) || "");
   }
 
   // Resolves with the final payload, or `null` when the run was superseded.
