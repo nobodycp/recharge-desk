@@ -212,6 +212,24 @@ class SubmitRoutingTests(_Base):
         )
         self.adapter_call.assert_not_called()
 
+    def test_shared_serial_checks_the_last_charged_number(self):
+        from reports.models import PhoneLineTracking
+
+        older = "0520000000"
+        serial = "105026171535"
+        self.make_sale(older, when=dt.datetime(2026, 8, 1, 10, 0, tzinfo=TZ_PLUS_2))
+        self.make_sale(when=dt.datetime(2026, 10, 1, 10, 0, tzinfo=TZ_PLUS_2))
+        for phone in (older, PHONE):
+            PhoneLineTracking.objects.create(
+                reference_key=phone,
+                sim_identifier=serial,
+                last_display_reference=phone,
+            )
+        _, status = self.run_check(serial)
+        self.assertIn(PHONE, status.json()["html"])
+        self.assertNotIn(older, status.json()["html"])
+        self.assertEqual(ProviderJob.objects.get().phone, PHONE)
+
     def test_phone_is_stripped_before_validation(self):
         self.make_sale()
         _, status = self.run_check(f"  {PHONE} ")

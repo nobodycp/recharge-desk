@@ -51,6 +51,8 @@ MSG_INVALID_PHONE = "رقم غير صحيح"
 MSG_SERIAL_NONE = "لا يوجد رقم بهذا السيريال"
 MSG_SERIAL_MANY = "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول."
 MIN_SERIAL_DIGITS = 4
+# A fragment this long is one chip, even if the stored text differs slightly.
+SAME_SERIAL_DIGITS = 8
 MSG_NO_SALE = "لا توجد عملية بيع سابقة لهذا الرقم"
 MSG_UNAVAILABLE = "فحص الرقم غير متاح لهذا المزوّد"
 MSG_BUSY = "الخدمة مشغولة حالياً، حاول بعد قليل"
@@ -95,12 +97,21 @@ def last_sale_for_phone(phone: str) -> Sale | None:
     )
 
 
+def _phone_from_line(display: str, key: str) -> str:
+    phone = (display or key or "").strip()
+    if not PHONE_RE.match(phone):
+        phone = (key or "").strip()
+    return phone if PHONE_RE.match(phone) else ""
+
+
 def resolve_check_query(raw: str) -> tuple[str, dict | None]:
     """Turn a phone or an ICCID fragment into the phone to check.
 
     A full phone is used as-is. Anything else with at least
     ``MIN_SERIAL_DIGITS`` digits is matched against the stored SIM serial
-    (full or partial). Returns ``(phone, None)`` or ``("", error payload)``.
+    (full or partial). When one serial is on several numbers, the phone of
+    the newest sale wins. A short fragment that hits different serials stays
+    ambiguous. Returns ``(phone, None)`` or ``("", error payload)``.
     """
     from reports.models import PhoneLineTracking
 
@@ -114,21 +125,36 @@ def resolve_check_query(raw: str) -> tuple[str, dict | None]:
     if len(text) < MIN_SERIAL_DIGITS:
         return "", _error(MSG_INVALID_PHONE)
 
-    matches = list(
+    rows = list(
         PhoneLineTracking.objects.exclude(sim_identifier="")
         .filter(sim_identifier__icontains=text)
-        .order_by("reference_key")
-        .values_list("last_display_reference", "reference_key")[:2]
+        .values_list("sim_identifier", "last_display_reference", "reference_key")
     )
-    if not matches:
+    phones = []
+    serials = set()
+    seen = set()
+    for sim, display, key in rows:
+        serials.add(re.sub(r"\D", "", sim))
+        phone = _phone_from_line(display, key)
+        if phone and phone not in seen:
+            seen.add(phone)
+            phones.append(phone)
+    if not phones:
         return "", _error(MSG_SERIAL_NONE)
-    if len(matches) > 1:
+    if len(phones) == 1:
+        return phones[0], None
+    same_serial = len(serials) == 1 or len(text) >= SAME_SERIAL_DIGITS
+    if not same_serial:
         return "", _error(MSG_SERIAL_MANY)
-    display, key = matches[0]
-    phone = (display or key or "").strip()
-    if not PHONE_RE.match(phone):
-        phone = (key or "").strip()
-    return phone, None
+    charged = (
+        Sale.objects.filter(reference_number__in=phones)
+        .order_by("-created_at", "-pk")
+        .values_list("reference_number", flat=True)
+        .first()
+    )
+    if not charged:
+        return "", _error(MSG_NO_SALE)
+    return charged, None
 
 
 @contextmanager
