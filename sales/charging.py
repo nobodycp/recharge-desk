@@ -235,6 +235,36 @@ def _discard_unsent_sale(sale: Sale, *, actor, who: dict, message: str) -> Sale:
     return sale
 
 
+def _pending_discarded_charge_jobs(user_id: int):
+    return [
+        job
+        for job in ProviderJob.objects.filter(
+            kind=ProviderJob.KIND_CHARGE,
+            status=ProviderJob.STATUS_DONE,
+            result__discarded=True,
+            result__user_id=user_id,
+        ).order_by("-finished_at")[:20]
+        if not (job.result or {}).get("acknowledged")
+    ][:5]
+
+
+def peek_employee_charge_dialog(request) -> str:
+    """Refusal text without consuming it (poll until the page can show it)."""
+    for job in _pending_discarded_charge_jobs(request.user.pk):
+        text = ((job.result or {}).get("employee_message") or "").strip()
+        if text:
+            return str(text)
+        phone = (job.result or {}).get("phone") or job.phone
+        return str(
+            _(
+                "Charge for %(phone)s never reached the provider. "
+                "The sale was not recorded. Record it manually."
+            )
+            % {"phone": phone}
+        )
+    return ""
+
+
 def take_employee_charge_dialog(request) -> str:
     """One notice for charges dropped since this employee last looked.
 
@@ -242,16 +272,7 @@ def take_employee_charge_dialog(request) -> str:
     shown once, in a dialog, not as a stack of toasts. Returns "" when there
     is nothing new.
     """
-    pending = [
-        job
-        for job in ProviderJob.objects.filter(
-            kind=ProviderJob.KIND_CHARGE,
-            status=ProviderJob.STATUS_DONE,
-            result__discarded=True,
-            result__user_id=request.user.pk,
-        ).order_by("-finished_at")[:20]
-        if not (job.result or {}).get("acknowledged")
-    ][:5]
+    pending = _pending_discarded_charge_jobs(request.user.pk)
     dialog = ""
     for job in pending:
         result = dict(job.result or {})

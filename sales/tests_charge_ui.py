@@ -220,6 +220,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertContains(page, "الحزمة غير مطابقة لخط هذا الرقم")
         self.assertNotContains(page, "Sale recorded successfully.")
         self.assertNotContains(page, "Charge sent to the provider.")
+        self.assertNotContains(page, "Charging the number at the provider")
         self.client.force_login(self.manager)
         management = self.client.get(reverse("sales:management_sale_list"))
         self.assertNotContains(management, "الحزمة غير مطابقة لخط هذا الرقم")

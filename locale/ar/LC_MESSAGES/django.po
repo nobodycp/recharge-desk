@@ -3053,6 +3053,12 @@ msgstr "تم تسجيل البيع بنجاح."
 #: sales/views/employee.py:196
 msgid "Charge sent to the provider. Follow its status in My entries."
 msgstr "أُرسل الشحن إلى المزوّد. تابع حالته في إدخالاتي."
+
+msgid "Charging the number at the provider…"
+msgstr "جاري شحن الرقم لدى المزوّد…"
+
+msgid "Sale recorded. Follow the charge status in My entries."
+msgstr "تم تسجيل البيع. تابع حالة الشحن في إدخالاتي."
 #: sales/views/employee.py:219
 msgid "New sale"
 msgstr "بيع جديد"

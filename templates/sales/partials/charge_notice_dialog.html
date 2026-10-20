@@ -1,23 +1,38 @@
+{% load i18n %}
 {% if charge_dialog %}
 <div data-rd-charge-notice hidden>{{ charge_dialog }}</div>
 {% endif %}
 {% if charge_notice_wait %}
-<div data-rd-charge-wait hidden data-url="{% url 'sales:employee_charge_notice' %}"></div>
+<div
+  data-rd-charge-wait
+  hidden
+  data-url="{% url 'sales:employee_charge_notice' %}"
+  data-ok-msg="{% trans 'Sale recorded. Follow the charge status in My entries.' %}"
+></div>
 {% endif %}
 <script>
 (function () {
-  function show(text) {
-    text = String(text || "").trim();
-    if (!text) return false;
+  function clearPendingToasts() {
     document.querySelectorAll(".rd-toast[data-rd-charge-pending]").forEach(function (el) {
       el.remove();
     });
+  }
+  function afterNotice() {
+    // Consume the refusal on the server (take/ack) and clear wait toasts.
+    if (window.rdNavigate) window.rdNavigate(location.pathname + location.search);
+    else location.reload();
+  }
+  function show(text) {
+    text = String(text || "").trim();
+    if (!text) return false;
+    clearPendingToasts();
     if (window.rdConfirm) {
-      window.rdConfirm(text, { notice: true });
+      window.rdConfirm(text, { notice: true }).then(afterNotice);
       return true;
     }
     if (window.rdToast) {
       window.rdToast(text, "error");
+      setTimeout(afterNotice, 2500);
       return true;
     }
     return false;
@@ -32,11 +47,14 @@
     if (!wait || wait.dataset.rdStarted || (node && node.dataset.rdShown)) return;
     wait.dataset.rdStarted = "1";
     var url = wait.getAttribute("data-url");
+    var okMsg = wait.getAttribute("data-ok-msg") || "";
     var tries = 0;
     var timer = setInterval(function () {
       tries += 1;
       if (tries > 12) {
         clearInterval(timer);
+        clearPendingToasts();
+        if (okMsg && window.rdToast) window.rdToast(okMsg, "success");
         return;
       }
       fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })

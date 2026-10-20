@@ -239,6 +239,15 @@ def employee_entry(request):
                     request,
                     sale.charge_message or _("Charge failed"),
                 )
+            elif charge_notice == "pending":
+                # Avoid "sale recorded" / "charge sent" — a refused package would
+                # look like success. One neutral wait toast; refusal is a dialog.
+                request.session["charge_notice_wait"] = True
+                messages.info(
+                    request,
+                    _("Charging the number at the provider…"),
+                    extra_tags="charge-pending",
+                )
             elif charge_notice != "discarded":
                 if outcome == "posted_debt":
                     messages.success(request, _("Recorded on account and posted to the customer."))
@@ -255,18 +264,7 @@ def employee_entry(request):
                         request, _("Recorded as on-account; awaiting management approval.")
                     )
                 else:
-                    messages.success(
-                        request,
-                        _("Sale recorded successfully."),
-                        extra_tags="charge-pending" if charge_notice == "pending" else "",
-                    )
-                if charge_notice == "pending":
-                    request.session["charge_notice_wait"] = True
-                    messages.info(
-                        request,
-                        _("Charge sent to the provider. Follow its status in My entries."),
-                        extra_tags="charge-pending",
-                    )
+                    messages.success(request, _("Sale recorded successfully."))
             return redirect("sales:employee_entry")
         except ValueError as exc:
             messages.error(request, str(exc))
@@ -314,9 +312,11 @@ def employee_charge_notice(request):
     """The refusal dialog text, once the worker has dropped the charge."""
     from django.http import JsonResponse
 
-    from sales.charging import take_employee_charge_dialog
+    from sales.charging import peek_employee_charge_dialog
 
-    return JsonResponse({"message": take_employee_charge_dialog(request)})
+    # Peek only — acknowledging happens when the entry page embeds the dialog
+    # (so a missed client show cannot swallow the message).
+    return JsonResponse({"message": peek_employee_charge_dialog(request)})
 
 
 @employee_required
