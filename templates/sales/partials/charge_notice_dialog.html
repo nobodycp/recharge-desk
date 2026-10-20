@@ -10,11 +10,16 @@
   data-ack-url="{% url 'sales:employee_charge_notice' %}?ack=1"
   data-wait-label="{% trans 'Charging the number at the provider…' %}"
   data-wait-msg="{% trans 'Still charging… Follow the status in My entries.' %}"
+  data-ok-msg="{% trans 'Charged' %}"
 ></div>
 {% endif %}
 <script>
 (function () {
-  var booted = false;
+  if (window.__rdChargeNotice && window.__rdChargeNotice.timer) {
+    clearInterval(window.__rdChargeNotice.timer);
+  }
+  var state = { timer: null, shown: false, active: false };
+  window.__rdChargeNotice = state;
 
   function clearPendingToasts() {
     document.querySelectorAll(".rd-toast[data-rd-charge-pending]").forEach(function (el) {
@@ -26,6 +31,13 @@
     var path = location.pathname;
     if (window.rdNavigate) window.rdNavigate(path);
     else location.assign(path);
+  }
+
+  function stopPoll() {
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
   }
 
   function afterNotice(ackUrl) {
@@ -41,7 +53,9 @@
 
   function showError(text, ackUrl) {
     text = String(text || "").trim();
-    if (!text) return false;
+    if (!text || state.shown) return false;
+    state.shown = true;
+    stopPoll();
     clearPendingToasts();
     if (window.rdConfirm) {
       try {
@@ -61,6 +75,15 @@
     return false;
   }
 
+  function showSuccess(okMsg) {
+    if (state.shown) return;
+    state.shown = true;
+    stopPoll();
+    clearPendingToasts();
+    if (okMsg && window.rdToast) window.rdToast(okMsg, "success");
+    goClean();
+  }
+
   function showLoading(label) {
     if (!window.rdConfirm) return false;
     try {
@@ -71,52 +94,60 @@
     }
   }
 
+  function handlePayload(data, ackUrl, waitMsg, okMsg) {
+    if (!data || state.shown) return;
+    var status = data.status || (data.message ? "refused" : "pending");
+    if (status === "refused" || status === "failed") {
+      showError(data.message || waitMsg || "…", status === "refused" ? ackUrl : "");
+      return;
+    }
+    if (status === "ok") {
+      showSuccess(okMsg || "");
+    }
+  }
+
+  function pollOnce(url, ackUrl, waitMsg, okMsg) {
+    fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("charge-notice");
+        return response.json();
+      })
+      .then(function (data) { handlePayload(data, ackUrl, waitMsg, okMsg); })
+      .catch(function () {});
+  }
+
   function boot(root) {
-    if (booted || !root || !root.querySelector) return;
+    if (state.active || !root || !root.querySelector) return;
     var node = document.querySelector("[data-rd-charge-notice]");
     var wait = document.querySelector("[data-rd-charge-wait]");
     if (!node && !wait) return;
-    booted = true;
+    state.active = true;
 
-    if (node && !node.dataset.rdShown) {
-      // Sync path: server already took/acked when embedding the notice.
-      if (showError(node.textContent, "")) node.dataset.rdShown = "1";
+    if (node) {
+      showError(node.textContent, "");
       return;
     }
 
-    if (!wait || wait.dataset.rdStarted) return;
-    wait.dataset.rdStarted = "1";
     var url = wait.getAttribute("data-url");
     var ackUrl = wait.getAttribute("data-ack-url") || "";
     var waitLabel = wait.getAttribute("data-wait-label") || "";
     var waitMsg = wait.getAttribute("data-wait-msg") || "";
+    var okMsg = wait.getAttribute("data-ok-msg") || "";
     showLoading(waitLabel);
     var tries = 0;
-    var timer = setInterval(function () {
-      tries += 1;
-      if (tries > 24) {
-        clearInterval(timer);
-        clearPendingToasts();
-        // Still waiting — one notice dialog, never a success toast.
-        if (waitMsg && window.rdConfirm) {
-          window.rdConfirm(waitMsg, { notice: true, error: true }).then(goClean);
-        } else if (waitMsg && window.rdToast) {
-          window.rdToast(waitMsg, "info");
-        }
+    pollOnce(url, ackUrl, waitMsg, okMsg);
+    state.timer = setInterval(function () {
+      if (state.shown) {
+        stopPoll();
         return;
       }
-      fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
-        .then(function (response) {
-          if (!response.ok) throw new Error("charge-notice");
-          return response.json();
-        })
-        .then(function (data) {
-          if (data && data.message) {
-            clearInterval(timer);
-            showError(data.message, ackUrl);
-          }
-        })
-        .catch(function () {});
+      tries += 1;
+      if (tries > 24) {
+        stopPoll();
+        showError(waitMsg || "…", "");
+        return;
+      }
+      pollOnce(url, ackUrl, waitMsg, okMsg);
     }, 700);
   }
 

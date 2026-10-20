@@ -240,9 +240,10 @@ def employee_entry(request):
                     sale.charge_message or _("Charge failed"),
                 )
             elif charge_notice == "pending":
-                # Silent wait: no toast. A refuse must open as a dialog only —
-                # "charging…" then an error feels like the charge started.
+                # Spinner dialog waits on the job; refuse/success settle via poll.
                 request.session["charge_notice_wait"] = True
+                if getattr(sale, "charge_job_id", None):
+                    request.session["charge_wait_job_id"] = str(sale.charge_job_id)
             elif charge_notice != "discarded":
                 if outcome == "posted_debt":
                     messages.success(request, _("Recorded on account and posted to the customer."))
@@ -304,16 +305,46 @@ def employee_entry(request):
 
 @employee_required
 def employee_charge_notice(request):
-    """Poll (peek) or acknowledge (take) a refused charge dialog."""
+    """Poll charge wait: pending / refused / ok / failed; ack consumes a refuse."""
     from django.http import JsonResponse
 
+    from providers.models import ProviderJob
     from sales.charging import peek_employee_charge_dialog, take_employee_charge_dialog
 
-    # Peek while waiting so a failed client show cannot swallow the message.
-    # Ack (?ack=1) after the dialog was shown, so reload does not open it again.
     if request.GET.get("ack") == "1" or request.method == "POST":
-        return JsonResponse({"message": take_employee_charge_dialog(request)})
-    return JsonResponse({"message": peek_employee_charge_dialog(request)})
+        msg = take_employee_charge_dialog(request)
+        request.session.pop("charge_wait_job_id", None)
+        request.session.pop("charge_notice_wait", None)
+        return JsonResponse({"status": "refused" if msg else "ok", "message": msg})
+
+    refuse = peek_employee_charge_dialog(request)
+    if refuse:
+        return JsonResponse({"status": "refused", "message": refuse})
+
+    job_id = str(request.session.get("charge_wait_job_id") or "").strip()
+    if not job_id:
+        return JsonResponse({"status": "pending", "message": ""})
+
+    job = ProviderJob.objects.filter(pk=job_id, kind=ProviderJob.KIND_CHARGE).first()
+    if job is None or job.status in (
+        ProviderJob.STATUS_QUEUED,
+        ProviderJob.STATUS_RUNNING,
+    ):
+        return JsonResponse({"status": "pending", "message": ""})
+
+    result = job.result or {}
+    if result.get("discarded"):
+        text = (result.get("employee_message") or "").strip() or str(_("Charge failed"))
+        return JsonResponse({"status": "refused", "message": text})
+
+    if job.status == ProviderJob.STATUS_FAILED or result.get("result") == "failed":
+        text = (result.get("message") or "").strip() or str(_("Charge failed"))
+        return JsonResponse({"status": "failed", "message": text})
+
+    if job.status == ProviderJob.STATUS_DONE:
+        return JsonResponse({"status": "ok", "message": ""})
+
+    return JsonResponse({"status": "pending", "message": ""})
 
 
 @employee_required

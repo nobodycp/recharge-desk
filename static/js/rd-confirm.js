@@ -197,6 +197,23 @@
         morphLoadingToError(text, options, resolve);
         return;
       }
+      // Same error already open — attach to the existing dismiss, do not queue a twin.
+      if (
+        pending &&
+        mode === "error" &&
+        options.error &&
+        host &&
+        (host.open || host.classList.contains("is-open")) &&
+        textEl &&
+        textEl.textContent === text
+      ) {
+        var prev = pending;
+        pending = function (ok) {
+          try { prev(ok); } catch (err) { /* ignore */ }
+          resolve(ok);
+        };
+        return;
+      }
       if (pending) queue.push({ message: text, options: options, resolve: resolve });
       else open(text, options, resolve);
     });

@@ -250,14 +250,13 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertContains(page, "data-rd-charge-wait")
         self.assertContains(page, "data-wait-msg=")
         self.assertContains(page, "data-ack-url=")
+        self.assertContains(page, "data-ok-msg=")
         body = page.content.decode()
-        self.assertNotIn("data-ok-msg=", body)
-        self.assertNotIn('rdToast(okMsg, "success")', body)
-        self.assertIn('rdToast(waitMsg, "info")', body)
         self.assertIn("Still charging", body)
         self.assertIn('loading: true', body)
         self.assertIn("ack=1", body)
         self.assertIn('data-wait-label=', body)
+        self.assertIn('showSuccess', body)
         # Spinner label may appear in markup; must not be a flash toast.
         flash = body.split("data-rd-flash")[1].split("</div>")[0] if "data-rd-flash" in body else ""
         self.assertNotIn("charge-pending", flash)
@@ -279,16 +278,39 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
             )
         peek = self.client.get(reverse("sales:employee_charge_notice"))
         self.assertEqual(peek.status_code, 200)
+        self.assertEqual(peek.json()["status"], "refused")
         self.assertIn("الحزمة غير مطابقة", peek.json()["message"])
         ack = self.client.get(reverse("sales:employee_charge_notice") + "?ack=1")
         self.assertEqual(ack.status_code, 200)
+        self.assertEqual(ack.json()["status"], "refused")
         self.assertIn("الحزمة غير مطابقة", ack.json()["message"])
         page = self.client.get(reverse("sales:employee_entry"))
         body = page.content.decode()
         self.assertNotIn("data-rd-charge-notice hidden", body)
         self.assertNotRegex(body, r"<div[^>]*\bdata-rd-charge-notice\b")
         empty = self.client.get(reverse("sales:employee_charge_notice"))
+        self.assertIn(empty.json()["status"], ("pending", "ok"))
         self.assertEqual(empty.json()["message"], "")
+
+    def test_charge_notice_reports_ok_when_job_succeeds(self):
+        """Successful charges settle the spinner with status=ok, not a refuse."""
+        with patch("sales.tasks.run_charge_job.delay"):
+            self.post_entry(
+                action="charge", form_token="55555555-5555-4555-8555-555555555555"
+            )
+        pending = self.client.get(reverse("sales:employee_charge_notice"))
+        self.assertEqual(pending.json()["status"], "pending")
+        sale = Sale.objects.get()
+        from providers.models import ProviderJob
+
+        job = ProviderJob.objects.get(pk=sale.charge_job_id)
+        job.status = ProviderJob.STATUS_DONE
+        job.result = {"result": "success", "provider_ref": "x", "message": ""}
+        job.save(update_fields=["status", "result"])
+        Sale.objects.filter(pk=sale.pk).update(charge_status=Sale.ChargeStatus.SUCCESS)
+        done = self.client.get(reverse("sales:employee_charge_notice"))
+        self.assertEqual(done.json()["status"], "ok")
+        self.assertEqual(done.json()["message"], "")
 
     def test_traditional_save_stays_manual(self):
         self.post_entry()
