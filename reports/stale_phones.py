@@ -88,11 +88,13 @@ def _span_days(duration_days, base_days) -> int:
 
 
 def stack_coverage(charges: list[tuple[datetime, int]]) -> tuple[datetime, int] | None:
-    """End of a line and the days in its current run.
+    """End of a line and the days shown for its current run (provider-like).
 
-    A charge while the line is still active extends the existing end. A charge
-    after the end has passed starts a new run from that charge. Two 30-day
-    charges a day apart therefore last 60 days, not 30 from the second charge.
+    A charge while the line is still active keeps the leftover time and adds the
+    new span onto the existing end (2 days left + 30 → end moves +30, shown as
+    32). A charge after the end has passed starts a new run from that charge.
+    Displayed days are leftover + new span — never the sum of every past full
+    charge in the chain (that used to show 60 for an early monthly renew).
     """
     end = None
     chain = 0
@@ -102,8 +104,9 @@ def stack_coverage(charges: list[tuple[datetime, int]]) -> tuple[datetime, int] 
             end = at + timedelta(days=length)
             chain = length
         else:
+            remaining_days = max(0, (end - at).days)
             end = end + timedelta(days=length)
-            chain += length
+            chain = remaining_days + length
     if end is None:
         return None
     return end, chain

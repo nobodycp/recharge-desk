@@ -904,21 +904,33 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertNotContains(r, "Lines for disconnect")
 
     def test_second_charge_extends_a_running_line(self):
+        """Early renew keeps leftover days and adds the new span (not full+full)."""
         first = self._make_sale(ref="055STACK001", paid=True)
         self._age_sale(first, days_ago=1, duration_days=30)
         second = self._make_sale(ref="055STACK001", paid=True)
         self._age_sale(second, days_ago=0, duration_days=20)
         first.refresh_from_db()
+        second.refresh_from_db()
+        leftover = max(0, (first.created_at + timedelta(days=30) - second.created_at).days)
         r = self.client.get(reverse("reports:phone_lines_report"))
         row = next(
             x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stack001"
         )
-        self.assertEqual(row["duration_days"], 50)
+        self.assertEqual(row["duration_days"], leftover + 20)
         self.assertEqual(row["status"], "active")
         self.assertEqual(
             row["subscription_end"],
             first.created_at + timedelta(days=50),
         )
+
+    def test_stack_coverage_keeps_remaining_then_adds_new_span(self):
+        from reports.stale_phones import stack_coverage
+
+        start = timezone.now() - timedelta(days=28)
+        mid = start + timedelta(days=28)  # 2 days left on a 30-day charge
+        end, chain = stack_coverage([(start, 30), (mid, 30)])
+        self.assertEqual(chain, 32)
+        self.assertEqual(end, start + timedelta(days=60))
 
     def test_charge_after_expiry_starts_a_new_run(self):
         old = self._make_sale(ref="055STACK002", paid=True)
