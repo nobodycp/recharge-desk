@@ -389,10 +389,11 @@ class NumberCheckRowTests(TestCase):
     def test_phone_input_contract_is_unchanged(self):
         form = self._form("en")
         field = re.search(r"<input[^>]*id=\"rd-refresh-phone-input\"[^>]*>", form, re.S).group(0)
-        for attr in ('maxlength="10"', 'inputmode="numeric"', 'pattern="05[0123458][0-9]{7}"', 'placeholder="0501234567"', "autofocus", 'dir="ltr"'):
+        for attr in ('maxlength="22"', 'inputmode="numeric"', 'placeholder="Phone or serial"', "autofocus", 'dir="ltr"'):
             self.assertIn(attr, field)
+        self.assertNotIn("pattern=", field)
         self.assertIn('data-paste-target="rd-refresh-phone-input"', form)
-        self.assertRegex(form, r'<label[^>]*for="rd-refresh-phone-input"[^>]*>\s*Phone number\s*</label>')
+        self.assertRegex(form, r'<label[^>]*for="rd-refresh-phone-input"[^>]*>\s*Phone or serial\s*</label>')
         self.assertIn('data-paste-fail="', form)
 
     def test_label_stays_above_the_row(self):

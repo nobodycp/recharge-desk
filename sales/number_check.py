@@ -48,6 +48,9 @@ SUBMIT_LOCK_WAIT_SECONDS = 3
 
 DASH = "—"
 MSG_INVALID_PHONE = "رقم غير صحيح"
+MSG_SERIAL_NONE = "لا يوجد رقم بهذا السيريال"
+MSG_SERIAL_MANY = "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول."
+MIN_SERIAL_DIGITS = 4
 MSG_NO_SALE = "لا توجد عملية بيع سابقة لهذا الرقم"
 MSG_UNAVAILABLE = "فحص الرقم غير متاح لهذا المزوّد"
 MSG_BUSY = "الخدمة مشغولة حالياً، حاول بعد قليل"
@@ -90,6 +93,42 @@ def last_sale_for_phone(phone: str) -> Sale | None:
         .order_by("-created_at", "-pk")
         .first()
     )
+
+
+def resolve_check_query(raw: str) -> tuple[str, dict | None]:
+    """Turn a phone or an ICCID fragment into the phone to check.
+
+    A full phone is used as-is. Anything else with at least
+    ``MIN_SERIAL_DIGITS`` digits is matched against the stored SIM serial
+    (full or partial). Returns ``(phone, None)`` or ``("", error payload)``.
+    """
+    from reports.models import PhoneLineTracking
+
+    text = re.sub(r"\D", "", raw or "")
+    if text.startswith("972") and len(text) >= 12:
+        text = "0" + text[3:]
+    if len(text) == 9 and text.startswith("5"):
+        text = "0" + text
+    if PHONE_RE.match(text):
+        return text, None
+    if len(text) < MIN_SERIAL_DIGITS:
+        return "", _error(MSG_INVALID_PHONE)
+
+    matches = list(
+        PhoneLineTracking.objects.exclude(sim_identifier="")
+        .filter(sim_identifier__icontains=text)
+        .order_by("reference_key")
+        .values_list("last_display_reference", "reference_key")[:2]
+    )
+    if not matches:
+        return "", _error(MSG_SERIAL_NONE)
+    if len(matches) > 1:
+        return "", _error(MSG_SERIAL_MANY)
+    display, key = matches[0]
+    phone = (display or key or "").strip()
+    if not PHONE_RE.match(phone):
+        phone = (key or "").strip()
+    return phone, None
 
 
 @contextmanager
@@ -137,7 +176,9 @@ def submit_number_check(phone: str, *, user) -> CheckTicket:
     unsupported provider, a gate failure (one operations row) and an enqueue
     failure (no row: nothing reached the provider).
     """
-    phone = (phone or "").strip()
+    phone, rejected = resolve_check_query(phone)
+    if rejected is not None:
+        return CheckTicket(None, rejected)
     if not PHONE_RE.match(phone):
         return CheckTicket(None, _error(MSG_INVALID_PHONE))
 

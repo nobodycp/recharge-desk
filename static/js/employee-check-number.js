@@ -36,6 +36,10 @@
     return /^05[0123458]\d{7}$/.test(value);
   }
 
+  function isSerialQuery(value) {
+    return /^\d{4,22}$/.test(value) && !isValidPhone(value);
+  }
+
   function sleep(ms) {
     return new Promise(function (resolve) {
       setTimeout(resolve, ms);
@@ -136,7 +140,7 @@
       notify(root.getAttribute("data-msg-phone") || "");
       return;
     }
-    if (!isValidPhone(phone)) {
+    if (!isValidPhone(phone) && !isSerialQuery(phone)) {
       notify(root.getAttribute("data-msg-invalid-phone") || "");
       return;
     }

@@ -692,6 +692,7 @@ AR: dict[str, str] = {
     ),
     "Refresh phone": "تحديث الهاتف",
     "Phone number": "رقم الهاتف",
+    "Phone or serial": "رقم أو سيريال",
     "Close": "إغلاق",
     "Delete this movement? (Does not reverse stock.)": "حذف هذه الحركة؟ (لا يعكس المخزون.)",
     "No product lines yet.": "لا توجد خطوط منتج بعد.",

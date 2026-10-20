@@ -169,11 +169,48 @@ class _Base(TestCase):
 
 class SubmitRoutingTests(_Base):
     def test_invalid_phone_is_rejected_without_row_or_job(self):
-        resp = self.post("12345")
+        resp = self.post("12")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {"status": "error", "message": "رقم غير صحيح"})
         self.assertFalse(self.rows().exists())
         self.assertFalse(ProviderJob.objects.exists())
+
+    def test_full_or_partial_serial_resolves_to_the_phone(self):
+        from reports.models import PhoneLineTracking
+
+        self.make_sale()
+        PhoneLineTracking.objects.create(
+            reference_key=PHONE,
+            sim_identifier="8997201234567890123",
+            last_display_reference=PHONE,
+        )
+        for query in ("8997201234567890123", "234567890123"):
+            with self.subTest(query=query):
+                _, status = self.run_check(query)
+                self.assertEqual(status.json()["status"], "ok")
+
+    def test_unknown_or_ambiguous_serial_does_not_call_the_provider(self):
+        from reports.models import PhoneLineTracking
+
+        self.make_sale()
+        PhoneLineTracking.objects.create(
+            reference_key=PHONE,
+            sim_identifier="8997201234567890123",
+            last_display_reference=PHONE,
+        )
+        PhoneLineTracking.objects.create(
+            reference_key="0520000000",
+            sim_identifier="8997209999567890999",
+            last_display_reference="0520000000",
+        )
+        missing = self.post("11112222")
+        self.assertEqual(missing.json()["message"], "لا يوجد رقم بهذا السيريال")
+        ambiguous = self.post("899720")
+        self.assertEqual(
+            ambiguous.json()["message"],
+            "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول.",
+        )
+        self.adapter_call.assert_not_called()
 
     def test_phone_is_stripped_before_validation(self):
         self.make_sale()

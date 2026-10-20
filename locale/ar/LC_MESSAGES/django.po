@@ -7432,3 +7432,6 @@ msgstr "تم %(filled)s · كان عنده %(skipped)s · فشل %(failed)s · �
 
 msgid "Without ICCID"
 msgstr "بدون ICCID"
+
+msgid "Phone or serial"
+msgstr "رقم أو سيريال"

@@ -34,7 +34,7 @@
   data-msg-time-and="{{ _('and')|escapejs }}"
 >
   {% csrf_token %}
-  <label class="rd-ncheck-label" for="rd-refresh-phone-input">{% trans "Phone number" %}</label>
+  <label class="rd-ncheck-label" for="rd-refresh-phone-input">{% trans "Phone or serial" %}</label>
   <div class="rd-ncheck-row">
     <div class="rd-entry-field">
       <input
@@ -43,9 +43,8 @@
         id="rd-refresh-phone-input"
         inputmode="numeric"
         autocomplete="off"
-        maxlength="10"
-        pattern="05[0123458][0-9]{7}"
-        placeholder="0501234567"
+        maxlength="22"
+        placeholder="{% trans 'Phone or serial' %}"
         dir="ltr"
         autofocus
       >
