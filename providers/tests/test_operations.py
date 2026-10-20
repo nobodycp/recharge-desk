@@ -260,9 +260,17 @@ class LabelCoverageTests(TestCase):
         self.assertLessEqual(emitted, set(operations.CAUSE_LABELS))
         self.assertLessEqual(outcomes, set(operations.OUTCOME_LABELS))
         self.assertIn("price_mismatch", operations.CAUSE_LABELS)
+        self.assertIn("package_mismatch", operations.CAUSE_LABELS)
         self.assertEqual(operations.CAUSE_LABELS["rejected"], "رفض المزوّد")
         self.assertEqual(operations.CAUSE_LABELS["provider_error"], "خطأ في العملية")
-        self.assertEqual(operations.CAUSE_LABELS["price_mismatch"], "السعر غير مطابق")
+        self.assertEqual(
+            operations.CAUSE_LABELS["price_mismatch"],
+            "الحزمة غير مطابقة لخط هذا الرقم",
+        )
+        self.assertEqual(
+            operations.CAUSE_LABELS["package_mismatch"],
+            operations.CAUSE_LABELS["price_mismatch"],
+        )
 
 
 class RecordTests(TestCase):

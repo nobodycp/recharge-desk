@@ -144,7 +144,9 @@ class LayanAdapter(BaseAdapter):
         )
         quoted = layan_charge.parse_cost_quote(quote_body)
         if not layan_charge.money_match(quoted, ctx.expected_cost):
-            raise PermanentError("price_mismatch")
+            # Wrong line package (e.g. Partner number + Wecom cost) — refuse
+            # before any Extend/Activate leaves. Same employee-only path as Sky.
+            raise PermanentError("package_mismatch")
 
         # After this point a charge may already exist at Layan. Never map errors
         # to AuthRequired — run_authenticated would login and call charge again.

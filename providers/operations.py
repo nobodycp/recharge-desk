@@ -57,7 +57,8 @@ CAUSE_LABELS = {
     "connection": "تعذّر الاتصال بالمزوّد",
     "rejected": "رفض المزوّد",
     "provider_error": "خطأ في العملية",
-    "price_mismatch": "السعر غير مطابق",
+    "price_mismatch": "الحزمة غير مطابقة لخط هذا الرقم",
+    "package_mismatch": "الحزمة غير مطابقة لخط هذا الرقم",
     "period_unavailable": "المدة غير متاحة لهذه الحزمة",
     "not_found": "الرقم غير موجود لدى المزوّد",
     "internal": "خطأ داخلي",
@@ -95,6 +96,7 @@ _CODE_TO_CAUSE = {
     "context_error": "internal",
     "unknown_provider": "internal",
     "price_mismatch": "price_mismatch",
+    "package_mismatch": "package_mismatch",
     "period_unavailable": "period_unavailable",
 }
 

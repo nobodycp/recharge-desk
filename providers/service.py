@@ -40,6 +40,7 @@ NO_RETRY_TRANSIENT_CODES = frozenset({"login_busy", "login_failed"})
 PROVIDER_ANSWER_CODES = frozenset(
     {
         "price_mismatch",
+        "package_mismatch",
         "period_unavailable",
         "not_found",
         "not_eligible",

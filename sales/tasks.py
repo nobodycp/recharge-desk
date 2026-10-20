@@ -172,7 +172,7 @@ def run_charge_job(job_id: str) -> None:
         result["discarded"] = True
         result["user_id"] = user_id
         result["phone"] = phone
-        if outcome.employee_only and outcome.message:
+        if outcome.message:
             result["employee_message"] = charging.clean_message(outcome.message)
     jobs.mark_done(job, result)
 

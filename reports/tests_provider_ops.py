@@ -252,10 +252,15 @@ class ProviderOperationsReportTests(TestCase):
         self.assertEqual(causes[0], ("سبب 0", 1))
 
     def test_charge_refusal_stays_off_the_management_report(self):
-        self._op(service="charge", outcome="failed", error_code="price_mismatch", message="فشل الشحن — السعر غير مطابق")
+        self._op(
+            service="charge",
+            outcome="failed",
+            error_code="package_mismatch",
+            message="فشل الشحن — الحزمة غير مطابقة لخط هذا الرقم",
+        )
         self._op(service="charge", outcome="pending", message="الشحن قيد المتابعة")
         response = self.client.get(self.url, {"provider": "sky"})
-        self.assertNotContains(response, "السعر غير مطابق")
+        self.assertNotContains(response, "الحزمة غير مطابقة لخط هذا الرقم")
         self.assertContains(response, "الشحن قيد المتابعة")
         self.assertEqual(response.context["summary"]["failed"], 0)
         self.assertEqual(response.context["summary"]["pending"], 1)

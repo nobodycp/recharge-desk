@@ -203,7 +203,7 @@ class LayanAdapterChargeTests(TestCase):
         self.client.get_cost_before_activate.return_value = 80
         with self.assertRaises(PermanentError) as caught:
             self._charge()
-        self.assertEqual(str(caught.exception), "price_mismatch")
+        self.assertEqual(str(caught.exception), "package_mismatch")
         self.client.extend_line.assert_not_called()
         self.client.activate_line.assert_not_called()
 

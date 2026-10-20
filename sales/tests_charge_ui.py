@@ -208,7 +208,7 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
     def test_wrong_package_shows_the_price_mismatch(self):
         from providers.contracts import PermanentError
 
-        self.use(raise_before_send=PermanentError("price_mismatch"))
+        self.use(raise_before_send=PermanentError("package_mismatch"))
         resp = self.post_entry(
             action="charge", form_token="22222222-2222-4222-8222-222222222222"
         )
@@ -217,12 +217,12 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         page = self.client.get(reverse("sales:employee_entry"))
         self.assertContains(page, 'data-rd-charge-notice')
         self.assertContains(page, "notice: true")
-        self.assertContains(page, "السعر غير مطابق")
+        self.assertContains(page, "الحزمة غير مطابقة لخط هذا الرقم")
         self.assertNotContains(page, "Sale recorded successfully.")
         self.assertNotContains(page, "Charge sent to the provider.")
         self.client.force_login(self.manager)
         management = self.client.get(reverse("sales:management_sale_list"))
-        self.assertNotContains(management, "السعر غير مطابق")
+        self.assertNotContains(management, "الحزمة غير مطابقة لخط هذا الرقم")
 
     def test_traditional_save_stays_manual(self):
         self.post_entry()

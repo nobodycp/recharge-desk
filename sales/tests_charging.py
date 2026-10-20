@@ -246,7 +246,7 @@ class ChargeFlowTests(ChargingTestBase):
         self.assertEqual(self.fake.sent, 0)
         result = self.job(sale).result
         self.assertTrue(result.get("discarded"))
-        self.assertEqual(result.get("employee_message"), "فشل الشحن — السعر غير مطابق")
+        self.assertEqual(result.get("employee_message"), "فشل الشحن — الحزمة غير مطابقة لخط هذا الرقم")
 
     def test_charge_that_never_starts_is_dropped(self):
         self.use(raise_before_send=NotImplementedError())
@@ -921,7 +921,7 @@ class LayanChargePathTests(ChargingTestBase):
     def test_layan_price_mismatch_drops_sale_for_employee(self):
         with patch(
             "providers.adapters.layan.adapter.LayanAdapter.charge",
-            side_effect=PermanentError("price_mismatch"),
+            side_effect=PermanentError("package_mismatch"),
         ):
             sale = self._charge_layan("layan-mismatch")
         self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
@@ -929,4 +929,4 @@ class LayanChargePathTests(ChargingTestBase):
         self.assertEqual(self.layan_company.current_balance, START)
         result = ProviderJob.objects.get(pk=sale.charge_job_id).result
         self.assertTrue(result.get("discarded"))
-        self.assertEqual(result.get("employee_message"), "فشل الشحن — السعر غير مطابق")
+        self.assertEqual(result.get("employee_message"), "فشل الشحن — الحزمة غير مطابقة لخط هذا الرقم")
