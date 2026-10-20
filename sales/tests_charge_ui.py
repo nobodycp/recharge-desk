@@ -226,6 +226,33 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         management = self.client.get(reverse("sales:management_sale_list"))
         self.assertNotContains(management, "الحزمة غير مطابقة لخط هذا الرقم")
 
+    def test_charge_wait_markup_never_toasts_success(self):
+        """While the worker is still running, the page must not claim 'charged'."""
+        from pathlib import Path
+
+        from django.conf import settings
+
+        confirm_js = (Path(settings.BASE_DIR) / "static/js/rd-confirm.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("host.isConnected", confirm_js)
+        self.assertIn("appendChild(host)", confirm_js)
+
+        # Keep the job pending so the redirect lands on the wait/poll branch.
+        with patch("sales.tasks.run_charge_job.delay"):
+            resp = self.post_entry(
+                action="charge", form_token="33333333-3333-4333-8333-333333333333"
+            )
+        self.assertEqual(resp.status_code, 302)
+        page = self.client.get(reverse("sales:employee_entry"))
+        self.assertContains(page, "data-rd-charge-wait")
+        self.assertContains(page, "data-wait-msg=")
+        body = page.content.decode()
+        self.assertNotIn("data-ok-msg=", body)
+        self.assertNotIn('rdToast(okMsg, "success")', body)
+        self.assertIn('rdToast(waitMsg, "info")', body)
+        self.assertIn("Still charging", body)
+
     def test_traditional_save_stays_manual(self):
         self.post_entry()
         sale = Sale.objects.get()

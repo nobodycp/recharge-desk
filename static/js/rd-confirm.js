@@ -21,7 +21,12 @@
   }
 
   function ensure() {
-    if (host) return;
+    // hx-boost replaces <body>, which detaches a dialog appended earlier.
+    // Re-attach the same node (listeners stay) so later confirms still show.
+    if (host) {
+      if (!host.isConnected && document.body) document.body.appendChild(host);
+      return;
+    }
     host = document.createElement("dialog");
     host.className = "rd-confirm";
     host.innerHTML =

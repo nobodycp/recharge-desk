@@ -3059,6 +3059,9 @@ msgstr "جاري شحن الرقم لدى المزوّد…"
 
 msgid "Sale recorded. Follow the charge status in My entries."
 msgstr "تم تسجيل البيع. تابع حالة الشحن في إدخالاتي."
+
+msgid "Still charging… Follow the status in My entries."
+msgstr "ما زال الشحن جارياً… تابع الحالة في إدخالاتي."
 #: sales/views/employee.py:219
 msgid "New sale"
 msgstr "بيع جديد"

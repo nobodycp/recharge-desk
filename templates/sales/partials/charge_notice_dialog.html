@@ -7,7 +7,7 @@
   data-rd-charge-wait
   hidden
   data-url="{% url 'sales:employee_charge_notice' %}"
-  data-ok-msg="{% trans 'Sale recorded. Follow the charge status in My entries.' %}"
+  data-wait-msg="{% trans 'Still charging… Follow the status in My entries.' %}"
 ></div>
 {% endif %}
 <script>
@@ -27,8 +27,12 @@
     if (!text) return false;
     clearPendingToasts();
     if (window.rdConfirm) {
-      window.rdConfirm(text, { notice: true, error: true }).then(afterNotice);
-      return true;
+      try {
+        window.rdConfirm(text, { notice: true, error: true }).then(afterNotice);
+        return true;
+      } catch (err) {
+        /* fall through to toast */
+      }
     }
     if (window.rdToast) {
       window.rdToast(text, "error");
@@ -47,14 +51,15 @@
     if (!wait || wait.dataset.rdStarted || (node && node.dataset.rdShown)) return;
     wait.dataset.rdStarted = "1";
     var url = wait.getAttribute("data-url");
-    var okMsg = wait.getAttribute("data-ok-msg") || "";
+    var waitMsg = wait.getAttribute("data-wait-msg") || "";
     var tries = 0;
     var timer = setInterval(function () {
       tries += 1;
-      if (tries > 12) {
+      if (tries > 24) {
         clearInterval(timer);
         clearPendingToasts();
-        if (okMsg && window.rdToast) window.rdToast(okMsg, "success");
+        // Never a success toast — a late refusal must not look like "charged".
+        if (waitMsg && window.rdToast) window.rdToast(waitMsg, "info");
         return;
       }
       fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
