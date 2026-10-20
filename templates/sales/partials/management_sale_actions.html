@@ -19,7 +19,7 @@
       <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
     </form>
   {% endif %}
-  {% if s.entry_mode != "auto_charge" or s.charge_status == "failed" %}
+  {% if not s.charge_is_open %}
     <form
       method="post"
       action="{% url 'sales:sale_delete_permanent' s.pk %}"
@@ -27,7 +27,7 @@
       hx-post="{% url 'sales:sale_delete_permanent' s.pk %}"
       hx-target="#{{ row_id }}-{{ s.pk }}"
       hx-swap="outerHTML swap:200ms"
-      hx-confirm="{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}"
+      hx-confirm="{% if s.entry_mode == 'auto_charge' %}{% trans 'Permanently delete this sale? Only do this if you already reversed or cancelled at the provider. Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}{% else %}{% trans 'Permanently delete this sale? Ledger rows will be removed and supplier balance corrected. This cannot be undone.' %}{% endif %}"
     >
       {% csrf_token %}
       <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="{% trans 'Delete permanently' %}" title="{% trans 'Delete permanently' %}">{% trans "Delete" %}</button>

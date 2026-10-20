@@ -517,16 +517,44 @@ class GuardTests(ChargingTestBase):
         sale.refresh_from_db()
         self.assertEqual(sale.reference_number, "0599123456")
 
-    def test_delete_rejects_auto_charge_unless_failed(self):
-        sale = self.charge()
+    def test_delete_rejects_open_auto_charge_but_allows_settled(self):
+        open_sale = self.unverified()
         with self.assertRaises(ValueError):
-            delete_sale_permanently(sale=sale, user=self.manager)
-        self.assertTrue(Sale.objects.filter(pk=sale.pk).exists())
+            delete_sale_permanently(sale=open_sale, user=self.manager)
+        self.assertTrue(Sale.objects.filter(pk=open_sale.pk).exists())
+
+        self.use()
+        succeeded = self.charge("t-ok")
+        self.assertEqual(succeeded.charge_status, Sale.ChargeStatus.SUCCESS)
+        delete_sale_permanently(sale=succeeded, user=self.manager)
+        self.assertFalse(Sale.objects.filter(pk=succeeded.pk).exists())
+
+        cancelled = self.charge("t-cancel")
+        cancel_sale(sale=cancelled, user=self.manager)
+        delete_sale_permanently(sale=cancelled, user=self.manager)
+        self.assertFalse(Sale.objects.filter(pk=cancelled.pk).exists())
 
         self.use(result=ChargeResult.FAILED)
         failed = self.charge("t-failed")
         delete_sale_permanently(sale=failed, user=self.manager)
         self.assertFalse(Sale.objects.filter(pk=failed.pk).exists())
+
+        # Open charge still blocked; its cost deduction remains.
+        self.assertTrue(Sale.objects.filter(pk=open_sale.pk).exists())
+        self.assertEqual(self.balance(), START - COST)
+
+    def test_management_can_delete_successful_auto_charge(self):
+        sale = self.charge()
+        self.client.force_login(self.manager)
+        list_resp = self.client.get(reverse("sales:management_sale_list"))
+        self.assertContains(list_resp, reverse("sales:sale_delete_permanent", args=[sale.pk]))
+        self.assertContains(list_resp, "already reversed or cancelled at the provider")
+        response = self.client.post(
+            reverse("sales:sale_delete_permanent", args=[sale.pk]), follow=True
+        )
+        self.assertContains(response, "permanently removed")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
+        self.assertEqual(self.balance(), START)
 
     def test_management_delete_view_shows_error(self):
         sale = self.unverified()

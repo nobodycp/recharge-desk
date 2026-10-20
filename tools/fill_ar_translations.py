@@ -783,6 +783,8 @@ AR: dict[str, str] = {
     "Only charges in progress or unverified can be resolved.": "يمكن حسم الشحنات الجارية أو غير المؤكدة فقط.",
     "This sale is still being charged by the provider; resolve the charge first.": "ما زال المزوّد يشحن هذا البيع؛ احسم الشحن أولاً.",
     "A sale charged through the provider can only be deleted after its charge failed.": "لا يمكن حذف بيع مشحون عبر المزوّد إلا بعد فشل الشحن.",
+    "A sale charged through the provider can't be deleted while the charge is still in progress or unverified.": "لا يمكن حذف بيع مشحون عبر المزوّد أثناء الشحن أو قبل التأكد منه.",
+    "Permanently delete this sale? Only do this if you already reversed or cancelled at the provider. Ledger rows will be removed and supplier balance corrected. This cannot be undone.": "حذف هذا البيع نهائياً؟ افعل ذلك فقط إذا رجّعت أو ألغيت الشحنة عند المزوّد. ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع.",
     "The provider is still processing this charge. Try again in a few minutes.": "ما زال المزوّد يعالج هذا الشحن. حاول مجدداً بعد بضع دقائق.",
     "charge conflict": "تعارض في الشحن",
     "This number has a charge still in progress; try again after it settles.": "لهذا الرقم شحن ما زال قيد التنفيذ؛ حاول مجدداً بعد حسمه.",

@@ -3000,6 +3000,20 @@ msgid ""
 "A sale charged through the provider can only be deleted after its charge "
 "failed."
 msgstr "لا يمكن حذف بيع مشحون عبر المزوّد إلا بعد فشل الشحن."
+
+msgid ""
+"A sale charged through the provider can't be deleted while the charge is "
+"still in progress or unverified."
+msgstr "لا يمكن حذف بيع مشحون عبر المزوّد أثناء الشحن أو قبل التأكد منه."
+
+msgid ""
+"Permanently delete this sale? Only do this if you already reversed or "
+"cancelled at the provider. Ledger rows will be removed and supplier balance "
+"corrected. This cannot be undone."
+msgstr ""
+"حذف هذا البيع نهائياً؟ افعل ذلك فقط إذا رجّعت أو ألغيت الشحنة عند المزوّد. "
+"ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع."
+
 #: sales/services.py:442
 msgid "Sale is already cancelled."
 msgstr "هذا البيع ملغى مسبقاً."
