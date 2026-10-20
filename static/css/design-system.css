@@ -5143,8 +5143,19 @@ body.rd-inv-dialog-open {
   display: none;
 }
 
-/* Charging wait: glass over the page, spinner and text only. No card. */
+/* Charging wait: glass over the page, spinner and text only. No card.
+   Size and display apply only while the dialog is open. A closed dialog
+   that still has .is-loading must stay display:none, or it covers the
+   page and swallows every tap. */
 .rd-confirm.is-loading {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.rd-confirm[open].is-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5155,11 +5166,6 @@ body.rd-inv-dialog-open {
   max-height: none;
   margin: 0;
   padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
   overflow: hidden;
 }
 

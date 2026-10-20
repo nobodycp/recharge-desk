@@ -57,6 +57,10 @@
       if (mode === "loading") return;
       finish(false);
     });
+    host.addEventListener("close", function () {
+      host.classList.remove("is-open", "is-loading", "is-error", "is-notice");
+      document.body.classList.remove("rd-confirm-open");
+    });
     // Backdrop click (target is the <dialog> itself, not a child).
     host.addEventListener("click", function (ev) {
       if (ev.target === host) {
@@ -161,7 +165,15 @@
     pending = resolve;
     lastFocus = document.activeElement;
     paint(message, options);
-    if (!host.open) host.showModal();
+    try {
+      if (!host.open) host.showModal();
+    } catch (err) {
+      host.classList.remove("is-open", "is-loading", "is-error", "is-notice");
+      document.body.classList.remove("rd-confirm-open");
+      pending = null;
+      resolve(false);
+      return;
+    }
     document.body.classList.add("rd-confirm-open");
     requestAnimationFrame(function () {
       host.classList.add("is-open");
