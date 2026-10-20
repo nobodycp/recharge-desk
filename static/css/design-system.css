@@ -5130,6 +5130,43 @@ body.rd-inv-dialog-open {
   font-size: 1.02rem;
 }
 
+.rd-confirm.is-loading .rd-confirm__icon {
+  color: var(--rd-ink);
+  background: color-mix(in srgb, var(--rd-ink) 8%, transparent);
+}
+
+.rd-confirm.is-loading .rd-confirm__text {
+  text-align: center;
+}
+
+.rd-confirm.is-loading .rd-confirm__actions {
+  display: none;
+}
+
+.rd-confirm__spinner {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid color-mix(in srgb, var(--rd-ink) 18%, transparent);
+  border-top-color: var(--rd-ink);
+  border-radius: 999px;
+  animation: rd-confirm-spin 0.7s linear infinite;
+}
+
+@keyframes rd-confirm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-confirm__spinner {
+    animation: none;
+    border-top-color: color-mix(in srgb, var(--rd-ink) 18%, transparent);
+    border-color: var(--rd-ink);
+  }
+}
+
 .rd-confirm__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -7,59 +7,102 @@
   data-rd-charge-wait
   hidden
   data-url="{% url 'sales:employee_charge_notice' %}"
+  data-ack-url="{% url 'sales:employee_charge_notice' %}?ack=1"
+  data-wait-label="{% trans 'Charging the number at the provider…' %}"
   data-wait-msg="{% trans 'Still charging… Follow the status in My entries.' %}"
 ></div>
 {% endif %}
 <script>
 (function () {
+  var booted = false;
+
   function clearPendingToasts() {
     document.querySelectorAll(".rd-toast[data-rd-charge-pending]").forEach(function (el) {
       el.remove();
     });
   }
-  function afterNotice() {
-    // Consume the refusal on the server (take/ack) and clear wait toasts.
-    if (window.rdNavigate) window.rdNavigate(location.pathname + location.search);
-    else location.reload();
+
+  function goClean() {
+    var path = location.pathname;
+    if (window.rdNavigate) window.rdNavigate(path);
+    else location.assign(path);
   }
-  function show(text) {
+
+  function afterNotice(ackUrl) {
+    clearPendingToasts();
+    if (!ackUrl) {
+      goClean();
+      return;
+    }
+    fetch(ackUrl, { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .catch(function () {})
+      .then(goClean);
+  }
+
+  function showError(text, ackUrl) {
     text = String(text || "").trim();
     if (!text) return false;
     clearPendingToasts();
     if (window.rdConfirm) {
       try {
-        window.rdConfirm(text, { notice: true, error: true }).then(afterNotice);
+        window.rdConfirm(text, { notice: true, error: true }).then(function () {
+          afterNotice(ackUrl || "");
+        });
         return true;
       } catch (err) {
-        /* fall through to toast */
+        /* fall through */
       }
     }
     if (window.rdToast) {
       window.rdToast(text, "error");
-      setTimeout(afterNotice, 2500);
+      setTimeout(function () { afterNotice(ackUrl || ""); }, 2500);
       return true;
     }
     return false;
   }
-  function boot(root) {
-    if (!root || !root.querySelector) return;
-    var node = root.querySelector("[data-rd-charge-notice]");
-    if (node && !node.dataset.rdShown) {
-      if (show(node.textContent)) node.dataset.rdShown = "1";
+
+  function showLoading(label) {
+    if (!window.rdConfirm) return false;
+    try {
+      window.rdConfirm(label || "…", { notice: true, loading: true });
+      return true;
+    } catch (err) {
+      return false;
     }
-    var wait = root.querySelector("[data-rd-charge-wait]");
-    if (!wait || wait.dataset.rdStarted || (node && node.dataset.rdShown)) return;
+  }
+
+  function boot(root) {
+    if (booted || !root || !root.querySelector) return;
+    var node = document.querySelector("[data-rd-charge-notice]");
+    var wait = document.querySelector("[data-rd-charge-wait]");
+    if (!node && !wait) return;
+    booted = true;
+
+    if (node && !node.dataset.rdShown) {
+      // Sync path: server already took/acked when embedding the notice.
+      if (showError(node.textContent, "")) node.dataset.rdShown = "1";
+      return;
+    }
+
+    if (!wait || wait.dataset.rdStarted) return;
     wait.dataset.rdStarted = "1";
     var url = wait.getAttribute("data-url");
+    var ackUrl = wait.getAttribute("data-ack-url") || "";
+    var waitLabel = wait.getAttribute("data-wait-label") || "";
     var waitMsg = wait.getAttribute("data-wait-msg") || "";
+    showLoading(waitLabel);
     var tries = 0;
     var timer = setInterval(function () {
       tries += 1;
       if (tries > 24) {
         clearInterval(timer);
         clearPendingToasts();
-        // Never a success toast — a late refusal must not look like "charged".
-        if (waitMsg && window.rdToast) window.rdToast(waitMsg, "info");
+        // Still waiting — one notice dialog, never a success toast.
+        if (waitMsg && window.rdConfirm) {
+          window.rdConfirm(waitMsg, { notice: true, error: true }).then(goClean);
+        } else if (waitMsg && window.rdToast) {
+          window.rdToast(waitMsg, "info");
+        }
         return;
       }
       fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
@@ -70,12 +113,13 @@
         .then(function (data) {
           if (data && data.message) {
             clearInterval(timer);
-            show(data.message);
+            showError(data.message, ackUrl);
           }
         })
         .catch(function () {});
     }, 700);
   }
+
   if (window.htmx) htmx.onLoad(boot);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () { boot(document); });

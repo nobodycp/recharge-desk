@@ -304,13 +304,15 @@ def employee_entry(request):
 
 @employee_required
 def employee_charge_notice(request):
-    """The refusal dialog text, once the worker has dropped the charge."""
+    """Poll (peek) or acknowledge (take) a refused charge dialog."""
     from django.http import JsonResponse
 
-    from sales.charging import peek_employee_charge_dialog
+    from sales.charging import peek_employee_charge_dialog, take_employee_charge_dialog
 
-    # Peek only — acknowledging happens when the entry page embeds the dialog
-    # (so a missed client show cannot swallow the message).
+    # Peek while waiting so a failed client show cannot swallow the message.
+    # Ack (?ack=1) after the dialog was shown, so reload does not open it again.
+    if request.GET.get("ack") == "1" or request.method == "POST":
+        return JsonResponse({"message": take_employee_charge_dialog(request)})
     return JsonResponse({"message": peek_employee_charge_dialog(request)})
 
 

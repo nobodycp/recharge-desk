@@ -237,6 +237,8 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         )
         self.assertIn("host.isConnected", confirm_js)
         self.assertIn("appendChild(host)", confirm_js)
+        self.assertIn("is-loading", confirm_js)
+        self.assertIn("rd-confirm__spinner", confirm_js)
 
         # Keep the job pending so the redirect lands on the wait/poll branch.
         with patch("sales.tasks.run_charge_job.delay"):
@@ -247,16 +249,46 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         page = self.client.get(reverse("sales:employee_entry"))
         self.assertContains(page, "data-rd-charge-wait")
         self.assertContains(page, "data-wait-msg=")
+        self.assertContains(page, "data-ack-url=")
         body = page.content.decode()
         self.assertNotIn("data-ok-msg=", body)
         self.assertNotIn('rdToast(okMsg, "success")', body)
         self.assertIn('rdToast(waitMsg, "info")', body)
         self.assertIn("Still charging", body)
-        # Silent poll — no "charging…" toast before the refuse dialog.
-        self.assertNotContains(page, "Charging the number at the provider")
+        self.assertIn('loading: true', body)
+        self.assertIn("ack=1", body)
+        self.assertIn('data-wait-label=', body)
+        # Spinner label may appear in markup; must not be a flash toast.
         flash = body.split("data-rd-flash")[1].split("</div>")[0] if "data-rd-flash" in body else ""
         self.assertNotIn("charge-pending", flash)
         self.assertNotIn("جاري شحن الرقم لدى المزوّد", flash)
+        self.assertNotIn("Charging the number at the provider", flash)
+
+    def test_charge_notice_ack_consumes_so_reload_does_not_reshow(self):
+        """Poll peeks; ack takes. Reload must not open the refuse dialog again."""
+        from providers.contracts import PermanentError
+
+        self.use(raise_before_send=PermanentError("package_mismatch"))
+        with self.captureOnCommitCallbacks(execute=True):
+            self.client.post(
+                reverse("sales:employee_entry"),
+                self.entry_payload(
+                    action="charge",
+                    form_token="44444444-4444-4444-8444-444444444444",
+                ),
+            )
+        peek = self.client.get(reverse("sales:employee_charge_notice"))
+        self.assertEqual(peek.status_code, 200)
+        self.assertIn("الحزمة غير مطابقة", peek.json()["message"])
+        ack = self.client.get(reverse("sales:employee_charge_notice") + "?ack=1")
+        self.assertEqual(ack.status_code, 200)
+        self.assertIn("الحزمة غير مطابقة", ack.json()["message"])
+        page = self.client.get(reverse("sales:employee_entry"))
+        body = page.content.decode()
+        self.assertNotIn("data-rd-charge-notice hidden", body)
+        self.assertNotRegex(body, r"<div[^>]*\bdata-rd-charge-notice\b")
+        empty = self.client.get(reverse("sales:employee_charge_notice"))
+        self.assertEqual(empty.json()["message"], "")
 
     def test_traditional_save_stays_manual(self):
         self.post_entry()

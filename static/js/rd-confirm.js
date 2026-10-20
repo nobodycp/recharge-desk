@@ -3,6 +3,8 @@
  * onsubmit="return confirm(...)", and the unsaved-changes prompt.
  *
  * window.rdConfirm(message, { danger: true }) → Promise<boolean>
+ * window.rdConfirm(message, { notice: true, loading: true }) → spinner, no buttons
+ * window.rdConfirm(message, { notice: true, error: true }) → big X; morphs if loading
  */
 (function () {
   "use strict";
@@ -15,6 +17,13 @@
   var pending = null;
   var lastFocus = null;
   var queue = [];
+  var mode = "";
+  var ERROR_ICON =
+    '<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="10"></circle>' +
+    '<path d="M15 9 9 15M9 9l6 6"></path>' +
+    "</svg>";
+  var SPINNER_ICON = '<span class="rd-confirm__spinner" aria-hidden="true"></span>';
 
   function label(name, fallback) {
     return (document.body && document.body.getAttribute(name)) || fallback;
@@ -31,10 +40,8 @@
     host.className = "rd-confirm";
     host.innerHTML =
       '<div class="rd-confirm__icon" data-rd-confirm-icon hidden aria-hidden="true">' +
-      '<svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">' +
-      '<circle cx="12" cy="12" r="10"></circle>' +
-      '<path d="M15 9 9 15M9 9l6 6"></path>' +
-      "</svg></div>" +
+      ERROR_ICON +
+      "</div>" +
       '<p class="rd-confirm__text" id="rd-confirm-text"></p>' +
       '<div class="rd-confirm__actions">' +
       '<button type="button" class="btn btn-outline-secondary" data-rd-confirm-cancel></button>' +
@@ -47,11 +54,15 @@
     cancelBtn = host.querySelector("[data-rd-confirm-cancel]");
     host.addEventListener("cancel", function (ev) {
       ev.preventDefault();
+      if (mode === "loading") return;
       finish(false);
     });
     // Backdrop click (target is the <dialog> itself, not a child).
     host.addEventListener("click", function (ev) {
-      if (ev.target === host) finish(false);
+      if (ev.target === host) {
+        if (mode === "loading") return;
+        finish(false);
+      }
     });
     // Bind the buttons directly. A delegated click on <dialog> used to close
     // synchronously, so the same gesture fell through to the Delete button
@@ -72,13 +83,19 @@
       if (!pending) return;
       if (ev.key === "Escape") {
         ev.preventDefault();
+        if (mode === "loading") return;
         finish(false);
       } else if (ev.key === "Tab") {
-        var nodes = [cancelBtn, okBtn];
+        if (mode === "loading") {
+          ev.preventDefault();
+          return;
+        }
+        var nodes = [cancelBtn, okBtn].filter(function (b) { return b && !b.hidden; });
+        if (!nodes.length) return;
         var index = nodes.indexOf(document.activeElement);
         ev.preventDefault();
         if (index === -1) {
-          nodes[ev.shiftKey ? 0 : 1].focus();
+          nodes[ev.shiftKey ? 0 : nodes.length - 1].focus();
           return;
         }
         nodes[(index + (ev.shiftKey ? -1 : 1) + nodes.length) % nodes.length].focus();
@@ -90,7 +107,8 @@
     if (!pending) return;
     var resolve = pending;
     pending = null;
-    host.classList.remove("is-open");
+    mode = "";
+    host.classList.remove("is-open", "is-loading", "is-error", "is-notice");
     document.body.classList.remove("rd-confirm-open");
 
     // Cover the page for one frame so the closing click / Enter keyup cannot
@@ -117,27 +135,50 @@
     }, 50);
   }
 
-  function open(message, options, resolve) {
-    ensure();
-    pending = resolve;
-    lastFocus = document.activeElement;
-    textEl.textContent = message;
+  function paint(message, options) {
     var notice = !!options.notice;
     var error = !!options.error;
-    host.classList.toggle("is-notice", notice);
-    host.classList.toggle("is-error", error);
-    if (iconEl) iconEl.hidden = !error;
-    cancelBtn.hidden = notice;
+    var loading = !!options.loading;
+    mode = loading ? "loading" : error ? "error" : notice ? "notice" : "confirm";
+    textEl.textContent = message;
+    host.classList.toggle("is-notice", notice || loading);
+    host.classList.toggle("is-error", error && !loading);
+    host.classList.toggle("is-loading", loading);
+    if (iconEl) {
+      iconEl.hidden = !(error || loading);
+      iconEl.innerHTML = loading ? SPINNER_ICON : ERROR_ICON;
+    }
+    cancelBtn.hidden = notice || loading;
+    okBtn.hidden = loading;
     cancelBtn.textContent = label("data-rd-confirm-cancel", "Cancel");
     okBtn.textContent = label("data-rd-confirm-ok", "Confirm");
     okBtn.classList.remove("btn-primary", "btn-outline-danger");
     okBtn.classList.add(options.danger && !error ? "btn-outline-danger" : "btn-primary");
+  }
+
+  function open(message, options, resolve) {
+    ensure();
+    pending = resolve;
+    lastFocus = document.activeElement;
+    paint(message, options);
     if (!host.open) host.showModal();
     document.body.classList.add("rd-confirm-open");
     requestAnimationFrame(function () {
       host.classList.add("is-open");
     });
+    if (mode === "loading") return;
     (options.notice || !options.danger ? okBtn : cancelBtn).focus();
+  }
+
+  function morphLoadingToError(message, options, resolve) {
+    // Drop the loading promise without navigating; the error dialog owns the next dismiss.
+    var prev = pending;
+    pending = resolve;
+    paint(message, options);
+    if (typeof prev === "function") {
+      try { prev(false); } catch (err) { /* ignore */ }
+    }
+    okBtn.focus();
   }
 
   window.rdConfirm = function (message, options) {
@@ -145,6 +186,17 @@
     options = options || {};
     if (!text) return Promise.resolve(true);
     return new Promise(function (resolve) {
+      // Loading → error in the same dialog (one surface, one dismiss).
+      if (
+        pending &&
+        mode === "loading" &&
+        options.error &&
+        host &&
+        (host.open || host.classList.contains("is-open"))
+      ) {
+        morphLoadingToError(text, options, resolve);
+        return;
+      }
       if (pending) queue.push({ message: text, options: options, resolve: resolve });
       else open(text, options, resolve);
     });
