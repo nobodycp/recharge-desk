@@ -36,6 +36,14 @@
     <button
       type="submit"
       name="action"
+      value="fetch_iccid"
+      class="btn btn-sm btn-outline-primary"
+      onclick="this.form.setAttribute('hx-swap','innerHTML')"
+      hx-confirm="{% trans "Fetch ICCID from the provider for selected lines that do not already have one?" %}"
+    >{% trans "Fetch ICCID from provider" %}</button>
+    <button
+      type="submit"
+      name="action"
       value="delete"
       class="btn btn-sm btn-outline-danger"
       onclick="var grid=this.form.closest('[data-rd-select]'); if(!(grid&&grid.getAttribute('data-rd-select-mode')==='all')) this.form.setAttribute('hx-swap','none')"

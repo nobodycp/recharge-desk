@@ -7396,3 +7396,18 @@ msgstr "تم نسخ %%(count)s رقماً."
 
 msgid "Could not copy the numbers."
 msgstr "تعذّر نسخ الأرقام."
+
+msgid "Fetch ICCID from provider"
+msgstr "جلب ICCID من المزوّد"
+
+msgid "Fetch ICCID from the provider for selected lines that do not already have one?"
+msgstr "جلب ICCID من المزوّد للأرقام المحددة اللي ما عندها ICCID؟"
+
+msgid "Fetched ICCID for %(filled)s lines (%(skipped)s already had one, %(failed)s failed)."
+msgstr "تم جلب ICCID لـ %(filled)s رقم (%(skipped)s كان عنده، %(failed)s فشل)."
+
+msgid "Could not fetch ICCID for any of the selected lines."
+msgstr "ما قدرنا نجيب ICCID لأي من الأرقام المحددة."
+
+msgid "Choose delete, renew, or fetch ICCID."
+msgstr "اختر حذف أو تجديد أو جلب ICCID."

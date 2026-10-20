@@ -419,6 +419,17 @@ AR: dict[str, str] = {
     "Line status": "حالة الأرقام",
     "Line statement": "بيان الأرقام",
     "Open line statement": "افتح بيان الأرقام",
+    "Fetch ICCID from provider": "جلب ICCID من المزوّد",
+    "Fetch ICCID from the provider for selected lines that do not already have one?": (
+        "جلب ICCID من المزوّد للأرقام المحددة اللي ما عندها ICCID؟"
+    ),
+    "Fetched ICCID for %(filled)s lines (%(skipped)s already had one, %(failed)s failed).": (
+        "تم جلب ICCID لـ %(filled)s رقم (%(skipped)s كان عنده، %(failed)s فشل)."
+    ),
+    "Could not fetch ICCID for any of the selected lines.": (
+        "ما قدرنا نجيب ICCID لأي من الأرقام المحددة."
+    ),
+    "Choose delete, renew, or fetch ICCID.": "اختر حذف أو تجديد أو جلب ICCID.",
     "Every number with a sale in the system, with lifecycle status from the %(d)s-day activity threshold. A new charge resets the timer.": (
         "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
         "%(d)s يوماً. شحن جديد يعيد المؤقت."

@@ -17,6 +17,7 @@ from accounts.models import UserProfile
 from accounts.permissions import management_required
 from core.pagination import paginate_request
 from reports.forms import PhoneLineFullEditForm, PhoneLinesFilterForm
+from reports.iccid_fetch import fill_sim_identifiers_from_provider
 from reports.models import PhoneLineTracking
 from reports.stale_phones import (
     STATUS_OVERDUE,
@@ -468,7 +469,7 @@ def _filtered_ref_keys(request, profile, list_query: str) -> list[str]:
 @management_required
 @require_POST
 def phone_lines_bulk(request):
-    """Delete, renew, or copy numbers for checked lines or the whole filter."""
+    """Delete, renew, fetch ICCID, or copy numbers for checked lines or the filter."""
     profile = _management_profile(request)
     action = (request.POST.get("action") or "").strip()
     next_query = _list_query_from_request(request)
@@ -499,8 +500,8 @@ def phone_lines_bulk(request):
         resp["HX-Reswap"] = "none"
         return resp
 
-    if action not in ("delete", "renew"):
-        return _fail(_("Choose delete or renew."))
+    if action not in ("delete", "renew", "fetch_iccid"):
+        return _fail(_("Choose delete, renew, or fetch ICCID."))
     if not keys:
         return _fail(_("Select at least one line."))
 
@@ -520,6 +521,23 @@ def phone_lines_bulk(request):
             resp = HttpResponse(status=200)
             resp["HX-Reswap"] = "none"
             return _with_htmx_toast_removed(resp, ok_msg, removed)
+        messages.success(request, ok_msg)
+        return redirect(list_url)
+
+    if action == "fetch_iccid":
+        counts = fill_sim_identifiers_from_provider(keys, user=request.user)
+        if not counts["filled"] and not counts["skipped"]:
+            return _fail(
+                _("Could not fetch ICCID for any of the selected lines.")
+            )
+        ok_msg = _(
+            "Fetched ICCID for %(filled)s lines "
+            "(%(skipped)s already had one, %(failed)s failed)."
+        ) % counts
+        if is_htmx(request):
+            return _htmx_phone_lines_results(
+                request, profile, list_query=next_query, toast=ok_msg, level="success"
+            )
         messages.success(request, ok_msg)
         return redirect(list_url)
 
