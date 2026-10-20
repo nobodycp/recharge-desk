@@ -1706,12 +1706,46 @@ class EmployeeRefreshPhoneTests(TestCase):
         self.assertEqual(plain.post(self._status_url(job_id)).status_code, 405)
 
     def test_employee_status_returns_only_job_payload_output(self):
+        from providers import jobs
+        from providers.models import ProviderJob
+
+        job = jobs.create_job(
+            kind=ProviderJob.KIND_REFRESH,
+            provider_key="sky",
+            phone="0501234567",
+            source="employee",
+            payload={"user_id": self.emp.pk},
+        )
         stub = {"status": "wait", "message": {"title": "t", "body": "b"}}
-        job_id = "5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"
         with patch("sales.views.employee.job_payload", return_value=stub) as jp:
-            resp = self.client.get(self._status_url(job_id))
+            resp = self.client.get(self._status_url(job.id))
         self.assertEqual(resp.json(), stub)
-        jp.assert_called_once_with(job_id)
+        jp.assert_called_once_with(str(job.id), include_staff_jobs=True)
+
+    def test_another_employee_cannot_poll_a_refresh_job(self):
+        from providers import jobs
+        from providers.models import ProviderJob
+
+        job = jobs.create_job(
+            kind=ProviderJob.KIND_REFRESH,
+            provider_key="sky",
+            phone="0501234567",
+            source="employee",
+            payload={"user_id": self.emp.pk},
+        )
+        from accounts.models import UserProfile
+
+        other = User.objects.create_user("other_refresh", password="x")
+        UserProfile.objects.update_or_create(
+            user=other,
+            defaults={"role": UserProfile.Role.EMPLOYEE, "is_active_profile": True},
+        )
+        client = Client()
+        client.force_login(other)
+        resp = client.get(self._status_url(job.id))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], "error")
+        self.assertNotEqual(resp.json().get("status"), "refreshed")
 
     def test_employee_status_unknown_job_is_generic_error(self):
         resp = self.client.get(self._status_url("5f0d7f0e-6a0b-4f3a-9a53-0c4c1f1f8f11"))

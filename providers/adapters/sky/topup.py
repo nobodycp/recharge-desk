@@ -62,6 +62,17 @@ def quoted_cost(row: dict) -> Decimal | None:
     return abs(number).quantize(_MONEY)
 
 
+def format_sky_money(value) -> str:
+    """Two-decimal shekel text for a Sky task. ``Decimal``, never ``float``."""
+    try:
+        number = Decimal(str(value if value is not None else 0).strip() or "0")
+    except (InvalidOperation, AttributeError):
+        number = Decimal("0")
+    if not number.is_finite():
+        number = Decimal("0")
+    return format(number.quantize(_MONEY), "f")
+
+
 def costs_match(quoted: Decimal | None, expected: Decimal) -> bool:
     if quoted is None:
         return False

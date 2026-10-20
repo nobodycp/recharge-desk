@@ -27,10 +27,20 @@ from customers.services import (
 )
 from customers.views._shared import flash_form_errors
 from phone_refresh.models import RefreshSource, SystemSettings
-from phone_refresh.services.refresh_jobs import job_payload, submit_refresh
+from phone_refresh.services.refresh_jobs import (
+    job_payload,
+    refresh_visible_to,
+    submit_refresh,
+    unknown_job_payload,
+)
 from sales.forms import EmployeeRecentFilterForm, EmployeeSaleEditForm, EmployeeSaleForm
 from sales.models import PaymentMethod, Sale
-from sales.number_check import check_payload, submit_number_check
+from sales.number_check import (
+    MSG_EXPIRED,
+    check_payload,
+    number_check_visible,
+    submit_number_check,
+)
 from sales.employee_editing import (
     EMPLOYEE_RECENT_EDIT_LIMIT,
     employee_editable_payment_submission_ids,
@@ -43,6 +53,7 @@ from sales.charging import (
     DUPLICATE_SUBMIT,
     REPEAT_CHARGE_MESSAGE,
     can_charge,
+    reject_same_day_duplicate,
     sale_recorded_today,
     user_may_charge,
     create_charged_sale,
@@ -166,55 +177,63 @@ def employee_entry(request):
                     return _duplicate_charge_redirect(request, duplicate)
                 if not user_may_charge(request.user) or not can_charge(form.cleaned_data["company"]):
                     raise ValueError(_("This company cannot be charged through its provider."))
+            allow_repeat = request.POST.get("repeat_charge") == "1"
             if (
                 sale_recorded_today(form.cleaned_data["reference_number"])
-                and request.POST.get("repeat_charge") != "1"
+                and not allow_repeat
             ):
                 raise ValueError(REPEAT_CHARGE_MESSAGE)
-            on_account = bool(form.cleaned_data.get("on_account"))
-            app_settings = AppSettings.load()
-            paid_via_employee = (
-                bool(form.cleaned_data.get("paid_via_employee"))
-                and app_settings.sales_show_employee_payment
-            )
-            customer = None
-            if on_account:
-                customer = resolve_or_create_customer_for_sale(
-                    name=form.cleaned_data["payer_name"],
-                    phone=form.cleaned_data["reference_number"],
-                    user=request.user,
+            with transaction.atomic():
+                reject_same_day_duplicate(
+                    form.cleaned_data["reference_number"],
+                    allow_repeat=allow_repeat,
                 )
-            employee_recipient = (
-                form.cleaned_data.get("employee_recipient") if paid_via_employee else None
-            )
-            is_new_sim = bool(form.cleaned_data.get("is_new_sim")) and app_settings.sales_inventory_enabled
-            sale_kwargs = dict(
-                company=form.cleaned_data["company"],
-                product=form.cleaned_data["product"],
-                reference_number=form.cleaned_data["reference_number"],
-                payer_name=form.cleaned_data["payer_name"],
-                payment_method=form.cleaned_data["payment_method"]
-                if not on_account and not paid_via_employee
-                else None,
-                sell_price_actual=form.cleaned_data["sell_price_actual"],
-                notes=form.cleaned_data.get("notes") or "",
-                is_esim=bool(form.cleaned_data.get("is_esim")),
-                is_new_sim=is_new_sim,
-                sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
-                duration_days=form.cleaned_data.get("duration_days"),
-                on_account=on_account,
-                customer=customer,
-                paid_via_employee=paid_via_employee,
-                employee_recipient=employee_recipient,
-            )
-            if charge_requested:
-                sale, outcome = create_charged_sale(
-                    form_token=request.POST.get("form_token", ""),
-                    user=request.user,
-                    **sale_kwargs,
+                on_account = bool(form.cleaned_data.get("on_account"))
+                app_settings = AppSettings.load()
+                paid_via_employee = (
+                    bool(form.cleaned_data.get("paid_via_employee"))
+                    and app_settings.sales_show_employee_payment
                 )
-            else:
-                with transaction.atomic():
+                customer = None
+                if on_account:
+                    customer = resolve_or_create_customer_for_sale(
+                        name=form.cleaned_data["payer_name"],
+                        phone=form.cleaned_data["reference_number"],
+                        user=request.user,
+                    )
+                employee_recipient = (
+                    form.cleaned_data.get("employee_recipient") if paid_via_employee else None
+                )
+                is_new_sim = (
+                    bool(form.cleaned_data.get("is_new_sim"))
+                    and app_settings.sales_inventory_enabled
+                )
+                sale_kwargs = dict(
+                    company=form.cleaned_data["company"],
+                    product=form.cleaned_data["product"],
+                    reference_number=form.cleaned_data["reference_number"],
+                    payer_name=form.cleaned_data["payer_name"],
+                    payment_method=form.cleaned_data["payment_method"]
+                    if not on_account and not paid_via_employee
+                    else None,
+                    sell_price_actual=form.cleaned_data["sell_price_actual"],
+                    notes=form.cleaned_data.get("notes") or "",
+                    is_esim=bool(form.cleaned_data.get("is_esim")),
+                    is_new_sim=is_new_sim,
+                    sim_serial_or_iccid=form.cleaned_data.get("sim_serial_or_iccid") or "",
+                    duration_days=form.cleaned_data.get("duration_days"),
+                    on_account=on_account,
+                    customer=customer,
+                    paid_via_employee=paid_via_employee,
+                    employee_recipient=employee_recipient,
+                )
+                if charge_requested:
+                    sale, outcome = create_charged_sale(
+                        form_token=request.POST.get("form_token", ""),
+                        user=request.user,
+                        **sale_kwargs,
+                    )
+                else:
                     sale = create_sale(user=request.user, **sale_kwargs)
                     outcome = finalize_sale_after_entry(
                         sale=sale,
@@ -222,46 +241,51 @@ def employee_entry(request):
                         on_account=on_account,
                         paid_via_employee=paid_via_employee,
                     )
-            if outcome == DUPLICATE_SUBMIT:
-                return _duplicate_charge_redirect(request, sale)
-            charge_notice = ""
-            if charge_requested:
-                try:
-                    sale.refresh_from_db()
-                except Sale.DoesNotExist:
-                    charge_notice = "discarded"
-                else:
-                    charge_notice = (
-                        "failed" if sale.charge_status == Sale.ChargeStatus.FAILED else "pending"
+                if outcome == DUPLICATE_SUBMIT:
+                    return _duplicate_charge_redirect(request, sale)
+                charge_notice = ""
+                if charge_requested:
+                    try:
+                        sale.refresh_from_db()
+                    except Sale.DoesNotExist:
+                        charge_notice = "discarded"
+                    else:
+                        charge_notice = (
+                            "failed"
+                            if sale.charge_status == Sale.ChargeStatus.FAILED
+                            else "pending"
+                        )
+                if charge_notice == "failed":
+                    messages.error(
+                        request,
+                        sale.charge_message or _("Charge failed"),
                     )
-            if charge_notice == "failed":
-                messages.error(
-                    request,
-                    sale.charge_message or _("Charge failed"),
-                )
-            elif charge_notice == "pending":
-                # Spinner dialog waits on the job; refuse/success settle via poll.
-                request.session["charge_notice_wait"] = True
-                if getattr(sale, "charge_job_id", None):
-                    request.session["charge_wait_job_id"] = str(sale.charge_job_id)
-            elif charge_notice != "discarded":
-                if outcome == "posted_debt":
-                    messages.success(request, _("Recorded on account and posted to the customer."))
-                elif outcome in ("paid", "paid_employee"):
-                    if paid_via_employee:
+                elif charge_notice == "pending":
+                    # Spinner dialog waits on the job; refuse/success settle via poll.
+                    request.session["charge_notice_wait"] = True
+                    if getattr(sale, "charge_job_id", None):
+                        request.session["charge_wait_job_id"] = str(sale.charge_job_id)
+                elif charge_notice != "discarded":
+                    if outcome == "posted_debt":
+                        messages.success(
+                            request, _("Recorded on account and posted to the customer.")
+                        )
+                    elif outcome in ("paid", "paid_employee"):
+                        if paid_via_employee:
+                            messages.success(
+                                request,
+                                _("Sale recorded; payment credited to employee ledger."),
+                            )
+                        else:
+                            messages.success(request, _("Sale recorded and marked paid."))
+                    elif on_account:
                         messages.success(
                             request,
-                            _("Sale recorded; payment credited to employee ledger."),
+                            _("Recorded as on-account; awaiting management approval."),
                         )
                     else:
-                        messages.success(request, _("Sale recorded and marked paid."))
-                elif on_account:
-                    messages.success(
-                        request, _("Recorded as on-account; awaiting management approval.")
-                    )
-                else:
-                    messages.success(request, _("Sale recorded successfully."))
-            return redirect("sales:employee_entry")
+                        messages.success(request, _("Sale recorded successfully."))
+                return redirect("sales:employee_entry")
         except ValueError as exc:
             messages.error(request, str(exc))
 
@@ -471,6 +495,7 @@ def employee_refresh_phone(request):
         phone,
         ip=get_client_ip(request) or None,
         source=RefreshSource.EMPLOYEE,
+        user_id=request.user.pk,
     )
     if ticket.job_id is None:
         # Answered without a job (validation, cooldown, service off, busy).
@@ -486,7 +511,9 @@ def employee_refresh_status(request, job_id):
 
     Returns exactly what :func:`job_payload` returns (customer-safe).
     """
-    return JsonResponse(job_payload(str(job_id)))
+    if not refresh_visible_to(request.user.pk, str(job_id)):
+        return JsonResponse(unknown_job_payload())
+    return JsonResponse(job_payload(str(job_id), include_staff_jobs=True))
 
 
 def _number_check_disabled_response():
@@ -520,6 +547,8 @@ def employee_check_status(request, job_id):
     """Poll a check started by :func:`employee_check_phone` (card HTML or a message)."""
     if not AppSettings.load().sales_show_refresh_phone:
         return _number_check_disabled_response()
+    if not number_check_visible(request.user, str(job_id)):
+        return JsonResponse({"status": "error", "message": MSG_EXPIRED})
     return JsonResponse(check_payload(str(job_id)))
 
 

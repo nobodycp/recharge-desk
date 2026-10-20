@@ -19,7 +19,7 @@
       <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</button>
     </form>
   {% endif %}
-  {% if not s.charge_is_open %}
+  {% if s.charge_status != "processing" %}
     <form
       method="post"
       action="{% url 'sales:sale_delete_permanent' s.pk %}"

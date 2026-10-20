@@ -810,6 +810,8 @@ AR: dict[str, str] = {
     "This sale is still being charged by the provider; resolve the charge first.": "ما زال المزوّد يشحن هذا البيع؛ احسم الشحن أولاً.",
     "A sale charged through the provider can only be deleted after its charge failed.": "لا يمكن حذف بيع مشحون عبر المزوّد إلا بعد فشل الشحن.",
     "A sale charged through the provider can't be deleted while the charge is still in progress or unverified.": "لا يمكن حذف بيع مشحون عبر المزوّد أثناء الشحن أو قبل التأكد منه.",
+    "A sale charged through the provider can't be deleted while the charge is still in progress.": "لا يمكن حذف بيع مشحون عبر المزوّد أثناء الشحن.",
+    "This charge may already have reached the provider. It cannot be marked failed from here. Recheck it, or delete the sale only after cancelling it at the provider.": "ربما وصل هذا الشحن إلى المزوّد، ولا يمكن اعتباره فاشلاً من هنا. أعد الفحص، أو احذف البيع فقط بعد إلغاء الشحن عند المزوّد.",
     "Permanently delete this sale? Only do this if you already reversed or cancelled at the provider. Ledger rows will be removed and supplier balance corrected. This cannot be undone.": "حذف هذا البيع نهائياً؟ افعل ذلك فقط إذا رجّعت أو ألغيت الشحنة عند المزوّد. ستُحذف حركات السجل ويُصحَّح رصيد المورد. لا يمكن التراجع.",
     "The provider is still processing this charge. Try again in a few minutes.": "ما زال المزوّد يعالج هذا الشحن. حاول مجدداً بعد بضع دقائق.",
     "charge conflict": "تعارض في الشحن",

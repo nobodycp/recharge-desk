@@ -518,7 +518,7 @@ class GuardTests(ChargingTestBase):
         self.assertEqual(sale.reference_number, "0599123456")
 
     def test_delete_rejects_open_auto_charge_but_allows_settled(self):
-        open_sale = self.unverified()
+        open_sale = self.charge_without_worker()
         with self.assertRaises(ValueError):
             delete_sale_permanently(sale=open_sale, user=self.manager)
         self.assertTrue(Sale.objects.filter(pk=open_sale.pk).exists())
@@ -556,8 +556,18 @@ class GuardTests(ChargingTestBase):
         self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
         self.assertEqual(self.balance(), START)
 
-    def test_management_delete_view_shows_error(self):
+    def test_management_can_delete_unverified_charge(self):
         sale = self.unverified()
+        self.client.force_login(self.manager)
+        response = self.client.post(
+            reverse("sales:sale_delete_permanent", args=[sale.pk]), follow=True
+        )
+        self.assertContains(response, "permanently removed")
+        self.assertFalse(Sale.objects.filter(pk=sale.pk).exists())
+        self.assertEqual(self.balance(), START)
+
+    def test_management_delete_view_shows_error(self):
+        sale = self.charge_without_worker()
         self.client.force_login(self.manager)
         response = self.client.post(
             reverse("sales:sale_delete_permanent", args=[sale.pk]), follow=True
@@ -633,14 +643,15 @@ class ManualResolveTests(ChargingTestBase):
         )
         self.assertEqual(log.changes["_extra"]["previous_charge_message"], "الشحن قيد المتابعة")
 
-    def test_manual_failure_reverses_once(self):
+    def test_manual_failure_of_unverified_charge_does_not_reverse(self):
         sale = self.unverified()
-        sale = charging.manual_resolve(sale, success=False, user=self.manager)
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(sale.cancelled_by, self.manager)
-        self.assertEqual(self.reversals(sale), 1)
-        self.assertEqual(self.balance(), START)
+        with self.assertRaises(charging.ChargeUnconfirmed):
+            charging.manual_resolve(sale, success=False, user=self.manager)
+        sale.refresh_from_db()
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
+        self.assertNotEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertEqual(self.reversals(sale), 0)
+        self.assertEqual(self.balance(), START - COST)
 
     def test_manual_resolve_rejects_final_and_manual_sales(self):
         sale = self.charge()

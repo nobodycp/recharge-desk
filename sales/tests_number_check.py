@@ -555,6 +555,24 @@ class PollTests(_Base):
             {"status": "error", "message": STILL_RUNNING, "final": True},
         )
 
+    def test_another_employee_cannot_read_the_check(self):
+        from django.contrib.auth import get_user_model
+
+        job = self._job()
+        jobs.mark_running(job)
+        other = get_user_model().objects.create_user("nc_other", password="x")
+        _profile(other, UserProfile.Role.EMPLOYEE)
+        self.client.force_login(other)
+        self.assertEqual(
+            self.status(job.id).json(), {"status": "error", "message": EXPIRED}
+        )
+
+    def test_management_can_read_an_employee_check(self):
+        job = self._job()
+        jobs.mark_running(job)
+        self.client.force_login(self.boss)
+        self.assertEqual(self.status(job.id).json(), {"status": "processing"})
+
     def test_unknown_uuid_is_expired(self):
         self.assertEqual(
             self.status(uuid.uuid4()).json(), {"status": "error", "message": EXPIRED}

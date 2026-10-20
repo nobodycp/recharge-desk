@@ -13,7 +13,7 @@ from companies.models import Company
 from customers.models import Customer
 from sales.models import Sale
 from sales.services import create_sale
-from sales.tests_charging import START, ChargingTestBase
+from sales.tests_charging import COST, START, ChargingTestBase
 from sales.views._shared import RECHECK_POLLS
 
 
@@ -168,6 +168,25 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         )
         self.assertRedirects(allowed, reverse("sales:employee_entry"), fetch_redirect_response=False)
         self.assertEqual(Sale.objects.count(), 2)
+
+    def test_same_day_race_still_refuses_the_second_sale(self):
+        """A check that misses the first sale must not record a second one."""
+        from sales import charging
+
+        self.post_entry()
+        real = charging.sale_recorded_today
+        seen = {"n": 0}
+
+        def raced(phone):
+            seen["n"] += 1
+            if seen["n"] == 1:
+                return False
+            return real(phone)
+
+        with patch("sales.views.employee.sale_recorded_today", side_effect=raced):
+            blocked = self.post_entry(form_token="22222222-2222-4222-8222-222222222222")
+        self.assertContains(blocked, "تم شحن هذا الرقم اليوم")
+        self.assertEqual(Sale.objects.count(), 1)
 
     def test_sale_today_reports_an_existing_charge(self):
         url = reverse("sales:employee_sale_today")
@@ -459,9 +478,11 @@ class ManagementChargeTests(ChargeUiTestBase):
         self.assertContains(resp, reverse("sales:sale_charge_recheck", args=[sale.pk]))
         self.assertContains(resp, reverse("sales:sale_charge_resolve", args=[sale.pk]))
         self.assertContains(resp, 'name="result" value="success"')
+        self.assertNotContains(resp, 'name="result" value="failed"')
+        self.assertContains(resp, "cannot be marked failed")
         self.assertContains(resp, "Mark this charge as successful?")
 
-    def test_resolve_failed_requires_management_and_reverses(self):
+    def test_resolve_failed_requires_management_and_does_not_reverse_unverified(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)
         url = reverse("sales:sale_charge_resolve", args=[sale.pk])
 
@@ -473,12 +494,12 @@ class ManagementChargeTests(ChargeUiTestBase):
         self.assertNotEqual(sale.status, Sale.Status.CANCELLED)
 
         self.client.force_login(self.manager)
-        resp = self.client.post(url, {"result": "failed"})
-        self.assertEqual(resp.status_code, 302)
+        resp = self.client.post(url, {"result": "failed"}, follow=True)
+        self.assertContains(resp, "cannot be marked failed")
         sale.refresh_from_db()
-        self.assertEqual(sale.charge_status, Sale.ChargeStatus.FAILED)
-        self.assertEqual(sale.status, Sale.Status.CANCELLED)
-        self.assertEqual(self.balance(), START)
+        self.assertEqual(sale.charge_status, Sale.ChargeStatus.UNVERIFIED)
+        self.assertNotEqual(sale.status, Sale.Status.CANCELLED)
+        self.assertEqual(self.balance(), START - COST)
 
     def test_resolve_is_post_only(self):
         sale = self.manual_sale(charge_status=Sale.ChargeStatus.UNVERIFIED)

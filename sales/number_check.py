@@ -228,6 +228,7 @@ def submit_number_check(phone: str, *, user) -> CheckTicket:
     with _submit_lock(phone):
         existing = jobs.find_inflight(ProviderJob.KIND_NUMBER_INFO, phone, wait)
         if existing is not None:
+            _grant_job_viewer(existing, user.pk)
             return CheckTicket(str(existing.id), None)
         job = jobs.create_job(
             kind=ProviderJob.KIND_NUMBER_INFO,
@@ -263,6 +264,37 @@ def _left_agency_payload(job: ProviderJob, sale: Sale) -> dict:
     context = card_context(info, sale, now.date(), phone=job.phone, now=now)
     context.update(_branding())
     return {"status": "ok", "html": render_to_string(CARD_TEMPLATE, context)}
+
+
+def _grant_job_viewer(job: ProviderJob, user_id: int) -> None:
+    """Let ``user_id`` poll a check they joined while it was already running."""
+    payload = dict(job.payload or {})
+    viewers = [int(value) for value in payload.get("viewer_ids") or []]
+    owner = payload.get("user_id")
+    if owner is not None and int(owner) not in viewers:
+        viewers.append(int(owner))
+    if int(user_id) not in viewers:
+        viewers.append(int(user_id))
+    if viewers == list(payload.get("viewer_ids") or []):
+        return
+    payload["viewer_ids"] = viewers
+    ProviderJob.objects.filter(pk=job.pk).update(payload=payload)
+    job.payload = payload
+
+
+def number_check_visible(user, job_id: str) -> bool:
+    """Employees see their own checks. Management can open any of them."""
+    from accounts.permissions import is_management
+
+    job = _load_job(job_id)
+    if job is None:
+        return False
+    if is_management(user):
+        return True
+    payload = job.payload or {}
+    if payload.get("user_id") == user.pk:
+        return True
+    return user.pk in list(payload.get("viewer_ids") or [])
 
 
 def _load_job(job_id: str) -> ProviderJob | None:

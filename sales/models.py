@@ -384,3 +384,12 @@ class CompanyBalanceTransaction(models.Model):
 
     def __str__(self):
         return f"{self.company.name} {self.entry_type} {self.amount}"
+
+
+class SaleReferenceLock(models.Model):
+    """One row per phone so two same-day sales cannot pass the check together."""
+
+    reference_key = models.CharField(max_length=64, unique=True)
+
+    class Meta:
+        db_table = "sales_reference_lock"

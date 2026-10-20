@@ -22,7 +22,7 @@ from providers.contracts import Capability, ChargeContext, ChargeOutcome, Charge
 from providers.models import ProviderJob
 from providers.sanitize import scrub
 from providers.service import service_state
-from sales.models import Sale
+from sales.models import Sale, SaleReferenceLock
 from sales.services import _cancellation_ledger_exists, cancel_sale, create_sale, delete_sale_permanently
 
 log = logging.getLogger(__name__)
@@ -67,6 +67,7 @@ def with_charge_send_detail(qs):
 
 def sale_charge_not_sent(sale) -> bool:
     """The auto-charge never reached the provider (the sale can still be settled)."""
+    from providers.models import ProviderOperation
     from providers.operations import NOT_SENT_LABEL
 
     if getattr(sale, "entry_mode", "") != Sale.EntryMode.AUTO_CHARGE:
@@ -75,8 +76,49 @@ def sale_charge_not_sent(sale) -> bool:
         return False
     if (sale.charge_message or "") == NOT_SENT_LABEL:
         return True
-    detail = getattr(sale, "charge_send_detail", None) or ""
+    if "charge_send_detail" in sale.__dict__:
+        detail = sale.charge_send_detail or ""
+    else:
+        detail = (
+            ProviderOperation.objects.filter(sale_id=sale.pk, service="charge")
+            .order_by("-created_at")
+            .values_list("detail", flat=True)
+            .first()
+            or ""
+        )
     return "not_sent:" in detail or "NotImplementedError" in detail
+
+
+def lock_sale_reference(phone: str) -> None:
+    """Hold this phone until the surrounding transaction commits.
+
+    The row is created in a savepoint so a duplicate insert does not abort
+    the sale. ``select_for_update`` then waits for any other sale of the
+    same phone to finish before this one continues.
+    """
+    key = (phone or "").strip().lower()[:64]
+    if not key:
+        return
+    try:
+        with transaction.atomic():
+            SaleReferenceLock.objects.create(reference_key=key)
+    except IntegrityError:
+        pass
+    SaleReferenceLock.objects.select_for_update().get(reference_key=key)
+
+
+def reject_same_day_duplicate(phone: str, *, allow_repeat: bool) -> None:
+    """Refuse a second sale today unless the employee confirmed the repeat.
+
+    Call this inside the same transaction that records the sale. The earlier
+    check in the view can miss a sale that commits between the check and the
+    insert; this one cannot.
+    """
+    lock_sale_reference(phone)
+    if allow_repeat:
+        return
+    if sale_recorded_today(phone):
+        raise ValueError(REPEAT_CHARGE_MESSAGE)
 
 
 def sale_recorded_today(phone: str) -> bool:
@@ -405,6 +447,10 @@ def apply_outcome(
         return sale
 
 
+class ChargeUnconfirmed(ValueError):
+    """Marking the charge failed would restore money without proof it did not happen."""
+
+
 class ChargeInProgress(ValueError):
     """The provider is still working on the charge; it cannot be resolved by hand yet."""
 
@@ -443,12 +489,40 @@ def manual_resolve(sale: Sale, *, success: bool, user) -> Sale:
 
     Raises ``ChargeInProgress`` while a worker is (recently) charging it,
     ``ChargeNotSent`` for ``success=True`` on a charge that was never sent,
-    and ``ValueError`` when the charge is not open.
+    ``ChargeUnconfirmed`` when failure would restore the supplier balance
+    without proof the charge never happened, and ``ValueError`` when the
+    charge is not open.
     """
     with transaction.atomic():
         locked = Sale.objects.select_for_update().get(pk=sale.pk)
         if not locked.charge_is_open:
             raise ValueError(_("Only charges in progress or unverified can be resolved."))
+        job = (
+            ProviderJob.objects.filter(pk=locked.charge_job_id).first()
+            if locked.charge_job_id
+            else None
+        )
+        if (
+            job is not None
+            and job.status == ProviderJob.STATUS_RUNNING
+            and job.started_at is not None
+            and job.started_at > timezone.now() - RUNNING_STALE_AFTER
+        ):
+            raise ChargeInProgress(
+                _("The provider is still processing this charge. Try again in a few minutes.")
+            )
+        if (
+            not success
+            and not sale_charge_not_sent(locked)
+            and (job is None or job.status != ProviderJob.STATUS_QUEUED)
+        ):
+            raise ChargeUnconfirmed(
+                _(
+                    "This charge may already have reached the provider. "
+                    "It cannot be marked failed from here. Recheck it, or delete "
+                    "the sale only after cancelling it at the provider."
+                )
+            )
         _stop_pending_job(locked, success=success)
         result = ChargeResult.SUCCESS if success else ChargeResult.FAILED
         outcome = ChargeOutcome(result=result, message=f"manual:{result.value}")

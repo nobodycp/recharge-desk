@@ -78,6 +78,7 @@ class _Client:
         self.periods = PERIODS if periods is None else periods
         self.create_id = create_id
         self.calls = []
+        self.created_args = None
         self.session = SimpleNamespace(eot_user_id=7)
 
     def is_session_usable(self):
@@ -102,6 +103,7 @@ class _Client:
         if name == "GetSubscriberStatus":
             return {"result": "SUCCESS", "data": [{"STATUS_ID": "301"}]}
         if name == "CreateNewTaskWithBalanceCheck":
+            self.created_args = args
             return {"result": "SUCCESS", "data": [{"ID": self.create_id}]}
         if name == "GetTaskDetails":
             return {"result": "SUCCESS", "data": [{"STATUS_ID": "2", "STATUS_NAME": "مهمة تم تنفيذها"}]}
@@ -114,6 +116,15 @@ class SkyChargeTests(SimpleTestCase):
             "providers.adapters.sky.adapter.SkySalesClient.from_store", return_value=client
         ), patch("providers.adapters.sky.adapter.get_credentials", return_value=object()):
             return SkyAdapter().charge(ctx or _ctx())
+
+    def test_money_sent_to_sky_uses_decimal_rounding(self):
+        client = _Client(cost="-2.675")
+        outcome = self._charge(client, _ctx(expected_cost=Decimal("2.68")))
+        self.assertEqual(outcome.result, ChargeResult.SUCCESS)
+        blob = client.created_args[4]
+        self.assertIn("-2.68", blob)
+        self.assertNotIn("-2.675", blob)
+        self.assertNotIn("-2.67", blob)
 
     def test_three_days_charges_once_at_the_prorated_price(self):
         client = _Client()

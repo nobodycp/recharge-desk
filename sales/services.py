@@ -250,11 +250,11 @@ def delete_sale_permanently(*, sale: Sale, user=None) -> None:
       so the customer's running balance also lands net-zero.
     """
     sale_locked = Sale.objects.select_for_update().get(pk=sale.pk)
-    if sale_locked.charge_is_open:
+    if sale_locked.charge_status == Sale.ChargeStatus.PROCESSING:
         raise ValueError(
             _(
                 "A sale charged through the provider can't be deleted while "
-                "the charge is still in progress or unverified."
+                "the charge is still in progress."
             )
         )
     audit_snapshot = snapshot(sale_locked, _SALE_AUDITED_FIELDS)

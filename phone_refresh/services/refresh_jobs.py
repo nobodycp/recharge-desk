@@ -70,6 +70,7 @@ def submit_refresh(
     bypass_provider_off: bool = False,
     notify: dict | None = None,
     api_token_id: int | None = None,
+    user_id: int | None = None,
 ) -> RefreshTicket:
     """Start (or join) a refresh for ``phone``.
 
@@ -117,6 +118,8 @@ def submit_refresh(
     }
     if api_token_id is not None:
         job_payload_ctx["api_token_id"] = api_token_id
+    if user_id is not None:
+        job_payload_ctx["user_id"] = user_id
     with _submit_lock(phone):
         if shareable:
             existing = jobs.find_inflight(
@@ -126,6 +129,8 @@ def submit_refresh(
                 accept=lambda job: _is_plain_job(job, api_token_id),
             )
             if existing is not None:
+                if user_id is not None:
+                    _grant_refresh_viewer(existing, user_id)
                 return RefreshTicket(str(existing.id), None)
         job = jobs.create_job(
             kind=ProviderJob.KIND_REFRESH,
@@ -250,7 +255,35 @@ def _payload_for(job: ProviderJob) -> dict:
     return status_payload("processing", final=True)
 
 
-def job_payload(job_id: str, *, include_api_jobs: bool = False) -> dict:
+def _grant_refresh_viewer(job: ProviderJob, user_id: int) -> None:
+    payload = dict(job.payload or {})
+    viewers = [int(value) for value in payload.get("viewer_ids") or []]
+    owner = payload.get("user_id")
+    if owner is not None and int(owner) not in viewers:
+        viewers.append(int(owner))
+    if int(user_id) not in viewers:
+        viewers.append(int(user_id))
+    if viewers == list(payload.get("viewer_ids") or []):
+        return
+    payload["viewer_ids"] = viewers
+    ProviderJob.objects.filter(pk=job.pk).update(payload=payload)
+    job.payload = payload
+
+
+def refresh_visible_to(user_id: int, job_id: str) -> bool:
+    """True when this staff user started the refresh or joined it in flight."""
+    job = _load_refresh_job(job_id)
+    if job is None:
+        return False
+    payload = job.payload or {}
+    if payload.get("api_token_id") is not None:
+        return False
+    if payload.get("user_id") == user_id:
+        return True
+    return user_id in list(payload.get("viewer_ids") or [])
+
+
+def job_payload(job_id: str, *, include_api_jobs: bool = False, include_staff_jobs: bool = False) -> dict:
     """Current customer-facing JSON for ``job_id`` (safe to expose).
 
     Jobs submitted through ``/api/v1`` belong to their token and look
@@ -260,7 +293,10 @@ def job_payload(job_id: str, *, include_api_jobs: bool = False) -> dict:
     job = _load_refresh_job(job_id)
     if job is None:
         return dict(_EXPIRED_PAYLOAD)
-    if not include_api_jobs and (job.payload or {}).get("api_token_id") is not None:
+    payload = job.payload or {}
+    if not include_api_jobs and payload.get("api_token_id") is not None:
+        return dict(_EXPIRED_PAYLOAD)
+    if not include_staff_jobs and payload.get("user_id") is not None:
         return dict(_EXPIRED_PAYLOAD)
     return _payload_for(job)
 

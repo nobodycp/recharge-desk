@@ -62,6 +62,7 @@
           <input type="hidden" name="result" value="success">
           <button type="submit" class="btn btn-sm btn-outline-success">{% trans "Mark charged" %}</button>
         </form>
+        {% if s.charge_status == "processing" or s|charge_not_sent %}
         <form
           method="post"
           action="{% url 'sales:sale_charge_resolve' s.pk %}"
@@ -76,6 +77,9 @@
           <input type="hidden" name="result" value="failed">
           <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Mark failed" %}</button>
         </form>
+        {% else %}
+        <p class="rd-charge-details__alert mb-0">{% trans "This charge may already have reached the provider. It cannot be marked failed from here. Recheck it, or delete the sale only after cancelling it at the provider." %}</p>
+        {% endif %}
       </div>
     {% endif %}
   </div>

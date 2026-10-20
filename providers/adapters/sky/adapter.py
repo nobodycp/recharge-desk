@@ -21,6 +21,7 @@ from providers.adapters.sky.topup import (
     build_task,
     costs_match,
     find_period,
+    format_sky_money,
     quoted_cost,
     task_args,
     task_settled,
@@ -198,9 +199,9 @@ class SkyAdapter(BaseAdapter):
             raise PermanentError("not_eligible")
 
         money = {
-            "order_cost": f"{float(cost.get('order_cost') or 0):.2f}",
-            "order_refund": f"{float(cost.get('order_refund') or 0):.2f}",
-            "order_total_cost": f"{float(cost.get('order_total_cost') or 0):.2f}",
+            "order_cost": format_sky_money(cost.get("order_cost") or 0),
+            "order_refund": format_sky_money(cost.get("order_refund") or 0),
+            "order_total_cost": format_sky_money(cost.get("order_total_cost") or 0),
         }
         with _sky_errors():
             global_customer = client.load_global_sub_customer_id() or str(
