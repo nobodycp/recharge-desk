@@ -20,6 +20,7 @@
     data-msg-phone-prefix="{% trans 'صحصح رقم الشريحه اكتب' %}"
     data-repeat-url="{% url 'sales:employee_sale_today' %}"
     data-msg-repeat-charge="تم شحن هذا الرقم اليوم. هل توافق على شحنه مرة ثانية؟"
+    data-msg-charge-confirm="{% trans 'Are you sure you want to charge this number and record the sale?' %}"
   >
           {% csrf_token %}
           <input type="hidden" name="form_token" value="{{ form_token }}">
@@ -485,7 +486,9 @@
             return;
           }
           el.hidden = false;
-          var warn = data.source === "ambiguous" || data.source === "no_customer_stock";
+          var warn =
+            data.source === "ambiguous" ||
+            !(data.quantity_available > 0);
           el.className = warn ? "rd-entry-note rd-entry-note--danger" : "rd-entry-note rd-entry-note--info";
           el.textContent = data.message || "";
         })
@@ -805,6 +808,8 @@
         if (digits.length === 9 && digits.charAt(0) === "5") digits = "0" + digits;
         if (!/^05[0-5]\d{7}$/.test(digits)) {
           e.preventDefault();
+          saleForm.removeAttribute("data-charge-ok");
+          saleForm.removeAttribute("data-repeat-ok");
           var msg = saleForm.getAttribute("data-msg-phone-prefix") || "";
           var group = saleRefInput.closest(".rd-field-group");
           var err = document.getElementById("rd-ref-error");
@@ -820,6 +825,26 @@
       });
     }
     if (saleForm) {
+      saleForm.addEventListener("submit", function (e) {
+        if (saleForm.getAttribute("data-charge-ok") === "1") return;
+        if (e.defaultPrevented) return;
+        var submitter = e.submitter;
+        var isCharge =
+          (submitter && submitter.getAttribute("name") === "action" && submitter.value === "charge") ||
+          (submitter && submitter.id === "rd-charge-sale-btn");
+        if (!isCharge) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var message = saleForm.getAttribute("data-msg-charge-confirm") || "";
+        var ask = window.rdConfirm
+          ? window.rdConfirm(message)
+          : Promise.resolve(window.confirm(message));
+        ask.then(function (ok) {
+          if (!ok) return;
+          saleForm.setAttribute("data-charge-ok", "1");
+          saleForm.requestSubmit(submitter || undefined);
+        });
+      }, true);
       saleForm.addEventListener("submit", function (e) {
         if (saleForm.getAttribute("data-repeat-ok") === "1") return;
         if (e.defaultPrevented) return;
@@ -844,7 +869,10 @@
           var message = saleForm.getAttribute("data-msg-repeat-charge") || "";
           var ask = window.rdConfirm ? window.rdConfirm(message) : Promise.resolve(window.confirm(message));
           ask.then(function (ok) {
-            if (!ok) return;
+            if (!ok) {
+              saleForm.removeAttribute("data-charge-ok");
+              return;
+            }
             var input = saleForm.querySelector('input[name="repeat_charge"]');
             if (!input) {
               input = document.createElement("input");
@@ -875,6 +903,8 @@
       window.addEventListener("pageshow", function (evt) {
         if (!evt.persisted) return;
         saleForm.removeAttribute("data-submitting");
+        saleForm.removeAttribute("data-charge-ok");
+        saleForm.removeAttribute("data-repeat-ok");
         setSubmitButtonsDisabled(saleForm, false);
       });
     }

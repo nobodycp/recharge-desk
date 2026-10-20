@@ -85,6 +85,18 @@ class EmployeeEntryChargeButtonTests(ChargeUiTestBase):
         self.assertRegex(html, rf'data-company-id="{other.pk}"\s+data-can-charge="0"')
         self.assertContains(resp, 'name="form_token"')
 
+    def test_charge_button_asks_for_confirm_save_does_not(self):
+        resp = self.client.get(reverse("sales:employee_entry"))
+        self.assertContains(resp, 'data-msg-charge-confirm="')
+        self.assertContains(
+            resp,
+            "Are you sure you want to charge this number and record the sale?",
+        )
+        # Save stays a plain submit — no confirm attribute on the save button.
+        self.assertContains(resp, 'name="action" value="save"')
+        self.assertNotContains(resp, 'value="save"\n                    hx-confirm')
+        self.assertContains(resp, 'id="rd-charge-sale-btn"')
+
     def test_form_token_is_new_per_render(self):
         first = self.client.get(reverse("sales:employee_entry")).context["form_token"]
         second = self.client.get(reverse("sales:employee_entry")).context["form_token"]

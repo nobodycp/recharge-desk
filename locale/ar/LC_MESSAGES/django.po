@@ -1979,6 +1979,32 @@ msgstr "سيُخصم من مخزون الزبون «%(name)s» (%(qty)s متاح
 #, python-format
 msgid "Will deduct from main stock (%(qty)s available)."
 msgstr "سيُخصم من المخزون الرئيسي (%(qty)s متاح)."
+#: inventory/services.py
+#, python-format
+msgid ""
+"Customer “%(name)s” has no %(line)s stock — will deduct from main stock "
+"(%(qty)s available)."
+msgstr ""
+"الزبون «%(name)s» لا يملك مخزون %(line)s — سيُخصم من المخزون الرئيسي "
+"(%(qty)s متاح)."
+#: inventory/services.py
+#, python-format
+msgid "Deducted from main stock (customer “%(name)s” had none)."
+msgstr "خُصم من المخزون الرئيسي (الزبون «%(name)s» بلا رصيد)."
+#: inventory/services.py
+#, python-format
+msgid "Deducted from main stock (payer “%(name)s”)."
+msgstr "خُصم من المخزون الرئيسي (الدافع «%(name)s»)."
+#: inventory/services.py
+msgid "Deducted from main stock."
+msgstr "خُصم من المخزون الرئيسي."
+#: inventory/_balance_actions.html
+msgid ""
+"No customer stock to sell. Allocate from main stock first, or sell as a New "
+"SIM from the sales screen (main stock)."
+msgstr ""
+"لا يوجد مخزون عند الزبون للبيع. خصّص من المخزون الرئيسي أولاً، أو بِع كشريحة "
+"جديدة من شاشة المبيعات (المخزون الرئيسي)."
 #: inventory/services.py:134
 #, python-format
 msgid "Serial “%(serial)s” is already registered."
@@ -6124,6 +6150,9 @@ msgstr "سجّل البيع واشحن الخط عبر المزوّد"
 #: templates/sales/employee_entry.html:259
 msgid "Charge & record sale"
 msgstr "شحن وتسجيل بيع"
+#: templates/sales/employee_entry.html
+msgid "Are you sure you want to charge this number and record the sale?"
+msgstr "هل أنت متأكد من عملية شحن الرقم مع التسجيل؟"
 #: templates/sales/employee_entry.html:412
 msgid "Prorated from package base:"
 msgstr "محسوب من أساس الباقة:"

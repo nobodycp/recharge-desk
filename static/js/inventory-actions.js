@@ -1,5 +1,8 @@
 /**
  * SIM inventory row actions — fixed popover menu + modal forms.
+ *
+ * Re-wires the dialog after every boosted navigation (htmx.onLoad): the shell
+ * keeps this script's closure alive while <body> (and the dialog) are replaced.
  */
 (function () {
   var dialog = null;
@@ -20,6 +23,7 @@
   var inputReason = null;
   var inputNotes = null;
   var inputNext = null;
+  var documentBound = false;
 
   function qs(sel) {
     return dialog ? dialog.querySelector(sel) : null;
@@ -28,6 +32,50 @@
   function csrfToken() {
     var el = document.querySelector("[name=csrfmiddlewaretoken]");
     return el ? el.value : "";
+  }
+
+  function setFieldActive(input, on, required) {
+    if (!input) return;
+    input.disabled = !on;
+    input.required = !!(on && required);
+    if (!on) input.value = "";
+  }
+
+  function wireUi() {
+    dialog = document.getElementById("rd-inv-action-dialog");
+    popover = document.getElementById("rd-inv-actions-popover");
+    popoverPanel = popover ? popover.querySelector(".rd-inv-actions-popover__panel") : null;
+    form = null;
+    titleEl = null;
+    fieldSetQty = fieldDelta = fieldDamagedQty = fieldReason = fieldNotes = null;
+    inputSetQty = inputDelta = inputDamagedQty = inputReason = inputNotes = inputNext = null;
+    activeToggle = null;
+
+    if (!dialog) return;
+
+    form = dialog.querySelector("#rd-inv-action-form");
+    titleEl = dialog.querySelector("[data-inv-dialog-title]");
+    fieldSetQty = qs('[data-inv-field="set-qty"]');
+    fieldDelta = qs('[data-inv-field="delta"]');
+    fieldDamagedQty = qs('[data-inv-field="damaged-qty"]');
+    fieldReason = qs('[data-inv-field="reason"]');
+    fieldNotes = qs('[data-inv-field="notes"]');
+    inputSetQty = dialog.querySelector("#rd-inv-set-qty");
+    inputDelta = dialog.querySelector("#rd-inv-delta");
+    inputDamagedQty = dialog.querySelector("#rd-inv-damaged-qty");
+    inputReason = dialog.querySelector("#rd-inv-reason");
+    inputNotes = dialog.querySelector("#rd-inv-notes");
+    inputNext = dialog.querySelector("#rd-inv-action-next");
+
+    dialog.querySelectorAll("[data-inv-dialog-close]").forEach(function (el) {
+      el.addEventListener("click", closeDialog);
+    });
+
+    dialog.addEventListener("click", function (e) {
+      if (e.target.classList && e.target.classList.contains("rd-inv-dialog__backdrop")) {
+        closeDialog();
+      }
+    });
   }
 
   function openDialog() {
@@ -44,14 +92,14 @@
     dialog.classList.remove("is-open");
     document.body.classList.remove("rd-inv-dialog-open");
     setTimeout(function () {
-      dialog.hidden = true;
+      if (dialog) dialog.hidden = true;
     }, 180);
   }
 
   function closePopover() {
     if (!popover) return;
     popover.hidden = true;
-    popoverPanel.innerHTML = "";
+    if (popoverPanel) popoverPanel.innerHTML = "";
     activeToggle = null;
   }
 
@@ -66,13 +114,17 @@
     if (fieldDamagedQty) fieldDamagedQty.hidden = !showDamagedQty;
     if (fieldReason) fieldReason.hidden = !showReason;
     if (fieldNotes) fieldNotes.hidden = !showNotes;
-    if (inputSetQty) inputSetQty.required = showSetQty;
-    if (inputDelta) inputDelta.required = showAdjust;
-    if (inputDamagedQty) inputDamagedQty.required = showDamagedQty;
-    if (inputReason) inputReason.required = showReason;
+    // Disable unused inputs so they are not validated or posted (two fields
+    // share name="quantity"; a stale hidden value would steal the submit).
+    setFieldActive(inputSetQty, showSetQty, true);
+    setFieldActive(inputDelta, showAdjust, true);
+    setFieldActive(inputDamagedQty, showDamagedQty, true);
+    setFieldActive(inputReason, showReason, true);
+    setFieldActive(inputNotes, showNotes, false);
   }
 
   function openAction(btn) {
+    wireUi();
     if (!form || !dialog) return;
     closePopover();
     var action = btn.getAttribute("data-inv-action") || "";
@@ -82,25 +134,40 @@
     var maxQty = btn.getAttribute("data-inv-max") || "";
     var next = btn.getAttribute("data-inv-next") || "";
 
+    // max="0" makes the browser block submit with no toast — refuse up front.
+    if (action === "manual_sale" && maxQty !== "" && Number(maxQty) < 1) {
+      if (window.rdToast) {
+        window.rdToast(
+          btn.getAttribute("data-inv-error-no-stock") ||
+            "No customer stock to sell.",
+          "error"
+        );
+      }
+      return;
+    }
+
+    showFields(action);
+
     form.action = url;
     if (titleEl) titleEl.textContent = title;
     if (inputNext) inputNext.value = next;
-    if (inputSetQty) inputSetQty.value = qty;
-    if (inputDamagedQty) {
+    if (inputSetQty && !inputSetQty.disabled) inputSetQty.value = qty;
+    if (inputDamagedQty && !inputDamagedQty.disabled) {
       inputDamagedQty.value = "1";
-      if (maxQty) inputDamagedQty.max = maxQty;
+      if (maxQty !== "") inputDamagedQty.max = maxQty;
       else inputDamagedQty.removeAttribute("max");
     }
-    if (inputDelta) inputDelta.value = "";
-    if (inputReason) inputReason.value = "";
-    if (inputNotes) inputNotes.value = "";
+    if (inputDelta && !inputDelta.disabled) inputDelta.value = "";
+    if (inputReason && !inputReason.disabled) inputReason.value = "";
+    if (inputNotes && !inputNotes.disabled) inputNotes.value = "";
 
-    showFields(action);
     openDialog();
 
     if ((action === "set" || action === "edit") && inputSetQty) inputSetQty.focus();
     else if (action === "adjust" && inputDelta) inputDelta.focus();
-    else if ((action === "damaged" || action === "manual_sale") && inputDamagedQty) inputDamagedQty.focus();
+    else if ((action === "damaged" || action === "manual_sale") && inputDamagedQty) {
+      inputDamagedQty.focus();
+    }
   }
 
   function placePopover(toggle) {
@@ -132,6 +199,10 @@
     var html = "";
 
     function actionBtn(action, url, title, label) {
+      var extra =
+        action === "manual_sale" && d.invErrorNoStock
+          ? ' data-inv-error-no-stock="' + escapeAttr(d.invErrorNoStock) + '"'
+          : "";
       return (
         '<button type="button" class="rd-inv-actions-popover__item rd-inv-action-btn" data-inv-action="' +
         action +
@@ -145,7 +216,9 @@
         maxQty +
         '" data-inv-next="' +
         next +
-        '">' +
+        '"' +
+        extra +
+        ">" +
         label +
         "</button>"
       );
@@ -155,7 +228,12 @@
       html += actionBtn("edit", d.invEditUrl, d.invTitleEdit || "", d.invLabelEdit || "");
     }
     if (d.invManualSaleUrl) {
-      html += actionBtn("manual_sale", d.invManualSaleUrl, d.invTitleManualSale || "", d.invLabelManualSale || "");
+      html += actionBtn(
+        "manual_sale",
+        d.invManualSaleUrl,
+        d.invTitleManualSale || "",
+        d.invLabelManualSale || ""
+      );
     }
     if (d.invSetUrl) {
       html += actionBtn("set", d.invSetUrl, d.invTitleSet || "", d.invLabelSet || "");
@@ -164,7 +242,12 @@
       html += actionBtn("adjust", d.invAdjustUrl, d.invTitleAdjust || "", d.invLabelAdjust || "");
     }
     if (d.invDamagedUrl) {
-      html += actionBtn("damaged", d.invDamagedUrl, d.invTitleDamaged || "", d.invLabelDamaged || "");
+      html += actionBtn(
+        "damaged",
+        d.invDamagedUrl,
+        d.invTitleDamaged || "",
+        d.invLabelDamaged || ""
+      );
     }
     if (d.invClearUrl) {
       html +=
@@ -209,7 +292,9 @@
   }
 
   function openPopover(toggle) {
-    if (activeToggle === toggle && popover && !popover.hidden) {
+    wireUi();
+    if (!popover || !popoverPanel) return;
+    if (activeToggle === toggle && !popover.hidden) {
       closePopover();
       return;
     }
@@ -218,39 +303,10 @@
     placePopover(toggle);
   }
 
-  function init() {
-    dialog = document.getElementById("rd-inv-action-dialog");
-    popover = document.getElementById("rd-inv-actions-popover");
-    popoverPanel = popover ? popover.querySelector(".rd-inv-actions-popover__panel") : null;
-
-    if (dialog) {
-      form = dialog.querySelector("#rd-inv-action-form");
-      titleEl = dialog.querySelector("[data-inv-dialog-title]");
-      fieldSetQty = qs('[data-inv-field="set-qty"]');
-      fieldDelta = qs('[data-inv-field="delta"]');
-      fieldDamagedQty = qs('[data-inv-field="damaged-qty"]');
-      fieldReason = qs('[data-inv-field="reason"]');
-      fieldNotes = qs('[data-inv-field="notes"]');
-      inputSetQty = dialog.querySelector("#rd-inv-set-qty");
-      inputDelta = dialog.querySelector("#rd-inv-delta");
-      inputDamagedQty = dialog.querySelector("#rd-inv-damaged-qty");
-      inputReason = dialog.querySelector("#rd-inv-reason");
-      inputNotes = dialog.querySelector("#rd-inv-notes");
-      inputNext = dialog.querySelector("#rd-inv-action-next");
-
-      dialog.querySelectorAll("[data-inv-dialog-close]").forEach(function (el) {
-        el.addEventListener("click", closeDialog);
-      });
-
-      dialog.addEventListener("click", function (e) {
-        if (e.target.classList && e.target.classList.contains("rd-inv-dialog__backdrop")) {
-          closeDialog();
-        }
-      });
-    }
-  }
-
   function bindDocument() {
+    if (documentBound) return;
+    documentBound = true;
+
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         if (dialog && !dialog.hidden) closeDialog();
@@ -292,10 +348,24 @@
     });
   }
 
-  bindDocument();
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  function init(root) {
+    var scope = root && root.querySelector ? root : document;
+    if (scope === document || (scope.querySelector && scope.querySelector("#rd-inv-action-dialog"))) {
+      wireUi();
+    } else if (document.getElementById("rd-inv-action-dialog")) {
+      // Partial swap (customer filter) — keep dialog wiring, refresh popover handle.
+      wireUi();
+    }
+    bindDocument();
+  }
+
+  if (window.htmx && window.htmx.onLoad) {
+    window.htmx.onLoad(init);
+  } else if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
+      init(document.body);
+    });
   } else {
-    init();
+    init(document.body);
   }
 })();

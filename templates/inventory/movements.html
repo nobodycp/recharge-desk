@@ -47,7 +47,19 @@
                 <td>{{ m.get_movement_type_display }}</td>
                 <td class="rd-inventory-stock-table__line"><span class="fw-semibold">{{ m.product_line.name }}</span></td>
                 <td class="text-end tabular-nums rd-inventory-stock-table__qty">{{ m.quantity }}</td>
-                <td class="rd-inventory-stock-table__customer">{% if m.customer %}{{ m.customer.name }}{% else %}<span class="rd-text-muted">—</span>{% endif %}</td>
+                <td class="rd-inventory-stock-table__customer">
+                  {% if m.movement_type == "sale_consume" and m.from_balance and m.from_balance.location == "main" %}
+                    <span class="fw-semibold">{% trans "Main stock" %}</span>
+                    {% if m.customer %}<div class="small rd-text-muted text-truncate">{{ m.customer.name }}</div>{% endif %}
+                  {% elif m.movement_type == "sale_reversal" and m.to_balance and m.to_balance.location == "main" %}
+                    <span class="fw-semibold">{% trans "Main stock" %}</span>
+                    {% if m.customer %}<div class="small rd-text-muted text-truncate">{{ m.customer.name }}</div>{% endif %}
+                  {% elif m.customer %}
+                    {{ m.customer.name }}
+                  {% else %}
+                    <span class="rd-text-muted">—</span>
+                  {% endif %}
+                </td>
                 <td class="small rd-text-muted text-truncate">{{ m.notes|default:"—" }}</td>
                 {% if not read_only %}
                 <td class="text-end rd-inventory-stock-table__actions">
@@ -89,7 +101,17 @@
             </div>
             <div class="rd-mobile-kv__row">
               <span class="rd-mobile-k">{% trans "Customer" %}</span>
-              <span class="rd-mobile-v text-truncate">{% if m.customer %}{{ m.customer.name }}{% else %}—{% endif %}</span>
+              <span class="rd-mobile-v text-truncate">
+                {% if m.movement_type == "sale_consume" and m.from_balance and m.from_balance.location == "main" %}
+                  {% trans "Main stock" %}{% if m.customer %} — {{ m.customer.name }}{% endif %}
+                {% elif m.movement_type == "sale_reversal" and m.to_balance and m.to_balance.location == "main" %}
+                  {% trans "Main stock" %}{% if m.customer %} — {{ m.customer.name }}{% endif %}
+                {% elif m.customer %}
+                  {{ m.customer.name }}
+                {% else %}
+                  —
+                {% endif %}
+              </span>
             </div>
             {% if m.notes %}
               <div class="rd-mobile-kv__row">

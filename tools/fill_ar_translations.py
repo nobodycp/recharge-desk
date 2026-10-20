@@ -613,6 +613,20 @@ AR: dict[str, str] = {
     "Used on first visit before the user picks a language or theme. Personal choices in the header still override these defaults.": (
         "تُستخدم في الزيارة الأولى قبل اختيار المستخدم للغة أو الثيم. الاختيارات الشخصية في الشريط العلوي تبقى لها الأولوية."
     ),
+    "Customer “%(name)s” has no %(line)s stock — will deduct from main stock (%(qty)s available).": (
+        "الزبون «%(name)s» لا يملك مخزون %(line)s — سيُخصم من المخزون الرئيسي (%(qty)s متاح)."
+    ),
+    "Deducted from main stock (customer “%(name)s” had none).": (
+        "خُصم من المخزون الرئيسي (الزبون «%(name)s» بلا رصيد)."
+    ),
+    "Deducted from main stock (payer “%(name)s”).": (
+        "خُصم من المخزون الرئيسي (الدافع «%(name)s»)."
+    ),
+    "Deducted from main stock.": "خُصم من المخزون الرئيسي.",
+    "No customer stock to sell. Allocate from main stock first, or sell as a New SIM from the sales screen (main stock).": (
+        "لا يوجد مخزون عند الزبون للبيع. خصّص من المخزون الرئيسي أولاً، أو بِع كشريحة "
+        "جديدة من شاشة المبيعات (المخزون الرئيسي)."
+    ),
     "Will deduct from customer “%(name)s” stock (%(qty)s available).": (
         "سيُخصم من مخزون الزبون «%(name)s» (%(qty)s متاح)."
     ),
@@ -776,6 +790,9 @@ AR: dict[str, str] = {
     "This charge was never sent to the provider. Resolve it as failed instead.": "لم يُرسل هذا الشحن إلى المزوّد إطلاقاً. احسمه كفاشل بدلاً من ذلك.",
     "The provider reported a successful charge after the sale was reversed.": "أبلغ المزوّد عن شحن ناجح بعد إلغاء البيع.",
     "Charge & record sale": "شحن وتسجيل بيع",
+    "Are you sure you want to charge this number and record the sale?": (
+        "هل أنت متأكد من عملية شحن الرقم مع التسجيل؟"
+    ),
     "Record the sale and charge the line through the provider": "سجّل البيع واشحن الخط عبر المزوّد",
     "Auto charge": "شحن تلقائي",
     "Needs verification": "بحاجة تحقق",

@@ -11,23 +11,23 @@
       <input type="hidden" name="next" id="rd-inv-action-next" value="">
       <div class="d-grid gap-2" data-inv-field="set-qty" hidden>
         <label class="form-label small mb-0" for="rd-inv-set-qty">{% trans "New quantity" %}</label>
-        <input type="number" name="quantity" id="rd-inv-set-qty" class="form-control form-control-sm" min="0">
+        <input type="number" name="quantity" id="rd-inv-set-qty" class="form-control form-control-sm" min="0" disabled>
       </div>
       <div class="d-grid gap-2" data-inv-field="delta" hidden>
         <label class="form-label small mb-0" for="rd-inv-delta">{% trans "Adjustment (+/-)" %}</label>
-        <input type="number" name="signed_delta" id="rd-inv-delta" class="form-control form-control-sm">
+        <input type="number" name="signed_delta" id="rd-inv-delta" class="form-control form-control-sm" disabled>
       </div>
       <div class="d-grid gap-2" data-inv-field="damaged-qty" hidden>
         <label class="form-label small mb-0" for="rd-inv-damaged-qty">{% trans "Quantity" %}</label>
-        <input type="number" name="quantity" id="rd-inv-damaged-qty" class="form-control form-control-sm" min="1" value="1">
+        <input type="number" name="quantity" id="rd-inv-damaged-qty" class="form-control form-control-sm" min="1" value="1" disabled>
       </div>
-      <div class="d-grid gap-2" data-inv-field="reason">
+      <div class="d-grid gap-2" data-inv-field="reason" hidden>
         <label class="form-label small mb-0" for="rd-inv-reason">{% trans "Reason" %}</label>
-        <textarea name="reason" id="rd-inv-reason" class="form-control form-control-sm" rows="2"></textarea>
+        <textarea name="reason" id="rd-inv-reason" class="form-control form-control-sm" rows="2" disabled></textarea>
       </div>
       <div class="d-grid gap-2" data-inv-field="notes" hidden>
         <label class="form-label small mb-0" for="rd-inv-notes">{% trans "Notes (optional)" %}</label>
-        <textarea name="notes" id="rd-inv-notes" class="form-control form-control-sm" rows="2"></textarea>
+        <textarea name="notes" id="rd-inv-notes" class="form-control form-control-sm" rows="2" disabled></textarea>
       </div>
       <div class="d-flex justify-content-end gap-2 mt-3">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-inv-dialog-close>{% trans "Cancel" %}</button>

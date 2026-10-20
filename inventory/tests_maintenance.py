@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from accounts.models import UserProfile
-from companies.models import Company, ProductLine
+from companies.models import Company, Product, ProductLine
 from customers.models import Customer
 from inventory.models import SimCard, SimStockBalance, SimStockMovement
 from inventory.services import (
@@ -19,6 +19,7 @@ from inventory.services import (
     return_from_customer,
     set_balance_quantity,
 )
+from sales.models import PaymentMethod
 
 User = get_user_model()
 
@@ -332,6 +333,62 @@ class CustomerBalanceActionViewTests(TestCase):
         ).first()
         self.assertIsNotNone(movement)
         self.assertEqual(movement.notes, "Sold to a walk-in")
+
+    def test_customer_pages_ship_action_dialog_with_disabled_quantity_fields(self):
+        """Unused quantity inputs must start disabled so a stale twin cannot post."""
+        detail = self.client.get(reverse("inventory:customer_detail", args=[self.customer.pk]))
+        self.assertContains(detail, 'id="rd-inv-damaged-qty"')
+        self.assertContains(detail, 'id="rd-inv-set-qty"')
+        self.assertContains(detail, 'name="quantity" id="rd-inv-set-qty"')
+        body = detail.content.decode()
+        self.assertIn('id="rd-inv-set-qty"', body)
+        self.assertRegex(body, r'id="rd-inv-set-qty"[^>]*\bdisabled\b')
+        self.assertRegex(body, r'id="rd-inv-damaged-qty"[^>]*\bdisabled\b')
+        self.assertContains(detail, "inventory-actions.js")
+        listing = self.client.get(reverse("inventory:customers"))
+        self.assertContains(listing, "inventory-actions.js")
+        self.assertContains(listing, 'data-inv-manual-sale-url')
+        self.assertContains(listing, f'data-inv-qty="{self.balance.quantity}"')
+
+    def test_customer_manual_sale_zero_stock_shows_error_message(self):
+        self.balance.quantity = 0
+        self.balance.save(update_fields=["quantity"])
+        url = reverse("inventory:customer_manual_sale", args=[self.customer.pk, self.balance.pk])
+        resp = self.client.post(url, {"quantity": 1}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Insufficient stock for a manual sale.")
+        self.assertFalse(
+            SimStockMovement.objects.filter(
+                movement_type=SimStockMovement.MovementType.MANUAL_SALE
+            ).exists()
+        )
+
+    def test_movements_page_labels_main_stock_source(self):
+        from sales.services import create_sale, mark_sale_paid
+
+        product = Product.objects.create(
+            line=self.line, cost_price=Decimal("5"), default_sell_price=Decimal("10")
+        )
+        pm = PaymentMethod.objects.create(name="Cash")
+        customer = Customer.objects.create(name="No Stock Co", created_by=self.user)
+        # Customer has no partner/line stock; sale should consume main.
+        sale = create_sale(
+            company=self.company,
+            product=product,
+            reference_number="0591111111",
+            payer_name=customer.name,
+            payment_method=pm,
+            sell_price_actual=Decimal("10"),
+            notes="",
+            user=self.user,
+            is_new_sim=True,
+        )
+        mark_sale_paid(sale=sale, user=self.user)
+        resp = self.client.get(reverse("inventory:movements"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Main stock")
+        self.assertContains(resp, customer.name)
+        self.assertContains(resp, "Deducted from main stock")
 
     def test_customer_list_action_redirect_preserves_filter_query_string(self):
         list_url = reverse("inventory:customers")

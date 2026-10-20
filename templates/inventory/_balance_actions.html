@@ -15,6 +15,7 @@
   data-inv-label-edit="{% trans 'Edit' %}"
   data-inv-label-manual-sale="{% trans 'Manual sale' %}"
   data-inv-label-clear="{% trans 'Clear' %}"
+  data-inv-error-no-stock="{% filter escapejs %}{% trans 'No customer stock to sell. Allocate from main stock first, or sell as a New SIM from the sales screen (main stock).' %}{% endfilter %}"
   data-inv-confirm-clear="{% filter escapejs %}{% trans 'Zero out this balance completely?' %}{% endfilter %}"
   data-inv-clear-reason="{% trans 'Zeroed out' %}"
 >{% trans "Actions" %}</button>

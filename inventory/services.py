@@ -66,25 +66,29 @@ def preview_sim_stock_deduction(*, payer_name: str, product_line: ProductLine) -
         qty = _balance_qty(
             SimStockBalance.Location.CUSTOMER, line, customer=resolved
         )
-        if qty < 1:
+        if qty >= 1:
             return {
-                "source": "no_customer_stock",
+                "source": "customer",
                 "customer_id": resolved.pk,
                 "customer_name": resolved.name,
-                "quantity_available": 0,
+                "quantity_available": qty,
                 "message": str(
-                    _("Customer “%(name)s” has no SIM stock for %(line)s.")
-                    % {"name": resolved.name, "line": line_label}
+                    _("Will deduct from customer “%(name)s” stock (%(qty)s available).")
+                    % {"name": resolved.name, "qty": qty}
                 ),
             }
+        main_qty = _balance_qty(SimStockBalance.Location.MAIN, line)
         return {
-            "source": "customer",
+            "source": "main",
             "customer_id": resolved.pk,
             "customer_name": resolved.name,
-            "quantity_available": qty,
+            "quantity_available": main_qty,
             "message": str(
-                _("Will deduct from customer “%(name)s” stock (%(qty)s available).")
-                % {"name": resolved.name, "qty": qty}
+                _(
+                    "Customer “%(name)s” has no %(line)s stock — "
+                    "will deduct from main stock (%(qty)s available)."
+                )
+                % {"name": resolved.name, "line": line_label, "qty": main_qty}
             ),
         }
     qty = _balance_qty(SimStockBalance.Location.MAIN, line)
@@ -630,6 +634,8 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
 
     deducted_from = Sale.SimDeductedFrom.NONE
     from_balance = None
+    movement_customer = None
+    movement_notes = ""
 
     if isinstance(resolved, Customer):
         balance = _get_balance_for_update(
@@ -642,7 +648,7 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
             deducted_from = Sale.SimDeductedFrom.CUSTOMER
             from_balance = balance
             movement_customer = resolved
-        elif sale_locked.on_account and sale_locked.customer_id == resolved.pk:
+        else:
             balance = _get_balance_for_update(
                 location=SimStockBalance.Location.MAIN, product_line=product_line
             )
@@ -653,11 +659,10 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
             _deduct_from_balance(balance=balance)
             deducted_from = Sale.SimDeductedFrom.MAIN
             from_balance = balance
-            movement_customer = None
-        else:
-            raise ValueError(
-                _("Customer “%(name)s” has no SIM stock for %(line)s.")
-                % {"name": resolved.name, "line": product_line.name}
+            movement_customer = resolved
+            movement_notes = str(
+                _("Deducted from main stock (customer “%(name)s” had none).")
+                % {"name": resolved.name}
             )
     else:
         balance = _get_balance_for_update(
@@ -671,6 +676,12 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
         deducted_from = Sale.SimDeductedFrom.MAIN
         from_balance = balance
         movement_customer = None
+        payer = (sale_locked.payer_name or "").strip()
+        movement_notes = (
+            str(_("Deducted from main stock (payer “%(name)s”).") % {"name": payer})
+            if payer
+            else str(_("Deducted from main stock."))
+        )
 
     movement = _record_movement(
         movement_type=SimStockMovement.MovementType.SALE_CONSUME,
@@ -680,7 +691,7 @@ def consume_sim_for_sale(*, sale: Sale, user) -> Sale | None:
         from_balance=from_balance,
         customer=movement_customer,
         sale=sale_locked,
-        notes="",
+        notes=movement_notes,
     )
     serial = (sale_locked.sim_serial_or_iccid or "").strip()
     if serial:

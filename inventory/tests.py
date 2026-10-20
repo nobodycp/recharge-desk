@@ -140,12 +140,32 @@ class SimConsumeTests(SimInventoryTestBase):
         )
         self.assertEqual(cust.quantity, 1)
 
-    def test_consume_rejects_customer_without_line_stock(self):
+    def test_consume_falls_back_to_main_when_customer_has_no_line_stock(self):
         customer = Customer.objects.create(name="Dealer D", created_by=self.mgmt)
-        receive_main_stock(product_line=self.line, qty=1, notes="", user=self.mgmt)
+        receive_main_stock(product_line=self.line, qty=2, notes="", user=self.mgmt)
         sale = self._sale(payer_name="Dealer D")
-        with self.assertRaises(ValueError):
-            mark_sale_paid(sale=sale, user=self.mgmt)
+        mark_sale_paid(sale=sale, user=self.mgmt)
+        sale.refresh_from_db()
+        self.assertEqual(sale.sim_deducted_from, Sale.SimDeductedFrom.MAIN)
+        movement = sale.sim_stock_movement
+        self.assertEqual(movement.customer_id, customer.pk)
+        self.assertIn("main stock", movement.notes.lower())
+        main = SimStockBalance.objects.get(
+            location=SimStockBalance.Location.MAIN, product_line=self.line, customer=None
+        )
+        self.assertEqual(main.quantity, 1)
+
+    def test_preview_points_at_main_when_customer_stock_empty(self):
+        from inventory.services import preview_sim_stock_deduction
+
+        customer = Customer.objects.create(name="Empty Dealer", created_by=self.mgmt)
+        receive_main_stock(product_line=self.line, qty=3, notes="", user=self.mgmt)
+        preview = preview_sim_stock_deduction(
+            payer_name=customer.name, product_line=self.line
+        )
+        self.assertEqual(preview["source"], "main")
+        self.assertEqual(preview["quantity_available"], 3)
+        self.assertIn(customer.name, preview["message"])
 
     def test_consume_rejects_ambiguous_payer_name(self):
         Customer.objects.create(name="Dup Name", created_by=self.mgmt)
