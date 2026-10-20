@@ -154,6 +154,18 @@ def effective_activity_clock(
     return last, duration, False
 
 
+def remaining_charge_days(now, subscription_end) -> int:
+    """Whole days still left until ``subscription_end``.
+
+    The statement shows this countdown, not the original package length.
+    Any positive remainder under one day still counts as 1 until the end.
+    """
+    if subscription_end <= now:
+        return 0
+    whole = (subscription_end - now).days
+    return whole if whole >= 1 else 1
+
+
 def _lifecycle_status(
     *,
     now,
@@ -225,7 +237,7 @@ def _statement_row(
         "is_esim": bool(sale.is_esim),
         "used_manual_renew": used_manual,
         "status": status,
-        "duration_days": duration,
+        "duration_days": remaining_charge_days(now, subscription_end),
         "subscription_end": subscription_end,
         "disconnect_at": disconnect_at,
         "days_past_end": days_past_end,

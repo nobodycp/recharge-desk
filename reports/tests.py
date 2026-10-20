@@ -911,17 +911,34 @@ class PhoneLinesStatementTests(_ReportsBase):
         self._age_sale(second, days_ago=0, duration_days=20)
         first.refresh_from_db()
         second.refresh_from_db()
-        leftover = max(0, (first.created_at + timedelta(days=30) - second.created_at).days)
+        from reports.stale_phones import remaining_charge_days
+
+        end = first.created_at + timedelta(days=50)
         r = self.client.get(reverse("reports:phone_lines_report"))
         row = next(
             x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stack001"
         )
-        self.assertEqual(row["duration_days"], leftover + 20)
+        self.assertEqual(row["duration_days"], remaining_charge_days(timezone.now(), end))
         self.assertEqual(row["status"], "active")
         self.assertEqual(
             row["subscription_end"],
             first.created_at + timedelta(days=50),
         )
+
+    def test_aged_charge_shows_days_left_not_the_package(self):
+        from reports.stale_phones import remaining_charge_days
+
+        sale = self._make_sale(ref="055LEFT0090", paid=True)
+        self._age_sale(sale, days_ago=77, duration_days=90)
+        sale.refresh_from_db()
+        end = sale.created_at + timedelta(days=90)
+        r = self.client.get(reverse("reports:phone_lines_report"))
+        row = next(
+            x for x in r.context["page_obj"].object_list if x["ref_key"] == "055left0090"
+        )
+        self.assertEqual(row["duration_days"], remaining_charge_days(timezone.now(), end))
+        self.assertLess(row["duration_days"], 90)
+        self.assertGreater(row["duration_days"], 0)
 
     def test_stack_coverage_keeps_remaining_then_adds_new_span(self):
         from reports.stale_phones import stack_coverage
@@ -937,13 +954,16 @@ class PhoneLinesStatementTests(_ReportsBase):
         self._age_sale(old, days_ago=40, duration_days=30)
         fresh = self._make_sale(ref="055STACK002", paid=True)
         self._age_sale(fresh, days_ago=0, duration_days=20)
+        from reports.stale_phones import remaining_charge_days
+
         fresh.refresh_from_db()
+        end = fresh.created_at + timedelta(days=20)
         r = self.client.get(reverse("reports:phone_lines_report"))
         row = next(
             x for x in r.context["page_obj"].object_list if x["ref_key"] == "055stack002"
         )
-        self.assertEqual(row["duration_days"], 20)
-        self.assertEqual(row["subscription_end"], fresh.created_at + timedelta(days=20))
+        self.assertEqual(row["duration_days"], remaining_charge_days(timezone.now(), end))
+        self.assertEqual(row["subscription_end"], end)
 
     def test_statement_includes_esim(self):
         s = self._make_sale(ref="055STMTE001", paid=True, is_esim=True)
