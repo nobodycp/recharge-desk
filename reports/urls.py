@@ -46,6 +46,11 @@ urlpatterns = [
         name="phone_lines_bulk",
     ),
     path(
+        "management/reports/phone-lines/iccid-status/",
+        views_stale_phones.phone_lines_iccid_status,
+        name="phone_lines_iccid_status",
+    ),
+    path(
         "management/reports/phone-lines/",
         views_stale_phones.phone_lines_report,
         name="phone_lines_report",

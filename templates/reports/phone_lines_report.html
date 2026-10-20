@@ -35,6 +35,121 @@
 <script>
 (function () {
   var rootId = "phone-lines-list-results";
+
+  function iccidProgressRoot() {
+    return document.getElementById("iccid-fetch-progress");
+  }
+
+  function paintIccidProgress(box, data) {
+    if (!box || !data) return;
+    box.classList.remove("d-none");
+    box.setAttribute("data-job", data.job_id || "");
+    var total = data.total || 0;
+    var done = data.done || 0;
+    var pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    var title = box.querySelector("[data-iccid-progress-title]");
+    var counts = box.querySelector("[data-iccid-progress-counts]");
+    var bar = box.querySelector("[data-iccid-progress-bar]");
+    var detail = box.querySelector("[data-iccid-progress-detail]");
+    var running = !!data.running;
+    if (title) {
+      title.textContent = running
+        ? (box.getAttribute("data-label-running") || "")
+        : data.status === "failed"
+          ? (box.getAttribute("data-label-failed") || "")
+          : (box.getAttribute("data-label-done") || "");
+    }
+    if (counts) {
+      counts.textContent = done + "/" + total + " · " + (data.remaining || 0);
+    }
+    if (bar) bar.style.width = pct + "%";
+    if (detail) {
+      detail.textContent =
+        (data.filled || 0) + " / " + (data.skipped || 0) + " / " + (data.failed || 0) +
+        (running && data.current ? " · " + data.current : "");
+    }
+  }
+
+  function refreshIccidResults(box) {
+    var url = box && box.getAttribute("data-results-url");
+    var target = document.getElementById(rootId);
+    if (!url || !target || !window.htmx) return;
+    window.htmx.ajax("GET", url, { target: "#" + rootId, swap: "innerHTML" });
+  }
+
+  var iccidTimer = null;
+  function stopIccidPoll() {
+    if (iccidTimer) {
+      clearInterval(iccidTimer);
+      iccidTimer = null;
+    }
+  }
+
+  function pollIccidOnce(box) {
+    var job = box.getAttribute("data-job") || "";
+    var base = box.getAttribute("data-status-url") || "";
+    if (!base) return;
+    var url = job ? base + (base.indexOf("?") >= 0 ? "&" : "?") + "job=" + encodeURIComponent(job) : base;
+    fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } })
+      .then(function (r) {
+        if (!r.ok) throw new Error("status");
+        return r.json();
+      })
+      .then(function (data) {
+        paintIccidProgress(box, data);
+        if (!data.running) {
+          stopIccidPoll();
+          if (window.rdToast) {
+            var msg = data.status === "failed"
+              ? (box.getAttribute("data-label-failed") || "")
+              : (box.getAttribute("data-label-done") || "");
+            if (msg) window.rdToast(msg, data.status === "failed" ? "error" : "success");
+          }
+          refreshIccidResults(box);
+        }
+      })
+      .catch(function () {});
+  }
+
+  function startIccidPoll(jobId) {
+    var box = iccidProgressRoot();
+    if (!box) return;
+    if (jobId) box.setAttribute("data-job", jobId);
+    box.classList.remove("d-none");
+    stopIccidPoll();
+    pollIccidOnce(box);
+    iccidTimer = setInterval(function () {
+      var live = iccidProgressRoot();
+      if (!live) {
+        stopIccidPoll();
+        return;
+      }
+      pollIccidOnce(live);
+    }, 2000);
+  }
+
+  document.body.addEventListener("iccidFetchStarted", function (ev) {
+    var detail = (ev && ev.detail) || {};
+    startIccidPoll(detail.job_id || "");
+  });
+
+  if (window.htmx) {
+    htmx.onLoad(function (elt) {
+      var box = (elt && elt.querySelector)
+        ? (elt.id === "iccid-fetch-progress" ? elt : elt.querySelector("#iccid-fetch-progress"))
+        : null;
+      if (!box) box = iccidProgressRoot();
+      if (box && box.getAttribute("data-job") && !box.classList.contains("d-none")) {
+        startIccidPoll(box.getAttribute("data-job"));
+      }
+    });
+  } else {
+    var initial = iccidProgressRoot();
+    if (initial && initial.getAttribute("data-job") && !initial.classList.contains("d-none")) {
+      startIccidPoll(initial.getAttribute("data-job"));
+    }
+  }
+
   document.body.addEventListener("phoneLinesRemoved", function (ev) {
     var keys = (ev.detail && ev.detail.keys) || [];
     var box = document.getElementById(rootId);

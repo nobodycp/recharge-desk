@@ -7411,3 +7411,21 @@ msgstr "ما قدرنا نجيب ICCID لأي من الأرقام المحددة
 
 msgid "Choose delete, renew, or fetch ICCID."
 msgstr "اختر حذف أو تجديد أو جلب ICCID."
+
+msgid "ICCID fetch started in the background for %(count)s lines. Progress updates below."
+msgstr "بدأ جلب ICCID بالخلفية لـ %(count)s رقم. التقدّم يظهر تحت."
+
+msgid "An ICCID fetch is already running (%(done)s/%(total)s done). Wait for it to finish."
+msgstr "في جلب ICCID شغّال الآن (%(done)s/%(total)s). استنى لما يخلّص."
+
+msgid "Fetching ICCID…"
+msgstr "جاري جلب ICCID…"
+
+msgid "ICCID fetch finished."
+msgstr "انتهى جلب ICCID."
+
+msgid "ICCID fetch stopped with an error."
+msgstr "توقف جلب ICCID بسبب خطأ."
+
+msgid "Filled %(filled)s · already had %(skipped)s · failed %(failed)s · now %(current)s"
+msgstr "تم %(filled)s · كان عنده %(skipped)s · فشل %(failed)s · الآن %(current)s"

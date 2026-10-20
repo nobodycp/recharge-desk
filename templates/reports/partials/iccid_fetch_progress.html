@@ -1,0 +1,38 @@
+{% load i18n %}
+{% with job=iccid_fetch_job %}
+<div
+  id="iccid-fetch-progress"
+  class="rd-card mb-3 p-3{% if not job or not job.running %} d-none{% endif %}"
+  data-iccid-progress
+  data-status-url="{% url 'reports:phone_lines_iccid_status' %}"
+  data-results-url="{% url 'reports:phone_lines_report' %}{% if list_query %}?{{ list_query }}{% endif %}"
+  data-job="{{ job.job_id|default:'' }}"
+  data-label-running="{% trans 'Fetching ICCID…' %}"
+  data-label-done="{% trans 'ICCID fetch finished.' %}"
+  data-label-failed="{% trans 'ICCID fetch stopped with an error.' %}"
+  role="status"
+  aria-live="polite"
+>
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+    <strong data-iccid-progress-title>{% trans "Fetching ICCID…" %}</strong>
+    <span class="tabular-nums text-secondary" data-iccid-progress-counts>
+      {% if job %}{{ job.done }}/{{ job.total }} · {% trans "left" %} {{ job.remaining }}{% endif %}
+    </span>
+  </div>
+  <div class="progress mb-2" style="height: 0.5rem" aria-hidden="true">
+    <div
+      class="progress-bar"
+      data-iccid-progress-bar
+      role="progressbar"
+      style="width: {% if job and job.total %}{% widthratio job.done job.total 100 %}{% else %}0{% endif %}%"
+    ></div>
+  </div>
+  <p class="small text-secondary mb-0" data-iccid-progress-detail>
+    {% if job %}
+      {% blocktrans with filled=job.filled skipped=job.skipped failed=job.failed current=job.current|default:"—" %}
+        Filled {{ filled }} · already had {{ skipped }} · failed {{ failed }} · now {{ current }}
+      {% endblocktrans %}
+    {% endif %}
+  </p>
+</div>
+{% endwith %}

@@ -430,6 +430,19 @@ AR: dict[str, str] = {
         "ما قدرنا نجيب ICCID لأي من الأرقام المحددة."
     ),
     "Choose delete, renew, or fetch ICCID.": "اختر حذف أو تجديد أو جلب ICCID.",
+    "ICCID fetch started in the background for %(count)s lines. Progress updates below.": (
+        "بدأ جلب ICCID بالخلفية لـ %(count)s رقم. التقدّم يظهر تحت."
+    ),
+    "An ICCID fetch is already running (%(done)s/%(total)s done). Wait for it to finish.": (
+        "في جلب ICCID شغّال الآن (%(done)s/%(total)s). استنى لما يخلّص."
+    ),
+    "Fetching ICCID…": "جاري جلب ICCID…",
+    "ICCID fetch finished.": "انتهى جلب ICCID.",
+    "ICCID fetch stopped with an error.": "توقف جلب ICCID بسبب خطأ.",
+    "left": "متبقي",
+    "Filled %(filled)s · already had %(skipped)s · failed %(failed)s · now %(current)s": (
+        "تم %(filled)s · كان عنده %(skipped)s · فشل %(failed)s · الآن %(current)s"
+    ),
     "Every number with a sale in the system, with lifecycle status from the %(d)s-day activity threshold. A new charge resets the timer.": (
         "كل رقم له بيع في النظام، مع حالة دورة الحياة حسب عتبة عدم النشاط "
         "%(d)s يوماً. شحن جديد يعيد المؤقت."

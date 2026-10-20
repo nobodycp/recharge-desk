@@ -5,19 +5,23 @@ from __future__ import annotations
 import json
 
 from django.contrib import messages
-from django.http import Http404, HttpResponse, QueryDict
+from django.http import Http404, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from accounts.models import UserProfile
 from accounts.permissions import management_required
 from core.pagination import paginate_request
 from reports.forms import PhoneLineFullEditForm, PhoneLinesFilterForm
-from reports.iccid_fetch import fill_sim_identifiers_from_provider
+from reports.iccid_fetch import (
+    active_job_for_user,
+    job_status,
+    start_iccid_fetch_job,
+)
 from reports.models import PhoneLineTracking
 from reports.stale_phones import (
     STATUS_OVERDUE,
@@ -196,13 +200,20 @@ def _phone_lines_list_context(request, profile, *, get_params=None) -> dict:
             "sort": sort,
             "order": order,
             "list_query": list_query,
+            "iccid_fetch_job": active_job_for_user(request.user.pk),
         }
     finally:
         request.GET = original_get
 
 
 def _htmx_phone_lines_results(
-    request, profile, *, list_query: str, toast: str, level: str = "success"
+    request,
+    profile,
+    *,
+    list_query: str,
+    toast: str,
+    level: str = "success",
+    extra_trigger: dict | None = None,
 ) -> HttpResponse:
     """Re-render only the results grid after an in-list action + toast."""
     ctx = _phone_lines_list_context(
@@ -213,7 +224,11 @@ def _htmx_phone_lines_results(
         "reports/partials/phone_lines_report_results.html",
         ctx,
     )
-    return _with_htmx_toast(resp, toast, level=level)
+    payload = {"rdToast": {"message": str(toast), "level": level}}
+    if extra_trigger:
+        payload.update(extra_trigger)
+    resp["HX-Trigger"] = json.dumps(payload)
+    return resp
 
 
 @management_required
@@ -228,6 +243,19 @@ def phone_lines_report(request):
             ctx,
         )
     return render(request, "reports/phone_lines_report.html", ctx)
+
+
+@management_required
+@require_GET
+def phone_lines_iccid_status(request):
+    """JSON progress for a background ICCID fetch job."""
+    job_id = (request.GET.get("job") or "").strip()
+    status = job_status(job_id) if job_id else active_job_for_user(request.user.pk)
+    if status is None:
+        return JsonResponse({"status": "missing", "running": False}, status=404)
+    if str(status.get("user_id") or "") != str(request.user.pk):
+        return JsonResponse({"status": "forbidden", "running": False}, status=403)
+    return JsonResponse(status)
 
 
 def _row_for_ref(*, ref_key: str, threshold_days: int) -> dict | None:
@@ -525,18 +553,28 @@ def phone_lines_bulk(request):
         return redirect(list_url)
 
     if action == "fetch_iccid":
-        counts = fill_sim_identifiers_from_provider(keys, user=request.user)
-        if not counts["filled"] and not counts["skipped"]:
-            return _fail(
-                _("Could not fetch ICCID for any of the selected lines.")
-            )
+        try:
+            job_id = start_iccid_fetch_job(keys, user_id=request.user.pk)
+        except ValueError as exc:
+            return _fail(str(exc))
         ok_msg = _(
-            "Fetched ICCID for %(filled)s lines "
-            "(%(skipped)s already had one, %(failed)s failed)."
-        ) % counts
+            "ICCID fetch started in the background for %(count)s lines. "
+            "Progress updates below."
+        ) % {"count": len(keys)}
+        trigger = {
+            "iccidFetchStarted": {
+                "job_id": job_id,
+                "status_url": reverse("reports:phone_lines_iccid_status"),
+            }
+        }
         if is_htmx(request):
             return _htmx_phone_lines_results(
-                request, profile, list_query=next_query, toast=ok_msg, level="success"
+                request,
+                profile,
+                list_query=next_query,
+                toast=ok_msg,
+                level="success",
+                extra_trigger=trigger,
             )
         messages.success(request, ok_msg)
         return redirect(list_url)
