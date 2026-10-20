@@ -940,6 +940,26 @@ class PhoneLinesStatementTests(_ReportsBase):
         self.assertLess(row["duration_days"], 90)
         self.assertGreater(row["duration_days"], 0)
 
+    def test_missing_iccid_filter(self):
+        bare = self._make_sale(ref="055NOICCID1", paid=True)
+        filled = self._make_sale(ref="055HASICC01", paid=True)
+        self._age_sale(bare, days_ago=5, duration_days=30)
+        self._age_sale(filled, days_ago=5, duration_days=30)
+        PhoneLineTracking.objects.create(
+            reference_key="055hasicc01",
+            sim_identifier="8997000000000000001",
+            last_display_reference="055HASICC01",
+        )
+        page = self.client.get(reverse("reports:phone_lines_report"))
+        self.assertContains(page, 'name="iccid"')
+        self.assertContains(page, "Without ICCID")
+        filtered = self.client.get(
+            reverse("reports:phone_lines_report"), {"iccid": "missing"}
+        )
+        refs = {x["ref_key"] for x in filtered.context["page_obj"].object_list}
+        self.assertIn("055noiccid1", refs)
+        self.assertNotIn("055hasicc01", refs)
+
     def test_stack_coverage_keeps_remaining_then_adds_new_span(self):
         from reports.stale_phones import stack_coverage
 

@@ -394,6 +394,8 @@ def filter_stale_rows(
         out = [r for r in out if r.get("is_esim")]
     elif sim_type == "physical":
         out = [r for r in out if not r.get("is_esim")]
+    if (cleaned.get("iccid") or "").strip().lower() == "missing":
+        out = [r for r in out if not str(r.get("sim_identifier") or "").strip()]
     needle = (q or "").strip().lower()
     if needle:
 

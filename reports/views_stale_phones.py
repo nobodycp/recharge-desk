@@ -159,6 +159,9 @@ def _phone_lines_filter_cleaned(request, profile, filter_form, *, default_th: in
         cleaned["sim_type"] = sim_type
     if line_name in allowed_lines:
         cleaned["line_name"] = line_name
+    iccid = (request.GET.get("iccid") or "").strip().lower()
+    if iccid in {c[0] for c in filter_form.fields["iccid"].choices if c[0]}:
+        cleaned["iccid"] = iccid
     company_raw = request.GET.get("company")
     if company_raw not in (None, ""):
         try:

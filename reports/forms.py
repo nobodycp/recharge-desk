@@ -113,6 +113,15 @@ class PhoneLinesFilterForm(forms.Form):
         ),
         widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
+    iccid = forms.ChoiceField(
+        label=_("ICCID"),
+        required=False,
+        choices=(
+            ("", "---------"),
+            ("missing", _("Without ICCID")),
+        ),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
     threshold_days = forms.IntegerField(
         label=_("Days to leave the agency"),
         min_value=1,

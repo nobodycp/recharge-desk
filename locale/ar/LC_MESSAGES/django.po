@@ -7429,3 +7429,6 @@ msgstr "توقف جلب ICCID بسبب خطأ."
 
 msgid "Filled %(filled)s · already had %(skipped)s · failed %(failed)s · now %(current)s"
 msgstr "تم %(filled)s · كان عنده %(skipped)s · فشل %(failed)s · الآن %(current)s"
+
+msgid "Without ICCID"
+msgstr "بدون ICCID"
