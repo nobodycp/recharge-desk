@@ -2,9 +2,29 @@
  * SIM inventory row actions — fixed popover menu + modal forms.
  *
  * Re-wires the dialog after every boosted navigation (htmx.onLoad): the shell
- * keeps this script's closure alive while <body> (and the dialog) are replaced.
+ * keeps this script's closure alive while <body>'s content (and the dialog)
+ * is replaced. Click delegation is bound to `document` (never swapped), not
+ * `document.body` (its content is swapped) — see bindDocument(). The actual
+ * htmx.onLoad(init) registration is deferred (see the bottom of the file) so
+ * page-scope.js doesn't tear it — and everything it transitively registers,
+ * including the click delegate — down after the first navigation.
+ *
+ * This <script src> tag is itself part of the swapped content (main_stock.html
+ * / customer_detail.html ship it conditionally), so htmx re-inserts — and
+ * therefore re-executes — it on every boosted navigation back to one of these
+ * pages. Without the guard below, each swap would spin up a brand new,
+ * independent copy of all the module state (dialog/popover/activeToggle) and
+ * register a second full set of document-level listeners that never gets
+ * torn down, so two (or more) copies would race on every click afterward —
+ * the open/close toggle desyncs between them, which is what made every row
+ * action look "stuck" until a hard refresh. Only the very first execution
+ * matters; htmx.onLoad(init) below already re-wires that one instance's
+ * dialog/popover element references on every later swap.
  */
 (function () {
+  if (window.__rdInventoryActionsLoaded) return;
+  window.__rdInventoryActionsLoaded = true;
+
   var dialog = null;
   var form = null;
   var titleEl = null;
@@ -67,15 +87,21 @@
     inputNotes = dialog.querySelector("#rd-inv-notes");
     inputNext = dialog.querySelector("#rd-inv-action-next");
 
-    dialog.querySelectorAll("[data-inv-dialog-close]").forEach(function (el) {
-      el.addEventListener("click", closeDialog);
-    });
+    // wireUi() re-runs on every openAction()/openPopover() call, not only
+    // after a swap — guard so repeated opens on the same (unswapped) dialog
+    // node don't pile up duplicate close listeners.
+    if (!dialog.dataset.invWired) {
+      dialog.dataset.invWired = "1";
+      dialog.querySelectorAll("[data-inv-dialog-close]").forEach(function (el) {
+        el.addEventListener("click", closeDialog);
+      });
 
-    dialog.addEventListener("click", function (e) {
-      if (e.target.classList && e.target.classList.contains("rd-inv-dialog__backdrop")) {
-        closeDialog();
-      }
-    });
+      dialog.addEventListener("click", function (e) {
+        if (e.target.classList && e.target.classList.contains("rd-inv-dialog__backdrop")) {
+          closeDialog();
+        }
+      });
+    }
   }
 
   function openDialog() {
@@ -149,6 +175,13 @@
     showFields(action);
 
     form.action = url;
+    // hx-boost reads `action` once when it first wires an element's submit
+    // listener, then reuses that path forever — changing `.action` here is
+    // invisible to it until the element is reprocessed. Without this, every
+    // dialog submission (any row, any action) would silently POST to
+    // whatever path was captured at the last page load/swap instead of the
+    // endpoint the user actually picked.
+    if (window.htmx) window.htmx.process(form);
     if (titleEl) titleEl.textContent = title;
     if (inputNext) inputNext.value = next;
     if (inputSetQty && !inputSetQty.disabled) inputSetQty.value = qty;
@@ -324,7 +357,10 @@
 
     window.addEventListener("resize", closePopover);
 
-    document.body.addEventListener("click", function (e) {
+    // Bind to `document`, not `document.body`: a boosted swap can leave the
+    // body-bound delegate unreachable (every row action button goes dead
+    // until a hard refresh), while `document` itself is never replaced.
+    document.addEventListener("click", function (e) {
       var toggle = e.target.closest(".rd-inv-actions-toggle");
       if (toggle) {
         e.preventDefault();
@@ -359,13 +395,26 @@
     bindDocument();
   }
 
-  if (window.htmx && window.htmx.onLoad) {
-    window.htmx.onLoad(init);
-  } else if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
+  // page-scope.js tears down anything a page (body-resident) script
+  // registers — synchronously, or transitively from inside one of its own
+  // callbacks — right before the next boosted swap, so a plain page is
+  // never left leaking listeners. This script is shipped conditionally
+  // (only on pages that need it), so by that rule it IS a page script, but
+  // its htmx.onLoad(init) re-wiring hook — and the click delegate init()
+  // installs the first time it runs — must survive every navigation, not
+  // just the one that follows the first page load. Deferring past the
+  // current task means `document.currentScript` is already null (and we're
+  // not nested inside any tracked call) when this actually registers, so
+  // page-scope.js treats it as shell-owned and leaves it alone.
+  setTimeout(function () {
+    if (window.htmx && window.htmx.onLoad) {
+      window.htmx.onLoad(init);
+    } else if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        init(document.body);
+      });
+    } else {
       init(document.body);
-    });
-  } else {
-    init(document.body);
-  }
+    }
+  }, 0);
 })();
