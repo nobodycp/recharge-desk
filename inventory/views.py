@@ -224,6 +224,31 @@ def inventory_main_adjust(request, pk):
 
 @management_required
 @require_POST
+def inventory_main_manual_sale(request, pk):
+    balance = get_object_or_404(
+        SimStockBalance,
+        pk=pk,
+        location=SimStockBalance.Location.MAIN,
+    )
+    form = ManualSaleForm(request.POST)
+    if form.is_valid():
+        try:
+            record_manual_sale(
+                balance=balance,
+                qty=form.cleaned_data["quantity"],
+                notes=form.cleaned_data.get("notes") or "",
+                user=request.user,
+            )
+            messages.success(request, _("Manual sale recorded."))
+        except ValueError as exc:
+            messages.error(request, str(exc))
+    else:
+        messages.error(request, _("Invalid form."))
+    return _redirect_next(request, "inventory:main")
+
+
+@management_required
+@require_POST
 def inventory_main_damaged(request, pk):
     balance = get_object_or_404(
         SimStockBalance,
