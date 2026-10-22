@@ -179,7 +179,9 @@ def _login_once(
         try:
             adapter.login()
         except Exception as exc:
-            _start_cooldown(redis_client, key)
+            # An SMS code was just sent: the next attempt must not wait out a cool-down.
+            if not getattr(exc, "retry_without_cooldown", False):
+                _start_cooldown(redis_client, key)
             error = scrub(str(exc)) or exc.__class__.__name__
             log.warning("provider %s login failed: %s", key, error)
             accounts.record_login(key, False, error)

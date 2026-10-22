@@ -62,6 +62,8 @@ class ProviderAccountForm(forms.Form):
     def __init__(self, *args, provider_key: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.provider_key = provider_key
+        if provider_key == "areen":
+            self.fields.pop("totp_secret", None)
         self.account = ProviderConnection.objects.filter(provider_key=provider_key).first()
         if self.account is not None:
             self.fields["username"].initial = self.account.username
@@ -71,7 +73,7 @@ class ProviderAccountForm(forms.Form):
                 ("totp_secret", bool(decrypt_or_empty(self.account.totp_secret_encrypted))),
                 ("proxy_url", has_proxy),
             ):
-                if saved:
+                if saved and name in self.fields:
                     self.fields[name].widget.attrs["placeholder"] = SAVED_PLACEHOLDER
 
     def clean_totp_secret(self) -> str:
@@ -100,15 +102,21 @@ class ProviderAccountForm(forms.Form):
     def save(self) -> ProviderConnection:
         data = self.cleaned_data
         account = self.account or ProviderConnection(provider_key=self.provider_key)
+        previous_username = account.username
         account.username = data["username"].strip()
         if data["password"]:
             account.secret_encrypted = encrypt(data["password"])
-        if data["totp_secret"]:
-            account.totp_secret_encrypted = encrypt(data["totp_secret"])
-        elif not decrypt_or_empty(account.totp_secret_encrypted):
+        totp_secret = data.get("totp_secret") or ""
+        if totp_secret:
+            account.totp_secret_encrypted = encrypt(totp_secret)
+        elif "totp_secret" in self.fields and not decrypt_or_empty(account.totp_secret_encrypted):
             account.totp_secret_encrypted = ""  # drop an unreadable blob
 
         extra = load_extra(account) if account.pk else {}
+        if self.provider_key == "areen" and (
+            data["password"] or previous_username != account.username
+        ):
+            extra.pop("areen_device", None)
         if data["clear_proxy"]:
             extra.pop("proxy_url", None)
         elif data["proxy_url"]:

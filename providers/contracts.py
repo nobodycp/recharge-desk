@@ -122,6 +122,9 @@ class NumberInfo:
     iccid: str = ""
     # Data allowance is open-ended: show what was used, with no cap.
     data_unlimited: bool = False
+    # Calls or SMS with no cap (Areen «بدون تحديد»): show the used count only.
+    minutes_unlimited: bool = False
+    sms_unlimited: bool = False
 
     _DECIMALS = (
         "plan_price",
@@ -158,6 +161,8 @@ class NumberInfo:
             kwargs[name] = _int_or_none(data.get(name))
         kwargs["is_esim"] = bool(data.get("is_esim", False))
         kwargs["data_unlimited"] = bool(data.get("data_unlimited", False))
+        kwargs["minutes_unlimited"] = bool(data.get("minutes_unlimited", False))
+        kwargs["sms_unlimited"] = bool(data.get("sms_unlimited", False))
         kwargs["ends_at"] = _datetime_or_none(data.get("ends_at"))
         return cls(**kwargs)
 

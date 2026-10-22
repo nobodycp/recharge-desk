@@ -47,7 +47,7 @@ def keepalive_sessions() -> None:
 
 
 @shared_task
-def test_connection(provider_key: str) -> None:
+def test_connection(provider_key: str, otp_code: str = "") -> None:
     """Admin login test: fresh session, then one authenticated ping; never raises.
 
     Routed to the ``refresh`` queue by ``providers.tasks.*`` in
@@ -59,7 +59,7 @@ def test_connection(provider_key: str) -> None:
     error = ""
     try:
         reset_session(provider_key)
-        service.keepalive(provider_key)
+        service.keepalive(provider_key, force_login=True, otp_code=otp_code or "")
     except Exception as exc:
         error = scrub(str(exc)) or exc.__class__.__name__
         log.warning("provider %s login test failed: %s", provider_key, error)

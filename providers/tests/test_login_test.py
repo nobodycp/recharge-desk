@@ -159,13 +159,13 @@ class TestConnectionTaskTests(_Base):
         get_redis().set(_cooldown_key(KEY), "1")
         seen = {}
 
-        def fake_keepalive(key):
+        def fake_keepalive(key, **kwargs):
             seen["session"] = SessionStore(key).load()
             seen["cooldown"] = get_redis().exists(_cooldown_key(key))
 
         with patch("providers.tasks.service.keepalive", side_effect=fake_keepalive) as ka:
             tasks.test_connection(KEY)
-        ka.assert_called_once_with(KEY)
+        ka.assert_called_once_with(KEY, force_login=True, otp_code="")
         self.assertIsNone(seen["session"])
         self.assertFalse(seen["cooldown"])
 
@@ -210,7 +210,7 @@ class TestConnectionTaskTests(_Base):
     def test_existing_login_result_not_overwritten(self):
         account = _make_account()
 
-        def keepalive(key):
+        def keepalive(key, **kwargs):
             # Mimics _login_once: records its own failure, then raises.
             record_login(key, False, "bad password")
             raise TransientError("login_failed")
@@ -223,7 +223,7 @@ class TestConnectionTaskTests(_Base):
     def test_success_leaves_recorded_login_alone(self):
         account = _make_account()
 
-        def keepalive(key):
+        def keepalive(key, **kwargs):
             record_login(key, True)
 
         with patch("providers.tasks.service.keepalive", side_effect=keepalive):

@@ -7,6 +7,8 @@ Secrets are write-only: stored values are never rendered back.
 
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import redirect, render
@@ -20,6 +22,7 @@ from companies.forms_connection import (
 )
 from companies.models import Company
 from providers import health, login_test
+from providers.adapters.areen.client import OTP_REJECTED, login_needs_otp
 from providers.contracts import Capability
 from providers.forms import ProviderAccountForm
 from providers.models import ProviderConnection
@@ -56,9 +59,21 @@ LOGIN_TEST_DISABLED_NOTE = _("فعّل الربط أولاً لاختبار تس
 def login_status_context(company) -> dict:
     key = company_key(company)
     connection = ProviderConnection.objects.filter(provider_key=key).first()
+    login = login_test.status(key)
+    login["otp_required"] = (
+        not login["pending"]
+        and login["last_login_ok"] is False
+        and login_needs_otp(login["last_error"])
+    )
+    login["otp_error"] = (
+        login["last_error"]
+        if login["otp_required"] and OTP_REJECTED in (login["last_error"] or "")
+        else ""
+    )
     return {
         "company": company,
-        "login": login_test.status(key),
+        "connection_key": key,
+        "login": login,
         # No row yet means the model defaults apply (master switch on).
         "login_enabled": connection is None or connection.is_enabled,
         "login_disabled_note": LOGIN_TEST_DISABLED_NOTE,
@@ -192,7 +207,8 @@ def start_login_test(request, company):
             )
         messages.error(request, LOGIN_TEST_DISABLED_NOTE)
         return redirect_to_tab(company)
-    result = login_test.start(key)
+    otp_code = (request.POST.get("otp_code") or "").strip()
+    result = login_test.start(key, otp_code) if otp_code else login_test.start(key)
     if request.headers.get("HX-Request"):
         ctx = login_status_context(company)
         ctx["unavailable"] = result == "unavailable"
@@ -207,8 +223,15 @@ def login_status(request, company):
     if not needs_login(company):
         raise Http404("This system has no login account")
     ProviderConnection.for_key(company_key(company))
-    return render(
+    ctx = login_status_context(company)
+    response = render(
         request,
         "companies/partials/connection_login_status.html",
-        login_status_context(company),
+        ctx,
     )
+    # The poll is the moment we learn the provider asked for the SMS code.
+    if request.headers.get("HX-Request") and ctx["login"]["otp_required"]:
+        response["HX-Trigger"] = json.dumps(
+            {"rdToast": {"message": ctx["login"]["last_error"], "level": "warning"}}
+        )
+    return response

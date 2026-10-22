@@ -550,6 +550,9 @@ def reconcile(
     return result, adapter.reconcile_template
 
 
-def keepalive(provider_key: str) -> None:
+def keepalive(provider_key: str, *, force_login: bool = False, otp_code: str = "") -> None:
     adapter = get_adapter(provider_key)
+    adapter.force_login = force_login
+    adapter.otp_code = otp_code or ""
+    adapter.prompt_device = force_login
     run_authenticated(adapter, adapter.ping)

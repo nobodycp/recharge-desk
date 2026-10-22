@@ -40,7 +40,7 @@ def _is_pending(started_at: float | None, last_login_at) -> bool:
     return last_login_at is None or last_login_at.timestamp() < started_at
 
 
-def start(provider_key: str) -> str:
+def start(provider_key: str, otp_code: str = "") -> str:
     """Enqueue a login test: ``"started"``, ``"pending"`` or ``"unavailable"``."""
     from providers import tasks
 
@@ -56,7 +56,10 @@ def start(provider_key: str) -> str:
         cache.set(key, now, TEST_TTL_SECONDS)
     cache.set(_started_key(provider_key), now, STARTED_TTL_SECONDS)
     try:
-        tasks.test_connection.delay(provider_key)
+        if otp_code:
+            tasks.test_connection.delay(provider_key, otp_code)
+        else:
+            tasks.test_connection.delay(provider_key)
     except Exception as exc:
         log.warning("provider %s login test could not be enqueued: %s", provider_key, exc)
         cache.delete(key)

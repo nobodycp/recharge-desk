@@ -94,25 +94,31 @@
             <div class="mb-3">
               <div class="fw-semibold">{% trans "حساب المزوّد:" %} <span class="text-uppercase">{{ connection_key }}</span></div>
               <div class="rd-text-muted small">
-                {% trans "تُحفظ كلمة المرور ومفتاح TOTP والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة." %}
+                {% if "totp_secret" in account_form.fields %}
+                  {% trans "تُحفظ كلمة المرور ومفتاح TOTP والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة." %}
+                {% else %}
+                  {% trans "تُحفظ كلمة المرور والبروكسي مشفّرة ولا تُعرض مجدداً — اترك الحقل فارغاً للإبقاء على القيمة المحفوظة." %}
+                {% endif %}
               </div>
             </div>
             <form method="post" action="{% url 'companies:company_connection_account' company.pk %}"
-                  autocomplete="off" class="row g-3">
+                  autocomplete="off" class="rd-form-grid">
               {% csrf_token %}
-              <div class="col-12 col-md-6">
+              <div>
                 <label class="form-label" for="{{ account_form.username.id_for_label }}">{{ account_form.username.label }}:</label>
                 {{ account_form.username }}
               </div>
-              <div class="col-12 col-md-6">
+              <div>
                 <label class="form-label" for="{{ account_form.password.id_for_label }}">{{ account_form.password.label }}:</label>
                 {{ account_form.password }}
               </div>
-              <div class="col-12 col-md-6">
+              {% if "totp_secret" in account_form.fields %}
+              <div>
                 <label class="form-label" for="{{ account_form.totp_secret.id_for_label }}">{{ account_form.totp_secret.label }}:</label>
                 {{ account_form.totp_secret }}
               </div>
-              <div class="col-12 col-md-6">
+              {% endif %}
+              <div class="{% if 'totp_secret' not in account_form.fields %}rd-field--full{% endif %}">
                 <label class="form-label" for="{{ account_form.proxy_url.id_for_label }}">{{ account_form.proxy_url.label }}:</label>
                 {{ account_form.proxy_url }}
                 <div class="form-check mt-2">
@@ -122,10 +128,36 @@
                   </label>
                 </div>
               </div>
-              <div class="col-12 d-flex justify-content-end">
+              <div class="rd-field--full d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary">{% trans "حفظ الحساب" %}</button>
               </div>
             </form>
+
+            {% if connection_key == "areen" %}
+              <form id="areen-otp-slot" class="rd-form-grid mt-3" {% if not login.otp_required %}hidden{% endif %}
+                    method="post" action="{% url 'companies:company_connection_test' company.pk %}"
+                    hx-post="{% url 'companies:company_connection_test' company.pk %}"
+                    hx-target="#connection-login-status"
+                    hx-swap="outerHTML">
+                {% csrf_token %}
+                <div>
+                  <label class="form-label" for="areen-otp-code">{% trans "رمز التحقق" %}</label>
+                  <input id="areen-otp-code" name="otp_code" type="text" inputmode="numeric"
+                         autocomplete="one-time-code" maxlength="8" dir="ltr"
+                         class="form-control" placeholder="{% trans "الرمز الذي وصل للجوال" %}">
+                </div>
+                <div>
+                  <label class="form-label" aria-hidden="true">&nbsp;</label>
+                  <button type="submit" class="btn btn-primary w-100">{% trans "تحقق" %}</button>
+                </div>
+                <div class="rd-field--full">
+                  <div class="rd-text-muted small">{% trans "تم إرسال رمز التحقق إلى الموبايل. أدخله ثم اضغط تحقق." %}</div>
+                  {% if login.otp_error %}
+                    <div class="text-danger small text-break mt-1" dir="auto">{{ login.otp_error }}</div>
+                  {% endif %}
+                </div>
+              </form>
+            {% endif %}
 
             <hr class="my-3">
             <div class="d-flex flex-wrap align-items-start gap-3">
@@ -143,6 +175,23 @@
               {% endif %}
               {% include "companies/partials/connection_login_status.html" %}
             </div>
+            {% if connection_key == "areen" %}
+            <script>
+            htmx.onLoad(function (root) {
+              if (!root || root.id !== "connection-login-status") return;
+              if (root.getAttribute("hx-trigger")) return;
+              var slot = document.getElementById("areen-otp-slot");
+              if (!slot) return;
+              var open = root.getAttribute("data-areen-otp") === "open";
+              var wasHidden = slot.hidden;
+              slot.hidden = !open;
+              var input = document.getElementById("areen-otp-code");
+              if (!input) return;
+              if (!open) input.value = "";
+              if (open && wasHidden) input.focus();
+            });
+            </script>
+            {% endif %}
           </div>
         </div>
       </div>

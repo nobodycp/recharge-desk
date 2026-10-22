@@ -149,10 +149,14 @@ def record_login(provider_key: str, ok: bool, error: str = "") -> None:
     account = ProviderConnection.objects.filter(provider_key=provider_key).first()
     if account is None:
         return
+    extra = load_extra(account)
+    device = extra.get("areen_device") if isinstance(extra.get("areen_device"), dict) else {}
+    cookies = device.get("cookies") if isinstance(device.get("cookies"), dict) else {}
     secrets = [
         decrypt_or_empty(account.secret_encrypted),
         decrypt_or_empty(account.totp_secret_encrypted),
-        str(load_extra(account).get("proxy_url", "")),
+        str(extra.get("proxy_url", "")),
+        *[str(value) for value in cookies.values() if value],
     ]
     account.last_login_at = timezone.now()
     account.last_login_ok = ok

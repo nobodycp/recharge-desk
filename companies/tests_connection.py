@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 from django.conf import settings
@@ -523,3 +524,86 @@ class SharedSystemTests(_Base):
     def test_no_shared_note_when_alone(self):
         company = self.company(name="Alpha", provider_key="layan")
         self.assertNotContains(self.tab(company), "مشترك مع")
+
+
+class AreenLoginFieldTests(_Base):
+    def test_areen_keeps_the_sms_field_closed_until_the_provider_asks(self):
+        company = self.company(provider_key="areen")
+        response = self.tab(company)
+        self.assertContains(response, 'id="areen-otp-slot" class="rd-form-grid mt-3" hidden')
+        self.assertContains(response, 'name="otp_code"')
+        self.assertNotContains(response, 'data-areen-otp="open"')
+        self.assertNotContains(response, "totp_secret")
+        self.assertNotContains(response, "مفتاح TOTP")
+
+    def test_sms_request_notifies_and_opens_the_code_field(self):
+        connection = ProviderConnection.for_key("areen")
+        connection.last_login_ok = False
+        connection.last_login_at = timezone.now()
+        connection.last_error = "تم إرسال رمز التحقق إلى الموبايل. أدخله ثم أعد الاختبار."
+        connection.save()
+        company = self.company(provider_key="areen")
+        page = self.tab(company)
+        self.assertContains(page, "بانتظار رمز التحقق")
+        self.assertContains(page, 'data-areen-otp="open"')
+        self.assertNotContains(page, 'id="areen-otp-slot" class="rd-form-grid mt-3" hidden')
+        self.assertContains(page, "تم إرسال رمز التحقق إلى الموبايل. أدخله ثم اضغط تحقق.")
+        self.assertContains(page, "تحقق")
+        body = page.content.decode()
+        self.assertLess(body.index('id="areen-otp-slot"'), body.index("اختبار تسجيل الدخول"))
+        self.assertGreater(
+            body.index("اختبار تسجيل الدخول"),
+            body.index("تم إرسال رمز التحقق إلى الموبايل"),
+        )
+        response = self.client.get(
+            self.url("company_connection_status", company), HTTP_HX_REQUEST="true"
+        )
+        self.assertNotContains(response, "تم إرسال رمز التحقق إلى الموبايل")
+        toast = json.loads(response["HX-Trigger"])["rdToast"]
+        self.assertEqual(toast["level"], "warning")
+        self.assertIn("تم إرسال رمز التحقق", toast["message"])
+        self.assertContains(response, 'data-areen-otp="open"')
+
+    def test_rejected_code_keeps_the_field_open(self):
+        connection = ProviderConnection.for_key("areen")
+        connection.last_login_ok = False
+        connection.last_login_at = timezone.now()
+        connection.last_error = "رمز التحقق غير صحيح."
+        connection.save()
+        company = self.company(provider_key="areen")
+        page = self.tab(company)
+        self.assertContains(page, "بانتظار رمز التحقق")
+        self.assertContains(page, "رمز التحقق غير صحيح.")
+        self.assertNotContains(page, 'id="areen-otp-slot" class="rd-form-grid mt-3" hidden')
+        status = self.client.get(self.url("company_connection_status", company))
+        self.assertNotContains(status, "رمز التحقق غير صحيح.")
+
+    def test_successful_login_hides_the_code_field(self):
+        connection = ProviderConnection.for_key("areen")
+        connection.last_login_ok = True
+        connection.last_login_at = timezone.now()
+        connection.last_error = ""
+        connection.save()
+        company = self.company(provider_key="areen")
+        page = self.tab(company)
+        self.assertContains(page, "آخر دخول: ناجح")
+        self.assertContains(page, 'id="areen-otp-slot" class="rd-form-grid mt-3" hidden')
+        self.assertContains(page, "اختبار تسجيل الدخول")
+
+    def test_sky_still_asks_for_the_totp_secret(self):
+        company = self.company(provider_key="sky")
+        response = self.tab(company)
+        self.assertContains(response, "مفتاح TOTP")
+        self.assertNotContains(response, 'name="otp_code"')
+
+    def test_areen_test_sends_the_typed_code(self):
+        company = self.company(provider_key="areen")
+        with patch("providers.login_test.start", return_value="started") as start:
+            response = self.post(
+                "company_connection_test",
+                company,
+                {"otp_code": "111111"},
+                HTTP_HX_REQUEST="true",
+            )
+        start.assert_called_once_with("areen", "111111")
+        self.assertEqual(response.status_code, 200)

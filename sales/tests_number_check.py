@@ -781,11 +781,43 @@ class CardContextTests(_Base):
     def test_physical_sim(self):
         self.assertEqual(self.ctx(NumberInfo(is_esim=False))["sim_type"], "شريحة عادية")
 
+    def test_areen_sim_type_follows_our_sale(self):
+        sale = self.sale()
+        sale.company = Company(provider_key="areen", name="Areen")
+        sale.is_esim = True
+        self.assertEqual(self.ctx(NumberInfo(is_esim=False), sale)["sim_type"], "شريحة إلكترونية")
+        sale.is_esim = False
+        self.assertEqual(self.ctx(NumberInfo(is_esim=True), sale)["sim_type"], "شريحة عادية")
+
+    def test_a_past_end_date_reads_as_expired(self):
+        info = NumberInfo(
+            ends_at=timezone.make_aware(dt.datetime(2026, 5, 19, 12, 0)),
+            data_used_gb=Decimal("6.89"),
+            data_total_gb=Decimal("500"),
+            minutes_used=0,
+            minutes_unlimited=True,
+            sms_used=1,
+            sms_unlimited=True,
+        )
+        ctx = self.ctx(info, today=dt.date(2026, 10, 23))
+        self.assertEqual(ctx["expiry"]["date"], "19/05/2026")
+        self.assertEqual(ctx["expiry"]["state"], "منتهية")
+        days = next(row["value"] for row in ctx["facts"] if row["label"] == "الأيام المتبقية")
+        self.assertEqual(days, "منتهية")
+        data, minutes, sms = ctx["usage"]
+        self.assertEqual(data["used"], "6.8")
+        self.assertEqual(data["total"], "500")
+        self.assertTrue(minutes["unlimited"])
+        self.assertEqual(minutes["used"], "0")
+        self.assertTrue(sms["unlimited"])
+        self.assertEqual(sms["used"], "1")
+
     def test_status_tones(self):
         self.assertEqual(self.ctx(NumberInfo(status="مفعل"))["status_tone"], "ok")
         self.assertEqual(self.ctx(NumberInfo(status="غير مفعل"))["status_tone"], "warn")
         self.assertEqual(self.ctx(NumberInfo(status="موقوف"))["status_tone"], "warn")
         self.assertEqual(self.ctx(NumberInfo(status="شيء آخر"))["status_tone"], "muted")
+        self.assertEqual(self.ctx(NumberInfo(status="موصــــــول"))["status_tone"], "ok")
         self.assertEqual(self.ctx(NumberInfo())["status_tone"], "muted")
 
     def test_network_tones(self):

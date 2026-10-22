@@ -456,7 +456,8 @@ class KeepaliveTaskTests(TestCase):
         ) as keepalive:
             keepalive_sessions()
         self.assertEqual(
-            [call.args[0] for call in keepalive.call_args_list], ["sky", "layan"]
+            [call.args[0] for call in keepalive.call_args_list],
+            ["sky", "layan", "areen"],
         )
 
         with patch("providers.tasks.get_credentials", return_value=creds), patch(
@@ -489,6 +490,7 @@ class KeepaliveTaskTests(TestCase):
 
         ProviderConnection.objects.create(provider_key="sky", is_enabled=False)
         ProviderConnection.objects.create(provider_key="layan", is_enabled=False)
+        ProviderConnection.objects.create(provider_key="areen", is_enabled=False)
         with patch(
             "providers.tasks.get_credentials", return_value=Credentials("u", "p")
         ), patch("providers.tasks.service.keepalive") as keepalive:

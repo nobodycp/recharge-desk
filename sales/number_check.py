@@ -376,7 +376,7 @@ _NETWORK_TONES = (
     (("وطنية", "اوريدو", "أوريدو", "ooredoo"), "ooredoo"),
 )
 _INACTIVE_WORDS = ("غير", "موقوف", "معلق", "ملغ", "inactive", "suspend", "blocked")
-_ACTIVE_WORDS = ("مفعل", "فعال", "نشط", "active")
+_ACTIVE_WORDS = ("مفعل", "فعال", "نشط", "موصول", "active")
 _GAUGES = (
     ("data", "إنترنت", "جيجا"),
     ("minutes", "دقائق", "دقيقة"),
@@ -437,7 +437,7 @@ def _network_tone(network: str) -> str:
 def _status_tone(status: str) -> str:
     if status.strip() == LEFT_AGENCY:
         return "warn"
-    text = status.lower()
+    text = status.replace("\u0640", "").lower()
     if not text:
         return "muted"
     if any(word in text for word in _INACTIVE_WORDS):
@@ -497,14 +497,19 @@ def _usage(info: NumberInfo) -> list[dict]:
         "sms": (info.sms_used, info.sms_total),
     }
     gauges = [_gauge(key, label, unit, *values[key]) for key, label, unit in _GAUGES]
-    if info.data_unlimited:
-        for gauge in gauges:
-            if gauge["key"] == "data":
-                gauge["unlimited"] = True
-                gauge["total"] = ""
-                gauge["pct"] = ""
-                gauge["remaining"] = ""
-                gauge["included"] = True
+    unlimited = {
+        "data": info.data_unlimited,
+        "minutes": info.minutes_unlimited,
+        "sms": info.sms_unlimited,
+    }
+    for gauge in gauges:
+        if not unlimited.get(gauge["key"]):
+            continue
+        gauge["unlimited"] = True
+        gauge["total"] = ""
+        gauge["pct"] = ""
+        gauge["remaining"] = ""
+        gauge["included"] = True
     return gauges
 
 
@@ -702,10 +707,10 @@ def _share(ctx: dict) -> dict:
 
 
 def _sim_is_esim(info: NumberInfo, sale: Sale | None) -> bool:
-    """Layan's eSIM flag is unreliable, so that card uses the flag on our sale."""
+    """Layan and Areen do not report the SIM type, so the card uses our sale."""
     company = getattr(sale, "company", None)
     key = (getattr(company, "provider_key", "") or "").strip().lower()
-    if sale is not None and key == "layan":
+    if sale is not None and key in {"layan", "areen"}:
         return bool(sale.is_esim)
     return bool(info.is_esim)
 
