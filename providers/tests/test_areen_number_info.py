@@ -150,6 +150,29 @@ class AreenNumberInfoParseTests(SimpleTestCase):
 
 
 class AreenNumberInfoRequestTests(SimpleTestCase):
+    def test_password_login_opens_the_subscribe_screen(self):
+        menu = (
+            'O2.rootObj=true;_cdo_("frmMaster");'
+            'O1EA=new Ext.button.Button({text:"اشتراك وشحن"});'
+            'O1EA.nm="O1EA";_cdo_("btnMMtfaseel",O1EA);'
+        )
+        search = (
+            'O9.rootObj=true;_cdo_("edtCelNum",O438);'
+            '_cdo_("btnFind",O43C);_cdo_("btnCstmrDLYButton",O44C);'
+        )
+        http = _Http([search])
+        opened = AreenPortal(http=http).open_subscriber_search("sid", menu)
+        self.assertIn("edtCelNum", opened)
+        self.assertIn("Obj=O1EA", http.calls[0][1])
+        self.assertIn("Evt=click", http.calls[0][1])
+
+    def test_an_open_search_screen_is_left_as_it_is(self):
+        search = 'O9.rootObj=true;_cdo_("edtCelNum",O438);'
+        http = _Http([])
+        opened = AreenPortal(http=http).open_subscriber_search("sid", search)
+        self.assertEqual(opened, search)
+        self.assertEqual(http.calls, [])
+
     def test_lookup_reads_the_details_window_and_the_usage_row(self):
         http = _Http(["", "", SEARCH, CUSTOMER, USAGE, ROWS])
         session = {

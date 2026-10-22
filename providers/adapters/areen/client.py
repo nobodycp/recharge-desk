@@ -226,6 +226,23 @@ class AreenPortal:
             raise AreenError(OTP_REJECTED)
         clear_pending()
 
+    def open_subscriber_search(self, session_id: str, script: str) -> str:
+        """Open «اشتراك وشحن». A password login lands on the menu, not the search."""
+        from providers.adapters.areen.number_info import component_map, main_window
+
+        names = component_map(script)
+        if "edtCelNum" in names:
+            return script
+        button = names.get("btnMMtfaseel")
+        window = main_window(script, "btnMMtfaseel")
+        if not session_id or not button or not window:
+            raise AreenError(FORM_FAILED)
+        page = PortalPage(session_id, window, "", "", "")
+        opened = self._event(page, button, "click", extra=f"this={button}")
+        if "edtCelNum" not in component_map(opened):
+            raise AreenError(FORM_FAILED)
+        return opened
+
     def read_subscription(self, session: dict, phone: str) -> dict:
         """Look ``phone`` up on an already open portal session.
 

@@ -137,6 +137,7 @@ class AreenAdapter(BaseAdapter):
                 raise PermanentError(str(exc)) from exc
             except requests.RequestException as exc:
                 raise TransientError("connection_error") from exc
+            script = portal.open_subscriber_search(page.session_id, script)
             names = component_map(script)
             window = main_window(script, "edtCelNum")
             session = {
