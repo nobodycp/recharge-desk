@@ -16,6 +16,7 @@ from providers.shared.activity import (
 )
 from providers.shared.phones import norm_phone
 from providers.shared.rd_sales import rd_ledger_totals, rd_sales_by_phone
+from sales.pricing import provider_comparable_cost
 
 REFUND_MARKERS = ("إعادة مال",)
 DEPOSIT_OP = "دفع جديد"
@@ -764,7 +765,7 @@ def _layan_rd_sales_by_phone_details(
     qs = (
         Sale.objects.exclude(status=Sale.Status.CANCELLED)
         .filter(company=company)
-        .select_related("product")
+        .select_related("product__line")
         .order_by("created_at")
     )
     if period_from:
@@ -782,7 +783,7 @@ def _layan_rd_sales_by_phone_details(
             {
                 "id": sale.pk,
                 "at": sale.created_at,
-                "cost": Decimal(sale.cost_price_snapshot),
+                "cost": provider_comparable_cost(sale),
                 "product": label,
                 "is_esim": bool(sale.is_esim),
                 "status": sale.status,

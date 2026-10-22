@@ -58,6 +58,23 @@ def prorate_amount(amount: Decimal, *, base_days: int, duration_days: int) -> De
     return quantize_money(Decimal(amount) * Decimal(duration) / Decimal(base))
 
 
+def provider_comparable_cost(sale) -> Decimal:
+    """Provider-facing cost of a sale.
+
+    The new-SIM chip is our own stock, not a charge on the supplier, so it
+    is left out of company reconciliation. eSIM extra stays, because that is
+    a supplier cost.
+    """
+    cost = Decimal(sale.cost_price_snapshot or 0)
+    if not getattr(sale, "is_new_sim", False):
+        return cost
+    product = getattr(sale, "product", None)
+    chip = _new_sim_unit_cost(product) if product is not None else Decimal("0")
+    if chip <= 0 or cost <= chip:
+        return cost if chip <= 0 else Decimal("0")
+    return cost - chip
+
+
 def _new_sim_unit_cost(product: Product) -> Decimal:
     """Estimated SIM plastic/chip cost from the product line, if configured."""
     raw = getattr(product.line, "estimated_unit_cost", None)

@@ -327,6 +327,26 @@ class SkyReconcileMatchTests(TestCase):
         self.assertEqual(result.action_count, 2)  # not_recorded + rd_only
         self.assertEqual(result.mismatch_count, 1)
 
+    def test_new_sim_chip_is_left_out_of_the_provider_comparison(self):
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        sale = self._sale(self.company, self.product, "0588888888", Decimal("57"))
+        Sale.objects.filter(pk=sale.pk).update(is_new_sim=True)
+        rows = [
+            _row(phone="0588888888", delta="-45", before="100", after="55", cost="45"),
+        ]
+        result = reconcile_sky_report(
+            self.company,
+            rows,
+            period_from=date(2026, 8, 1),
+            period_to=date(2026, 8, 31),
+            min_amount_diff=Decimal("3"),
+        )
+        self.assertEqual(result.amount_mismatches, [])
+        matched = next(r for r in result.matched if r.phone == "0588888888")
+        self.assertEqual(matched.rd_net, Decimal("45"))
+        self.assertEqual(matched.gap, Decimal("0"))
+
     def test_esim_sum_matches_rd_snapshot(self):
         self._sale(self.company, self.product, "0577777777", Decimal("50"))
         rows = [

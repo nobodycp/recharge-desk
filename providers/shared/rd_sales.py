@@ -18,8 +18,11 @@ def rd_sales_by_phone(
     Pass ``company`` to scope matching to one supplier (e.g. Layan only).
     """
     from sales.models import Sale
+    from sales.pricing import provider_comparable_cost
 
-    qs = Sale.objects.exclude(status=Sale.Status.CANCELLED).select_related("company")
+    qs = Sale.objects.exclude(status=Sale.Status.CANCELLED).select_related(
+        "company", "product__line"
+    )
     if company is not None:
         qs = qs.filter(company=company)
     if period_from:
@@ -28,14 +31,13 @@ def rd_sales_by_phone(
         qs = qs.filter(created_at__date__lte=period_to)
     out: dict[str, Decimal] = {}
     suppliers: dict[str, list[str]] = {}
-    for ref, cost, company_name in qs.values_list(
-        "reference_number", "cost_price_snapshot", "company__name"
-    ):
-        ph = norm_phone(ref or "")
+    for sale in qs:
+        ph = norm_phone(sale.reference_number or "")
         if not ph:
             continue
-        out[ph] = out.get(ph, Decimal("0")) + Decimal(cost)
+        out[ph] = out.get(ph, Decimal("0")) + provider_comparable_cost(sale)
         names = suppliers.setdefault(ph, [])
+        company_name = sale.company.name if sale.company_id else ""
         if company_name and company_name not in names:
             names.append(company_name)
     return out, suppliers

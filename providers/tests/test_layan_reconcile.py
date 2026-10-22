@@ -66,6 +66,46 @@ class LayanReconcileTests(TestCase):
         sale.save(update_fields=["created_at"])
         return sale
 
+    def test_new_sim_chip_is_left_out_of_the_provider_comparison(self):
+        from sales.models import PaymentMethod, Sale
+
+        line = ProductLine.objects.create(
+            company=self.company, name="Chip", estimated_unit_cost=_decimal(12)
+        )
+        product = Product.objects.create(
+            line=line,
+            variant_label="v",
+            cost_price=_decimal(30),
+            default_sell_price=_decimal(50),
+        )
+        pm = PaymentMethod.objects.create(name="cash-chip")
+        self._create_may_sale(
+            company=self.company,
+            product=product,
+            reference_number="0540000000",
+            payer_name="test",
+            payment_method=pm,
+            cost_price_snapshot=_decimal(42),
+            sell_price_actual=_decimal(50),
+            profit_snapshot=_decimal(8),
+            loss_snapshot=_decimal(0),
+            status=Sale.Status.PAID,
+            created_by=self.user,
+            is_new_sim=True,
+        )
+        buf = self._minimal_workbook(
+            [("0540000000", "تفعيل", 30, 1000, 970, "15/05/2026 10:00")]
+        )
+        result = reconcile_layan_report(
+            self.company,
+            buf,
+            period_from=date(2026, 5, 1),
+            period_to=date(2026, 5, 31),
+        )
+        self.assertEqual(result.amount_mismatches, [])
+        matched = next(r for r in result.matched if r.phone == "0540000000")
+        self.assertEqual(matched.rd_net, _decimal(30))
+
     def test_reconcile_not_recorded_and_split(self):
         from sales.models import PaymentMethod, Sale
 
