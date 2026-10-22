@@ -83,7 +83,8 @@
 
   if (phoneInp) {
     phoneInp.addEventListener("input", function () {
-      phoneInp.value = phoneInp.value.replace(/\D/g, "").slice(0, 10);
+      // 22 covers a full ICCID. A 10-digit cap cut serials and matched the wrong line.
+      phoneInp.value = phoneInp.value.replace(/\D/g, "").slice(0, 22);
     });
   }
 

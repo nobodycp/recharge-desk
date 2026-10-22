@@ -73,7 +73,7 @@ const post = (o) => o.method === "POST";
 
   // 1. invalid phone -> toast, no fetch, button untouched
   let e = makeEnv({ fetchImpl: () => resp(200, {}) });
-  e.click("12345"); await e.settle();
+  e.click("12"); await e.settle();
   check("invalid phone: no fetch, invalid-phone toast", e.fetchCalls.length === 0 && e.toasts.length === 1 && e.toasts[0].m === "رقم غير صحيح" && e.toasts[0].l === "error", [e.fetchCalls.length, e.toasts]);
   e.click(""); await e.settle();
   check("empty phone: phone toast", e.fetchCalls.length === 0 && e.toasts[1].m === "أدخل رقم الهاتف", e.toasts);

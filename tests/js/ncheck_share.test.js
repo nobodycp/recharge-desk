@@ -19,7 +19,7 @@ const SHARE = {
     { label: "سعر الاشتراك", value: "60 ₪", ltr: true },
   ],
   usage: [
-    { label: "إنترنت", used: "6.08", total: "400", unit: "جيجا", pct: "1.5", included: true },
+    { label: "إنترنت", used: "6.0", total: "400", unit: "جيجا", pct: "1.5", tone: "ok", included: true },
     { label: "دقائق", used: "0", total: "5000", unit: "دقيقة", pct: "0", included: true },
     { label: "رسائل", used: "0", total: "0", unit: "رسالة", pct: "", included: false },
   ],
@@ -124,7 +124,11 @@ const setTimeout0 = (fn) => setImmediate(fn);
   check("layout: company, package, sim and our price",
     strs.includes("سلكوم") && strs.includes("رمضان") && strs.includes("شريحة إلكترونية") && strs.includes("60 ₪"), strs);
   check("layout: not-included ring says so", strs.includes("غير مشمولة"), strs);
-  check("layout: capped usage prints used / total", strs.includes("6.08 / 400") && strs.includes("0 / 5000"), strs);
+  check("layout: capped usage prints used / total", strs.includes("6.0 / 400") && strs.includes("0 / 5000"), strs);
+  const arcs = L.ops.filter((o) => o.t === "arc");
+  const rings = L.ops.filter((o) => o.t === "ring");
+  check("layout: each usage circle has a track, and only a used share draws an arc",
+    rings.length === 3 && arcs.length === 1 && arcs[0].pct === 1.5 && arcs[0].stroke === "INK", { rings: rings.length, arcs: arcs });
   check("layout: line logo + site logo images when available", L.ops.filter((o) => o.t === "image").map((o) => o.key).sort().join() === "line,site", 0);
   const L2 = api.layoutShare({ ...SHARE, line_name: "سلكوم", usage: [], has_usage: false }, (s, w, z) => String(s).length * z * 0.5, COLORS, { hasLineLogo: false });
   const s2 = L2.ops.filter((o) => o.t === "text").map((o) => o.s);

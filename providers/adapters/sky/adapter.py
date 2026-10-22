@@ -15,7 +15,12 @@ from providers.adapters.sky.client import (
     SkySalesError,
     SkySalesSessionError,
 )
-from providers.adapters.sky.number_info import matches_phone, parse_number_info
+from providers.adapters.sky.number_info import (
+    is_pelephone,
+    matches_phone,
+    parse_number_info,
+    parse_talkphone_balance,
+)
 from providers.adapters.sky.reconcile import SkyReconcileResult, reconcile_sky_report
 from providers.adapters.sky.topup import (
     build_task,
@@ -132,7 +137,26 @@ class SkyAdapter(BaseAdapter):
         # exactly; a number check must not report another line's data.
         if not row or not matches_phone(row, phone):
             raise PermanentError("not_found")
-        return parse_number_info(row)
+        info = parse_number_info(row)
+        if not is_pelephone(info.network):
+            return info
+        # Pelephone usage is not on the subscriber row. Package size stays
+        # with the sale; only what was consumed comes from this call.
+        with _sky_errors():
+            balance = client.talkphone_balance(phone)
+        used_gb, minutes, sms = parse_talkphone_balance(balance)
+        return NumberInfo(
+            network=info.network,
+            is_esim=info.is_esim,
+            status=info.status,
+            plan_name=info.plan_name,
+            plan_price=info.plan_price,
+            ends_at=info.ends_at,
+            data_used_gb=used_gb,
+            minutes_used=minutes,
+            sms_used=sms,
+            iccid=info.iccid,
+        )
 
     def _rows(self, data: dict) -> list[dict]:
         rows = data.get("data") or []

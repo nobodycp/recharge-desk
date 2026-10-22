@@ -189,6 +189,21 @@ class SubmitRoutingTests(_Base):
                 _, status = self.run_check(query)
                 self.assertEqual(status.json()["status"], "ok")
 
+    def test_short_middle_or_full_serial_all_resolve(self):
+        from reports.models import PhoneLineTracking
+
+        self.make_sale()
+        PhoneLineTracking.objects.create(
+            reference_key=PHONE,
+            sim_identifier="89972096000018341080",
+            last_display_reference=PHONE,
+        )
+        for query in ("341080", "18341080", "89972096000018341080"):
+            with self.subTest(query=query):
+                _, status = self.run_check(query)
+                self.assertEqual(status.json()["status"], "ok")
+                self.assertIn(PHONE, status.json()["html"])
+
     def test_unknown_or_ambiguous_serial_does_not_call_the_provider(self):
         from reports.models import PhoneLineTracking
 
@@ -211,6 +226,35 @@ class SubmitRoutingTests(_Base):
             "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول.",
         )
         self.adapter_call.assert_not_called()
+
+    def test_shared_prefix_does_not_check_a_different_chip(self):
+        from reports.models import PhoneLineTracking
+
+        wanted = "8997207180002560597"
+        self.make_sale()
+        PhoneLineTracking.objects.create(
+            reference_key=PHONE,
+            sim_identifier=wanted,
+            last_display_reference=PHONE,
+        )
+        PhoneLineTracking.objects.create(
+            reference_key="0539648094",
+            sim_identifier="8997207180002560530",
+            last_display_reference="0539648094",
+        )
+        self.make_sale(
+            "0539648094",
+            when=dt.datetime(2026, 10, 20, 10, 0, tzinfo=TZ_PLUS_2),
+        )
+        prefix = self.post("1800025605")
+        self.assertEqual(
+            prefix.json()["message"],
+            "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول.",
+        )
+        _, status = self.run_check("180002560597")
+        self.assertIn(PHONE, status.json()["html"])
+        self.assertNotIn("0539648094", status.json()["html"])
+        self.adapter_call.assert_called()
 
     def test_shared_serial_checks_the_last_charged_number(self):
         from reports.models import PhoneLineTracking
@@ -353,7 +397,7 @@ class HappyPathTests(_Base):
             "13/11/2026",
             "30 يوم",
             PHONE_DISPLAY,
-            "6.08 / 400",
+            "6.0 / 400",
             ICCID,
             "60 ₪",
             "رمضان",
@@ -702,8 +746,8 @@ class CardContextTests(_Base):
             data,
             {
                 "key": "data", "label": "إنترنت", "unit": "جيجا",
-                "used": "6.08", "total": "400", "pct": "1.5",
-                "remaining": "393.92", "tone": "ok", "included": True, "unlimited": False,
+                "used": "6.0", "total": "400", "pct": "1.5",
+                "remaining": "393.9", "tone": "ok", "included": True, "unlimited": False,
             },
         )
         self.assertEqual((minutes["used"], minutes["total"], minutes["pct"]), ("0", "5000", "0"))
@@ -956,7 +1000,7 @@ class CardContextTests(_Base):
         self.assertRegex(share["checked_at"], r"^14/10/2026 · \d\d:05$")
         self.assertEqual(
             share["usage"][0],
-            {"label": "إنترنت", "used": "6.08", "total": "400", "unit": "جيجا", "pct": "1.5", "included": True, "unlimited": False},
+            {"label": "إنترنت", "used": "6.0", "total": "400", "unit": "جيجا", "pct": "1.5", "tone": "ok", "included": True, "unlimited": False},
         )
         self.assertEqual(len(share["usage"]), 3)
         text = json.dumps(share, ensure_ascii=False)
@@ -1047,9 +1091,41 @@ class CardContextTests(_Base):
         self.assertNotIn("لا يوجد تاريخ انتهاء", html)
         self.assertGreaterEqual(html.count(">—<"), 2)
 
+    def test_pelephone_consumption_uses_our_package_size(self):
+        line = ProductLine.objects.create(company=self.company, name="Pelephone")
+        product = Product.objects.create(
+            line=line,
+            variant_label="150GB",
+            cost_price=Decimal("1"),
+            default_sell_price=Decimal("1"),
+        )
+        sale = Sale(product=product, company=self.company, created_at=NOW)
+        info = NumberInfo(
+            network="بليفون",
+            data_used_gb=Decimal("20.74"),
+            data_total_gb=Decimal("999"),
+            minutes_used=0,
+            minutes_total=5000,
+            sms_used=0,
+            sms_total=5000,
+            utilization_pct=Decimal("80"),
+        )
+        ctx = self.ctx(info, sale)
+        data = next(row for row in ctx["usage"] if row["key"] == "data")
+        self.assertEqual((data["used"], data["total"]), ("20.7", "150"))
+        self.assertEqual(ctx["facts"][1]["value"], "150 جيجا")
+        minutes = next(row for row in ctx["usage"] if row["key"] == "minutes")
+        self.assertEqual((minutes["used"], minutes["total"]), ("0", ""))
+
+    def test_fractional_usage_shows_one_decimal_digit(self):
+        ctx = self.ctx(NumberInfo(data_used_gb=Decimal("50.4434"), data_total_gb=Decimal("400")))
+        data = ctx["usage"][0]
+        self.assertEqual(data["used"], "50.4")
+        self.assertEqual(data["total"], "400")
+
     def test_usage_rings_show_used_and_total(self):
         html = self.card()
-        self.assertIn("6.08 / 400", html)
+        self.assertIn("6.0 / 400", html)
         self.assertIn("إنترنت", html)
         self.assertIn("0 / 5000", html)
         self.assertIn("دقائق", html)

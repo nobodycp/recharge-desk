@@ -559,6 +559,16 @@ class SkySalesClient:
                 return row[lower]
         return None
 
+    def talkphone_balance(self, phone: str) -> str:
+        """Used internet, SMS, and minutes for a Pelephone line."""
+        data = self.generic_api("GetTalkphoneBalance", [phone.strip()])
+        if data.get("result") != "SUCCESS":
+            raise SkySalesError(f"GetTalkphoneBalance failed: {data.get('result')}")
+        rows = self._rows(data)
+        if not rows:
+            return ""
+        return str(self._first(rows[0], "proc_talkphone_balance") or "")
+
     def search_subscriber(self, phone: str, lang: str = "AR") -> dict[str, Any] | None:
         if not self.session.eot_user_id:
             raise SkySalesError("eot_user_id missing — login first")

@@ -226,7 +226,22 @@
       var col = (WIDTH - 2 * MARGIN) / 3;
       rings.forEach(function (g, i) {
         var cx = RIGHT - col * i - col / 2;
-        ops.push({ t: "circle", x: cx, y: y + 54, r: 46, fill: c.surface2 });
+        var cy = y + 54;
+        ops.push({ t: "circle", x: cx, y: cy, r: 46, fill: c.surface2 });
+        // The ring track stays full; the arc is the share of the package already used.
+        ops.push({ t: "ring", x: cx, y: cy, r: 46, stroke: c.border, width: 8 });
+        var pct = parseFloat(g.pct);
+        if (g.included !== false && !g.unlimited && pct > 0) {
+          ops.push({
+            t: "arc",
+            x: cx,
+            y: cy,
+            r: 46,
+            pct: Math.min(pct, 100),
+            stroke: g.tone === "warn" ? c.warning : g.tone === "danger" ? c.danger : c.ink,
+            width: 8,
+          });
+        }
         ltr(String(g.used), cx - m(String(g.used), 700, 28) / 2, y + 64, 700, 28, c.ink);
         text(g.label, cx, y + 130, 600, 26, c.ink, "center");
         var caption = g.included === false ? "غير مشمولة" : g.unlimited ? "غير محدود" : "";
@@ -274,6 +289,15 @@
         ctx.arc(op.x, op.y, op.r, 0, Math.PI * 2);
         ctx.fillStyle = op.fill;
         ctx.fill();
+      } else if (op.t === "ring" || op.t === "arc") {
+        ctx.beginPath();
+        var start = -Math.PI / 2;
+        var sweep = op.t === "ring" ? Math.PI * 2 : (Math.PI * 2 * op.pct) / 100;
+        ctx.arc(op.x, op.y, op.r, start, start + sweep);
+        ctx.strokeStyle = op.stroke;
+        ctx.lineWidth = op.width || 8;
+        ctx.lineCap = "round";
+        ctx.stroke();
       } else if (op.t === "text") {
         ctx.font = fontString(op.weight, op.size);
         ctx.direction = op.dir;

@@ -16,7 +16,11 @@ from providers.adapters.sky.client import (
     SkySalesSessionError,
     proxy_fingerprint,
 )
-from providers.adapters.sky.number_info import matches_phone, parse_number_info
+from providers.adapters.sky.number_info import (
+    matches_phone,
+    parse_number_info,
+    parse_talkphone_balance,
+)
 from providers.contracts import (
     AuthRequired,
     BaseAdapter,
@@ -29,6 +33,8 @@ from providers.redis_conn import get_redis
 from providers.sessions import SessionStore
 
 SEARCH = "providers.adapters.sky.client.SkySalesClient.search_subscriber"
+BALANCE = "providers.adapters.sky.client.SkySalesClient.talkphone_balance"
+TALK = "גלישה באינטרנט בארץ:20.7364 GB, הודעות SMS: 0, דקות שיחה: 0"
 
 ROW_ESIM = {
     "ne_id": "0525737739",
@@ -113,6 +119,12 @@ class ParseNumberInfoTests(SimpleTestCase):
         self.assertEqual(info.utilization_pct, Decimal("0.00"))
         local = timezone.localtime(info.ends_at)
         self.assertEqual((local.month, local.day, local.hour), (11, 12, 23))
+
+    def test_talkphone_balance_is_consumed_data(self):
+        used, minutes, sms = parse_talkphone_balance(TALK)
+        self.assertEqual(used, Decimal("20.74"))
+        self.assertEqual(minutes, 0)
+        self.assertEqual(sms, 0)
 
     def test_esim_flag_is_case_insensitive(self):
         self.assertTrue(parse_number_info({"esim": "ESIM"}).is_esim)
@@ -326,6 +338,31 @@ class SkyAdapterNumberInfoTests(SimpleTestCase):
         search.return_value = ROW_ESIM
         info = SkyAdapter().number_info("0525737739")
         search.assert_called_once_with("0525737739")
+        self.assertEqual(info, parse_number_info(ROW_ESIM))
+
+    @patch(BALANCE, return_value=TALK)
+    @patch(SEARCH)
+    def test_pelephone_usage_comes_from_talkphone_balance(self, search, balance):
+        search.return_value = dict(
+            ROW_ESIM,
+            ne_id="0508426685",
+            msisdn="972508426685",
+            mno_name="بليفون",
+        )
+        info = SkyAdapter().number_info("0508426685")
+        balance.assert_called_once_with("0508426685")
+        self.assertEqual(info.data_used_gb, Decimal("20.74"))
+        self.assertIsNone(info.data_total_gb)
+        self.assertIsNone(info.utilization_pct)
+        self.assertEqual((info.minutes_used, info.sms_used), (0, 0))
+        self.assertEqual(info.network, "بليفون")
+
+    @patch(BALANCE)
+    @patch(SEARCH)
+    def test_other_networks_keep_the_subscriber_row(self, search, balance):
+        search.return_value = ROW_ESIM
+        info = SkyAdapter().number_info("0525737739")
+        balance.assert_not_called()
         self.assertEqual(info, parse_number_info(ROW_ESIM))
 
     @patch(SEARCH)

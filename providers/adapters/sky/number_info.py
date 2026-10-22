@@ -5,6 +5,7 @@ Every field is parsed on its own: a missing or unparseable value becomes
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any, Optional
@@ -71,6 +72,35 @@ def _ends_at(row: dict) -> Optional[datetime]:
             continue
         return timezone.make_aware(naive, timezone.get_default_timezone())
     return None
+
+
+_PELEPHONE = ("pelephone", "بليفون", "بلفون", "פלאפון")
+_TALK_GB = re.compile(r"([0-9]+(?:\.[0-9]+)?)\s*GB\b", re.IGNORECASE)
+_TALK_SMS = re.compile(r"SMS:\s*([0-9]+)", re.IGNORECASE)
+_TALK_MINUTES = re.compile(r"דקות שיחה:\s*([0-9]+)")
+
+
+def is_pelephone(network: str) -> bool:
+    text = (network or "").strip().lower()
+    return any(token in text for token in _PELEPHONE)
+
+
+def parse_talkphone_balance(text: str) -> tuple[Optional[Decimal], Optional[int], Optional[int]]:
+    """Used data, minutes, and SMS from Sky ``GetTalkphoneBalance``.
+
+    The provider returns one Hebrew sentence, for example
+    ``גלישה באינטרנט בארץ:20.7364 GB, הודעות SMS: 0, דקות שיחה: 0``.
+    """
+    raw = _text(text)
+    data = None
+    match = _TALK_GB.search(raw)
+    if match:
+        number = _decimal(match.group(1))
+        if number is not None:
+            data = number.quantize(_GB_QUANTUM, rounding=ROUND_HALF_UP)
+    minutes = _int(_TALK_MINUTES.search(raw).group(1)) if _TALK_MINUTES.search(raw) else None
+    sms = _int(_TALK_SMS.search(raw).group(1)) if _TALK_SMS.search(raw) else None
+    return data, minutes, sms
 
 
 def _data_total_gb(row: dict) -> Optional[Decimal]:

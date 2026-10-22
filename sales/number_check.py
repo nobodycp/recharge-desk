@@ -14,9 +14,9 @@ from __future__ import annotations
 import logging
 import re
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -51,8 +51,6 @@ MSG_INVALID_PHONE = "رقم غير صحيح"
 MSG_SERIAL_NONE = "لا يوجد رقم بهذا السيريال"
 MSG_SERIAL_MANY = "أكثر من رقم يطابق هذا السيريال. اكتب جزءاً أطول."
 MIN_SERIAL_DIGITS = 4
-# A fragment this long is one chip, even if the stored text differs slightly.
-SAME_SERIAL_DIGITS = 8
 MSG_NO_SALE = "لا توجد عملية بيع سابقة لهذا الرقم"
 MSG_UNAVAILABLE = "فحص الرقم غير متاح لهذا المزوّد"
 MSG_BUSY = "الخدمة مشغولة حالياً، حاول بعد قليل"
@@ -143,8 +141,8 @@ def resolve_check_query(raw: str) -> tuple[str, dict | None]:
         return "", _error(MSG_SERIAL_NONE)
     if len(phones) == 1:
         return phones[0], None
-    same_serial = len(serials) == 1 or len(text) >= SAME_SERIAL_DIGITS
-    if not same_serial:
+    # Different stored serials that merely share a prefix are different chips.
+    if len(serials) != 1:
         return "", _error(MSG_SERIAL_MANY)
     charged = (
         Sale.objects.filter(reference_number__in=phones)
@@ -399,6 +397,23 @@ def _num(value) -> str:
     return str(value)
 
 
+def _usage_num(value) -> str:
+    """Usage on the card: a fraction keeps one digit, ``50.4434`` shows as ``50.4``."""
+    if value is None:
+        return DASH
+    if not isinstance(value, Decimal):
+        try:
+            value = Decimal(str(value))
+        except InvalidOperation:
+            return DASH
+    if not value.is_finite():
+        return DASH
+    if value == value.to_integral_value():
+        return _num(value)
+    text = format(value.quantize(Decimal("0.1"), rounding=ROUND_DOWN), "f")
+    return "0.0" if text in ("-0.0", "") else text
+
+
 def _date_text(value: date) -> str:
     return value.strftime("%d/%m/%Y")
 
@@ -455,8 +470,8 @@ def _gauge(key: str, label: str, unit: str, used, total) -> dict:
         "key": key,
         "label": label,
         "unit": unit,
-        "used": _num(used),
-        "total": "" if total is None else _num(total),
+        "used": _usage_num(used),
+        "total": "" if total is None else _usage_num(total),
         "pct": "",
         "remaining": "",
         "tone": "ok",
@@ -469,7 +484,7 @@ def _gauge(key: str, label: str, unit: str, used, total) -> dict:
     pct = min(max(used / total * _HUNDRED, Decimal(0)), _HUNDRED)
     gauge.update(
         pct=_pct_text(pct),
-        remaining=_num(max(total - used, Decimal(0))),
+        remaining=_usage_num(max(total - used, Decimal(0))),
         tone="danger" if pct >= 90 else "warn" if pct >= 70 else "ok",
     )
     return gauge
@@ -504,6 +519,51 @@ _REGISTERED_COMPANY = {
     "aloha": "الوها",
 }
 _SIZE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(?:gb|g)\b", re.IGNORECASE)
+
+
+def _is_pelephone_name(*names: str) -> bool:
+    blob = " ".join(name or "" for name in names).lower()
+    return any(token in blob for token in ("pelephone", "بليفون", "بلفون", "פלאפון"))
+
+
+def _our_package_gb(sale: Sale | None) -> Decimal | None:
+    """Data allowance printed on our package, such as ``500GB``."""
+    product = sale.product if sale is not None else None
+    label = (getattr(product, "variant_label", "") or "").strip()
+    match = _SIZE.fullmatch(label)
+    if match is None:
+        match = _SIZE.search(label)
+        if match is None:
+            name = (getattr(product, "display_name", "") or "").strip()
+            match = _SIZE.search(name)
+    if match is None:
+        return None
+    try:
+        return Decimal(match.group(1).replace(",", "."))
+    except InvalidOperation:
+        return None
+
+
+def _with_our_pelephone_allowance(info: NumberInfo, sale: Sale | None) -> NumberInfo:
+    """Pelephone on Sky: keep consumed data from the provider, cap from our package."""
+    company = getattr(sale, "company", None)
+    if (getattr(company, "provider_key", "") or "").strip().lower() != "sky":
+        return info
+    product = sale.product if sale is not None else None
+    line = getattr(product, "line", None)
+    line_name = (getattr(line, "name", "") or "") if line is not None else ""
+    if not _is_pelephone_name(info.network, line_name):
+        return info
+    total = _our_package_gb(sale)
+    if total is None:
+        return info
+    return replace(
+        info,
+        data_total_gb=total,
+        utilization_pct=None,
+        minutes_total=None,
+        sms_total=None,
+    )
 
 
 def _package_label(sale: Sale | None) -> str:
@@ -621,7 +681,16 @@ def _share(ctx: dict) -> dict:
         "usage": [
             {
                 key: g[key]
-                for key in ("label", "used", "total", "unit", "pct", "included", "unlimited")
+                for key in (
+                    "label",
+                    "used",
+                    "total",
+                    "unit",
+                    "pct",
+                    "tone",
+                    "included",
+                    "unlimited",
+                )
             }
             for g in ctx["usage"]
         ],
@@ -652,6 +721,7 @@ def card_context(
     status = (info.status or "").strip()
     iccid = (info.iccid or "").strip()
     phone = (phone or "").strip()
+    info = _with_our_pelephone_allowance(info, sale)
     usage = _usage(info)
     line_logo, matched_name = _line_logo(sale, network)
     product = sale.product if sale is not None else None
