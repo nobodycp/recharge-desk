@@ -469,6 +469,110 @@ class CustomerBalanceActionViewTests(TestCase):
         self.assertEqual(list(resp.context["page_obj"]), [])
 
 
+class MainBalanceActionViewTests(TestCase):
+    """Main-stock mirrors of CustomerBalanceActionViewTests.
+
+    The row-action dialog JS (static/js/inventory-actions.js) is shared
+    between the main and customer stock pages, so it is easy for a browser
+    (htmx-boost) bug to break one and not the other. These view-level tests
+    cover every endpoint directly so regressions there — and any future
+    "manual sale from main stock" feature — stay caught server-side even
+    though the JS wiring itself isn't exercised here.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(name="Co", current_balance=Decimal("0"))
+        cls.line = ProductLine.objects.create(company=cls.company, name="Sleekom")
+        cls.user = User.objects.create_user("mgr_main_view", password="x")
+        UserProfile.objects.update_or_create(
+            user=cls.user,
+            defaults={"role": UserProfile.Role.MANAGEMENT, "is_active_profile": True},
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+        receive_main_stock(product_line=self.line, qty=10, notes="", user=self.user)
+        self.balance = SimStockBalance.objects.get(
+            location=SimStockBalance.Location.MAIN, product_line=self.line
+        )
+
+    def test_main_set_edits_quantity_with_reason(self):
+        url = reverse("inventory:main_set", args=[self.balance.pk])
+        resp = self.client.post(url, {"quantity": 25, "reason": "stock count"})
+        self.assertEqual(resp.status_code, 302)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 25)
+
+    def test_main_set_requires_reason(self):
+        url = reverse("inventory:main_set", args=[self.balance.pk])
+        resp = self.client.post(url, {"quantity": 25, "reason": ""}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 10)
+
+    def test_main_adjust_applies_signed_delta(self):
+        url = reverse("inventory:main_adjust", args=[self.balance.pk])
+        resp = self.client.post(url, {"signed_delta": -4, "reason": "damaged batch"})
+        self.assertEqual(resp.status_code, 302)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 6)
+
+    def test_main_damaged_deducts_quantity(self):
+        url = reverse("inventory:main_damaged", args=[self.balance.pk])
+        resp = self.client.post(url, {"quantity": 3, "notes": "cracked"})
+        self.assertEqual(resp.status_code, 302)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 7)
+
+    def test_main_manual_sale_deducts_with_optional_note(self):
+        url = reverse("inventory:main_manual_sale", args=[self.balance.pk])
+        resp = self.client.post(url, {"quantity": 2, "notes": "Sold to a walk-in"})
+        self.assertEqual(resp.status_code, 302)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 8)
+        movement = SimStockMovement.objects.filter(
+            movement_type=SimStockMovement.MovementType.MANUAL_SALE
+        ).first()
+        self.assertIsNotNone(movement)
+        self.assertEqual(movement.notes, "Sold to a walk-in")
+
+    def test_main_manual_sale_zero_stock_shows_error_message(self):
+        self.balance.quantity = 0
+        self.balance.save(update_fields=["quantity"])
+        url = reverse("inventory:main_manual_sale", args=[self.balance.pk])
+        resp = self.client.post(url, {"quantity": 1}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Insufficient stock for a manual sale.")
+        self.assertFalse(
+            SimStockMovement.objects.filter(
+                movement_type=SimStockMovement.MovementType.MANUAL_SALE
+            ).exists()
+        )
+
+    def test_main_page_ships_manual_sale_action_and_action_dialog_js(self):
+        resp = self.client.get(reverse("inventory:main"))
+        self.assertContains(resp, "inventory-actions.js")
+        self.assertContains(resp, "data-inv-manual-sale-url")
+        self.assertContains(resp, reverse("inventory:main_manual_sale", args=[self.balance.pk]))
+        self.assertContains(resp, f'data-inv-qty="{self.balance.quantity}"')
+        body = resp.content.decode()
+        self.assertRegex(body, r'id="rd-inv-set-qty"[^>]*\bdisabled\b')
+        self.assertRegex(body, r'id="rd-inv-damaged-qty"[^>]*\bdisabled\b')
+
+    def test_main_clear_and_delete_round_trip(self):
+        clear_url = reverse("inventory:main_clear", args=[self.balance.pk])
+        resp = self.client.post(clear_url, {"reason": "reset"})
+        self.assertEqual(resp.status_code, 302)
+        self.balance.refresh_from_db()
+        self.assertEqual(self.balance.quantity, 0)
+
+        delete_url = reverse("inventory:main_delete", args=[self.balance.pk])
+        resp = self.client.post(delete_url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(SimStockBalance.objects.filter(pk=self.balance.pk).exists())
+
+
 class InventoryMobileLayoutTests(TestCase):
     @classmethod
     def setUpTestData(cls):

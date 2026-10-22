@@ -28,6 +28,11 @@ urlpatterns = [
         name="main_adjust",
     ),
     path(
+        "management/inventory/main/<int:pk>/manual-sale/",
+        views.inventory_main_manual_sale,
+        name="main_manual_sale",
+    ),
+    path(
         "management/inventory/main/<int:pk>/damaged/",
         views.inventory_main_damaged,
         name="main_damaged",
