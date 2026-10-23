@@ -17,6 +17,33 @@
     }
   }
 
+  /* iOS keyboard Paste writes neighbouring labels into the field. Insert the
+     clipboard text instead. An empty clipboardData means the browser will not
+     tell us the text, so the native paste is left alone. */
+  document.body.addEventListener("paste", function (e) {
+    var input = e.target;
+    if (!input || !input.closest || !input.closest(".rd-entry-field")) return;
+    if (input.tagName !== "INPUT" && input.tagName !== "TEXTAREA") return;
+    var cd = e.clipboardData;
+    if (!cd || typeof cd.getData !== "function") return;
+    var text = cd.getData("text/plain") || cd.getData("text") || "";
+    if (!text) return;
+    e.preventDefault();
+    text = String(text).replace(/\u200e|\u200f/g, "");
+    var max = input.maxLength > 0 ? input.maxLength : 0;
+    var start = typeof input.selectionStart === "number" ? input.selectionStart : input.value.length;
+    var end = typeof input.selectionEnd === "number" ? input.selectionEnd : start;
+    var next = String(input.value || "").slice(0, start) + text + String(input.value || "").slice(end);
+    var caret = start + text.length;
+    if (max && next.length > max) {
+      next = next.slice(0, max);
+      caret = Math.min(caret, next.length);
+    }
+    input.value = next;
+    try { input.setSelectionRange(caret, caret); } catch (err) {}
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
   document.body.addEventListener("click", function (e) {
     var btn = e.target.closest(".rd-copy-ref");
     if (!btn) return;

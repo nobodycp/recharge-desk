@@ -73,12 +73,35 @@
     // underneath (or Enter keyup activated it after focus returned) and ran
     // the confirm action after Cancel.
     function arm(btn, ok) {
-      ["click", "mousedown", "pointerdown"].forEach(function (type) {
-        btn.addEventListener(type, function (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          if (type === "click") finish(ok);
-        });
+      // A cancelled pointerdown does not produce a click for touch or pen.
+      // Finish on pointerup for those, and keep click for mouse and keyboard.
+      // Closing on pointerdown let the same tap hit the button underneath.
+      var pointer = null;
+      btn.addEventListener("pointerdown", function (ev) {
+        if (ev.button > 0) return;
+        pointer = { id: ev.pointerId, type: ev.pointerType || "" };
+        ev.preventDefault();
+        ev.stopPropagation();
+      });
+      btn.addEventListener("pointerup", function (ev) {
+        if (!pointer || ev.pointerId !== pointer.id) return;
+        var kind = pointer.type;
+        pointer = null;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (kind === "touch" || kind === "pen") finish(ok);
+      });
+      btn.addEventListener("pointercancel", function (ev) {
+        if (pointer && ev.pointerId === pointer.id) pointer = null;
+      });
+      btn.addEventListener("mousedown", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      });
+      btn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        finish(ok);
       });
     }
     arm(okBtn, true);
@@ -128,6 +151,14 @@
     lastFocus = null;
     setTimeout(function () {
       if (shield.parentNode) shield.remove();
+      // iOS leaves sticky controls (the sale dock) untappable after a modal
+      // locked body scroll, until a full reload. A scroll restore wakes them.
+      var scroller = document.scrollingElement || document.documentElement;
+      if (scroller) {
+        var top = scroller.scrollTop;
+        scroller.scrollTop = top + 1;
+        scroller.scrollTop = top;
+      }
       // Only put focus back after Cancel. After Confirm the request navigates
       // or swaps the row; restoring focus to Delete would risk a second submit.
       if (!ok && focusEl && focusEl.isConnected && focusEl.focus) {

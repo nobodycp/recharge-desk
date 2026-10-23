@@ -871,21 +871,43 @@
       return false;
     }
     if (saleForm) {
+      /* iOS often omits SubmitEvent.submitter for a sticky dock button, so the
+         charge tap was treated as a plain save and the buttons stayed disabled. */
+      function rememberSubmitter(e) {
+        var btn = e.target && e.target.closest
+          ? e.target.closest('button[type="submit"], input[type="submit"]')
+          : null;
+        if (!btn || !saleForm.contains(btn)) return;
+        saleForm.__rdSubmitter = btn;
+        saleForm.__rdSubmitterAt = Date.now();
+      }
+      saleForm.addEventListener("pointerdown", rememberSubmitter, true);
+      saleForm.addEventListener("click", rememberSubmitter, true);
+      function submitterOf(e) {
+        if (e.submitter) return e.submitter;
+        var btn = saleForm.__rdSubmitter;
+        if (btn && btn.isConnected && Date.now() - (saleForm.__rdSubmitterAt || 0) < 1500) return btn;
+        return null;
+      }
+      function releaseSubmitLock() {
+        saleForm.removeAttribute("data-submitting");
+        saleForm.removeAttribute("data-charge-ok");
+        saleForm.removeAttribute("data-repeat-ok");
+        setSubmitButtonsDisabled(saleForm, false);
+      }
       /* Fields first — before charge confirm / repeat-charge prompts. */
       saleForm.addEventListener("submit", function (e) {
         if (e.defaultPrevented) return;
         if (!validateSaleEntry(saleForm)) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          saleForm.removeAttribute("data-charge-ok");
-          saleForm.removeAttribute("data-repeat-ok");
-          saleForm.removeAttribute("data-submitting");
+          releaseSubmitLock();
         }
       }, true);
       saleForm.addEventListener("submit", function (e) {
         if (saleForm.getAttribute("data-charge-ok") === "1") return;
         if (e.defaultPrevented) return;
-        var submitter = e.submitter;
+        var submitter = submitterOf(e);
         var isCharge =
           (submitter && submitter.getAttribute("name") === "action" && submitter.value === "charge") ||
           (submitter && submitter.id === "rd-charge-sale-btn");
@@ -897,7 +919,10 @@
           ? window.rdConfirm(message)
           : Promise.resolve(window.confirm(message));
         ask.then(function (ok) {
-          if (!ok) return;
+          if (!ok) {
+            releaseSubmitLock();
+            return;
+          }
           saleForm.setAttribute("data-charge-ok", "1");
           saleForm.requestSubmit(submitter || undefined);
         });
@@ -913,7 +938,7 @@
         if (!/^05[0-5]\d{7}$/.test(digits)) return;
         e.preventDefault();
         e.stopImmediatePropagation();
-        var submitter = e.submitter;
+        var submitter = submitterOf(e);
         fetch(repeatUrl + "?phone=" + encodeURIComponent(digits), {
           credentials: "same-origin",
           headers: { Accept: "application/json" },
@@ -927,7 +952,7 @@
           var ask = window.rdConfirm ? window.rdConfirm(message) : Promise.resolve(window.confirm(message));
           ask.then(function (ok) {
             if (!ok) {
-              saleForm.removeAttribute("data-charge-ok");
+              releaseSubmitLock();
               return;
             }
             var input = saleForm.querySelector('input[name="repeat_charge"]');

@@ -626,10 +626,17 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: repeat(2, minmax(0, 1fr));
   min-height: 3.45rem;
-  overflow: hidden;
+  /* clip, not hidden: hidden is a scroll container, and iOS then pastes the
+     field's neighbouring labels when the keyboard's Paste button is used. */
+  overflow: clip;
   background: var(--rd-surface);
   border: 1.5px solid var(--rd-field-border);
   border-radius: 0.85rem;
+}
+
+.rd-entry-field :is(input, textarea) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .rd-entry-field:focus-within {
@@ -696,7 +703,8 @@ body:has(.rd-employee-wallet.htmx-request) .rd-employee-main {
   width: 100%;
   min-width: 0;
   height: auto;
-  min-height: 0;
+  /* A collapsed box makes iOS aim the system Paste at the whole field. */
+  min-height: 1.35em;
   padding: 0.05rem 0.8rem 0.2rem;
   color: var(--rd-ink);
   background: transparent;
