@@ -110,13 +110,19 @@ function makeEl(tag) {
 function boot() {
   const body = makeEl("body");
   body.isConnected = true;
+  const docListeners = {};
   const document = {
     body,
     activeElement: null,
     scrollingElement: { scrollTop: 0 },
     documentElement: { scrollTop: 0 },
     createElement: (tag) => makeEl(tag),
-    addEventListener() {},
+    addEventListener(type, fn) {
+      (docListeners[type] = docListeners[type] || []).push(fn);
+    },
+    dispatchEvent(ev) {
+      (docListeners[ev.type] || []).slice().forEach((fn) => fn(ev));
+    },
   };
   const window = {
     document,
@@ -147,6 +153,10 @@ function openDialog(window) {
 
 function documentBody(window) {
   return window.document.body;
+}
+
+function fireBeforeSwap(window, detail) {
+  window.document.dispatchEvent({ type: "htmx:beforeSwap", detail: detail });
 }
 
 const tests = [];
@@ -180,6 +190,36 @@ test("lifting a touch outside Cancel leaves the dialog open", () => {
   cancel.dispatchEvent(pointer("pointercancel", "touch", 3));
   cancel.dispatchEvent(pointer("pointerup", "touch", 9));
   assert.strictEqual(dialog.open, true);
+});
+
+// A "loading" notice (e.g. the sales charge poll) has no Cancel and is only
+// ever dismissed by its own page's code. Leaving that page (back/forward)
+// before it resolves used to leave `pending` set forever, so every later
+// rdConfirm() on every later page just queued silently — the next Charge
+// button looked dead: no confirm, no cancel, nothing.
+test("a stuck loading notice does not block confirms on the next page", () => {
+  const { window } = boot();
+  window.rdConfirm("Charging…", { notice: true, loading: true });
+  const stuck = documentBody(window).children.find((n) => n.tagName === "DIALOG");
+  assert.strictEqual(stuck.open, true, "the loading notice opened with no way to dismiss itself");
+
+  fireBeforeSwap(window, { shouldSwap: true, target: documentBody(window) });
+  assert.strictEqual(stuck.open, false, "leaving the page force-closes the orphaned notice");
+
+  window.rdConfirm("Charge this number?");
+  assert.strictEqual(stuck.open, true, "the next page's confirm still opens instead of queuing silently");
+  const ok = stuck.querySelector("[data-rd-confirm-ok]");
+  ok.dispatchEvent({ type: "click", button: 0, bubbles: true, cancelable: true });
+  assert.strictEqual(stuck.open, false);
+});
+
+test("a partial (non-body) swap does not cancel an open confirm", () => {
+  const { window } = boot();
+  const { dialog, result } = openDialog(window);
+  var otherTarget = { tagName: "DIV" };
+  fireBeforeSwap(window, { shouldSwap: true, target: otherTarget });
+  assert.strictEqual(dialog.open, true);
+  assert.strictEqual(result(), null);
 });
 
 let failed = 0;
