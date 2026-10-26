@@ -224,6 +224,50 @@
     okBtn.focus();
   }
 
+  // hx-boost swaps the whole <body>; this script lives in <head> so it is
+  // never reloaded, and `pending`/`mode`/`queue` are shared across every page
+  // for the rest of the session. A "loading" notice (sales charge polling,
+  // etc.) has no Cancel, ignores Escape/backdrop, and is only ever dismissed
+  // by its own page's code — so leaving that page (back/forward, or any other
+  // navigation that bypasses the modal) orphans it mid-flight. With nothing
+  // left to call finish(), `pending` stays set forever and every later
+  // rdConfirm() on every later page just queues silently (no dialog, ever)
+  // instead of opening — the button looks dead with no confirm or cancel.
+  // Treat a body-targeted navigation as an implicit cancel so the next page
+  // starts clean.
+  function resetForNavigation() {
+    if (!pending && !queue.length) return;
+    var resolves = queue.splice(0).map(function (q) {
+      return q.resolve;
+    });
+    if (pending) resolves.unshift(pending);
+    pending = null;
+    mode = "";
+    if (host) {
+      host.classList.remove("is-open", "is-loading", "is-error", "is-notice");
+      if (host.open) {
+        try {
+          host.close();
+        } catch (err) {
+          /* ignore */
+        }
+      }
+    }
+    if (document.body) document.body.classList.remove("rd-confirm-open");
+    resolves.forEach(function (resolve) {
+      try {
+        resolve(false);
+      } catch (err) {
+        /* ignore */
+      }
+    });
+  }
+  document.addEventListener("htmx:beforeSwap", function (evt) {
+    var d = evt.detail;
+    if (d && d.shouldSwap && d.target === document.body) resetForNavigation();
+  });
+  document.addEventListener("htmx:historyCacheMissLoad", resetForNavigation);
+
   window.rdConfirm = function (message, options) {
     var text = String(message == null ? "" : message).trim();
     options = options || {};
