@@ -20,6 +20,7 @@ from sales.pricing import (
     ESIM_EXTRA_COST,
     effective_cost_for_product,
     loss_snapshot_for_sale,
+    provider_comparable_cost,
     suggested_sell_for_product,
 )
 from sales.models import CompanyBalanceTransaction
@@ -618,6 +619,185 @@ class NewSimProviderBalanceBackfillMigrationTests(TestCase):
 
         self.company.refresh_from_db()
         self.assertEqual(self.company.current_balance, balance_after_first_run)
+
+
+class NewSimProviderBalanceRepairTests(TestCase):
+    """0021 must put back supplier charges that 0020 removed when the chip
+    was never inside the cost snapshot, and leave a real package+chip
+    snapshot at the supplier-only amount."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(
+            name="RepairCo",
+            opening_balance=Decimal("5000"),
+            current_balance=Decimal("5000"),
+        )
+        cls.line = ProductLine.objects.create(
+            company=cls.company, name="LineR", estimated_unit_cost=Decimal("30")
+        )
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("30"),
+            default_sell_price=Decimal("50"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="CashR")
+        cls.user = User.objects.create_user("repair_emp", password="x")
+
+    def setUp(self):
+        self.company.refresh_from_db()
+        self.line.refresh_from_db()
+        self.product.refresh_from_db()
+
+    def _run_repair(self):
+        from importlib import import_module
+
+        from django.apps import apps as django_apps
+
+        module = import_module(
+            "sales.migrations.0021_repair_new_sim_provider_balance"
+        )
+        module.repair_new_sim_provider_balance(django_apps, None)
+
+    def _sale(self, *, reference_number, snapshot, deducted, catalog=None, status=Sale.Status.PAID):
+        self.company.refresh_from_db()
+        if catalog is not None:
+            self.product.cost_price = catalog
+            self.product.save(update_fields=["cost_price"])
+        sale = Sale.objects.create(
+            company=self.company,
+            product=self.product,
+            reference_number=reference_number,
+            payer_name="Test",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            duration_days=30,
+            cost_price_snapshot=snapshot,
+            profit_snapshot=Decimal("0"),
+            loss_snapshot=Decimal("0"),
+            is_new_sim=True,
+            status=status,
+            created_by=self.user,
+        )
+        CompanyBalanceTransaction.objects.create(
+            company=self.company,
+            entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
+            amount=deducted,
+            reference_type=CompanyBalanceTransaction.ReferenceType.SALE,
+            reference_id=sale.pk,
+            created_by=self.user,
+        )
+        return sale
+
+    def test_package_only_snapshot_is_not_treated_as_chip(self):
+        sale = self._sale(
+            reference_number="0512980083",
+            snapshot=Decimal("30"),
+            deducted=Decimal("30"),
+        )
+        self.assertEqual(provider_comparable_cost(sale), Decimal("30.00"))
+
+    def test_package_plus_chip_snapshot_excludes_chip(self):
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        sale = self._sale(
+            reference_number="0590000200",
+            snapshot=Decimal("42"),
+            deducted=Decimal("30"),
+            catalog=Decimal("30"),
+        )
+        self.assertEqual(provider_comparable_cost(sale), Decimal("30.00"))
+
+    def test_repair_restores_zeroed_package_deduction(self):
+        """0020 turned a 30 package deduction into 0 and added 30 to the balance."""
+        sale = self._sale(
+            reference_number="0512980083",
+            snapshot=Decimal("30"),
+            deducted=Decimal("0"),
+        )
+        self.company.current_balance = Decimal("5030")
+        self.company.save(update_fields=["current_balance"])
+
+        self._run_repair()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("5000"))
+        txn = CompanyBalanceTransaction.objects.get(reference_id=sale.pk)
+        self.assertEqual(txn.amount, Decimal("30.00"))
+
+    def test_repair_restores_partially_cut_package(self):
+        """0020 turned a 39 package deduction into 9."""
+        self.product.cost_price = Decimal("39")
+        self.product.save(update_fields=["cost_price"])
+        sale = self._sale(
+            reference_number="0543364156",
+            snapshot=Decimal("39"),
+            deducted=Decimal("9"),
+            catalog=Decimal("39"),
+        )
+        self.company.current_balance = Decimal("5030")
+        self.company.save(update_fields=["current_balance"])
+
+        self._run_repair()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("5000"))
+        txn = CompanyBalanceTransaction.objects.get(reference_id=sale.pk)
+        self.assertEqual(txn.amount, Decimal("39.00"))
+
+    def test_repair_leaves_real_chip_exclusion_in_place(self):
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        sale = self._sale(
+            reference_number="0590000201",
+            snapshot=Decimal("42"),
+            deducted=Decimal("30"),
+            catalog=Decimal("30"),
+        )
+        self.company.current_balance = Decimal("4970")
+        self.company.save(update_fields=["current_balance"])
+
+        self._run_repair()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("4970"))
+        txn = CompanyBalanceTransaction.objects.get(reference_id=sale.pk)
+        self.assertEqual(txn.amount, Decimal("30"))
+
+    def test_repair_is_idempotent(self):
+        self._sale(
+            reference_number="0512980084",
+            snapshot=Decimal("30"),
+            deducted=Decimal("0"),
+        )
+        self.company.current_balance = Decimal("5030")
+        self.company.save(update_fields=["current_balance"])
+        self._run_repair()
+        self.company.refresh_from_db()
+        once = self.company.current_balance
+
+        self._run_repair()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, once)
+
+    def test_repair_leaves_cancelled_sale_untouched(self):
+        sale = self._sale(
+            reference_number="0512980085",
+            snapshot=Decimal("30"),
+            deducted=Decimal("0"),
+            status=Sale.Status.CANCELLED,
+        )
+        self.company.current_balance = Decimal("5030")
+        self.company.save(update_fields=["current_balance"])
+
+        self._run_repair()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("5030"))
+        txn = CompanyBalanceTransaction.objects.get(reference_id=sale.pk)
+        self.assertEqual(txn.amount, Decimal("0"))
 
 
 class CleanupOrphanLedgerTests(TestCase):

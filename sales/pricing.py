@@ -61,9 +61,11 @@ def prorate_amount(amount: Decimal, *, base_days: int, duration_days: int) -> De
 def provider_comparable_cost(sale) -> Decimal:
     """The part of a sale's cost that is actually owed to / charged by the supplier.
 
-    The new-SIM chip is our own stock (paid for separately when it was bought
-    into inventory), not a charge the supplier ever makes, so it is excluded
-    here. eSIM extra stays, because that is a real supplier cost.
+    The new-SIM chip is our own stock, not a supplier charge, so it is excluded
+    only when ``cost_price_snapshot`` actually contains it (package + chip).
+    Older new-SIM sales stored the package price alone; subtracting the chip
+    from those snapshots removes a real supplier charge. eSIM extra stays,
+    because that is a supplier cost.
 
     This is both the amount deducted from / restored to the company's
     provider balance (see ``sales.services.create_sale`` / ``cancel_sale``)
@@ -71,14 +73,38 @@ def provider_comparable_cost(sale) -> Decimal:
     reconciliation — the two must agree, or every new-SIM sale would look
     like an unexplained mismatch.
     """
-    cost = Decimal(sale.cost_price_snapshot or 0)
+    cost = quantize_money(Decimal(sale.cost_price_snapshot or 0))
     if not getattr(sale, "is_new_sim", False):
         return cost
     product = getattr(sale, "product", None)
     chip = _new_sim_unit_cost(product) if product is not None else Decimal("0")
-    if chip <= 0 or cost <= chip:
-        return cost if chip <= 0 else Decimal("0")
-    return cost - chip
+    if chip <= 0 or not _snapshot_includes_new_sim_chip(sale, chip):
+        return cost
+    if cost <= chip:
+        return Decimal("0.00")
+    return quantize_money(cost - chip)
+
+
+def _snapshot_includes_new_sim_chip(sale, chip: Decimal) -> bool:
+    """True when the recorded cost is the supplier package plus the chip."""
+    product = getattr(sale, "product", None)
+    if product is None:
+        return False
+    package = _supplier_package_cost(sale)
+    recorded = quantize_money(Decimal(sale.cost_price_snapshot or 0))
+    return quantize_money(package + chip) == recorded
+
+
+def _supplier_package_cost(sale) -> Decimal:
+    """Package price the supplier charges, before any new-SIM chip."""
+    product = sale.product
+    base = package_base_days(product)
+    raw_days = getattr(sale, "duration_days", None)
+    days = int(raw_days) if raw_days else base
+    cost = prorate_amount(product.cost_price, base_days=base, duration_days=days)
+    if getattr(sale, "is_esim", False):
+        cost += ESIM_EXTRA_COST
+    return cost
 
 
 def _new_sim_unit_cost(product: Product) -> Decimal:
