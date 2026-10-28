@@ -24,6 +24,7 @@ from sales.pricing import (
 )
 from sales.models import CompanyBalanceTransaction
 from sales.services import (
+    cancel_sale,
     cleanup_orphan_sale_balance_transactions,
     create_sale,
     find_orphan_sale_balance_transactions,
@@ -254,7 +255,10 @@ class EsimSaleTests(TestCase):
         self.assertEqual(sale.profit_snapshot, Decimal("20"))
         self.assertEqual(sale.loss_snapshot, Decimal("0"))
 
-    def test_create_sale_new_sim_includes_estimated_unit_cost(self):
+    def test_create_sale_new_sim_chip_cost_excluded_from_provider_balance(self):
+        """The new-SIM chip lowers profit (it is a real cost) but is our own
+        stock, not the supplier's — only the package cost comes out of the
+        company's provider balance."""
         self.line.estimated_unit_cost = Decimal("12")
         self.line.save(update_fields=["estimated_unit_cost"])
         sale = create_sale(
@@ -274,7 +278,40 @@ class EsimSaleTests(TestCase):
         self.assertEqual(sale.profit_snapshot, Decimal("8"))
         self.assertEqual(sale.loss_snapshot, Decimal("0"))
         self.company.refresh_from_db()
-        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("42"))
+        # Only the 30 package cost left the provider balance, not the 12 chip cost.
+        self.assertEqual(self.company.current_balance, Decimal("1000") - Decimal("30"))
+        txn = CompanyBalanceTransaction.objects.get(
+            reference_type=CompanyBalanceTransaction.ReferenceType.SALE,
+            reference_id=sale.pk,
+        )
+        self.assertEqual(txn.amount, Decimal("30"))
+
+    def test_cancel_sale_new_sim_restores_only_provider_portion(self):
+        """Cancelling a new-SIM sale must restore exactly what was deducted
+        (package cost only), not the full cost snapshot (which also carries
+        the chip cost)."""
+        self.line.estimated_unit_cost = Decimal("12")
+        self.line.save(update_fields=["estimated_unit_cost"])
+        sale = create_sale(
+            company=self.company,
+            product=self.product,
+            reference_number="0590000002b",
+            payer_name="Test",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            notes="",
+            user=self.user,
+            is_esim=False,
+            is_new_sim=True,
+        )
+        self.company.refresh_from_db()
+        balance_after_sale = self.company.current_balance
+        cancel_sale(sale=sale, user=self.user)
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("1000"))
+        self.assertEqual(
+            self.company.current_balance - balance_after_sale, Decimal("30")
+        )
 
     def test_create_sale_new_sim_without_estimated_cost_unchanged(self):
         sale = create_sale(
@@ -473,6 +510,114 @@ class EsimSaleTests(TestCase):
         )
         self.assertEqual(updated.profit_snapshot, Decimal("-30"))
         self.assertEqual(updated.loss_snapshot, Decimal("30"))
+
+
+class NewSimProviderBalanceBackfillMigrationTests(TestCase):
+    """The 0020 data migration must correct historical over-deductions of
+    the new-SIM chip cost from the provider balance, and leave everything
+    else (cancelled sales, non-new-SIM sales) untouched."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.company = Company.objects.create(
+            name="BackfillCo",
+            opening_balance=Decimal("1000"),
+            current_balance=Decimal("1000"),
+        )
+        cls.line = ProductLine.objects.create(
+            company=cls.company, name="LineB", estimated_unit_cost=Decimal("12")
+        )
+        cls.product = Product.objects.create(
+            line=cls.line,
+            variant_label="Pkg",
+            cost_price=Decimal("30"),
+            default_sell_price=Decimal("50"),
+        )
+        cls.pm = PaymentMethod.objects.create(name="CashB")
+        cls.user = User.objects.create_user("backfill_emp", password="x")
+
+    def _run_migration(self):
+        from importlib import import_module
+
+        from django.apps import apps as django_apps
+
+        module = import_module(
+            "sales.migrations.0020_backfill_new_sim_provider_balance"
+        )
+        module.backfill_new_sim_provider_balance(django_apps, None)
+
+    def _simulate_pre_fix_sale(self, *, reference_number, status=Sale.Status.PENDING):
+        """Build a sale + deduction the way the old (buggy) code did: the
+        deduction amount includes the chip cost."""
+        # setUpTestData's company instance is shared (not reset) across test
+        # methods in this class; resync it with the per-test rolled-back DB
+        # state before mutating, or a stale in-memory balance leaks in.
+        self.company.refresh_from_db()
+        sale = Sale.objects.create(
+            company=self.company,
+            product=self.product,
+            reference_number=reference_number,
+            payer_name="Test",
+            payment_method=self.pm,
+            sell_price_actual=Decimal("50"),
+            duration_days=30,
+            cost_price_snapshot=Decimal("42"),
+            profit_snapshot=Decimal("8"),
+            loss_snapshot=Decimal("0"),
+            is_new_sim=True,
+            status=status,
+            created_by=self.user,
+        )
+        CompanyBalanceTransaction.objects.create(
+            company=self.company,
+            entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
+            amount=Decimal("42"),
+            reference_type=CompanyBalanceTransaction.ReferenceType.SALE,
+            reference_id=sale.pk,
+            created_by=self.user,
+        )
+        self.company.current_balance = self.company.current_balance - Decimal("42")
+        self.company.save(update_fields=["current_balance"])
+        self.company.refresh_from_db()
+        return sale
+
+    def test_backfill_credits_overcharged_open_sale(self):
+        sale = self._simulate_pre_fix_sale(reference_number="0590000100")
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("958"))
+
+        self._run_migration()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, Decimal("970"))
+        txn = CompanyBalanceTransaction.objects.get(
+            reference_type=CompanyBalanceTransaction.ReferenceType.SALE,
+            reference_id=sale.pk,
+        )
+        self.assertEqual(txn.amount, Decimal("30"))
+
+    def test_backfill_leaves_cancelled_sale_untouched(self):
+        self._simulate_pre_fix_sale(
+            reference_number="0590000101", status=Sale.Status.CANCELLED
+        )
+        self.company.refresh_from_db()
+        balance_before = self.company.current_balance
+
+        self._run_migration()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, balance_before)
+
+    def test_backfill_is_idempotent(self):
+        self._simulate_pre_fix_sale(reference_number="0590000102")
+        self._run_migration()
+        self.company.refresh_from_db()
+        balance_after_first_run = self.company.current_balance
+
+        self._run_migration()
+
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.current_balance, balance_after_first_run)
 
 
 class CleanupOrphanLedgerTests(TestCase):
