@@ -59,11 +59,17 @@ def prorate_amount(amount: Decimal, *, base_days: int, duration_days: int) -> De
 
 
 def provider_comparable_cost(sale) -> Decimal:
-    """Provider-facing cost of a sale.
+    """The part of a sale's cost that is actually owed to / charged by the supplier.
 
-    The new-SIM chip is our own stock, not a charge on the supplier, so it
-    is left out of company reconciliation. eSIM extra stays, because that is
-    a supplier cost.
+    The new-SIM chip is our own stock (paid for separately when it was bought
+    into inventory), not a charge the supplier ever makes, so it is excluded
+    here. eSIM extra stays, because that is a real supplier cost.
+
+    This is both the amount deducted from / restored to the company's
+    provider balance (see ``sales.services.create_sale`` / ``cancel_sale``)
+    and the figure compared against the supplier's own balance report during
+    reconciliation — the two must agree, or every new-SIM sale would look
+    like an unexplained mismatch.
     """
     cost = Decimal(sale.cost_price_snapshot or 0)
     if not getattr(sale, "is_new_sim", False):
@@ -92,7 +98,11 @@ def effective_cost_for_product(
     duration_days: int | None = None,
 ) -> Decimal:
     """
-    Cost deducted from company balance and stored on ``Sale.cost_price_snapshot``.
+    Total cost of the sale, stored on ``Sale.cost_price_snapshot`` and used for
+    profit/loss. Only part of this — see ``provider_comparable_cost`` — is
+    actually deducted from the company's provider balance: the new-SIM chip
+    cost is real (it lowers profit) but it is paid for out of our own SIM
+    stock, not out of the supplier's balance.
 
     Package catalog cost is prorated by ``duration_days / base_days``.
     eSIM and new-SIM extras are fixed add-ons (not prorated).

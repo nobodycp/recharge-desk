@@ -10,7 +10,11 @@ from audit.models import AuditAction
 from audit.services import diff_fields, record as audit_record, snapshot
 from companies.models import Company, Product
 from sales.models import CompanyBalanceTransaction, PaymentMethod, Sale
-from sales.pricing import effective_cost_for_product, loss_snapshot_for_sale
+from sales.pricing import (
+    effective_cost_for_product,
+    loss_snapshot_for_sale,
+    provider_comparable_cost,
+)
 
 
 _SALE_AUDITED_FIELDS = (
@@ -117,16 +121,19 @@ def create_sale(
         employee_recipient=employee_recipient if paid_via_employee else None,
     )
 
+    # Only the part the supplier actually charges comes out of their balance —
+    # a new-SIM chip is our own stock, not theirs (see provider_comparable_cost).
+    provider_cost = provider_comparable_cost(sale)
     CompanyBalanceTransaction.objects.create(
         company=company_locked,
         entry_type=CompanyBalanceTransaction.EntryType.DEDUCTION,
-        amount=cost,
+        amount=provider_cost,
         reference_type=CompanyBalanceTransaction.ReferenceType.SALE,
         reference_id=sale.pk,
         notes="",
         created_by=user,
     )
-    _apply_balance_delta(company_locked, -cost)
+    _apply_balance_delta(company_locked, -provider_cost)
     audit_record(
         AuditAction.CREATE,
         sale,
@@ -446,19 +453,21 @@ def cancel_sale(*, sale: Sale, user, audit_extra: Optional[dict] = None) -> Sale
         raise ValueError(_("Cancellation already recorded for this sale."))
 
     company_locked = Company.objects.select_for_update().get(pk=sale_locked.company_id)
-    cost = sale_locked.cost_price_snapshot
+    # Restore exactly what was deducted at creation — the supplier-charged
+    # portion only, excluding any new-SIM chip cost (see create_sale).
+    provider_cost = provider_comparable_cost(sale_locked)
     previous_status = sale_locked.status
 
     CompanyBalanceTransaction.objects.create(
         company=company_locked,
         entry_type=CompanyBalanceTransaction.EntryType.REVERSAL,
-        amount=cost,
+        amount=provider_cost,
         reference_type=CompanyBalanceTransaction.ReferenceType.CANCELLATION,
         reference_id=sale_locked.pk,
         notes="",
         created_by=user,
     )
-    _apply_balance_delta(company_locked, cost)
+    _apply_balance_delta(company_locked, provider_cost)
 
     # If this was an on-account sale that had already been approved (i.e. a
     # CHARGE row is sitting in the customer ledger), reverse it so the
